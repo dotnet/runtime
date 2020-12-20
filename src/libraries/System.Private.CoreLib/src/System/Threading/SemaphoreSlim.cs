@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -60,13 +61,6 @@ namespace System.Threading
 
         // Tail of list representing asynchronous waits on the semaphore.
         private TaskNode? m_asyncTail;
-
-        // A pre-completed task with Result==true
-        private static readonly Task<bool> s_trueTask =
-            new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
-        // A pre-completed task with Result==false
-        private static readonly Task<bool> s_falseTask =
-            new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         // No maximum constant
         private const int NO_MAXIMUM = int.MaxValue;
@@ -179,6 +173,7 @@ namespace System.Threading
         /// </summary>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void Wait()
         {
             // Call wait with infinite timeout
@@ -195,6 +190,7 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void Wait(CancellationToken cancellationToken)
         {
             // Call wait with infinite timeout
@@ -213,6 +209,7 @@ namespace System.Threading
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/>.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout)
         {
             // Validate the timeout
@@ -243,6 +240,7 @@ namespace System.Threading
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             // Validate the timeout
@@ -267,6 +265,7 @@ namespace System.Threading
         /// otherwise, false.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
         /// negative number other than -1, which represents an infinite time-out.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout)
         {
             return Wait(millisecondsTimeout, CancellationToken.None);
@@ -284,6 +283,7 @@ namespace System.Threading
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a negative number other than -1,
         /// which represents an infinite time-out.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             CheckDispose();
@@ -439,6 +439,7 @@ namespace System.Threading
         /// <param name="startTime">The start ticks to calculate the elapsed time</param>
         /// <param name="cancellationToken">The CancellationToken to observe.</param>
         /// <returns>true if the monitor received a signal, false if the timeout expired</returns>
+        [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(int millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
@@ -625,12 +626,12 @@ namespace System.Threading
                 {
                     --m_currentCount;
                     if (m_waitHandle != null && m_currentCount == 0) m_waitHandle.Reset();
-                    return s_trueTask;
+                    return Task.FromResult(true);
                 }
                 else if (millisecondsTimeout == 0)
                 {
                     // No counts, if timeout is zero fail fast
-                    return s_falseTask;
+                    return Task.FromResult(false);
                 }
                 // If there aren't, create and return a task to the caller.
                 // The task will be completed either when they've successfully acquired

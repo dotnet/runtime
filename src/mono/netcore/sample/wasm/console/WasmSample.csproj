@@ -1,49 +1,74 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
+    <AppBundleDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</AppBundleDir>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
-  <Target Name="RebuildWasmAppBuilder">
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+  </PropertyGroup>
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj" />
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
+      </RuntimePack>
     </ItemGroup>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=$(Configuration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-             Targets="Restore"/>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=$(Configuration)"
-             Targets="Build;Publish"/>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <UsingTask TaskName="WasmAppBuilder" 
-             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
-
-  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
+    <PropertyGroup>
+      <WasmAppDir>$(AppBundleDir)</WasmAppDir>
+      <WasmAOTDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmAOTDir>
+      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+      <WasmMainAssemblyPath>$(WasmAotDir)WasmSample.dll</WasmMainAssemblyPath>
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    </PropertyGroup>
     <ItemGroup>
-      <AssemblySearchPaths Include="bin"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
     </ItemGroup>
-    <WasmAppBuilder
-      AppDir="$(AppDir)"
-      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="bin\WasmSample.dll"
-      MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
-      AssemblySearchPaths="@(AssemblySearchPaths)"/>
-    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
+
+  <Target Name="CopySampleAppToHelixTestDir" 
+          Condition="'$(ArchiveTests)' == 'true'" 
+          AfterTargets="Build"
+          DependsOnTargets="Publish" >
+    <PropertyGroup>
+      <!-- Helix properties -->
+      <!-- AnyCPU as Platform-->
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/console/</HelixArchiveRunOnlyAppsDir>
+      <ZippedApp>$(OutputPath)/WasmConsoleSample.zip</ZippedApp>
+    </PropertyGroup>
+    <ZipDirectory SourceDirectory="$(AppBundleDir)" DestinationFile="$(ZippedApp)" />
+    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
+  </Target>
+
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>

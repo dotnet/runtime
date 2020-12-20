@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
@@ -21,8 +21,6 @@
     <Compile Include="System\IO\Pipes\PipeState.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.cs" />
     <Compile Include="System\IO\Pipes\PipeTransmissionMode.cs" />
-    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
-             Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
@@ -50,13 +48,13 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"
              Link="Common\Interop\Windows\Interop.FileOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs"
-             Link="Common\CoreLib\Interop\Windows\Interop.FileTypes.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs"
+             Link="Common\Interop\Windows\Interop.FileTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
              Link="Common\Interop\Windows\Interop.GetCurrentProcess.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_IntPtr.cs"
-             Link="Common\Interop\Windows\Interop.DuplicateHandle_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafePipeHandle.cs"
+             Link="Common\Interop\Windows\Interop.DuplicateHandle_SafePipeHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"
-             Link="Common\CoreLib\Interop\Windows\Interop.GetFileType.cs" />
+             Link="Common\Interop\Windows\Interop.GetFileType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreatePipe_SafePipeHandle.cs"
              Link="Common\Interop\Windows\Interop.CreatePipe_SafePipeHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConnectNamedPipe.cs"
@@ -169,8 +167,6 @@
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetEUid.cs"
              Link="Common\Interop\Unix\Interop.SetEUid.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\ForceAsyncAwaiter.cs"
-             Link="Common\System\Threading\Tasks\ForceAsyncAwaiter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

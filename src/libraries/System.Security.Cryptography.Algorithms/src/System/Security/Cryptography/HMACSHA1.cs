@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
     public class HMACSHA1 : HMAC
     {
         public HMACSHA1()
-            : this(Helpers.GenerateRandom(BlockSize))
+            : this(RandomNumberGenerator.GetBytes(BlockSize))
         {
         }
 

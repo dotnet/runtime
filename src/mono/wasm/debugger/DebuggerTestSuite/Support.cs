@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -55,9 +57,11 @@ namespace DebuggerTests
                 tcs.SetException(new ArgumentException(exception.ToString()));
         }
 
+        // https://console.spec.whatwg.org/#formatting-specifiers
+        static Regex _consoleArgsRegex = new(@"(%[sdifoOc])", RegexOptions.Compiled);
+
         async Task OnMessage(string method, JObject args, CancellationToken token)
         {
-            //System.Console.WriteLine("OnMessage " + method + args);
             switch (method)
             {
                 case "Debugger.paused":
@@ -67,7 +71,31 @@ namespace DebuggerTests
                     NotifyOf(READY, args);
                     break;
                 case "Runtime.consoleAPICalled":
-                    Console.WriteLine("CWL: {0}", args?["args"]?[0]?["value"]);
+                    String type = args?["type"]?.Value<string>();
+                    List<string> consoleArgs = new();
+                    foreach (var arg in args?["args"])
+                    {
+                        consoleArgs.Add(arg?["value"].ToString());
+                    }
+
+                    int position = 1;
+                    string first = consoleArgs[0];
+                    string output = _consoleArgsRegex.Replace(first, (_) => $"{consoleArgs[position++]}");
+                    if (position == 1)
+                    {
+                        // first arg wasn't a format string so concat things together
+                        // with a space instead.
+                        StringBuilder builder = new StringBuilder(first);
+                        for (position = 1; position < consoleArgs.Count(); position++)
+                        {
+                            builder.Append(" ");
+                            builder.Append(consoleArgs[position]);
+                        }
+                        builder.Append("\n");
+                        output = builder.ToString();
+                    }
+                    Console.Write("console.{0}: {1}", type, output);
+
                     break;
             }
             if (eventListeners.ContainsKey(method))
@@ -130,20 +158,12 @@ namespace DebuggerTests
 
         static protected string FindTestPath()
         {
-            //FIXME how would I locate it otherwise?
-            var test_path = Environment.GetEnvironmentVariable("TEST_SUITE_PATH");
-            //Lets try to guest
-            if (test_path != null && Directory.Exists(test_path))
-                return test_path;
+            var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", "Debug", "publish");
+            if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
+                return test_app_path;
 
-            var cwd = Environment.CurrentDirectory;
-            Console.WriteLine("guessing from {0}", cwd);
-            //tests run from DebuggerTestSuite/bin/Debug/netcoreapp2.1
-            var new_path = Path.Combine(cwd, "../../../../bin/debugger-test-suite");
-            if (File.Exists(Path.Combine(new_path, "debugger-driver.html")))
-                return new_path;
-
-            throw new Exception("Missing TEST_SUITE_PATH env var and could not guess path from CWD");
+            throw new Exception($"Could not figure out debugger-test app path ({test_app_path}) based on the test suite location ({asm_dir})");
         }
 
         static string[] PROBE_LIST = {

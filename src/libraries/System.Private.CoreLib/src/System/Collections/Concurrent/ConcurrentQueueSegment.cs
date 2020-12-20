@@ -159,6 +159,9 @@ namespace System.Collections.Concurrent
                         }
                         return true;
                     }
+
+                    // The head was already advanced by another thread. A newer head has already been observed and the next
+                    // iteration would make forward progress, so there's no need to spin-wait before trying again.
                 }
                 else if (diff < 0)
                 {
@@ -179,11 +182,19 @@ namespace System.Collections.Concurrent
 
                     // It's possible it could have become frozen after we checked _frozenForEnqueues
                     // and before reading the tail.  That's ok: in that rare race condition, we just
-                    // loop around again.
+                    // loop around again. This is not necessarily an always-forward-progressing
+                    // situation since this thread is waiting for another to write to the slot and
+                    // this thread may have to check the same slot multiple times. Spin-wait to avoid
+                    // a potential busy-wait, and then try again.
+                    spinner.SpinOnce(sleep1Threshold: -1);
                 }
-
-                // Lost a race. Spin a bit, then try again.
-                spinner.SpinOnce(sleep1Threshold: -1);
+                else
+                {
+                    // The item was already dequeued by another thread. The head has already been updated beyond what was
+                    // observed above, and the sequence number observed above as a volatile load is more recent than the update
+                    // to the head. So, the next iteration of the loop is guaranteed to see a new head. Since this is an
+                    // always-forward-progressing situation, there's no need to spin-wait before trying again.
+                }
             }
         }
 
@@ -240,11 +251,19 @@ namespace System.Collections.Concurrent
 
                     // It's possible it could have become frozen after we checked _frozenForEnqueues
                     // and before reading the tail.  That's ok: in that rare race condition, we just
-                    // loop around again.
+                    // loop around again. This is not necessarily an always-forward-progressing
+                    // situation since this thread is waiting for another to write to the slot and
+                    // this thread may have to check the same slot multiple times. Spin-wait to avoid
+                    // a potential busy-wait, and then try again.
+                    spinner.SpinOnce(sleep1Threshold: -1);
                 }
-
-                // Lost a race. Spin a bit, then try again.
-                spinner.SpinOnce(sleep1Threshold: -1);
+                else
+                {
+                    // The item was already dequeued by another thread. The head has already been updated beyond what was
+                    // observed above, and the sequence number observed above as a volatile load is more recent than the update
+                    // to the head. So, the next iteration of the loop is guaranteed to see a new head. Since this is an
+                    // always-forward-progressing situation, there's no need to spin-wait before trying again.
+                }
             }
         }
 
@@ -258,7 +277,6 @@ namespace System.Collections.Concurrent
             Slot[] slots = _slots;
 
             // Loop in case of contention...
-            SpinWait spinner = default;
             while (true)
             {
                 // Get the tail at which to try to return.
@@ -289,6 +307,9 @@ namespace System.Collections.Concurrent
                         Volatile.Write(ref slots[slotsIndex].SequenceNumber, currentTail + 1);
                         return true;
                     }
+
+                    // The tail was already advanced by another thread. A newer tail has already been observed and the next
+                    // iteration would make forward progress, so there's no need to spin-wait before trying again.
                 }
                 else if (diff < 0)
                 {
@@ -299,9 +320,14 @@ namespace System.Collections.Concurrent
                     // we need to enqueue in order.
                     return false;
                 }
-
-                // Lost a race. Spin a bit, then try again.
-                spinner.SpinOnce(sleep1Threshold: -1);
+                else
+                {
+                    // Either the slot contains an item, or it is empty but because the slot was filled and dequeued. In either
+                    // case, the tail has already been updated beyond what was observed above, and the sequence number observed
+                    // above as a volatile load is more recent than the update to the tail. So, the next iteration of the loop
+                    // is guaranteed to see a new tail. Since this is an always-forward-progressing situation, there's no need
+                    // to spin-wait before trying again.
+                }
             }
         }
 

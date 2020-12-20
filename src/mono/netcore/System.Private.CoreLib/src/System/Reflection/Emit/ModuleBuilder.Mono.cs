@@ -372,7 +372,7 @@ namespace System.Reflection.Emit
             return GetType(className, false, ignoreCase);
         }
 
-        private TypeBuilder? search_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
+        private static TypeBuilder? search_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
         {
             int i;
             for (i = 0; i < validElementsInArray; ++i)
@@ -385,7 +385,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        private TypeBuilder? search_nested_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
+        private static TypeBuilder? search_nested_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
         {
             int i;
             for (i = 0; i < validElementsInArray; ++i)
@@ -396,7 +396,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        private TypeBuilder? GetMaybeNested(TypeBuilder t, IEnumerable<ITypeName> nested)
+        private static TypeBuilder? GetMaybeNested(TypeBuilder t, IEnumerable<ITypeName> nested)
         {
             TypeBuilder? result = t;
 
@@ -545,57 +545,57 @@ namespace System.Reflection.Emit
             return copy;
         }
 
-        public MethodToken GetMethodToken(MethodInfo method)
+        internal int GetMethodToken(MethodInfo method)
         {
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
 
-            return new MethodToken(GetToken(method));
+            return method.MetadataToken;
         }
 
-        public MethodToken GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
+        internal int GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
         {
             return GetMethodToken(GetArrayMethod(arrayClass, methodName, callingConvention, returnType, parameterTypes));
         }
 
         [ComVisible(true)]
-        public MethodToken GetConstructorToken(ConstructorInfo con)
+        internal int GetConstructorToken(ConstructorInfo con)
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
 
-            return new MethodToken(GetToken(con));
+            return con.MetadataToken;
         }
 
-        public FieldToken GetFieldToken(FieldInfo field)
+        internal int GetFieldToken(FieldInfo field)
         {
             if (field == null)
                 throw new ArgumentNullException(nameof(field));
 
-            return new FieldToken(GetToken (field), field.GetType());
+            return field.MetadataToken;
         }
 
         // FIXME:
-        public SignatureToken GetSignatureToken(byte[] sigBytes, int sigLength)
+        internal int GetSignatureToken(byte[] sigBytes, int sigLength)
         {
             throw new NotImplementedException();
         }
 
-        public SignatureToken GetSignatureToken(SignatureHelper sigHelper)
+        internal int GetSignatureToken(SignatureHelper sigHelper)
         {
             if (sigHelper == null)
                 throw new ArgumentNullException(nameof(sigHelper));
-            return new SignatureToken(GetToken(sigHelper));
+            return GetToken(sigHelper);
         }
 
-        public StringToken GetStringConstant(string str)
+        internal int GetStringConstant(string str)
         {
             if (str == null)
                 throw new ArgumentNullException(nameof(str));
-            return new StringToken(GetToken(str));
+            return GetToken(str);
         }
 
-        public TypeToken GetTypeToken(Type type)
+        internal int GetTypeToken(Type type)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -603,12 +603,12 @@ namespace System.Reflection.Emit
                 throw new ArgumentException("type can't be a byref type", nameof(type));
             if (!IsTransient() && (type.Module is ModuleBuilder) && ((ModuleBuilder)type.Module).IsTransient())
                 throw new InvalidOperationException("a non-transient module can't reference a transient module");
-            return new TypeToken(GetToken(type));
+            return type.MetadataToken;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Reflection.Emit is not subject to trimming")]
-        public TypeToken GetTypeToken(string name)
+        internal int GetTypeToken(string name)
         {
             return GetTypeToken(GetType(name)!);
         }
@@ -851,7 +851,7 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        internal ModuleBuilder GetNativeHandle() => this;
+        internal ModuleBuilder InternalModule => this;
 
         internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
 

@@ -3,13 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Fakes;
+using Microsoft.Extensions.Hosting.Tests;
 using Microsoft.Extensions.Hosting.Tests.Fakes;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -1215,6 +1219,48 @@ namespace Microsoft.Extensions.Hosting.Internal
             });
         }
 
+        /// <summary>
+        /// Tests when a BackgroundService throws an exception asynchronously
+        /// (after an await), the exception gets logged correctly.
+        /// </summary>
+        [Fact]
+        public async Task BackgroundServiceAsyncExceptionGetsLogged()
+        {
+            using TestEventListener listener = new TestEventListener();
+            var backgroundDelayTaskSource = new TaskCompletionSource<bool>();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddEventSourceLogger();
+                })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddHostedService(sp => new AsyncThrowingService(backgroundDelayTaskSource.Task));
+                })
+                .Start();
+
+            backgroundDelayTaskSource.SetResult(true);
+
+            // give the background service 1 minute to log the failure
+            TimeSpan timeout = TimeSpan.FromMinutes(1);
+            Stopwatch sw = Stopwatch.StartNew();
+
+            while (true)
+            {
+                EventWrittenEventArgs[] events = listener.EventData.ToArray();
+                if (events.Any(e =>
+                    e.EventSource.Name == "Microsoft-Extensions-Logging" &&
+                    e.Payload.OfType<string>().Any(p => p.Contains("BackgroundService failed"))))
+                {
+                    break;
+                }
+
+                Assert.InRange(sw.Elapsed, TimeSpan.Zero, timeout);
+                await Task.Delay(TimeSpan.FromMilliseconds(30));
+            }
+        }
+
         private IHostBuilder CreateBuilder(IConfiguration config = null)
         {
             return new HostBuilder().ConfigureHostConfiguration(builder => builder.AddConfiguration(config ?? new ConfigurationBuilder().Build()));
@@ -1322,6 +1368,23 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 DisposeAsyncCalled = true;
                 return default;
+            }
+        }
+
+        private class AsyncThrowingService : BackgroundService
+        {
+            private readonly Task _executeDelayTask;
+
+            public AsyncThrowingService(Task executeDelayTask)
+            {
+                _executeDelayTask = executeDelayTask;
+            }
+
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                await _executeDelayTask;
+
+                throw new Exception("Background Exception");
             }
         }
     }

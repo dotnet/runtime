@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -65,7 +64,7 @@ namespace System.Text.Json.Serialization
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Contains(constructor));
+            Debug.Assert(Array.IndexOf(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance), constructor) >= 0);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
@@ -111,7 +110,7 @@ namespace System.Text.Json.Serialization
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Contains(constructor));
+            Debug.Assert(Array.IndexOf(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance), constructor) >= 0);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
@@ -171,7 +170,7 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>() =>
+        public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>() =>
             CreateDelegate<Func<IEnumerable<TElement>, TCollection>>(
                 CreateImmutableEnumerableCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<TElement>)));
 
@@ -195,13 +194,13 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TElement, TCollection>() =>
-            CreateDelegate<Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>>(
-                CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<KeyValuePair<string, TElement>>)));
+        public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>() =>
+            CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>>(
+                CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TKey), typeof(TValue), typeof(IEnumerable<KeyValuePair<TKey, TValue>>)));
 
-        private static DynamicMethod CreateImmutableDictionaryCreateRangeDelegate(Type collectionType, Type elementType, Type enumerableType)
+        private static DynamicMethod CreateImmutableDictionaryCreateRangeDelegate(Type collectionType, Type keyType, Type valueType, Type enumerableType)
         {
-            MethodInfo realMethod = collectionType.GetImmutableDictionaryCreateRangeMethod(elementType);
+            MethodInfo realMethod = collectionType.GetImmutableDictionaryCreateRangeMethod(keyType, valueType);
 
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,

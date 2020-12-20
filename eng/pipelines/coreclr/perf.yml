@@ -18,14 +18,8 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
-  
-pr: none
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 # build coreclr and libraries
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -34,8 +28,9 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - windows_x64
+    - windows_x86
+    - Linux_arm64
     jobParameters:
       testGroup: perf
 
@@ -48,7 +43,7 @@ jobs:
     platforms:
     - Browser_wasm
     jobParameters:
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       nameSuffix: wasm
       isOfficialBuild: ${{ variables.isOfficialBuild }}
       extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
@@ -128,8 +123,9 @@ jobs:
     runtimeFlavor: coreclr
     platforms:
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - windows_x64
+    - windows_x86
+    - Linux_arm64
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release
@@ -145,8 +141,8 @@ jobs:
     runtimeFlavor: coreclr
     platforms:
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - windows_x64
+    - windows_x86
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release

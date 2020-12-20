@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.6.2)
 
 cmake_policy(SET CMP0042 NEW)
+if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
+  cmake_policy(SET CMP0091 NEW)
+endif()
 project(Tests)
 
+include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 # Add this subdir. We install the headers for the jit.
-add_subdirectory(../coreclr/src/pal/prebuilt/inc ../coreclr/src/pal/prebuilt/inc)
+add_subdirectory(../coreclr/pal/prebuilt/inc ../coreclr/pal/prebuilt/inc)
 
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Common/Platform)
 if (CLR_CMAKE_TARGET_WIN32)
@@ -30,6 +34,8 @@ if (CLR_CMAKE_HOST_WIN32)
     # 5027 - move assignment operator was implicitly defined as deleted
     # 5039 - pointer or reference to potentially throwing function passed to extern C function under -EHc. Undefined behavior may occur if this function throws an exception.
     add_compile_options(-wd4100 -wd4514 -wd4625 -wd4626 -wd4668 -wd4710 -wd4711 -wd4774 -wd4820 -wd5025 -wd5026 -wd5027 -wd5039)
+
+    string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
 endif()
 

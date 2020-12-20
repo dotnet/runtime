@@ -29,10 +29,6 @@ endif
 
 glib_libs = $(monodir)/mono/eglib/libeglib.la
 
-if ENABLE_PERFTRACING
-eventpipe_libs = $(monodir)/mono/eventpipe/libeventpipe.la
-endif
-
 boehm_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
@@ -43,7 +39,6 @@ sgen_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
 	$(monodir)/mono/sgen/libmonosgen.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(eventpipe_libs) \
 	$(glib_libs)
 
 if ENABLE_LLVM

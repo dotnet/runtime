@@ -708,5 +708,39 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             options.Should().HaveProperty("defines")
                 .Subject.Values<string>().Should().BeEquivalentTo(new[] { "MY", "DEFINES" });
         }
+
+        [Fact]
+        public void WriteDoesNotDisposeStream()
+        {
+            DependencyContext context = Create(
+                "Target",
+                "Target/runtime",
+                runtimeGraph: new[]
+                {
+                    new RuntimeFallbacks("win7-x64", new [] { "win6", "win5"}),
+                    new RuntimeFallbacks("win8-x64", new [] { "win7-x64"}),
+                });
+
+            DisposeAwareMemoryStream stream = new DisposeAwareMemoryStream();
+            using (stream)
+            {
+                new DependencyContextWriter().Write(context, stream);
+                Assert.False(stream.IsDisposed);
+            }
+
+            Assert.True(stream.IsDisposed);
+        }
+
+        private class DisposeAwareMemoryStream : MemoryStream
+        {
+            public bool IsDisposed { get; set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                IsDisposed = true;
+
+                base.Dispose(disposing);
+            }
+        }
     }
 }

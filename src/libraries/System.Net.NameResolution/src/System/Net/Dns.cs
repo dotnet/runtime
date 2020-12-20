@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Internals;
@@ -17,8 +18,6 @@ namespace System.Net
         /// <summary>Gets the host name of the local machine.</summary>
         public static string GetHostName()
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(string.Empty);
 
             string name;
@@ -41,8 +40,6 @@ namespace System.Net
 
         public static IPHostEntry GetHostEntry(IPAddress address)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
@@ -54,16 +51,25 @@ namespace System.Net
                 throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(address)));
             }
 
-            IPHostEntry ipHostEntry = GetHostEntryCore(address);
+            IPHostEntry ipHostEntry = GetHostEntryCore(address, AddressFamily.Unspecified);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(address, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
             return ipHostEntry;
         }
 
-        public static IPHostEntry GetHostEntry(string hostNameOrAddress)
-        {
-            NameResolutionPal.EnsureSocketsAreInitialized();
+        public static IPHostEntry GetHostEntry(string hostNameOrAddress) =>
+            GetHostEntry(hostNameOrAddress, AddressFamily.Unspecified);
 
+        /// <summary>
+        /// Resolves a host name or IP address to an <see cref="IPHostEntry"/> instance.
+        /// </summary>
+        /// <param name="hostNameOrAddress">The host name or IP address to resolve.</param>
+        /// <param name="family">The address family for which IPs should be retrieved. If <see cref="AddressFamily.Unspecified"/>, retrieve all IPs regardless of address family.</param>
+        /// <returns>
+        /// An <see cref="IPHostEntry"/> instance that contains the address information about the host specified in <paramref name="hostNameOrAddress"/>.
+        /// </returns>
+        public static IPHostEntry GetHostEntry(string hostNameOrAddress, AddressFamily family)
+        {
             if (hostNameOrAddress is null)
             {
                 throw new ArgumentNullException(nameof(hostNameOrAddress));
@@ -79,36 +85,59 @@ namespace System.Net
                     throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(hostNameOrAddress)));
                 }
 
-                ipHostEntry = GetHostEntryCore(address);
+                ipHostEntry = GetHostEntryCore(address, family);
             }
             else
             {
-                ipHostEntry = GetHostEntryCore(hostNameOrAddress);
+                ipHostEntry = GetHostEntryCore(hostNameOrAddress, family);
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostNameOrAddress, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
             return ipHostEntry;
         }
 
-        public static Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress)
+        public static Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress) =>
+            GetHostEntryAsync(hostNameOrAddress, AddressFamily.Unspecified, CancellationToken.None);
+
+        /// <summary>
+        /// Resolves a host name or IP address to an <see cref="IPHostEntry"/> instance as an asynchronous operation.
+        /// </summary>
+        /// <param name="hostNameOrAddress">The host name or IP address to resolve.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to signal the asynchronous operation should be canceled.</param>
+        /// <returns>
+        /// The task object representing the asynchronous operation. The <see cref="Task{TResult}.Result"/> property on the task object returns
+        /// an <see cref="IPHostEntry"/> instance that contains the address information about the host specified in <paramref name="hostNameOrAddress"/>.
+        /// </returns>
+        public static Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress, CancellationToken cancellationToken) =>
+            GetHostEntryAsync(hostNameOrAddress, AddressFamily.Unspecified, cancellationToken);
+
+        /// <summary>
+        /// Resolves a host name or IP address to an <see cref="IPHostEntry"/> instance as an asynchronous operation.
+        /// </summary>
+        /// <param name="hostNameOrAddress">The host name or IP address to resolve.</param>
+        /// <param name="family">The address family for which IPs should be retrieved. If <see cref="AddressFamily.Unspecified"/>, retrieve all IPs regardless of address family.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to signal the asynchronous operation should be canceled.</param>
+        /// <returns>
+        /// The task object representing the asynchronous operation. The <see cref="Task{TResult}.Result"/> property on the task object returns
+        /// an <see cref="IPHostEntry"/> instance that contains the address information about the host specified in <paramref name="hostNameOrAddress"/>.
+        /// </returns>
+        public static Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress, AddressFamily family, CancellationToken cancellationToken = default)
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                Task<IPHostEntry> t = GetHostEntryCoreAsync(hostNameOrAddress, justReturnParsedIp: false, throwOnIIPAny: true);
+                Task<IPHostEntry> t = GetHostEntryCoreAsync(hostNameOrAddress, justReturnParsedIp: false, throwOnIIPAny: true, family, cancellationToken);
                 t.ContinueWith((t, s) => NetEventSource.Info((string)s!, $"{t.Result} with {((IPHostEntry)t.Result).AddressList.Length} entries"),
                     hostNameOrAddress, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
                 return t;
             }
             else
             {
-                return GetHostEntryCoreAsync(hostNameOrAddress, justReturnParsedIp: false, throwOnIIPAny: true);
+                return GetHostEntryCoreAsync(hostNameOrAddress, justReturnParsedIp: false, throwOnIIPAny: true, family, cancellationToken);
             }
         }
 
         public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
@@ -121,7 +150,7 @@ namespace System.Net
             }
 
             return RunAsync(s => {
-                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s);
+                    IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
             }, address);
@@ -137,9 +166,18 @@ namespace System.Net
             TaskToApm.End<IPHostEntry>(asyncResult ?? throw new ArgumentNullException(nameof(asyncResult)));
 
         public static IPAddress[] GetHostAddresses(string hostNameOrAddress)
-        {
-            NameResolutionPal.EnsureSocketsAreInitialized();
+            => GetHostAddresses(hostNameOrAddress, AddressFamily.Unspecified);
 
+        /// <summary>
+        /// Returns the Internet Protocol (IP) addresses for the specified host.
+        /// </summary>
+        /// <param name="hostNameOrAddress">The host name or IP address to resolve.</param>
+        /// <param name="family">The address family for which IPs should be retrieved. If <see cref="AddressFamily.Unspecified"/>, retrieve all IPs regardless of address family.</param>
+        /// <returns>
+        /// An array of type <see cref="IPAddress"/> that holds the IP addresses for the host that is specified by the <paramref name="hostNameOrAddress"/> parameter.
+        /// </returns>
+        public static IPAddress[] GetHostAddresses(string hostNameOrAddress, AddressFamily family)
+        {
             if (hostNameOrAddress is null)
             {
                 throw new ArgumentNullException(nameof(hostNameOrAddress));
@@ -155,11 +193,11 @@ namespace System.Net
                     throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(hostNameOrAddress)));
                 }
 
-                addresses = new IPAddress[] { address };
+                addresses = (family == AddressFamily.Unspecified || address.AddressFamily == family) ? new IPAddress[] { address } : Array.Empty<IPAddress>();
             }
             else
             {
-                addresses = GetHostAddressesCore(hostNameOrAddress);
+                addresses = GetHostAddressesCore(hostNameOrAddress, family);
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostNameOrAddress, addresses);
@@ -167,7 +205,32 @@ namespace System.Net
         }
 
         public static Task<IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress) =>
-            (Task<IPAddress[]>)GetHostEntryOrAddressesCoreAsync(hostNameOrAddress, justReturnParsedIp: true, throwOnIIPAny: true, justAddresses: true);
+            (Task<IPAddress[]>)GetHostEntryOrAddressesCoreAsync(hostNameOrAddress, justReturnParsedIp: true, throwOnIIPAny: true, justAddresses: true, AddressFamily.Unspecified, CancellationToken.None);
+
+        /// <summary>
+        /// Returns the Internet Protocol (IP) addresses for the specified host as an asynchronous operation.
+        /// </summary>
+        /// <param name="hostNameOrAddress">The host name or IP address to resolve.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to signal the asynchronous operation should be canceled.</param>
+        /// <returns>
+        /// The task object representing the asynchronous operation. The <see cref="Task{TResult}.Result"/> property on the task object returns an array of
+        /// type <see cref="IPAddress"/> that holds the IP addresses for the host that is specified by the <paramref name="hostNameOrAddress"/> parameter.
+        /// </returns>
+        public static Task<IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress, CancellationToken cancellationToken) =>
+            (Task<IPAddress[]>)GetHostEntryOrAddressesCoreAsync(hostNameOrAddress, justReturnParsedIp: true, throwOnIIPAny: true, justAddresses: true, AddressFamily.Unspecified, cancellationToken);
+
+        /// <summary>
+        /// Returns the Internet Protocol (IP) addresses for the specified host as an asynchronous operation.
+        /// </summary>
+        /// <param name="hostNameOrAddress">The host name or IP address to resolve.</param>
+        /// <param name="family">The address family for which IPs should be retrieved. If <see cref="AddressFamily.Unspecified"/>, retrieve all IPs regardless of address family.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to signal the asynchronous operation should be canceled.</param>
+        /// <returns>
+        /// The task object representing the asynchronous operation. The <see cref="Task{TResult}.Result"/> property on the task object returns an array of
+        /// type <see cref="IPAddress"/> that holds the IP addresses for the host that is specified by the <paramref name="hostNameOrAddress"/> parameter.
+        /// </returns>
+        public static Task<IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress, AddressFamily family, CancellationToken cancellationToken = default) =>
+            (Task<IPAddress[]>)GetHostEntryOrAddressesCoreAsync(hostNameOrAddress, justReturnParsedIp: true, throwOnIIPAny: true, justAddresses: true, family, cancellationToken);
 
         public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback? requestCallback, object? state) =>
             TaskToApm.Begin(GetHostAddressesAsync(hostNameOrAddress), requestCallback, state);
@@ -178,8 +241,6 @@ namespace System.Net
         [Obsolete("GetHostByName is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByName(string hostName)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (hostName is null)
             {
                 throw new ArgumentNullException(nameof(hostName));
@@ -190,12 +251,12 @@ namespace System.Net
                 return CreateHostEntryForAddress(address);
             }
 
-            return GetHostEntryCore(hostName);
+            return GetHostEntryCore(hostName, AddressFamily.Unspecified);
         }
 
         [Obsolete("BeginGetHostByName is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true), requestCallback, stateObject);
+            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
         [Obsolete("EndGetHostByName is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult) =>
@@ -204,14 +265,12 @@ namespace System.Net
         [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByAddress(string address)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
             }
 
-            IPHostEntry ipHostEntry = GetHostEntryCore(IPAddress.Parse(address));
+            IPHostEntry ipHostEntry = GetHostEntryCore(IPAddress.Parse(address), AddressFamily.Unspecified);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(address, ipHostEntry);
             return ipHostEntry;
@@ -220,14 +279,12 @@ namespace System.Net
         [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByAddress(IPAddress address)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
             }
 
-            IPHostEntry ipHostEntry = GetHostEntryCore(address);
+            IPHostEntry ipHostEntry = GetHostEntryCore(address, AddressFamily.Unspecified);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(address, ipHostEntry);
             return ipHostEntry;
@@ -236,8 +293,6 @@ namespace System.Net
         [Obsolete("Resolve is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry Resolve(string hostName)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (hostName is null)
             {
                 throw new ArgumentNullException(nameof(hostName));
@@ -250,7 +305,7 @@ namespace System.Net
             {
                 try
                 {
-                    ipHostEntry = GetHostEntryCore(address);
+                    ipHostEntry = GetHostEntryCore(address, AddressFamily.Unspecified);
                 }
                 catch (SocketException ex)
                 {
@@ -260,7 +315,7 @@ namespace System.Net
             }
             else
             {
-                ipHostEntry = GetHostEntryCore(hostName);
+                ipHostEntry = GetHostEntryCore(hostName, AddressFamily.Unspecified);
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, ipHostEntry);
@@ -269,7 +324,7 @@ namespace System.Net
 
         [Obsolete("BeginResolve is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IAsyncResult BeginResolve(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false), requestCallback, stateObject);
+            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
         [Obsolete("EndResolve is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult)
@@ -282,10 +337,17 @@ namespace System.Net
             }
             catch (SocketException ex)
             {
-                IPAddress? address = asyncResult switch
+                object? asyncState = asyncResult switch
                 {
-                    Task t => t.AsyncState as IPAddress,
-                    TaskToApm.TaskAsyncResult twar => twar._task.AsyncState as IPAddress,
+                    Task t => t.AsyncState,
+                    TaskToApm.TaskAsyncResult twar => twar._task.AsyncState,
+                    _ => null
+                };
+
+                IPAddress? address = asyncState switch
+                {
+                    IPAddress a => a,
+                    KeyValuePair<IPAddress, AddressFamily> t => t.Key,
                     _ => null
                 };
 
@@ -293,6 +355,7 @@ namespace System.Net
                     throw; // BeginResolve was called with a HostName, not an IPAddress
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+
                 ipHostEntry = CreateHostEntryForAddress(address);
             }
 
@@ -300,13 +363,13 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        private static IPHostEntry GetHostEntryCore(string hostName) =>
-            (IPHostEntry)GetHostEntryOrAddressesCore(hostName, justAddresses: false);
+        private static IPHostEntry GetHostEntryCore(string hostName, AddressFamily addressFamily) =>
+            (IPHostEntry)GetHostEntryOrAddressesCore(hostName, justAddresses: false, addressFamily);
 
-        private static IPAddress[] GetHostAddressesCore(string hostName) =>
-            (IPAddress[])GetHostEntryOrAddressesCore(hostName, justAddresses: true);
+        private static IPAddress[] GetHostAddressesCore(string hostName, AddressFamily addressFamily) =>
+            (IPAddress[])GetHostEntryOrAddressesCore(hostName, justAddresses: true, addressFamily);
 
-        private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses)
+        private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily)
         {
             ValidateHostName(hostName);
 
@@ -315,7 +378,7 @@ namespace System.Net
             object result;
             try
             {
-                SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+                SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, addressFamily, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
 
                 if (errorCode != SocketError.Success)
                 {
@@ -344,14 +407,14 @@ namespace System.Net
             return result;
         }
 
-        private static IPHostEntry GetHostEntryCore(IPAddress address) =>
-            (IPHostEntry)GetHostEntryOrAddressesCore(address, justAddresses: false);
+        private static IPHostEntry GetHostEntryCore(IPAddress address, AddressFamily addressFamily) =>
+            (IPHostEntry)GetHostEntryOrAddressesCore(address, justAddresses: false, addressFamily);
 
-        private static IPAddress[] GetHostAddressesCore(IPAddress address) =>
-            (IPAddress[])GetHostEntryOrAddressesCore(address, justAddresses: true);
+        private static IPAddress[] GetHostAddressesCore(IPAddress address, AddressFamily addressFamily) =>
+            (IPAddress[])GetHostEntryOrAddressesCore(address, justAddresses: true, addressFamily);
 
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
-        private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses)
+        private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily)
         {
             // Try to get the data for the host from its address.
             // We need to call getnameinfo first, because getaddrinfo w/ the ipaddress string
@@ -389,7 +452,7 @@ namespace System.Net
             object result;
             try
             {
-                errorCode = NameResolutionPal.TryGetAddrInfo(name, justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+                errorCode = NameResolutionPal.TryGetAddrInfo(name, justAddresses, addressFamily, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
 
                 if (errorCode != SocketError.Success)
                 {
@@ -424,18 +487,25 @@ namespace System.Net
             return result;
         }
 
-        private static Task<IPHostEntry> GetHostEntryCoreAsync(string hostName, bool justReturnParsedIp, bool throwOnIIPAny) =>
-            (Task<IPHostEntry>)GetHostEntryOrAddressesCoreAsync(hostName, justReturnParsedIp, throwOnIIPAny, justAddresses: false);
+        private static Task<IPHostEntry> GetHostEntryCoreAsync(string hostName, bool justReturnParsedIp, bool throwOnIIPAny, AddressFamily family, CancellationToken cancellationToken) =>
+            (Task<IPHostEntry>)GetHostEntryOrAddressesCoreAsync(hostName, justReturnParsedIp, throwOnIIPAny, justAddresses: false, family, cancellationToken);
 
         // If hostName is an IPString and justReturnParsedIP==true then no reverse lookup will be attempted, but the original address is returned.
-        private static Task GetHostEntryOrAddressesCoreAsync(string hostName, bool justReturnParsedIp, bool throwOnIIPAny, bool justAddresses)
+        private static Task GetHostEntryOrAddressesCoreAsync(string hostName, bool justReturnParsedIp, bool throwOnIIPAny, bool justAddresses, AddressFamily family, CancellationToken cancellationToken)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (hostName is null)
             {
                 throw new ArgumentNullException(nameof(hostName));
             }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return justAddresses ? (Task)
+                    Task.FromCanceled<IPAddress[]>(cancellationToken) :
+                    Task.FromCanceled<IPHostEntry>(cancellationToken);
+            }
+
+            object asyncState;
 
             // See if it's an IP Address.
             if (IPAddress.TryParse(hostName, out IPAddress? ipAddress))
@@ -449,39 +519,62 @@ namespace System.Net
                 if (justReturnParsedIp)
                 {
                     return justAddresses ? (Task)
-                        Task.FromResult(new[] { ipAddress }) :
+                        Task.FromResult(family == AddressFamily.Unspecified || ipAddress.AddressFamily == family ? new[] { ipAddress } : Array.Empty<IPAddress>()) :
                         Task.FromResult(CreateHostEntryForAddress(ipAddress));
                 }
 
-                return justAddresses ? (Task)
-                    RunAsync(s => GetHostAddressesCore((IPAddress)s), ipAddress) :
-                    RunAsync(s => GetHostEntryCore((IPAddress)s), ipAddress);
+                asyncState = family == AddressFamily.Unspecified ? (object)ipAddress : new KeyValuePair<IPAddress, AddressFamily>(ipAddress, family);
             }
-
-            // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
-            // instead of calling the synchronous version in the ThreadPool.
-            if (NameResolutionPal.SupportsGetAddrInfoAsync && ipAddress is null)
+            else if (NameResolutionPal.SupportsGetAddrInfoAsync)
             {
+#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
+
+                // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
+                // instead of calling the synchronous version in the ThreadPool.
+
                 ValidateHostName(hostName);
 
                 if (NameResolutionTelemetry.Log.IsEnabled())
                 {
                     return justAddresses
-                        ? (Task)GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses)
-                        : (Task)GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses);
+                        ? (Task)GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
+                        : (Task)GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken);
                 }
                 else
                 {
-                    return NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
+                    return NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, family, cancellationToken);
                 }
             }
+            else
+            {
+                asyncState = family == AddressFamily.Unspecified ? (object)hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
+            }
 
-            return justAddresses ? (Task)
-                RunAsync(s => GetHostAddressesCore((string)s), hostName) :
-                RunAsync(s => GetHostEntryCore((string)s), hostName);
+            if (justAddresses)
+            {
+                return RunAsync(s => s switch
+                {
+                    string h => GetHostAddressesCore(h, AddressFamily.Unspecified),
+                    KeyValuePair<string, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
+                    IPAddress a => GetHostAddressesCore(a, AddressFamily.Unspecified),
+                    KeyValuePair<IPAddress, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
+                    _ => null
+                }, asyncState);
+            }
+            else
+            {
+                return RunAsync(s => s switch
+                {
+                    string h => GetHostEntryCore(h, AddressFamily.Unspecified),
+                    KeyValuePair<string, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
+                    IPAddress a => GetHostEntryCore(a, AddressFamily.Unspecified),
+                    KeyValuePair<IPAddress, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
+                    _ => null
+                }, asyncState);
+            }
         }
 
-        private static async Task<T> GetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses)
+        private static async Task<T> GetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
             where T : class
         {
             ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
@@ -489,7 +582,7 @@ namespace System.Net
             T? result = null;
             try
             {
-                result = await ((Task<T>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses)).ConfigureAwait(false);
+                result = await ((Task<T>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken)).ConfigureAwait(false);
                 return result;
             }
             finally

@@ -7,6 +7,7 @@
 #cmakedefine01 HAVE_POSIX_FADVISE64
 #cmakedefine01 HAVE_FLOCK64
 #cmakedefine01 HAVE_F_DUPFD_CLOEXEC
+#cmakedefine01 HAVE_F_FULLFSYNC
 #cmakedefine01 HAVE_O_CLOEXEC
 #cmakedefine01 HAVE_GETIFADDRS
 #cmakedefine01 HAVE_UTSNAME_DOMAINNAME
@@ -85,7 +86,7 @@
 #cmakedefine01 HAVE_INOTIFY
 #cmakedefine01 HAVE_CLOCK_MONOTONIC
 #cmakedefine01 HAVE_CLOCK_REALTIME
-#cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
+#cmakedefine01 HAVE_CLOCK_GETTIME_NSEC_NP
 #cmakedefine01 HAVE_TCP_H_TCPSTATE_ENUM
 #cmakedefine01 HAVE_TCP_FSM_H
 #cmakedefine01 HAVE_GSSFW_HEADERS
@@ -93,6 +94,7 @@
 #cmakedefine01 HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 #cmakedefine01 HAVE_HEIMDAL_HEADERS
 #cmakedefine01 HAVE_NSGETENVIRON
+#cmakedefine01 HAVE_GETAUXVAL
 #cmakedefine01 HAVE_CRT_EXTERNS_H
 #cmakedefine01 HAVE_GETDOMAINNAME
 #cmakedefine01 HAVE_UNAME
@@ -112,6 +114,7 @@
 #cmakedefine01 HAVE_CFMAKERAW
 #cmakedefine01 HAVE_GETGROUPLIST
 #cmakedefine01 HAVE_SYS_PROCINFO_H
+#cmakedefine01 HAVE_IOSS_H
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

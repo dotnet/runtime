@@ -241,7 +241,7 @@ namespace System.Runtime.Serialization
             if (type.IsValueType)
                 return null;
 
-            ConstructorInfo? ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Array.Empty<Type>());
+            ConstructorInfo? ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Type.EmptyTypes);
             if (ctor == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableMustHaveDefaultConstructor, DataContract.GetClrTypeFullName(type))));
 
@@ -352,7 +352,7 @@ namespace System.Runtime.Serialization
                 object? o = null;
                 if (type == typeof(System.Xml.Linq.XElement))
                 {
-                    o = new System.Xml.Linq.XElement("default"!); // TODO-NULLABLE - https://github.com/dotnet/roslyn/issues/39802
+                    o = new System.Xml.Linq.XElement("default");
                 }
                 else
                 {

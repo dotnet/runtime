@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -28,52 +29,6 @@ namespace System.Net.Http
                 FromHttpClientHandler = fromHttpClientHandler;
                 ForSocketsHttpHandler = (object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) =>
                     FromHttpClientHandler((HttpRequestMessage)sender, certificate as X509Certificate2, chain, sslPolicyErrors);
-            }
-        }
-
-        public static async ValueTask<Stream> ConnectAsync(Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> callback, DnsEndPoint endPoint, HttpRequestMessage requestMessage, CancellationToken cancellationToken)
-        {
-            Stream stream;
-            try
-            {
-                stream = await callback(new SocketsHttpConnectionContext(endPoint, requestMessage), cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
-            {
-                throw CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
-            }
-
-            if (stream == null)
-            {
-                throw new HttpRequestException(SR.net_http_null_from_connect_callback);
-            }
-
-            return stream;
-        }
-
-        public static Stream Connect(string host, int port, CancellationToken cancellationToken)
-        {
-            // For synchronous connections, we can just create a socket and make the connection.
-            cancellationToken.ThrowIfCancellationRequested();
-            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            try
-            {
-                socket.NoDelay = true;
-                using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
-                {
-                    socket.Connect(new DnsEndPoint(host, port));
-                }
-
-                return new NetworkStream(socket, ownsSocket: true);
-            }
-            catch (Exception e)
-            {
-                socket.Dispose();
-                throw CreateWrappedException(e, host, port, cancellationToken);
             }
         }
 
@@ -145,9 +100,9 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
         {
-            QuicConnection con = new QuicConnection(endPoint, clientAuthenticationOptions);
+            QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
             try
             {
                 await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
@@ -160,7 +115,7 @@ namespace System.Net.Http
             }
         }
 
-        private static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
+        internal static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
         {
             return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
                 CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :

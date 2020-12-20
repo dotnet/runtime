@@ -7,6 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Composition.Convention;
 using System.Composition.Hosting.Core;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 
@@ -591,5 +592,45 @@ namespace System.Composition.Hosting.Tests
                 Assert.NotNull(property.GetValue(debuggerAttributeInfo.Instance));
             }
         }
+
+        [Fact]
+        public void CreateContiner_GenericExportWithDependencyConstructorHasConvention_Success()
+        {
+            var conventions = new ConventionBuilder();
+
+            conventions
+                .ForType<Dependency>()
+                .Export<Dependency>();
+
+            conventions
+                .ForType(typeof(MoreOpenWithDependency<>))
+                .ExportInterfaces(
+                    (i) => i.GetGenericTypeDefinition() == typeof(IOpen<>),
+                    (type, builder) => builder.AsContractType(typeof(IOpen<>)))
+                .SelectConstructor(ctors => ctors.ElementAt(0));
+
+            var configuration = new ContainerConfiguration()
+                .WithParts(new[] { typeof(IOpen<>), typeof(MoreOpenWithDependency<>), typeof(Dependency) }, conventions);
+
+            using (var container = configuration.CreateContainer())
+            {
+                var service = container.GetExport(typeof(IOpen<object>)) as MoreOpenWithDependency<object>;
+                Assert.NotNull(service);
+                Assert.NotNull(service.Dependency);
+            }
+        }
+        public interface IOpen<T>
+        {
+        }
+        public class MoreOpenWithDependency<T> : IOpen<T>
+        {
+            public Dependency Dependency { get; set; }
+            public MoreOpenWithDependency(Dependency dep)
+            {
+                Dependency = dep;
+            }
+        }
+
+        public class Dependency { }
     }
 }

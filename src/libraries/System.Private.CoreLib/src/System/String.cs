@@ -48,6 +48,8 @@ namespace System
         [DynamicDependency("Ctor(System.Char[])")]
         public extern String(char[]? value);
 
+#pragma warning disable CA1822 // Mark members as static
+
         private
 #if !CORECLR
         static
@@ -356,6 +358,8 @@ namespace System
             return result;
         }
 
+#pragma warning restore CA1822
+
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
             if (action == null)
@@ -487,13 +491,9 @@ namespace System
         [NonVersionable]
         public static bool IsNullOrEmpty([NotNullWhen(false)] string? value)
         {
-            // Using 0u >= (uint)value.Length rather than
-            // value.Length == 0 as it will elide the bounds check to
-            // the first char: value[0] if that is performed following the test
-            // for the same test cost.
             // Ternary operator returning true/false prevents redundant asm generation:
             // https://github.com/dotnet/runtime/issues/4207
-            return (value == null || 0u >= (uint)value.Length) ? true : false;
+            return (value == null || 0 == value.Length) ? true : false;
         }
 
         public static bool IsNullOrWhiteSpace([NotNullWhen(false)] string? value)
@@ -562,12 +562,6 @@ namespace System
             Unsafe.Add(ref result._firstChar, 1) = c2;
             return result;
         }
-
-        internal static unsafe void wstrcpy(char* dmem, char* smem, int charCount)
-        {
-            Buffer.Memmove((byte*)dmem, (byte*)smem, ((uint)charCount) * 2);
-        }
-
 
         // Returns this string.
         public override string ToString()

@@ -35,6 +35,12 @@ typedef struct
     uint32_t UserFlags; // user defined flags
 } FileStatus;
 
+typedef struct
+{
+    size_t ResidentSetSize;
+    // add more fields when needed.
+} ProcessStatus;
+
 /* Provide consistent access to nanosecond fields, if they exist. */
 /* Seconds are always available through st_atime, st_mtime, st_ctime. */
 
@@ -599,13 +605,6 @@ PALEXPORT int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, 
 PALEXPORT int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice);
 
 /**
-* Reads a line from the provided stream.
-*
-* Returns the read line, or null if no line could be read.  The caller is responsible for freeing the malloc'd line.
-*/
-PALEXPORT char* SystemNative_GetLine(FILE* stream);
-
-/**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor.
  *
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
@@ -717,3 +716,10 @@ PALEXPORT int32_t SystemNative_LChflags(const char* path, uint32_t flags);
  * Returns true (non-zero) if supported, false (zero) if not.
  */
 PALEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
+
+/**
+ * Reads the psinfo_t struct and converts into ProcessStatus.
+ *
+ * Returns 1 if the process status was read; otherwise, 0.
+ */
+PALEXPORT int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus);

@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Hosting
     public abstract partial class BackgroundService : Microsoft.Extensions.Hosting.IHostedService, System.IDisposable
     {
         protected BackgroundService() { }
+        public virtual System.Threading.Tasks.Task ExecuteTask { get { throw null; } }
         public virtual void Dispose() { }
         protected abstract System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken stoppingToken);
         public virtual System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }

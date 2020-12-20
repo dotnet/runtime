@@ -520,11 +520,8 @@ Greg Parker     gparker@cs.stanford.edu     December 2000
 This code is in the public domain and may be copied or modified without 
 permission. 
 
-License notice for libunwind8 based code
+License notice for libunwind based code
 ----------------------------------------
-
-Copyright (c) 2003-2005 Hewlett-Packard Development Company, L.P.
-   Contributed by David Mosberger-Tang <davidm@hpl.hp.com>
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

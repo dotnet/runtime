@@ -450,7 +450,7 @@ namespace System.Reflection.Emit
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException();
         }

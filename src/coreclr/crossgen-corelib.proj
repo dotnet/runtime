@@ -3,21 +3,107 @@
   <Import Project="Directory.Build.targets" />
 
   <Target Name="Build">
-    <ItemGroup>
-      <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
-      <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
-      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows))" Include="-os $(TargetOS)" />
-      <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
-      <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
-    </ItemGroup>
-
     <PropertyGroup>
-      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">crossgen-corelib.cmd</_CoreClrBuildScript>
-      <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">crossgen-corelib.sh</_CoreClrBuildScript>
+      <!-- Default for using Crossgen2 when not set externally -->
+      <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">false</UseCrossgen2>
+
+      <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
+      <RootBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</RootBinDir>
+      <LogsDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'log'))</LogsDir>
+      <BinDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'bin', 'coreclr', $(OSPlatformConfig)))</BinDir>
+      <IntermediatesDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'obj', 'coreclr', $(OSPlatformConfig)))</IntermediatesDir>
+      <CrossGenCoreLibLog>$([MSBuild]::NormalizePath('$(LogsDir)', 'CrossgenCoreLib_$(TargetOS)__$(TargetArchitecture)__$(Configuration).log'))</CrossGenCoreLibLog>
+      <ExeExtension Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExtension>
+      <DotNetCli>$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.sh'))</DotNetCli>
+      <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.cmd'))</DotNetCli>
+
+      <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
+      <CoreLibInputPath>$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '$(CoreLibAssemblyName).dll'))</CoreLibInputPath>
+      <CoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dll'))</CoreLibOutputPath>
     </PropertyGroup>
 
-    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" />
+    <PropertyGroup>
+      <CrossDir></CrossDir>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">
+      <CrossDir Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">x64</CrossDir>
+      <CrossDir Condition="'$(TargetArchitecture)' == 'arm' and '$(UseCrossgen2)' != 'true' and '$(OS)' == 'Windows_NT'">x86</CrossDir>
+      <CrossDir Condition="'$(TargetArchitecture)' == 'x86' and '$(UseCrossgen2)' == 'true'">$(BuildArchitecture)</CrossDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <BuildDll>true</BuildDll>
+      <BuildDll Condition="'$(CrossBuild)' == 'true' and '$(CrossDir)' == ''">false</BuildDll>
+
+      <BuildPdb>false</BuildPdb>
+      <BuildPdb Condition="$(BuildDll) and '$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'Windows'">true</BuildPdb>
+
+      <BuildPerfMap>false</BuildPerfMap>
+      <BuildPerfMap Condition="$(BuildDll) and '$(TargetOS)' == 'Linux'">true</BuildPerfMap>
+
+      <CrossGen1Cmd>$([MSBuild]::NormalizePath('$(BinDir)', '$(CrossDir)', 'crossgen$(ExeExtension)'))</CrossGen1Cmd>
+      <CrossGen1Cmd>$(CrossGen1Cmd) /nologo</CrossGen1Cmd>
+      <CrossGen1Cmd>$(CrossGen1Cmd) <!-- IbcTuning --></CrossGen1Cmd>
+      <CrossGen1Cmd>$(CrossGen1Cmd) /Platform_Assemblies_Paths "$([MSBuild]::NormalizePath('$(BinDir)', 'IL'))"</CrossGen1Cmd>
+    </PropertyGroup>
+
+    <MakeDir
+      Directories="$(BinDir);$(IntermediatesDir);$(LogsDir)" />
+
+    <Message Importance="High"
+      Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
+
+    <PropertyGroup>
+      <CrossGenDllCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', '$(CrossDir)', 'crossgen2', 'crossgen2.dll'))</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) $(CoreLibInputPath)</CrossGenDllCmd>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(UseCrossgen2)' != 'true'">
+      <CrossGenDllCmd>$(CrossGen1Cmd) /out "$(CoreLibOutputPath)"</CrossGenDllCmd> 
+      <CrossGenDllCmd>$(CrossGenDllCmd) "$(CoreLibInputPath)"</CrossGenDllCmd>
+    </PropertyGroup>
+
+    <!-- For now we're using Crossgen1 for generating the perf map as Crossgen2 doesn't yet implement it: -->
+    <!-- https://github.com/dotnet/runtime/issues/44123 -->
+    <PropertyGroup Condition="$(BuildPerfMap)">
+      <CrossGenPerfMapCmd>$(CrossGen1Cmd) /CreatePerfMap "$(BinDir)"</CrossGenPerfMapCmd>
+      <CrossGenPerfMapCmd>$(CrossGenPerfMapCmd) "$(CoreLibOutputPath)"</CrossGenPerfMapCmd>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="$(BuildPdb)">
+      <CrossGenPdbCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', 'r2rdump', 'r2rdump.dll'))</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(CrossGenPdbCmd) --create-pdb</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(CrossGenPdbCmd) --pdb-path:$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(CrossGenPdbCmd) --in:$(CoreLibOutputPath)</CrossGenPdbCmd>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="$(BuildPdb) and '$(UseCrossgen2)' != 'true'">
+      <VsSetupCmd>call $([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'coreclr', 'setup_vs_tools.cmd')) &amp;&amp;</VsSetupCmd>
+
+      <CrossGenPdbCmd>$(VsSetupCmd) $(CrossGen1Cmd) /CreatePdb "$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))"</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(CrossGenPdbCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
+    </PropertyGroup>
+    
+    <Message Condition="$(BuildDll)" Importance="High" Text="$(CrossGenDllCmd)" />
+    
+    <Exec Condition="$(BuildDll)" Command="$(CrossGenDllCmd)" />
+
+    <Message Condition="$(BuildPdb)" Importance="High" Text="$(CrossGenPdbCmd)" />
+
+    <Exec Condition="$(BuildPdb)" Command="$(CrossGenPdbCmd)" />
+
+    <Message Condition="$(BuildPerfMap)" Importance="High" Text="$(CrossGenPerfMapCmd)" />
+
+    <Exec Condition="$(BuildPerfMap)" Command="$(CrossGenPerfMapCmd)" />
+
+    <Copy Condition="!$(BuildDll)" SourceFiles="$(CoreLibInputPath)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
+
+    <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded.  Finished at $(TIME)" />
+    <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
   </Target>
 
   <Target Name="Restore" />

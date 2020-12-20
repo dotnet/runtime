@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -22,22 +23,15 @@ namespace System.Net.NetworkInformation
     // CancelMibChangeNotify2 guarantees that, by the time it returns, all calls to the callback will be complete
     // and that no new calls to the callback will be issued.
     //
-    // The major concerns of the class are: 1) making sure none of the managed objects needed to handle a native
-    // callback are GC'd before the callback, and 2) making sure no native callbacks will try to call into an unloaded
-    // AppDomain.
 
     internal class TeredoHelper
     {
-        // Holds a list of all pending calls to NotifyStableUnicastIpAddressTable.  Also used as a lock to protect its
-        // contents.
-        private static readonly List<TeredoHelper> s_pendingNotifications = new List<TeredoHelper>();
         private readonly Action<object> _callback;
         private readonly object _state;
 
         private bool _runCallbackCalled;
 
-        // We explicitly keep a copy of this to prevent it from getting GC'd.
-        private readonly Interop.IpHlpApi.StableUnicastIpAddressTableDelegate _onStabilizedDelegate;
+        private GCHandle _gcHandle;
 
         // Used to cancel notification after receiving the first callback, or when the AppDomain is going down.
         private SafeCancelMibChangeNotify? _cancelHandle;
@@ -46,123 +40,85 @@ namespace System.Net.NetworkInformation
         {
             _callback = callback;
             _state = state;
-            _onStabilizedDelegate = new Interop.IpHlpApi.StableUnicastIpAddressTableDelegate(OnStabilized);
-            _runCallbackCalled = false;
+
+            _gcHandle = GCHandle.Alloc(this);
         }
 
         // Returns true if the address table is already stable.  Otherwise, calls callback when it becomes stable.
         // 'Unsafe' because it does not flow ExecutionContext to the callback.
-        public static bool UnsafeNotifyStableUnicastIpAddressTable(Action<object> callback, object state)
+        public static unsafe bool UnsafeNotifyStableUnicastIpAddressTable(Action<object> callback, object state)
         {
-            if (callback == null)
+            Debug.Assert(callback != null);
+
+            TeredoHelper? helper = new TeredoHelper(callback, state);
+            try
             {
-                NetEventSource.Fail(null, "UnsafeNotifyStableUnicastIpAddressTable called without specifying callback!");
-            }
+                uint err = Interop.IpHlpApi.NotifyStableUnicastIpAddressTable(AddressFamily.Unspecified,
+                    out SafeFreeMibTable table, &OnStabilized, GCHandle.ToIntPtr(helper._gcHandle), out helper._cancelHandle);
 
-            TeredoHelper helper = new TeredoHelper(callback, state);
-
-            uint err = Interop.IpHlpApi.ERROR_SUCCESS;
-            SafeFreeMibTable table;
-
-            lock (s_pendingNotifications)
-            {
-                // If OnAppDomainUnload gets the lock first, tell our caller that we'll finish async.  Their AppDomain
-                // is about to go down anyways.  If we do, hold the lock until we've added helper to the
-                // s_pendingNotifications list (if we're going to complete asynchronously).
-                if (Environment.HasShutdownStarted)
-                {
-                    return false;
-                }
-
-                err = Interop.IpHlpApi.NotifyStableUnicastIpAddressTable(AddressFamily.Unspecified,
-                    out table, helper._onStabilizedDelegate, IntPtr.Zero, out helper._cancelHandle);
-
-                if (table != null)
-                {
-                    table.Dispose();
-                }
+                table.Dispose();
 
                 if (err == Interop.IpHlpApi.ERROR_IO_PENDING)
                 {
-                    if (helper._cancelHandle.IsInvalid)
-                    {
-                        NetEventSource.Fail(null, "CancelHandle invalid despite returning ERROR_IO_PENDING");
-                    }
+                    Debug.Assert(helper._cancelHandle != null && !helper._cancelHandle.IsInvalid);
 
-                    // Async completion: add us to the s_pendingNotifications list so we'll be canceled in the
-                    // event of an AppDomain unload.
-                    s_pendingNotifications.Add(helper);
+                    // Suppress synchronous Dispose. Dispose will be called asynchronously by the callback.
+                    helper = null;
                     return false;
                 }
-            }
 
-            if (err != Interop.IpHlpApi.ERROR_SUCCESS)
+                if (err != Interop.IpHlpApi.ERROR_SUCCESS)
+                {
+                    throw new Win32Exception((int)err);
+                }
+
+                return true;
+            }
+            finally
             {
-                throw new Win32Exception((int)err);
+                helper?.Dispose();
             }
-
-            return true;
         }
 
-        private void RunCallback(object? o)
+        private void Dispose()
         {
-            if (!_runCallbackCalled)
-            {
-                NetEventSource.Fail(null, "RunCallback called without setting runCallbackCalled!");
-            }
+            _cancelHandle?.Dispose();
 
-            // If OnAppDomainUnload beats us to the lock, do nothing: the AppDomain is going down soon anyways.
-            // Otherwise, wait until the call to CancelMibChangeNotify2 is done before giving it up.
-            lock (s_pendingNotifications)
-            {
-                if (Environment.HasShutdownStarted)
-                {
-                    return;
-                }
-
-#if DEBUG
-                bool successfullyRemoved = s_pendingNotifications.Remove(this);
-                if (!successfullyRemoved)
-                {
-                    NetEventSource.Fail(null, "RunCallback for a TeredoHelper which is not in s_pendingNotifications!");
-                }
-#else
-                s_pendingNotifications.Remove(this);
-#endif
-
-                if ((_cancelHandle == null || _cancelHandle.IsInvalid))
-                {
-                    NetEventSource.Fail(null, "Invalid cancelHandle in RunCallback");
-                }
-
-                _cancelHandle.Dispose();
-            }
-
-            _callback.Invoke(_state);
+            if (_gcHandle.IsAllocated)
+                _gcHandle.Free();
         }
 
         // This callback gets run on a native worker thread, which we don't want to allow arbitrary user code to
         // execute on (it will block AppDomain unload, for one).  Free the MibTable and delegate (exactly once)
         // to the managed ThreadPool for the rest of the processing.
-        //
-        // We can't use SafeHandle here for table because the marshaller doesn't support them in reverse p/invokes.
-        // We won't get an AppDomain unload here anyways, because OnAppDomainUnloaded will block until all of these
-        // callbacks are done.
-        private void OnStabilized(IntPtr context, IntPtr table)
+        [UnmanagedCallersOnly]
+        private static void OnStabilized(IntPtr context, IntPtr table)
         {
             Interop.IpHlpApi.FreeMibTable(table);
+
+            TeredoHelper helper = (TeredoHelper)GCHandle.FromIntPtr(context).Target!;
 
             // Lock the TeredoHelper instance to ensure that only the first call to OnStabilized will get to call
             // RunCallback.  This is the only place that TeredoHelpers get locked, as individual instances are not
             // exposed to higher layers, so there's no chance for deadlock.
-            if (!_runCallbackCalled)
+            if (!helper._runCallbackCalled)
             {
-                lock (this)
+                lock (helper)
                 {
-                    if (!_runCallbackCalled)
+                    if (!helper._runCallbackCalled)
                     {
-                        _runCallbackCalled = true;
-                        ThreadPool.QueueUserWorkItem(RunCallback, null);
+                        helper._runCallbackCalled = true;
+
+                        ThreadPool.QueueUserWorkItem(o =>
+                        {
+                            TeredoHelper helper = (TeredoHelper)o!;
+
+                            // We are intentionally not calling Dispose synchronously inside the OnStabilized callback.
+                            // According to MSDN, calling CancelMibChangeNotify2 inside the callback results into deadlock.
+                            helper.Dispose();
+
+                            helper._callback.Invoke(helper._state);
+                        }, helper);
                     }
                 }
             }

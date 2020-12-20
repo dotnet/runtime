@@ -132,6 +132,13 @@ echo BEGIN EXECUTION]]>
       <BashCLRTestExitCodeCheck><![CDATA[
 echo Expected: $CLRTestExpectedExitCode
 echo Actual: $CLRTestExitCode
+
+if [ -z ${CLRTestExitCode+x} ]
+then
+  echo END EXECUTION - FAILED
+  exit 1
+fi
+
 if [ $CLRTestExitCode -ne $CLRTestExpectedExitCode ]
 then
   echo END EXECUTION - FAILED
@@ -257,7 +264,7 @@ fi
       <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
 
-      <BashCLRTestPreCommands Condition="'$(TargetArchitecture)' == 'wasm'">
+      <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
    <![CDATA[
 # Build wasm app containing the test dll
 __Command=""
@@ -267,12 +274,12 @@ else
   __Command+=" dotnet"
 fi
 
-$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd` || exit $?
 
    ]]>
       </BashCLRTestPreCommands>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) != 'wasm' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -300,11 +307,36 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) == 'wasm' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' ">
       <![CDATA[
 cd WasmApp
-./run-v8.sh $(MsBuildProjectName)
+./run-v8.sh
 CLRTestExitCode=$?
+      ]]>
+      </BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+      <![CDATA[
+# run Android app
+__Command=""
+if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+  __Command+=" $__TestDotNetCmd"
+else
+  __Command+=" dotnet"
+fi
+
+if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+	# When running in CI, we only have the .NET runtime available
+	# We need to call the XHarness CLI DLL directly via dotnet exec
+	HARNESS_RUNNER="exec $XHARNESS_CLI_PATH"
+else
+	HARNESS_RUNNER="xharness"
+fi
+
+$__Command $HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --app="$__TestBinaryBase/$__Category.apk" --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100 -v
+CLRTestExitCode=$?
+
+# Exist code of xharness is zero when tests finished successfully
+CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
@@ -374,10 +406,20 @@ done
 $(BashCLRTestArgPrep)
       ]]></BashCLRTestArgPrep>
 
+      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) == 'Android' ">
+        <![CDATA[
+%23%21/usr/bin/env bash
+set -e
+      ]]></CLRTestExecutionScriptHeader>
+      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) != 'Android' ">
+        <![CDATA[
+%23%21/usr/bin/env bash
+      ]]></CLRTestExecutionScriptHeader>
+
       <!-- NOTE! semicolons must be escaped with %3B boooo -->
       <_CLRTestExecutionScriptText>
         <![CDATA[
-%23%21/usr/bin/env bash
+$(CLRTestExecutionScriptHeader)
 TakeLock()
 {
     echo "in takeLock"

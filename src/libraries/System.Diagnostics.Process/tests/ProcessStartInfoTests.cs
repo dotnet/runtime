@@ -17,11 +17,17 @@ using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
+using System.Security.AccessControl;
 
 namespace System.Diagnostics.Tests
 {
     public class ProcessStartInfoTests : ProcessTestBase
     {
+        private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
+
+        private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported
+            => PlatformDetection.IsWindowsAndElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+
         [Fact]
         public void TestEnvironmentProperty()
         {
@@ -219,7 +225,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestEnvironmentOfChildProcess()
         {
-            const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
             const string ExtraEnvVar = "TestEnvironmentOfChildProcess_SpecialStuff";
             Environment.SetEnvironmentVariable(ExtraEnvVar, "\x1234" + Environment.NewLine + "\x5678"); // ensure some Unicode characters and newlines are in the output
             try
@@ -262,6 +267,102 @@ namespace System.Diagnostics.Tests
             {
                 Environment.SetEnvironmentVariable(ExtraEnvVar, null);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void EnvironmentGetEnvironmentVariablesIsCaseSensitive()
+        {
+            var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "NPM_CONFIG_CACHE", "VALUE" },
+                { "npm_config_cache", "value" },
+            };
+
+            string[] printedEnvVars = ExecuteProcessAndReturnParsedOutput(
+                caseSensitiveEnvVars,
+                () =>
+                {
+                    Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+
+            foreach (var providedEnvVar in caseSensitiveEnvVars)
+            {
+                Assert.Single(printedEnvVars, envVar => envVar.Equals($"{providedEnvVar.Key}={providedEnvVar.Value}", StringComparison.Ordinal));
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessStartInfoEnvironmentDoesNotThrowForCaseSensitiveDuplicates()
+        {
+            var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "NPM_CONFIG_CACHE", "^" },
+                { "npm_config_cache", "^" },
+            };
+
+            string[] printedEnvVars = ExecuteProcessAndReturnParsedOutput(
+                caseSensitiveEnvVars,
+                () =>
+                {
+                    Console.Write(string.Join(ItemSeparator, new ProcessStartInfo().Environment.Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+
+            StringComparison osSpecificComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            foreach (var providedEnvVar in caseSensitiveEnvVars)
+            {
+                Assert.Single(printedEnvVars, envVar => envVar.Equals($"{providedEnvVar.Key}={providedEnvVar.Value}", osSpecificComparison));
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessStartInfoEnvironmentVariablesDoesNotThrowForCaseSensitiveDuplicates()
+        {
+            var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "NPM_CONFIG_CACHE", "^" },
+                { "npm_config_cache", "^" },
+            };
+
+            string[] printedEnvVars = ExecuteProcessAndReturnParsedOutput(
+                caseSensitiveEnvVars,
+                () =>
+                {
+                    Console.Write(string.Join(ItemSeparator, new ProcessStartInfo().EnvironmentVariables.Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+
+            StringComparison osSpecificComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            foreach (var providedEnvVar in caseSensitiveEnvVars)
+            {
+                Assert.Single(printedEnvVars, envVar => envVar.Equals($"{providedEnvVar.Key}={providedEnvVar.Value}", osSpecificComparison));
+            }
+        }
+
+        private string[] ExecuteProcessAndReturnParsedOutput(Dictionary<string, string> envVars, Func<int> processWork)
+        {
+            // Schedule a process to see what env vars it gets.  Have it write out those variables
+            // to its output stream so we can read them.
+            Process p = CreateProcess(processWork);
+            p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            p.StartInfo.RedirectStandardOutput = true;
+
+            // Environment Variables are case-insensitive on Windows.
+            // But it's possible to start a process with duplicate case-sensitive env vars using CreateProcess API (see #42029)
+            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insenstive on Windows.
+            // We also can't use p.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
+            // But we can overwrite it using reflection to mimic the CreateProcess behaviour and avoid having this test call CreateProcess directly.
+            p.StartInfo.Environment
+                .GetType()
+                .GetField("_contents", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)
+                .SetValue(p.StartInfo.Environment, envVars);
+
+            p.Start();
+            string output = p.StandardOutput.ReadToEnd();
+            Assert.True(p.WaitForExit(WaitInMS));
+
+            return output.Split(new[] { ItemSeparator }, StringSplitOptions.None).Select(s => Encoding.UTF8.GetString(Convert.FromBase64String(s))).ToArray();
         }
 
         [Fact]
@@ -350,21 +451,18 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18978")]
-                [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
+        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop("Requires admin privileges")]
         public void TestUserCredentialsPropertiesOnWindows()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            string username = "test", password = "PassWord123!!";
-            try
-            {
-                Interop.NetUserAdd(username, password);
-            }
-            catch (Exception exc)
-            {
-                Console.Error.WriteLine("TestUserCredentialsPropertiesOnWindows: NetUserAdd failed: {0}", exc.Message);
-                return; // test is irrelevant if we can't add a user
-            }
+            const string username = "testForDotnetRuntime", password = "PassWord123!!";
+
+            uint removalResult = Interop.NetUserDel(null, username);
+            Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
+
+            Interop.NetUserAdd(username, password);
 
             bool hasStarted = false;
             SafeProcessHandle handle = null;
@@ -373,6 +471,9 @@ namespace System.Diagnostics.Tests
             try
             {
                 p = CreateProcessLong();
+
+                // ensure the new user can access the .exe (otherwise you get Access is denied exception)
+                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Allow);
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
@@ -399,8 +500,9 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                IEnumerable<uint> collection = new uint[] { 0 /* NERR_Success */, 2221 /* NERR_UserNotFound */ };
-                Assert.Contains<uint>(Interop.NetUserDel(null, username), collection);
+                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Deny); // revoke the access
+
+                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
 
                 if (handle != null)
                     handle.Dispose();
@@ -412,6 +514,14 @@ namespace System.Diagnostics.Tests
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
             }
+        }
+
+        private static void SetAccessControl(string userName, string filePath, AccessControlType accessControlType)
+        {
+            FileInfo fileInfo = new FileInfo(filePath);
+            FileSecurity accessControl = fileInfo.GetAccessControl();
+            accessControl.AddAccessRule(new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, accessControlType));
+            fileInfo.SetAccessControl(accessControl);
         }
 
         private static List<string> GetNamesOfUserProfiles()
@@ -936,7 +1046,7 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo info = new ProcessStartInfo
             {
                 UseShellExecute = useShellExecute,
-                FileName = @"notepad.exe",
+                FileName = "notepad.exe",
                 Arguments = tempFile,
                 WindowStyle = ProcessWindowStyle.Minimized
             };
@@ -947,11 +1057,7 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
-                    // On some Windows versions, the file extension is not included in the title
-                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
@@ -960,16 +1066,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute and has not notepad
+                                                    nameof(PlatformDetection.IsNotWindowsServerCore), // https://github.com/dotnet/runtime/issues/26231
                                                     nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/runtime/issues/22007
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_TextFile_ShellExecute()
         {
-            if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
-                return; // [ActiveIssue(https://github.com/dotnet/runtime/issues/25823)]
+            // create a new extension that nobody else should be using
+            const string fileExtension = ".dotnetRuntimeTestExtension";
+            // associate Notepad with the new extension
+            FileAssociations.EnsureAssociationSet(fileExtension, "Used For Testing ShellExecute", "notepad.exe", "Notepad");
+            // from here we can try to open with with given extension and be sure that Notepad is going to open it (not other text file editor like Notepad++)
 
-            string tempFile = GetTestFilePath() + ".txt";
+            string tempFile = GetTestFilePath() + fileExtension;
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");
 
             ProcessStartInfo info = new ProcessStartInfo
@@ -985,18 +1095,7 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
-                    if (PlatformDetection.IsInAppContainer)
-                    {
-                        Assert.Throws<PlatformNotSupportedException>(() => process.MainWindowTitle);
-                    }
-                    else
-                    {
-                        // On some Windows versions, the file extension is not included in the title
-                        Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
-                    }
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
@@ -1159,7 +1258,7 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo info = new ProcessStartInfo
             {
                 UseShellExecute = useShellExecute,
-                FileName = @"notepad.exe",
+                FileName = "notepad.exe",
                 Arguments = null,
                 WindowStyle = ProcessWindowStyle.Minimized
             };
@@ -1172,17 +1271,43 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
-                    // On some Windows versions, the file extension is not included in the title
-                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
                     process?.Kill();
                 }
             }
+        }
+
+        private void VerifyNotepadMainWindowTitle(Process process, string filename)
+        {
+            if (PlatformDetection.IsWindowsServerCore)
+            {
+                return; // On Server Core, notepad exists but does not return a title
+            }
+
+            // On some Windows versions, the file extension is not included in the title
+            string expected = Path.GetFileNameWithoutExtension(filename);
+
+            process.WaitForInputIdle(); // Give the file a chance to load
+            Assert.Equal("notepad", process.ProcessName);
+
+            // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
+            // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
+            // with something similar to "myfilename - Notepad". So there's a race between input idle
+            // and the expected MainWindowTitle because of how Notepad is implemented.
+            string title = process.MainWindowTitle;
+            int count = 0;
+            while (!title.StartsWith(expected) && count < 500)
+            {
+                Thread.Sleep(10);
+                process.Refresh();
+                title = process.MainWindowTitle;
+                count++;
+            }
+
+            Assert.StartsWith(expected, title);
         }
     }
 }

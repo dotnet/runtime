@@ -910,6 +910,8 @@ namespace System.Reflection.Emit
             return this;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't analyze ResolveUserType but it's an identity function")]
         private void ResolveUserTypes()
         {
             parent = ResolveUserType(parent);
@@ -1054,7 +1056,7 @@ namespace System.Reflection.Emit
         /* Needed to keep signature compatibility with MS.NET */
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize GetEvents(BindingFlags.Public) but this is what the body is doing")]
+            Justification = "Linker doesn't recognize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public override EventInfo[] GetEvents()
         {
             const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
@@ -1121,7 +1123,7 @@ namespace System.Reflection.Emit
             return created!.GetMembers(bindingAttr);
         }
 
-        private MethodInfo[] GetMethodsByName(string? name, BindingFlags bindingAttr, bool ignoreCase, Type reflected_type)
+        private MethodInfo[] GetMethodsByName(string? name, BindingFlags bindingAttr, bool ignoreCase)
         {
             MethodInfo[]? candidates;
             bool match;
@@ -1221,7 +1223,7 @@ namespace System.Reflection.Emit
         {
             check_created();
 
-            return GetMethodsByName(null, bindingAttr, false, this);
+            return GetMethodsByName(null, bindingAttr, false);
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
@@ -1411,7 +1413,7 @@ namespace System.Reflection.Emit
 
             Type[] copy = new Type[typeArguments.Length];
             typeArguments.CopyTo(copy, 0);
-            return pmodule.assemblyb.MakeGenericType(this, copy);
+            return AssemblyBuilder.MakeGenericType(this, copy);
         }
 
         public override Type MakePointerType()
@@ -1612,16 +1614,10 @@ namespace System.Reflection.Emit
             return DefineField(name, datablobtype, attributes | FieldAttributes.Static | FieldAttributes.HasFieldRVA);
         }
 
-        public TypeToken TypeToken
-        {
-            get
-            {
-                return new TypeToken(0x02000000 | table_idx);
-            }
-        }
+        public override int MetadataToken => 0x02000000 | table_idx;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize ResolveUserType")]
+            Justification = "Linker doesn't analyze ResolveUserType but it's an identity function")]
         public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             check_not_created();
@@ -1682,7 +1678,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
@@ -1699,7 +1695,7 @@ namespace System.Reflection.Emit
                 throw not_supported();
         }
 
-        private void check_name(string argName, string name)
+        private static void check_name(string argName, string name)
         {
             if (name == null)
                 throw new ArgumentNullException(argName);

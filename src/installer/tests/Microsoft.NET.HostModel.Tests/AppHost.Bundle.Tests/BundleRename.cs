@@ -3,16 +3,16 @@
 
 using System;
 using System.IO;
-using Xunit;
+using System.Threading;
+using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
-using BundleTests.Helpers;
-using System.Threading;
+using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleRename : IClassFixture<BundleRename.SharedTestState>
+    public class BundleRename : BundleTestBase, IClassFixture<BundleRename.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -29,7 +29,7 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestFixture.Copy();
             BundleOptions options = testExtraction ? BundleOptions.BundleAllContent : BundleOptions.None;
-            string singleFile = BundleHelper.BundleApp(fixture, options);
+            string singleFile = BundleSelfContainedApp(fixture, options);
             string outputDir = Path.GetDirectoryName(singleFile);
             string renameFile = Path.Combine(outputDir, Path.GetRandomFileName());
             string waitFile = Path.Combine(outputDir, "wait");
@@ -63,19 +63,13 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("Hello World!");
         }
 
-        public class SharedTestState : IDisposable
+        public class SharedTestState : SharedTestStateBase, IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("AppWithWait", RepoDirectories);
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                TestFixture = PreparePublishedSelfContainedTestProject("AppWithWait");
             }
 
             public void Dispose()
