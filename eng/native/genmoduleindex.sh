@@ -9,21 +9,39 @@ if [[ "$#" -lt 2 ]]; then
   exit 1
 fi
 
+output=$2
+printf "" > $output
+
+function printIdAsBinary() {
+  id="$1"
+
+  # Print length in bytes
+  bytesLength=${#id}
+  printf "0x%02x, " "$((bytesLength/2))" > "$output"
+
+  # Print each pair of hex digits with 0x prefix followed by a comma
+  while [[ $id ]]; do
+    printf '0x%s, ' "${id:0:2}"
+    id=${id:2}
+  done >> "$output"
+}
+
 OSName=$(uname -s)
 
 case "$OSName" in
 Darwin)
-	# Extract the build id and prefix it with its length in bytes
-	dwarfdump -u $1 |
-	awk '/UUID:/ { gsub(/\-/,"", $2); printf("%02x", length($2)/2); print $2}' |
-	# Convert each byte of the id to 0x prefixed constant followed by comma
-	sed -E s/\(\.\.\)/0x\\1,\ /g > $2
-	;;
+  array=($(dwarfdump -u $1))
+  id="${array[1]}"
+  id="${id//-/}"
+  printIdAsBinary "$id"
+  ;;
 *)
-	# Extract the build id and prefix it with its length in bytes
-	readelf -n $1 |
-	awk '/Build ID:/ { printf("%02x", length($3)/2); print $3 }' |
-	# Convert each byte of the id to 0x prefixed constant followed by comma
-	sed -E s/\(\.\.\)/0x\\1,\ /g > $2
-	;;
+  while read -r line; do
+    if [[ "$line" =~ ^[[:space:]]*"Build ID:" ]]; then
+      array=($line)
+      printIdAsBinary "${array[2]}"
+      break
+    fi
+  done < <(readelf -n $1)
+  ;;
 esac
