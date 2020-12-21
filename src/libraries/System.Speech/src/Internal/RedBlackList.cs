@@ -11,11 +11,11 @@ namespace System.Speech.Internal
     /// <summary>
     /// Sorted List using the Red-Black algorithm
     /// </summary>
-    internal abstract class RedBackList : IEnumerable
+    internal abstract class RedBlackList : IEnumerable
     {
         #region Constructors
 
-        internal RedBackList()
+        internal RedBlackList()
         {
         }
 
