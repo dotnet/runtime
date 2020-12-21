@@ -76,7 +76,6 @@ namespace System.IO
         /// <param name="fileOptions">desired options for the temp file (defaults to None)</param>
         /// <param name="extension">desired extension, or null (defaults to null)</param>
         /// <param name="subFolder">desired subfolder of temp folder, or null (defaults to "WPF")</param>
-        [SecurityCritical]
         internal static FileStream CreateAndOpenTemporaryFile(
                     out string filePath,
                     FileAccess fileAccess = FileAccess.Write,

@@ -204,7 +204,6 @@ namespace System.Speech.Recognition
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.Recognition.RecognizedPhrase> Alternates { get { throw null; } }
         public System.Speech.Recognition.RecognizedAudio Audio { get { throw null; } }
         public System.Speech.Recognition.RecognizedAudio GetAudioForWordRange(System.Speech.Recognition.RecognizedWordUnit firstWord, System.Speech.Recognition.RecognizedWordUnit lastWord) { throw null; }
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, SerializationFormatter=true)]
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class RecognizeCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs

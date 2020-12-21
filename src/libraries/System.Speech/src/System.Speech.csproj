@@ -230,8 +230,6 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
-<!-- TOOD remove this -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Net.WebClient" />
     <Reference Include="System.Collections" />
