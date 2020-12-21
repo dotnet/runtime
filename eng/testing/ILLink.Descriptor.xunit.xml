@@ -3,5 +3,8 @@
     <type fullname="Xunit.Sdk.ReflectionAssemblyInfo">
       <method signature="System.Void .ctor(System.String)" />
     </type>
+    <type fullname="Xunit.Sdk.TestFrameworkProxy">
+      <method signature="System.Void .ctor(System.Object,System.Object,System.Object)" />
+    </type>
   </assembly>
 </linker>
