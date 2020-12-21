@@ -1,0 +1,3 @@
+Compat issues with assembly System.Threading.Thread:
+CannotRemoveAttribute : Attribute 'Mono.MonoRuntimeLayoutAwareAttribute' exists on 'System.Threading.Thread' in the implementation but not the reference.
+Total Issues: 1
