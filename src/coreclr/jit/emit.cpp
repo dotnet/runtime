@@ -4691,7 +4691,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
     // We don't rely on (block->bbJumpDest->bbNum <= block->bbNum) because the basic
     // block numbering is not guaranteed to be sequential.
 
-    if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum) && (emitCurIG->igLoopBackEdge == nullptr))
+    if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
     {
         unsigned currLoopStart = dstIG->igNum;
         unsigned currLoopEnd   = emitCurIG->igNum;
