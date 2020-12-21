@@ -174,8 +174,6 @@ namespace System.Speech.Internal.SapiInterop
             #endregion
         }
 
-
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 #pragma warning disable 56500 // Remove all the catch all statements warnings used by the interop layer
 
         internal class MTAThread : SapiProxy, IDisposable
@@ -286,7 +284,6 @@ namespace System.Speech.Internal.SapiInterop
                     Invoke2(delegate { Marshal.ReleaseComObject(_recognizer); });
                     ((IDisposable)_process).Dispose();
                     ((IDisposable)_done).Dispose();
-                    _mta.Abort();
                 }
                 base.Dispose();
             }

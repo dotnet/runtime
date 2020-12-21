@@ -110,6 +110,7 @@ namespace System.Speech.Internal
         /// <returns></returns>
         private static Stream DownloadData(Uri uri, out Uri redirectedUri)
         {
+#pragma warning disable SYSLIB0014
             // Create a request for the URL.
             WebRequest request = WebRequest.Create(uri);
 
@@ -132,6 +133,7 @@ namespace System.Speech.Internal
                     }
                 }
             }
+#pragma warning restore SYSLIB0014
         }
 
         #endregion

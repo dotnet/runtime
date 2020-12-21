@@ -93,7 +93,6 @@ namespace System.IO
             const int MaxRetries = 5;
             int retries = MaxRetries;
             filePath = null;
-            bool needAsserts = System.Security.SecurityManager.CurrentThreadRequiresSecurityContextCapture();
 
             string folderPath = Path.GetTempPath();
 
@@ -103,24 +102,10 @@ namespace System.IO
 
                 if (!Directory.Exists(subFolderPath))
                 {
-                    if (!needAsserts)
-                    {
-                        Directory.CreateDirectory(subFolderPath);
-                    }
-                    else
-                    {
-                        new FileIOPermission(FileIOPermissionAccess.Read | FileIOPermissionAccess.Write, folderPath).Assert();
-                        Directory.CreateDirectory(subFolderPath);
-                        FileIOPermission.RevertAssert();
-                    }
+                    Directory.CreateDirectory(subFolderPath);
                 }
 
                 folderPath = subFolderPath;
-            }
-
-            if (needAsserts)
-            {
-                new FileIOPermission(FileIOPermissionAccess.Read | FileIOPermissionAccess.Write, folderPath).Assert();
             }
 
             FileStream stream = null;
@@ -155,11 +140,6 @@ namespace System.IO
             return stream;
         }
 
-        // PreSharp uses message numbers that the C# compiler doesn't know about.
-        // Disable the C# complaints, per the PreSharp documentation.
-#pragma warning disable 1634, 1691
-#pragma warning disable 56502 // disable PreSharp warning about empty catch blocks
-
         ///<summary>
         /// Delete a temporary file robustly.
         ///</summary>
@@ -167,17 +147,10 @@ namespace System.IO
         /// <SecurityNote>
         ///     Critical - Calls into filesystem functions, asserts permission.
         /// </SecurityNote>
-        [SecurityCritical]
         static internal void DeleteTemporaryFile(string filePath)
         {
             if (!String.IsNullOrEmpty(filePath))
             {
-                bool needAsserts = System.Security.SecurityManager.CurrentThreadRequiresSecurityContextCapture();
-                if (needAsserts)
-                {
-                    new FileIOPermission(FileIOPermissionAccess.Write, filePath).Assert();
-                }
-
                 try
                 {
                     File.Delete(filePath);
@@ -189,6 +162,5 @@ namespace System.IO
                 }
             }
         }
-#pragma warning restore 56502
     }
 }

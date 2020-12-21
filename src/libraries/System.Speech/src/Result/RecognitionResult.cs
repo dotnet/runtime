@@ -21,8 +21,6 @@ using System.Text;
 using System.Xml;
 using System.Xml.XPath;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 #pragma warning disable 56507 // check for null or empty strings
 
 namespace System.Speech.Recognition
@@ -98,7 +96,6 @@ namespace System.Speech.Recognition
             return Audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
         }
 
-        [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             Helpers.ThrowIfNull(info, nameof(info));
