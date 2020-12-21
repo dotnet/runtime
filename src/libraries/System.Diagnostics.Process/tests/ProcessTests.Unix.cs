@@ -161,7 +161,7 @@ namespace System.Diagnostics.Tests
         {
             const string scriptName = nameof(ProcessNameMatchesScriptName);
             string filename = Path.Combine(TestDirectory, scriptName);
-            File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
+            File.WriteAllText(filename, $"#!/bin/sh\n/bin/sleep 600\n"); // sleep 10 min.
             ChMod(filename, "744"); // set x-bit
 
             using (var process = Process.Start(new ProcessStartInfo { FileName = filename }))
