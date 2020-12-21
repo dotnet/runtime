@@ -7,7 +7,6 @@ using System.Speech.Internal.GrammarBuilding;
 
 namespace System.Speech.Recognition
 {
-
     [DebuggerDisplay("{_semanticKey.DebugSummary}")]
     public class SemanticResultKey
     {

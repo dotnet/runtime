@@ -7,8 +7,7 @@ using System.Speech.Internal.Synthesis;
 namespace System.Speech.AudioFormat
 {
     [Serializable]
-    public
- class SpeechAudioFormatInfo
+    public class SpeechAudioFormatInfo
     {
         #region Constructors
 
@@ -178,14 +177,12 @@ namespace System.Speech.AudioFormat
     }
 
     #region Public Properties
-    public
- enum AudioChannel
+    public enum AudioChannel
     {
         Mono = 1,
         Stereo = 2
     }
-    public
- enum AudioBitsPerSample
+    public enum AudioBitsPerSample
     {
         Eight = 8,
         Sixteen = 16

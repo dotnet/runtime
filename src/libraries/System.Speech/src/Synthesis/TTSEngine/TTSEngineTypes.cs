@@ -12,8 +12,7 @@ using System.Speech.Internal;
 namespace System.Speech.Synthesis.TtsEngine
 {
     #region Public Interface
-    public
- abstract class TtsEngineSsml
+    public abstract class TtsEngineSsml
     {
         /// <summary>
         /// Constructor for the TTS engine
@@ -58,8 +57,7 @@ namespace System.Speech.Synthesis.TtsEngine
     [StructLayout(LayoutKind.Sequential)]
     [ImmutableObject(true)]
 
-    public
- struct SpeechEventInfo : IEquatable<SpeechEventInfo>
+    public struct SpeechEventInfo : IEquatable<SpeechEventInfo>
     {
         public short EventId { get { return _eventId; } internal set { _eventId = value; } }
         public short ParameterType { get { return _parameterType; } internal set { _parameterType = value; } }
@@ -112,8 +110,7 @@ namespace System.Speech.Synthesis.TtsEngine
         private int _param1;   // Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         private IntPtr _param2;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
     }
-    public
- interface ITtsEngineSite
+    public interface ITtsEngineSite
     {
         void AddEvents(SpeechEventInfo[] events, int count);
         int Write(IntPtr data, int count);
@@ -125,8 +122,7 @@ namespace System.Speech.Synthesis.TtsEngine
         int Rate { get; }
         int Volume { get; }
     }
-    public
- class SkipInfo
+    public class SkipInfo
     {
         internal SkipInfo(int type, int count)
         {
@@ -167,10 +163,8 @@ namespace System.Speech.Synthesis.TtsEngine
 
     #region Public Types
     [StructLayout(LayoutKind.Sequential)]
-
     [DebuggerDisplay("{State.Action} {TextToSpeak!=null?TextToSpeak:\"\"}")]
-    public
- class TextFragment
+    public class TextFragment
     {
         public TextFragment()
         {
@@ -213,8 +207,7 @@ namespace System.Speech.Synthesis.TtsEngine
     }
     [ImmutableObject(true)]
 
-    public
- struct FragmentState : IEquatable<FragmentState>
+    public struct FragmentState : IEquatable<FragmentState>
     {
         public TtsEngineAction Action { get { return _action; } internal set { _action = value; } }
         public int LangId { get { return _langId; } internal set { _langId = value; } }
@@ -274,8 +267,7 @@ namespace System.Speech.Synthesis.TtsEngine
         private char[] _phoneme;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public
- class Prosody
+    public class Prosody
     {
         public ProsodyNumber Pitch { get { return _pitch; } set { _pitch = value; } }
         public ProsodyNumber Range { get { return _range; } set { _range = value; } }
@@ -317,8 +309,7 @@ namespace System.Speech.Synthesis.TtsEngine
     }
     [ImmutableObject(true)]
 
-    public
- struct ContourPoint : IEquatable<ContourPoint>
+    public struct ContourPoint : IEquatable<ContourPoint>
     {
         public float Start { get { return _start; } /* internal set { _start = value; }  */}
         public float Change { get { return _change; } /* internal set { _change = value; } */ }
@@ -360,8 +351,7 @@ namespace System.Speech.Synthesis.TtsEngine
         private ContourPointChangeType _changeType;
     }
     [ImmutableObject(true)]
-    public
- struct ProsodyNumber : IEquatable<ProsodyNumber>
+    public struct ProsodyNumber : IEquatable<ProsodyNumber>
     {
         public int SsmlAttributeId { get { return _ssmlAttributeId; } internal set { _ssmlAttributeId = value; } }
         public bool IsNumberPercent { get { return _isPercent; } internal set { _isPercent = value; } }
@@ -414,8 +404,7 @@ namespace System.Speech.Synthesis.TtsEngine
         private ProsodyUnit _unit;
     }
     [StructLayout(LayoutKind.Sequential)]
-    public
- class SayAs
+    public class SayAs
     {
         public string InterpretAs { get { return _interpretAs; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _interpretAs = value; } }
         public string Format { get { return _format; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _format = value; } }
@@ -434,8 +423,7 @@ namespace System.Speech.Synthesis.TtsEngine
     #endregion
 
     #region Public Enums
-    public
- enum TtsEngineAction
+    public enum TtsEngineAction
     {
         Speak,
         Silence,
@@ -446,8 +434,7 @@ namespace System.Speech.Synthesis.TtsEngine
         StartParagraph,
         ParseUnknownTag,
     }
-    public
- enum EmphasisWord : int
+    public enum EmphasisWord : int
     {
         Default,
         Strong,
@@ -455,8 +442,7 @@ namespace System.Speech.Synthesis.TtsEngine
         None,
         Reduced
     }
-    public
- enum EmphasisBreak : int
+    public enum EmphasisBreak : int
     {
         None = -1,
         ExtraWeak = -2,
@@ -469,8 +455,7 @@ namespace System.Speech.Synthesis.TtsEngine
         /// </summary>
         Default = -7,
     }
-    public
- enum ProsodyPitch
+    public enum ProsodyPitch
     {
         Default,
         ExtraLow,
@@ -479,8 +464,7 @@ namespace System.Speech.Synthesis.TtsEngine
         High,
         ExtraHigh
     }
-    public
- enum ProsodyRange
+    public enum ProsodyRange
     {
         Default,
         ExtraLow,
@@ -489,8 +473,7 @@ namespace System.Speech.Synthesis.TtsEngine
         High,
         ExtraHigh
     }
-    public
- enum ProsodyRate
+    public enum ProsodyRate
     {
         Default,
         ExtraSlow,
@@ -499,8 +482,7 @@ namespace System.Speech.Synthesis.TtsEngine
         Fast,
         ExtraFast
     }
-    public
- enum ProsodyVolume : int
+    public enum ProsodyVolume : int
     {
         Default = -1,
         Silent = -2,
@@ -510,15 +492,13 @@ namespace System.Speech.Synthesis.TtsEngine
         Loud = -6,
         ExtraLoud = -7
     }
-    public
- enum ProsodyUnit : int
+    public enum ProsodyUnit : int
     {
         Default,
         Hz,
         Semitone
     }
-    public
- enum TtsEventId
+    public enum TtsEventId
     {
         StartInputStream = 1,
         EndInputStream = 2,
@@ -530,8 +510,7 @@ namespace System.Speech.Synthesis.TtsEngine
         Viseme = 8,
         AudioLevel = 9,   // wparam contains current output audio level
     }
-    public
- enum EventParameterType
+    public enum EventParameterType
     {
         Undefined = 0x0000,
         Token = 0x0001,
@@ -539,14 +518,12 @@ namespace System.Speech.Synthesis.TtsEngine
         Pointer = 0x0003,
         String = 0x0004
     }
-    public
- enum SpeakOutputFormat
+    public enum SpeakOutputFormat
     {
         WaveFormat = 0,
         Text = 1
     }
-    public
- enum ContourPointChangeType
+    public enum ContourPointChangeType
     {
         Hz = 0,
         Percentage = 1

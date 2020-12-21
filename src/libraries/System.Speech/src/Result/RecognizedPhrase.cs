@@ -19,7 +19,6 @@ using System.Xml.XPath;
 namespace System.Speech.Recognition
 {
     [Serializable]
-
     [DebuggerDisplay("{Text}")]
     public class RecognizedPhrase
     {
@@ -1111,7 +1110,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Private Types
-
         [DebuggerDisplay("{DisplayDebugInfo ()}")]
         private class RuleNode
         {
@@ -1180,7 +1178,6 @@ namespace System.Speech.Recognition
             internal RuleNode _next;
             internal RuleNode _child;
         }
-
         [DebuggerDisplay("Name={_name} node={_ruleNode._rule} value={_value != null && _value.Value != null ? _value.Value.ToString() : \"\"}")]
         private struct ResultPropertiesRef
         {

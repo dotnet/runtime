@@ -6,7 +6,6 @@ using System.Speech.Internal.SrgsParser;
 
 namespace System.Speech.Internal.GrammarBuilding
 {
-
     [DebuggerDisplay("{DebugSummary}")]
     internal sealed class RuleRefElement : GrammarBuilderBase
     {

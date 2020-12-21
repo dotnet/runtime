@@ -239,7 +239,6 @@ namespace System.Speech.Recognition
                     return _confidence;
                 }
             }
-
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public SemanticValue[] AKeys
             {

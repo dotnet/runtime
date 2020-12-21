@@ -964,7 +964,6 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 _states = states;
             }
-
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public State[] AKeys
             {

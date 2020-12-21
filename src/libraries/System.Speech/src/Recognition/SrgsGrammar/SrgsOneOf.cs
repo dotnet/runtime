@@ -136,7 +136,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 _items = oneOf._items;
             }
-
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public SrgsItem[] AKeys
             {

@@ -370,7 +370,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                     return _elements.Count;
                 }
             }
-
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public SrgsElement[] AKeys
             {

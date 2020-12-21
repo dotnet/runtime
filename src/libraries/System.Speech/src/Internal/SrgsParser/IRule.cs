@@ -20,6 +20,7 @@ namespace System.Speech.Internal.SrgsParser
         False,
         NotSet
     };
+
     // RuleScope specifies how a rule behaves with respect to being able to be
     // referenced by other rules, and whether or not the rule can be activated
     // or not.

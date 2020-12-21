@@ -14,7 +14,6 @@ using System.Text;
 
 namespace System.Speech.Recognition
 {
-
     [DebuggerDisplay("{DebugSummary}")]
     public class GrammarBuilder
     {

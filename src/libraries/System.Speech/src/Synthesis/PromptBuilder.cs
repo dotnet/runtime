@@ -734,8 +734,7 @@ namespace System.Speech.Synthesis
 
             AppendSsml(new Uri(path, UriKind.Relative));
         }
-        public
- void AppendSsml(Uri ssmlFile)
+        public void AppendSsml(Uri ssmlFile)
         {
             Helpers.ThrowIfNull(ssmlFile, nameof(ssmlFile));
 
@@ -827,8 +826,7 @@ namespace System.Speech.Synthesis
                 return _elements.Count == 0;
             }
         }
-        public
-            CultureInfo Culture
+        public            CultureInfo Culture
         {
             get
             {

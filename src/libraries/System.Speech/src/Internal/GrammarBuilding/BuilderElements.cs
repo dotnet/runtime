@@ -10,7 +10,6 @@ using System.Text;
 
 namespace System.Speech.Internal.GrammarBuilding
 {
-
     [DebuggerDisplay("{DebugSummary}")]
     internal abstract class BuilderElements : GrammarBuilderBase
     {

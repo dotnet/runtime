@@ -292,8 +292,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Methods
 
-        private
-        static TtsEngineAction ActionTextFragment(TtsEngineAction action)
+        private static TtsEngineAction ActionTextFragment(TtsEngineAction action)
         {
             return action;
         }
