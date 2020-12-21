@@ -172,6 +172,8 @@ namespace System.Diagnostics.Tests
                     Assert.Contains($"({scriptName.Substring(0, 15)})", stat);
                     string cmdline = File.ReadAllText($"/proc/{process.Id}/cmdline");
 
+                    // cmdLine can sometimes be null: https://github.com/dotnet/runtime/issues/13757
+                    // according to docs, it's when the process is a zombie: https://man7.org/linux/man-pages/man5/proc.5.html
                     if (string.IsNullOrEmpty(cmdline))
                     {
                         Assert.True(process.HasExited, $"/proc/{process.Id}/cmdline was empty, but the process was not a zombie");
