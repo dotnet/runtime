@@ -1187,6 +1187,33 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
+
+        public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, Span<byte> buffer, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        {
+            byte[] socketAddressBuffer = socketAddress.Buffer;
+            int socketAddressLen = socketAddress.Size;
+
+            bool isIPv4, isIPv6;
+            Socket.GetIPProtocolInformation(socket.AddressFamily, socketAddress, out isIPv4, out isIPv6);
+
+            SocketError errorCode;
+            if (!handle.IsNonBlocking)
+            {
+                errorCode = handle.AsyncContext.ReceiveMessageFrom(buffer, null, ref socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, handle.ReceiveTimeout, out ipPacketInformation, out bytesTransferred);
+            }
+            else
+            {
+                if (!TryCompleteReceiveMessageFrom(handle, buffer, null, socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, out bytesTransferred, out socketFlags, out ipPacketInformation, out errorCode))
+                {
+                    errorCode = SocketError.WouldBlock;
+                }
+            }
+
+            socketAddress.InternalSize = socketAddressLen;
+            receiveAddress = socketAddress;
+            return errorCode;
+        }
+
         public static SocketError ReceiveFrom(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, byte[] socketAddress, ref int socketAddressLen, out int bytesTransferred)
         {
             if (!handle.IsNonBlocking)

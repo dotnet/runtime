@@ -524,6 +524,80 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
+        public static unsafe SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, Span<byte> buffer, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        {
+            bool ipv4, ipv6;
+            Socket.GetIPProtocolInformation(socket.AddressFamily, socketAddress, out ipv4, out ipv6);
+
+            bytesTransferred = 0;
+            receiveAddress = socketAddress;
+            ipPacketInformation = default(IPPacketInformation);
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
+            fixed (byte* ptrSocketAddress = socketAddress.Buffer)
+            {
+                Interop.Winsock.WSAMsg wsaMsg;
+                wsaMsg.socketAddress = (IntPtr)ptrSocketAddress;
+                wsaMsg.addressLength = (uint)socketAddress.Size;
+                wsaMsg.flags = socketFlags;
+
+                WSABuffer wsaBuffer;
+                wsaBuffer.Length = buffer.Length;
+                wsaBuffer.Pointer = (IntPtr)bufferPtr;
+                wsaMsg.buffers = (IntPtr)(&wsaBuffer);
+                wsaMsg.count = 1;
+
+                if (ipv4)
+                {
+                    Interop.Winsock.ControlData controlBuffer;
+                    wsaMsg.controlBuffer.Pointer = (IntPtr)(&controlBuffer);
+                    wsaMsg.controlBuffer.Length = sizeof(Interop.Winsock.ControlData);
+
+                    if (socket.WSARecvMsgBlocking(
+                        handle,
+                        (IntPtr)(&wsaMsg),
+                        out bytesTransferred) == SocketError.SocketError)
+                    {
+                        return GetLastSocketError();
+                    }
+
+                    ipPacketInformation = GetIPPacketInformation(&controlBuffer);
+                }
+                else if (ipv6)
+                {
+                    Interop.Winsock.ControlDataIPv6 controlBuffer;
+                    wsaMsg.controlBuffer.Pointer = (IntPtr)(&controlBuffer);
+                    wsaMsg.controlBuffer.Length = sizeof(Interop.Winsock.ControlDataIPv6);
+
+                    if (socket.WSARecvMsgBlocking(
+                        handle,
+                        (IntPtr)(&wsaMsg),
+                        out bytesTransferred) == SocketError.SocketError)
+                    {
+                        return GetLastSocketError();
+                    }
+
+                    ipPacketInformation = GetIPPacketInformation(&controlBuffer);
+                }
+                else
+                {
+                    wsaMsg.controlBuffer.Pointer = IntPtr.Zero;
+                    wsaMsg.controlBuffer.Length = 0;
+
+                    if (socket.WSARecvMsgBlocking(
+                        handle,
+                        (IntPtr)(&wsaMsg),
+                        out bytesTransferred) == SocketError.SocketError)
+                    {
+                        return GetLastSocketError();
+                    }
+                }
+
+                socketFlags = wsaMsg.flags;
+            }
+
+            return SocketError.Success;
+        }
+
         public static unsafe SocketError ReceiveFrom(SafeSocketHandle handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, byte[] socketAddress, ref int addressLength, out int bytesTransferred)
         {
             int bytesReceived;
