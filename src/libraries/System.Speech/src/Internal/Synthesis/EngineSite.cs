@@ -14,7 +14,6 @@ using System.Diagnostics;
 
 // Exceptions cannot get throught the COM code.
 // The engine site saves the last exception before sending it back to the client.
-// Remove all PreSharp wanings about to swallowing exceptions.
 #pragma warning disable 6500
 
 
@@ -204,7 +203,6 @@ namespace System.Speech.Internal.Synthesis
                     memStream.Write(ab, 0, cLen);
                     memStream.Position = 0;
 
-                    // return in the middle of the code to appease PreSharp
                     return memStream;
                 }
             }

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Speech.Synthesis.TtsEngine;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 
 namespace System.Speech.Internal.Synthesis
 {
@@ -105,7 +104,7 @@ namespace System.Speech.Internal.Synthesis
         private List<TextFragment> _textFragments = new();
 #pragma warning disable 56524 // The _audio are not created in this module and should not be disposed
         private AudioData _audio;
-#pragma warning enable 56524
+#pragma warning restore 56524
 
 
         #endregion

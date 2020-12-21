@@ -9,8 +9,6 @@ using System.Speech.AudioFormat;
 using System.Speech.Internal.SapiInterop;
 using System.Speech.Internal.Synthesis;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 using STATSTG = System.Runtime.InteropServices.ComTypes.STATSTG;
 
 namespace System.Speech.Internal.SapiInterop

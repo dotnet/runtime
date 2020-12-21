@@ -1494,7 +1494,6 @@ namespace System.Speech.Recognition
 
         private SapiRecoContext SapiContext
         {
-            // Suppress the PreSharp warning as we need to throw ObjectDisposedException at this point.
             // Also this method is not public.
 #pragma warning disable 6503
             get { if (_disposed) { throw new ObjectDisposedException("RecognizerBase"); } return _sapiContext; }
@@ -2754,7 +2753,6 @@ namespace System.Speech.Recognition
                 }
                 catch (COMException)
                 {
-                    hasWaveFormat = false; // to please PRESharp
                 }
 
                 // If for some reason the GetFormat fails OR we can't get a wave format, assume 16 Kb, 16 bits, Audio.

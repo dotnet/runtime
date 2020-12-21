@@ -9,7 +9,6 @@ using System.Speech.Synthesis.TtsEngine;
 using System.Text;
 using System.Xml;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 #pragma warning disable 56524 // The _xmlWriter member is not created in this module and should not be disposed
 
 namespace System.Speech.Internal.Synthesis

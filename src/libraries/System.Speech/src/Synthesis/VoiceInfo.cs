@@ -13,7 +13,6 @@ using System.Speech.Internal.Synthesis;
 using System.Speech.Internal.ObjectTokens;
 using System.Xml;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 
 namespace System.Speech.Synthesis
 {
@@ -172,7 +171,6 @@ namespace System.Speech.Synthesis
         /// </summary>
         public override bool Equals(object obj)
         {
-            // PreSharp doesn't understand that if obj is null then this will return false.
 #pragma warning disable 6506
             VoiceInfo voice = obj as VoiceInfo;
             return voice != null

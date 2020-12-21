@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Speech.Internal.SrgsParser;
 using System.Text;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 
 namespace System.Speech.Internal.SrgsCompiler
 {

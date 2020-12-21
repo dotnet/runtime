@@ -21,7 +21,6 @@ using System.Text;
 using System.Threading;
 
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 #pragma warning disable 56502       // Empty catch statements
 
 namespace System.Speech.Internal.Synthesis

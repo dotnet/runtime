@@ -10,7 +10,6 @@ using System.Diagnostics;
 using System.Speech.Internal;
 using System.Speech.Internal.SrgsParser;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 
 namespace System.Speech.Recognition.SrgsGrammar
 {

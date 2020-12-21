@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Speech.Internal;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 
 namespace System.Speech.Recognition
 {

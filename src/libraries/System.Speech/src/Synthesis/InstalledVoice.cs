@@ -18,7 +18,6 @@ using System.Threading;
 using RegistryDataKey = System.Speech.Internal.ObjectTokens.RegistryDataKey;
 using RegistryEntry = System.Collections.Generic.KeyValuePair<string, object>;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
 
 namespace System.Speech.Synthesis
 {
