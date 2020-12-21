@@ -32,7 +32,6 @@ namespace System.Speech.Internal.SapiInterop
     /// compatible with the application model of the thread that created this object.
     internal class EventNotify
     {
-
         #region Constructors
 
         internal EventNotify(ISpEventSource sapiEventSource, IAsyncDispatch dispatcher, bool additionalSapiFeatures)
@@ -49,7 +48,6 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         #endregion Constructors
-
 
         #region Internal Methods
 
@@ -110,11 +108,9 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion Methods
 
-
         #region Private Methods
 
         #endregion
-
 
         #region Private Fields
 

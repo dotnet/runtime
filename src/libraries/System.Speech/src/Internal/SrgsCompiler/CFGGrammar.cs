@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Speech.Internal.SrgsParser;
 using System.Text;
 
-
 namespace System.Speech.Internal.SrgsCompiler
 {
     /// <summary>
@@ -16,7 +15,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal sealed class CfgGrammar
     {
-
         #region Constructors
 
         internal CfgGrammar()
@@ -24,7 +22,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Internal Types
 
@@ -52,7 +49,6 @@ namespace System.Speech.Internal.SrgsCompiler
             internal float[] weights;
 
             internal CfgSemanticTag[] tags;
-
 
             internal CfgScriptRef[] scripts;
 
@@ -246,9 +242,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Internal Methods
-
 
         //
         //  This helper converts a serialized CFG grammar header into an in-memory header
@@ -324,7 +318,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
             return header;
         }
-
 
         //
         //  This helper converts a serialized CFG grammar header into an in-memory header
@@ -407,8 +400,6 @@ namespace System.Speech.Internal.SrgsCompiler
             return true;
         }
 
-
-
 #if DEBUG
 
         internal static void TraceInformation(string s)
@@ -428,7 +419,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
 
         #endregion
-
 
         #region Private Methods
 
@@ -504,7 +494,6 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
             }
 
-
             //Check the offset for the scripts
             if (pFH.cScripts > 0)
             {
@@ -573,7 +562,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Internal Fields
 
         internal static Guid _SPGDF_ContextFree = new(0x4ddc926d, 0x6ce7, 0x4dc0, 0x99, 0xa7, 0xaf, 0x9e, 0x6b, 0x6a, 0x4e, 0x91);
@@ -608,7 +596,6 @@ namespace System.Speech.Internal.SrgsCompiler
         internal const int SP_HIGH_CONFIDENCE = +1;
 
         #endregion
-
 
         #region Private Fields
 

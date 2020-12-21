@@ -9,8 +9,6 @@ using System.Xml;
 
 namespace System.Speech.Synthesis.TtsEngine
 {
-
-
     #region Public Enums
 
     [ComImport, Guid("A74D7C8E-4CC5-4F2F-A6EB-804DEE18500E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

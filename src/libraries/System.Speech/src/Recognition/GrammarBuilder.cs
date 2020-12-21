@@ -20,7 +20,6 @@ namespace System.Speech.Recognition
     [DebuggerDisplay("{DebugSummary}")]
     public class GrammarBuilder
     {
-
         #region Constructors
 
         /// <summary>
@@ -106,8 +105,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion Constructors
-
-
 
         #region Public Methods
 
@@ -339,7 +336,6 @@ namespace System.Speech.Recognition
 
         #endregion Constructors
 
-
         #region Public Properties
 
         /// <summary>
@@ -363,7 +359,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
 
         #region Operator Overloads
 
@@ -530,8 +525,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
-
         #region Internal Methods
 
         /// <summary>
@@ -618,7 +611,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
         #region Internal Properties
 
         internal virtual string DebugSummary
@@ -649,7 +641,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
         #region Private Methods
 
         /// <summary>
@@ -662,7 +653,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
         #region Private Fields
 
         private InternalGrammarBuilder _grammarBuilder;
@@ -671,7 +661,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
         #region Private Type
 
         /// <summary>
@@ -679,8 +668,6 @@ namespace System.Speech.Recognition
         /// </summary>
         private class InternalGrammarBuilder : BuilderElements
         {
-
-
             #region Internal Methods
 
             /// <summary>

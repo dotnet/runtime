@@ -10,7 +10,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public class SpeakProgressEventArgs : PromptEventArgs
     {
-
         #region Constructors
 
         /// <summary>
@@ -27,7 +26,6 @@ namespace System.Speech.Synthesis
             _cWordLen = cWordLen;
         }
         #endregion
-
 
         #region public Properties
 
@@ -88,7 +86,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region Private Fields
 

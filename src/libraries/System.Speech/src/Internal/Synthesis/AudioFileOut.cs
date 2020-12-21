@@ -15,7 +15,6 @@ namespace System.Speech.Internal.Synthesis
     /// </summary>
     internal class AudioFileOut : AudioBase, IDisposable
     {
-
         #region Constructors
 
         /// <summary>
@@ -54,7 +53,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -181,7 +179,6 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-
         internal override void InjectEvent(TTSEvent ttsEvent)
         {
             if (!_aborted && _asyncDispatch != null)
@@ -203,7 +200,6 @@ namespace System.Speech.Internal.Synthesis
         #endregion
 
         #endregion
-
 
         #region Internal Fields
 
@@ -237,7 +233,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-
         #region Private Fields
 
         protected ManualResetEvent _evt = new(false);
@@ -253,7 +248,6 @@ namespace System.Speech.Internal.Synthesis
         protected int _bytesWritten;
 
         #endregion
-
 
         #region Private Fields
 

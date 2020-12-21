@@ -15,7 +15,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal static class SsmlParser
     {
-
         #region Internal Methods
 
         /// <summary>
@@ -78,7 +77,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Private Methods
 
@@ -414,7 +412,6 @@ namespace System.Speech.Internal.Synthesis
                                 }
                             }
                             break;
-
 
                         default:
                             isInvalidAttribute = true;
@@ -1839,7 +1836,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-
         #region Private Types
 
         private struct SsmlAttributes
@@ -1903,7 +1899,6 @@ namespace System.Speech.Internal.Synthesis
         private delegate void ParseElementDelegates(XmlReader reader, ISsmlParser engine, SsmlElement element, SsmlAttributes ssmlAttributes, bool fIgnore);
 
         #endregion
-
 
         #region Private Fields
 
@@ -1977,7 +1972,6 @@ namespace System.Speech.Internal.Synthesis
         {
             EmphasisBreak.Medium, EmphasisBreak.None, EmphasisBreak.Strong, EmphasisBreak.Weak, EmphasisBreak.ExtraStrong, EmphasisBreak.ExtraWeak
         };
-
 
         private static readonly string[] s_emphasisNames = new string[]
         {
@@ -2134,8 +2128,6 @@ namespace System.Speech.Internal.Synthesis
             VoiceGender.Female, VoiceGender.Male, VoiceGender.Neutral
         };
     }
-
-
 
     #region Internal Types
 

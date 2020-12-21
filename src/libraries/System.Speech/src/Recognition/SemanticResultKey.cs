@@ -15,7 +15,6 @@ namespace System.Speech.Recognition
     [DebuggerDisplay("{_semanticKey.DebugSummary}")]
     public class SemanticResultKey
     {
-
         #region Constructors
 
         /// <summary>
@@ -68,7 +67,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
         #region Public Methods
 
         /// <summary>
@@ -93,7 +91,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
 
         #region Private Fields
 

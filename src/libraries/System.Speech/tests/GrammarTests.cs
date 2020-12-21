@@ -97,7 +97,6 @@ namespace SampleSynthesisTests
             var grammar = new Grammar(new MemoryStream(Encoding.Unicode.GetBytes(xml)));
 
             grammar.Name = "test";
-
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No SAPI on Nano

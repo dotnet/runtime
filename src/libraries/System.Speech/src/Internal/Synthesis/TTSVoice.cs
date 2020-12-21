@@ -12,7 +12,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal class TTSVoice
     {
-
         #region Constructors
 
         internal TTSVoice(ITtsEngineProxy engine, VoiceInfo voiceId)
@@ -22,7 +21,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region public Methods
 
@@ -44,7 +42,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -151,7 +148,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region private Fields
 

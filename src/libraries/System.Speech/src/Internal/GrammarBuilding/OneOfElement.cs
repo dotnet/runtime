@@ -11,7 +11,6 @@ namespace System.Speech.Internal.GrammarBuilding
     [DebuggerDisplay("{DebugSummary}")]
     internal sealed class OneOfElement : BuilderElements
     {
-
         #region Constructors
 
         internal OneOfElement()
@@ -19,8 +18,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
-
 
         #region Internal Methods
 

@@ -19,7 +19,6 @@ namespace System.Speech.Recognition
 
     public class RecognizerInfo : IDisposable
     {
-
         #region Constructors
 
         private RecognizerInfo(ObjectToken token, CultureInfo culture)
@@ -107,14 +106,9 @@ namespace System.Speech.Recognition
             GC.SuppressFinalize(this);
         }
 
-
         #endregion
 
-
-
-
         #region public Properties
-
 
         /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo.Name"]/*' />
         public string Id
@@ -140,7 +134,6 @@ namespace System.Speech.Recognition
             get { return _culture; }
         }
 
-
         /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo.SupportedAudioFormats"]/*' />
         public ReadOnlyCollection<SpeechAudioFormatInfo> SupportedAudioFormats
         {
@@ -155,12 +148,9 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
         #region Internal Properties
 
         #endregion
-
-
 
         #region Private Fields
 

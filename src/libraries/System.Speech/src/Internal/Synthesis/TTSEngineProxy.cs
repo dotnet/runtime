@@ -29,13 +29,11 @@ namespace System.Speech.Internal.Synthesis
         internal abstract AlphabetType EngineAlphabet { get; }
         internal AlphabetConverter AlphabetConverter { get { return _alphabetConverter; } }
 
-
         protected AlphabetConverter _alphabetConverter;
     }
 
     internal class TtsProxySsml : ITtsEngineProxy
     {
-
         #region Constructors
 
         internal TtsProxySsml(TtsEngineSsml ssmlEngine, ITtsEngineSite site, int lcid)
@@ -46,7 +44,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -106,9 +103,7 @@ namespace System.Speech.Internal.Synthesis
         {
         }
 
-
         #endregion
-
 
         #region private Fields
 
@@ -123,7 +118,6 @@ namespace System.Speech.Internal.Synthesis
     /// </summary>
     internal class TtsProxySapi : ITtsEngineProxy
     {
-
         #region Constructors
 
         internal TtsProxySapi(ITtsEngine sapiEngine, IntPtr iSite, int lcid)
@@ -134,7 +128,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -214,9 +207,7 @@ namespace System.Speech.Internal.Synthesis
             Marshal.ReleaseComObject(_sapiEngine);
         }
 
-
         #endregion
-
 
         #region private Fields
 

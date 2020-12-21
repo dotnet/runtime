@@ -25,7 +25,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public sealed class SpeechSynthesizer : IDisposable
     {
-
         #region Constructors
 
         /// <summary>
@@ -53,7 +52,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region public Methods
 
@@ -424,7 +422,6 @@ namespace System.Speech.Synthesis
             VoiceSynthesizer.RemoveLexicon(uri);
         }
 
-
         #region public Events
 
         /// <summary>
@@ -522,7 +519,6 @@ namespace System.Speech.Synthesis
             }
         }
 
-
         #region WinFx
 
         /// <summary>
@@ -565,7 +561,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         /// <summary>
         /// TODOC
         /// </summary>
@@ -589,7 +584,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #endregion Events
-
 
         #region public Properties
 
@@ -658,11 +652,9 @@ namespace System.Speech.Synthesis
 
         #region Internal Properties
 
-
         #endregion
 
         #endregion
-
 
         #region Private Methods
 
@@ -724,7 +716,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         #region Private Properties
         private VoiceSynthesis VoiceSynthesizer
         {
@@ -743,7 +734,6 @@ namespace System.Speech.Synthesis
             }
         }
         #endregion
-
 
         #region Private Fields
 
@@ -765,8 +755,6 @@ namespace System.Speech.Synthesis
         #endregion Fields
     }
 
-
-
     #region Public Enums
 
     /// <summary>
@@ -787,7 +775,6 @@ namespace System.Speech.Synthesis
         /// </summary>
         Paused
     }
-
 
     /// <summary>
     /// TODOC

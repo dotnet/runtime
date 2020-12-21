@@ -16,7 +16,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
     internal sealed class Tag : IComparable<Tag>
     {
-
         #region Constructors
 
         internal Tag(Tag tag)
@@ -39,7 +38,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Internal Methods
 
         #region IComparable<SemanticTag> Interface implementation
@@ -57,7 +55,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Internal Fields
 

@@ -18,7 +18,6 @@ using Microsoft.VisualBasic;
 
 #pragma warning disable 56507 // check for null or empty strings
 
-
 namespace System.Speech.Internal.SrgsCompiler
 {
     /// <summary>
@@ -26,7 +25,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal class CustomGrammar
     {
-
         #region Constructors
 
         internal CustomGrammar()
@@ -34,7 +32,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region internal methods
 
@@ -216,7 +213,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Internal Types
 
         internal class CfgResource
@@ -226,7 +222,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Internal Fields
 
@@ -264,7 +259,6 @@ namespace System.Speech.Internal.SrgsCompiler
         internal StringBuilder _script = new();
 
         #endregion
-
 
         #region Private Methods
 
@@ -535,7 +529,6 @@ namespace System.Speech.Internal.SrgsCompiler
             // close the class
             sb.Append("\n}\n");
         }
-
 
         /// <summary>
         /// The VB assembly is loaded on the first call to the CSharpCodeProvider.

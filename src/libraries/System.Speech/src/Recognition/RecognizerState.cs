@@ -3,7 +3,6 @@
 
 using System;
 
-
 namespace System.Speech.Recognition
 {
     // Current recognizer state.

@@ -16,7 +16,6 @@ namespace System.Speech.Recognition
         // if the grammar object is a DictationGrammar, in which case the SAPI dictation methods are called.
         // The Uri is "grammar:dictation" for regular dictation and "grammar:dictation#spelling" for a spelling.
 
-
         #region Constructors
 
         // Load the generic dictation language model.
@@ -32,9 +31,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
-
-
 
         #region Public Methods
 
@@ -54,16 +50,9 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
-
-
         #region Internal Methods
 
-
         #endregion
-
-
-
 
         #region Private Fields
 

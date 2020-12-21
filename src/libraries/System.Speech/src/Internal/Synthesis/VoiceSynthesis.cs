@@ -20,14 +20,12 @@ using System.Speech.Synthesis.TtsEngine;
 using System.Text;
 using System.Threading;
 
-
 #pragma warning disable 56502       // Empty catch statements
 
 namespace System.Speech.Internal.Synthesis
 {
     internal sealed class VoiceSynthesis : IDisposable
     {
-
         #region Constructors
 
         internal VoiceSynthesis(WeakReference speechSynthesizer)
@@ -103,7 +101,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -604,9 +601,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-
         #endregion
-
 
         #region Internal Propperties
 
@@ -703,9 +698,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-
         #endregion
-
 
         #region Internal Fields
 
@@ -718,15 +711,11 @@ namespace System.Speech.Internal.Synthesis
         internal EventHandler<BookmarkReachedEventArgs> _bookmarkReached;
         internal EventHandler<VoiceChangeEventArgs> _voiceChange;
 
-
         internal EventHandler<PhonemeReachedEventArgs> _phonemeReached;
 
         internal EventHandler<VisemeReachedEventArgs> _visemeReached;
 
-
-
         #endregion
-
 
         #region Private Members
 
@@ -871,7 +860,6 @@ namespace System.Speech.Internal.Synthesis
                             break;
 
 #pragma warning restore 6500
-
 
                         default:
                             System.Diagnostics.Debug.Assert(false, "Unknown Action!");
@@ -1121,7 +1109,6 @@ namespace System.Speech.Internal.Synthesis
                 }
             }
         }
-
 
         /// <summary>
         /// This method is used to create the Engine voice and initialize
@@ -1590,7 +1577,6 @@ namespace System.Speech.Internal.Synthesis
             return voices;
         }
 
-
         #region Signal Client application
 
         private void SignalWorkerThread(object ignored)
@@ -1812,12 +1798,9 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-
         #endregion
 
-
         #region Private Properties
-
 
         private IntPtr ComEngineSite
         {
@@ -1834,7 +1817,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Private Types
 
@@ -1874,11 +1856,9 @@ namespace System.Speech.Internal.Synthesis
             internal Uri _audioFile;
         }
 
-
 #pragma warning restore 56524 // No instances of a class created in this module and should not be disposed
 
         #endregion
-
 
         #region Private Fields
 

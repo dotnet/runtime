@@ -10,8 +10,6 @@ namespace System.Speech.Internal.SrgsParser
         void CreateScript(IGrammar grammar, string rule, string method, RuleMethodScript type);
     }
 
-
-
     #region Internal Enums
 
     /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="RuleScope"]/*' />

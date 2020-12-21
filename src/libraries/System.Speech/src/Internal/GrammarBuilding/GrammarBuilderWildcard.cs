@@ -12,7 +12,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal sealed class GrammarBuilderWildcard : GrammarBuilderBase
     {
-
         #region Constructors
 
         /// <summary>
@@ -23,7 +22,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
 
         #region Public Methods
 
@@ -41,7 +39,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
 
         #region Internal Methods
 

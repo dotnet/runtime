@@ -14,7 +14,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal class TextFragmentEngine : ISsmlParser
     {
-
         #region Constructors
 
         internal TextFragmentEngine(SpeakInfo speakInfo, string ssmlText, bool pexml, ResourceLoader resourceLoader, List<LexiconEntry> lexicons)
@@ -26,7 +25,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -219,7 +217,6 @@ namespace System.Speech.Internal.Synthesis
         {
         }
 
-
         public bool BeginPromptEngineOutput(object voice)
         {
             return false;
@@ -294,7 +291,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-
         #region Private Methods
 
         private
@@ -311,9 +307,7 @@ namespace System.Speech.Internal.Synthesis
             fragmentState.Action = action;
         }
 
-
         #endregion
-
 
         #region Private Fields
 

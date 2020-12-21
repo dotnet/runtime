@@ -11,7 +11,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal abstract class GrammarBuilderBase
     {
-
         #region Internal Methods
 
         /// <summary>
@@ -100,7 +99,6 @@ namespace System.Speech.Internal.GrammarBuilding
         internal abstract string DebugSummary { get; }
 
         #endregion
-
 
         #region Private Fields
 

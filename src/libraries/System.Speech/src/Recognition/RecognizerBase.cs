@@ -26,7 +26,6 @@ namespace System.Speech.Recognition
     internal class RecognizerBase : IRecognizerInternal, IDisposable,
 ISpGrammarResourceLoader
     {
-
         #region Constructors
 
         /// <summary>
@@ -44,7 +43,6 @@ ISpGrammarResourceLoader
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -148,8 +146,6 @@ ISpGrammarResourceLoader
                 throw new OperationCanceledException(SR.Get(SRID.OperationAborted));
             }
         }
-
-
 
         // Unload grammars:
 
@@ -263,7 +259,6 @@ ISpGrammarResourceLoader
             }
         }
 
-
         void IRecognizerInternal.SetGrammarPriority(Grammar grammar, int priority)
         {
             Debug.Assert(grammar != null);
@@ -296,7 +291,6 @@ ISpGrammarResourceLoader
                 grammarData._grammarPriority = priority;
             }
         }
-
 
         // This method is used to get the Grammar object back from the id returned in the sapi recognition events.
         Grammar IRecognizerInternal.GetGrammarFromId(ulong id)
@@ -740,7 +734,6 @@ ISpGrammarResourceLoader
             }
         }
 
-
         // Controls whether the recognizer is paused after each recognition.
         // This is always true for the SpeechRecognitionEngine and is customizable {default false} for the SpeechRecognizer.
         internal bool PauseRecognizerOnRecognition
@@ -860,7 +853,6 @@ ISpGrammarResourceLoader
                     Marshal.ReleaseComObject(category);
                 }
 
-
                 UpdateAudioFormat(null);
                 _haveInputSource = true; // On success
             }
@@ -906,7 +898,6 @@ ISpGrammarResourceLoader
 
             SapiRecognizer.SetPropertyNum(settingName, updatedValue);
         }
-
 
         internal static Exception ExceptionFromSapiCreateRecognizerError(COMException e)
         {
@@ -981,8 +972,6 @@ ISpGrammarResourceLoader
         // In addition, the EventNotify class holds a lock to prevent events being fired more that one at a time.
         // It is required that Dispose also takes this lock.
 
-
-
         internal TimeSpan InitialSilenceTimeout
         {
             // lock to protect _initialSilenceTimeout and _isRecognizing
@@ -1026,7 +1015,6 @@ ISpGrammarResourceLoader
                 }
             }
         }
-
 
         internal RecognizerState State
         {
@@ -1109,7 +1097,6 @@ ISpGrammarResourceLoader
                 return _recognizerInfo;
             }
         }
-
 
         // Data on the audio stream the recognizer is processing
         /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.AudioStatus"]/*' />
@@ -1269,7 +1256,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-
         #region Internal Events
 
         // Internal event used to hook up the SpeechRecognitionEngine RecognizeCompleted event.
@@ -1389,12 +1375,10 @@ ISpGrammarResourceLoader
 
 #pragma warning restore 6504
 
-
         /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.RecognizerUpdateReached"]/*' />
         internal event EventHandler<RecognizerUpdateReachedEventArgs> RecognizerUpdateReached;
 
         #endregion
-
 
         #region Protected Methods
 
@@ -1456,7 +1440,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-
         #region Private Properties
 
         // Properties to get access to the underlying SAPI objects and to throw if disposed.
@@ -1478,9 +1461,7 @@ ISpGrammarResourceLoader
 
         #endregion
 
-
         #region Private Methods
-
 
         // Method called from LoadGrammar and LoadGrammarAsync to load the data from a Grammar into sapiGrammar.
         // Grammar is unchanged by this method.
@@ -1499,7 +1480,6 @@ ISpGrammarResourceLoader
                 }
             }
 
-
             // For dictation grammar, pass the Uri to SAPI.
             // For anything else, load it locally to figure out if it is a
             // strongly typed grammar.
@@ -1511,7 +1491,6 @@ ISpGrammarResourceLoader
             }
             LoadSapiGrammarFromCfg(sapiGrammar, grammar, baseUri, enabled, weight, priority);
         }
-
 
         // Actually load the uri into the sapiGrammar. This does not touch the Grammar object or InternalGrammarData.
         // This must be called on a new SapiGrammar that does not already have a grammar loaded {for SetSapiGrammarProperties}.
@@ -1554,8 +1533,6 @@ ISpGrammarResourceLoader
 
             SetSapiGrammarProperties(sapiGrammar, uri, ruleName, enabled, weight, priority);
         }
-
-
 
         #region Resource loader implementation
 
@@ -1666,7 +1643,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-
         // Actually load the stream into the sapiGrammar. This does not touch the Grammar object or InternalGrammarData.
         // This must be called on a new SapiGrammar that does not already have a grammar loaded {for SetSapiGrammarProperties}.
         private void LoadSapiGrammarFromCfg(SapiGrammar sapiGrammar, Grammar grammar, Uri baseUri, bool enabled, float weight, int priority)
@@ -1745,7 +1721,6 @@ ISpGrammarResourceLoader
 
             SetSapiGrammarProperties(sapiGrammar, null, grammar.RuleName, enabled, weight, priority);
         }
-
 
         // Update a new SAPI grammar with relevant enabled, weight and priority and activate the desired rule.
         // SetRuleState on the rule is always set to active - theSetGrammarState API is used to enable or disable the grammar.
@@ -1872,7 +1847,6 @@ ISpGrammarResourceLoader
                 loadGrammarCompletedHandler(this, new LoadGrammarCompletedEventArgs(grammar, grammar.LoadException, false, null));
             }
         }
-
 
         // Create a new sapi grammarId and SapiGrammar object.
         // The algorithm starts at '1' and increments.
@@ -2107,7 +2081,6 @@ ISpGrammarResourceLoader
             }
         }
 
-
         // Method called on background thread {from RecognizeAsync} to start recognition process.
 #pragma warning disable 56500 // Transferring exceptions to another thread
 
@@ -2147,7 +2120,6 @@ ISpGrammarResourceLoader
                     cancelled = true;
                 }
             }
-
 
             // Now start the recognizer there was no exception and we are not cancelled.
             if (exception == null && !cancelled)
@@ -2337,7 +2309,6 @@ ISpGrammarResourceLoader
             // Fire the SpeechDetected event.
             FireSpeechDetectedEvent(speechEvent.AudioPosition);
         }
-
 
         private void ProcessBookmarkEvent(SpeechEvent speechEvent)
         {
@@ -2674,7 +2645,6 @@ ISpGrammarResourceLoader
             return recoResult;
         }
 
-
         // Reset the AudioFormat property - needed when the format might have changed.
         // Also update the EventNotify so it can calculate event AudioPositions from byte offsets correctly.
         private void UpdateAudioFormat(SpeechAudioFormatInfo audioFormat)
@@ -2734,7 +2704,6 @@ ISpGrammarResourceLoader
             }
             return formatInfo;
         }
-
 
         // Convert a TimeSpan such as initialSilenceTimeout to a byte offset using the
         // curretn audio format. This should only needed if not using SAPI 5.3.
@@ -2810,7 +2779,6 @@ ISpGrammarResourceLoader
                 SapiContext.SetInterest(_eventInterest, _eventInterest);
             }
         }
-
 
         // Bookmark related methods:
         // A dictionary is used to map between userToken objects supplied to the RequestRecognizerUpdate event
@@ -3107,9 +3075,7 @@ ISpGrammarResourceLoader
 
         #endregion
 
-
         #region Private Fields
-
 
         private List<Grammar> _grammars;
         private ReadOnlyCollection<Grammar> _readOnlyGrammars;
@@ -3255,13 +3221,10 @@ ISpGrammarResourceLoader
         }
     }
 
-
-
     // Internal class used to encapsulate all the additional data the RecognizerBase needs about a Grammar.
     // This is stored in the Grammar.InternalData property.
     internal class InternalGrammarData
     {
-
         #region Constructors
 
         // Keep a copy of enabled, weight and priority because there's a race condition between reading the values from the Grammar
@@ -3278,7 +3241,6 @@ ISpGrammarResourceLoader
         }
 
         #endregion
-
 
         #region Internal Fields
 

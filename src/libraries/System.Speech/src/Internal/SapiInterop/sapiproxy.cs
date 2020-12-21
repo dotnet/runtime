@@ -11,7 +11,6 @@ namespace System.Speech.Internal.SapiInterop
 {
     internal abstract class SapiProxy : IDisposable
     {
-
         #region Constructors
 
         public virtual void Dispose()
@@ -20,7 +19,6 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -65,7 +63,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-
         #region Protected Fields
 
         protected ISpeechRecognizer _speechRecognizer;
@@ -74,13 +71,10 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-
         #region Protected Fields
 
         internal class PassThrough : SapiProxy, IDisposable
         {
-
-
             #region Constructors
 
             internal PassThrough(ISpRecognizer recognizer)
@@ -106,8 +100,6 @@ namespace System.Speech.Internal.SapiInterop
 
             #endregion
 
-
-
             #region Internal Methods
 
             internal override object Invoke(ObjectDelegate pfn)
@@ -121,8 +113,6 @@ namespace System.Speech.Internal.SapiInterop
             }
 
             #endregion
-
-
 
             #region Private Methods
 
@@ -140,8 +130,6 @@ namespace System.Speech.Internal.SapiInterop
 
         internal class MTAThread : SapiProxy, IDisposable
         {
-
-
             #region Constructors
 
             internal MTAThread(SapiRecognizer.RecognizerType type)
@@ -183,8 +171,6 @@ namespace System.Speech.Internal.SapiInterop
 
             #endregion
 
-
-
             #region Internal Methods
 
             internal override object Invoke(ObjectDelegate pfn)
@@ -220,8 +206,6 @@ namespace System.Speech.Internal.SapiInterop
             }
 
             #endregion
-
-
 
             #region Private Methods
 
@@ -266,8 +250,6 @@ namespace System.Speech.Internal.SapiInterop
             }
 
             #endregion
-
-
 
             #region Private Fields
 

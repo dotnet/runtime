@@ -57,7 +57,6 @@ namespace SampleSynthesisTests
 
                 RecognitionResult result = recognizer.EmulateRecognize("test");
                 Assert.NotNull(result);
-
             }
         }
     }

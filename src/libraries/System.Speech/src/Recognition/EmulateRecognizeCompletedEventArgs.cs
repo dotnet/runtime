@@ -9,7 +9,6 @@ namespace System.Speech.Recognition
     /// TODOC <_include file='doc\EmulateRecognizeCompletedEventArgs.uex' path='docs/doc[@for="EmulateRecognizeCompletedEventArgs"]/*' />
     public class EmulateRecognizeCompletedEventArgs : AsyncCompletedEventArgs
     {
-
         #region Constructors
 
         internal EmulateRecognizeCompletedEventArgs(RecognitionResult result, Exception error, bool cancelled, object userState)
@@ -20,7 +19,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
         #region Public Properties
 
         /// TODOC <_include file='doc\RecognizeCompletedEventArgs.uex' path='docs/doc[@for="RecognizeCompletedEventArgs.Result"]/*' />
@@ -30,7 +28,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
 
         #region Private Fields
 

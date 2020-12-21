@@ -20,7 +20,6 @@ namespace System.Speech.Internal.SrgsParser
 {
     internal class XmlParser : ISrgsParser
     {
-
         #region Constructors
 
         internal XmlParser(XmlReader reader, Uri uri)
@@ -60,7 +59,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-
         #region Internal Methods
 
         // Initializes the object from a stream containg SRGS in XML
@@ -69,7 +67,6 @@ namespace System.Speech.Internal.SrgsParser
             try
             {
                 bool isGrammarElementFound = false;
-
 
                 while (_reader.Read())
                 {
@@ -252,7 +249,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-
         #region Internal fields
 
         internal const string emptyNamespace = "";
@@ -264,7 +260,6 @@ namespace System.Speech.Internal.SrgsParser
         internal const string sapiNamespace = "http://schemas.microsoft.com/Speech/2002/06/SRGSExtensions";
 
         #endregion
-
 
         #region Private Type
 
@@ -282,7 +277,6 @@ namespace System.Speech.Internal.SrgsParser
             internal string _value;
         }
         #endregion
-
 
         #region Private Methods
 
@@ -1221,7 +1215,6 @@ namespace System.Speech.Internal.SrgsParser
             }
         }
 
-
         private void ParseScript(XmlReader reader, IGrammar grammar)
         {
             int line = _filename != null ? _xmlTextReader.LineNumber : -1;
@@ -1924,7 +1917,6 @@ namespace System.Speech.Internal.SrgsParser
         }
 
         #endregion
-
 
         #region Private Fields
 

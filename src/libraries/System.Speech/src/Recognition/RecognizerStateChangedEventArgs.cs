@@ -10,7 +10,6 @@ namespace System.Speech.Recognition
 
     public class StateChangedEventArgs : EventArgs
     {
-
         #region Constructors
 
         internal StateChangedEventArgs(RecognizerState recognizerState)
@@ -19,9 +18,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
-
-
 
         #region public Properties
 
@@ -32,9 +28,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
-
-
 
         #region Private Fields
 

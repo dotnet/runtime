@@ -11,7 +11,6 @@ namespace System.Speech.Internal
     /// </summary>
     internal class StringBlob
     {
-
         #region Constructors
 
         internal StringBlob()
@@ -46,7 +45,6 @@ namespace System.Speech.Internal
         }
 
         #endregion
-
 
         #region internal Methods
 
@@ -201,7 +199,6 @@ namespace System.Speech.Internal
         }
 
         #endregion
-
 
         #region Private Fields
 

@@ -7,7 +7,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal class PcmConverter
     {
-
         #region Internal Methods
 
         /// <summary>
@@ -124,7 +123,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-
         #region private Fields
 
         /// <summary>
@@ -148,7 +146,6 @@ namespace System.Speech.Internal.Synthesis
             }
             return pnBuff;
         }
-
 
         /// <summary>
         /// convert short array to float array
@@ -481,7 +478,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region private Fields
 

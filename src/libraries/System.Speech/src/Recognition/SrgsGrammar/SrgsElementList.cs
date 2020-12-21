@@ -13,7 +13,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [Serializable]
     internal class SrgsElementList : Collection<SrgsElement>
     {
-
         #region Interfaces Implementations
 
         protected override void InsertItem(int index, SrgsElement element)

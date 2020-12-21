@@ -12,8 +12,6 @@ using System.Xml;
 
 namespace System.Speech.Internal.Synthesis
 {
-
-
     #region Internal Types
 
     internal interface ISsmlParser

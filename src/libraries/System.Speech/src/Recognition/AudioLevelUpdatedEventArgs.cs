@@ -10,7 +10,6 @@ namespace System.Speech.Recognition
 
     public class AudioLevelUpdatedEventArgs : EventArgs
     {
-
         #region Constructors
 
         internal AudioLevelUpdatedEventArgs(int audioLevel)
@@ -19,9 +18,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
-
-
 
         #region public Properties
 
@@ -32,9 +28,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
-
-
 
         #region Private Fields
 

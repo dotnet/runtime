@@ -8,7 +8,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public class VisemeReachedEventArgs : PromptEventArgs
     {
-
         #region Constructors
 
         /// <summary>
@@ -30,7 +29,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region Public Properties
 
@@ -80,7 +78,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region Private Fields
 

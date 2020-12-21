@@ -10,7 +10,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public class PhonemeReachedEventArgs : PromptEventArgs
     {
-
         #region Constructors
 
         /// <summary>
@@ -32,7 +31,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region Public Properties
 
@@ -83,9 +81,7 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         #region Private Fields
-
 
         // Current phoneme being synthesized
         private string _currentPhoneme;

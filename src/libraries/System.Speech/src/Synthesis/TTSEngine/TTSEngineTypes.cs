@@ -15,8 +15,6 @@ using System.Diagnostics;
 
 namespace System.Speech.Synthesis.TtsEngine
 {
-
-
     #region Public Interface
 
     /// <summary>
@@ -245,8 +243,6 @@ namespace System.Speech.Synthesis.TtsEngine
 
     #endregion
 
-
-
     #region Public Types
 
     /// <summary>
@@ -370,7 +366,6 @@ namespace System.Speech.Synthesis.TtsEngine
             _prosody = prosody;
             _phoneme = phonemes;
         }
-
 
         /// TODOC
         public static bool operator ==(FragmentState state1, FragmentState state2)
@@ -683,8 +678,6 @@ namespace System.Speech.Synthesis.TtsEngine
     }
 
     #endregion
-
-
 
     #region Public Enums
 
@@ -1050,8 +1043,6 @@ namespace System.Speech.Synthesis.TtsEngine
 
     #endregion
 
-
-
     #region Internal Interface
 
     /// <summary>
@@ -1103,7 +1094,6 @@ namespace System.Speech.Synthesis.TtsEngine
             _langId = state.LangId;
             _emphasis = state.Emphasis;
             _duration = state.Duration;
-
 
             if (state.SayAs != null)
             {

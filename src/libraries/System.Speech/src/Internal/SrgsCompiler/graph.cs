@@ -23,7 +23,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
     internal class Graph : IEnumerable<State>
     {
-
         #region Internal Methods
 
         internal void Add(State state)
@@ -249,7 +248,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Internal Property
 
 #if DEBUG
@@ -276,7 +274,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #endif
         #endregion
-
 
         #region Private Methods
 
@@ -989,7 +986,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Private Types
 
 #if DEBUG
@@ -1021,7 +1017,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
 
         #endregion
-
 
         #region Private Fields
 

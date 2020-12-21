@@ -5,7 +5,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Speech.Internal.SrgsParser;
 
-
 namespace System.Speech.Internal.SrgsCompiler
 {
     /// <summary>
@@ -13,7 +12,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal sealed class PropertyTag : ParseElement, IPropertyTag
     {
-
         #region Constructors
 
         internal PropertyTag(ParseElement parent, Backend backend)
@@ -22,7 +20,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -100,7 +97,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #pragma warning restore 56507
 
         #endregion
-
 
         #region Private Fields
 

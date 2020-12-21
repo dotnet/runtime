@@ -10,7 +10,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal static class ConvertTextFrag
     {
-
         #region internal Methods
 
         internal static bool ToSapi(List<TextFragment> ssmlFrags, ref GCHandle sapiFragLast)
@@ -148,7 +147,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Private Methods
 
@@ -376,9 +374,7 @@ namespace System.Speech.Internal.Synthesis
             return rate;
         }
 
-
         #endregion
-
 
         #region Private Methods
 

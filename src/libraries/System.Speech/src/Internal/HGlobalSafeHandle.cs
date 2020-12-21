@@ -11,7 +11,6 @@ namespace System.Speech.Internal
     /// </summary>
     internal sealed class HGlobalSafeHandle : SafeHandle
     {
-
         #region Constructors
 
         internal HGlobalSafeHandle() : base(IntPtr.Zero, true)
@@ -32,7 +31,6 @@ namespace System.Speech.Internal
         }
 
         #endregion
-
 
         #region internal Methods
 
@@ -75,7 +73,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-
         #region Protected Methods
 
         /// <summary>
@@ -101,9 +98,7 @@ namespace System.Speech.Internal
             return false;
         }
 
-
         #endregion
-
 
         #region Private Fields
 

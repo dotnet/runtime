@@ -10,7 +10,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public class StateChangedEventArgs : EventArgs
     {
-
         #region Constructors
 
         /// <summary>
@@ -25,7 +24,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region public Properties
 
@@ -54,7 +52,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region Private Fields
 

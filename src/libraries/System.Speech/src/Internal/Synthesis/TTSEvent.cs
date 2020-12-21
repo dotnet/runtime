@@ -13,7 +13,6 @@ namespace System.Speech.Internal.Synthesis
     /// </summary>
     internal class TTSEvent
     {
-
         #region Constructors
 
         internal TTSEvent(TtsEventId id, Prompt prompt, Exception exception, VoiceInfo voice)
@@ -129,7 +128,6 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-
         internal string Phoneme
         {
             get
@@ -158,9 +156,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-
         #endregion
-
 
         #region private Fields
 
@@ -172,7 +168,6 @@ namespace System.Speech.Internal.Synthesis
         private uint _wParam;
         private IntPtr _lParam;
         private Prompt _prompt;
-
 
         //
         // Data for phoneme event

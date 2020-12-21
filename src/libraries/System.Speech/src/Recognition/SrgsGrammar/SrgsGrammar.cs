@@ -21,7 +21,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [Serializable]
     internal sealed class SrgsGrammar : IGrammar
     {
-
         #region Constructors
 
         /// <summary>
@@ -33,7 +32,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -251,7 +249,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             Validate();
         }
 
-
 #pragma warning disable 56507 // check for null or empty strings
 
         // Add a script to this grammar or to a rule
@@ -399,7 +396,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _globalTags = value;
             }
         }
-
 
         /// |summary|
         /// language
@@ -564,7 +560,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-
         #region Private Methods
 
         /// <summary>
@@ -659,7 +654,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
         #endregion
-
 
         #region Private Fields
 

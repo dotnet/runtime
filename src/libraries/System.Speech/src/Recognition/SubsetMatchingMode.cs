@@ -3,8 +3,6 @@
 
 namespace System.Speech.Recognition
 {
-
-
     #region Public Types
 
     /// <summary>

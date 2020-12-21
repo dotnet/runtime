@@ -13,7 +13,6 @@ namespace System.Speech.Internal.SrgsCompiler
     [StructLayout(LayoutKind.Sequential)]
     internal struct CfgScriptRef
     {
-
         #region Internal Fields
 
         // should be private but the order is absolutly key for marshalling

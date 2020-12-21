@@ -13,7 +13,6 @@ using System.Speech.Internal.Synthesis;
 using System.Speech.Internal.ObjectTokens;
 using System.Xml;
 
-
 namespace System.Speech.Synthesis
 {
     /// <summary>
@@ -23,7 +22,6 @@ namespace System.Speech.Synthesis
     [Serializable]
     public class VoiceInfo
     {
-
         #region Constructors
 
         /// <summary>
@@ -111,7 +109,6 @@ namespace System.Speech.Synthesis
             }
         }
 
-
         /// <summary>
         /// TODOC
         /// </summary>
@@ -150,9 +147,7 @@ namespace System.Speech.Synthesis
             _variant = voiceAlternate + 1;
         }
 
-
         #endregion
-
 
         #region public Methods
 
@@ -180,7 +175,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region public Properties
 
@@ -259,7 +253,6 @@ namespace System.Speech.Synthesis
             }
         }
 
-
         /// <summary>
         /// TODOC
         /// </summary>
@@ -272,7 +265,6 @@ namespace System.Speech.Synthesis
                 return _audioFormats;
             }
         }
-
 
         /// <summary>
         /// TODOC
@@ -291,7 +283,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         #region Internal Methods
 
         internal static bool ValidateGender(VoiceGender gender)
@@ -305,7 +296,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region Internal Property
 
@@ -359,7 +349,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         #region Private Fields
 
         private string _name;
@@ -389,7 +378,6 @@ namespace System.Speech.Synthesis
 
         [NonSerialized]
         private ReadOnlyDictionary<string, string> _attributes;
-
 
         [NonSerialized]
         private ReadOnlyCollection<SpeechAudioFormatInfo> _audioFormats;

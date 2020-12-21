@@ -57,7 +57,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-
         #region public Methods
 
         #region ISpStreamFormat interface implementation
@@ -147,7 +146,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-
         #region Private Types
 
         private const uint RIFF_MARKER = 0x46464952;
@@ -178,7 +176,6 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         #endregion
-
 
         #region Private Fields
 

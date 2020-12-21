@@ -50,7 +50,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-
         // must add the rule Id
         // _propInfo._ulId = (uint) ((ParseElement) parent).StartState._rule._iSerialize2;
         internal void AddSementicPropertyTag(CfgGrammar.CfgProperty propertyInfo)

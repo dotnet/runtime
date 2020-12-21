@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Speech.AudioFormat;
 using System.Speech.Internal;
 
-
 namespace System.Speech.Recognition
 {
     /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio"]/*' />
@@ -118,7 +117,6 @@ namespace System.Speech.Recognition
             return new RecognizedAudio(audioBytes, _audioFormat, _startTime + audioPosition, audioPosition, duration);
         }
 
-
         #region Private Methods
 
         private void WriteWaveHeader(StreamMarshaler sm)
@@ -156,10 +154,7 @@ namespace System.Speech.Recognition
             sm.WriteStream(_rawAudioData.Length);
         }
 
-
         #endregion
-
-
 
         #region Private Fields
 

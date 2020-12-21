@@ -9,7 +9,6 @@ using System.Speech.Internal.SrgsParser;
 using System.Text;
 using System.Xml;
 
-
 namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef"]/*' />
@@ -18,7 +17,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [DebuggerDisplay("{DebuggerDisplayString()}")]
     public class SrgsRuleRef : SrgsElement, IRuleRef
     {
-
         #region Constructors
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef2"]/*' />
@@ -43,7 +41,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             UriInit(uri, rule, semanticKey, null);
         }
 
-
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(Uri uri, string rule, string semanticKey, string parameters)
         {
@@ -52,7 +49,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             UriInit(uri, rule, semanticKey, parameters);
         }
 
-
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(SrgsRule rule)
         {
@@ -60,7 +56,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
             _uri = new Uri("#" + rule.Id, UriKind.Relative);
         }
-
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(SrgsRule rule, string semanticKey)
@@ -84,7 +79,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             _params = parameters;
         }
 
-
         /// <summary>
         /// Special private constructor for Special Rulerefs
         /// </summary>
@@ -102,7 +96,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         #endregion
-
 
         #region public Properties
 
@@ -162,7 +155,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         public static readonly SrgsRuleRef MnemonicSpelling = new(new Uri("grammar:dictation#spelling"));
 
         #endregion
-
 
         #region Internal methods
 
@@ -278,7 +270,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-
         #region Private Method
 
         /// <summary>
@@ -306,9 +297,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-
         #region Private Fields
-
 
         #region Private Enums
 

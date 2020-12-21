@@ -19,7 +19,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal sealed partial class Backend
     {
-
         #region Constructors
 
         internal Backend()
@@ -34,7 +33,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -822,7 +820,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Internal Property
 
         internal StringBlob Words
@@ -842,7 +839,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Private Methods
 
@@ -1263,7 +1259,7 @@ namespace System.Speech.Internal.SrgsCompiler
 #else
         private static
 #endif
- void AddArc(Arc arc)
+        void AddArc(Arc arc)
         {
 #if DEBUG
             arc.Backend = this;
@@ -1405,7 +1401,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-
         internal Collection<ScriptRef> ScriptRefs
         {
             set
@@ -1431,7 +1426,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Private Fields
 
@@ -1482,7 +1476,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private static char[] s_achZero = new char[] { '\0' };
         private int _cImportedRules;
-
 
         // List of cd /reference Rule->rule 'on'method-> .Net method
         private Collection<ScriptRef> _scriptRefs = new();

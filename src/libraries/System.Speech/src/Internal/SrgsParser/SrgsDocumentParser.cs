@@ -18,7 +18,6 @@ namespace System.Speech.Internal.SrgsParser
 {
     internal class SrgsDocumentParser : ISrgsParser
     {
-
         #region Constructors
 
         internal SrgsDocumentParser(SrgsGrammar grammar)
@@ -27,7 +26,6 @@ namespace System.Speech.Internal.SrgsParser
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -59,7 +57,6 @@ namespace System.Speech.Internal.SrgsParser
         }
 
         #endregion
-
 
         #region Private Methods
 
@@ -112,7 +109,6 @@ namespace System.Speech.Internal.SrgsParser
             string id = srgsRule.Id;
             bool hasScript = srgsRule.OnInit != null || srgsRule.OnParse != null || srgsRule.OnError != null || srgsRule.OnRecognition != null;
             IRule rule = grammar.CreateRule(id, srgsRule.Scope == SrgsRuleScope.Public ? RulePublic.True : RulePublic.False, srgsRule.Dynamic, hasScript);
-
 
             if (srgsRule.OnInit != null)
             {
@@ -459,7 +455,6 @@ namespace System.Speech.Internal.SrgsParser
         }
 
         #endregion
-
 
         #region Private Fields
 

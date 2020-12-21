@@ -13,7 +13,6 @@ namespace System.Speech.Internal.Synthesis
     /// </summary>
     internal abstract class AudioBase
     {
-
         #region Constructors
 
         /// <summary>
@@ -24,7 +23,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -295,7 +293,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-
         #region Internal Property
 
         internal abstract TimeSpan Duration { get; }
@@ -318,13 +315,11 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-
         #region Protected Property
 
         protected bool _aborted;
 
         #endregion
-
 
         #region Private Types
 
@@ -376,8 +371,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
     }
-
-
 
     #region Internal Methods
 

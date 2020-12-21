@@ -20,7 +20,6 @@ namespace System.Speech.Synthesis
     [Serializable]
     public class PromptBuilder
     {
-
         #region Constructors
 
         /// <summary>
@@ -50,7 +49,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region Public Methods
 
@@ -909,7 +907,6 @@ namespace System.Speech.Synthesis
             AppendSsml(new Uri(path, UriKind.Relative));
         }
 
-
         /// <summary>
         /// TODOC - Embed SSML into this document.
         /// </summary>
@@ -1011,9 +1008,7 @@ namespace System.Speech.Synthesis
             }
         }
 
-
         #endregion
-
 
         #region public Properties
 
@@ -1053,7 +1048,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         #region Internal Enums
 
         internal enum SsmlState
@@ -1069,11 +1063,9 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         #region Protected Methods
 
         #endregion
-
 
         #region Private Methods
 
@@ -1089,7 +1081,6 @@ namespace System.Speech.Synthesis
             writer.WriteAttributeString("version", "1.0");
             writer.WriteAttributeString("xmlns", _xmlnsDefault);
             writer.WriteAttributeString("xml", "lang", null, _culture.Name);
-
 
             bool noEndElement = false;
 
@@ -1205,7 +1196,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         #region Private Fields
 
         // Stack of elements for the SSML document
@@ -1222,9 +1212,7 @@ namespace System.Speech.Synthesis
 
         private const string _xmlnsDefault = @"http://www.w3.org/2001/10/synthesis";
 
-
         #endregion
-
 
         #region Private Type
 

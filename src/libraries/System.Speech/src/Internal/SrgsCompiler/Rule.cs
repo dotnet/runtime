@@ -16,7 +16,6 @@ namespace System.Speech.Internal.SrgsCompiler
     [DebuggerDisplay("{Name}")]
     internal sealed class Rule : ParseElementCollection, IRule, IComparable<Rule>
     {
-
         #region Constructors
 
         // Only used for the special transition
@@ -41,7 +40,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region internal Methods
 
@@ -183,7 +181,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-
         void IRule.CreateScript(IGrammar grammar, string rule, string method, RuleMethodScript type)
         {
             ((GrammarElement)grammar).CustomGrammar._scriptRefs.Add(new ScriptRef(rule, method, type));
@@ -200,7 +197,6 @@ namespace System.Speech.Internal.SrgsCompiler
                 return _id;
             }
         }
-
 
         string IRule.BaseClass
         {
@@ -238,9 +234,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-
         #endregion
-
 
         #region Private Methods
 
@@ -290,7 +284,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Internal Fields
 
         internal CfgRule _cfgRule;
@@ -317,7 +310,6 @@ namespace System.Speech.Internal.SrgsCompiler
         internal bool _fStaticRule;
 
         #endregion
-
 
         #region Private Fields
 

@@ -239,8 +239,6 @@ namespace System.Speech.Internal.SapiInterop
 
     #endregion
 
-
-
     #region Structure
 
 #pragma warning disable 649
@@ -449,7 +447,6 @@ namespace System.Speech.Internal.SapiInterop
         // TODO-hieung: Append SPRESULTHEADER to reflect new data on the managed side.
     }
 
-
     // Serialized phrase header from versions of SAPI prior to 5.2.
     [StructLayout(LayoutKind.Sequential)]
     internal class SPSERIALIZEDPHRASE_Sapi51
@@ -543,7 +540,6 @@ namespace System.Speech.Internal.SapiInterop
                     RecognizedWordUnit word = words[i];
                     elements[i] = new SPPHRASEELEMENT
                     {
-
                         // diplay + confidence
                         bDisplayAttributes = RecognizedWordUnit.DisplayAttributesToSapiAttributes(word.DisplayAttributes == DisplayAttributes.None ? DisplayAttributes.OneTrailingSpace : word.DisplayAttributes),
                         SREngineConfidence = word.Confidence,
@@ -787,8 +783,6 @@ namespace System.Speech.Internal.SapiInterop
 #pragma warning restore 649
 
     #endregion
-
-
 
     #region Interface
 
@@ -1154,9 +1148,7 @@ namespace System.Speech.Internal.SapiInterop
 
     #endregion
 
-
     #region Class
-
 
     [ComImport, Guid("3BEE4890-4FE9-4A37-8C1E-5E7E12791C1F")]
     internal class SpSharedRecognizer { }

@@ -12,7 +12,6 @@ namespace System.Speech.Internal.SapiInterop
 {
     internal class SapiRecognizer : IDisposable
     {
-
         #region Constructors
 
         internal SapiRecognizer(RecognizerType type)
@@ -34,7 +33,6 @@ namespace System.Speech.Internal.SapiInterop
             {
                 throw RecognizerBase.ExceptionFromSapiCreateRecognizerError(e);
             }
-
 
             // Back out if the recognizer we have SAPI 5.1
             if (!IsSapi53 && System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
@@ -60,7 +58,6 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -191,7 +188,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-
         #region Internal Types
 
         internal enum RecognizerType
@@ -201,7 +197,6 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         #endregion
-
 
         #region Private Methods
 
@@ -258,7 +253,6 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         #endregion
-
 
         #region Private Fields
 

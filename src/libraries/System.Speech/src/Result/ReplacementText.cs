@@ -25,7 +25,6 @@ namespace System.Speech.Recognition
 
     public class ReplacementText
     {
-
         #region Constructors
 
         internal ReplacementText(DisplayAttributes displayAttributes, string text, int wordIndex, int countOfWords)
@@ -37,7 +36,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
 
         #region Public Properties
 
@@ -86,7 +84,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
 
         #region Private Fields
 

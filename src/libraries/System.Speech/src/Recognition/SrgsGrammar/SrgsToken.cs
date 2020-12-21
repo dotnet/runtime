@@ -17,7 +17,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsToken : SrgsElement, IToken
     {
-
         #region Constructors
 
         /// TODOC <_include file='doc\Token.uex' path='docs/doc[@for="Token.Token2"]/*' />
@@ -28,7 +27,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         #endregion
-
 
         #region public Properties
 
@@ -82,7 +80,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         #endregion
-
 
         #region Internal methods
 
@@ -168,7 +165,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         #endregion
-
 
         #region Private Fields
 

@@ -7,14 +7,10 @@ using System.Net;
 
 using System.Speech.Synthesis;
 
-
 namespace System.Speech.Internal
 {
-
-
     internal class ResourceLoader
     {
-
         #region Internal Methods
 
         /// <summary>
@@ -81,9 +77,7 @@ namespace System.Speech.Internal
             return LoadFile(uri, out mediaTypeUnused, out redirectedUri, out localPath);
         }
 
-
         #endregion
-
 
         #region Private Methods
 
@@ -124,9 +118,7 @@ namespace System.Speech.Internal
 
         #endregion
 
-
         #region Private Fields
-
 
         #endregion
     }

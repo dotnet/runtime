@@ -11,7 +11,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal struct CfgRule
     {
-
         #region Constructors
 
         internal CfgRule(int id, int nameOffset, uint flag)
@@ -206,7 +205,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Internal Fields
 
         // should be private but the order is absolutly key for marshalling
@@ -218,8 +216,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
     }
-
-
 
     #region Internal Enumeration
 

@@ -12,7 +12,6 @@ namespace System.Speech.Internal
 {
     internal static class SapiAttributeParser
     {
-
         #region Internal Methods
 
         internal static CultureInfo GetCultureInfoFromLanguageString(string valueString)
@@ -35,7 +34,6 @@ namespace System.Speech.Internal
 
             return null;
         }
-
 
         internal static List<SpeechAudioFormatInfo> GetAudioFormatsFromString(string valueString)
         {

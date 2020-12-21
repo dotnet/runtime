@@ -8,7 +8,6 @@ using System.Speech.Internal.SrgsParser;
 using System.Text;
 using System.Xml;
 
-
 namespace System.Speech.Recognition.SrgsGrammar
 {
     /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag"]/*' />
@@ -16,7 +15,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsSemanticInterpretationTag : SrgsElement, ISemanticTag
     {
-
         #region Constructors
 
         /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.Tag1"]/*' />
@@ -35,7 +33,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         #endregion
-
 
         #region public Properties
 
@@ -57,7 +54,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 #pragma warning restore 56507
 
         #endregion
-
 
         #region Internal Methods
 
@@ -108,7 +104,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         #endregion
-
 
         #region Private Fields
 

@@ -19,7 +19,6 @@ namespace System.Speech.Internal.ObjectTokens
     [DebuggerDisplay("{Name}")]
     internal class RegistryDataKey : ISpDataKey, IEnumerable<RegistryDataKey>, IDisposable
     {
-
         #region Constructors
 
         protected RegistryDataKey(string fullPath, SafeRegistryHandle regHandle)
@@ -153,7 +152,6 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         #endregion
-
 
         #region internal Methods
 
@@ -323,7 +321,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-
         /// <summary>
         /// Full path and name for the key
         /// </summary>
@@ -485,7 +482,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-
         #region Protected Methods
 
         /// <summary>
@@ -503,7 +499,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-
         #region Internal Fields
 
         internal string _sKeyId;
@@ -513,7 +508,6 @@ namespace System.Speech.Internal.ObjectTokens
         internal bool _disposeSapiKey;
 
         #endregion
-
 
         #region Private Methods
 
@@ -570,7 +564,6 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         #endregion
-
 
         #region private Types
 

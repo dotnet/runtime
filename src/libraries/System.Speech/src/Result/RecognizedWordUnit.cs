@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Speech.Internal;
 
-
 namespace System.Speech.Recognition
 {
     /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedWordUnit"]/*' />
@@ -89,7 +88,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
         #region Internal Methods
 
         internal static byte DisplayAttributesToSapiAttributes(DisplayAttributes displayAttributes)
@@ -104,14 +102,12 @@ namespace System.Speech.Recognition
 
         #endregion
 
-
         #region Internal Fields
 
         internal TimeSpan _audioPosition;
         internal TimeSpan _audioDuration;
 
         #endregion
-
 
         #region Private Fields
 

@@ -9,7 +9,6 @@ using STATSTG = System.Runtime.InteropServices.ComTypes.STATSTG;
 
 using System.Speech.AudioFormat;
 
-
 namespace System.Speech.Internal.SapiInterop
 {
     #region Enum
@@ -60,9 +59,7 @@ namespace System.Speech.Internal.SapiInterop
         SPERR_CFG_INVALID_DATA = -2147200890         // 0x80045086
     }
 
-
     #endregion Enum
-
 
     #region SAPI constants
 
@@ -159,7 +156,6 @@ namespace System.Speech.Internal.SapiInterop
         [PreserveSig]
         int GetObjectToken(out ISpObjectToken ppToken);
     };
-
 
     [ComImport, Guid("14056581-E16C-11D2-BB90-00C04F8EE6C0"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpDataKey
@@ -274,14 +270,12 @@ namespace System.Speech.Internal.SapiInterop
         void GetCount(out uint pCount);
     }
 
-
     [ComImport, Guid("B2745EFD-42CE-48CA-81F1-A96E02538A90"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface ISpPhoneticAlphabetSelection
     {
         void IsAlphabetUPS([MarshalAs(UnmanagedType.Bool)] out bool pfIsUPS);
         void SetAlphabetToUPS([MarshalAs(UnmanagedType.Bool)] bool fForceUPS);
     }
-
 
     [ComImport, Guid("EF411752-3736-4CB4-9C8C-8EF4CCB58EFE")]
     internal class SpObjectToken { }

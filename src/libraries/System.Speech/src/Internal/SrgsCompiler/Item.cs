@@ -11,7 +11,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal sealed class Item : ParseElementCollection, IItem
     {
-
         #region Constructors
 
         internal Item(Backend backend, Rule rule, int minRepeat, int maxRepeat, float repeatProbability, float weigth)
@@ -24,7 +23,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Intenal Method
 
@@ -142,7 +140,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Private Methods
 
         private void AddEpsilonTransition(State start, State end, float weigth)
@@ -153,7 +150,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Private Fields
 

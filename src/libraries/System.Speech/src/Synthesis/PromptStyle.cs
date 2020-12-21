@@ -11,7 +11,6 @@ namespace System.Speech.Synthesis
     [Serializable]
     public class PromptStyle
     {
-
         #region Constructors
 
         /// <summary>
@@ -49,7 +48,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region public Properties
 
@@ -105,7 +103,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         #region Private Fields
 
         private PromptRate _rate = PromptRate.NotSet;
@@ -114,8 +111,6 @@ namespace System.Speech.Synthesis
 
         #endregion
     }
-
-
 
     #region Public Enums
 

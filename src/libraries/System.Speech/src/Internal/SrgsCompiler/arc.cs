@@ -21,7 +21,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
     internal class Arc : IComparer<Arc>, IComparable<Arc>
     {
-
         #region Constructors
 
         internal Arc()
@@ -103,7 +102,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region internal Methods
 
@@ -539,7 +537,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-
 #if DEBUG
 
         public override string ToString()
@@ -766,7 +763,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
         #endregion
 
-
         #region private Methods
 
 #if DEBUG
@@ -845,7 +841,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Private Fields
 
         // Transition start state
@@ -888,8 +883,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
     }
-
-
 
     #region private Methods
 

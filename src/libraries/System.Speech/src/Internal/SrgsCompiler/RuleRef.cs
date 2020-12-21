@@ -15,7 +15,6 @@ namespace System.Speech.Internal.SrgsCompiler
 {
     internal class RuleRef : ParseElement, IRuleRef
     {
-
         #region Constructors
 
         /// <summary>
@@ -99,7 +98,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Internal Method
 
         /// <summary>
@@ -148,7 +146,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Private Methods
 
         /// <summary>
@@ -178,7 +175,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region internal Properties
 
         internal static IRuleRef Null
@@ -206,9 +202,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Private Fields
-
 
         #region Private Enums
 

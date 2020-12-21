@@ -15,7 +15,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal class TextWriterEngine : ISsmlParser
     {
-
         #region Constructors
 
         internal TextWriterEngine(XmlTextWriter writer, CultureInfo culture)
@@ -25,7 +24,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -295,7 +293,6 @@ namespace System.Speech.Internal.Synthesis
         //this is not a public API!!!
 #pragma warning disable 56507
 
-
         private bool ProcessPromptEngine(string element, params KeyValuePair<string, string>[] attributes)
         {
             _writer.WriteStartElement(_pexmlPrefix, element, xmlNamespacePrompt);
@@ -381,7 +378,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Private Fields
 

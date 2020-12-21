@@ -15,7 +15,6 @@ namespace System.Speech.Internal.SrgsCompiler
 {
     internal class SrgsElementCompilerFactory : IElementFactory
     {
-
         #region Constructors
 
         internal SrgsElementCompilerFactory(Backend backend, CustomGrammar cg)
@@ -25,7 +24,6 @@ namespace System.Speech.Internal.SrgsCompiler
             _grammar = new GrammarElement(backend, cg);
         }
         #endregion
-
 
         #region Internal Methods
 
@@ -145,7 +143,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-
         void IElementFactory.AddItem(IOneOf oneOf, IItem item)
         {
         }
@@ -192,7 +189,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
         #endregion
-
 
         #region Private Methods
 
@@ -362,7 +358,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Private Fields
 
         // Callers param
@@ -370,7 +365,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         // Grammar
         private GrammarElement _grammar;
-
 
         // Callers param
         private CustomGrammar _cg;

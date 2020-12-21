@@ -11,7 +11,6 @@ namespace System.Speech.Internal.SrgsCompiler
 {
     internal class GrammarElement : ParseElement, IGrammar
     {
-
         #region Constructors
 
         internal GrammarElement(Backend backend, CustomGrammar cg)
@@ -22,7 +21,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Internal Method
 
@@ -101,7 +99,6 @@ namespace System.Speech.Internal.SrgsCompiler
                 XmlParser.ThrowSrgsException(SRID.InvalidSemanticProcessingType);
             }
         }
-
 
         internal void AddScript(string name, string code)
         {
@@ -217,7 +214,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-
         /// |summary|
         /// language
         /// |/summary|
@@ -314,7 +310,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Private Methods
 
         /// <summary>
@@ -363,7 +358,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-
         #region Private Fields
 
         private Backend _backend;
@@ -371,7 +365,6 @@ namespace System.Speech.Internal.SrgsCompiler
         // Collection of referenced, but undefined, rules
         private List<Rule> _undefRules = new();
         private CustomGrammar _cg;
-
 
         private string _sRoot;
 

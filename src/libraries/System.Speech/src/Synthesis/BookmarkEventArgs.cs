@@ -10,7 +10,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public class BookmarkReachedEventArgs : PromptEventArgs
     {
-
         #region Constructors
 
         /// <summary>
@@ -26,9 +25,7 @@ namespace System.Speech.Synthesis
             _audioPosition = audioPosition;
         }
 
-
         #endregion
-
 
         #region public Properties
 
@@ -56,9 +53,7 @@ namespace System.Speech.Synthesis
             }
         }
 
-
         #endregion
-
 
         #region Private Fields
 

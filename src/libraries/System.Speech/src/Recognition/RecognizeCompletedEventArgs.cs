@@ -10,7 +10,6 @@ namespace System.Speech.Recognition
 
     public class RecognizeCompletedEventArgs : AsyncCompletedEventArgs
     {
-
         #region Constructors
 
         internal RecognizeCompletedEventArgs(RecognitionResult result, bool initialSilenceTimeout, bool babbleTimeout,
@@ -26,8 +25,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
-
 
         #region Public Properties
 
@@ -62,8 +59,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
-
 
         #region Private Fields
 

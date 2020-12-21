@@ -12,7 +12,6 @@ namespace System.Speech.Internal.SapiInterop
 {
     internal class SapiGrammar : IDisposable
     {
-
         #region Constructors
 
         internal SapiGrammar(ISpRecoGrammar sapiGrammar, SapiProxy thread)
@@ -32,7 +31,6 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -112,7 +110,6 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         #endregion
-
 
         #region Private Methods
 

@@ -25,7 +25,6 @@ namespace System.Speech.Recognition
     [DebuggerDisplay("{Text}")]
     public class RecognizedPhrase
     {
-
         #region Constructors
 
         internal RecognizedPhrase()
@@ -33,7 +32,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
 
         #region Public Methods
 
@@ -85,7 +83,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
 
         #region Public Properties
 
@@ -340,7 +337,6 @@ namespace System.Speech.Recognition
         }
         #endregion
 
-
         #region Internal Methods
 
         internal static SPSERIALIZEDPHRASE GetPhraseHeader(IntPtr phraseBuffer, uint expectedPhraseSize, bool isSapi53Header)
@@ -421,7 +417,6 @@ namespace System.Speech.Recognition
         internal bool _hasIPAPronunciation;
 
         #endregion
-
 
         #region Private Methods
 
@@ -539,7 +534,6 @@ namespace System.Speech.Recognition
                     InsertSemanticValueToDictionary(semanticValue, property._name, property._value, semanticTag, ref dupItems);
                 }
             }
-
 
             Exception exceptionThrown = null;
 
@@ -828,7 +822,6 @@ namespace System.Speech.Recognition
             }
         }
 
-
         private static bool TryExecuteOnParse(RuleNode ruleRef, SemanticValue value, IList<RecognizedWordUnit> words, out object newValue, ref Exception exceptionThrown)
         {
             newValue = null;
@@ -1011,7 +1004,6 @@ namespace System.Speech.Recognition
             return resultValue;
         }
 
-
         private static void GetRuleInstance(Grammar grammar, string rule, string method, out MethodInfo onParse, out Grammar ruleInstance)
         {
             Type grammarType = grammar.GetType();
@@ -1102,7 +1094,6 @@ namespace System.Speech.Recognition
                         propertyNode.SetAttribute("confidence", semanticsNode[kv.Key].Confidence.ToString("f", nfo));
                         alternateNode.AppendChild(propertyNode);
 
-
                         if (kv.Value.Count > 0)
                         {
                             if (kv.Value.Value != null)
@@ -1139,7 +1130,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
 
         #region Private Types
 
@@ -1214,7 +1204,6 @@ namespace System.Speech.Recognition
             internal RuleNode _child;
         }
 
-
         [DebuggerDisplay("Name={_name} node={_ruleNode._rule} value={_value != null && _value.Value != null ? _value.Value.ToString() : \"\"}")]
         private struct ResultPropertiesRef
         {
@@ -1231,7 +1220,6 @@ namespace System.Speech.Recognition
         }
 
         #endregion
-
 
         #region Private Fields
 

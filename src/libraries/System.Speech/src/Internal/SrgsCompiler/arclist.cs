@@ -16,7 +16,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
     internal class ArcList : RedBackList
     {
-
         #region Internal Methods
 
         /// <summary>
@@ -51,7 +50,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
 
         #region Private Members
 

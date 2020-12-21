@@ -14,7 +14,6 @@ namespace System.Speech.Internal.ObjectTokens
     /// </summary>
     internal static class SAPICategories
     {
-
         #region internal Methods
 
         internal static ObjectToken DefaultToken(string category)
@@ -94,7 +93,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-
         private const string SpeechRegistryKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\";
 
         internal const string CurrentUserVoices = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\Voices";
@@ -107,7 +105,6 @@ namespace System.Speech.Internal.ObjectTokens
         internal const string AudioIn = SpeechRegistryKey + "AudioInput";
 
         #endregion
-
 
         #region Private Methods
 
@@ -362,7 +359,6 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         #endregion
-
 
         #region private Fields
 

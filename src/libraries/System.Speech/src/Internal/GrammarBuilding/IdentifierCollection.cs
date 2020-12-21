@@ -10,7 +10,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal class IdentifierCollection
     {
-
         #region Constructors
 
         /// <summary>
@@ -23,8 +22,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
-
 
         #region Internal Methods
 
@@ -55,8 +52,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
-
 
         #region Protected Fields
 

@@ -11,7 +11,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public abstract class PromptEventArgs : AsyncCompletedEventArgs
     {
-
         #region Constructors
 
         /// <summary>
@@ -24,7 +23,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
 
         #region public Properties
 
@@ -44,7 +42,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-
         #region Private Fields
 
         private Prompt _prompt;
@@ -56,7 +53,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public class SpeakStartedEventArgs : PromptEventArgs
     {
-
         #region Constructors
 
         /// <summary>

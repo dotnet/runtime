@@ -25,8 +25,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
         }
 
-
-
         #region Internal methods
 
         // Write the XML fragment describing the object.
@@ -57,7 +55,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-
         #region Protected Properties
 
         //TODOC Add Documentation
@@ -70,7 +67,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         #endregion
-
 
         #region Private Types
 

@@ -8,7 +8,6 @@ namespace System.Speech.Recognition
     // Interface that all recognizers must implement in order to connect to Grammar and RecognitionResult.
     internal interface IRecognizerInternal
     {
-
         #region Internal Methods
 
         void SetGrammarState(Grammar grammar, bool enabled);

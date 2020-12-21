@@ -14,7 +14,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal sealed class SpeakInfo
     {
-
         #region Constructors
 
         /// <summary>
@@ -40,7 +39,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -70,7 +68,6 @@ namespace System.Speech.Internal.Synthesis
             _lastSeg.AddFrag(textFragment);
         }
 
-
         internal SpeechSeg RemoveFirst()
         {
             SpeechSeg speechSeg = null;
@@ -84,7 +81,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-
         #region Private Method
 
         private void AddNewSeg(TTSVoice pCurrVoice, AudioData audio)
@@ -96,7 +92,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region private Fields
 
@@ -117,8 +112,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
     }
-
-
 
     #region Private Types
 

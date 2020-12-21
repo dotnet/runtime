@@ -16,7 +16,6 @@ namespace System.Speech.Internal.GrammarBuilding
     [DebuggerDisplay("{DebugSummary}")]
     internal abstract class BuilderElements : GrammarBuilderBase
     {
-
         #region Constructors
 
         /// <summary>
@@ -27,8 +26,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
-
 
         #region Public Methods
 
@@ -65,7 +62,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -136,7 +132,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -240,7 +235,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #endregion
 
-
         #region Internal Properties
 
         internal List<GrammarBuilderBase> Items
@@ -270,7 +264,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
 
         #region Private Method
 
@@ -314,7 +307,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
 
         #region Private Fields
 

@@ -15,7 +15,6 @@ namespace System.Speech.Internal.Synthesis
     /// </summary>
     internal class AudioDeviceOut : AudioBase, IDisposable
     {
-
         #region Constructors
 
         /// <summary>
@@ -56,7 +55,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Internal Methods
 
@@ -191,7 +189,6 @@ namespace System.Speech.Internal.Synthesis
                 }
             }
         }
-
 
         /// <summary>
         /// Pause the playback of a sound.
@@ -339,7 +336,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-
         #region Internal Fields
 
         internal override TimeSpan Duration
@@ -355,7 +351,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Private Methods
 
@@ -451,7 +446,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-
         #region Private Types
 
         /// <summary>
@@ -497,7 +491,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
 
         #region Private Fields
 

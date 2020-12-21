@@ -61,7 +61,6 @@ namespace System.Speech.Internal
             }
         }
 
-
         public void PostOperation(Delegate callback, params object[] parameters)
         {
             AddItem(new AsyncWorkItem(callback, parameters));

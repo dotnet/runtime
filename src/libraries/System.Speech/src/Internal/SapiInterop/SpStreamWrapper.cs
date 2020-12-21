@@ -9,14 +9,12 @@ using System.Speech.AudioFormat;
 using System.Speech.Internal.SapiInterop;
 using System.Speech.Internal.Synthesis;
 
-
 using STATSTG = System.Runtime.InteropServices.ComTypes.STATSTG;
 
 namespace System.Speech.Internal.SapiInterop
 {
     internal class SpStreamWrapper : IStream, IDisposable
     {
-
         #region Constructors
 
         internal SpStreamWrapper(Stream stream)
@@ -35,7 +33,6 @@ namespace System.Speech.Internal.SapiInterop
         }
 
         #endregion
-
 
         #region public Methods
 
@@ -118,7 +115,6 @@ namespace System.Speech.Internal.SapiInterop
         #endregion
 
         #endregion
-
 
         #region Private Fields
 
