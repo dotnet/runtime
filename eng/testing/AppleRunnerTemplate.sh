@@ -56,7 +56,15 @@ else
     export XHARNESS_OUT="$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output"
 fi
 
-dotnet xharness ios test  \
+if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+    # When running in CI, we only have the .NET runtime available
+    # We need to call the XHarness CLI DLL directly via dotnet exec
+    HARNESS_RUNNER="dotnet exec $XHARNESS_CLI_PATH"
+else
+    HARNESS_RUNNER="dotnet xharness"
+fi
+
+$HARNESS_RUNNER ios test  \
     --targets="$TARGET"   \
     --app="$APP_BUNDLE"   \
     --xcode="$XCODE_PATH" \
