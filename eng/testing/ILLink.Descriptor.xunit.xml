@@ -6,5 +6,9 @@
     <type fullname="Xunit.Sdk.TestFrameworkProxy">
       <method signature="System.Void .ctor(System.Object,System.Object,System.Object)" />
     </type>
+    <type fullname="Xunit.Sdk.FactDiscoverer" />
+  </assembly>
+  <assembly fullname="xunit.core">
+    <namespace fullname="Xunit" />
   </assembly>
 </linker>
