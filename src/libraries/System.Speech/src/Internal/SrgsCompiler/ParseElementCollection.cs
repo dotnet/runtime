@@ -3,7 +3,6 @@
 
 #region Using directives
 
-
 #endregion
 
 namespace System.Speech.Internal.SrgsCompiler
