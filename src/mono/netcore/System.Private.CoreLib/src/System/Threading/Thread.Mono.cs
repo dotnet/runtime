@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -254,6 +255,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void Start()
         {
+            _executionContext = ExecutionContext.Capture();
             StartInternal(this);
         }
 
@@ -264,16 +266,62 @@ namespace System.Threading
                 throw new InvalidOperationException(SR.InvalidOperation_ThreadWrongThreadStart);
 
             m_start_arg = parameter;
+            Start();
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        internal void UnsafeStart()
+        {
             StartInternal(this);
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        internal void UnsafeStart(object parameter)
+        {
+            Debug.Assert(m_start is ThreadStart);
+
+            m_start_arg = parameter;
+            UnsafeStart();
         }
 
         // Called from the runtime
         internal void StartCallback()
         {
+            ExecutionContext? context = _executionContext;
+            _executionContext = null;
+            if (context != null && !context.IsDefault)
+            {
+                ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
+            }
+            else
+            {
+                StartCallbackWorker();
+            }
+        }
+
+        private static readonly ContextCallback s_threadStartContextCallback = new ContextCallback(StartCallback_Context);
+
+        private static void StartCallback_Context(object? state)
+        {
+            Debug.Assert(state is Thread);
+            ((Thread)state).StartCallbackWorker();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // otherwise an unnecessary long-lived stack frame in many threads
+        private void StartCallbackWorker()
+        {
             if (culture != null)
-                CurrentCulture = culture;
+            {
+                CultureInfo.CurrentCulture = culture;
+                culture = null;
+            }
+
             if (ui_culture != null)
-                CurrentUICulture = ui_culture;
+            {
+                CultureInfo.CurrentUICulture = ui_culture;
+                ui_culture = null;
+            }
+
             if (m_start is ThreadStart del)
             {
                 m_start = null;
@@ -281,6 +329,7 @@ namespace System.Threading
             }
             else
             {
+                Debug.Assert(m_start is ParameterizedThreadStart);
                 var pdel = (ParameterizedThreadStart)m_start!;
                 object? arg = m_start_arg;
                 m_start = null;

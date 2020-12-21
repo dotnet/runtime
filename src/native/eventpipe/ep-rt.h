@@ -1,10 +1,9 @@
 #ifndef __EVENTPIPE_RT_H__
 #define __EVENTPIPE_RT_H__
 
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #include "ep-types.h"
 
 #define EP_ARRAY_SIZE(expr) ep_rt_redefine
@@ -870,7 +869,9 @@ _ep_on_config_lock_exit_ ##section_name: \
 #define ep_raise_error_if_nok_holding_lock(expr, section_name) do { if (EP_UNLIKELY(!(expr))) { _no_config_error_ ##section_name = false; goto _ep_on_config_lock_exit_ ##section_name; } } while (0)
 #define ep_raise_error_holding_lock(section_name) do { _no_config_error_ ##section_name = false; goto _ep_on_config_lock_exit_ ##section_name; } while (0)
 
+#ifndef EP_NO_RT_DEPENDENCY
 #include EP_RT_H
+#endif
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_H__ */

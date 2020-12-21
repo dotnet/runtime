@@ -4,7 +4,6 @@
   <PropertyGroup>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,21 +14,14 @@
     <!-- LINUX -->
 
     <!-- OSX -->
-    <SingleFileHostIncludeFilename Include="libSystem.Native.dylib" />
-    <SingleFileHostIncludeFilename Include="libSystem.Net.Security.Native.dylib" />
-    <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.Apple.dylib" />
-    <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" />
     
     <!-- Windows -->
     <SingleFileHostIncludeFilename Include="mscordaccore.dll" />
   </ItemGroup>
 
   <!--
-    Platform manifest needs to include all System*Native items from 3.1 release. This itemgroup adds
-    them explicitly, to fill the gap that appeared when the names of these libraries were changed
-    in 5.0 to conform to a specific Android naming convention. The library name change was a fix
-    for https://github.com/dotnet/runtime/issues/33118. For more details of the issue and fix see
-    https://github.com/dotnet/runtime/issues/33450.
+    Platform manifest needs to include all native shims from previous releases.
+    This itemgroup adds them explicitly.
   -->
   <ItemGroup>
     <_pastShimFiles Include="System.Globalization.Native.dylib" />
@@ -51,6 +43,7 @@
     <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.a" />
     <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
     <_pastShimFiles Include="System.Security.Cryptography.Native.OpenSsl.so" />
+    <_pastShimFiles Include="clrcompression.dll" />
     <PlatformManifestFileEntry Include="@(_pastShimFiles)" IsNative="true" />
   </ItemGroup>
 
@@ -61,35 +54,14 @@
   </PropertyGroup>
 
   <Import Project="$(LibrariesProjectRoot)NetCoreAppLibrary.props" />
+  <Import Project="$(LibrariesProjectRoot)shims/netfxreference.props" />
 
   <ItemGroup>
-    <!-- Libraries specified in NetCoreAppLibrary.props -->
+    <!-- Public libraries and shims -->
     <PlatformManifestFileEntry Include="@(NetCoreAppLibrary->'%(Identity).dll')" />
     <PlatformManifestFileEntry Include="@(NetCoreAppLibraryNoReference->'%(Identity).dll')" />
-    <!-- Shim libraries -->
-    <PlatformManifestFileEntry Include="mscorlib.dll" />
+    <PlatformManifestFileEntry Include="@(NetFxReference->'%(Identity).dll')" />
     <PlatformManifestFileEntry Include="netstandard.dll" />
-    <PlatformManifestFileEntry Include="WindowsBase.dll" />
-    <PlatformManifestFileEntry Include="Microsoft.VisualBasic.dll" />
-    <PlatformManifestFileEntry Include="System.ComponentModel.DataAnnotations.dll" />
-    <PlatformManifestFileEntry Include="System.Configuration.dll" />
-    <PlatformManifestFileEntry Include="System.Core.dll" />
-    <PlatformManifestFileEntry Include="System.Data.dll" />
-    <PlatformManifestFileEntry Include="System.dll" />
-    <PlatformManifestFileEntry Include="System.Drawing.dll" />
-    <PlatformManifestFileEntry Include="System.IO.Compression.FileSystem.dll" />
-    <PlatformManifestFileEntry Include="System.Net.dll" />
-    <PlatformManifestFileEntry Include="System.Numerics.dll" />
-    <PlatformManifestFileEntry Include="System.Runtime.Serialization.dll" />
-    <PlatformManifestFileEntry Include="System.Security.dll" />
-    <PlatformManifestFileEntry Include="System.ServiceModel.Web.dll" />
-    <PlatformManifestFileEntry Include="System.ServiceProcess.dll" />
-    <PlatformManifestFileEntry Include="System.Transactions.dll" />
-    <PlatformManifestFileEntry Include="System.Web.dll" />
-    <PlatformManifestFileEntry Include="System.Windows.dll" />
-    <PlatformManifestFileEntry Include="System.Xml.dll" />
-    <PlatformManifestFileEntry Include="System.Xml.Linq.dll" />
-    <PlatformManifestFileEntry Include="System.Xml.Serialization.dll" />
     <!-- Private libraries -->
     <PlatformManifestFileEntry Include="System.Private.CoreLib.dll" />
     <PlatformManifestFileEntry Include="System.Private.DataContractSerialization.dll" />
@@ -176,7 +148,6 @@
     <PlatformManifestFileEntry Include="api-ms-win-crt-utility-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="API-MS-Win-core-xstate-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="clrcompression.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
@@ -229,18 +200,7 @@
 
  <ItemGroup>
     <!-- Exclude shims from the closure verification -->
-    <ExcludeFromClosure Include="mscorlib" />
-    <ExcludeFromClosure Include="System" />
-    <ExcludeFromClosure Include="System.Configuration" />
-    <ExcludeFromClosure Include="System.Core" />
-    <ExcludeFromClosure Include="System.Data" />
-    <ExcludeFromClosure Include="System.Drawing" />
-    <ExcludeFromClosure Include="System.Net" />
-    <ExcludeFromClosure Include="System.Security" />
-    <ExcludeFromClosure Include="System.ServiceModel.Web" />
-    <ExcludeFromClosure Include="System.ServiceProcess" />
-    <ExcludeFromClosure Include="System.Transactions" />
-    <ExcludeFromClosure Include="WindowsBase" />
+    <ExcludeFromClosure Include="@(NetFxReference)" />
  </ItemGroup>
 
   <ItemGroup>

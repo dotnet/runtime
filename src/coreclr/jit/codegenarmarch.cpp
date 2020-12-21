@@ -795,7 +795,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         }
         else // We must have a GT_OBJ or a GT_LCL_VAR
         {
-            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_OBJ));
+            noway_assert(source->OperIs(GT_LCL_VAR, GT_OBJ));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
@@ -864,10 +864,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             assert((varNode != nullptr) ^ (addrNode != nullptr));
 
             ClassLayout* layout;
-            unsigned     structSize;
+            unsigned     srcSize;
             bool         isHfa;
 
-            // Setup the structSize, isHFa, and gcPtrCount
+            // Setup the srcSize, isHFa, and gcPtrCount
             if (source->OperGet() == GT_LCL_VAR)
             {
                 assert(varNode != nullptr);
@@ -878,10 +878,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(varDsc->lvType == TYP_STRUCT);
                 assert(varDsc->lvOnFrame && !varDsc->lvRegister);
 
-                structSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
-                                               // as that is how much stack is allocated for this LclVar
-                isHfa  = varDsc->lvIsHfa();
-                layout = varDsc->GetLayout();
+                srcSize = varDsc->lvSize();
+                isHfa   = varDsc->lvIsHfa();
+                layout  = varDsc->GetLayout();
             }
             else // we must have a GT_OBJ
             {
@@ -891,26 +890,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
                 // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
                 // the OBJ node has a different type than the lclvar.
-                layout = source->AsObj()->GetLayout();
-
-                structSize = layout->GetSize();
-
-                // The codegen code below doesn't have proper support for struct sizes
-                // that are not multiple of the slot size. Call arg morphing handles this
-                // case by copying non-local values to temporary local variables.
-                // More generally, we can always round up the struct size when the OBJ node
-                // wraps a local variable because the local variable stack allocation size
-                // is also rounded up to be a multiple of the slot size.
-                if (varNode != nullptr)
-                {
-                    structSize = roundUp(structSize, TARGET_POINTER_SIZE);
-                }
-                else
-                {
-                    assert((structSize % TARGET_POINTER_SIZE) == 0);
-                }
-
-                isHfa = compiler->IsHfa(layout->GetClassHandle());
+                layout  = source->AsObj()->GetLayout();
+                srcSize = layout->GetSize();
+                isHfa   = compiler->IsHfa(layout->GetClassHandle());
             }
 
             // If we have an HFA we can't have any GC pointers,
@@ -922,11 +904,44 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 #ifdef TARGET_ARM64
             else
             {
-                noway_assert(structSize <= 2 * TARGET_POINTER_SIZE);
+                noway_assert(srcSize <= 2 * TARGET_POINTER_SIZE);
             }
 
-            noway_assert(structSize <= MAX_PASS_MULTIREG_BYTES);
+            noway_assert(srcSize <= MAX_PASS_MULTIREG_BYTES);
 #endif // TARGET_ARM64
+
+            unsigned structSize;
+
+            unsigned dstSize = treeNode->GetStackByteSize();
+            if (dstSize != srcSize)
+            {
+                // We can generate a smaller code if store size is a multiple of TARGET_POINTER_SIZE.
+                // The dst size can be rounded up to PUTARG_STK size.
+                // The src size can be rounded up if it reads a local variable slot because the local
+                // variable stack allocation size is rounded up to be a multiple of the TARGET_POINTER_SIZE.
+                // The exception  is arm64 apple arguments because they can be passed without padding.
+                if (varNode != nullptr)
+                {
+                    // If we have a varNode, even if it was casted using `OBJ`, we can read its original memory size.
+                    const LclVarDsc* varDsc       = compiler->lvaGetDesc(varNode);
+                    const unsigned   varStackSize = varDsc->lvSize();
+                    if (varStackSize >= srcSize)
+                    {
+                        srcSize = varStackSize;
+                    }
+                }
+            }
+            if (dstSize == srcSize)
+            {
+                structSize = dstSize;
+            }
+            else
+            {
+                // With Unsafe object cast we can have different strange combinations:
+                // PutArgStk<8>(Obj<16>(LclVar<8>)) -> copy 8 bytes;
+                // PutArgStk<16>(Obj<16>(LclVar<8>)) -> copy 16 bytes, reading undefined memory after the local.
+                structSize = min(dstSize, srcSize);
+            }
 
             int      remainingSize = structSize;
             unsigned structOffset  = 0;
@@ -1010,70 +1025,58 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             while (remainingSize > 0)
             {
+                var_types type;
+
                 if (remainingSize >= TARGET_POINTER_SIZE)
                 {
-                    var_types nextType = layout->GetGCPtrType(nextIndex);
-                    emitAttr  nextAttr = emitTypeSize(nextType);
-                    remainingSize -= TARGET_POINTER_SIZE;
-
-                    if (varNode != nullptr)
-                    {
-                        // Load from our varNumImp source
-                        emit->emitIns_R_S(ins_Load(nextType), nextAttr, loReg, varNode->GetLclNum(), structOffset);
-                    }
-                    else
-                    {
-                        assert(loReg != addrReg);
-
-                        // Load from our address expression source
-                        emit->emitIns_R_R_I(ins_Load(nextType), nextAttr, loReg, addrReg, structOffset);
-                    }
-                    // Emit a store instruction to store the register into the outgoing argument area
-                    emit->emitIns_S_R(ins_Store(nextType), nextAttr, loReg, varNumOut, argOffsetOut);
-                    argOffsetOut += EA_SIZE_IN_BYTES(nextAttr);
-                    assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
-
-                    structOffset += TARGET_POINTER_SIZE;
-                    nextIndex++;
+                    type = layout->GetGCPtrType(nextIndex);
                 }
                 else // (remainingSize < TARGET_POINTER_SIZE)
                 {
-                    int loadSize  = remainingSize;
-                    remainingSize = 0;
-
-                    // We should never have to do a non-pointer sized load when we have a LclVar source
-                    assert(varNode == nullptr);
-
                     // the left over size is smaller than a pointer and thus can never be a GC type
                     assert(!layout->IsGCPtr(nextIndex));
 
-                    var_types loadType = TYP_UINT;
-                    if (loadSize == 1)
+                    if (remainingSize == 1)
                     {
-                        loadType = TYP_UBYTE;
+                        type = TYP_UBYTE;
                     }
-                    else if (loadSize == 2)
+                    else if (remainingSize == 2)
                     {
-                        loadType = TYP_USHORT;
+                        type = TYP_USHORT;
                     }
                     else
                     {
-                        // Need to handle additional loadSize cases here
-                        noway_assert(loadSize == 4);
+                        assert(remainingSize == 4);
+                        type = TYP_UINT;
                     }
-
-                    instruction loadIns  = ins_Load(loadType);
-                    emitAttr    loadAttr = emitAttr(loadSize);
-
-                    assert(loReg != addrReg);
-
-                    emit->emitIns_R_R_I(loadIns, loadAttr, loReg, addrReg, structOffset);
-
-                    // Emit a store instruction to store the register into the outgoing argument area
-                    emit->emitIns_S_R(ins_Store(loadType), loadAttr, loReg, varNumOut, argOffsetOut);
-                    argOffsetOut += EA_SIZE_IN_BYTES(loadAttr);
-                    assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
                 }
+                const emitAttr attr     = emitTypeSize(type);
+                const unsigned moveSize = genTypeSize(type);
+                assert(EA_SIZE_IN_BYTES(attr) == moveSize);
+
+                remainingSize -= moveSize;
+
+                instruction loadIns = ins_Load(type);
+                if (varNode != nullptr)
+                {
+                    // Load from our varNumImp source
+                    emit->emitIns_R_S(loadIns, attr, loReg, varNode->GetLclNum(), structOffset);
+                }
+                else
+                {
+                    assert(loReg != addrReg);
+                    // Load from our address expression source
+                    emit->emitIns_R_R_I(loadIns, attr, loReg, addrReg, structOffset);
+                }
+
+                // Emit a store instruction to store the register into the outgoing argument area
+                instruction storeIns = ins_Store(type);
+                emit->emitIns_S_R(storeIns, attr, loReg, varNumOut, argOffsetOut);
+                argOffsetOut += moveSize;
+                assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+
+                structOffset += moveSize;
+                nextIndex++;
             }
         }
     }

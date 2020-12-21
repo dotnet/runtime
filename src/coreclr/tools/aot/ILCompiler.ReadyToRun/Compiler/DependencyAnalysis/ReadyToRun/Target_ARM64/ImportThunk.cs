@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!relocsOnly)
                     {
                         // movz x9, #index
-                        int index = _instanceCell.Table.IndexFromBeginningOfArray;
+                        int index = _containingImportSection.IndexFromBeginningOfArray;
                         instructionEncoder.EmitMOV(Register.X9, checked((ushort)index));
                     }
 
@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Emit relocation for the Module* load above
             if (_thunkKind != Kind.Eager)
-                instructionEncoder.Builder.EmitReloc(_moduleImport, RelocType.IMAGE_REL_BASED_DIR64);
+                instructionEncoder.Builder.EmitReloc(factory.ModuleImport, RelocType.IMAGE_REL_BASED_DIR64);
         }
     }
 }

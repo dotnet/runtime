@@ -50,10 +50,6 @@
 #include "roapi.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#ifdef FEATURE_PERFTRACING
-#include "eventpipebuffermanager.h"
-#endif // FEATURE_PERFTRACING
-
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -1162,6 +1158,9 @@ void InitThreadManager()
 #ifdef TARGET_ARM64
     // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
     JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
+
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
 #endif // TARGET_ARM64
 
 #else // FEATURE_WRITEBARRIER_COPY

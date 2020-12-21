@@ -23497,6 +23497,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_INFO);
+                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
 
                 compileFlagsForInlinee.Set(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
 

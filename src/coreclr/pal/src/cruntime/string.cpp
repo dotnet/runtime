@@ -202,3 +202,94 @@ PAL_strtoul(const char *szNumber, char **pszEnd, int nBase)
     return (ULONG)ulResult;
 
 }
+
+/*++
+Function:
+  PAL_strtoull
+
+Convert string to an unsigned long long-integer value.
+
+Return Value
+
+strtoull returns the converted value, if any, or UINT64_MAX on
+overflow. It returns 0 if no conversion can be performed. errno is
+set to ERANGE if overflow or underflow occurs.
+
+Parameters
+
+szNumber  Null-terminated string to convert to a ULONGLONG
+pszEnd          Pointer to character that stops scan
+nBase           Number base to use
+
+Remarks
+
+strtoull stops reading the string szNumber at the first character it cannot
+recognize as part of a number. This may be the terminating null
+character, or it may be the first numeric character greater than or
+equal to base. The LC_NUMERIC category setting of the current locale
+determines recognition of the radix character in szNumber; for more
+information, see setlocale. If pszEnd is not NULL, a pointer to the
+character that stopped the scan is stored at the location pointed to
+by pszEnd. If no conversion can be performed (no valid digits were
+found or an invalid base was specified), the value of szNumber is stored
+at the location pointed to by pszEnd.
+
+Notes :
+    MSDN states that only space and tab are accepted as leading whitespace, but
+    tests indicate that other whitespace characters (newline, carriage return,
+    etc) are also accepted. This matches the behavior on Unix systems.
+
+    For strtoull, we need to check if the value to be returned
+    is outside the 64 bit range. If so, the returned value needs to be set
+    as appropriate, according to the MSDN pages and in all instances errno
+    must be set to ERANGE (The one exception is converting a string
+    representing a negative value to unsigned long).
+    --*/
+
+/* The use of ULONGLONG is by design, to ensure that a 64 bit value is always
+returned from this function. */
+ULONGLONG
+__cdecl
+PAL_strtoull(const char *szNumber, char **pszEnd, int nBase)
+{
+    unsigned long long ullResult;
+
+    PERF_ENTRY(strtoull);
+    ENTRY("strtoull (szNumber=%p (%s), pszEnd=%p, nBase=%d)\n",
+        szNumber?szNumber:"NULL",
+        szNumber?szNumber:"NULL",
+        pszEnd,
+        nBase);
+
+    ullResult = strtoull(szNumber, pszEnd, nBase);
+
+    if (ullResult > UINT64_MAX)
+    {
+        char ch = *szNumber;
+        while (isspace(ch))
+        {
+            ch = *szNumber++;
+        }
+        /* If the string represents a positive number that is greater than
+           UINT64_MAX, set errno to ERANGE. Otherwise, don't set errno
+           to match Windows behavior. */
+        if (ch != '-')
+        {
+            ullResult = UINT64_MAX;
+            errno = ERANGE;
+        }
+    }
+
+    LOGEXIT("strtoull returning unsigned long long %llu\n", ullResult);
+    PERF_EXIT(strtoull);
+
+    /* When returning unsigned long long res from this function, it will be
+        implicitly cast to ULONGLONG. This handles situations where a string that
+        represents a negative number is passed in to strtoull. The Windows
+        behavior is analogous to taking the binary equivalent of the negative
+        value and treating it as a positive number. Returning a ULONGLONG from
+        this function, as opposed to native unsigned long long, allows us to match
+        this behavior. The explicit cast to ULONGLONG below is used to silence any
+        potential warnings due to the implicit casting.  */
+    return (ULONGLONG)ullResult;
+}

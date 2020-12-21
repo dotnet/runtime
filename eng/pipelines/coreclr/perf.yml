@@ -20,10 +20,6 @@ trigger:
     - THIRD-PARTY-NOTICES.TXT
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 # build coreclr and libraries
 - template: /eng/pipelines/common/platform-matrix.yml

@@ -15,7 +15,7 @@ internal class Xcode
     public Xcode(string target)
     {
         Target = target;
-        SysRoot = (Target == Utils.TargetOS.iOS) ?
+        SysRoot = (Target == TargetNames.iOS) ?
             Utils.RunProcess("xcrun", "--sdk iphoneos --show-sdk-path") :
             Utils.RunProcess("xcrun", "--sdk appletvos --show-sdk-path");
     }
@@ -95,7 +95,7 @@ internal class Xcode
         }
 
         string frameworks = "";
-        if (Target == Utils.TargetOS.iOS)
+        if (Target == TargetNames.iOS)
         {
             frameworks = "\"-framework GSS\"";
         }
@@ -164,7 +164,7 @@ internal class Xcode
 
         if (architecture == "arm64")
         {
-            sdk = (Target == Utils.TargetOS.iOS) ? "iphoneos" : "appletvos";
+            sdk = (Target == TargetNames.iOS) ? "iphoneos" : "appletvos";
             args.Append(" -arch arm64")
                 .Append(" -sdk " + sdk);
 
@@ -182,7 +182,7 @@ internal class Xcode
         }
         else
         {
-            sdk = (Target == Utils.TargetOS.iOS) ? "iphonesimulator" : "appletvsimulator";
+            sdk = (Target == TargetNames.iOS) ? "iphonesimulator" : "appletvsimulator";
             args.Append(" -arch x86_64")
                 .Append(" -sdk " + sdk);
         }

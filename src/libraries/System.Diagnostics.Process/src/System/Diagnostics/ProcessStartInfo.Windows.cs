@@ -10,8 +10,6 @@ namespace System.Diagnostics
     {
         private string? _domain;
 
-        private const bool CaseSensitiveEnvironmentVariables = false;
-
         [SupportedOSPlatform("windows")]
         public string? PasswordInClearText { get; set; }
 

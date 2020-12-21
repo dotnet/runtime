@@ -191,11 +191,13 @@ bool WrapICorJitInfo::isIntrinsicType(
     return temp;
 }
 
-CorInfoUnmanagedCallConv WrapICorJitInfo::getUnmanagedCallConv(
-          CORINFO_METHOD_HANDLE method)
+CorInfoCallConvExtension WrapICorJitInfo::getUnmanagedCallConv(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_SIG_INFO* callSiteSig,
+          bool* pSuppressGCTransition)
 {
     API_ENTER(getUnmanagedCallConv);
-    CorInfoUnmanagedCallConv temp = wrapHnd->getUnmanagedCallConv(method);
+    CorInfoCallConvExtension temp = wrapHnd->getUnmanagedCallConv(method, callSiteSig, pSuppressGCTransition);
     API_LEAVE(getUnmanagedCallConv);
     return temp;
 }

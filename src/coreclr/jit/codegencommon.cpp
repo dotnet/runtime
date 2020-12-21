@@ -8933,7 +8933,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             fCalleePop = false;
 
 #ifdef UNIX_X86_ABI
-        if (IsCallerPop(compiler->info.compMethodInfo->args.callConv))
+        if (IsCallerPop(compiler->info.compCallConv))
             fCalleePop = false;
 #endif // UNIX_X86_ABI
 
@@ -11534,8 +11534,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             }
             else // we must have a struct return type
             {
-                CorInfoCallConvExtension callConv =
-                    compiler->compMethodInfoGetEntrypointCallConv(compiler->info.compMethodInfo);
+                CorInfoCallConvExtension callConv = compiler->info.compCallConv;
 
                 retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
                                                        callConv);
@@ -11663,9 +11662,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
-        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
-                                               compiler->compMethodInfoGetEntrypointCallConv(
-                                                   compiler->info.compMethodInfo));
+        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(), compiler->info.compCallConv);
         assert(varDsc->lvIsMultiRegRet);
     }
     else
@@ -11828,8 +11825,8 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
     }
     for (unsigned i = 0; i < regCount; ++i)
     {
-        regNumber reg  = genConsumeReg(op1, i);
-        var_types type = actualOp1->GetRegTypeByIndex(i);
+        regNumber reg     = genConsumeReg(op1, i);
+        var_types srcType = actualOp1->GetRegTypeByIndex(i);
         // genConsumeReg will return the valid register, either from the COPY
         // or from the original source.
         assert(reg != REG_NA);
@@ -11839,14 +11836,14 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             regNumber  varReg      = lclNode->GetRegByIndex(i);
             unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
-            var_types  type        = fieldVarDsc->TypeGet();
+            var_types  destType    = fieldVarDsc->TypeGet();
             if (varReg != REG_NA)
             {
                 hasRegs = true;
                 if (varReg != reg)
                 {
                     // We may need a cross register-file copy here.
-                    inst_RV_RV(ins_Copy(reg, type), varReg, reg, type);
+                    inst_RV_RV(ins_Copy(reg, destType), varReg, reg, destType);
                 }
                 fieldVarDsc->SetRegNum(varReg);
             }
@@ -11858,15 +11855,15 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {
-                    GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, fieldLclNum, 0);
+                    GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(destType), reg, fieldLclNum, 0);
                 }
             }
             fieldVarDsc->SetRegNum(varReg);
         }
         else
         {
-            GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
-            offset += genTypeSize(type);
+            GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, lclNum, offset);
+            offset += genTypeSize(srcType);
         }
     }
 

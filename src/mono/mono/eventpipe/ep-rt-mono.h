@@ -1890,7 +1890,7 @@ inline
 const uint8_t *
 ep_rt_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id_handle)
 {
-	EP_ASSERT (!"EP_THREAD_INCLUDE_ACTIVITY_ID should have been defined on Mono");
+	EP_UNREACHABLE ("EP_THREAD_INCLUDE_ACTIVITY_ID should have been defined on Mono");
 	return NULL;
 }
 

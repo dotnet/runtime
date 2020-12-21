@@ -2055,22 +2055,6 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     return sigSize;
 }
 
-CorInfoCallConvExtension Compiler::compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo)
-{
-    CorInfoCallConv callConv = mthInfo->args.getCallConv();
-    if (callConv == CORINFO_CALLCONV_DEFAULT || callConv == CORINFO_CALLCONV_VARARG)
-    {
-        // Both the default and the varargs calling conventions represent a managed callconv.
-        return CorInfoCallConvExtension::Managed;
-    }
-
-    static_assert_no_msg((unsigned)CorInfoCallConvExtension::C == (unsigned)CORINFO_CALLCONV_C);
-    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Stdcall == (unsigned)CORINFO_CALLCONV_STDCALL);
-    static_assert_no_msg((unsigned)CorInfoCallConvExtension::Thiscall == (unsigned)CORINFO_CALLCONV_THISCALL);
-
-    return (CorInfoCallConvExtension)callConv;
-}
-
 #ifdef DEBUG
 static bool DidComponentUnitTests = false;
 
@@ -2586,6 +2570,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
     }
 
     opts.jitFlags  = jitFlags;
@@ -4841,6 +4826,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         bool doValueNum      = true;
         bool doLoopHoisting  = true;
         bool doCopyProp      = true;
+        bool doBranchOpt     = true;
         bool doAssertionProp = true;
         bool doRangeAnalysis = true;
         int  iterations      = 1;
@@ -4851,6 +4837,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         doValueNum      = doSsa && (JitConfig.JitDoValueNumber() != 0);
         doLoopHoisting  = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
         doCopyProp      = doValueNum && (JitConfig.JitDoCopyProp() != 0);
+        doBranchOpt     = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
         doAssertionProp = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
 
@@ -4895,6 +4882,11 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
                 // Perform VN based copy propagation
                 //
                 DoPhase(this, PHASE_VN_COPY_PROP, &Compiler::optVnCopyProp);
+            }
+
+            if (doBranchOpt)
+            {
+                DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
 #if FEATURE_ANYCSE
@@ -6108,21 +6100,28 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     info.compHasNextCallRetAddr = false;
 
+    if (opts.IsReversePInvoke())
+    {
+        bool unused;
+        info.compCallConv = info.compCompHnd->getUnmanagedCallConv(methodInfo->ftn, nullptr, &unused);
+    }
+    else
+    {
+        info.compCallConv = CorInfoCallConvExtension::Managed;
+    }
+
+    info.compIsVarArgs = false;
+
     switch (methodInfo->args.getCallConv())
     {
-        case CORINFO_CALLCONV_VARARG:
         case CORINFO_CALLCONV_NATIVEVARARG:
+        case CORINFO_CALLCONV_VARARG:
             info.compIsVarArgs = true;
             break;
-        case CORINFO_CALLCONV_C:
-        case CORINFO_CALLCONV_STDCALL:
-        case CORINFO_CALLCONV_THISCALL:
-        case CORINFO_CALLCONV_DEFAULT:
-            info.compIsVarArgs = false;
-            break;
         default:
-            BADCODE("bad calling convention");
+            break;
     }
+
     info.compRetNativeType = info.compRetType = JITtype2varType(methodInfo->args.retType);
 
     info.compUnmanagedCallCountWithGCTransition = 0;

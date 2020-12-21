@@ -10,6 +10,7 @@
 #define _SpmiRecordsHelper
 
 #include "methodcontext.h"
+#include "spmiutil.h"
 
 class SpmiRecordsHelper
 {
@@ -83,8 +84,8 @@ inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin SpmiRecordsHelper::Creat
 {
     MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin tokenIn;
     ZeroMemory(&tokenIn, sizeof(tokenIn));
-    tokenIn.tokenContext = (DWORDLONG)pResolvedToken->tokenContext;
-    tokenIn.tokenScope   = (DWORDLONG)pResolvedToken->tokenScope;
+    tokenIn.tokenContext = CastHandle(pResolvedToken->tokenContext);
+    tokenIn.tokenScope   = CastHandle(pResolvedToken->tokenScope);
     tokenIn.token        = (DWORD)pResolvedToken->token;
     tokenIn.tokenType    = (DWORD)pResolvedToken->tokenType;
     return tokenIn;
@@ -95,9 +96,9 @@ inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::
 {
     MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
     ZeroMemory(&tokenOut, sizeof(tokenOut));
-    tokenOut.hClass  = (DWORDLONG)pResolvedToken->hClass;
-    tokenOut.hMethod = (DWORDLONG)pResolvedToken->hMethod;
-    tokenOut.hField  = (DWORDLONG)pResolvedToken->hField;
+    tokenOut.hClass  = CastHandle(pResolvedToken->hClass);
+    tokenOut.hMethod = CastHandle(pResolvedToken->hMethod);
+    tokenOut.hField  = CastHandle(pResolvedToken->hField);
 
     tokenOut.cbTypeSpec   = (DWORD)pResolvedToken->cbTypeSpec;
     tokenOut.cbMethodSpec = (DWORD)pResolvedToken->cbMethodSpec;
@@ -178,16 +179,16 @@ inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::CreateAgnosti
     MethodContext::Agnostic_CORINFO_SIG_INFO sig;
     ZeroMemory(&sig, sizeof(sig));
     sig.callConv               = (DWORD)sigInfo.callConv;
-    sig.retTypeClass           = (DWORDLONG)sigInfo.retTypeClass;
-    sig.retTypeSigClass        = (DWORDLONG)sigInfo.retTypeSigClass;
+    sig.retTypeClass           = CastHandle(sigInfo.retTypeClass);
+    sig.retTypeSigClass        = CastHandle(sigInfo.retTypeSigClass);
     sig.retType                = (DWORD)sigInfo.retType;
     sig.flags                  = (DWORD)sigInfo.flags;
     sig.numArgs                = (DWORD)sigInfo.numArgs;
     sig.sigInst_classInstCount = (DWORD)sigInfo.sigInst.classInstCount;
     sig.sigInst_methInstCount  = (DWORD)sigInfo.sigInst.methInstCount;
-    sig.args                   = (DWORDLONG)sigInfo.args;
+    sig.args                   = CastHandle(sigInfo.args);
     sig.cbSig                  = (DWORD)sigInfo.cbSig;
-    sig.scope                  = (DWORDLONG)sigInfo.scope;
+    sig.scope                  = CastHandle(sigInfo.scope);
     sig.token                  = (DWORD)sigInfo.token;
     return sig;
 }
@@ -273,7 +274,7 @@ inline MethodContext::Agnostic_CORINFO_CONST_LOOKUP SpmiRecordsHelper::StoreAgno
     MethodContext::Agnostic_CORINFO_CONST_LOOKUP constLookup;
     ZeroMemory(&constLookup, sizeof(constLookup));
     constLookup.accessType = (DWORD)pLookup->accessType;
-    constLookup.handle     = (DWORDLONG)pLookup->handle;
+    constLookup.handle     = CastHandle(pLookup->handle);
     return constLookup;
 }
 
@@ -291,7 +292,7 @@ inline MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAg
 {
     MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup;
     ZeroMemory(&runtimeLookup, sizeof(runtimeLookup));
-    runtimeLookup.signature            = (DWORDLONG)pLookup->signature;
+    runtimeLookup.signature            = CastPointer(pLookup->signature);
     runtimeLookup.helper               = (DWORD)pLookup->helper;
     runtimeLookup.indirections         = (DWORD)pLookup->indirections;
     runtimeLookup.testForNull          = (DWORD)pLookup->testForNull;
@@ -299,7 +300,7 @@ inline MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAg
     runtimeLookup.sizeOffset           = pLookup->sizeOffset;
     runtimeLookup.indirectFirstOffset  = (DWORD)pLookup->indirectFirstOffset;
     runtimeLookup.indirectSecondOffset = (DWORD)pLookup->indirectSecondOffset;
-    for (int i                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
+    for (int i = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (DWORDLONG)pLookup->offsets[i];
     return runtimeLookup;
 }

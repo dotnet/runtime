@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <EnsureRuntimeIdentifierSet>true</EnsureRuntimeIdentifierSet>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
