@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <Optimize>false</Optimize>
     <CLRTestKind>BuildAndRun</CLRTestKind>
+    <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>

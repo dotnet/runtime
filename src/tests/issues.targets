@@ -140,9 +140,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/1514/InterlockExchange/*">
             <Issue>https://github.com/dotnet/runtime/issues/12166</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">	
-            <Issue>https://github.com/dotnet/runtime/issues/46175</Issue>	
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
