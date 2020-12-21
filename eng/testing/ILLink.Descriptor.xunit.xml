@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="xunit.execution.dotnet">
+    <type fullname="Xunit.Sdk.ReflectionAssemblyInfo">
+      <method signature="System.Void .ctor(System.String)" />
+    </type>
+  </assembly>
+</linker>

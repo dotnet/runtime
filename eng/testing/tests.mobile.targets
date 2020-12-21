@@ -172,6 +172,10 @@
       </ManagedAssemblyToLink>
       <TrimmerRootAssembly Include="WasmTestRunner"/>
     </ItemGroup>
+    <ItemGroup>
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml">
+      </TrimmerRootDescriptor>
+    </ItemGroup>
   </Target>
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
