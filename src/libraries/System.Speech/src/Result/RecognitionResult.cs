@@ -1,25 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using COMTYPES = System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Permissions;
+using System.Speech.AudioFormat;
 using System.Speech.Internal;
 using System.Speech.Internal.SapiInterop;
-using System.Speech.AudioFormat;
 using System.Text;
-using System.Xml;
-using System.Xml.XPath;
 
 #pragma warning disable 56507 // check for null or empty strings
 

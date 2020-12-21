@@ -3,9 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Speech.Recognition;
 using System.Speech.Internal.SrgsParser;
-using System.Text;
+using System.Speech.Recognition;
 
 namespace System.Speech.Internal.GrammarBuilding
 {

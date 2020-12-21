@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Speech.Internal;
-using System.Speech.Internal.SrgsCompiler;
 using System.Speech.Internal.SrgsParser;
 using System.Xml;
 
@@ -32,10 +29,10 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Internal Methods
 
-        /// |summary|
+        /// <summary>
         /// Write the XML fragment describing the object.
-        /// |/summary|
-        /// |param name="writer"|XmlWriter to which to write the XML fragment.|/param|
+        /// </summary>
+        /// <param name="writer">XmlWriter to which to write the XML fragment.</param>
         internal void WriteSrgs(XmlWriter writer)
         {
             // Write <grammar
@@ -140,9 +137,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             writer.WriteEndElement();
         }
 
-        /// |summary|
+        /// <summary>
         /// Validate the SRGS element.
-        /// |/summary|
+        /// </summary>
         internal void Validate()
         {
             // Validation set the pronunciation so reset it to zero
@@ -282,12 +279,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Base URI of grammar (xml:base)
-        /// |/summary|
-        /// |remarks|
-        /// TODO: Validate baseUri?
-        /// |/remarks|
+        /// </summary>
         public Uri XmlBase
         {
             get
@@ -300,9 +294,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Grammar language (xml:lang)
-        /// |/summary|
+        /// </summary>
         public CultureInfo Culture
         {
             get
@@ -317,9 +311,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Grammar mode.  voice or dtmf
-        /// |/summary|
+        /// </summary>
         public GrammarType Mode
         {
             get
@@ -333,9 +327,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Pronunciation Alphabet, IPA or SAPI or UPS
-        /// |/summary|
+        /// </summary>
         public AlphabetType PhoneticAlphabet
         {
             get
@@ -348,9 +342,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|root
+        /// <summary>root
         /// Root rule (srgs:root)
-        /// |/summary|
+        /// </summary>
         public SrgsRule Root
         {
             get
@@ -363,9 +357,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Tag format (srgs:tag-format)
-        /// |/summary|
+        /// </summary>
         public SrgsTagFormat TagFormat
         {
             get
@@ -378,9 +372,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Tag format (srgs:tag-format)
-        /// |/summary|
+        /// </summary>
         public Collection<string> GlobalTags
         {
             get
@@ -393,9 +387,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// language
-        /// |/summary|
+        /// </summary>
         public string Language
         {
             get
@@ -408,9 +402,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// namespace
-        /// |/summary|
+        /// </summary>
         public string Namespace
         {
             get
@@ -423,9 +417,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// CodeBehind
-        /// |/summary|
+        /// </summary>
         public Collection<string> CodeBehind
         {
             get
@@ -438,9 +432,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Add #line statements to the inline scripts if set
-        /// |/summary|
+        /// </summary>
         public bool Debug
         {
             get
@@ -453,9 +447,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Scripts
-        /// |/summary|
+        /// </summary>
         public string Script
         {
             get
@@ -469,9 +463,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// ImportNameSpaces
-        /// |/summary|
+        /// </summary>
         public Collection<string> ImportNamespaces
         {
             get
@@ -484,9 +478,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// ImportNameSpaces
-        /// |/summary|
+        /// </summary>
         public Collection<string> AssemblyReferences
         {
             get
@@ -502,9 +496,9 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Internal Properties
 
-        /// |summary|
+        /// <summary>
         /// A collection of _rules that this grammar houses.
-        /// |/summary|
+        /// </summary>
         internal SrgsRulesCollection Rules
         {
             get
@@ -513,9 +507,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// A collection of _rules that this grammar houses.
-        /// |/summary|
+        /// </summary>
         internal bool HasPronunciation
         {
             get
@@ -528,9 +522,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// A collection of _rules that this grammar houses.
-        /// |/summary|
+        /// </summary>
         internal bool HasPhoneticAlphabetBeenSet
         {
             set
@@ -539,9 +533,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// A collection of _rules that this grammar houses.
-        /// |/summary|
+        /// </summary>
         internal bool HasSapiExtension
         {
             get

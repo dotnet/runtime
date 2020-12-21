@@ -3,7 +3,6 @@
 
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-
 using STATSTG = System.Runtime.InteropServices.ComTypes.STATSTG;
 
 namespace System.Speech.Internal.SapiInterop

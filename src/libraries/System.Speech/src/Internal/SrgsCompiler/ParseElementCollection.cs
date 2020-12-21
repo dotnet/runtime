@@ -3,9 +3,6 @@
 
 #region Using directives
 
-using System;
-using System.Collections.ObjectModel;
-using System.Speech.Internal.SrgsParser;
 
 #endregion
 

@@ -1,20 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Security;
 using System.Speech.Internal;
 using System.Speech.Internal.SrgsCompiler;
 using System.Speech.Recognition.SrgsGrammar;
 using System.Text;
-using System.Xml;
 
 #pragma warning disable 56500 // Remove all the catch all statements warnings used by the interop layer
 

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Speech.Recognition;
 using System.Speech.Internal.SrgsParser;
 using System.Text;
 

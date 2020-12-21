@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -116,12 +115,9 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Internal Properties
 
-        /// |summary|
+        /// <summary>
         /// Base URI of grammar (xml:base)
-        /// |/summary|
-        /// |remarks|
-        /// TODO: Validate baseUri?
-        /// |/remarks|
+        /// </summary>
         Uri IGrammar.XmlBase
         {
             set
@@ -133,9 +129,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// GrammarElement language (xml:lang)
-        /// |/summary|
+        /// </summary>
         CultureInfo IGrammar.Culture
         {
             set
@@ -146,9 +142,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// GrammarElement mode.  voice or dtmf
-        /// |/summary|
+        /// </summary>
         GrammarType IGrammar.Mode
         {
             set
@@ -157,9 +153,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// GrammarElement mode.  voice or dtmf
-        /// |/summary|
+        /// </summary>
         AlphabetType IGrammar.PhoneticAlphabet
         {
             set
@@ -168,9 +164,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Tag format (srgs:tag-format)
-        /// |/summary|
+        /// </summary>
         System.Speech.Recognition.SrgsGrammar.SrgsTagFormat IGrammar.TagFormat
         {
             get
@@ -183,9 +179,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Tag format (srgs:tag-format)
-        /// |/summary|
+        /// </summary>
         Collection<string> IGrammar.GlobalTags
         {
             get
@@ -214,9 +210,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// language
-        /// |/summary|
+        /// </summary>
         string IGrammar.Language
         {
             get
@@ -229,9 +225,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// namespace
-        /// |/summary|
+        /// </summary>
         string IGrammar.Namespace
         {
             get
@@ -244,9 +240,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// CodeBehind
-        /// |/summary|
+        /// </summary>
         Collection<string> IGrammar.CodeBehind
         {
             get
@@ -259,9 +255,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Add #line statements to the inline scripts if set
-        /// |/summary|
+        /// </summary>
         bool IGrammar.Debug
         {
             set
@@ -270,9 +266,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// ImportNameSpaces
-        /// |/summary|
+        /// </summary>
         Collection<string> IGrammar.ImportNamespaces
         {
             get
@@ -285,9 +281,9 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// ImportNameSpaces
-        /// |/summary|
+        /// </summary>
         Collection<string> IGrammar.AssemblyReferences
         {
             get

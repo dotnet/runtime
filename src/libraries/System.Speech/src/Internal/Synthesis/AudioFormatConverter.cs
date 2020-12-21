@@ -3,8 +3,6 @@
 
 #region Using directives
 
-using System;
-using System.Speech.Synthesis.TtsEngine;
 
 #endregion
 

@@ -3,11 +3,8 @@
 
 #region Using directives
 
-using System;
 using System.Globalization;
 using System.Reflection;
-using System.Security;
-using System.Speech.Recognition;
 using System.Speech.Recognition.SrgsGrammar;
 using System.Text;
 

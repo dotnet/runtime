@@ -1,20 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
+using System.ComponentModel;
 using System.Globalization;
-using System.Runtime.InteropServices;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Threading;
+using System.Runtime.InteropServices;
 using System.Speech.AudioFormat;
 using System.Speech.Internal;
-using System.Speech.Internal.SapiInterop;
 using System.Speech.Internal.ObjectTokens;
-using System.Speech.Recognition.SrgsGrammar;
+using System.Speech.Internal.SapiInterop;
 
 namespace System.Speech.Recognition
 {

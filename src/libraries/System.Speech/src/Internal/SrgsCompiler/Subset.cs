@@ -3,7 +3,6 @@
 
 #region Using directives
 
-using System;
 using System.Speech.Internal.SrgsParser;
 
 #endregion

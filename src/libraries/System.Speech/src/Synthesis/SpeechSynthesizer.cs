@@ -1,22 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Speech.AudioFormat;
 using System.Speech.Internal;
-using System.Speech.Internal.ObjectTokens;
 using System.Speech.Internal.Synthesis;
 using System.Speech.Synthesis.TtsEngine;
-using System.Threading;
-
-using RegistryDataKey = System.Speech.Internal.ObjectTokens.RegistryDataKey;
-using RegistryEntry = System.Collections.Generic.KeyValuePair<string, object>;
 
 namespace System.Speech.Synthesis
 {

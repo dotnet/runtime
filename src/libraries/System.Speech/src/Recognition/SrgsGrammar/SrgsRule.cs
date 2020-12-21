@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Xml;
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Speech.Internal;
 using System.Speech.Internal.SrgsParser;
+using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
@@ -91,9 +88,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// classname
-        /// |/summary|
+        /// </summary>
         public string BaseClass
         {
             get
@@ -109,9 +106,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// OnInit
-        /// |/summary|
+        /// </summary>
         public string Script
         {
             get
@@ -125,9 +122,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// OnInit
-        /// |/summary|
+        /// </summary>
         public string OnInit
         {
             get
@@ -141,9 +138,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// OnParse
-        /// |/summary|
+        /// </summary>
         public string OnParse
         {
             get
@@ -157,9 +154,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// OnError
-        /// |/summary|
+        /// </summary>
         public string OnError
         {
             get
@@ -173,9 +170,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// OnRecognition
-        /// |/summary|
+        /// </summary>
         public string OnRecognition
         {
             get

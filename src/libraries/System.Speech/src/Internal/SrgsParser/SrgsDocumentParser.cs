@@ -1,16 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Globalization;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Xml;
-using System.Collections;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
-using System.Speech.Internal.SrgsCompiler;
+using System.Collections.ObjectModel;
 using System.Speech.Recognition;
 using System.Speech.Recognition.SrgsGrammar;
 

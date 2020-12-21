@@ -1,18 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Globalization;
-using System.ComponentModel;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Xml;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Speech.Internal;
 using System.Speech.Internal.SrgsCompiler;
 using System.Speech.Internal.SrgsParser;
+using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
@@ -211,9 +205,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// namespace
-        /// |/summary|
+        /// </summary>
         public string Namespace
         {
             get
@@ -229,9 +223,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// CodeBehind
-        /// |/summary|
+        /// </summary>
         public Collection<string> CodeBehind
         {
             get
@@ -240,9 +234,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// Add #line statements to the inline scripts if set
-        /// |/summary|
+        /// </summary>
         public bool Debug
         {
             get
@@ -255,9 +249,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// language
-        /// |/summary|
+        /// </summary>
         public string Script
         {
             get
@@ -271,9 +265,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// ImportNameSpaces
-        /// |/summary|
+        /// </summary>
         public Collection<string> ImportNamespaces
         {
             get
@@ -282,9 +276,9 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        /// |summary|
+        /// <summary>
         /// ImportNameSpaces
-        /// |/summary|
+        /// </summary>
         public Collection<string> AssemblyReferences
         {
             get

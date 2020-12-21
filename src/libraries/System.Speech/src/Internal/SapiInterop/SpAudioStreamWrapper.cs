@@ -1,15 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using System.Speech.AudioFormat;
-using System.Speech.Internal.SapiInterop;
 using System.Speech.Internal.Synthesis;
-
-using STATSTG = System.Runtime.InteropServices.ComTypes.STATSTG;
 
 namespace System.Speech.Internal.SapiInterop
 {
