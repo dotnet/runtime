@@ -12,11 +12,6 @@ namespace System.Speech.Internal
 {
     internal static class SapiAttributeParser
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 

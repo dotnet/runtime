@@ -22,11 +22,6 @@ namespace System.Speech.Internal
     /// </summary>
     internal class AlphabetConverter
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -38,11 +33,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -129,11 +119,6 @@ namespace System.Speech.Internal
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -228,11 +213,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -249,11 +229,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Type
-        //
-        //*******************************************************************
 
         #region Private Type
 

@@ -18,11 +18,6 @@ namespace System.Speech.Internal.SrgsParser
 {
     internal class SrgsDocumentParser : ISrgsParser
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -33,11 +28,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -58,12 +48,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         public IElementFactory ElementFactory
@@ -76,11 +60,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -481,11 +460,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

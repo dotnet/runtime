@@ -10,11 +10,6 @@ namespace System.Speech.Recognition
     [Serializable]
     public abstract class RecognitionEventArgs : EventArgs
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
         #region Constructors
         internal RecognitionEventArgs(RecognitionResult result)
         {
@@ -22,11 +17,6 @@ namespace System.Speech.Recognition
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
         #region Public Properties
         // All this class has is a property to access the main result.
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionEventArgs.Result"]/*' />
@@ -36,11 +26,6 @@ namespace System.Speech.Recognition
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
         #region Private Fields
         private RecognitionResult _result;
         #endregion
@@ -50,11 +35,6 @@ namespace System.Speech.Recognition
     [Serializable]
     public class SpeechRecognizedEventArgs : RecognitionEventArgs
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
         #region Constructors
 
         internal SpeechRecognizedEventArgs(RecognitionResult result)
@@ -69,11 +49,6 @@ namespace System.Speech.Recognition
     [Serializable]
     public class SpeechRecognitionRejectedEventArgs : RecognitionEventArgs
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
         #region Constructors
 
         internal SpeechRecognitionRejectedEventArgs(RecognitionResult result)
@@ -88,11 +63,6 @@ namespace System.Speech.Recognition
     [Serializable]
     public class SpeechHypothesizedEventArgs : RecognitionEventArgs
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
         #region Constructors
 
         internal SpeechHypothesizedEventArgs(RecognitionResult result)

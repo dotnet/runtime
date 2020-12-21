@@ -17,11 +17,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsSubset : SrgsElement, ISubset
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -49,11 +44,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -94,11 +84,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal methods
-        //
-        //*******************************************************************
 
         #region Internal methods
         internal override void WriteSrgs(XmlWriter writer)
@@ -154,11 +139,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

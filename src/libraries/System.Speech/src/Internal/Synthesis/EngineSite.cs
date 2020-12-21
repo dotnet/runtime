@@ -21,11 +21,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal class EngineSite : ITtsEngineSite, ITtsEventSink
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -36,11 +31,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
         internal TtsEventMapper EventMapper
@@ -236,12 +226,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         /// <summary>
@@ -306,11 +290,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Members
-        //
-        //*******************************************************************
 
         #region Private Members
 
@@ -340,11 +319,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region private Fields
 

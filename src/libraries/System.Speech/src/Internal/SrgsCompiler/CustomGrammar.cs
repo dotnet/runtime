@@ -26,11 +26,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal class CustomGrammar
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -40,11 +35,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal methods
-        //
-        //*******************************************************************
 
         #region internal methods
 
@@ -202,12 +192,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal bool HasScript
@@ -232,11 +216,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Types
-        //
-        //*******************************************************************
 
         #region Internal Types
 
@@ -248,11 +227,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 
@@ -291,11 +265,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 

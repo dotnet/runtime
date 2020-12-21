@@ -25,11 +25,6 @@ namespace System.Speech.Recognition
 
     public class ReplacementText
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -43,11 +38,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region Public Properties
 
@@ -97,11 +87,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

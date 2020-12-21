@@ -15,11 +15,6 @@ namespace System.Speech.Internal.GrammarBuilding
     [DebuggerDisplay("{DebugSummary}")]
     internal sealed class ItemElement : BuilderElements
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -88,11 +83,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region Public Methods
 
@@ -119,11 +109,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -160,11 +145,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

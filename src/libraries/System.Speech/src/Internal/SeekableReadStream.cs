@@ -17,11 +17,6 @@ namespace System.Speech.Internal
     // After CacheDataForSeeking is set to false data can be read from the buffer but no more Seeking can be done.
     internal class SeekableReadStream : Stream
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -34,12 +29,6 @@ namespace System.Speech.Internal
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -146,11 +135,6 @@ namespace System.Speech.Internal
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -252,11 +236,6 @@ namespace System.Speech.Internal
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

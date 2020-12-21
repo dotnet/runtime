@@ -20,11 +20,6 @@ namespace System.Speech.Internal.SrgsParser
 {
     internal class XmlParser : ISrgsParser
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -65,11 +60,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -249,12 +239,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Methods
 
         // Inmplementation of the internal interface ISrgsParser
@@ -268,11 +252,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal fields
-        //
-        //*******************************************************************
 
         #region Internal fields
 
@@ -286,11 +265,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Type
-        //
-        //*******************************************************************
 
         #region Private Type
 
@@ -309,11 +283,6 @@ namespace System.Speech.Internal.SrgsParser
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -1956,11 +1925,6 @@ namespace System.Speech.Internal.SrgsParser
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

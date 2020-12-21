@@ -12,11 +12,6 @@ namespace System.Speech.Internal.SapiInterop
 {
     internal class SapiRecognizer : IDisposable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -66,11 +61,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -189,12 +179,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal bool IsSapi53
@@ -207,11 +191,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Types
-        //
-        //*******************************************************************
 
         #region Internal Types
 
@@ -223,11 +202,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -285,11 +259,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

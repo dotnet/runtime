@@ -10,11 +10,7 @@ namespace System.Speech.Internal.SrgsParser
         void CreateScript(IGrammar grammar, string rule, string method, RuleMethodScript type);
     }
 
-    //*******************************************************************
-    //
-    // Internal Enums
-    //
-    //*******************************************************************
+
 
     #region Internal Enums
 

@@ -12,11 +12,6 @@ namespace System.Speech.Internal.SapiInterop
 {
     internal class SapiGrammar : IDisposable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -38,11 +33,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -107,12 +97,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal ISpRecoGrammar2 SpRecoGrammar2
@@ -129,11 +113,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Methods
 

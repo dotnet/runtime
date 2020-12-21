@@ -22,11 +22,6 @@ namespace System.Speech.Recognition
 
     public class SpeechRecognitionEngine : IDisposable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -122,11 +117,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Static Public Methods
-        //
-        //*******************************************************************
 
         #region Static Methods
 
@@ -164,11 +154,6 @@ namespace System.Speech.Recognition
 
 
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -280,11 +265,6 @@ namespace System.Speech.Recognition
 
 
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region public Methods
 
@@ -505,11 +485,6 @@ namespace System.Speech.Recognition
 
 
 
-        //*******************************************************************
-        //
-        // Public Events
-        //
-        //*******************************************************************
 
         #region public Events
 
@@ -646,11 +621,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -789,11 +759,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Properties
-        //
-        //*******************************************************************
 
         #region Private Properties
         private RecognizerBase RecoBase
@@ -823,11 +788,6 @@ namespace System.Speech.Recognition
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

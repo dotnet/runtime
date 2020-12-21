@@ -12,11 +12,6 @@ namespace System.Speech.Internal.SapiInterop
     // Disposing this class will dispose all unmanmanaged memory.
     internal class SpeechEvent : IDisposable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -92,11 +87,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -131,12 +121,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal SPEVENTENUM EventId
@@ -167,11 +151,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

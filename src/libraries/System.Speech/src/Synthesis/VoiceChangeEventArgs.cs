@@ -10,11 +10,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public class VoiceChangeEventArgs : PromptEventArgs
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -30,11 +25,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -52,11 +42,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

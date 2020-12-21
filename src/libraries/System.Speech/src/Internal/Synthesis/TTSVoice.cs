@@ -12,11 +12,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal class TTSVoice
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -28,11 +23,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region public Methods
 
@@ -55,11 +45,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -147,12 +132,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal ITtsEngineProxy TtsEngine
@@ -173,11 +152,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region private Fields
 

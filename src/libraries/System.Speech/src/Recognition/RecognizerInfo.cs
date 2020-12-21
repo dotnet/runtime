@@ -19,11 +19,6 @@ namespace System.Speech.Recognition
 
     public class RecognizerInfo : IDisposable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -117,11 +112,6 @@ namespace System.Speech.Recognition
 
 
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -166,22 +156,11 @@ namespace System.Speech.Recognition
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

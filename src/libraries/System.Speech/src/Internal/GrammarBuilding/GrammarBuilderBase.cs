@@ -11,11 +11,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal abstract class GrammarBuilderBase
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -47,12 +42,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -112,11 +101,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

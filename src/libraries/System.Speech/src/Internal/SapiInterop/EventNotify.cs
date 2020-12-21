@@ -32,11 +32,6 @@ namespace System.Speech.Internal.SapiInterop
     /// compatible with the application model of the thread that created this object.
     internal class EventNotify
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -55,11 +50,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion Constructors
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -108,12 +98,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion Methods
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal SpeechAudioFormatInfo AudioFormat
@@ -126,21 +110,11 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion Methods
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

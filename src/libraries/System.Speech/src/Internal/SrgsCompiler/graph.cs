@@ -18,16 +18,11 @@ namespace System.Speech.Internal.SrgsCompiler
     // Checks are made to ensure that the State pointers are never reused.
 
 #if DEBUG
-    [DebuggerDisplay ("Count = {Count}")]
-    [DebuggerTypeProxy (typeof(GraphDebugDisplay))]
+    [DebuggerDisplay("Count = {Count}")]
+    [DebuggerTypeProxy(typeof(GraphDebugDisplay))]
 #endif
     internal class Graph : IEnumerable<State>
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -118,10 +113,10 @@ namespace System.Speech.Internal.SrgsCompiler
 #if DEBUG
             // Remove redundant epsilon transitions.
             int cStates = Count;
-            RemoveEpsilonStates ();
+            RemoveEpsilonStates();
             if (Count != cStates)
             {
-                System.Diagnostics.Trace.WriteLine ("Grammar compiler, additional Epsilons could have been removed :" + (cStates - Count).ToString (CultureInfo.InvariantCulture));
+                System.Diagnostics.Trace.WriteLine("Grammar compiler, additional Epsilons could have been removed :" + (cStates - Count).ToString(CultureInfo.InvariantCulture));
                 //System.Diagnostics.Debug.Assert (_states.Count == cStates);
             }
             // Remove duplicate transitions.
@@ -131,11 +126,11 @@ namespace System.Speech.Internal.SrgsCompiler
 #if DEBUG
             // Remove redundant epsilon transitions again now that identical epsilon transitions have been removed.
             cStates = Count;
-            RemoveEpsilonStates ();
+            RemoveEpsilonStates();
             //System.Diagnostics.Debug.Assert (_states.Count == cStates);
             if (Count != cStates)
             {
-                System.Diagnostics.Trace.WriteLine ("Grammar compiler, additional Epsilons could have been removed post merge transition :" + (cStates - Count).ToString (CultureInfo.InvariantCulture));
+                System.Diagnostics.Trace.WriteLine("Grammar compiler, additional Epsilons could have been removed post merge transition :" + (cStates - Count).ToString(CultureInfo.InvariantCulture));
             }
 
             // Verify the transition weights are normalized.
@@ -151,9 +146,9 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
 
                 float maxWeightError = 0.00001f * cArcs;
-                if (flSumWeights != 0.0f && maxWeightError - Math.Abs (flSumWeights - 1.0f) < 0)
+                if (flSumWeights != 0.0f && maxWeightError - Math.Abs(flSumWeights - 1.0f) < 0)
                 {
-                    System.Diagnostics.Debug.Assert (true);
+                    System.Diagnostics.Debug.Assert(true);
                 }
             }
 #endif
@@ -254,11 +249,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Property
-        //
-        //*******************************************************************
 
         #region Internal Property
 
@@ -287,11 +277,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -320,7 +305,7 @@ namespace System.Speech.Internal.SrgsCompiler
         ///    - InputEpsilonTransitions  can move its semantic tag ownerships/references to the right.
         ///    - OutputEpsilonTransitions can move its semantic tag ownerships/references to the left.
         /// </summary>
-        private void RemoveEpsilonStates ()
+        private void RemoveEpsilonStates()
         {
             // For each state in the grammar graph, remove excess input/output epsilon transitions.
             for (State state = First, nextState = null; state != null; state = nextState)
@@ -333,13 +318,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
                     // Attempt to move properties referencing EpsilonArc to the right.
                     // Optimization can only be applied when the epsilon arc is not referenced by any properties.
-                    if (MoveSemanticTagRight (epsilonArc))
+                    if (MoveSemanticTagRight(epsilonArc))
                     {
                         // Delete the input epsilon transition
                         State pEpsilonStartState = epsilonArc.Start;
                         float flEpsilonWeight = epsilonArc.Weight;
 
-                        DeleteTransition (epsilonArc);
+                        DeleteTransition(epsilonArc);
 
                         // Multiply weight of all transitions from state by EpsilonWeight.
                         foreach (Arc arc in state.OutArcs)
@@ -350,7 +335,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         // Move all output transitions from state to pEpsilonStartState and delete state if appropriate.
                         if (state != pEpsilonStartState)
                         {
-                            MoveOutputTransitionsAndDeleteState (state, pEpsilonStartState);
+                            MoveOutputTransitionsAndDeleteState(state, pEpsilonStartState);
                         }
                     }
                 }
@@ -363,17 +348,17 @@ namespace System.Speech.Internal.SrgsCompiler
                     // Attempt to move properties referencing EpsilonArc to the left.
                     // Optimization can only be applied when the epsilon arc is not referenced by any properties
                     // and when the arc does not connect RuleInitialState to null.
-                    if (!((state == state.Rule._firstState) && (epsilonArc.End == null)) && MoveSemanticTagLeft (epsilonArc))
+                    if (!((state == state.Rule._firstState) && (epsilonArc.End == null)) && MoveSemanticTagLeft(epsilonArc))
                     {
                         // Delete the output epsilon transition
                         State pEpsilonEndState = epsilonArc.End;
 
-                        DeleteTransition (epsilonArc);
+                        DeleteTransition(epsilonArc);
 
                         // Move all input transitions from state to pEpsilonEndState and delete state if appropriate.
                         if (state != pEpsilonEndState)
                         {
-                            MoveInputTransitionsAndDeleteState (state, pEpsilonEndState);
+                            MoveInputTransitionsAndDeleteState(state, pEpsilonEndState);
                         }
                     }
                 }
@@ -1004,11 +989,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Types
-        //
-        //*******************************************************************
 
         #region Private Types
 
@@ -1016,21 +996,21 @@ namespace System.Speech.Internal.SrgsCompiler
         // Used by the debbugger display attribute
         internal class GraphDebugDisplay
         {
-            public GraphDebugDisplay (Graph states)
+            public GraphDebugDisplay(Graph states)
             {
                 _states = states;
             }
 
-            [DebuggerBrowsable (DebuggerBrowsableState.RootHidden)]
-            public State [] AKeys
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public State[] AKeys
             {
                 get
                 {
-                    State [] states = new State [_states.Count];
+                    State[] states = new State[_states.Count];
                     int i = 0;
                     foreach (State state in _states)
                     {
-                        states [i++] = state;
+                        states[i++] = state;
                     }
                     return states;
                 }
@@ -1042,11 +1022,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

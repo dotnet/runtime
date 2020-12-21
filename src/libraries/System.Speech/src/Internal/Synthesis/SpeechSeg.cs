@@ -13,11 +13,6 @@ namespace System.Speech.Internal.Synthesis
     /// </summary>
     internal class SpeechSeg
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -28,12 +23,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -72,11 +61,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -92,11 +76,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region private Fields
 

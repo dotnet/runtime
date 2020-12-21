@@ -11,11 +11,6 @@ namespace System.Speech.Internal.SapiInterop
 {
     internal abstract class SapiProxy : IDisposable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -26,11 +21,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -38,12 +28,6 @@ namespace System.Speech.Internal.SapiInterop
         internal abstract void Invoke2(VoidDelegate pfn);
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -81,11 +65,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Fields
-        //
-        //*******************************************************************
 
         #region Protected Fields
 
@@ -95,21 +74,12 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Types
-        //
-        //*******************************************************************
 
         #region Protected Fields
 
         internal class PassThrough : SapiProxy, IDisposable
         {
-            //*******************************************************************
-            //
-            // Constructors
-            //
-            //*******************************************************************
+
 
             #region Constructors
 
@@ -136,11 +106,7 @@ namespace System.Speech.Internal.SapiInterop
 
             #endregion
 
-            //*******************************************************************
-            //
-            // Internal Methods
-            //
-            //*******************************************************************
+
 
             #region Internal Methods
 
@@ -156,11 +122,7 @@ namespace System.Speech.Internal.SapiInterop
 
             #endregion
 
-            //*******************************************************************
-            //
-            // Private Methods
-            //
-            //*******************************************************************
+
 
             #region Private Methods
 
@@ -178,11 +140,7 @@ namespace System.Speech.Internal.SapiInterop
 
         internal class MTAThread : SapiProxy, IDisposable
         {
-            //*******************************************************************
-            //
-            // Constructors
-            //
-            //*******************************************************************
+
 
             #region Constructors
 
@@ -225,11 +183,7 @@ namespace System.Speech.Internal.SapiInterop
 
             #endregion
 
-            //*******************************************************************
-            //
-            // Internal Methods
-            //
-            //*******************************************************************
+
 
             #region Internal Methods
 
@@ -267,11 +221,7 @@ namespace System.Speech.Internal.SapiInterop
 
             #endregion
 
-            //*******************************************************************
-            //
-            // Private Methods
-            //
-            //*******************************************************************
+
 
             #region Private Methods
 
@@ -317,11 +267,7 @@ namespace System.Speech.Internal.SapiInterop
 
             #endregion
 
-            //*******************************************************************
-            //
-            // Private Fields
-            //
-            //*******************************************************************
+
 
             #region Private Fields
 

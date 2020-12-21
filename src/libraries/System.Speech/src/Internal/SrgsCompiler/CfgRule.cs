@@ -11,11 +11,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal struct CfgRule
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -40,12 +35,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -217,11 +206,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 
@@ -235,11 +219,7 @@ namespace System.Speech.Internal.SrgsCompiler
         #endregion
     }
 
-    //*******************************************************************
-    //
-    // Internal Enumeration
-    //
-    //*******************************************************************
+
 
     #region Internal Enumeration
 

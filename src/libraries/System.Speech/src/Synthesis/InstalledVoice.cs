@@ -27,11 +27,6 @@ namespace System.Speech.Synthesis
     [DebuggerDisplay("{VoiceInfo.Name} [{Enabled ? \"Enabled\" : \"Disabled\"}]")]
     public class InstalledVoice
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -44,11 +39,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -80,11 +70,6 @@ namespace System.Speech.Synthesis
 
         #endregion Events
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region public Methods
 
@@ -109,11 +94,6 @@ namespace System.Speech.Synthesis
 
         #endregion Events
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -181,11 +161,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

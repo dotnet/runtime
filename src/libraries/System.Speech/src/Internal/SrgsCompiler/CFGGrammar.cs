@@ -16,11 +16,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal sealed class CfgGrammar
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -30,11 +25,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Types
-        //
-        //*******************************************************************
 
         #region Internal Types
 
@@ -256,11 +246,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -426,29 +411,24 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #if DEBUG
 
-        internal static void TraceInformation (string s)
+        internal static void TraceInformation(string s)
         {
-            System.Diagnostics.Debug.WriteLine (s);
+            System.Diagnostics.Debug.WriteLine(s);
         }
 
-        internal static void TraceInformation2 (string s)
+        internal static void TraceInformation2(string s)
         {
-            System.Diagnostics.Debug.WriteLine (s);
+            System.Diagnostics.Debug.WriteLine(s);
         }
 
-        internal static void TraceInformation3 (string s)
+        internal static void TraceInformation3(string s)
         {
-            System.Diagnostics.Debug.WriteLine (s);
+            System.Diagnostics.Debug.WriteLine(s);
         }
 #endif
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -581,12 +561,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal static uint NextHandle
@@ -599,11 +573,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 
@@ -640,11 +609,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

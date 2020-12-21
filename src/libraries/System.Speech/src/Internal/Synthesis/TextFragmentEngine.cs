@@ -14,11 +14,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal class TextFragmentEngine : ISsmlParser
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -32,11 +27,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -292,12 +282,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         public string Ssml
@@ -310,11 +294,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -335,11 +314,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

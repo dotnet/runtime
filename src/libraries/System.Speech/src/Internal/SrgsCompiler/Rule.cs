@@ -16,11 +16,6 @@ namespace System.Speech.Internal.SrgsCompiler
     [DebuggerDisplay("{Name}")]
     internal sealed class Rule : ParseElementCollection, IRule, IComparable<Rule>
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -47,11 +42,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -82,7 +72,7 @@ namespace System.Speech.Internal.SrgsCompiler
         ///
         /// </summary>
         /// <param name="iRecursiveDepth"></param>
-        internal void CheckForExitPath (ref int iRecursiveDepth)
+        internal void CheckForExitPath(ref int iRecursiveDepth)
         {
             //CfgGrammar.TraceInformation ("Rule::CheckForExitPath");
             if (!_fHasExitPath)
@@ -90,7 +80,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // This check allows empty rules.
                 if (_firstState != null && _firstState.NumArcs != 0)
                 {
-                    _firstState.CheckExitPath (ref iRecursiveDepth);
+                    _firstState.CheckExitPath(ref iRecursiveDepth);
                 }
             }
         }
@@ -201,12 +191,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal string Name
@@ -257,11 +241,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -311,11 +290,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 
@@ -344,11 +318,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

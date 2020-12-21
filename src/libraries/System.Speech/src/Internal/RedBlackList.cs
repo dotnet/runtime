@@ -14,11 +14,6 @@ namespace System.Speech.Internal
     /// </summary>
     internal abstract class RedBackList : IEnumerable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -28,11 +23,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -41,7 +31,7 @@ namespace System.Speech.Internal
 #if DEBUG
             if (_root != null && _root._inEnumaration)
             {
-                throw new InvalidOperationException ();
+                throw new InvalidOperationException();
             }
 #endif
             TreeNode node = new(key);
@@ -57,7 +47,7 @@ namespace System.Speech.Internal
 #if DEBUG
             if (_root != null && _root._inEnumaration)
             {
-                throw new InvalidOperationException ();
+                throw new InvalidOperationException();
             }
 #endif
             TreeNode node = FindItem(_root, key);
@@ -95,12 +85,6 @@ namespace System.Speech.Internal
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -145,11 +129,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Methods
-        //
-        //*******************************************************************
 
         #region Protected Methods
 
@@ -157,11 +136,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -598,7 +572,7 @@ namespace System.Speech.Internal
 
 #if DEBUG
 
-        private void ValidateBinaryTree (TreeNode node, out object minValue, out object maxValue)
+        private void ValidateBinaryTree(TreeNode node, out object minValue, out object maxValue)
         {
             if (node == null)
             {
@@ -606,19 +580,19 @@ namespace System.Speech.Internal
                 return;
             }
             object maxRight, minRight, maxLeft, minLeft;
-            ValidateBinaryTree(node.Left, out minLeft, out maxLeft );
+            ValidateBinaryTree(node.Left, out minLeft, out maxLeft);
             ValidateBinaryTree(node.Right, out minRight, out maxRight);
             object current = node.Key;
             if (maxLeft != null)
             {
-                if (CompareTo (maxLeft, current) >= 0)
+                if (CompareTo(maxLeft, current) >= 0)
                 {
                     throw new InvalidOperationException(string.Format("Binary property violated on the left of {0}", node.ToString()));
                 }
             }
             if (minRight != null)
             {
-                if (CompareTo (minRight, current) < 0)
+                if (CompareTo(minRight, current) < 0)
                 {
                     throw new InvalidOperationException(string.Format("Binary property violated on the right of {0}", node.ToString()));
                 }
@@ -721,11 +695,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -733,11 +702,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Types
-        //
-        //*******************************************************************
 
         #region Private Types
 
@@ -799,7 +763,7 @@ namespace System.Speech.Internal
         }
 
 #if DEBUG
-        [DebuggerDisplay ("{((System.Speech.Internal.SrgsCompiler.Arc)Key).ToString ()}")]
+        [DebuggerDisplay("{((System.Speech.Internal.SrgsCompiler.Arc)Key).ToString ()}")]
 #endif
         private class TreeNode
         {

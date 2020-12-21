@@ -11,16 +11,11 @@ using System.Text;
 namespace System.Speech.Internal.SrgsCompiler
 {
 #if DEBUG
-    [DebuggerDisplay ("Count #{Count}")]
-    [DebuggerTypeProxy (typeof(ArcListDebugDisplay))]
+    [DebuggerDisplay("Count #{Count}")]
+    [DebuggerTypeProxy(typeof(ArcListDebugDisplay))]
 #endif
     internal class ArcList : RedBackList
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -45,12 +40,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal new Arc First
@@ -63,11 +52,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Members
-        //
-        //*******************************************************************
 
         #region Private Members
 
@@ -88,21 +72,21 @@ namespace System.Speech.Internal.SrgsCompiler
         // Used by the debbugger display attribute
         private class ArcListDebugDisplay
         {
-            public ArcListDebugDisplay (ArcList item)
+            public ArcListDebugDisplay(ArcList item)
             {
                 _item = item;
             }
 
-            [DebuggerBrowsable (DebuggerBrowsableState.RootHidden)]
-            public Arc [] AKeys
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public Arc[] AKeys
             {
                 get
                 {
-                    Arc [] item = new Arc [_item.Count];
+                    Arc[] item = new Arc[_item.Count];
                     int i = 0;
                     foreach (Arc arc in _item)
                     {
-                        item [i++] = arc;
+                        item[i++] = arc;
                     }
                     return item;
                 }

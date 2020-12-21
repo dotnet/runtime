@@ -13,11 +13,6 @@ namespace System.Speech.Internal.SrgsCompiler
     [DebuggerDisplay("rule=\"{_rule}\" method=\"{_sMethod}\" operation=\"{_method.ToString ()}\"")]
     internal class ScriptRef
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -30,11 +25,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -71,11 +61,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 

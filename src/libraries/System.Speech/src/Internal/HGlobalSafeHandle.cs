@@ -11,11 +11,6 @@ namespace System.Speech.Internal
     /// </summary>
     internal sealed class HGlobalSafeHandle : SafeHandle
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -38,11 +33,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -85,11 +75,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Methods
-        //
-        //*******************************************************************
 
         #region Protected Methods
 
@@ -119,11 +104,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

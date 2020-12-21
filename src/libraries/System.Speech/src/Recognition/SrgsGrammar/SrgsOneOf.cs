@@ -20,11 +20,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [DebuggerTypeProxy(typeof(OneOfDebugDisplay))]
     public class SrgsOneOf : SrgsElement, IOneOf
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -70,11 +65,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region public Method
 
@@ -91,11 +81,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -111,11 +96,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -140,11 +120,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Properties
-        //
-        //*******************************************************************
 
         #region Protected Properties
 
@@ -169,11 +144,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -181,11 +151,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Types
-        //
-        //*******************************************************************
 
         #region Private Types
 

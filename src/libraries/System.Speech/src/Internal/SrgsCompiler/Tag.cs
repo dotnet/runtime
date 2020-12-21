@@ -12,15 +12,10 @@ namespace System.Speech.Internal.SrgsCompiler
     /// Summary description for SemanticTag.
     /// </summary>
 #if DEBUG
-    [DebuggerDisplay ("{_be.Symbols.FromOffset (_cfgTag._nameOffset == 0 ? _cfgTag._valueOffset : _cfgTag._nameOffset)}")]
+    [DebuggerDisplay("{_be.Symbols.FromOffset (_cfgTag._nameOffset == 0 ? _cfgTag._valueOffset : _cfgTag._nameOffset)}")]
 #endif
     internal sealed class Tag : IComparable<Tag>
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -44,11 +39,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -68,11 +58,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 

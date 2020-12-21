@@ -15,11 +15,6 @@ namespace System.Speech.Internal.SapiInterop
 {
     internal class SpAudioStreamWrapper : SpStreamWrapper, ISpStreamFormat
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
         #region Constructors
 
         internal SpAudioStreamWrapper(Stream stream, SpeechAudioFormatInfo audioFormat) : base(stream)
@@ -62,11 +57,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region public Methods
 
@@ -82,12 +72,6 @@ namespace System.Speech.Internal.SapiInterop
         #endregion
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -163,11 +147,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Types
-        //
-        //*******************************************************************
 
         #region Private Types
 
@@ -200,11 +179,6 @@ namespace System.Speech.Internal.SapiInterop
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

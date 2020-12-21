@@ -26,11 +26,6 @@ namespace System.Speech.Recognition
     internal class RecognizerBase : IRecognizerInternal, IDisposable,
 ISpGrammarResourceLoader
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -50,11 +45,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -971,12 +961,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         // Note on locking implementation:
@@ -1285,11 +1269,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Events
-        //
-        //*******************************************************************
 
         #region Internal Events
 
@@ -1416,11 +1395,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Methods
-        //
-        //*******************************************************************
 
         #region Protected Methods
 
@@ -1482,11 +1456,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Properties
-        //
-        //*******************************************************************
 
         #region Private Properties
 
@@ -1509,11 +1478,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -3143,11 +3107,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -3302,11 +3261,6 @@ ISpGrammarResourceLoader
     // This is stored in the Grammar.InternalData property.
     internal class InternalGrammarData
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -3325,11 +3279,6 @@ ISpGrammarResourceLoader
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 

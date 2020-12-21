@@ -14,11 +14,6 @@ namespace System.Speech.Internal
     // Helper class which wraps AudioFormat and handles WaveFormatEx variable sized structure
     internal static class AudioFormatConverter
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -50,11 +45,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -289,11 +279,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Type
-        //
-        //*******************************************************************
 
         #region Private Type
 

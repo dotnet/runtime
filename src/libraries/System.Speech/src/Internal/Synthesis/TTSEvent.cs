@@ -13,11 +13,6 @@ namespace System.Speech.Internal.Synthesis
     /// </summary>
     internal class TTSEvent
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -59,12 +54,6 @@ namespace System.Speech.Internal.Synthesis
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -172,11 +161,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region private Fields
 

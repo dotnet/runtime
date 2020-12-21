@@ -15,11 +15,6 @@ namespace System.Speech.Internal.Synthesis
     /// </summary>
     internal static class AudioFormatConverter
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -136,11 +131,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -443,11 +433,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Members
-        //
-        //*******************************************************************
 
         #region Private Members
 
@@ -600,11 +585,7 @@ namespace System.Speech.Internal.Synthesis
         #endregion
     }
 
-    //*******************************************************************
-    //
-    // Internal Types
-    //
-    //*******************************************************************
+
 
     #region Internal Types
 

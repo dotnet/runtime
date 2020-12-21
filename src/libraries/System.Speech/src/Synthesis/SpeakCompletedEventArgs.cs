@@ -10,11 +10,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public class SpeakCompletedEventArgs : PromptEventArgs
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 

@@ -15,11 +15,6 @@ namespace System.Speech.Internal.SrgsCompiler
 {
     internal class SrgsElementCompilerFactory : IElementFactory
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -31,11 +26,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -170,12 +160,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         IGrammar IElementFactory.Grammar
@@ -209,11 +193,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -383,11 +362,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

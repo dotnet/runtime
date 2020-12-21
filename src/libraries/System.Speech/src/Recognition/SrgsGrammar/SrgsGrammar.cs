@@ -21,11 +21,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [Serializable]
     internal sealed class SrgsGrammar : IGrammar
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -39,11 +34,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -280,12 +270,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 #pragma warning restore 56507
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -524,12 +508,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         /// |summary|
@@ -586,11 +564,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -687,11 +660,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

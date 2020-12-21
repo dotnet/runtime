@@ -14,11 +14,6 @@ namespace System.Speech.Recognition
 
     public class RecognizedWordUnit
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
         #region Constructors
 
 #pragma warning disable 6504
@@ -52,11 +47,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
         #region Public Properties
         // Spoken text of the word {No conversion to display form}
         /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedWordUnit.Text"]/*' />
@@ -99,11 +89,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -119,11 +104,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 
@@ -132,11 +112,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

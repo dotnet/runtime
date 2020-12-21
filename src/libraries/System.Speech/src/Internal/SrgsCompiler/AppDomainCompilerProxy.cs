@@ -284,11 +284,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal string[] _constructors;
 
-        //*******************************************************************
-        //
-        // Private Types
-        //
-        //*******************************************************************
 
         #region Private Types
 
@@ -298,11 +293,7 @@ namespace System.Speech.Internal.SrgsCompiler
         // list of rules with scripts
         private class ScriptRefStruct
         {
-            //*******************************************************************
-            //
-            // Constructors
-            //
-            //*******************************************************************
+
 
             #region Constructors
 
@@ -314,11 +305,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
             #endregion
 
-            //*******************************************************************
-            //
-            // Internal Fields
-            //
-            //*******************************************************************
+
 
             #region Internal Fields
 

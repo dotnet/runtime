@@ -14,11 +14,6 @@ namespace System.Speech.Internal.SrgsCompiler
     [StructLayout(LayoutKind.Explicit)]
     internal struct CfgSemanticTag
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -93,12 +88,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -218,11 +207,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 

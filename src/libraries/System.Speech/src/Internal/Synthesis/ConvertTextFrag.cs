@@ -10,11 +10,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal static class ConvertTextFrag
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -154,11 +149,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -389,11 +379,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Field
-        //
-        //*******************************************************************
 
         #region Private Methods
 

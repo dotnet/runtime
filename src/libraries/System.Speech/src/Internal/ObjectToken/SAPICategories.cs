@@ -14,11 +14,6 @@ namespace System.Speech.Internal.ObjectTokens
     /// </summary>
     internal static class SAPICategories
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -99,11 +94,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         private const string SpeechRegistryKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\";
 
@@ -118,11 +108,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -378,11 +363,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region private Fields
 

@@ -23,11 +23,6 @@ namespace System.Speech.Synthesis
     [Serializable]
     public class VoiceInfo
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -158,11 +153,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region public Methods
 
@@ -191,11 +181,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -306,11 +291,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -326,11 +306,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Property
-        //
-        //*******************************************************************
 
         #region Internal Property
 
@@ -384,11 +359,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

@@ -7,11 +7,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal class PcmConverter
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -129,11 +124,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region private Fields
 
@@ -381,13 +371,6 @@ namespace System.Speech.Internal.Synthesis
             _iDownFactor = inHz;
         }
 
-
-        /*****************************************************************************
-        * Resampling *
-        *------------*
-        *   Description:
-        *
-        ******************************************************************* DING  ***/
         private float[] Resampling(float[] inSamples, float[] pdMemory)
         {
             int cInSamples = inSamples.Length;
@@ -499,11 +482,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region private Fields
 

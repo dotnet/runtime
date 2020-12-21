@@ -9,6 +9,8 @@
     <NoWarn>$(NoWarn);CS0649;CA2249;SA1129</NoWarn>
     <!-- On older TFM's we needed to disable obsoletion warnings about Marshalling VARIANTs -->
     <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">$(NoWarn);IDE0079</NoWarn>
+    <!-- On newer TFM's we needed to disable obsoletion warning about WebRequest -->
+    <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.0-windows'">$(NoWarn);IDE0079</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
 
   </PropertyGroup>

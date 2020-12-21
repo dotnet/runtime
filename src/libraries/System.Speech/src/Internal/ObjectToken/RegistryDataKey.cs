@@ -19,11 +19,6 @@ namespace System.Speech.Internal.ObjectTokens
     [DebuggerDisplay("{Name}")]
     internal class RegistryDataKey : ISpDataKey, IEnumerable<RegistryDataKey>, IDisposable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -159,11 +154,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -495,11 +485,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Methods
-        //
-        //*******************************************************************
 
         #region Protected Methods
 
@@ -518,11 +503,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 
@@ -534,11 +514,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Method
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -596,11 +571,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Types
-        //
-        //*******************************************************************
 
         #region private Types
 

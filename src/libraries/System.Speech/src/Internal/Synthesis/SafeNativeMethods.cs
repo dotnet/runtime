@@ -156,11 +156,7 @@ namespace System.Speech.Internal.Synthesis
         internal const uint CALLBACK_NULL = 0x00000000;
         internal const uint CALLBACK_FUNCTION = 0x00030000;
     }
-    //*******************************************************************
-    //
-    // Internal Types
-    //
-    //*******************************************************************
+
 
     #region Internal Types
 

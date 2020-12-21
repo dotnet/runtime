@@ -14,11 +14,6 @@ namespace System.Speech.Internal
     /// </summary>
     internal sealed class StreamMarshaler : IDisposable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -38,11 +33,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
         internal void ReadArray<T>(T[] ao, int c)
@@ -159,11 +149,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region internal Fields
 
@@ -185,11 +170,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

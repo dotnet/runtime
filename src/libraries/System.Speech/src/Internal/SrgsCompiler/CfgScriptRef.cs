@@ -13,11 +13,6 @@ namespace System.Speech.Internal.SrgsCompiler
     [StructLayout(LayoutKind.Sequential)]
     internal struct CfgScriptRef
     {
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 

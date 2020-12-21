@@ -19,11 +19,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal sealed partial class Backend
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -40,11 +35,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -832,11 +822,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Property
-        //
-        //*******************************************************************
 
         #region Internal Property
 
@@ -858,11 +843,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -1082,7 +1062,7 @@ namespace System.Speech.Internal.SrgsCompiler
 #if DEBUG
                 if (thisState == 0 && state.InArcs.IsEmpty && state.Rule._cStates > 1)
                 {
-                    XmlParser.ThrowSrgsException (SRID.StateWithNoArcs);
+                    XmlParser.ThrowSrgsException(SRID.StateWithNoArcs);
                 }
 #endif
                 cArcs += thisState;
@@ -1319,7 +1299,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 _ulRecursiveDepth = 0;
 
                 //The following function will use recursive function that might change _ulRecursiveDepth
-                rule.CheckForExitPath (ref _ulRecursiveDepth);
+                rule.CheckForExitPath(ref _ulRecursiveDepth);
             }
 #endif
             //
@@ -1366,12 +1346,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -1458,11 +1432,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

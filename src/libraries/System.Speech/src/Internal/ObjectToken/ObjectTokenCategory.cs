@@ -18,11 +18,6 @@ namespace System.Speech.Internal.ObjectTokens
     /// </summary>
     internal class ObjectTokenCategory : RegistryDataKey, IEnumerable<ObjectToken>
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -39,11 +34,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -119,11 +109,6 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Methods
-        //
-        //*******************************************************************
 
         #region Protected Methods
 

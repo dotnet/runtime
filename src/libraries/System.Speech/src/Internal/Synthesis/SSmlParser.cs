@@ -15,11 +15,6 @@ namespace System.Speech.Internal.Synthesis
 {
     internal static class SsmlParser
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -84,11 +79,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -1849,11 +1839,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Types
-        //
-        //*******************************************************************
 
         #region Private Types
 
@@ -1919,11 +1904,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -2155,11 +2135,7 @@ namespace System.Speech.Internal.Synthesis
         };
     }
 
-    //*******************************************************************
-    //
-    // Internal Types
-    //
-    //*******************************************************************
+
 
     #region Internal Types
 

@@ -20,11 +20,6 @@ namespace System.Speech.Recognition
     [DebuggerDisplay("{DebugSummary}")]
     public class GrammarBuilder
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -113,11 +108,6 @@ namespace System.Speech.Recognition
         #endregion Constructors
 
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region Public Methods
 
@@ -349,11 +339,6 @@ namespace System.Speech.Recognition
 
         #endregion Constructors
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region Public Properties
 
@@ -379,11 +364,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Operator Overloads
-        //
-        //*******************************************************************
 
         #region Operator Overloads
 
@@ -551,11 +531,6 @@ namespace System.Speech.Recognition
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -644,12 +619,6 @@ namespace System.Speech.Recognition
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
         internal virtual string DebugSummary
@@ -680,11 +649,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -698,11 +662,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -712,11 +671,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Type
-        //
-        //*******************************************************************
 
         #region Private Type
 
@@ -725,11 +679,7 @@ namespace System.Speech.Recognition
         /// </summary>
         private class InternalGrammarBuilder : BuilderElements
         {
-            //*******************************************************************
-            //
-            // Internal Methods
-            //
-            //*******************************************************************
+
 
             #region Internal Methods
 

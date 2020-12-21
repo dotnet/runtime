@@ -10,11 +10,6 @@ namespace System.Speech.Recognition
 
     public class StateChangedEventArgs : EventArgs
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -27,11 +22,6 @@ namespace System.Speech.Recognition
 
 
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -45,11 +35,6 @@ namespace System.Speech.Recognition
 
 
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

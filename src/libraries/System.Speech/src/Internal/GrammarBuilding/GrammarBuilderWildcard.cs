@@ -12,11 +12,6 @@ namespace System.Speech.Internal.GrammarBuilding
     /// </summary>
     internal sealed class GrammarBuilderWildcard : GrammarBuilderBase
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -29,11 +24,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region Public Methods
 
@@ -52,11 +42,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -88,12 +73,6 @@ namespace System.Speech.Internal.GrammarBuilding
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 

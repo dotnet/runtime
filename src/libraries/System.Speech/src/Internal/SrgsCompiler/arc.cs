@@ -17,15 +17,10 @@ namespace System.Speech.Internal.SrgsCompiler
     /// Summary description for Arc.
     /// </summary>
 #if DEBUG
-    [DebuggerDisplay ("{ToString ()}")]
+    [DebuggerDisplay("{ToString ()}")]
 #endif
     internal class Arc : IComparer<Arc>, IComparable<Arc>
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -109,11 +104,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -552,45 +542,45 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #if DEBUG
 
-        public override string ToString ()
+        public override string ToString()
         {
-            return (_start != null ? "#" + _start.Id.ToString (CultureInfo.InvariantCulture) : "") + " <- " + DebuggerDisplayTags () + " -> " + (_end != null ? "#" + _end.Id.ToString (CultureInfo.InvariantCulture) : "");
+            return (_start != null ? "#" + _start.Id.ToString(CultureInfo.InvariantCulture) : "") + " <- " + DebuggerDisplayTags() + " -> " + (_end != null ? "#" + _end.Id.ToString(CultureInfo.InvariantCulture) : "");
         }
 
-        internal string DebuggerDisplayTags ()
+        internal string DebuggerDisplayTags()
         {
             StringBuilder sb = new();
             if (_iWord == 0 && (_ruleRef != null || _specialTransitionIndex != 0))
             {
-                sb.Append ('<');
+                sb.Append('<');
                 if (_ruleRef != null)
                 {
-                    sb.Append (_ruleRef.Name);
+                    sb.Append(_ruleRef.Name);
                 }
                 else
                 {
                     switch (_specialTransitionIndex)
                     {
                         case CfgGrammar.SPWILDCARDTRANSITION:
-                            sb.Append ("GARBAGE");
+                            sb.Append("GARBAGE");
                             break;
 
                         case CfgGrammar.SPTEXTBUFFERTRANSITION:
-                            sb.Append ("TEXTBUFFER");
+                            sb.Append("TEXTBUFFER");
                             break;
 
                         case CfgGrammar.SPDICTATIONTRANSITION:
-                            sb.Append ("DICTATION");
+                            sb.Append("DICTATION");
                             break;
                     }
                 }
-                sb.Append ('>');
+                sb.Append('>');
             }
             else
             {
-                sb.Append ('\'');
-                sb.Append (_iWord == 0 ? new string (new char [] { (char) 0x3b5 }) : _be != null ? _be.Words [_iWord] : _iWord.ToString (CultureInfo.InvariantCulture));
-                sb.Append ('\'');
+                sb.Append('\'');
+                sb.Append(_iWord == 0 ? new string(new char[] { (char)0x3b5 }) : _be != null ? _be.Words[_iWord] : _iWord.ToString(CultureInfo.InvariantCulture));
+                sb.Append('\'');
             }
 
             if (_startTags != null || _endTags != null)
@@ -601,10 +591,10 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Compare each tag if not null
                 for (int i = 0; same && i < _endTags.Count; i++)
                 {
-                    same &= _startTags [i] == _endTags [i];
+                    same &= _startTags[i] == _endTags[i];
                 }
 
-                sb.Append (" (");
+                sb.Append(" (");
                 if (_startTags != null)
                 {
                     bool first = true;
@@ -612,19 +602,19 @@ namespace System.Speech.Internal.SrgsCompiler
                     {
                         if (!first)
                         {
-                            sb.Append ('|');
+                            sb.Append('|');
                         }
-                        sb.Append (GetSemanticTag (tag));
+                        sb.Append(GetSemanticTag(tag));
                         first = false;
                     }
                 }
                 else
                 {
-                    sb.Append ('-');
+                    sb.Append('-');
                 }
                 if (!same)
                 {
-                    sb.Append (',');
+                    sb.Append(',');
                     if (_endTags != null)
                     {
                         bool first = true;
@@ -632,31 +622,25 @@ namespace System.Speech.Internal.SrgsCompiler
                         {
                             if (!first)
                             {
-                                sb.Append ('|');
+                                sb.Append('|');
                             }
-                            sb.Append (GetSemanticTag (tag));
+                            sb.Append(GetSemanticTag(tag));
                             first = false;
                         }
                     }
                     else
                     {
-                        sb.Append ('-');
+                        sb.Append('-');
                     }
                 }
-                sb.Append (')');
+                sb.Append(')');
             }
-            return sb.ToString ();
+            return sb.ToString();
         }
 
 #endif
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region internal Properties
 
@@ -782,54 +766,49 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region private Methods
 
 #if DEBUG
-        private string GetSemanticTag (Tag tag)
+        private string GetSemanticTag(Tag tag)
         {
             StringBuilder sb = new();
             string value;
-            string tagName = GetSemanticValue (tag._cfgTag, _be.Symbols, out value);
+            string tagName = GetSemanticValue(tag._cfgTag, _be.Symbols, out value);
             if (tagName != "SemanticKey")
             {
                 if (tagName != "=")
                 {
-                    sb.Append (tagName);
-                    sb.Append ('=');
+                    sb.Append(tagName);
+                    sb.Append('=');
                 }
-                sb.Append (value);
+                sb.Append(value);
             }
             else
             {
-                sb.Append ('[');
-                sb.Append (value);
-                sb.Append (']');
+                sb.Append('[');
+                sb.Append(value);
+                sb.Append(']');
             }
-            return sb.ToString ();
+            return sb.ToString();
         }
 
-        private static string GetSemanticValue (CfgSemanticTag tag, StringBlob symbols, out string value)
+        private static string GetSemanticValue(CfgSemanticTag tag, StringBlob symbols, out string value)
         {
 #pragma warning disable 0618 // VarEnum is obsolete
             switch (tag.PropVariantType)
             {
                 case VarEnum.VT_EMPTY:
-                    value = tag._valueOffset > 0 ? symbols.FromOffset (tag._valueOffset) : tag._valueOffset.ToString (CultureInfo.InvariantCulture);
+                    value = tag._valueOffset > 0 ? symbols.FromOffset(tag._valueOffset) : tag._valueOffset.ToString(CultureInfo.InvariantCulture);
                     break;
 
                 case VarEnum.VT_I4:
                 case VarEnum.VT_UI4:
-                    value = tag._varInt.ToString (CultureInfo.InvariantCulture);
+                    value = tag._varInt.ToString(CultureInfo.InvariantCulture);
                     break;
 
                 case VarEnum.VT_R8:
-                    value = tag._varDouble.ToString (CultureInfo.InvariantCulture);
+                    value = tag._varDouble.ToString(CultureInfo.InvariantCulture);
                     break;
 
                 case VarEnum.VT_BOOL:
@@ -842,7 +821,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 #pragma warning restore 0618
 
-            return tag._nameOffset > 0 ? symbols.FromOffset (tag._nameOffset) : tag._nameOffset.ToString (CultureInfo.InvariantCulture); ;
+            return tag._nameOffset > 0 ? symbols.FromOffset(tag._nameOffset) : tag._nameOffset.ToString(CultureInfo.InvariantCulture); ;
         }
 #endif
 
@@ -866,11 +845,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -915,11 +889,7 @@ namespace System.Speech.Internal.SrgsCompiler
         #endregion
     }
 
-    //*******************************************************************
-    //
-    // Internal Types
-    //
-    //*******************************************************************
+
 
     #region private Methods
 

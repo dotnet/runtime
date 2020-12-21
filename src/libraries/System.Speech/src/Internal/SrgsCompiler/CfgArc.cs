@@ -12,11 +12,6 @@ namespace System.Speech.Internal.SrgsCompiler
     /// </summary>
     internal struct CfgArc
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -27,12 +22,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -183,11 +172,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region private Fields
 

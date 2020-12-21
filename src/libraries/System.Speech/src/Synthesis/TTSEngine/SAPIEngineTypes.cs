@@ -9,11 +9,7 @@ using System.Xml;
 
 namespace System.Speech.Synthesis.TtsEngine
 {
-    //*******************************************************************
-    //
-    // Public Enums
-    //
-    //*******************************************************************
+
 
     #region Public Enums
 

@@ -12,11 +12,6 @@ namespace System.Speech.Internal.SrgsCompiler
 {
     internal class OneOf : ParseElementCollection, IOneOf
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -43,11 +38,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Method
-        //
-        //*******************************************************************
 
         #region Internal Method
 
@@ -75,11 +65,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Method
-        //
-        //*******************************************************************
 
         #region Protected Method
 
@@ -123,11 +108,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Method
-        //
-        //*******************************************************************
 
         #region Protected Method
 

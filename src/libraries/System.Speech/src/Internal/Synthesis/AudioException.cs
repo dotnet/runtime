@@ -12,11 +12,6 @@ namespace System.Speech.Internal.Synthesis
     [Serializable]
     internal class AudioException : Exception
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 

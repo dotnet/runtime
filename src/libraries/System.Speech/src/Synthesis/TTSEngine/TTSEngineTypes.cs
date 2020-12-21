@@ -15,11 +15,7 @@ using System.Diagnostics;
 
 namespace System.Speech.Synthesis.TtsEngine
 {
-    //*******************************************************************
-    //
-    // Public Interface
-    //
-    //*******************************************************************
+
 
     #region Public Interface
 
@@ -249,11 +245,7 @@ namespace System.Speech.Synthesis.TtsEngine
 
     #endregion
 
-    //*******************************************************************
-    //
-    // Public Types
-    //
-    //*******************************************************************
+
 
     #region Public Types
 
@@ -692,11 +684,7 @@ namespace System.Speech.Synthesis.TtsEngine
 
     #endregion
 
-    //*******************************************************************
-    //
-    // Public Enums
-    //
-    //*******************************************************************
+
 
     #region Public Enums
 
@@ -1062,11 +1050,7 @@ namespace System.Speech.Synthesis.TtsEngine
 
     #endregion
 
-    //*******************************************************************
-    //
-    // Internal Interface
-    //
-    //*******************************************************************
+
 
     #region Internal Interface
 

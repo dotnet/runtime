@@ -25,11 +25,6 @@ namespace System.Speech.Synthesis
     /// </summary>
     public sealed class SpeechSynthesizer : IDisposable
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -59,11 +54,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region public Methods
 
@@ -434,11 +424,6 @@ namespace System.Speech.Synthesis
             VoiceSynthesizer.RemoveLexicon(uri);
         }
 
-        //*******************************************************************
-        //
-        // Public Events
-        //
-        //*******************************************************************
 
         #region public Events
 
@@ -605,11 +590,6 @@ namespace System.Speech.Synthesis
 
         #endregion Events
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -676,12 +656,6 @@ namespace System.Speech.Synthesis
             }
         }
 
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
-
         #region Internal Properties
 
 
@@ -689,11 +663,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -755,11 +724,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Properties
-        //
-        //*******************************************************************
 
         #region Private Properties
         private VoiceSynthesis VoiceSynthesizer
@@ -780,11 +744,6 @@ namespace System.Speech.Synthesis
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -806,11 +765,7 @@ namespace System.Speech.Synthesis
         #endregion Fields
     }
 
-    //*******************************************************************
-    //
-    // Public Enums
-    //
-    //*******************************************************************
+
 
     #region Public Enums
 

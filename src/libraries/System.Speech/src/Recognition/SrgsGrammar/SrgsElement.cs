@@ -26,11 +26,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal methods
 
@@ -62,11 +57,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Properties
-        //
-        //*******************************************************************
 
         #region Protected Properties
 
@@ -81,11 +71,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Types
-        //
-        //*******************************************************************
 
         #region Private Types
 

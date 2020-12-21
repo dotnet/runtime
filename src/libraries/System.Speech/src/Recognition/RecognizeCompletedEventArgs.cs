@@ -10,11 +10,6 @@ namespace System.Speech.Recognition
 
     public class RecognizeCompletedEventArgs : AsyncCompletedEventArgs
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -33,11 +28,6 @@ namespace System.Speech.Recognition
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region Public Properties
 
@@ -74,11 +64,6 @@ namespace System.Speech.Recognition
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

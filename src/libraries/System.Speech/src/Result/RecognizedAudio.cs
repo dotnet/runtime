@@ -118,11 +118,6 @@ namespace System.Speech.Recognition
             return new RecognizedAudio(audioBytes, _audioFormat, _startTime + audioPosition, audioPosition, duration);
         }
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Methods
 
@@ -165,11 +160,6 @@ namespace System.Speech.Recognition
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

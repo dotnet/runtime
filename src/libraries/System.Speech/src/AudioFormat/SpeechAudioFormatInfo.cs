@@ -13,11 +13,6 @@ namespace System.Speech.AudioFormat
     public
  class SpeechAudioFormatInfo
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -99,11 +94,6 @@ namespace System.Speech.AudioFormat
         #endregion
 
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region Public Properties
 
@@ -132,11 +122,6 @@ namespace System.Speech.AudioFormat
 
 
 
-        //*******************************************************************
-        //
-        // Public Methods
-        //
-        //*******************************************************************
 
         #region Public Methods
 
@@ -183,11 +168,6 @@ namespace System.Speech.AudioFormat
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
         internal byte[] WaveFormat
@@ -216,11 +196,6 @@ namespace System.Speech.AudioFormat
         }
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -235,11 +210,7 @@ namespace System.Speech.AudioFormat
         #endregion
     }
 
-    //*******************************************************************
-    //
-    // Public Properties
-    //
-    //*******************************************************************
+
 
     #region Public Properties
 

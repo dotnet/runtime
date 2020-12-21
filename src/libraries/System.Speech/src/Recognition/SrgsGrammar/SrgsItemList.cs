@@ -13,11 +13,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [Serializable]
     internal class SrgsItemList : Collection<SrgsItem>
     {
-        //*******************************************************************
-        //
-        // Interfaces Implementations
-        //
-        //*******************************************************************
 
         #region Interfaces Implementations
 

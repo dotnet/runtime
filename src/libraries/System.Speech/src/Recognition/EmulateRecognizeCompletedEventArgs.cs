@@ -9,11 +9,6 @@ namespace System.Speech.Recognition
     /// TODOC <_include file='doc\EmulateRecognizeCompletedEventArgs.uex' path='docs/doc[@for="EmulateRecognizeCompletedEventArgs"]/*' />
     public class EmulateRecognizeCompletedEventArgs : AsyncCompletedEventArgs
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -25,11 +20,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region Public Properties
 
@@ -41,11 +31,6 @@ namespace System.Speech.Recognition
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 

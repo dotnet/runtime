@@ -13,11 +13,6 @@ namespace System.Speech.Internal.Synthesis
     /// </summary>
     internal abstract class AudioBase
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -30,11 +25,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -305,11 +295,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Property
-        //
-        //*******************************************************************
 
         #region Internal Property
 
@@ -333,11 +318,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Protected Property
-        //
-        //*******************************************************************
 
         #region Protected Property
 
@@ -345,11 +325,6 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Types
-        //
-        //*******************************************************************
 
         #region Private Types
 
@@ -402,11 +377,7 @@ namespace System.Speech.Internal.Synthesis
         #endregion
     }
 
-    //*******************************************************************
-    //
-    // Internal Types
-    //
-    //*******************************************************************
+
 
     #region Internal Methods
 

@@ -15,11 +15,6 @@ namespace System.Speech.Synthesis
     [DebuggerDisplay("{_text}")]
     public class Prompt
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -116,11 +111,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Public Properties
-        //
-        //*******************************************************************
 
         #region public Properties
 
@@ -155,11 +145,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Fields
-        //
-        //*******************************************************************
 
         #region Internal Fields
 
@@ -190,11 +175,6 @@ namespace System.Speech.Synthesis
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region Private Fields
 
@@ -213,11 +193,7 @@ namespace System.Speech.Synthesis
         #endregion
     }
 
-    //*******************************************************************
-    //
-    // Public Enums
-    //
-    //*******************************************************************
+
 
     #region Public Enums
 
@@ -257,11 +233,7 @@ namespace System.Speech.Synthesis
 
     #endregion
 
-    //*******************************************************************
-    //
-    // Internal Types
-    //
-    //*******************************************************************
+
 
     #region Internal Types
 

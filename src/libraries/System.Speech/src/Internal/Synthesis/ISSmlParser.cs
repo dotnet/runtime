@@ -12,11 +12,7 @@ using System.Xml;
 
 namespace System.Speech.Internal.Synthesis
 {
-    //*******************************************************************
-    //
-    // Internal Types
-    //
-    //*******************************************************************
+
 
     #region Internal Types
 

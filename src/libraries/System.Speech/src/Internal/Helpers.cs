@@ -9,11 +9,6 @@ namespace System.Speech.Internal
 {
     internal static class Helpers
     {
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region Internal Methods
 
@@ -114,11 +109,6 @@ namespace System.Speech.Internal
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal fields
-        //
-        //*******************************************************************
 
         #region Internal fields
 

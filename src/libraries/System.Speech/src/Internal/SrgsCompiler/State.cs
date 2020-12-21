@@ -18,15 +18,10 @@ namespace System.Speech.Internal.SrgsCompiler
     /// instead all the arcs are, with a flag to indicate the end arc out of a state */
     /// </summary>
 #if DEBUG
-    [DebuggerDisplay ("{ToString ()}")]
+    [DebuggerDisplay("{ToString ()}")]
 #endif
     internal sealed class State : IComparable<State>
     {
-        //*******************************************************************
-        //
-        // Constructors
-        //
-        //*******************************************************************
 
         #region Constructors
 
@@ -44,11 +39,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Internal Methods
-        //
-        //*******************************************************************
 
         #region internal Methods
 
@@ -204,11 +194,11 @@ namespace System.Speech.Internal.SrgsCompiler
         #endregion
 
 #if DEBUG
-        internal void CheckExitPath (ref int iRecursiveDepth)
+        internal void CheckExitPath(ref int iRecursiveDepth)
         {
             if (iRecursiveDepth > CfgGrammar.MAX_TRANSITIONS_COUNT)
             {
-                XmlParser.ThrowSrgsException (SRID.MaxTransitionsCount);
+                XmlParser.ThrowSrgsException(SRID.MaxTransitionsCount);
             }
 
             foreach (Arc arc in _outArcs)
@@ -223,7 +213,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     arc.CheckingForExitPath = true;
                     if (arc.RuleRef != null)
                     {
-                        arc.RuleRef.CheckForExitPath (ref iRecursiveDepth);
+                        arc.RuleRef.CheckForExitPath(ref iRecursiveDepth);
                         if (arc.RuleRef._fHasExitPath)
                         {
                             if (arc.End == null)
@@ -232,7 +222,7 @@ namespace System.Speech.Internal.SrgsCompiler
                             }
                             else
                             {
-                                arc.End.CheckExitPath (ref iRecursiveDepth);
+                                arc.End.CheckExitPath(ref iRecursiveDepth);
                             }
                         }
                     }
@@ -244,7 +234,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         }
                         else
                         {
-                            arc.End.CheckExitPath (ref iRecursiveDepth);
+                            arc.End.CheckExitPath(ref iRecursiveDepth);
                         }
                     }
 
@@ -310,12 +300,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         #endregion
-
-        //*******************************************************************
-        //
-        // Internal Properties
-        //
-        //*******************************************************************
 
         #region Internal Properties
 
@@ -403,11 +387,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Methods
-        //
-        //*******************************************************************
 
         #region private Methods
 
@@ -446,16 +425,16 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #if DEBUG
 
-        public override string ToString ()
+        public override string ToString()
         {
             StringBuilder sb = new("[#");
-            sb.Append (_id.ToString (CultureInfo.InvariantCulture));
+            sb.Append(_id.ToString(CultureInfo.InvariantCulture));
             if (_rule != null && _rule._firstState == this)
             {
-                sb.Append (' ');
-                sb.Append (_rule.Name);
+                sb.Append(' ');
+                sb.Append(_rule.Name);
             }
-            sb.Append ("] ");
+            sb.Append("] ");
             if (_inArcs != null)
             {
                 bool first = true;
@@ -463,16 +442,16 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     if (!first)
                     {
-                        sb.Append ("\x20\x25cf\x20");
+                        sb.Append("\x20\x25cf\x20");
                     }
-                    sb.Append ('#');
-                    sb.Append (arc.Start != null ? arc.Start._id.ToString (CultureInfo.InvariantCulture) : "S");
-                    sb.Append (' ');
-                    sb.Append (arc.DebuggerDisplayTags ());
+                    sb.Append('#');
+                    sb.Append(arc.Start != null ? arc.Start._id.ToString(CultureInfo.InvariantCulture) : "S");
+                    sb.Append(' ');
+                    sb.Append(arc.DebuggerDisplayTags());
                     first = false;
                 }
             }
-            sb.Append (" <--> ");
+            sb.Append(" <--> ");
             if (_outArcs != null)
             {
                 bool first = true;
@@ -480,27 +459,22 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     if (!first)
                     {
-                        sb.Append ("\x20\x25cf\x20");
+                        sb.Append("\x20\x25cf\x20");
                     }
-                    sb.Append ('#');
-                    sb.Append (arc.End != null ? arc.End._id.ToString (CultureInfo.InvariantCulture) : "E");
-                    sb.Append (' ');
-                    sb.Append (arc.DebuggerDisplayTags ());
+                    sb.Append('#');
+                    sb.Append(arc.End != null ? arc.End._id.ToString(CultureInfo.InvariantCulture) : "E");
+                    sb.Append(' ');
+                    sb.Append(arc.DebuggerDisplayTags());
                     first = false;
                 }
             }
 
-            return sb.ToString ();
+            return sb.ToString();
         }
 #endif
 
         #endregion
 
-        //*******************************************************************
-        //
-        // Private Fields
-        //
-        //*******************************************************************
 
         #region internal Fields
 
