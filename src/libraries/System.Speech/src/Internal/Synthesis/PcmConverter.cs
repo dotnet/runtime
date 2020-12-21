@@ -532,4 +532,3 @@ namespace System.Speech.Internal.Synthesis
         #endregion
     }
 }
-

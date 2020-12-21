@@ -1349,5 +1349,3 @@ namespace System.Speech.Recognition
         LoadFailed,
     }
 }
-
-

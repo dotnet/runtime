@@ -15,4 +15,3 @@ namespace System.Speech.Recognition
         Multiple
     }
 }
-

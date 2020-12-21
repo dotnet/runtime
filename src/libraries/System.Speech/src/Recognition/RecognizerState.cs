@@ -19,5 +19,3 @@ namespace System.Speech.Recognition
         Listening
     }
 }
-
-

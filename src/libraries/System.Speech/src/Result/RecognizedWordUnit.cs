@@ -165,4 +165,3 @@ namespace System.Speech.Recognition
         ConsumeLeadingSpaces = 0x10,
     }
 }
-
