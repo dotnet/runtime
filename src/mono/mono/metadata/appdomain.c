@@ -484,9 +484,16 @@ mono_check_corlib_version_internal (void)
 	guint32 native_offset;
 	guint32 managed_offset;
 	native_offset = (guint32) MONO_STRUCT_OFFSET (MonoInternalThread, last);
+#ifdef ENABLE_NETCORE
+	MonoClassField *thread_runtime_data = mono_class_get_field_from_name_full (mono_defaults.internal_thread_class, "_runtime", NULL);
+	g_assert (mono_field_get_offset (thread_runtime_data) == MONO_ABI_SIZEOF (MonoObject));
+	MonoClass *thread_managed_struct = mono_class_from_mono_type_internal (thread_runtime_data->type);
+	managed_offset = mono_field_get_offset (mono_class_get_field_from_name_full (thread_managed_struct, "last", NULL));
+#else
 	managed_offset = mono_field_get_offset (mono_class_get_field_from_name_full (mono_defaults.internal_thread_class, "last", NULL));
+#endif
 	if (native_offset != managed_offset)
-		result = g_strdup_printf ("expected InternalThread.last field offset %u, found %u. See InternalThread.last comment", native_offset, managed_offset);
+		result = g_strdup_printf ("expected InternalThread._runtime.last field offset %u, found %u. See InternalThread.last comment", native_offset, managed_offset);
 exit:
 	g_free (version);
 	return result;

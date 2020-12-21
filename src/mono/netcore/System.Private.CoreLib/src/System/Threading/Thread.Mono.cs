@@ -13,65 +13,73 @@ namespace System.Threading
     //
     // Under netcore, there is only one thread object per thread
     //
-    [StructLayout(LayoutKind.Sequential)]
+    [Mono.MonoRuntimeLayoutAware]
     public partial class Thread
     {
-#pragma warning disable 169, 414, 649
-        #region Sync with metadata/object-internals.h and InternalThread in mcs/class/corlib/System.Threading/Thread.cs
-        private int lock_thread_id;
-        // stores a thread handle
-        private IntPtr handle;
-        private IntPtr native_handle; // used only on Win32
-        /* accessed only from unmanaged code */
-        private IntPtr name;
-        private int name_free; // bool
-        private int name_length;
-        private ThreadState state;
-        private object? abort_exc;
-        private int abort_state_handle;
-        /* thread_id is only accessed from unmanaged code */
-        internal long thread_id;
-        private IntPtr debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
-        private UIntPtr static_data; /* GC-tracked */
-        private IntPtr runtime_thread_info;
-        /* current System.Runtime.Remoting.Contexts.Context instance
-           keep as an object to avoid triggering its class constructor when not needed */
-        private object? current_appcontext;
-        private object? root_domain_thread;
-        internal byte[]? _serialized_principal;
-        internal int _serialized_principal_version;
-        private IntPtr appdomain_refs;
-        private int interruption_requested;
-        private IntPtr longlived;
-        internal bool threadpool_thread;
-        private bool thread_interrupt_requested;
-        /* These are used from managed code */
-        internal int stack_size;
-        internal byte apartment_state;
-        internal volatile int critical_region_level;
-        internal int managed_id;
-        private int small_id;
-        private IntPtr manage_callback;
-        private IntPtr flags;
-        private IntPtr thread_pinning_ref;
-        private IntPtr abort_protected_block_count;
-        private int priority;
-        private IntPtr owned_mutex;
-        private IntPtr suspended_event;
-        private int self_suspended;
-        private IntPtr thread_state;
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RuntimeLayout {
+#pragma warning disable 169, 414, 649, CA1823
+            #region Sync with metadata/object-internals.h and InternalThread in mcs/class/corlib/System.Threading/Thread.cs
+            private int lock_thread_id;
+            // stores a thread handle
+            private IntPtr handle;
+            private IntPtr native_handle; // used only on Win32
+            /* accessed only from unmanaged code */
+            private IntPtr name;
+            private int name_free; // bool
+            private int name_length;
+            private ThreadState state;
+            private object? abort_exc;
+            private int abort_state_handle;
+            /* thread_id is only accessed from unmanaged code */
+            internal long thread_id;
+            private IntPtr debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
+            private UIntPtr static_data; /* GC-tracked */
+            private IntPtr runtime_thread_info;
+            /* current System.Runtime.Remoting.Contexts.Context instance
+               keep as an object to avoid triggering its class constructor when not needed */
+            private object? current_appcontext;
+            private object? root_domain_thread;
+            internal byte[]? _serialized_principal;
+            internal int _serialized_principal_version;
+            private IntPtr appdomain_refs;
+            private int interruption_requested;
+            private IntPtr longlived;
+            internal bool threadpool_thread;
+            private bool thread_interrupt_requested;
+            /* These are used from managed code */
+            internal int stack_size;
+            internal byte apartment_state;
+            internal volatile int critical_region_level;
+            internal int managed_id;
+            private int small_id;
+            private IntPtr manage_callback;
+            private IntPtr flags;
+            private IntPtr thread_pinning_ref;
+            private IntPtr abort_protected_block_count;
+            internal int priority;
+            private IntPtr owned_mutex;
+            private IntPtr suspended_event;
+            private int self_suspended;
+            private IntPtr thread_state;
 
-        private Thread self = null!;
-        private object? pending_exception;
-        private object? start_obj;
+            private Thread self;
+            private object? pending_exception;
+            private object? start_obj;
 
-        /* This is used only to check that we are in sync between the representation
-         * of MonoInternalThread in native and InternalThread in managed
-         *
-         * DO NOT RENAME! DO NOT ADD FIELDS AFTER! */
-        private IntPtr last;
-        #endregion
-#pragma warning restore 169, 414, 649
+            /* This is used only to check that we are in sync between the representation
+             * of MonoInternalThread in native and InternalThread in managed
+             *
+             * DO NOT RENAME! DO NOT ADD FIELDS AFTER! */
+            private IntPtr last;
+            #endregion
+#pragma warning restore 169, 414, 649, CA1823
+        }
+
+#pragma warning disable 169, CA1823
+        [Mono.MonoRuntimeLayoutAwareAttribute("keep in sync with metadata/object-internals.h")]
+        private RuntimeLayout _runtime;
+#pragma warning restore 169, CA1823
 
         private string? _name;
         private Delegate? m_start;
@@ -139,15 +147,15 @@ namespace System.Threading
             get
             {
                 ValidateThreadState();
-                return threadpool_thread;
+                return _runtime.threadpool_thread;
             }
             internal set
             {
-                threadpool_thread = value;
+                _runtime.threadpool_thread = value;
             }
         }
 
-        public int ManagedThreadId => managed_id;
+        public int ManagedThreadId => _runtime.managed_id;
 
         internal static int OptimalMaxSpinWaitsPerSpinIteration
         {
@@ -163,7 +171,7 @@ namespace System.Threading
             get
             {
                 ValidateThreadState();
-                return (ThreadPriority)priority;
+                return (ThreadPriority)_runtime.priority;
             }
             set
             {
@@ -229,7 +237,7 @@ namespace System.Threading
         private void SetStartHelper(Delegate start, int maxStackSize)
         {
             m_start = start;
-            stack_size = maxStackSize;
+            _runtime.stack_size = maxStackSize;
         }
 
         public static void SpinWait(int iterations)
@@ -384,7 +392,6 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern ulong GetCurrentOSThreadId();
 
-        [MemberNotNull("self")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InitInternal(Thread thread);
 
