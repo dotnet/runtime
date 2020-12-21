@@ -452,10 +452,10 @@ namespace System.Speech.Internal.SrgsCompiler
                              endArc >= cArcs ||
                              (
                                 header.tags[i].PropVariantType != VarEnum.VT_EMPTY &&
-                                header.tags[i].PropVariantType == VarEnum.VT_BSTR &&
-                                header.tags[i].PropVariantType == VarEnum.VT_BOOL &&
-                                header.tags[i].PropVariantType == VarEnum.VT_R8 &&
-                                header.tags[i].PropVariantType == VarEnum.VT_I4)
+                                header.tags[i].PropVariantType != VarEnum.VT_BSTR &&
+                                header.tags[i].PropVariantType != VarEnum.VT_BOOL &&
+                                header.tags[i].PropVariantType != VarEnum.VT_R8 &&
+                                header.tags[i].PropVariantType != VarEnum.VT_I4)
                              )
                         {
                             XmlParser.ThrowSrgsException(SRID.UnsupportedFormat);
