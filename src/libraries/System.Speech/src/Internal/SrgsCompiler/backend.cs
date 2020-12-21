@@ -34,7 +34,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Optimizes the grammar network by removing the epsilon states and merging
-        /// duplicate transitions.  See GrammarOptimization.doc for details.
+        /// duplicate transitions.
         /// </summary>
         internal void Optimize()
         {

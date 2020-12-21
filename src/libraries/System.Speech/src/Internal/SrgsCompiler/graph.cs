@@ -91,7 +91,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Optimizes the grammar network by removing the epsilon states and merging
-        /// duplicate transitions.  See GrammarOptimization.doc for details.
+        /// duplicate transitions.
         /// </summary>
         internal void Optimize()
         {
@@ -267,7 +267,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         ///   Description:
         ///        Removing epsilon states from the grammar network.
-        ///        See GrammarOptimization.doc for details.
         ///        - There may be additional duplicate transitions after removing epsilon transitions.
         ///
         ///   Algorithm:
@@ -351,7 +350,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Description:
         ///     Remove duplicate transitions starting from the same state, or ending at the same state.
-        ///     See GrammarOptimization.doc for details.
         ///
         /// Algorithm:
         /// - Add all states to ToDoList
@@ -439,7 +437,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Description:
         ///        Sort and iterate through the input arcs and remove duplicate input transitions.
-        ///        See GrammarOptimization.doc for details.
         ///
         /// Algorithm:
         ///   - MergeIdenticalTransitions(Arcs)
@@ -581,7 +578,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Description:
         ///     Sort and iterate through the output arcs and remove duplicate output transitions.
-        ///     See GrammarOptimization.doc for details.
         ///
         /// Algorithm:
         ///   - MergeIdenticalTransitions(Arcs)
@@ -933,7 +929,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Normalize the weights of output transitions from this state.
-        /// See GrammarOptimization.doc for details.
         /// </summary>
         private static void NormalizeTransitionWeights(State state)
         {
