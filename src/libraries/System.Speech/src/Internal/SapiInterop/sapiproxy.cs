@@ -144,12 +144,12 @@ namespace System.Speech.Internal.SapiInterop
 
             #region Internal Methods
 
-            override internal object Invoke(ObjectDelegate pfn)
+            internal override object Invoke(ObjectDelegate pfn)
             {
                 return pfn.Invoke();
             }
 
-            override internal void Invoke2(VoidDelegate pfn)
+            internal override void Invoke2(VoidDelegate pfn)
             {
                 pfn.Invoke();
             }
@@ -233,7 +233,7 @@ namespace System.Speech.Internal.SapiInterop
 
             #region Internal Methods
 
-            override internal object Invoke(ObjectDelegate pfn)
+            internal override object Invoke(ObjectDelegate pfn)
             {
                 lock (this)
                 {
@@ -251,7 +251,7 @@ namespace System.Speech.Internal.SapiInterop
                 }
             }
 
-            override internal void Invoke2(VoidDelegate pfn)
+            internal override void Invoke2(VoidDelegate pfn)
             {
                 lock (this)
                 {

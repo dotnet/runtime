@@ -42,7 +42,7 @@ namespace System.Speech.Internal
         /// Returns the cached version of the universal phone converter.
         /// </summary>
         /// <returns></returns>
-        static internal PhonemeConverter UpsConverter
+        internal static PhonemeConverter UpsConverter
         {
             get
             {
@@ -56,7 +56,7 @@ namespace System.Speech.Internal
         /// <param name="pronunciation">pronunciation</param>
         /// <param name="lcid"></param>
         /// <returns></returns>
-        static internal string ConvertPronToId(string pronunciation, int lcid)
+        internal static string ConvertPronToId(string pronunciation, int lcid)
         {
             //CfgGrammar.TraceInformation ("BackEnd::ConvertPronToId");
             PhonemeConverter phoneConv = UpsConverter;
@@ -139,12 +139,12 @@ namespace System.Speech.Internal
             return pidArray.ToString();
         } /* CSpPhoneConverter::PhoneToId */
 
-        static internal void ValidateUpsIds(string ids)
+        internal static void ValidateUpsIds(string ids)
         {
             ValidateUpsIds(ids.ToCharArray());
         }
 
-        static internal void ValidateUpsIds(char[] ids)
+        internal static void ValidateUpsIds(char[] ids)
         {
             foreach (char id in ids)
             {
@@ -170,7 +170,7 @@ namespace System.Speech.Internal
         /// </summary>
         /// <param name="pmComps"></param>
         /// <returns></returns>
-        static private PhoneMap[] DecompressPhoneMaps(PhoneMapCompressed[] pmComps)
+        private static PhoneMap[] DecompressPhoneMaps(PhoneMapCompressed[] pmComps)
         {
             PhoneMap[] phoneMaps = new PhoneMap[pmComps.Length];
 

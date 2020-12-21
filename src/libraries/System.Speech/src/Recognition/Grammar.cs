@@ -464,7 +464,7 @@ namespace System.Speech.Recognition
         /// <summary>
         /// Is the grammar a strongly typed grammar?
         /// </summary>
-        protected virtual internal bool IsStg
+        protected internal virtual bool IsStg
         {
             get { return _isStg; }
         }
@@ -581,7 +581,7 @@ namespace System.Speech.Recognition
 
         // Helper method used to indicate if this grammar has a dictation Uri or not.
         // This is here because the functionality needs to be a common place.
-        static internal bool IsDictationGrammar(Uri uri)
+        internal static bool IsDictationGrammar(Uri uri)
         {
             // Note that must check IsAbsoluteUri before Scheme because Uri.Scheme may throw on a relative Uri
             if (uri == null || !uri.IsAbsoluteUri || uri.Scheme != "grammar" ||
@@ -1217,7 +1217,7 @@ namespace System.Speech.Recognition
 
         // Pulls the required data out of a stream containing a cfg.
         // Stream must point to start of cfg on entry and is reset to same point on exit.
-        static private string CheckRuleName(Stream stream, string rulename, bool isImportedGrammar, bool stgInit, out bool sapi53Only, out GrammarOptions grammarOptions)
+        private static string CheckRuleName(Stream stream, string rulename, bool isImportedGrammar, bool stgInit, out bool sapi53Only, out GrammarOptions grammarOptions)
         {
             sapi53Only = false;
             long initialPosition = stream.Position;

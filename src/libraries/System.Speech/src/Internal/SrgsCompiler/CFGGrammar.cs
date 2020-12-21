@@ -149,7 +149,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 // Else SAPI 5.0 syntax grammar - parameters set to zero
             }
-            static internal bool IsCfg(Stream stream, out int cfgLength)
+            internal static bool IsCfg(Stream stream, out int cfgLength)
             {
                 cfgLength = 0;
                 BinaryReader br = new(stream);
@@ -598,11 +598,11 @@ namespace System.Speech.Internal.SrgsCompiler
 
         // INFINITE
         //
-        static internal readonly Rule SPRULETRANS_TEXTBUFFER = new(-1);
+        internal static readonly Rule SPRULETRANS_TEXTBUFFER = new(-1);
 
-        static internal readonly Rule SPRULETRANS_WILDCARD = new(-2);
+        internal static readonly Rule SPRULETRANS_WILDCARD = new(-2);
 
-        static internal readonly Rule SPRULETRANS_DICTATION = new(-3);
+        internal static readonly Rule SPRULETRANS_DICTATION = new(-3);
 
         //
         internal const int SPTEXTBUFFERTRANSITION = 0x3fffff;

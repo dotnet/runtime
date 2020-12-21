@@ -42,7 +42,7 @@ namespace System.Speech.Internal.Synthesis
         {
         }
 
-        static internal TTSEvent CreatePhonemeEvent(string phoneme, string nextPhoneme,
+        internal static TTSEvent CreatePhonemeEvent(string phoneme, string nextPhoneme,
                                                     TimeSpan duration, SynthesizerEmphasis emphasis,
                                                     Prompt prompt, TimeSpan audioPosition)
         {

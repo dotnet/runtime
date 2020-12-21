@@ -132,7 +132,7 @@ namespace System.Speech.Recognition
 
         // Get attributes of all the recognizers that are installed
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.InstalledRecognizers"]/*' />
-        static public ReadOnlyCollection<RecognizerInfo> InstalledRecognizers()
+        public static ReadOnlyCollection<RecognizerInfo> InstalledRecognizers()
         {
             List<RecognizerInfo> recognizers = new();
 

@@ -428,7 +428,7 @@ namespace System.Speech.Internal.Synthesis
 
 #pragma warning restore 649
 
-        static internal WAVEFORMATEX ToWaveHeader(byte[] waveHeader)
+        internal static WAVEFORMATEX ToWaveHeader(byte[] waveHeader)
         {
             GCHandle gc = GCHandle.Alloc(waveHeader, GCHandleType.Pinned);
             IntPtr ptr = gc.AddrOfPinnedObject();
@@ -449,7 +449,7 @@ namespace System.Speech.Internal.Synthesis
             return wfx;
         }
 
-        static internal void AvgBytesPerSec(byte[] waveHeader, out int avgBytesPerSec, out int nBlockAlign)
+        internal static void AvgBytesPerSec(byte[] waveHeader, out int avgBytesPerSec, out int nBlockAlign)
         {
             // Hardcode the value of the size for the structure element
             // as the C# compiler pads the structure to the closest 4 or 8 bytes
@@ -469,7 +469,7 @@ namespace System.Speech.Internal.Synthesis
             return ab;
         }
 
-        static internal byte[] ToBytes(IntPtr waveHeader)
+        internal static byte[] ToBytes(IntPtr waveHeader)
         {
             // Hardcode the value of the size for the structure element
             // as the C# compiler pads the structure to the closest 4 or 8 bytes
@@ -480,7 +480,7 @@ namespace System.Speech.Internal.Synthesis
             return ab;
         }
 
-        static internal WAVEFORMATEX Default
+        internal static WAVEFORMATEX Default
         {
             get
             {

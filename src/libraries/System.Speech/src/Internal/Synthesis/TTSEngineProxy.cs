@@ -20,13 +20,13 @@ namespace System.Speech.Internal.Synthesis
             _alphabetConverter = new AlphabetConverter(lcid);
         }
 
-        abstract internal IntPtr GetOutputFormat(IntPtr targetFormat);
-        abstract internal void AddLexicon(Uri lexicon, string mediaType);
-        abstract internal void RemoveLexicon(Uri lexicon);
-        abstract internal void Speak(List<TextFragment> frags, byte[] wfx);
-        abstract internal void ReleaseInterface();
-        abstract internal char[] ConvertPhonemes(char[] phones, AlphabetType alphabet);
-        abstract internal AlphabetType EngineAlphabet { get; }
+        internal abstract IntPtr GetOutputFormat(IntPtr targetFormat);
+        internal abstract void AddLexicon(Uri lexicon, string mediaType);
+        internal abstract void RemoveLexicon(Uri lexicon);
+        internal abstract void Speak(List<TextFragment> frags, byte[] wfx);
+        internal abstract void ReleaseInterface();
+        internal abstract char[] ConvertPhonemes(char[] phones, AlphabetType alphabet);
+        internal abstract AlphabetType EngineAlphabet { get; }
         internal AlphabetConverter AlphabetConverter { get { return _alphabetConverter; } }
 
 
@@ -60,22 +60,22 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        override internal IntPtr GetOutputFormat(IntPtr targetFormat)
+        internal override IntPtr GetOutputFormat(IntPtr targetFormat)
         {
             return _ssmlEngine.GetOutputFormat(SpeakOutputFormat.WaveFormat, targetFormat);
         }
 
-        override internal void AddLexicon(Uri lexicon, string mediaType)
+        internal override void AddLexicon(Uri lexicon, string mediaType)
         {
             _ssmlEngine.AddLexicon(lexicon, mediaType, _site);
         }
 
-        override internal void RemoveLexicon(Uri lexicon)
+        internal override void RemoveLexicon(Uri lexicon)
         {
             _ssmlEngine.RemoveLexicon(lexicon, _site);
         }
 
-        override internal void Speak(List<TextFragment> frags, byte[] wfx)
+        internal override void Speak(List<TextFragment> frags, byte[] wfx)
         {
             GCHandle gc = GCHandle.Alloc(wfx, GCHandleType.Pinned);
             try
@@ -89,7 +89,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        override internal char[] ConvertPhonemes(char[] phones, AlphabetType alphabet)
+        internal override char[] ConvertPhonemes(char[] phones, AlphabetType alphabet)
         {
             if (alphabet == AlphabetType.Ipa)
             {
@@ -101,7 +101,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        override internal AlphabetType EngineAlphabet
+        internal override AlphabetType EngineAlphabet
         {
             get
             {
@@ -112,7 +112,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Release the COM interface for COM object
         /// </summary>
-        override internal void ReleaseInterface()
+        internal override void ReleaseInterface()
         {
         }
 
@@ -163,7 +163,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        override internal IntPtr GetOutputFormat(IntPtr preferedFormat)
+        internal override IntPtr GetOutputFormat(IntPtr preferedFormat)
         {
             // Initialize TTS Engine
             Guid formatId = SAPIGuids.SPDFID_WaveFormatEx;
@@ -174,17 +174,17 @@ namespace System.Speech.Internal.Synthesis
             return coMem;
         }
 
-        override internal void AddLexicon(Uri lexicon, string mediaType)
+        internal override void AddLexicon(Uri lexicon, string mediaType)
         {
             // SAPI: Ignore
         }
 
-        override internal void RemoveLexicon(Uri lexicon)
+        internal override void RemoveLexicon(Uri lexicon)
         {
             // SAPI: Ignore
         }
 
-        override internal void Speak(List<TextFragment> frags, byte[] wfx)
+        internal override void Speak(List<TextFragment> frags, byte[] wfx)
         {
             GCHandle gc = GCHandle.Alloc(wfx, GCHandleType.Pinned);
             try
@@ -211,7 +211,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        override internal AlphabetType EngineAlphabet
+        internal override AlphabetType EngineAlphabet
         {
             get
             {
@@ -219,7 +219,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        override internal char[] ConvertPhonemes(char[] phones, AlphabetType alphabet)
+        internal override char[] ConvertPhonemes(char[] phones, AlphabetType alphabet)
         {
             if (alphabet == AlphabetType.Ipa)
             {
@@ -234,7 +234,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Release the COM interface for COM object
         /// </summary>
-        override internal void ReleaseInterface()
+        internal override void ReleaseInterface()
         {
             Marshal.ReleaseComObject(_sapiEngine);
         }

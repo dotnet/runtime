@@ -163,7 +163,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return script;
         }
 
-        static private void ThrowIfMultipleOverloads(bool found, string method)
+        private static void ThrowIfMultipleOverloads(bool found, string method)
         {
             if (found)
             {
@@ -171,7 +171,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        static private string WrapConstructorCSharp(int iCfg, ParameterInfo[] parameters, string classname)
+        private static string WrapConstructorCSharp(int iCfg, ParameterInfo[] parameters, string classname)
         {
             StringBuilder sb = new(200);
             sb.Append(" public ");
@@ -223,7 +223,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return sb.ToString();
         }
 
-        static private string WrapConstructorVB(int iCfg, ParameterInfo[] parameters, string classname)
+        private static string WrapConstructorVB(int iCfg, ParameterInfo[] parameters, string classname)
         {
             StringBuilder sb = new(200);
             sb.Append("Public Sub New");

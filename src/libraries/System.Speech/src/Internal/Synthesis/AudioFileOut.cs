@@ -72,7 +72,7 @@ namespace System.Speech.Internal.Synthesis
         /// Begin to play
         /// </summary>
         /// <param name="wfx"></param>
-        override internal void Begin(byte[] wfx)
+        internal override void Begin(byte[] wfx)
         {
             if (_deviceOpen)
             {
@@ -99,7 +99,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Begin to play
         /// </summary>
-        override internal void End()
+        internal override void End()
         {
             if (!_deviceOpen)
             {
@@ -125,7 +125,7 @@ namespace System.Speech.Internal.Synthesis
         /// Play a wave file.
         /// </summary>
         /// <param name="buffer"></param>
-        override internal void Play(byte[] buffer)
+        internal override void Play(byte[] buffer)
         {
             if (!_deviceOpen)
             {
@@ -153,7 +153,7 @@ namespace System.Speech.Internal.Synthesis
         /// Pause the playback of a sound.
         /// </summary>
         /// <returns>MMSYSERR.NOERROR if successful</returns>
-        override internal void Pause()
+        internal override void Pause()
         {
             if (!_aborted && !_paused)
             {
@@ -168,7 +168,7 @@ namespace System.Speech.Internal.Synthesis
         /// Resume the playback of a paused sound.
         /// </summary>
         /// <returns>MMSYSERR.NOERROR if successful</returns>
-        override internal void Resume()
+        internal override void Resume()
         {
             if (!_aborted && _paused)
             {
@@ -183,7 +183,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Wait for all the queued buffers to be played
         /// </summary>
-        override internal void Abort()
+        internal override void Abort()
         {
             lock (_noWriteOutLock)
             {
@@ -194,7 +194,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
 
-        override internal void InjectEvent(TTSEvent ttsEvent)
+        internal override void InjectEvent(TTSEvent ttsEvent)
         {
             if (!_aborted && _asyncDispatch != null)
             {
@@ -205,7 +205,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// File operation are basically synchonous
         /// </summary>
-        override internal void WaitUntilDone()
+        internal override void WaitUntilDone()
         {
             lock (_noWriteOutLock)
             {
@@ -224,7 +224,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Fields
 
-        override internal TimeSpan Duration
+        internal override TimeSpan Duration
         {
             get
             {
@@ -236,7 +236,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        override internal long Position
+        internal override long Position
         {
             get
             {

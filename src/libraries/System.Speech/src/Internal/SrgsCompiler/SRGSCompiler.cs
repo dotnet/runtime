@@ -112,7 +112,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        static private object CompileStream(int iCfg, ISrgsParser srgsParser, string srgsPath, string filename, Stream stream, bool fOutputCfg, StringBuilder innerCode, object cfgResources, out CultureInfo culture, string[] referencedAssemblies, string keyFile)
+        private static object CompileStream(int iCfg, ISrgsParser srgsParser, string srgsPath, string filename, Stream stream, bool fOutputCfg, StringBuilder innerCode, object cfgResources, out CultureInfo culture, string[] referencedAssemblies, string keyFile)
         {
             Backend backend = new();
             CustomGrammar cg = new();
@@ -209,7 +209,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="backend"></param>
         /// <returns></returns>
-        static private MemoryStream BuildCfg(Backend backend)
+        private static MemoryStream BuildCfg(Backend backend)
         {
             // Creates a DLL
             MemoryStream cfgStream = new();

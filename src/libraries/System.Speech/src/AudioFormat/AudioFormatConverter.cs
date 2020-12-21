@@ -12,7 +12,7 @@ namespace System.Speech.Internal
 #pragma warning restore 649
 
     // Helper class which wraps AudioFormat and handles WaveFormatEx variable sized structure
-    static internal class AudioFormatConverter
+    internal static class AudioFormatConverter
     {
         //*******************************************************************
         //
@@ -22,7 +22,7 @@ namespace System.Speech.Internal
 
         #region Internal Methods
 
-        static internal SpeechAudioFormatInfo ToSpeechAudioFormatInfo(IntPtr waveFormatPtr)
+        internal static SpeechAudioFormatInfo ToSpeechAudioFormatInfo(IntPtr waveFormatPtr)
         {
             WaveFormatEx waveFormatEx = (WaveFormatEx)Marshal.PtrToStructure(waveFormatPtr, typeof(WaveFormatEx));
 
@@ -36,7 +36,7 @@ namespace System.Speech.Internal
             return new SpeechAudioFormatInfo((EncodingFormat)waveFormatEx.wFormatTag, (int)waveFormatEx.nSamplesPerSec, (short)waveFormatEx.wBitsPerSample, (short)waveFormatEx.nChannels, (int)waveFormatEx.nAvgBytesPerSec, (short)waveFormatEx.nBlockAlign, extraData);
         }
 
-        static internal SpeechAudioFormatInfo ToSpeechAudioFormatInfo(string formatString)
+        internal static SpeechAudioFormatInfo ToSpeechAudioFormatInfo(string formatString)
         {
             // Is it normal format?
             short streamFormat;
@@ -63,7 +63,7 @@ namespace System.Speech.Internal
         /// </summary>
         /// <param name="eFormat"></param>
         /// <returns></returns>
-        static private SpeechAudioFormatInfo ConvertFormat(StreamFormat eFormat)
+        private static SpeechAudioFormatInfo ConvertFormat(StreamFormat eFormat)
         {
             WaveFormatEx waveEx = new();
             byte[] extra = null;

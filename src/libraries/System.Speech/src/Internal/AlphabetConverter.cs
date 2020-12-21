@@ -356,7 +356,7 @@ namespace System.Speech.Internal
                 return prefixTable;
             }
 
-            static private string ReadPhoneString(BinaryReader reader)
+            private static string ReadPhoneString(BinaryReader reader)
             {
                 int phoneLength;
                 char[] phoneString;

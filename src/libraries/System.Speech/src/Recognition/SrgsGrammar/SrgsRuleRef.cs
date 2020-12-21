@@ -153,23 +153,23 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Null"]/*' />
         // The Null SpecialRuleRef defines a rule that is automatically matched:
         // that is, matched without the user speaking any word.
-        static public readonly SrgsRuleRef Null = new(SpecialRuleRefType.Null);
+        public static readonly SrgsRuleRef Null = new(SpecialRuleRefType.Null);
 
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Void"]/*' />
         // The Void SpecialRuleRef defines a rule that can never be spoken. Inserting
         // VOID into a sequence automatically makes that sequence unspeakable.
-        static public readonly SrgsRuleRef Void = new(SpecialRuleRefType.Void);
+        public static readonly SrgsRuleRef Void = new(SpecialRuleRefType.Void);
 
         /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Garbage"]/*' />
         // The Garbage SpecialRuleRef defines a rule that may match any speech up until
         // the next rule match, the next token or until the end of spoken input.
-        static public readonly SrgsRuleRef Garbage = new(SpecialRuleRefType.Garbage);
+        public static readonly SrgsRuleRef Garbage = new(SpecialRuleRefType.Garbage);
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.Dictation"]/*' />
-        static public readonly SrgsRuleRef Dictation = new(new Uri("grammar:dictation"));
+        public static readonly SrgsRuleRef Dictation = new(new Uri("grammar:dictation"));
 
         /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.Dictation"]/*' />
-        static public readonly SrgsRuleRef MnemonicSpelling = new(new Uri("grammar:dictation#spelling"));
+        public static readonly SrgsRuleRef MnemonicSpelling = new(new Uri("grammar:dictation#spelling"));
 
         #endregion
 

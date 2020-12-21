@@ -80,7 +80,7 @@ namespace System.Speech.Internal.GrammarBuilding
         ///
         /// </summary>
         /// <param name="phrase"></param>
-        new internal void Add(string phrase)
+        internal new void Add(string phrase)
         {
             _ruleRef.Add(new GrammarBuilderPhrase(phrase));
         }
@@ -89,7 +89,7 @@ namespace System.Speech.Internal.GrammarBuilding
         ///
         /// </summary>
         /// <param name="builder"></param>
-        new internal void Add(GrammarBuilder builder)
+        internal new void Add(GrammarBuilder builder)
         {
             foreach (GrammarBuilderBase item in builder.InternalBuilder.Items)
             {
@@ -138,7 +138,7 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Internal Properties
 
-        override internal string DebugSummary
+        internal override string DebugSummary
         {
             get
             {

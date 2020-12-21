@@ -153,7 +153,7 @@ namespace System.Speech.Internal
 
         #region Protected Methods
 
-        abstract protected int CompareTo(object object1, object object2);
+        protected abstract int CompareTo(object object1, object object2);
 
         #endregion
 
@@ -167,7 +167,7 @@ namespace System.Speech.Internal
 
         #region Implement utility operations on Tree
 
-        static private TreeNode GetUncle(TreeNode node)
+        private static TreeNode GetUncle(TreeNode node)
         {
             if (node.Parent == node.Parent.Parent.Left)
             {
@@ -179,7 +179,7 @@ namespace System.Speech.Internal
             }
         }
 
-        static private TreeNode GetSibling(TreeNode node, TreeNode parent)
+        private static TreeNode GetSibling(TreeNode node, TreeNode parent)
         {
             if (node == parent.Left)
             {
@@ -191,13 +191,13 @@ namespace System.Speech.Internal
             }
         }
 
-        static private NodeColor GetColor(TreeNode node)
+        private static NodeColor GetColor(TreeNode node)
         {
             return node == null ? NodeColor.BLACK : (node.IsRed ? NodeColor.RED : NodeColor.BLACK);
         }
 
 
-        static private void SetColor(TreeNode node, NodeColor color)
+        private static void SetColor(TreeNode node, NodeColor color)
         {
             if (node != null)
             {
@@ -209,7 +209,7 @@ namespace System.Speech.Internal
             }
         }
 
-        static private void TakeParent(TreeNode node, TreeNode newNode)
+        private static void TakeParent(TreeNode node, TreeNode newNode)
         {
             if (node.Parent == null)
             {
@@ -232,7 +232,7 @@ namespace System.Speech.Internal
             }
         }
 
-        static private TreeNode RotateLeft(TreeNode node)
+        private static TreeNode RotateLeft(TreeNode node)
         {
             TreeNode newNode = node.Right;
             node.Right = newNode.Left;
@@ -241,7 +241,7 @@ namespace System.Speech.Internal
             return newNode;
         }
 
-        static private TreeNode RotateRight(TreeNode node)
+        private static TreeNode RotateRight(TreeNode node)
         {
             TreeNode newNode = node.Left;
             node.Left = newNode.Right;
@@ -252,7 +252,7 @@ namespace System.Speech.Internal
         }
 
 
-        static private TreeNode FindMinSubTree(TreeNode node)
+        private static TreeNode FindMinSubTree(TreeNode node)
         {
             while (node.Left != null)
             {
@@ -261,7 +261,7 @@ namespace System.Speech.Internal
             return node;
         }
 
-        static private TreeNode FindSuccessor(TreeNode node)
+        private static TreeNode FindSuccessor(TreeNode node)
         {
             if (node.Right == null)
             {
@@ -280,7 +280,7 @@ namespace System.Speech.Internal
 
 
         // Return the actual node that is deleted
-        static private TreeNode DeleteNode(TreeNode node)
+        private static TreeNode DeleteNode(TreeNode node)
         {
             if (node.Right == null)
             {

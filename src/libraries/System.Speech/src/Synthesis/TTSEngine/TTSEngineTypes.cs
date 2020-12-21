@@ -42,7 +42,7 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <param name="speakOutputFormat">Wave or Text</param>
         /// <param name="targetWaveFormat">Wave format header</param>
         /// <returns>Returns the closest format that it supports</returns>
-        abstract public IntPtr GetOutputFormat(SpeakOutputFormat speakOutputFormat, IntPtr targetWaveFormat);
+        public abstract IntPtr GetOutputFormat(SpeakOutputFormat speakOutputFormat, IntPtr targetWaveFormat);
 
         /// <summary>
         /// Add a lexicon for this engine
@@ -50,14 +50,14 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <param name="uri">uri</param>
         /// <param name="mediaType">media type</param>
         /// <param name="site">Engine site</param>
-        abstract public void AddLexicon(Uri uri, string mediaType, ITtsEngineSite site);
+        public abstract void AddLexicon(Uri uri, string mediaType, ITtsEngineSite site);
 
         /// <summary>
         /// Removes a lexicon for this engine
         /// </summary>
         /// <param name="uri">uri</param>
         /// <param name="site">Engine site</param>
-        abstract public void RemoveLexicon(Uri uri, ITtsEngineSite site);
+        public abstract void RemoveLexicon(Uri uri, ITtsEngineSite site);
 
         /// <summary>
         /// Renders the specified text fragments array in the
@@ -67,7 +67,7 @@ namespace System.Speech.Synthesis.TtsEngine
         /// attributes information</param>
         /// <param name="waveHeader">Wave format header</param>
         /// <param name="site">Engine site</param>
-        abstract public void Speak(TextFragment[] fragment, IntPtr waveHeader, ITtsEngineSite site);
+        public abstract void Speak(TextFragment[] fragment, IntPtr waveHeader, ITtsEngineSite site);
     }
 
     /// <summary>

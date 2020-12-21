@@ -93,7 +93,7 @@ namespace System.Speech.Internal.GrammarBuilding
         ///
         /// </summary>
         /// <returns></returns>
-        override internal GrammarBuilderBase Clone()
+        internal override GrammarBuilderBase Clone()
         {
             return new RuleRefElement(_rule, _semanticKey);
         }
@@ -116,7 +116,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
         /// <returns></returns>
-        override internal IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Create the new rule and add the reference to the item
             return elementFactory.CreateRuleRef(parent, new Uri("#" + Rule.RuleName, UriKind.Relative), _semanticKey, null);
@@ -141,7 +141,7 @@ namespace System.Speech.Internal.GrammarBuilding
             }
         }
 
-        override internal string DebugSummary
+        internal override string DebugSummary
         {
             get
             {

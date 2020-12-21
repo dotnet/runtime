@@ -69,7 +69,7 @@ namespace System.Speech.Recognition
             _objectToken = token;
         }
 
-        static internal RecognizerInfo Create(ObjectToken token)
+        internal static RecognizerInfo Create(ObjectToken token)
         {
             // Token for recognizer should have Attributes.
             if (token.Attributes == null)

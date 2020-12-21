@@ -31,7 +31,7 @@ namespace System.Speech.Internal.ObjectTokens
         {
         }
 
-        static internal ObjectTokenCategory Create(string sCategoryId)
+        internal static ObjectTokenCategory Create(string sCategoryId)
         {
             RegistryDataKey key = RegistryDataKey.Open(sCategoryId, true);
             return new ObjectTokenCategory(sCategoryId, key);

@@ -566,7 +566,7 @@ namespace System.Speech.Recognition
         /// <param name="maxRepeat"></param>
         /// <param name="minParamName"></param>
         /// <param name="maxParamName"></param>
-        static internal void ValidateRepeatArguments(int minRepeat, int maxRepeat, string minParamName, string maxParamName)
+        internal static void ValidateRepeatArguments(int minRepeat, int maxRepeat, string minParamName, string maxParamName)
         {
             if (minRepeat < 0)
             {
@@ -583,7 +583,7 @@ namespace System.Speech.Recognition
         /// </summary>
         /// <param name="subsetMatchingCriteria"></param>
         /// <param name="paramName"></param>
-        static internal void ValidateSubsetMatchingCriteriaArgument(SubsetMatchingMode subsetMatchingCriteria, string paramName)
+        internal static void ValidateSubsetMatchingCriteriaArgument(SubsetMatchingMode subsetMatchingCriteria, string paramName)
         {
             switch (subsetMatchingCriteria)
             {

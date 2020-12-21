@@ -211,7 +211,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="name"></param>
         /// <param name="parameterName"></param>
         /// <returns></returns>
-        static private string GetTrimmedName(string name, string parameterName)
+        private static string GetTrimmedName(string name, string parameterName)
         {
             Helpers.ThrowIfEmptyOrNull(name, parameterName);
 

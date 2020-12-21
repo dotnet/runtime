@@ -479,7 +479,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// CSharp compiler, the VB compiler and JSccript compiler.
         /// </summary>
         /// <returns></returns>
-        static private CodeDomProvider CreateCSharpCompiler()
+        private static CodeDomProvider CreateCSharpCompiler()
         {
             return new CSharpCodeProvider();
         }
@@ -574,7 +574,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// CSharp compiler, the VB compiler and JSccript compiler.
         /// </summary>
         /// <returns></returns>
-        static private CodeDomProvider CreateVBCompiler()
+        private static CodeDomProvider CreateVBCompiler()
         {
             return new VBCodeProvider();
         }
@@ -794,7 +794,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        static private void AssociateConstructorsWithRules(AppDomainCompilerProxy proxy, string[] names, List<Rule> rules, int iCfg, string language)
+        private static void AssociateConstructorsWithRules(AppDomainCompilerProxy proxy, string[] names, List<Rule> rules, int iCfg, string language)
         {
             string[] constructors = proxy.Constructors();
 

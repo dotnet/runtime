@@ -75,7 +75,7 @@ namespace System.Speech.Internal.SapiInterop
         internal const uint SPDF_ALL = 0xff;
 
         // Throws exception if the specified Rule does not have a valid Id.
-        static internal SRID SapiErrorCode2SRID(SAPIErrorCodes code)
+        internal static SRID SapiErrorCode2SRID(SAPIErrorCodes code)
         {
             if (code >= SAPIErrorCodes.SPERR_FIRST && code <= SAPIErrorCodes.SPERR_LAST)
             {
@@ -298,8 +298,8 @@ namespace System.Speech.Internal.SapiInterop
 
     internal static class SAPIGuids
     {
-        static internal readonly Guid SPDFID_WaveFormatEx = new("C31ADBAE-527F-4ff5-A230-F62BB61FF70C");
-        static internal readonly Guid SPDFID_Text = new("7CEEF9F9-3D13-11d2-9EE7-00C04F797396");
+        internal static readonly Guid SPDFID_WaveFormatEx = new("C31ADBAE-527F-4ff5-A230-F62BB61FF70C");
+        internal static readonly Guid SPDFID_Text = new("7CEEF9F9-3D13-11d2-9EE7-00C04F797396");
     }
 
     #endregion

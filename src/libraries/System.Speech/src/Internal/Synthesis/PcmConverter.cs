@@ -165,7 +165,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="inSamples"></param>
         /// <returns></returns>
-        static private float[] Short2Float(short[] inSamples)
+        private static float[] Short2Float(short[] inSamples)
         {
             float[] pdOut = new float[inSamples.Length];
 
@@ -182,7 +182,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="inSamples"></param>
         /// <returns></returns>
-        static private short[] Float2Short(float[] inSamples)
+        private static short[] Float2Short(float[] inSamples)
         {
             short[] outSamples = new short[inSamples.Length];
             float dtmp;
@@ -215,7 +215,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="inSamples"></param>
         /// <returns></returns>
-        static private short[] Mono2Stereo(short[] inSamples)
+        private static short[] Mono2Stereo(short[] inSamples)
         {
             short[] outSamples = new short[inSamples.Length * 2];
 
@@ -233,7 +233,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="inSamples"></param>
         /// <returns></returns>
-        static private short[] Stereo2Mono(short[] inSamples)
+        private static short[] Stereo2Mono(short[] inSamples)
         {
             short[] outSamples = new short[inSamples.Length / 2];
 
@@ -251,7 +251,7 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="leftSamples"></param>
         /// <param name="rightSamples"></param>
         /// <returns></returns>
-        static private short[] MergeStereo(short[] leftSamples, short[] rightSamples)
+        private static short[] MergeStereo(short[] leftSamples, short[] rightSamples)
         {
             short[] outSamples = new short[leftSamples.Length * 2];
 
@@ -270,7 +270,7 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="inSamples"></param>
         /// <param name="leftSamples"></param>
         /// <param name="rightSamples"></param>
-        static private void SplitStereo(short[] inSamples, out short[] leftSamples, out short[] rightSamples)
+        private static void SplitStereo(short[] inSamples, out short[] leftSamples, out short[] rightSamples)
         {
             int length = inSamples.Length / 2;
 
@@ -472,7 +472,7 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="iLength"></param>
         /// <param name="bSymmetric"></param>
         /// <returns></returns>
-        static private float[] Blackman(int iLength, bool bSymmetric)
+        private static float[] Blackman(int iLength, bool bSymmetric)
         {
             float[] pdWindow = new float[iLength];
             double dArg, dArg2;

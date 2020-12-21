@@ -81,7 +81,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Validate each element and recurse through all the children srgs
         /// elements if any.
         /// </summary>
-        override internal void Validate(SrgsGrammar grammar)
+        internal override void Validate(SrgsGrammar grammar)
         {
             if (grammar.TagFormat == SrgsTagFormat.Default)
             {

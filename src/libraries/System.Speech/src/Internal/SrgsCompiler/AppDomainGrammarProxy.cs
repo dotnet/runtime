@@ -162,7 +162,7 @@ namespace System.Speech.Internal.SrgsCompiler
             onParse = grammar.MethodInfo(method);
         }
 
-        static private Type GetTypeForRule(Assembly assembly, string rule)
+        private static Type GetTypeForRule(Assembly assembly, string rule)
         {
             Type[] types = assembly.GetTypes();
             for (int iType = 0; iType < types.Length; iType++)

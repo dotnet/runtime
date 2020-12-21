@@ -446,7 +446,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #if DEBUG
 
-        override public string ToString ()
+        public override string ToString ()
         {
             StringBuilder sb = new("[#");
             sb.Append (_id.ToString (CultureInfo.InvariantCulture));

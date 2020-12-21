@@ -280,7 +280,7 @@ namespace System.Speech.Internal.GrammarBuilding
             }
         }
 
-        override internal string DebugSummary
+        internal override string DebugSummary
         {
             get
             {

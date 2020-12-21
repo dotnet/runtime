@@ -22,7 +22,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region internal Methods
 
-        static internal ObjectToken DefaultToken(string category)
+        internal static ObjectToken DefaultToken(string category)
         {
             Helpers.ThrowIfEmptyOrNull(category, nameof(category));
 
@@ -45,7 +45,7 @@ namespace System.Speech.Internal.ObjectTokens
         /// for with this token. Otherwise, picks the default WAVE_MAPPER is returned.
         /// </summary>
         /// <returns></returns>
-        static internal int DefaultDeviceOut()
+        internal static int DefaultDeviceOut()
         {
             int device = -1;
             using (ObjectTokenCategory tokenCategory = ObjectTokenCategory.Create(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\AudioOutput"))
@@ -126,7 +126,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         #region Private Methods
 
-        static private ObjectToken DefaultToken(string category, string defaultTokenIdValueName)
+        private static ObjectToken DefaultToken(string category, string defaultTokenIdValueName)
         {
             ObjectToken token = GetPreference(category, defaultTokenIdValueName);
 

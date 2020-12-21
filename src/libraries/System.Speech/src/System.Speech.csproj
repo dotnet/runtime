@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!--<TargetFramework>netstandard2.0</TargetFramework>-->
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp2.0-windows;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- CS0649: uninitialized interop type fields -->
     <!-- CA2249: Consider using String.Contains instead of String.IndexOf.  We compile for netcoreapp2.0 where this doesn't exist.-->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <NoWarn>$(NoWarn);CS0649;CA2249;SA1129</NoWarn>
-    <NoWarn>$(NoWarn);;;;;;;;;;;;;CS0618;CS0649;;;CS1734;CS8032;IDE0041;IDE0073;SA1001;;;;;SA1206;;SA1400;SA1518;SA1617;;;</NoWarn>
+    <NoWarn>$(NoWarn);;;;;;;;;;;;;CS0618;CS0649;;;CS1734;CS8032;IDE0041;IDE0073;SA1001;;;;;;;SA1400;SA1518;SA1617;;;</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
 
   </PropertyGroup>

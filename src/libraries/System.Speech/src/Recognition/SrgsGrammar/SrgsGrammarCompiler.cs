@@ -28,7 +28,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         /// <param name="inputPath"></param>
         /// <param name="outputStream"></param>
-        static public void Compile(string inputPath, Stream outputStream)
+        public static void Compile(string inputPath, Stream outputStream)
         {
             Helpers.ThrowIfEmptyOrNull(inputPath, nameof(inputPath));
             Helpers.ThrowIfNull(outputStream, nameof(outputStream));
@@ -44,7 +44,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         /// <param name="srgsGrammar"></param>
         /// <param name="outputStream"></param>
-        static public void Compile(SrgsDocument srgsGrammar, Stream outputStream)
+        public static void Compile(SrgsDocument srgsGrammar, Stream outputStream)
         {
             Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
             Helpers.ThrowIfNull(outputStream, nameof(outputStream));
@@ -57,7 +57,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="outputStream"></param>
-        static public void Compile(XmlReader reader, Stream outputStream)
+        public static void Compile(XmlReader reader, Stream outputStream)
         {
             Helpers.ThrowIfNull(reader, nameof(reader));
             Helpers.ThrowIfNull(outputStream, nameof(outputStream));
@@ -73,7 +73,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="outputPath"></param>
         /// <param name="referencedAssemblies"></param>
         /// <param name="keyFile"></param>
-        static public void CompileClassLibrary(string[] inputPaths, string outputPath, string[] referencedAssemblies, string keyFile)
+        public static void CompileClassLibrary(string[] inputPaths, string outputPath, string[] referencedAssemblies, string keyFile)
         {
             Helpers.ThrowIfNull(inputPaths, nameof(inputPaths));
             Helpers.ThrowIfEmptyOrNull(outputPath, nameof(outputPath));
@@ -111,7 +111,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="outputPath"></param>
         /// <param name="referencedAssemblies"></param>
         /// <param name="keyFile"></param>
-        static public void CompileClassLibrary(SrgsDocument srgsGrammar, string outputPath, string[] referencedAssemblies, string keyFile)
+        public static void CompileClassLibrary(SrgsDocument srgsGrammar, string outputPath, string[] referencedAssemblies, string keyFile)
         {
             Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
             Helpers.ThrowIfEmptyOrNull(outputPath, nameof(outputPath));
@@ -126,7 +126,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <param name="outputPath"></param>
         /// <param name="referencedAssemblies"></param>
         /// <param name="keyFile"></param>
-        static public void CompileClassLibrary(XmlReader reader, string outputPath, string[] referencedAssemblies, string keyFile)
+        public static void CompileClassLibrary(XmlReader reader, string outputPath, string[] referencedAssemblies, string keyFile)
         {
             Helpers.ThrowIfNull(reader, nameof(reader));
             Helpers.ThrowIfEmptyOrNull(outputPath, nameof(outputPath));
@@ -148,7 +148,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         // Decide if the input stream is a cfg.
         // If not assume it's an xml grammar.
         // The stream parameter points to the start of the data on entry and is reset to that point on exit.
-        static private bool CheckIfCfg(Stream stream, out int cfgLength)
+        private static bool CheckIfCfg(Stream stream, out int cfgLength)
         {
             long initialPosition = stream.Position;
 
@@ -159,7 +159,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             return isCfg;
         }
 
-        static internal void CompileXmlOrCopyCfg(
+        internal static void CompileXmlOrCopyCfg(
             Stream inputStream,
             Stream outputStream,
             Uri orginalUri)

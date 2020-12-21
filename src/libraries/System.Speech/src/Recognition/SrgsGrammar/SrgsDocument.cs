@@ -377,7 +377,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        static internal GrammarOptions TagFormat2GrammarOptions(SrgsTagFormat value)
+        internal static GrammarOptions TagFormat2GrammarOptions(SrgsTagFormat value)
         {
             GrammarOptions newValue = 0;
 
@@ -398,7 +398,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             return newValue;
         }
 
-        static internal SrgsTagFormat GrammarOptions2TagFormat(GrammarOptions value)
+        internal static SrgsTagFormat GrammarOptions2TagFormat(GrammarOptions value)
         {
             SrgsTagFormat tagFormat = SrgsTagFormat.Default;
 

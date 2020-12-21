@@ -1300,7 +1300,7 @@ namespace System.Speech.Internal.SrgsParser
             }
         }
 
-        static private void ParseAssemblyReference(XmlReader reader, IGrammar grammar)
+        private static void ParseAssemblyReference(XmlReader reader, IGrammar grammar)
         {
             while (reader.MoveToNextAttribute())
             {
@@ -1326,7 +1326,7 @@ namespace System.Speech.Internal.SrgsParser
             }
         }
 
-        static private void ParseImportNamespace(XmlReader reader, IGrammar grammar)
+        private static void ParseImportNamespace(XmlReader reader, IGrammar grammar)
         {
             while (reader.MoveToNextAttribute())
             {
@@ -1697,7 +1697,7 @@ namespace System.Speech.Internal.SrgsParser
             reader.Read();
         }
 
-        static private string GetStringContent(XmlReader reader)
+        private static string GetStringContent(XmlReader reader)
         {
             StringBuilder sb = new();
 
@@ -1838,7 +1838,7 @@ namespace System.Speech.Internal.SrgsParser
         /// <param name="repeat"></param>
         /// <param name="minRepeat"></param>
         /// <param name="maxRepeat"></param>
-        static private void SetRepeatValues(string repeat, out int minRepeat, out int maxRepeat)
+        private static void SetRepeatValues(string repeat, out int minRepeat, out int maxRepeat)
         {
             minRepeat = maxRepeat = 1;
             if (!string.IsNullOrEmpty(repeat))
@@ -1906,7 +1906,7 @@ namespace System.Speech.Internal.SrgsParser
         }
 
         // Throws exception if the specified Rule does not have a valid Id.
-        static internal void ValidateRuleId(string id)
+        internal static void ValidateRuleId(string id)
         {
             Helpers.ThrowIfEmptyOrNull(id, nameof(id));
 
@@ -1989,9 +1989,9 @@ namespace System.Speech.Internal.SrgsParser
 
         private List<ForwardReference> _scripts = new();
 
-        static private readonly char[] s_invalidRuleIdChars = new char[] { '.', ':', '-', '#' };
+        private static readonly char[] s_invalidRuleIdChars = new char[] { '.', ':', '-', '#' };
 
-        static private readonly char[] s_slashBackSlash = new char[] { '\\', '/' };
+        private static readonly char[] s_slashBackSlash = new char[] { '\\', '/' };
 
         #endregion
     }

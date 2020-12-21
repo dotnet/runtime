@@ -103,7 +103,7 @@ namespace System.Speech.Internal.SapiInterop
         // This tries to get an event from the ISpEventSource.
         // If there are no events queued then null is returned.
         // Otherwise a new SpeechEvent is created and returned.
-        static internal SpeechEvent TryCreateSpeechEvent(ISpEventSource sapiEventSource, bool additionalSapiFeatures, SpeechAudioFormatInfo audioFormat)
+        internal static SpeechEvent TryCreateSpeechEvent(ISpEventSource sapiEventSource, bool additionalSapiFeatures, SpeechAudioFormatInfo audioFormat)
         {
             uint fetched;
             SpeechEvent speechEvent = null;

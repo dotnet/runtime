@@ -368,7 +368,7 @@ namespace System.Speech.Internal.SrgsCompiler
             _endTags = null;
         }
 
-        static internal void CopyTags(Arc src, Arc dest, Direction move)
+        internal static void CopyTags(Arc src, Arc dest, Direction move)
         {
             // Copy the start tags if any
             if (src._startTags != null)
@@ -551,7 +551,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #if DEBUG
 
-        override public string ToString ()
+        public override string ToString ()
         {
             return (_start != null ? "#" + _start.Id.ToString (CultureInfo.InvariantCulture) : "") + " <- " + DebuggerDisplayTags () + " -> " + (_end != null ? "#" + _end.Id.ToString (CultureInfo.InvariantCulture) : "");
         }

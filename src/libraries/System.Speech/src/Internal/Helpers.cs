@@ -21,7 +21,7 @@ namespace System.Speech.Internal
 #pragma warning disable 56507
 
         // Throws exception if the specified Rule does not have a valid Id.
-        static internal void ThrowIfEmptyOrNull(string s, string paramName)
+        internal static void ThrowIfEmptyOrNull(string s, string paramName)
         {
             if (string.IsNullOrEmpty(s))
             {
@@ -39,7 +39,7 @@ namespace System.Speech.Internal
 #pragma warning restore 56507
 
         // Throws exception if the specified Rule does not have a valid Id.
-        static internal void ThrowIfNull(object value, string paramName)
+        internal static void ThrowIfNull(object value, string paramName)
         {
             if (value == null)
             {
@@ -47,7 +47,7 @@ namespace System.Speech.Internal
             }
         }
 
-        static internal bool CompareInvariantCulture(CultureInfo culture1, CultureInfo culture2)
+        internal static bool CompareInvariantCulture(CultureInfo culture1, CultureInfo culture2)
         {
             // If perfect match easy
             if (culture1.Equals(culture2))
@@ -69,7 +69,7 @@ namespace System.Speech.Internal
 
         // Copy the input cfg to the output.
         // Streams point to the start of the data on entry and to the end on exit
-        static internal void CopyStream(Stream inputStream, Stream outputStream, int bytesToCopy)
+        internal static void CopyStream(Stream inputStream, Stream outputStream, int bytesToCopy)
         {
             // Copy using an intermediate buffer of a reasonable size.
             int bufferSize = bytesToCopy > 4096 ? 4096 : bytesToCopy;
@@ -89,14 +89,14 @@ namespace System.Speech.Internal
 
         // Copy the input cfg to the output.
         // inputStream points to the start of the data on entry and to the end on exit
-        static internal byte[] ReadStreamToByteArray(Stream inputStream, int bytesToCopy)
+        internal static byte[] ReadStreamToByteArray(Stream inputStream, int bytesToCopy)
         {
             byte[] outputArray = new byte[bytesToCopy];
             BlockingRead(inputStream, outputArray, 0, bytesToCopy);
             return outputArray;
         }
 
-        static internal void BlockingRead(Stream stream, byte[] buffer, int offset, int count)
+        internal static void BlockingRead(Stream stream, byte[] buffer, int offset, int count)
         {
             // Stream is not like IStream - it will block until some data is available but not necessarily all of it.
             while (count > 0)

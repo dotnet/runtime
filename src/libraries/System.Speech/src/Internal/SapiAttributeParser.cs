@@ -20,7 +20,7 @@ namespace System.Speech.Internal
 
         #region Internal Methods
 
-        static internal CultureInfo GetCultureInfoFromLanguageString(string valueString)
+        internal static CultureInfo GetCultureInfoFromLanguageString(string valueString)
         {
             string[] strings = valueString.Split(';');
 
@@ -42,7 +42,7 @@ namespace System.Speech.Internal
         }
 
 
-        static internal List<SpeechAudioFormatInfo> GetAudioFormatsFromString(string valueString)
+        internal static List<SpeechAudioFormatInfo> GetAudioFormatsFromString(string valueString)
         {
             List<SpeechAudioFormatInfo> formatList = new();
             string[] strings = valueString.Split(';');

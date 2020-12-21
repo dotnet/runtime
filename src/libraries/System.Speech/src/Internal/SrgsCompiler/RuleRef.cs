@@ -201,7 +201,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region internal Properties
 
-        static internal IRuleRef Null
+        internal static IRuleRef Null
         {
             get
             {
@@ -209,14 +209,14 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        static internal IRuleRef Void
+        internal static IRuleRef Void
         {
             get
             {
                 return new RuleRef(SpecialRuleRefType.Void, null);
             }
         }
-        static internal IRuleRef Garbage
+        internal static IRuleRef Garbage
         {
             get
             {

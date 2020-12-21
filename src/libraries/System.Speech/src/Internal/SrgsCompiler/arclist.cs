@@ -38,7 +38,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return collection;
         }
 
-        override protected int CompareTo(object arc1, object arc2)
+        protected override int CompareTo(object arc1, object arc2)
         {
             return Arc.CompareContentForKey((Arc)arc1, (Arc)arc2);
         }
@@ -53,7 +53,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Internal Properties
 
-        new internal Arc First
+        internal new Arc First
         {
             get
             {

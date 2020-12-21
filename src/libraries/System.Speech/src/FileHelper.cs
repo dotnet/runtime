@@ -8,7 +8,7 @@ using System.Security.Permissions;
 
 namespace System.IO
 {
-    static internal class FileHelper
+    internal static class FileHelper
     {
         // The normal way to create and open a temp file fails when an impolite
         // process opens the new file before we can (DDVSO 519951, 638468).
@@ -83,7 +83,7 @@ namespace System.IO
         ///     Critical - Calls into filesystem functions, returns local file path.
         /// </SecurityNote>
         [SecurityCritical]
-        static internal FileStream CreateAndOpenTemporaryFile(
+        internal static FileStream CreateAndOpenTemporaryFile(
                     out string filePath,
                     FileAccess fileAccess = FileAccess.Write,
                     FileOptions fileOptions = FileOptions.None,
@@ -147,7 +147,7 @@ namespace System.IO
         /// <SecurityNote>
         ///     Critical - Calls into filesystem functions, asserts permission.
         /// </SecurityNote>
-        static internal void DeleteTemporaryFile(string filePath)
+        internal static void DeleteTemporaryFile(string filePath)
         {
             if (!string.IsNullOrEmpty(filePath))
             {

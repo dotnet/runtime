@@ -82,7 +82,7 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Internal Properties
 
-        override internal string DebugSummary
+        internal override string DebugSummary
         {
             get
             {

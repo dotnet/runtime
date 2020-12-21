@@ -71,7 +71,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Protected Properties
 
         //TODOC Add Documentation
-        virtual internal SrgsElement[] Children
+        internal virtual SrgsElement[] Children
         {
             get
             {
