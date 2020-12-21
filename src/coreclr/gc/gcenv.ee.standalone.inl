@@ -294,4 +294,10 @@ inline void GCToEEInterface::UpdateGCEventStatus(int publicLevel, int publicKeyw
 #endif // __linux__
 }
 
+inline void GCToEEInterface::StressLogMsg(unsigned level, unsigned facility, int cArgs, const char* format, va_list args)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->StressLogMsg(level, facility, cArgs, format, args);
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__

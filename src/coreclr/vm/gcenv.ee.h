@@ -82,6 +82,8 @@ public:
     void VerifySyncTableEntry();
 
     void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
+
+    void StressLogMsg(unsigned level, unsigned facility, int cArgs, const char* format, va_list args);
 };
 
 } // namespace standalone

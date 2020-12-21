@@ -1684,3 +1684,9 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     }
 #endif // __linux__ && FEATURE_EVENT_TRACE
 }
+
+void GCToEEInterface::StressLogMsg(unsigned level, unsigned facility, int cArgs, const char* format, va_list args)
+{
+    StressLog::LogMsgVA(level, facility, cArgs, format, args);
+}
+

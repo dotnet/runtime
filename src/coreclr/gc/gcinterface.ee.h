@@ -421,6 +421,9 @@ public:
 
     virtual
     void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLEvel, int privateKeywords) = 0;
+
+    virtual
+    void StressLogMsg(unsigned level, unsigned facility, int cArgs, const char* format, va_list args) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

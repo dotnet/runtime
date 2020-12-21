@@ -9326,7 +9326,13 @@ size_t gc_heap::sort_mark_list()
         return 0;
     }
 
+    uint64_t now = GetHighPrecisionTimeStamp();
+
     uint8_t **local_mark_list_index = equalize_mark_lists (total_mark_list_size);
+
+    uint64_t after_equalize = GetHighPrecisionTimeStamp();
+
+    dprintf (4, ("equalize_mark_lists took %Id microseconds to equalize %Id mark list items", after_equalize - now, local_mark_list_index - mark_list_index));
 
 #ifdef USE_VXSORT
     ptrdiff_t item_count = local_mark_list_index - mark_list;
@@ -9343,11 +9349,11 @@ size_t gc_heap::sort_mark_list()
     }
 #endif // defined(_DEBUG) || defined(WRITE_SORT_DATA)
 
-    ptrdiff_t start = get_cycle_count();
-
     do_vxsort (mark_list, item_count, low, high);
 
-    ptrdiff_t elapsed_cycles = get_cycle_count() - start;
+    uint64_t after_sort = GetHighPrecisionTimeStamp();
+
+    dprintf(4, ("sorting mark list took %Id microseconds to sort %Id mark list items", after_sort - after_equalize, item_count));
 
 #ifdef WRITE_SORT_DATA
     char file_name[256];

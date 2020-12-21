@@ -319,15 +319,20 @@ public:
     uint8_t* memoryLimit;                   // limit of the memory mapped file
     static void* AllocMemoryMapped(size_t n);
 
+    struct ModuleDesc
+    {
+        uint8_t* baseAddress;
+        size_t size;
+    };
+    static const size_t MAX_MODULES = 2;
     struct StressLogHeader
     {
         uint8_t* memoryMapBaseAddress;
-        uint8_t* corClrBaseAddress;
-        size_t corClrSize;
+        ModuleDesc modules[MAX_MODULES];
         Volatile<ThreadStressLog*> logs;        // the list of logs for every thread.
         unsigned __int64 tickFrequency;         // number of ticks per second
         unsigned __int64 startTimeStamp;        // start time from when tick counter started
-        uint8_t                    coreClrImage[64 * 1024 * 1024];
+        uint8_t moduleImage[64 * 1024 * 1024];  // copy of the module images described by modules field
     };
 
     StressLogHeader* stressLogHeader;       // header to find things in the memory mapped file
@@ -345,6 +350,10 @@ public:
     static BOOL InlinedETWLogOn(unsigned facility, unsigned level);
 
     static void LogMsg(unsigned level, unsigned facility, int cArgs, const char* format, ... );
+
+    static void LogMsgVA(unsigned level, unsigned facility, int cArgs, const char* format, va_list args);
+
+    static void AddModule(uint8_t* moduleBase);
 
 // Support functions for STRESS_LOG_VA
 // We disable the warning "conversion from 'type' to 'type' of greater size" since everything will
@@ -519,7 +528,6 @@ struct StressLogChunk
 {
     StressLogChunk * prev;
     StressLogChunk * next;
-    uint64_t threadId;
     char buf[STRESSLOG_CHUNK_SIZE];
     DWORD dwSig1;
     DWORD dwSig2;
@@ -569,8 +577,8 @@ struct StressLogChunk
 #endif
 #endif //!STRESS_LOG_READONLY
 
-    StressLogChunk(uint64_t tId, StressLogChunk* p = NULL, StressLogChunk* n = NULL)
-        : prev (p), next (n), threadId(tId), dwSig1 (0xCFCFCFCF), dwSig2 (0xCFCFCFCF)
+    StressLogChunk (StressLogChunk * p = NULL, StressLogChunk * n = NULL)
+        :prev (p), next (n), dwSig1 (0xCFCFCFCF), dwSig2 (0xCFCFCFCF)
     {}
 
     char * StartPtr ()
@@ -638,12 +646,11 @@ class ThreadStressLog {
         {
             return FALSE;
         }
-        StressLogChunk * newChunk = new StressLogChunk (threadId, chunkListTail, chunkListHead);
+        StressLogChunk * newChunk = new StressLogChunk (chunkListTail, chunkListHead);
         if (newChunk == NULL)
         {
             return FALSE;
         }
-
         StressLog::NewChunk ();
         chunkListLength++;
         chunkListHead->prev = newChunk;
@@ -659,7 +666,7 @@ public:
     ThreadStressLog ()
     {
         chunkListHead = chunkListTail = curWriteChunk = NULL;
-        StressLogChunk * newChunk = new StressLogChunk (GetCurrentThreadId());
+        StressLogChunk * newChunk = new StressLogChunk;
         //OOM or in cantalloc region
         if (newChunk == NULL)
         {
@@ -719,7 +726,6 @@ public:
         threadId = GetCurrentThreadId ();
         isDead = FALSE;
         curWriteChunk = chunkListTail;
-        _ASSERTE (curWriteChunk->threadId == threadId);
         curPtr = (StressMsg *)curWriteChunk->EndPtr ();
         writeHasWrapped = FALSE;
 #else //STRESS_LOG_READONLY
@@ -803,7 +809,7 @@ public:
         LogMsg (facility, cArgs, format, Args);
         va_end(Args);
     }
-    void LogMsg (unsigned facility, int cArgs, const char* format, va_list Args);
+    FORCEINLINE void LogMsg (unsigned facility, int cArgs, const char* format, va_list Args);
 #ifdef STRESS_LOG_READONLY
     static size_t OffsetOfNext () {return offsetof (ThreadStressLog, next);}
     static size_t OffsetOfListHead () {return offsetof (ThreadStressLog, chunkListHead);}
@@ -904,7 +910,6 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 #endif //!STRESS_LOG_READONLY
 
     curWriteChunk = curWriteChunk->prev;
-    _ASSERTE (curWriteChunk->threadId == threadId);
 #ifndef STRESS_LOG_READONLY
    if (curWriteChunk == chunkListTail)
    {
