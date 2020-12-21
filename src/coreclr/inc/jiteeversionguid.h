@@ -32,7 +32,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 
-constexpr GUID JITEEVersionIdentifier = { /* {71a99045-a4fe-43b3-abd9-c1742ab020b3} */
+constexpr GUID JITEEVersionIdentifier = { /* 71a99045-a4fe-43b3-abd9-c1742ab020b3 */
     0x71a99045,
     0xa4fe,
     0x43b3,
