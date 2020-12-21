@@ -214,7 +214,7 @@ namespace System.Speech.Internal.Synthesis
 
             byte[] table = new byte[(ushort.MaxValue + 1) >> 2];
 
-            for (int i = 0; i < UInt16.MaxValue; i += 4)
+            for (int i = 0; i < ushort.MaxValue; i += 4)
             {
                 short data = unchecked((short)i);
 
@@ -325,7 +325,7 @@ namespace System.Speech.Internal.Synthesis
 
             byte[] table = new byte[(ushort.MaxValue + 1) >> 2];
 
-            for (int i = 0; i < UInt16.MaxValue; i += 4)
+            for (int i = 0; i < ushort.MaxValue; i += 4)
             {
                 short data = unchecked((short)i);
 

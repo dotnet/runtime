@@ -142,13 +142,13 @@ namespace System.Speech.Recognition
 
             sm.WriteStream(18 + formatSpecificData.Length);
 
-            sm.WriteStream((UInt16)_audioFormat.EncodingFormat);
-            sm.WriteStream((UInt16)_audioFormat.ChannelCount);
+            sm.WriteStream((ushort)_audioFormat.EncodingFormat);
+            sm.WriteStream((ushort)_audioFormat.ChannelCount);
             sm.WriteStream(_audioFormat.SamplesPerSecond);
             sm.WriteStream(_audioFormat.AverageBytesPerSecond);
-            sm.WriteStream((UInt16)_audioFormat.BlockAlign);
-            sm.WriteStream((UInt16)_audioFormat.BitsPerSample);
-            sm.WriteStream((UInt16)formatSpecificData.Length);
+            sm.WriteStream((ushort)_audioFormat.BlockAlign);
+            sm.WriteStream((ushort)_audioFormat.BitsPerSample);
+            sm.WriteStream((ushort)formatSpecificData.Length);
 
             // write codec specific data
             if (formatSpecificData.Length > 0)

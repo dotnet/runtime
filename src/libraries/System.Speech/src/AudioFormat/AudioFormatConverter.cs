@@ -40,7 +40,7 @@ namespace System.Speech.Internal
         {
             // Is it normal format?
             short streamFormat;
-            if (Int16.TryParse(formatString, NumberStyles.None, CultureInfo.InvariantCulture, out streamFormat))
+            if (short.TryParse(formatString, NumberStyles.None, CultureInfo.InvariantCulture, out streamFormat))
             {
                 // Now convert enum value into real info
                 return ConvertFormat((StreamFormat)streamFormat);
@@ -310,13 +310,13 @@ namespace System.Speech.Internal
         [StructLayout(LayoutKind.Sequential)]
         private class WaveFormatEx
         {
-            public UInt16 wFormatTag;
-            public UInt16 nChannels;
-            public UInt32 nSamplesPerSec;
-            public UInt32 nAvgBytesPerSec;
-            public UInt16 nBlockAlign;
-            public UInt16 wBitsPerSample;
-            public UInt16 cbSize;
+            public ushort wFormatTag;
+            public ushort nChannels;
+            public uint nSamplesPerSec;
+            public uint nAvgBytesPerSec;
+            public ushort nBlockAlign;
+            public ushort wBitsPerSample;
+            public ushort cbSize;
         }
 
         #endregion

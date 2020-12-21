@@ -110,12 +110,12 @@ namespace System.Speech.Internal.SrgsCompiler
                 if (_cg._language == "C#")
                 {
                     // C#
-                    return String.Format(CultureInfo.InvariantCulture, "#line {0} \"{1}\"\n{2}", line.ToString(CultureInfo.InvariantCulture), filename, code);
+                    return string.Format(CultureInfo.InvariantCulture, "#line {0} \"{1}\"\n{2}", line.ToString(CultureInfo.InvariantCulture), filename, code);
                 }
                 else
                 {
                     // VB.Net
-                    return String.Format(CultureInfo.InvariantCulture, "#ExternalSource (\"{1}\",{0}) \n{2}\n#End ExternalSource\n", line.ToString(CultureInfo.InvariantCulture), filename, code);
+                    return string.Format(CultureInfo.InvariantCulture, "#ExternalSource (\"{1}\",{0}) \n{2}\n#End ExternalSource\n", line.ToString(CultureInfo.InvariantCulture), filename, code);
                 }
             }
             return code;

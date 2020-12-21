@@ -157,11 +157,11 @@ namespace System.Speech.Internal
             StringBuilder result = new();
             int startIndex; // Starting index of a substring being considered
             int endIndex;   // The ending index of the last convertible substring
-            String token;           // Holds a substring of phonemes that are directly convertible from the mapping table.
-            String lastConvert;     // Holds last convertible substring, starting from startIndex.
+            string token;           // Holds a substring of phonemes that are directly convertible from the mapping table.
+            string lastConvert;     // Holds last convertible substring, starting from startIndex.
 
-            String tempConvert;
-            String source = new(phonemes);
+            string tempConvert;
+            string source = new(phonemes);
             int i;
 
             lastConvert = null;
@@ -240,8 +240,8 @@ namespace System.Speech.Internal
         private PhoneMapData _phoneMap;
 
         private static int[] s_langIds = new int[] { 0x804, 0x404, 0x407, 0x409, 0x40A, 0x40C, 0x411 };
-        private static String[] s_resourceNames =
-                    new String[] { "upstable_chs.upsmap", "upstable_cht.upsmap", "upstable_deu.upsmap", "upstable_enu.upsmap",
+        private static string[] s_resourceNames =
+                    new string[] { "upstable_chs.upsmap", "upstable_cht.upsmap", "upstable_deu.upsmap", "upstable_enu.upsmap",
                                    "upstable_esp.upsmap", "upstable_fra.upsmap", "upstable_jpn.upsmap",
 };
         private static PhoneMapData[] s_phoneMaps = new PhoneMapData[7];
@@ -261,8 +261,8 @@ namespace System.Speech.Internal
         {
             private class ConversionUnit
             {
-                public String sapi;
-                public String ups;
+                public string sapi;
+                public string ups;
                 public bool isDefault;
             }
 
@@ -360,7 +360,7 @@ namespace System.Speech.Internal
                 char[] phoneString;
                 phoneLength = reader.ReadInt16() / 2;
                 phoneString = reader.ReadChars(phoneLength);
-                return new String(phoneString, 0, phoneLength - 1);
+                return new string(phoneString, 0, phoneLength - 1);
             }
 
             private Hashtable _prefixSapiTable, _prefixUpsTable;

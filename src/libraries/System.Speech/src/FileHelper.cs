@@ -96,7 +96,7 @@ namespace System.IO
 
             string folderPath = Path.GetTempPath();
 
-            if (!String.IsNullOrEmpty(subFolder))
+            if (!string.IsNullOrEmpty(subFolder))
             {
                 string subFolderPath = Path.Combine(folderPath, subFolder);
 
@@ -113,7 +113,7 @@ namespace System.IO
             {
                 // build a candidate path name for the temp file
                 string path = Path.Combine(folderPath, Path.GetRandomFileName());
-                if (!String.IsNullOrEmpty(extension))
+                if (!string.IsNullOrEmpty(extension))
                 {
                     path = Path.ChangeExtension(path, extension);
                 }
@@ -149,7 +149,7 @@ namespace System.IO
         /// </SecurityNote>
         static internal void DeleteTemporaryFile(string filePath)
         {
-            if (!String.IsNullOrEmpty(filePath))
+            if (!string.IsNullOrEmpty(filePath))
             {
                 try
                 {

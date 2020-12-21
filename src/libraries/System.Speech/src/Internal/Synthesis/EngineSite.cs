@@ -67,7 +67,7 @@ namespace System.Speech.Internal.Synthesis
             {
                 foreach (SpeechEventInfo sapiEvent in events)
                 {
-                    Int32 evtMask = 1 << sapiEvent.EventId;
+                    int evtMask = 1 << sapiEvent.EventId;
 
                     if (sapiEvent.EventId == (short)TtsEventId.EndInputStream && _eventMapper != null)
                     {
@@ -134,7 +134,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Passes back the event interest for the voice.
         /// </summary>
-        public Int32 EventInterest
+        public int EventInterest
         {
             get
             {
@@ -225,7 +225,7 @@ namespace System.Speech.Internal.Synthesis
         {
         }
 
-        internal void SetEventsInterest(Int32 eventInterest)
+        internal void SetEventsInterest(int eventInterest)
         {
             _eventInterest = eventInterest;
             if (_eventMapper != null)
@@ -348,7 +348,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region private Fields
 
-        private Int32 _eventInterest;
+        private int _eventInterest;
 
         private SPVESACTIONS _actions = SPVESACTIONS.SPVES_RATE | SPVESACTIONS.SPVES_VOLUME;
 

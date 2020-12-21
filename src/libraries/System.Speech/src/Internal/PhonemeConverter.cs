@@ -287,7 +287,7 @@ namespace System.Speech.Internal
 
             int IComparer<PhoneId>.Compare(PhoneId x, PhoneId y)
             {
-                return String.Compare(x._phone, y._phone, StringComparison.CurrentCulture);
+                return string.Compare(x._phone, y._phone, StringComparison.CurrentCulture);
             }
         }
 

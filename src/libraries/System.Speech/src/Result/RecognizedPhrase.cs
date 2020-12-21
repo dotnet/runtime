@@ -297,7 +297,7 @@ namespace System.Speech.Recognition
             get
             {
                 // If this phrase comes from a deserialize, then throw
-                if (_grammarId == unchecked((UInt64)(-1)))
+                if (_grammarId == unchecked((ulong)(-1)))
                 {
                     throw new NotSupportedException(SR.Get(SRID.CantGetPropertyFromSerializedInfo, "Grammar"));
                 }
@@ -758,7 +758,7 @@ namespace System.Speech.Recognition
                             break;
 
                         case VarEnum.VT_UI4:
-                            propertyValue = Marshal.PtrToStructure(valueBuffer, typeof(UInt32));
+                            propertyValue = Marshal.PtrToStructure(valueBuffer, typeof(uint));
                             break;
 
                         case VarEnum.VT_I8:
@@ -766,7 +766,7 @@ namespace System.Speech.Recognition
                             break;
 
                         case VarEnum.VT_UI8:
-                            propertyValue = Marshal.PtrToStructure(valueBuffer, typeof(UInt64));
+                            propertyValue = Marshal.PtrToStructure(valueBuffer, typeof(ulong));
                             break;
 
                         case VarEnum.VT_R4:
@@ -790,7 +790,7 @@ namespace System.Speech.Recognition
                 }
                 else
                 {
-                    propertyValue = String.Empty;
+                    propertyValue = string.Empty;
                 }
             }
             return new SemanticValue(propertyName, propertyValue, property.SREngineConfidence);
@@ -1290,7 +1290,7 @@ namespace System.Speech.Recognition
         private Collection<ReplacementText> _replacementText;
 
         [NonSerializedAttribute]
-        private UInt64 _grammarId = unchecked((UInt64)(-1));
+        private ulong _grammarId = unchecked((ulong)(-1));
 #pragma warning disable 6524
         [NonSerializedAttribute]
         private Grammar _grammar;

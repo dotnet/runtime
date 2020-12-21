@@ -227,7 +227,7 @@ namespace System.Speech.Internal
         #region Private Fields
 
         // List of words, end-to-end
-        private Dictionary<String, int> _strings = new();
+        private Dictionary<string, int> _strings = new();
 
         // List of indices in the dictionary of words
         private List<string> _refStrings = new();

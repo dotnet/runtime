@@ -2047,7 +2047,7 @@ namespace System.Speech.Recognition
 
                 try
                 {
-                    SAPIErrorCodes hr = SapiRecognizer.EmulateRecognition(iSpPhrase, (UInt32)(flag));
+                    SAPIErrorCodes hr = SapiRecognizer.EmulateRecognition(iSpPhrase, (uint)(flag));
                     if (hr != SAPIErrorCodes.S_OK)
                     {
                         EmulateRecognizedFailReportError(hr);
@@ -3398,17 +3398,17 @@ namespace System.Speech.Recognition
     {
         // ISpDataKey Methods
         [PreserveSig]
-        new int SetData([MarshalAs(UnmanagedType.LPWStr)] string valueName, UInt32 cbData, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] Byte[] data);
+        new int SetData([MarshalAs(UnmanagedType.LPWStr)] string valueName, uint cbData, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data);
         [PreserveSig]
-        new int GetData([MarshalAs(UnmanagedType.LPWStr)] string valueName, ref UInt32 pcbData, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] Byte[] data);
+        new int GetData([MarshalAs(UnmanagedType.LPWStr)] string valueName, ref uint pcbData, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] byte[] data);
         [PreserveSig]
         new int SetStringValue([MarshalAs(UnmanagedType.LPWStr)] string valueName, [MarshalAs(UnmanagedType.LPWStr)] string value);
         [PreserveSig]
         new void GetStringValue([MarshalAs(UnmanagedType.LPWStr)] string pszValueName, [MarshalAs(UnmanagedType.LPWStr)] out string ppszValue);
         [PreserveSig]
-        new int SetDWORD([MarshalAs(UnmanagedType.LPWStr)] string valueName, UInt32 dwValue);
+        new int SetDWORD([MarshalAs(UnmanagedType.LPWStr)] string valueName, uint dwValue);
         [PreserveSig]
-        new int GetDWORD([MarshalAs(UnmanagedType.LPWStr)] string pszValueName, ref UInt32 pdwValue);
+        new int GetDWORD([MarshalAs(UnmanagedType.LPWStr)] string pszValueName, ref uint pdwValue);
         [PreserveSig]
         new int OpenKey([MarshalAs(UnmanagedType.LPWStr)] string pszSubKeyName, out ISpDataKey ppSubKey);
         [PreserveSig]
@@ -3418,9 +3418,9 @@ namespace System.Speech.Recognition
         [PreserveSig]
         new int DeleteValue([MarshalAs(UnmanagedType.LPWStr)] string valueName);
         [PreserveSig]
-        new int EnumKeys(UInt32 index, [MarshalAs(UnmanagedType.LPWStr)] out string ppszSubKeyName);
+        new int EnumKeys(uint index, [MarshalAs(UnmanagedType.LPWStr)] out string ppszSubKeyName);
         [PreserveSig]
-        new int EnumValues(UInt32 Index, [MarshalAs(UnmanagedType.LPWStr)] out string ppszValueName);
+        new int EnumValues(uint Index, [MarshalAs(UnmanagedType.LPWStr)] out string ppszValueName);
 
         // ISpObjectTokenCategory Methods
         void SetId([MarshalAs(UnmanagedType.LPWStr)] string pszCategoryId, [MarshalAs(UnmanagedType.Bool)] bool fCreateIfNotExist);
@@ -3438,8 +3438,8 @@ namespace System.Speech.Recognition
         void Slot2(); // void Skip(UInt32 celt);
         void Slot3(); // void Reset();
         void Slot4(); // void Clone(out IEnumSpObjectTokens ppEnum);
-        void Item(UInt32 Index, out ISpObjectToken ppToken);
-        void GetCount(out UInt32 pCount);
+        void Item(uint Index, out ISpObjectToken ppToken);
+        void GetCount(out uint pCount);
     }
 
     [ComImport, Guid("EF411752-3736-4CB4-9C8C-8EF4CCB58EFE")]

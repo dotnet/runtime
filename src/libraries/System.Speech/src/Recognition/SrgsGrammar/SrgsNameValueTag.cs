@@ -81,10 +81,10 @@ namespace System.Speech.Recognition.SrgsGrammar
             {
                 Helpers.ThrowIfNull(value, nameof(value));
 
-                if ((value is String) ||
-                (value is Boolean) ||
-                (value is Int32) ||
-                (value is Double))
+                if ((value is string) ||
+                (value is bool) ||
+                (value is int) ||
+                (value is double))
                 {
                     _value = value;
                 }

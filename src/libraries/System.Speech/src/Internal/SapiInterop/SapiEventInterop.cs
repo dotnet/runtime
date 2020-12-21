@@ -12,8 +12,8 @@ namespace System.Speech.Internal.SapiInterop
     {
         public SPEVENTENUM eEventId;
         public SPEVENTLPARAMTYPE elParamType;
-        public UInt32 ulStreamNum;
-        public UInt64 ullAudioStreamOffset;
+        public uint ulStreamNum;
+        public ulong ullAudioStreamOffset;
         public IntPtr wParam;   // Always just a numeric type - contains no unmanged resources so does not need special clean-up.
         public IntPtr lParam;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
     }
@@ -23,11 +23,11 @@ namespace System.Speech.Internal.SapiInterop
     {
         public SPEVENTENUM eEventId;
         public SPEVENTLPARAMTYPE elParamType;
-        public UInt32 ulStreamNum;
-        public UInt64 ullAudioStreamOffset;
+        public uint ulStreamNum;
+        public ulong ullAudioStreamOffset;
         public IntPtr wParam;   // Always just a numeric type - contains no unmanged resources so does not need special clean-up.
         public IntPtr lParam;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
-        public UInt64 ullAudioTimeOffset;
+        public ulong ullAudioTimeOffset;
     }
 
     internal enum SPEVENTENUM : ushort
@@ -87,12 +87,12 @@ namespace System.Speech.Internal.SapiInterop
     {
         // ISpNotifySource Methods
         void SetNotifySink(ISpNotifySink pNotifySink);
-        void SetNotifyWindowMessage(UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+        void SetNotifyWindowMessage(uint hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
         void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
         void Slot5(); // void SetNotifyWin32Event();
         [PreserveSig]
-        int WaitForNotifyEvent(UInt32 dwMilliseconds);
+        int WaitForNotifyEvent(uint dwMilliseconds);
         void Slot7(); // IntPtr GetNotifyEventHandle();
     }
 
@@ -101,17 +101,17 @@ namespace System.Speech.Internal.SapiInterop
     {
         // ISpNotifySource Methods
         new void SetNotifySink(ISpNotifySink pNotifySink);
-        new void SetNotifyWindowMessage(UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+        new void SetNotifyWindowMessage(uint hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         new void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
         new void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
         new void Slot5(); // void SetNotifyWin32Event();
         [PreserveSig]
-        new int WaitForNotifyEvent(UInt32 dwMilliseconds);
+        new int WaitForNotifyEvent(uint dwMilliseconds);
         new void Slot7(); // IntPtr GetNotifyEventHandle();
 
         // ISpEventSource Methods
-        void SetInterest(UInt64 ullEventInterest, UInt64 ullQueuedInterest);
-        void GetEvents(UInt32 ulCount, out SPEVENT pEventArray, out UInt32 pulFetched);
+        void SetInterest(ulong ullEventInterest, ulong ullQueuedInterest);
+        void GetEvents(uint ulCount, out SPEVENT pEventArray, out uint pulFetched);
         void Slot10(); // void GetInfo(out SPEVENTSOURCEINFO pInfo);
     }
 
@@ -120,21 +120,21 @@ namespace System.Speech.Internal.SapiInterop
     {
         // ISpNotifySource Methods
         new void SetNotifySink(ISpNotifySink pNotifySink);
-        new void SetNotifyWindowMessage(UInt32 hWnd, UInt32 Msg, IntPtr wParam, IntPtr lParam);
+        new void SetNotifyWindowMessage(uint hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
         new void Slot3(); // void SetNotifyCallbackFunction(ref IntPtr pfnCallback, IntPtr wParam, IntPtr lParam);
         new void Slot4(); // void SetNotifyCallbackInterface(ref IntPtr pSpCallback, IntPtr wParam, IntPtr lParam);
         new void Slot5(); // void SetNotifyWin32Event();
         [PreserveSig]
-        new int WaitForNotifyEvent(UInt32 dwMilliseconds);
+        new int WaitForNotifyEvent(uint dwMilliseconds);
         new void Slot7(); // IntPtr GetNotifyEventHandle();
 
         // ISpEventSource Methods
-        new void SetInterest(UInt64 ullEventInterest, UInt64 ullQueuedInterest);
-        new void GetEvents(UInt32 ulCount, out SPEVENT pEventArray, out UInt32 pulFetched);
+        new void SetInterest(ulong ullEventInterest, ulong ullQueuedInterest);
+        new void GetEvents(uint ulCount, out SPEVENT pEventArray, out uint pulFetched);
         new void Slot10(); // void GetInfo(out SPEVENTSOURCEINFO pInfo);
 
         // ISpEventSource2 Methods
-        void GetEventsEx(UInt32 ulCount, out SPEVENTEX pEventArray, out UInt32 pulFetched);
+        void GetEventsEx(uint ulCount, out SPEVENTEX pEventArray, out uint pulFetched);
     }
 
     [ComImport, Guid("259684DC-37C3-11D2-9603-00C04F8EE628"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

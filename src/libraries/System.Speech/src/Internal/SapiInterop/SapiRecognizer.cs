@@ -75,14 +75,14 @@ namespace System.Speech.Internal.SapiInterop
         #region Internal Methods
 
         // ISpProperties Methods
-        internal void SetPropertyNum(string name, Int32 value)
+        internal void SetPropertyNum(string name, int value)
         {
             _proxy.Invoke2(delegate { SetProperty(_proxy.Recognizer, name, value); });
         }
 
-        internal Int32 GetPropertyNum(string name)
+        internal int GetPropertyNum(string name)
         {
-            return (Int32)_proxy.Invoke(delegate { return GetProperty(_proxy.Recognizer, name, true); });
+            return (int)_proxy.Invoke(delegate { return GetProperty(_proxy.Recognizer, name, true); });
         }
         internal void SetPropertyString(string name, string value)
         {
@@ -182,7 +182,7 @@ namespace System.Speech.Internal.SapiInterop
             return (SAPIErrorCodes)_proxy.Invoke(delegate { return _proxy.SapiSpeechRecognizer.EmulateRecognition(phrase, ref displayAttributes, 0); });
         }
 
-        internal SAPIErrorCodes EmulateRecognition(ISpPhrase iSpPhrase, UInt32 dwCompareFlags)
+        internal SAPIErrorCodes EmulateRecognition(ISpPhrase iSpPhrase, uint dwCompareFlags)
         {
             return (SAPIErrorCodes)_proxy.Invoke(delegate { return _proxy.Recognizer2.EmulateRecognitionEx(iSpPhrase, dwCompareFlags); });
         }
@@ -235,9 +235,9 @@ namespace System.Speech.Internal.SapiInterop
         {
             SAPIErrorCodes errorCode;
 
-            if (value is Int32)
+            if (value is int)
             {
-                errorCode = (SAPIErrorCodes)sapiRecognizer.SetPropertyNum(name, (Int32)value);
+                errorCode = (SAPIErrorCodes)sapiRecognizer.SetPropertyNum(name, (int)value);
             }
             else
             {

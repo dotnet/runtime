@@ -101,7 +101,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 _symbols.Add(sb.ToString(), out semanticInterpretationGlobals);
                 semanticInterpretationGlobals = _symbols.OffsetFromId(semanticInterpretationGlobals);
-                if (semanticInterpretationGlobals > UInt16.MaxValue)
+                if (semanticInterpretationGlobals > ushort.MaxValue)
                 {
                     throw new OverflowException(SR.Get(SRID.TooManyRulesWithSemanticsGlobals));
                 }
@@ -113,7 +113,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 _symbols.Add(script._sMethod, out script._idSymbol);
             }
             // get the header
-            CfgGrammar.CfgSerializedHeader header = BuildHeader(sortedStates, cBasePath, unchecked((UInt16)semanticInterpretationGlobals), out cArcs, out pWeights);
+            CfgGrammar.CfgSerializedHeader header = BuildHeader(sortedStates, cBasePath, unchecked((ushort)semanticInterpretationGlobals), out cArcs, out pWeights);
             streamBuffer.WriteStream(header);
 
             //
@@ -1064,7 +1064,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="cArcs"></param>
         /// <param name="pWeights"></param>
         /// <returns></returns>
-        private CfgGrammar.CfgSerializedHeader BuildHeader(List<State> sortedStates, int cBasePath, UInt16 iSemanticGlobals, out int cArcs, out float[] pWeights)
+        private CfgGrammar.CfgSerializedHeader BuildHeader(List<State> sortedStates, int cBasePath, ushort iSemanticGlobals, out int cArcs, out float[] pWeights)
         {
             cArcs = 1; // Start with offset one! (0 indicates dead state).
             pWeights = null;
@@ -1101,7 +1101,7 @@ namespace System.Speech.Internal.SrgsCompiler
             header.FormatId = CfgGrammar._SPGDF_ContextFree;
             _guid = Guid.NewGuid();
             header.GrammarGUID = _guid;
-            header.LangID = (UInt16)_langId;
+            header.LangID = (ushort)_langId;
             header.pszSemanticInterpretationGlobals = iSemanticGlobals;
             header.cArcsInLargestState = cLargest;
 

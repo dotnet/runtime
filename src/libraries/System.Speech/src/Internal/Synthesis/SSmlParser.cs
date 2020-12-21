@@ -2104,7 +2104,7 @@ namespace System.Speech.Internal.Synthesis
             {
                 fResult = true;
             }
-            else if (Int32.TryParse(sAge, out iAge))
+            else if (int.TryParse(sAge, out iAge))
             {
                 if (iAge <= ((int)VoiceAge.Teen + (int)VoiceAge.Child) / 2)
                 {

@@ -173,69 +173,69 @@ namespace System.Speech.Internal.SrgsCompiler
 
 #pragma warning restore 56518 // The Binary reader cannot be disposed or it would close the underlying stream
 
-            internal UInt32 ulTotalSerializedSize;
+            internal uint ulTotalSerializedSize;
 
             internal Guid FormatId;
 
             internal Guid GrammarGUID;
 
-            internal UInt16 LangID;
+            internal ushort LangID;
 
-            internal UInt16 pszSemanticInterpretationGlobals;
+            internal ushort pszSemanticInterpretationGlobals;
 
-            internal Int32 cArcsInLargestState;
+            internal int cArcsInLargestState;
 
-            internal Int32 cchWords;
+            internal int cchWords;
 
-            internal Int32 cWords;
+            internal int cWords;
 
-            internal UInt32 pszWords;
+            internal uint pszWords;
 
-            internal Int32 cchSymbols;
+            internal int cchSymbols;
 
-            internal UInt32 pszSymbols;
+            internal uint pszSymbols;
 
-            internal Int32 cRules;
+            internal int cRules;
 
-            internal UInt32 pRules;
+            internal uint pRules;
 
-            internal Int32 cArcs;
+            internal int cArcs;
 
-            internal UInt32 pArcs;
+            internal uint pArcs;
 
-            internal UInt32 pWeights;
+            internal uint pWeights;
 
-            internal Int32 cTags;
+            internal int cTags;
 
-            internal UInt32 tags;
+            internal uint tags;
 
-            internal UInt32 ulReservered1;
+            internal uint ulReservered1;
 
-            internal UInt32 ulReservered2;
+            internal uint ulReservered2;
 
-            internal Int32 cScripts;
+            internal int cScripts;
 
-            internal UInt32 pScripts;
+            internal uint pScripts;
 
-            internal Int32 cIL;
+            internal int cIL;
 
-            internal UInt32 pIL;
+            internal uint pIL;
 
-            internal Int32 cPDB;
+            internal int cPDB;
 
-            internal UInt32 pPDB;
+            internal uint pPDB;
 
-            internal UInt32 ulRootRuleIndex;
+            internal uint ulRootRuleIndex;
 
             internal GrammarOptions GrammarOptions;
 
-            internal UInt32 cBasePath;
+            internal uint cBasePath;
 
-            internal UInt32 GrammarMode;
+            internal uint GrammarMode;
 
-            internal UInt32 ulReservered3;
+            internal uint ulReservered3;
 
-            internal UInt32 ulReservered4;
+            internal uint ulReservered4;
         }
 
         internal class CfgProperty

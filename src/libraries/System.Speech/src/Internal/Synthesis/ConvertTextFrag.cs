@@ -46,7 +46,7 @@ namespace System.Speech.Internal.Synthesis
                 SPVSTATE sapiState = new();
                 FragmentState ssmlState = textFragment.State;
                 sapiState.eAction = (SPVACTIONS)ssmlState.Action;
-                sapiState.LangID = (Int16)ssmlState.LangId;
+                sapiState.LangID = (short)ssmlState.LangId;
                 sapiState.EmphAdj = ssmlState.Emphasis != 1 ? 0 : 1;
                 if (ssmlState.Prosody != null)
                 {

@@ -48,18 +48,18 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Internal Methods
 
-        internal void SetInterest(UInt64 eventInterest, UInt64 queuedInterest)
+        internal void SetInterest(ulong eventInterest, ulong queuedInterest)
         {
             _proxy.Invoke2(delegate { _recoContext.SetInterest(eventInterest, queuedInterest); });
         }
 
-        internal SapiGrammar CreateGrammar(UInt64 id)
+        internal SapiGrammar CreateGrammar(ulong id)
         {
             ISpRecoGrammar sapiGrammar;
             return (SapiGrammar)_proxy.Invoke(delegate { _recoContext.CreateGrammar(id, out sapiGrammar); return new SapiGrammar(sapiGrammar, _proxy); });
         }
 
-        internal void SetMaxAlternates(UInt32 count)
+        internal void SetMaxAlternates(uint count)
         {
             _proxy.Invoke2(delegate { _recoContext.SetMaxAlternates(count); });
         }
@@ -69,7 +69,7 @@ namespace System.Speech.Internal.SapiInterop
             _proxy.Invoke2(delegate { _recoContext.SetAudioOptions(options, audioFormatId, waveFormatEx); });
         }
 
-        internal void Bookmark(SPBOOKMARKOPTIONS options, UInt64 position, IntPtr lparam)
+        internal void Bookmark(SPBOOKMARKOPTIONS options, ulong position, IntPtr lparam)
         {
             _proxy.Invoke2(delegate { _recoContext.Bookmark(options, position, lparam); });
         }

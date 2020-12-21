@@ -172,7 +172,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         }
                         else
                         {
-                            diff = String.Compare(arc1._ruleRef.Name, arc2._ruleRef.Name, StringComparison.CurrentCulture);
+                            diff = string.Compare(arc1._ruleRef.Name, arc2._ruleRef.Name, StringComparison.CurrentCulture);
                         }
                     }
 

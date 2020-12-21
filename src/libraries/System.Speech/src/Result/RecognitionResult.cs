@@ -110,7 +110,7 @@ namespace System.Speech.Recognition
                     try
                     {
                         // Get the sml Content and toy with this variable to fool the compiler in not doing the calucation at all
-                        String sml = phrase.SmlContent;
+                        string sml = phrase.SmlContent;
                         RecognizedAudio audio = Audio;
                         if (phrase.Text == null || phrase.Homophones == null || phrase.Semantics == null || (sml == null && sml != null) || (audio == null && audio != null))
                         {

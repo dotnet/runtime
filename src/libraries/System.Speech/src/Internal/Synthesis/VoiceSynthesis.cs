@@ -1047,10 +1047,10 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Get the user's default rate from the registry
         /// </summary>
-        private static UInt32 GetDefaultRate()
+        private static uint GetDefaultRate()
         {
             //--- Read the current user's default rate
-            UInt32 lCurrRateAd = 0;
+            uint lCurrRateAd = 0;
             using (ObjectTokenCategory category = ObjectTokenCategory.Create(SAPICategories.CurrentUserVoices))
             {
                 if (category != null)

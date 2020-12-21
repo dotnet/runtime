@@ -92,11 +92,11 @@ namespace System.Speech.Internal.SapiInterop
             SpRecoGrammar2.LoadCmdFromMemory2(grammar, options, sharingUri, baseUri);
         }
 
-        internal void SetRulePriority(string name, UInt32 id, Int32 priority)
+        internal void SetRulePriority(string name, uint id, int priority)
         {
             SpRecoGrammar2.SetRulePriority(name, id, priority);
         }
-        internal void SetRuleWeight(string name, UInt32 id, float weight)
+        internal void SetRuleWeight(string name, uint id, float weight)
         {
             SpRecoGrammar2.SetRuleWeight(name, id, weight);
         }

@@ -82,11 +82,11 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <summary>
         /// TODOC
         /// </summary>
-        public Int16 EventId { get { return _eventId; } internal set { _eventId = value; } }
+        public short EventId { get { return _eventId; } internal set { _eventId = value; } }
         /// <summary>
         /// TODOC
         /// </summary>
-        public Int16 ParameterType { get { return _parameterType; } internal set { _parameterType = value; } }
+        public short ParameterType { get { return _parameterType; } internal set { _parameterType = value; } }
         /// <summary>
         /// Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         /// </summary>
@@ -97,8 +97,8 @@ namespace System.Speech.Synthesis.TtsEngine
         public IntPtr Param2 { get { return _param2; } internal set { _param2 = value; } }
 
         /// TODOC
-        public SpeechEventInfo(Int16 eventId,
-                               Int16 parameterType,
+        public SpeechEventInfo(short eventId,
+                               short parameterType,
                                int param1,
                                IntPtr param2)
         {
@@ -143,8 +143,8 @@ namespace System.Speech.Synthesis.TtsEngine
             return base.GetHashCode();
         }
 
-        private Int16 _eventId;
-        private Int16 _parameterType;
+        private short _eventId;
+        private short _parameterType;
         private int _param1;   // Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         private IntPtr _param2;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
     }
@@ -179,7 +179,7 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <summary>
         /// TODOC
         /// </summary>
-        Int32 EventInterest { get; }
+        int EventInterest { get; }
         /// <summary>
         /// TODOC
         /// </summary>

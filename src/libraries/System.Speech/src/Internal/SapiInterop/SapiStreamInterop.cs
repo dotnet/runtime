@@ -25,17 +25,17 @@ namespace System.Speech.Internal.SapiInterop
     internal interface ISpStreamFormat : IStream
     {
         // ISequentialStream Methods
-        new void Read([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] Byte[] pv, int cb, IntPtr pcbRead);
-        new void Write([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] Byte[] pv, int cb, IntPtr pcbWritten);
+        new void Read([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] byte[] pv, int cb, IntPtr pcbRead);
+        new void Write([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pv, int cb, IntPtr pcbWritten);
 
         // IStream Methods
-        new void Seek(Int64 dlibMove, int dwOrigin, IntPtr plibNewPosition);
-        new void SetSize(Int64 libNewSize);
-        new void CopyTo(IStream pstm, Int64 cb, IntPtr pcbRead, IntPtr pcbWritten);
+        new void Seek(long dlibMove, int dwOrigin, IntPtr plibNewPosition);
+        new void SetSize(long libNewSize);
+        new void CopyTo(IStream pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten);
         new void Commit(int grfCommitFlags);
         new void Revert();
-        new void LockRegion(Int64 libOffset, Int64 cb, int dwLockType);
-        new void UnlockRegion(Int64 libOffset, Int64 cb, int dwLockType);
+        new void LockRegion(long libOffset, long cb, int dwLockType);
+        new void UnlockRegion(long libOffset, long cb, int dwLockType);
         new void Stat(out STATSTG pstatstg, int grfStatFlag);
         new void Clone(out IStream ppstm);
 
@@ -47,16 +47,16 @@ namespace System.Speech.Internal.SapiInterop
     internal interface ISpStream : ISpStreamFormat
     {
         // ISequentialStream Methods
-        new void Read([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] Byte[] pv, int cb, IntPtr pcbRead);
-        new void Write([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] Byte[] pv, int cb, IntPtr pcbWritten);
+        new void Read([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] byte[] pv, int cb, IntPtr pcbRead);
+        new void Write([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pv, int cb, IntPtr pcbWritten);
         // IStream Methods
-        new void Seek(Int64 dlibMove, int dwOrigin, IntPtr plibNewPosition);
-        new void SetSize(Int64 libNewSize);
-        new void CopyTo(IStream pstm, Int64 cb, IntPtr pcbRead, IntPtr pcbWritten);
+        new void Seek(long dlibMove, int dwOrigin, IntPtr plibNewPosition);
+        new void SetSize(long libNewSize);
+        new void CopyTo(IStream pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten);
         new void Commit(int grfCommitFlags);
         new void Revert();
-        new void LockRegion(Int64 libOffset, Int64 cb, int dwLockType);
-        new void UnlockRegion(Int64 libOffset, Int64 cb, int dwLockType);
+        new void LockRegion(long libOffset, long cb, int dwLockType);
+        new void UnlockRegion(long libOffset, long cb, int dwLockType);
         new void Stat(out STATSTG pstatstg, int grfStatFlag);
         new void Clone(out IStream ppstm);
         // ISpStreamFormat Methods
@@ -65,7 +65,7 @@ namespace System.Speech.Internal.SapiInterop
         // ISpStream Methods
         void SetBaseStream(IStream pStream, ref Guid rguidFormat, IntPtr pWaveFormatEx);
         void Slot14(); // void GetBaseStream(IStream ** ppStream);
-        void BindToFile(string pszFileName, SPFILEMODE eMode, ref Guid pFormatId, IntPtr pWaveFormatEx, UInt64 ullEventInterest);
+        void BindToFile(string pszFileName, SPFILEMODE eMode, ref Guid pFormatId, IntPtr pWaveFormatEx, ulong ullEventInterest);
         void Close();
     }
 

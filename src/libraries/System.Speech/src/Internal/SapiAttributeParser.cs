@@ -30,7 +30,7 @@ namespace System.Speech.Internal
             {
                 try
                 {
-                    return new CultureInfo(Int32.Parse(langStringTrim, NumberStyles.HexNumber, CultureInfo.InvariantCulture), false);
+                    return new CultureInfo(int.Parse(langStringTrim, NumberStyles.HexNumber, CultureInfo.InvariantCulture), false);
                 }
                 catch (ArgumentException)
                 {

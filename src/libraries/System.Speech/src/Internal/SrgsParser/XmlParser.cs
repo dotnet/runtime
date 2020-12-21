@@ -1865,10 +1865,10 @@ namespace System.Speech.Internal.SrgsParser
                     }
                     else
                     {
-                        maxRepeat = System.Int32.MaxValue;
+                        maxRepeat = int.MaxValue;
                     }
                     // Limit the range of valid values
-                    if (minRepeat < 0 || minRepeat > 255 || (maxRepeat != System.Int32.MaxValue && (maxRepeat < 0 || maxRepeat > 255)))
+                    if (minRepeat < 0 || minRepeat > 255 || (maxRepeat != int.MaxValue && (maxRepeat < 0 || maxRepeat > 255)))
                     {
                         XmlParser.ThrowSrgsException(SRID.MinMaxOutOfRange, minRepeat, maxRepeat);
                     }

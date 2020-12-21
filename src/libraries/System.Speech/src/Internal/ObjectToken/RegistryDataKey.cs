@@ -181,8 +181,8 @@ namespace System.Speech.Internal.ObjectTokens
         [PreserveSig]
         public int SetData(
             [MarshalAs(UnmanagedType.LPWStr)] string valueName,
-            [MarshalAs(UnmanagedType.SysUInt)] UInt32 cbData,
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] Byte[] data)
+            [MarshalAs(UnmanagedType.SysUInt)] uint cbData,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data)
         {
             return _sapiRegKey.SetData(valueName, cbData, data);
         }
@@ -197,8 +197,8 @@ namespace System.Speech.Internal.ObjectTokens
         [PreserveSig]
         public int GetData(
             [MarshalAs(UnmanagedType.LPWStr)] string valueName,
-            [MarshalAs(UnmanagedType.SysUInt)] ref UInt32 pcbData,
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] Byte[] data)
+            [MarshalAs(UnmanagedType.SysUInt)] ref uint pcbData,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] byte[] data)
         {
             return _sapiRegKey.GetData(valueName, ref pcbData, data);
         }
@@ -242,7 +242,7 @@ namespace System.Speech.Internal.ObjectTokens
         [PreserveSig]
         public int SetDWORD(
             [MarshalAs(UnmanagedType.LPWStr)] string valueName,
-            [MarshalAs(UnmanagedType.SysUInt)] UInt32 value)
+            [MarshalAs(UnmanagedType.SysUInt)] uint value)
         {
             return _sapiRegKey.SetDWORD(valueName, value);
         }
@@ -254,7 +254,7 @@ namespace System.Speech.Internal.ObjectTokens
         /// <param name="pdwValue"></param>
         /// <returns></returns>
         [PreserveSig]
-        public int GetDWORD([MarshalAs(UnmanagedType.LPWStr)] string valueName, ref UInt32 pdwValue)
+        public int GetDWORD([MarshalAs(UnmanagedType.LPWStr)] string valueName, ref uint pdwValue)
         {
             return _sapiRegKey.GetDWORD(valueName, ref pdwValue);
         }
@@ -314,7 +314,7 @@ namespace System.Speech.Internal.ObjectTokens
         /// <param name="ppszSubKeyName"></param>
         /// <returns></returns>
         [PreserveSig]
-        public int EnumKeys(UInt32 index, [MarshalAs(UnmanagedType.LPWStr)] out string ppszSubKeyName)
+        public int EnumKeys(uint index, [MarshalAs(UnmanagedType.LPWStr)] out string ppszSubKeyName)
         {
             return _sapiRegKey.EnumKeys(index, out ppszSubKeyName);
         }
@@ -326,7 +326,7 @@ namespace System.Speech.Internal.ObjectTokens
         /// <param name="valueName"></param>
         /// <returns></returns>
         [PreserveSig]
-        public int EnumValues(UInt32 index, [MarshalAs(UnmanagedType.LPWStr)] out string valueName)
+        public int EnumValues(uint index, [MarshalAs(UnmanagedType.LPWStr)] out string valueName)
         {
             return _sapiRegKey.EnumValues(index, out valueName);
         }
@@ -403,7 +403,7 @@ namespace System.Speech.Internal.ObjectTokens
         /// <param name="valueName"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal bool TryGetDWORD(string valueName, ref UInt32 value)
+        internal bool TryGetDWORD(string valueName, ref uint value)
         {
             if (string.IsNullOrEmpty(valueName))
             {

@@ -59,8 +59,8 @@ namespace System.Speech.Synthesis.TtsEngine
         public SPVACTIONS eAction;
 
         //--- Running state values
-        public Int16 LangID;
-        public Int16 wReserved;
+        public short LangID;
+        public short wReserved;
         public int EmphAdj;
         public int RateAdj;
         public int Volume;

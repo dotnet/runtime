@@ -171,13 +171,13 @@ namespace System.Speech.Internal.Synthesis
     internal struct WAVEHDR
     {
         internal IntPtr lpData; // disposed by the GCHandle
-        internal UInt32 dwBufferLength;
-        internal UInt32 dwBytesRecorded;
-        internal UInt32 dwUser;
-        internal UInt32 dwFlags;
-        internal UInt32 dwLoops;
+        internal uint dwBufferLength;
+        internal uint dwBytesRecorded;
+        internal uint dwUser;
+        internal uint dwFlags;
+        internal uint dwLoops;
         internal IntPtr lpNext; // unused
-        internal UInt32 reserved;
+        internal uint reserved;
     }
 
     // Enum equivalent to MMSYSERR_*

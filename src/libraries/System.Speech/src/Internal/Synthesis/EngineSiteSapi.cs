@@ -60,7 +60,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Passes back the event interest for the voice.
         /// </summary>
-        void ISpEngineSite.GetEventInterest(out Int64 eventInterest)
+        void ISpEngineSite.GetEventInterest(out long eventInterest)
         {
             eventInterest = (uint)_site.EventInterest;
         }
@@ -99,9 +99,9 @@ namespace System.Speech.Internal.Synthesis
         /// Retrieves the base output volume level the engine should use during synthesis.
         /// </summary>
         /// <param name="pusVolume"></param>
-        void ISpEngineSite.GetVolume(out Int16 pusVolume)
+        void ISpEngineSite.GetVolume(out short pusVolume)
         {
-            pusVolume = (Int16)_site.Volume;
+            pusVolume = (short)_site.Volume;
         }
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// TODOC
         /// </summary>
-        void GetEventInterest(out Int64 eventInterest);
+        void GetEventInterest(out long eventInterest);
         /// <summary>
         /// TODOC
         /// </summary>
@@ -232,7 +232,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// TODOC
         /// </summary>
-        void GetVolume(out Int16 volume);
+        void GetVolume(out short volume);
         /// <summary>
         /// TODOC
         /// </summary>
@@ -256,19 +256,19 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// TODOC
         /// </summary>
-        public Int16 EventId;
+        public short EventId;
         /// <summary>
         /// TODOC
         /// </summary>
-        public Int16 ParameterType;
+        public short ParameterType;
         /// <summary>
         /// TODOC
         /// </summary>
-        public Int32 StreamNumber;
+        public int StreamNumber;
         /// <summary>
         /// TODOC
         /// </summary>
-        public Int64 AudioStreamOffset;
+        public long AudioStreamOffset;
         /// <summary>
         /// TODOC
         /// </summary>

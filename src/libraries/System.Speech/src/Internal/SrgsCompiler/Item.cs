@@ -81,7 +81,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     State startState = _startArc.End;
 
                     // If _maxRepeat = Infinite, add epsilon transition loop back to the start of this
-                    if (_maxRepeat == System.Int32.MaxValue && _minRepeat == 1)
+                    if (_maxRepeat == int.MaxValue && _minRepeat == 1)
                     {
                         _endArc = InsertState(_endArc, 1.0f, Position.After);
 
@@ -92,7 +92,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         State currentStartState = startState;
 
                         // For each additional repeat count, clone a new subgraph and connect with appropriate transitions.
-                        for (UInt32 cnt = 1; cnt < _maxRepeat && cnt < 255; cnt++)
+                        for (uint cnt = 1; cnt < _maxRepeat && cnt < 255; cnt++)
                         {
                             // Prepare to clone a new subgraph matching the <item> content.
                             State newStartState = _backend.CreateNewState(_endArc.Start.Rule);
@@ -108,7 +108,7 @@ namespace System.Speech.Internal.SrgsCompiler
                             System.Diagnostics.Debug.Assert(newEndState.OutArcs.CountIsOne && Arc.CompareContent(_endArc, newEndState.OutArcs.First) == 0);
                             _endArc = newEndState.OutArcs.First;
 
-                            if (_maxRepeat == System.Int32.MaxValue)
+                            if (_maxRepeat == int.MaxValue)
                             {
                                 // If we are beyond _minRepeat, add epsilon transition frorm startState with (1-_repeatProbability).
                                 if (cnt == _minRepeat - 1)

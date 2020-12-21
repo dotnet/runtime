@@ -172,31 +172,31 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Private Types
 
-        private const UInt32 RIFF_MARKER = 0x46464952;
-        private const UInt32 WAVE_MARKER = 0x45564157;
-        private const UInt32 FMT_MARKER = 0x20746d66;
-        private const UInt32 DATA_MARKER = 0x61746164;
+        private const uint RIFF_MARKER = 0x46464952;
+        private const uint WAVE_MARKER = 0x45564157;
+        private const uint FMT_MARKER = 0x20746d66;
+        private const uint DATA_MARKER = 0x61746164;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct RIFFHDR
         {
-            internal UInt32 _id;
-            internal Int32 _len;             /* file length less header */
-            internal UInt32 _type;            /* should be "WAVE" */
+            internal uint _id;
+            internal int _len;             /* file length less header */
+            internal uint _type;            /* should be "WAVE" */
         }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct BLOCKHDR
         {
-            internal UInt32 _id;              /* should be "fmt " or "data" */
-            internal Int32 _len;             /* block size less header */
+            internal uint _id;              /* should be "fmt " or "data" */
+            internal int _len;             /* block size less header */
         };
 
         [StructLayout(LayoutKind.Sequential)]
         private struct DATAHDR
         {
-            internal UInt32 _id;              /* should be "fmt " or "data" */
-            internal Int32 _len;              /* block size less header */
+            internal uint _id;              /* should be "fmt " or "data" */
+            internal int _len;              /* block size less header */
         }
 
         #endregion

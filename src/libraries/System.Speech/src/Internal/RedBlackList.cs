@@ -613,14 +613,14 @@ namespace System.Speech.Internal
             {
                 if (CompareTo (maxLeft, current) >= 0)
                 {
-                    throw new InvalidOperationException(String.Format("Binary property violated on the left of {0}", node.ToString()));
+                    throw new InvalidOperationException(string.Format("Binary property violated on the left of {0}", node.ToString()));
                 }
             }
             if (minRight != null)
             {
                 if (CompareTo (minRight, current) < 0)
                 {
-                    throw new InvalidOperationException(String.Format("Binary property violated on the right of {0}", node.ToString()));
+                    throw new InvalidOperationException(string.Format("Binary property violated on the right of {0}", node.ToString()));
                 }
             }
             minValue = minLeft;
@@ -640,7 +640,7 @@ namespace System.Speech.Internal
                 {
                     if (GetColor(node.Left) == NodeColor.RED || GetColor(node.Right) == NodeColor.RED)
                     {
-                        throw new InvalidOperationException(String.Format("Red node {0} has a red child\n", node.ToString()));
+                        throw new InvalidOperationException(string.Format("Red node {0} has a red child\n", node.ToString()));
                     }
                 }
 
@@ -652,7 +652,7 @@ namespace System.Speech.Internal
 
                 if (leftCount != rightCount)
                 {
-                    throw new InvalidOperationException(String.Format("Black heights are different {0} != {1} at node {2}", leftCount, rightCount, node.ToString()));
+                    throw new InvalidOperationException(string.Format("Black heights are different {0} != {1} at node {2}", leftCount, rightCount, node.ToString()));
                 }
                 return leftCount + (GetColor(node) == NodeColor.BLACK ? 1 : 0);
             }
@@ -692,7 +692,7 @@ namespace System.Speech.Internal
             if (node != null)
             {
                 int maxLength = ShowTree(node.Left, lines, depth + 1, leftLength);
-                String current = node.ToString();
+                string current = node.ToString();
                 StringBuilder builder = new(lines[depth]);
                 while (builder.Length < maxLength - current.Length / 2)
                 {
@@ -703,7 +703,7 @@ namespace System.Speech.Internal
                 maxLength = ShowTree(node.Right, lines, depth + 1, maxLength + 1);
                 if (lines[depth].Length < maxLength)
                 {
-                    lines[depth] += new String(' ', maxLength - lines[depth].Length);
+                    lines[depth] += new string(' ', maxLength - lines[depth].Length);
                 }
 
                 return lines[depth].Length;
@@ -712,7 +712,7 @@ namespace System.Speech.Internal
             {
                 if (lines[depth].Length < leftLength)
                 {
-                    lines[depth] += new String(' ', leftLength - lines[depth].Length);
+                    lines[depth] += new string(' ', leftLength - lines[depth].Length);
                 }
                 return lines[depth].Length;
             }
