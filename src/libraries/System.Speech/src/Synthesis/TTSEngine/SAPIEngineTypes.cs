@@ -64,11 +64,8 @@ namespace System.Speech.Synthesis.TtsEngine
     [System.Runtime.InteropServices.TypeLibTypeAttribute(16)]
     internal struct SPVCONTEXT
     {
-        //[MarshalAs (UnmanagedType.LPWStr)]
         public IntPtr pCategory;
-        //[MarshalAs (UnmanagedType.LPWStr)]
         public IntPtr pBefore;
-        //[MarshalAs (UnmanagedType.LPWStr)]
         public IntPtr pAfter;
     }
 

@@ -8,8 +8,8 @@ namespace System.IO
     internal static class FileHelper
     {
         // The normal way to create and open a temp file fails when an impolite
-        // process opens the new file before we can (DDVSO 519951, 638468).
-        // The CLR doesn't provide a better way of doing it (DDVSO 641087), so
+        // process opens the new file before we can.
+        // The CLR doesn't provide a better way of doing it, so
         // we roll our own.   This method can and should be replaced once the
         // CLR provides a better way.
         //
@@ -151,7 +151,7 @@ namespace System.IO
                 }
                 catch (System.IO.IOException)
                 {
-                    // DDVSO 227517: We may not be able to delete the file if it's being used by some other process (e.g. Anti-virus check).
+                    // We may not be able to delete the file if it's being used by some other process (e.g. Anti-virus check).
                     // There's nothing we can do in that case, so just eat the exception and leave the file behind
                 }
             }
