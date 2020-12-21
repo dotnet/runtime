@@ -89,7 +89,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
             }
             Arc rulerefArc = backend.RuleTransition(ruleRef, _rule, 1.0f);
-
+#pragma warning disable 0618
             if (!string.IsNullOrEmpty(semanticKey))
             {
                 CfgGrammar.CfgProperty propertyInfo = new();
@@ -98,6 +98,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 propertyInfo._comType = VarEnum.VT_EMPTY;
                 backend.AddPropertyTag(rulerefArc, rulerefArc, propertyInfo);
             }
+#pragma warning restore 0618
             parent.AddArc(rulerefArc);
         }
 

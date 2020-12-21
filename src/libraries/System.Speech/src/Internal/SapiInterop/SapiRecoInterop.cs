@@ -961,7 +961,7 @@ namespace System.Speech.Internal.SapiInterop
         void ResetAcousticModelAdaptation();
     }
 
-    [ComImport, Guid("2D5F1C0C-BD75-4b08-9478-3B11FEA2586C"), InterfaceType(ComInterfaceType.InterfaceIsDual)]
+    [ComImport, Guid("2D5F1C0C-BD75-4b08-9478-3B11FEA2586C")]
     internal interface ISpeechRecognizer
     {
         // ISpeechRecognizer Methods
@@ -1103,7 +1103,7 @@ namespace System.Speech.Internal.SapiInterop
     /// <summary>
     /// Resource Loader interface definition
     /// </summary>
-    [ComImport, Guid("B9AC5783-FCD0-4b21-B119-B4F8DA8FD2C3"), InterfaceType(ComInterfaceType.InterfaceIsDual)]
+    [ComImport, Guid("B9AC5783-FCD0-4b21-B119-B4F8DA8FD2C3")]
     internal interface ISpGrammarResourceLoader
     {
         /// <summary>

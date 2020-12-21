@@ -56,6 +56,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 _nameOffset = 0; // Offset must be zero if no string
             }
+#pragma warning disable 0618 // VarEnum is obsolete
             switch (property._comType)
             {
                 case 0:
@@ -86,7 +87,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     System.Diagnostics.Debug.Assert(false, "Unknown Semantic Tag type");
                     break;
             }
-
+#pragma warning restore 0618
             PropVariantType = property._comType;
             ArcIndex = 0;
         }
@@ -175,6 +176,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
+#pragma warning disable 0618 // VarEnum is obsolete
         internal VarEnum PropVariantType
         {
             get
@@ -194,6 +196,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 _flag3 |= varType;
             }
         }
+#pragma warning restore 0618
 
         internal uint ArcIndex
         {

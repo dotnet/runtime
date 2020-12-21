@@ -69,6 +69,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
             // Set property value
             _propInfo._comValue = value;
+#pragma warning disable 0618 // VarEnum is obsolete
             if (value == null)
             {
                 _propInfo._comType = VarEnum.VT_EMPTY;
@@ -94,6 +95,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // should never get here
                 System.Diagnostics.Debug.Assert(false);
             }
+#pragma warning restore 0618
         }
 
         void IElement.PostParse(IElement parentElement)

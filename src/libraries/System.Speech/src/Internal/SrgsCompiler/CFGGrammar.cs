@@ -94,7 +94,8 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 BinaryReader br = new(stream);
                 ulTotalSerializedSize = br.ReadUInt32();
-                if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 || ulTotalSerializedSize > int.MaxValue)
+                if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 ||
+ ulTotalSerializedSize > int.MaxValue)
                 {
                     // Size is either negative or too small.
                     XmlParser.ThrowSrgsException(SRID.UnsupportedFormat);
@@ -114,7 +115,8 @@ namespace System.Speech.Internal.SrgsCompiler
                 cchWords = br.ReadInt32();
                 cWords = br.ReadInt32();
                 pszWords = br.ReadUInt32();
-                if (pszWords < SP_SPCFGSERIALIZEDHEADER_500 || pszWords > ulTotalSerializedSize)
+                if (pszWords < SP_SPCFGSERIALIZEDHEADER_500 ||
+ pszWords > ulTotalSerializedSize)
                 {
                     // First data points before or before valid range.
                     XmlParser.ThrowSrgsException(SRID.UnsupportedFormat);
@@ -154,7 +156,8 @@ namespace System.Speech.Internal.SrgsCompiler
                 cfgLength = 0;
                 BinaryReader br = new(stream);
                 uint ulTotalSerializedSize = br.ReadUInt32();
-                if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 || ulTotalSerializedSize > int.MaxValue)
+                if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 ||
+ ulTotalSerializedSize > int.MaxValue)
                 {
                     // Size is either negative or too small.
                     return false;
@@ -243,9 +246,9 @@ namespace System.Speech.Internal.SrgsCompiler
             internal string _pszName;
 
             internal uint _ulId;
-
+#pragma warning disable 0618 // VarEnum is obsolete
             internal VarEnum _comType;
-
+#pragma warning restore 0618
             internal object _comValue;
         }
 
@@ -289,7 +292,8 @@ namespace System.Speech.Internal.SrgsCompiler
             // read all the common fields
             header.rules = Load<CfgRule>(streamHelper, cfgSerializedHeader.pRules, cfgSerializedHeader.cRules);
 
-            if (includeAllGrammarData || loadSymbols)
+            if (includeAllGrammarData ||
+ loadSymbols)
             {
                 header.pszSymbols = LoadStringBlob(streamHelper, cfgSerializedHeader.pszSymbols, cfgSerializedHeader.cchSymbols);
             }
@@ -500,11 +504,22 @@ namespace System.Speech.Internal.SrgsCompiler
                         int startArc = (int)header.tags[i].StartArcIndex;
                         int endArc = (int)header.tags[i].EndArcIndex;
                         int cArcs = header.arcs.Length;
-
-                        if (startArc == 0 || startArc >= cArcs || endArc == 0 || endArc >= cArcs || (header.tags[i].PropVariantType != VarEnum.VT_EMPTY && header.tags[i].PropVariantType == VarEnum.VT_BSTR && header.tags[i].PropVariantType == VarEnum.VT_BOOL && header.tags[i].PropVariantType == VarEnum.VT_R8 && header.tags[i].PropVariantType == VarEnum.VT_I4))
+#pragma warning disable 0618 // VarEnum is obsolete
+                        if (startArc == 0 ||
+                             startArc >= cArcs ||
+                             endArc == 0 ||
+                             endArc >= cArcs ||
+                             (
+                                header.tags[i].PropVariantType != VarEnum.VT_EMPTY &&
+                                header.tags[i].PropVariantType == VarEnum.VT_BSTR &&
+                                header.tags[i].PropVariantType == VarEnum.VT_BOOL &&
+                                header.tags[i].PropVariantType == VarEnum.VT_R8 &&
+                                header.tags[i].PropVariantType == VarEnum.VT_I4)
+                             )
                         {
                             XmlParser.ThrowSrgsException(SRID.UnsupportedFormat);
                         }
+#pragma warning restore 0618
                     }
                 }
             }
@@ -529,7 +544,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private static void CheckSetOffsets(uint offset, int size, ref int start, uint max)
         {
-            if (offset < (uint)start || (start = (int)offset + size) > (int)max)
+            if (offset < (uint)start ||
+ (start = (int)offset + size) > (int)max)
             {
                 XmlParser.ThrowSrgsException(SRID.UnsupportedFormat);
             }

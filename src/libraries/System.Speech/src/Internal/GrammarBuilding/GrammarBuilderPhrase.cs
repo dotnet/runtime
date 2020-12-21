@@ -46,7 +46,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="subsetMatchingCriteria"></param>
         private GrammarBuilderPhrase(string phrase, bool subsetMatching, SubsetMatchingMode subsetMatchingCriteria)
         {
-            _phrase = string.Copy(phrase);
+            _phrase = phrase;
             _subsetMatching = subsetMatching;
             switch (subsetMatchingCriteria)
             {
@@ -73,7 +73,7 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="matchMode"></param>
         private GrammarBuilderPhrase(string phrase, bool subsetMatching, MatchMode matchMode)
         {
-            _phrase = string.Copy(phrase);
+            _phrase = phrase;
             _subsetMatching = subsetMatching;
             _matchMode = matchMode;
         }

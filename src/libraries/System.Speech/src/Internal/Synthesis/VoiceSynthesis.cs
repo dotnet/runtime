@@ -859,7 +859,7 @@ namespace System.Speech.Internal.Synthesis
                                                 FragmentState fragmentState = new();
                                                 fragmentState.Action = TtsEngineAction.Speak;
                                                 fragmentState.Prosody = new Prosody();
-                                                TextFragment textFragment = new(fragmentState, string.Copy(paramSpeak._textToSpeak));
+                                                TextFragment textFragment = new(fragmentState, paramSpeak._textToSpeak);
                                                 speakInfo.AddText(voice, textFragment);
                                             }
                                             else

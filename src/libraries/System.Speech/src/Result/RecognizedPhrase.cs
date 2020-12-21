@@ -751,6 +751,7 @@ namespace System.Speech.Recognition
                 if (property.SpVariantSubset >= 0)
                 {
                     IntPtr valueBuffer = new((long)phraseBuffer + +semanticsOffset + SpVariantSubsetOffset);
+#pragma warning disable 0618 // VarEnum is obsolete
                     switch ((VarEnum)property.vValue)
                     {
                         case VarEnum.VT_I4:
@@ -787,6 +788,7 @@ namespace System.Speech.Recognition
                         default:
                             throw new NotSupportedException(SR.Get(SRID.UnhandledVariant));
                     }
+#pragma warning restore 0618
                 }
                 else
                 {

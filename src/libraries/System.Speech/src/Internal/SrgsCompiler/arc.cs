@@ -451,11 +451,12 @@ namespace System.Speech.Internal.SrgsCompiler
                     {
                         int idTagName;
                         newTag._cfgTag._nameOffset = be.Symbols.Add(tag._be.Symbols.FromOffset(tag._cfgTag._nameOffset), out idTagName);
-
+#pragma warning disable 0618 // VarEnum is obsolete
                         if (tag._cfgTag._valueOffset != 0 && tag._cfgTag.PropVariantType == System.Runtime.InteropServices.VarEnum.VT_EMPTY)
                         {
                             newTag._cfgTag._valueOffset = be.Symbols.Add(tag._be.Symbols.FromOffset(tag._cfgTag._valueOffset), out idTagName);
                         }
+#pragma warning restore 0618
                     }
                 }
             }
@@ -815,6 +816,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private static string GetSemanticValue (CfgSemanticTag tag, StringBlob symbols, out string value)
         {
+#pragma warning disable 0618 // VarEnum is obsolete
             switch (tag.PropVariantType)
             {
                 case VarEnum.VT_EMPTY:
@@ -838,6 +840,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     value = "Unknown property type";
                     break;
             }
+#pragma warning restore 0618
 
             return tag._nameOffset > 0 ? symbols.FromOffset (tag._nameOffset) : tag._nameOffset.ToString (CultureInfo.InvariantCulture); ;
         }
