@@ -83,7 +83,26 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <libproc.h>
 #include <sys/sysctl.h>
 #include <sys/posix_sem.h>
-#endif
+#if defined(HOST_ARM64)
+#include <mach/task.h>
+#include <mach/vm_map.h>
+extern "C"
+{
+#  include <mach/thread_state.h>
+}
+
+#define CHECK_MACH(_msg, machret) do {                                      \
+        if (machret != KERN_SUCCESS)                                        \
+        {                                                                   \
+            char _szError[1024];                                            \
+            snprintf(_szError, _countof(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            mach_error(_szError, machret);                                  \
+            abort();                                                        \
+        }                                                                   \
+    } while (false)
+
+#endif // defined(HOST_ARM64)
+#endif // __APPLE__
 
 #ifdef __NetBSD__
 #include <sys/cdefs.h>
@@ -3348,6 +3367,9 @@ InitializeFlushProcessWriteBuffers()
         }
     }
 
+#if defined(TARGET_OSX) && defined(HOST_ARM64)
+    return TRUE;
+#else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
 
     if(s_helperPage == MAP_FAILED)
@@ -3375,6 +3397,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
+#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -3403,7 +3426,7 @@ FlushProcessWriteBuffers()
         int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0);
         FATAL_ASSERT(status == 0, "Failed to flush using membarrier");
     }
-    else
+    else if (s_helperPage != 0)
     {
         int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
@@ -3424,6 +3447,33 @@ FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
+#if defined(TARGET_OSX) && defined(HOST_ARM64)
+    else
+    {
+        mach_msg_type_number_t cThreads;
+        thread_act_t *pThreads;
+        kern_return_t machret = task_threads(mach_task_self(), &pThreads, &cThreads);
+        CHECK_MACH("task_threads()", machret);
+
+        uintptr_t sp;
+        uintptr_t registerValues[128];
+
+        // Iterate through each of the threads in the list.
+        for (mach_msg_type_number_t i = 0; i < cThreads; i++)
+        {
+            // Request the threads pointer values to force the thread to emit a memory barrier
+            size_t registers = 128;
+            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
+            {
+                CHECK_MACH("thread_get_register_pointer_values()", machret);
+            }
+        }
+        // Deallocate the thread list now we're done with it.
+        machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
+        CHECK_MACH("vm_deallocate()", machret);
+    }
+#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
 }
 
 /*++

@@ -864,10 +864,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             assert((varNode != nullptr) ^ (addrNode != nullptr));
 
             ClassLayout* layout;
-            unsigned     structSize;
+            unsigned     srcSize;
             bool         isHfa;
 
-            // Setup the structSize, isHFa, and gcPtrCount
+            // Setup the srcSize, isHFa, and gcPtrCount
             if (source->OperGet() == GT_LCL_VAR)
             {
                 assert(varNode != nullptr);
@@ -878,10 +878,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(varDsc->lvType == TYP_STRUCT);
                 assert(varDsc->lvOnFrame && !varDsc->lvRegister);
 
-                structSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
-                                               // as that is how much stack is allocated for this LclVar
-                isHfa  = varDsc->lvIsHfa();
-                layout = varDsc->GetLayout();
+                srcSize = varDsc->lvSize();
+                isHfa   = varDsc->lvIsHfa();
+                layout  = varDsc->GetLayout();
             }
             else // we must have a GT_OBJ
             {
@@ -891,9 +890,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
                 // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
                 // the OBJ node has a different type than the lclvar.
-                layout     = source->AsObj()->GetLayout();
-                structSize = layout->GetSize();
-                isHfa      = compiler->IsHfa(layout->GetClassHandle());
+                layout  = source->AsObj()->GetLayout();
+                srcSize = layout->GetSize();
+                isHfa   = compiler->IsHfa(layout->GetClassHandle());
             }
 
             // If we have an HFA we can't have any GC pointers,
@@ -905,16 +904,17 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 #ifdef TARGET_ARM64
             else
             {
-                noway_assert(structSize <= 2 * TARGET_POINTER_SIZE);
+                noway_assert(srcSize <= 2 * TARGET_POINTER_SIZE);
             }
 
-            noway_assert(structSize <= MAX_PASS_MULTIREG_BYTES);
+            noway_assert(srcSize <= MAX_PASS_MULTIREG_BYTES);
 #endif // TARGET_ARM64
 
-            unsigned roundedDstSize = treeNode->GetStackByteSize();
-            if (roundedDstSize != structSize)
+            unsigned structSize;
+
+            unsigned dstSize = treeNode->GetStackByteSize();
+            if (dstSize != srcSize)
             {
-                unsigned roundedSrcSize = structSize;
                 // We can generate a smaller code if store size is a multiple of TARGET_POINTER_SIZE.
                 // The dst size can be rounded up to PUTARG_STK size.
                 // The src size can be rounded up if it reads a local variable slot because the local
@@ -922,18 +922,25 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 // The exception  is arm64 apple arguments because they can be passed without padding.
                 if (varNode != nullptr)
                 {
-#if defined(OSX_ARM64_ABI)
-                    const LclVarDsc* varDsc = compiler->lvaGetDesc(varNode);
-                    if (!varDsc->lvIsParam || !isHfa || (varDsc->GetHfaType() != TYP_FLOAT))
-#endif // OSX_ARM64_ABI
+                    // If we have a varNode, even if it was casted using `OBJ`, we can read its original memory size.
+                    const LclVarDsc* varDsc       = compiler->lvaGetDesc(varNode);
+                    const unsigned   varStackSize = varDsc->lvSize();
+                    if (varStackSize >= srcSize)
                     {
-                        roundedSrcSize = roundUp(structSize, TARGET_POINTER_SIZE);
+                        srcSize = varStackSize;
                     }
                 }
-                if (roundedDstSize == roundedSrcSize)
-                {
-                    structSize = roundedDstSize;
-                }
+            }
+            if (dstSize == srcSize)
+            {
+                structSize = dstSize;
+            }
+            else
+            {
+                // With Unsafe object cast we can have different strange combinations:
+                // PutArgStk<8>(Obj<16>(LclVar<8>)) -> copy 8 bytes;
+                // PutArgStk<16>(Obj<16>(LclVar<8>)) -> copy 16 bytes, reading undefined memory after the local.
+                structSize = min(dstSize, srcSize);
             }
 
             int      remainingSize = structSize;

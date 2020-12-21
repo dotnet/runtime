@@ -211,11 +211,11 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
-  if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(AWK_SCRIPT generateexportedsymbols.awk)
   else()
     set(AWK_SCRIPT generateversionscript.awk)
-  endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  endif()
 
   add_custom_command(
     OUTPUT ${outputFilename}

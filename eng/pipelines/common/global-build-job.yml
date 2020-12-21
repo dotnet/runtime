@@ -15,6 +15,7 @@ parameters:
   platform: ''
   condition: true
   shouldContinueOnError: false
+  dependOnEvaluatePaths: false
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
   helixQueues: ''
@@ -26,13 +27,15 @@ jobs:
   parameters:
     name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
     displayName: ${{ format('Build {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
-    dependsOn: checkout
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     workspace:
       clean: all
+
+    ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+      dependsOn: evaluate_paths
 
     variables:
       - name: _osParameter
@@ -66,7 +69,9 @@ jobs:
         - ${{ variable }}
 
     steps:
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    - checkout: self
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml

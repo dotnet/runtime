@@ -118,10 +118,35 @@ namespace IlasmPortablePdbTests
             }
         }
 
+        // Tests whether the portable PDB MethodDebugInformation table has all the entries as MethoDef table
+        [Fact]
+        public void TestPortablePdbMethodDebugInformation1()
+        {
+            var ilSource = "TestMethodDebugInformation.il";
+
+            var ilasm = IlasmPortablePdbTesterCommon.GetIlasmFullPath(CoreRootVar, IlasmFile);
+            IlasmPortablePdbTesterCommon.Assemble(ilasm, ilSource, TestDir, out string dll, out string pdb);
+
+            using (var peStream = new FileStream(dll, FileMode.Open, FileAccess.Read))
+            {
+                using (var peReader = new PEReader(peStream))
+                {
+                    var peMdReader = peReader.GetMetadataReader();
+                    Assert.NotNull(peMdReader);
+                    using (var pdbReaderProvider = IlasmPortablePdbTesterCommon.GetMetadataReaderProvider(dll, pdb, peReader, false))
+                    {
+                        var portablePdbMdReader = pdbReaderProvider.GetMetadataReader();
+                        Assert.NotNull(portablePdbMdReader);
+                        Assert.Equal(peMdReader.MethodDefinitions.Count, portablePdbMdReader.MethodDebugInformation.Count);
+                    }
+                }
+            }
+        }
+
         // Tests whether the portable PDB has appropriate sequence points defined
         // The test source file includes external source reference and thus has 2 variants depending on OS type
         [Fact]
-        public void TestPortablePdbMethodDebugInformation()
+        public void TestPortablePdbMethodDebugInformation2()
         {
             var ilSource = IsUnix ? "TestMethodDebugInformation_unix.il" : "TestMethodDebugInformation_win.il";
 
