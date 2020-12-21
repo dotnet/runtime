@@ -257,9 +257,6 @@ COMPlusFrameHandler proto c
 COMPlusNestedExceptionHandler proto c
 .safeseh COMPlusNestedExceptionHandler
 
-FastNExportExceptHandler proto c
-.safeseh FastNExportExceptHandler
-
 UMThunkPrestubHandler proto c
 .safeseh UMThunkPrestubHandler
 
