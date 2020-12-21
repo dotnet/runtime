@@ -283,7 +283,6 @@ namespace System.Speech.Internal.ObjectTokens
                 ISpObjectWithToken objectWithToken = instanceValue as ISpObjectWithToken;
                 if (objectWithToken != null)
                 {
-                    //IntPtr ite = Marshal.GetComInterfaceForObject (this, typeof (ISpObjectToken2));
                     int hresult = objectWithToken.SetObjectToken(this);
                     if (hresult < 0)
                     {
@@ -297,7 +296,6 @@ namespace System.Speech.Internal.ObjectTokens
             }
             catch (Exception e)
             {
-                //wow I am not really sure we want to do this here....
                 if (e is MissingMethodException || e is TypeLoadException || e is FileLoadException || e is FileNotFoundException || e is MethodAccessException || e is MemberAccessException || e is TargetInvocationException || e is InvalidComObjectException || e is NotSupportedException || e is FormatException)
                 {
                     throw new ArgumentException(SR.Get(SRID.TokenCannotCreateInstance));

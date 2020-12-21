@@ -38,7 +38,6 @@ namespace System.IO
         // only guaranteed using both FileMode.CreateNew and FileShare.None (or more
         // precisely lack of FileShare.Write), and even that is only true on Windows.
         // Thus even this method won't necessarily work on non-Windows platforms.
-        // (This can't be fixed by WPF.)
         //
         // [Using FileMode.CreateNew also avoids a possible security vulnerability
         // in which a malicious process exploits the vulnerable window to create
@@ -137,9 +136,6 @@ namespace System.IO
         /// Delete a temporary file robustly.
         ///</summary>
         /// <param name="filePath">Path to the temp file.</param>
-        /// <SecurityNote>
-        ///     Critical - Calls into filesystem functions, asserts permission.
-        /// </SecurityNote>
         internal static void DeleteTemporaryFile(string filePath)
         {
             if (!string.IsNullOrEmpty(filePath))

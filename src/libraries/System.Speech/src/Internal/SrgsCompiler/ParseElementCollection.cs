@@ -163,7 +163,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         internal void AddArc(Arc arc) { AddArc(arc, arc); }
-        //internal virtual void AddArc (Arc startArc, Arc endArc) { throw new NotImplementedException (); }
 
         internal enum Position
         {

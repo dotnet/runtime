@@ -56,10 +56,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             Helpers.ThrowIfEmptyOrNull(parameters, nameof(parameters));
 
-#pragma warning disable 56504 // The public API is not that public so remove all the parameter validation.
             _semanticKey = semanticKey;
-#pragma warning restore 56504 // The public API is not that public so remove all the parameter validation.
-
             _params = parameters;
         }
 

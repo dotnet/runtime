@@ -58,8 +58,6 @@ namespace System.Speech.Internal.SrgsCompiler
             internal string BasePath;
         }
 
-#pragma warning disable 649
-
         [StructLayout(LayoutKind.Sequential)]
         internal class CfgSerializedHeader
         {
@@ -232,8 +230,6 @@ namespace System.Speech.Internal.SrgsCompiler
             internal object _comValue;
         }
 
-#pragma warning restore 649
-
         #endregion
 
         #region Internal Methods
@@ -393,24 +389,6 @@ namespace System.Speech.Internal.SrgsCompiler
             return true;
         }
 
-#if DEBUG
-
-        internal static void TraceInformation(string s)
-        {
-            System.Diagnostics.Debug.WriteLine(s);
-        }
-
-        internal static void TraceInformation2(string s)
-        {
-            System.Diagnostics.Debug.WriteLine(s);
-        }
-
-        internal static void TraceInformation3(string s)
-        {
-            System.Diagnostics.Debug.WriteLine(s);
-        }
-#endif
-
         #endregion
 
         #region Private Methods
@@ -515,7 +493,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private static StringBlob LoadStringBlob(StreamMarshaler streamHelper, uint iPos, int c)
         {
-            // TraceInformation (string.Format (CultureInfo.InvariantCulture, "Read String Blob at: {0:x}", iPos));
             char[] ach = new char[c];
 
             streamHelper.Position = iPos;
@@ -526,7 +503,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private static T[] Load<T>(StreamMarshaler streamHelper, uint iPos, int c)
         {
-            // TraceInformation (string.Format (CultureInfo.InvariantCulture, "Read {0} at: {1:x}", typeof (T).ToString (), iPos));
 
             T[] t = null;
 

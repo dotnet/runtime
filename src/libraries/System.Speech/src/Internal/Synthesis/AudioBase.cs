@@ -364,7 +364,6 @@ namespace System.Speech.Internal.Synthesis
     [System.Runtime.InteropServices.TypeLibTypeAttribute(16)]
     internal struct WAVEFORMATEX
     {
-#pragma warning disable 649
 
         internal short wFormatTag;
         internal short nChannels;
@@ -373,8 +372,6 @@ namespace System.Speech.Internal.Synthesis
         internal short nBlockAlign;
         internal short wBitsPerSample;
         internal short cbSize;
-
-#pragma warning restore 649
 
         internal static WAVEFORMATEX ToWaveHeader(byte[] waveHeader)
         {

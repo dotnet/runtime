@@ -143,8 +143,6 @@ namespace System.Speech.Internal
             startIndex = i = 0;
             endIndex = -1;
 
-#pragma warning disable 56507
-
             while (i < source.Length)
             {
                 token = source.Substring(startIndex, i - startIndex + 1);
@@ -185,7 +183,6 @@ namespace System.Speech.Internal
             {
                 return null;
             }
-#pragma warning restore 56507
 
             return result.ToString().ToCharArray();
         }

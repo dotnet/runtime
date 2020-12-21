@@ -288,9 +288,6 @@ namespace System.Speech.Internal.Synthesis
             _pexmlPrefix = pexmlPrefix;
         }
 
-        //this is not a public API!!!
-#pragma warning disable 56507
-
         private bool ProcessPromptEngine(string element, params KeyValuePair<string, string>[] attributes)
         {
             _writer.WriteStartElement(_pexmlPrefix, element, xmlNamespacePrompt);
@@ -307,8 +304,6 @@ namespace System.Speech.Internal.Synthesis
             }
             return true;
         }
-
-#pragma warning restore 56507
 
         public bool BeginPromptEngineOutput(object voice)
         {

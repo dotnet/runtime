@@ -24,7 +24,6 @@ namespace System.Speech.Synthesis
         }
 
         // Disable parameter validation check for empty strings
-#pragma warning disable 56507
         public Prompt(string textToSpeak, SynthesisTextFormat media)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -40,8 +39,6 @@ namespace System.Speech.Synthesis
                     throw new ArgumentException(SR.Get(SRID.SynthesizerUnknownMediaType), nameof(media));
             }
         }
-
-#pragma warning restore 56507
         internal Prompt(Uri promptFile, SynthesisMediaType media)
         {
             Helpers.ThrowIfNull(promptFile, nameof(promptFile));

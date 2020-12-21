@@ -7,8 +7,6 @@ using System.Speech.AudioFormat;
 
 namespace System.Speech.Internal
 {
-#pragma warning restore 649
-
     // Helper class which wraps AudioFormat and handles WaveFormatEx variable sized structure
     internal static class AudioFormatConverter
     {

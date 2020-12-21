@@ -38,7 +38,6 @@ namespace System.Speech.Internal
         /// </summary>
         internal static string ConvertPronToId(string pronunciation, int lcid)
         {
-            //CfgGrammar.TraceInformation ("BackEnd::ConvertPronToId");
             PhonemeConverter phoneConv = UpsConverter;
             foreach (PhoneMap phoneMap in s_phoneMaps)
             {
@@ -63,7 +62,6 @@ namespace System.Speech.Internal
         /// </summary>
         internal string ConvertPronToId(string sPhone)    // Internal phone string
         {
-            //CfgGrammar.TraceInformation ("CSpPhoneConverter::PhoneToId");
             // remove the white spaces
             sPhone = sPhone.Trim(Helpers._achTrimChars);
 

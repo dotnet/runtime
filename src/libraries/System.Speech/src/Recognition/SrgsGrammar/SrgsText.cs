@@ -16,8 +16,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsText()
         {
         }
-
-#pragma warning disable 56507
         public SrgsText(string text)
         {
             Helpers.ThrowIfNull(text, nameof(text));
@@ -43,8 +41,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _text = value;
             }
         }
-
-#pragma warning restore 56507
 
         #endregion
 

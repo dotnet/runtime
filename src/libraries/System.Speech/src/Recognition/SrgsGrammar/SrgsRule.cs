@@ -389,8 +389,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-#pragma warning restore 56507
-
         #endregion
 
         #region Private Fields

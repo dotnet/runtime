@@ -11,7 +11,6 @@ namespace System.Speech.Internal
         #region Internal Methods
 
         // Disable parameter validation check
-#pragma warning disable 56507
 
         // Throws exception if the specified Rule does not have a valid Id.
         internal static void ThrowIfEmptyOrNull(string s, string paramName)
@@ -28,8 +27,6 @@ namespace System.Speech.Internal
                 }
             }
         }
-
-#pragma warning restore 56507
 
         // Throws exception if the specified Rule does not have a valid Id.
         internal static void ThrowIfNull(object value, string paramName)

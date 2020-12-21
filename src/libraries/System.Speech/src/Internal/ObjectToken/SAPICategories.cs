@@ -65,30 +65,6 @@ namespace System.Speech.Internal.ObjectTokens
             return device;
         }
 
-        //static internal ObjectToken DefaultDeviceIn ()
-        //{
-        //    ObjectToken device = null;
-        //try
-        //{
-        //    using (ObjectTokenCategory tokenCategory = new ObjectTokenCategory (@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\AudioOutput", false))
-        //    {
-        //        string deviceName;
-        //        if (tokenCategory.TryGetString (_defaultTokenIdValueName, out deviceName))
-        //        {
-        //            int pos = deviceName.LastIndexOf ('\\');
-        //            if (pos > 0 && pos < deviceName.Length)
-        //            {
-        //                device = new ObjectToken (null, @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\AudioOutput\TokenEnums\MMAudioOut\" + deviceName.Substring (pos + 1), false);
-        //            }
-        //        }
-        //    }
-        //}
-        //catch (ObjectTokenException)
-        //{
-        //}
-        //return device;
-        //}
-
         #endregion
 
         private const string SpeechRegistryKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\";
@@ -348,7 +324,6 @@ namespace System.Speech.Internal.ObjectTokens
         #region private Fields
 
         private const string _defaultTokenIdValueName = "DefaultTokenId";
-        //private const string g_szDefaultDefaultTokenIdValueName = "DefaultDefaultTokenId";
 
         private static readonly string[] s_asVersionDefault = new string[] { "VersionDefault" };
 

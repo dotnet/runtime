@@ -38,9 +38,6 @@ namespace System.Speech.Synthesis.TtsEngine
         SPVST_SENTENCE = 1,
     }
 
-    // Disable warning CS0649 in this block
-#pragma warning disable 649
-
     [ComConversionLossAttribute]
     [TypeLibTypeAttribute(16)]
     internal struct SPVSTATE
@@ -80,8 +77,6 @@ namespace System.Speech.Synthesis.TtsEngine
     {
         internal static readonly Guid SPDFID_WaveFormatEx = new("C31ADBAE-527F-4ff5-A230-F62BB61FF70C");
     }
-
-#pragma warning restore 649
 
     [Flags]
     internal enum SPEAKFLAGS : int

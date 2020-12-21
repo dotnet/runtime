@@ -31,7 +31,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal CfgSemanticTag(StringBlob symbols, CfgGrammar.CfgProperty property)
         {
-            //CfgGrammar.TraceInformation ("CSemanticTag::CSemanticTag");
             int iWord;
 
             _flag1 = _flag2 = _flag3 = 0;

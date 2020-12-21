@@ -9,8 +9,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Speech.Internal;
 
-#pragma warning disable 56504 // The public API is not that public so remove all the parameter validation.
-
 namespace System.Speech.Synthesis.TtsEngine
 {
     #region Public Interface

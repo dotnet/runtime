@@ -239,8 +239,6 @@ namespace System.Speech.Internal.SapiInterop
 
     #region Structure
 
-#pragma warning disable 649
-
     /// Note:   This structure doesn't exist in SAPI.idl but is related to SPPHRASEALT.
     ///         We use it to map memory containted in the serialized result (instead of reading sequentially)
     [StructLayout(LayoutKind.Sequential)]
@@ -251,8 +249,6 @@ namespace System.Speech.Internal.SapiInterop
         internal uint cElementsInAlternate;
         internal uint cbAltExtra;
     }
-
-#pragma warning restore 649
 
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
@@ -340,8 +336,6 @@ namespace System.Speech.Internal.SapiInterop
     {
         internal uint ulSerializedSize;       // Count in bytes (including this ULONG) of the entire phrase
     }
-
-#pragma warning disable 649
 
     // Serialized result header from versions of SAPI prior to 5.3.
     [StructLayout(LayoutKind.Sequential)]
@@ -765,8 +759,6 @@ namespace System.Speech.Internal.SapiInterop
         public ushort wBitsPerSample;
         public ushort cbSize;
     }
-
-#pragma warning restore 649
 
     #endregion
 

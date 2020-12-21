@@ -21,8 +21,6 @@ namespace System.Speech.Internal.SrgsCompiler
         #endregion
 
         #region Internal Methods
-
-#pragma warning disable 56507
         // The probability that this item will be repeated.
         void IPropertyTag.NameValue(IElement parent, string name, object value)
         {
@@ -90,8 +88,6 @@ namespace System.Speech.Internal.SrgsCompiler
             // Attach the semantic properties on the parent element.
             parent.AddSementicPropertyTag(_propInfo);
         }
-
-#pragma warning restore 56507
 
         #endregion
 

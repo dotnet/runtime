@@ -1174,7 +1174,6 @@ namespace System.Speech.Recognition
             internal string _name;
             internal uint _firstElement;
             internal uint _count;
-            //internal int _ruleId;
             internal float _confidence;
             internal bool _hasName;
 

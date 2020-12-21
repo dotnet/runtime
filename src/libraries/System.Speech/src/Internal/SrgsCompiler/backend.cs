@@ -266,7 +266,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         internal Rule CreateRule(string name, SPCFGRULEATTRIBUTES attributes)
         {
-            //CfgGrammar.TraceInformation ("BackEnd::CreateRule");
 
             SPCFGRULEATTRIBUTES allFlags = SPCFGRULEATTRIBUTES.SPRAF_TopLevel | SPCFGRULEATTRIBUTES.SPRAF_Active | SPCFGRULEATTRIBUTES.SPRAF_Export | SPCFGRULEATTRIBUTES.SPRAF_Import | SPCFGRULEATTRIBUTES.SPRAF_Interpreter | SPCFGRULEATTRIBUTES.SPRAF_Dynamic | SPCFGRULEATTRIBUTES.SPRAF_Root;
 
@@ -275,13 +274,12 @@ namespace System.Speech.Internal.SrgsCompiler
                 throw new ArgumentException(SR.Get(SRID.InvalidFlagsSet), nameof(attributes));
             }
 
-            // PS: 52277 - SAPI does not properly handle a rule marked as Import and TopLevel/Active/Root.
+            // SAPI does not properly handle a rule marked as Import and TopLevel/Active/Root.
             // - To maintain maximal backwards compatibility, if a rule is marked as Import, we will unmark TopLevel/Active/Root.
             // - This changes the behavior when application tries to activate this rule.  However, given that it is already
             //   broken/fragile, we believe it is better to change the behavior.
             if ((attributes & SPCFGRULEATTRIBUTES.SPRAF_Import) != 0 && ((attributes & SPCFGRULEATTRIBUTES.SPRAF_TopLevel) != 0 || (attributes & SPCFGRULEATTRIBUTES.SPRAF_Active) != 0 || (attributes & SPCFGRULEATTRIBUTES.SPRAF_Root) != 0))
             {
-                //CfgGrammar.TraceInformation ("Warning: A rule cannot be marked as both Import and TopLevel/Active/Root.\n" + "         TopLevel/Active/Root have been disabled.");
                 attributes &= ~(SPCFGRULEATTRIBUTES.SPRAF_TopLevel | SPCFGRULEATTRIBUTES.SPRAF_Active | SPCFGRULEATTRIBUTES.SPRAF_Root);
             }
 
@@ -344,7 +342,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         internal Rule FindRule(string sRule)
         {
-            //CfgGrammar.TraceInformation ("BackEnd::FindRule");
             Rule rule = null;
 
             if (_nameOffsetRules.Count > 0)
@@ -456,7 +453,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void AddSemanticInterpretationTag(Arc arc, CfgGrammar.CfgProperty propertyInfo)
         {
-            //CfgGrammar.TraceInformation ("BackEnd::AddSemanticTag");
 
             Tag tag = new(this, propertyInfo);
             _tags.Add(tag);
@@ -467,7 +463,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void AddPropertyTag(Arc start, Arc end, CfgGrammar.CfgProperty propertyInfo)
         {
-            //CfgGrammar.TraceInformation ("BackEnd::AddSemanticTag");
 
             Tag tag = new(this, propertyInfo);
             _tags.Add(tag);
@@ -816,7 +811,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         internal void InitFromBinaryGrammar(StreamMarshaler streamHelper)
         {
-            //CfgGrammar.TraceInformation ("BackEnd::InitFromBinaryGrammar");
             CfgGrammar.CfgHeader header = CfgGrammar.ConvertCfgHeader(streamHelper);
 
             _words = header.pszWords;
@@ -1221,7 +1215,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private void ValidateAndTagRules()
         {
-            //CfgGrammar.TraceInformation ("BackEnd::ValidateAndTagRules");
             //
 
             bool fAtLeastOneRule = false;
@@ -1273,7 +1266,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private Arc AddSingleWordTransition(string s, float flWeight, int requiredConfidence)
         {
-            //CfgGrammar.TraceInformation ("BackEnd::CGramComp::AddSingleWordTransition");
 
             Arc arc = new(s, null, _words, flWeight, requiredConfidence, null, MatchMode.AllWords, ref _fNeedWeightTable);
             AddArc(arc);

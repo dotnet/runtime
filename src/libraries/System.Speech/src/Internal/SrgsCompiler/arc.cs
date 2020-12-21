@@ -64,7 +64,6 @@ namespace System.Speech.Internal.SrgsCompiler
         private Arc(string sWord, Rule ruleRef, StringBlob words, float flWeight, int confidence, Rule specialRule, uint iSerialize, MatchMode matchMode, ref bool fNeedWeightTable)
             : this(0, flWeight, confidence, 0, matchMode, ref fNeedWeightTable)
         {
-            //CfgGrammar.TraceInformation ("Arc::Arc");
             _ruleRef = ruleRef;
             _iSerialize = iSerialize;
 
@@ -84,7 +83,6 @@ namespace System.Speech.Internal.SrgsCompiler
         internal Arc(int iWord, float flWeight, int confidence, int ulSpecialTransitionIndex, MatchMode matchMode, ref bool fNeedWeightTable)
             : this()
         {
-            //CfgGrammar.TraceInformation ("Arc::Arc");
             _confidence = confidence;
             _iWord = iWord;
             _flWeight = flWeight;
@@ -188,8 +186,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal float Serialize(StreamMarshaler streamBuffer, bool isLast, uint arcIndex)
         {
-            //CfgGrammar.TraceInformation ("Arc::SerializeArcData");
-
             CfgArc A = new();
 
             A.LastArc = isLast;
@@ -257,7 +253,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void SetEndArcIndexForTags()
         {
-            //CfgGrammar.TraceInformation ("Arc::SerializeSemanticData");
             if (_endTags != null)
             {
                 foreach (Tag tag in _endTags)

@@ -68,7 +68,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         internal State CreateNewState(Rule rule)
         {
-            //CfgGrammar.TraceInformation ("BackEnd::CreateNewState");
             uint hNewState = CfgGrammar.NextHandle;
 
             State newState = new(rule, hNewState);
@@ -179,7 +178,6 @@ namespace System.Speech.Internal.SrgsCompiler
                 arc.End = destState;
             }
 
-            //srcState.InArcs.RemoveRange (0,srcState.InArcs.Count);
             // Replace references to SourceState with references to DestState before deleting SourceState
             if (srcState.Rule._firstState == srcState) // Update RuleInitialState reference, if necessary
             {

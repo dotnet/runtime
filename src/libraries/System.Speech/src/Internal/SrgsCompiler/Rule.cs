@@ -67,7 +67,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void CheckForExitPath(ref int iRecursiveDepth)
         {
-            //CfgGrammar.TraceInformation ("Rule::CheckForExitPath");
             if (!_fHasExitPath)
             {
                 // This check allows empty rules.
@@ -81,7 +80,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void Validate()
         {
-            //CfgGrammar.TraceInformation ("Rule::Validate");
             if ((!_cfgRule.Dynamic) && (!_cfgRule.Import) && _id != "VOID" && _firstState.NumArcs == 0)
             {
                 XmlParser.ThrowSrgsException(SRID.EmptyRule);
@@ -127,7 +125,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void Serialize(StreamMarshaler streamBuffer)
         {
-            //CfgGrammar.TraceInformation ("CRule::Serialize");
 
             // Dynamic rules and imports have no arcs
             _cfgRule.FirstArcIndex = _firstState != null && !_firstState.OutArcs.IsEmpty ? (uint)_firstState.SerializeId : 0;

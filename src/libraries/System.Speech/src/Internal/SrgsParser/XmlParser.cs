@@ -10,7 +10,6 @@ using System.Xml;
 #pragma warning disable 56524 // The _reader and  and _xmlReader are not created in this module and should not be disposed
 
 // Remove all the check for null or empty warnings
-#pragma warning disable 56507
 
 namespace System.Speech.Internal.SrgsParser
 {

@@ -40,12 +40,8 @@ namespace System.Speech.Internal.SrgsCompiler
             _rule = rule;
         }
 
-#pragma warning disable 649
-
         // Token - Required confidence
         internal int _confidence;
-
-#pragma warning restore 649
 
         void IElement.PostParse(IElement parent)
         {

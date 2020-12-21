@@ -17,8 +17,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsSemanticInterpretationTag()
         {
         }
-
-#pragma warning disable 56507
         public SrgsSemanticInterpretationTag(string script)
         {
             Helpers.ThrowIfNull(script, nameof(script));
@@ -42,8 +40,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _script = value;
             }
         }
-
-#pragma warning restore 56507
 
         #endregion
 

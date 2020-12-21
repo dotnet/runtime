@@ -1680,8 +1680,6 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-#pragma warning disable 56507
-
         /// <summary>
         /// This method is used to speak a text buffer.
         /// </summary>
@@ -1697,8 +1695,6 @@ namespace System.Speech.Internal.Synthesis
             //--- Add the Speak info to the pending TTS rendering list
             AddSpeakParameters(new Parameters(Action.SpeakText, new ParametersSpeak(textToSpeak, prompt, fIsXml, null)));
         }
-
-#pragma warning restore 56507
 
         private void SpeakStream(Uri audio, Prompt prompt)
         {

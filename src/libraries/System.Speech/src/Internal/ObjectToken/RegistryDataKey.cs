@@ -307,7 +307,6 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         // Disable parameter validation check
-#pragma warning disable 56507
 
         /// <summary>
         /// Reads the specified string value to the registry. If valueName is
@@ -322,8 +321,6 @@ namespace System.Speech.Internal.ObjectTokens
 
             return 0 == GetStringValue(valueName, out value);
         }
-
-#pragma warning restore 56507
 
         /// <summary>
         /// Opens a sub-key and returns a new object which supports SpDataKey

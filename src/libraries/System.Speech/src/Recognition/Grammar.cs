@@ -1115,8 +1115,6 @@ namespace System.Speech.Recognition
             return rulename;
         }
 
-#pragma warning restore 56507
-
         #endregion
 
         #region Private Fields

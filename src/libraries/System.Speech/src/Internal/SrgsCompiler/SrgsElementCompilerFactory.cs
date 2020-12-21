@@ -190,7 +190,6 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Private Methods
 
         // Disable parameter validation check
-#pragma warning disable 56507
 
         /// <summary>
         /// Add transition representing the normalized token.
@@ -310,8 +309,6 @@ namespace System.Speech.Internal.SrgsCompiler
                 parent.AddArc(_backend.WordTransition(sToken, 1.0f, requiredConfidence));
             }
         }
-
-#pragma warning restore 56507
 
         /// <summary>
         /// Escape token.  "/" -> "\/", "\" -> "\\"
