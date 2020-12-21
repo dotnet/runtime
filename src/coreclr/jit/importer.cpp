@@ -3880,17 +3880,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     // Optimize `ldstr + String::get_Length()` to CNS_INT
                     // e.g. "Hello".Length => 5
                     int     length = -1;
-                    LPCWSTR str;
-                    if (op1->AsStrCon()->IsStringEmptyField())
-                    {
-                        str    = _T("");
-                        length = 0;
-                    }
-                    else
-                    {
-                        str = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd, op1->AsStrCon()->gtSconCPX,
-                                                                 &length);
-                    }
+                    LPCWSTR str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd,
+                                                                     op1->AsStrCon()->gtSconCPX, &length);
                     if (length >= 0)
                     {
                         retNode = gtNewIconNode(length);
@@ -14851,7 +14842,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         assert(aflags & CORINFO_ACCESS_GET);
 
-                        op1 = gtNewSconNode(0, nullptr);
+                        if (s_emptyStringSconCPX != 0)
+                        {
+                            op1 = gtNewSconNode(s_emptyStringSconCPX, info.compCompHnd->getClassModule(impGetObjectClass()));
+                        }
+                        else
+                        {
+                            LPVOID         pValue;
+                            InfoAccessType iat = info.compCompHnd->emptyStringLiteral(&pValue);	
+                            op1                = gtNewStringLiteralNode(iat, pValue);
+                        }
                         goto FIELD_DONE;
                     }
                     break;

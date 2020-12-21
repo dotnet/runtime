@@ -3148,11 +3148,6 @@ struct GenTreeStrCon : public GenTree
     unsigned              gtSconCPX;
     CORINFO_MODULE_HANDLE gtScpHnd;
 
-    bool IsStringEmptyField()
-    {
-        return gtSconCPX == 0 && gtScpHnd == nullptr;
-    }
-
     // Because this node can come from an inlined method we need to
     // have the scope handle, since it will become a helper call.
     GenTreeStrCon(unsigned sconCPX, CORINFO_MODULE_HANDLE mod DEBUGARG(bool largeNode = false))

@@ -5448,8 +5448,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     if (opts.OptimizationEnabled() && asIndex->Arr()->OperIs(GT_CNS_STR) && asIndex->Index()->IsIntCnsFitsInI32())
     {
         const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
-        // NOTE: don't fold it for string.Empty[cns_index] or negative indices - it's going to crash anyway
-        if ((cnsIndex >= 0) && !asIndex->Arr()->AsStrCon()->IsStringEmptyField())
+        if (cnsIndex >= 0)
         {
             int     length;
             LPCWSTR str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
@@ -9271,12 +9270,8 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         return tree;
     }
 
-    if (tree->AsStrCon()->IsStringEmptyField())
-    {
-        LPVOID         pValue;
-        InfoAccessType iat = info.compCompHnd->emptyStringLiteral(&pValue);
-        return fgMorphTree(gtNewStringLiteralNode(iat, pValue));
-    }
+    CORINFO_MODULE_HANDLE scpHnd  = tree->AsStrCon()->gtScpHnd;
+    unsigned              sconCPX = tree->AsStrCon()->gtSconCPX;
 
     // TODO-CQ: Do this for compCurBB->isRunRarely(). Doing that currently will
     // guarantee slow performance for that block. Instead cache the return value
@@ -9284,8 +9279,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 
     if (compCurBB->bbJumpKind == BBJ_THROW)
     {
-        assert(!tree->AsStrCon()->IsStringEmptyField());
-        CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(tree->AsStrCon()->gtScpHnd);
+        CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(scpHnd);
         if (helper != CORINFO_HELP_UNDEF)
         {
             // For un-important blocks, we want to construct the string lazily
@@ -9293,12 +9287,12 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
             GenTreeCall::Use* args;
             if (helper == CORINFO_HELP_STRCNS_CURRENT_MODULE)
             {
-                args = gtNewCallArgs(gtNewIconNode(RidFromToken(tree->AsStrCon()->gtSconCPX), TYP_INT));
+                args = gtNewCallArgs(gtNewIconNode(RidFromToken(sconCPX), TYP_INT));
             }
             else
             {
-                args = gtNewCallArgs(gtNewIconNode(RidFromToken(tree->AsStrCon()->gtSconCPX), TYP_INT),
-                                     gtNewIconEmbScpHndNode(tree->AsStrCon()->gtScpHnd));
+                args = gtNewCallArgs(gtNewIconNode(RidFromToken(sconCPX), TYP_INT),
+                                     gtNewIconEmbScpHndNode(scpHnd));
             }
 
             tree = gtNewHelperCallNode(helper, TYP_REF, args);
@@ -9306,11 +9300,22 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         }
     }
 
-    assert(tree->AsStrCon()->gtScpHnd == info.compScopeHnd || !IsUninitialized(tree->AsStrCon()->gtScpHnd));
+    assert(scpHnd == info.compScopeHnd || !IsUninitialized(scpHnd));
+
+    // Save SconCPX to s_emptyStringSconCPX if it's "" (empty string).
+    if ((s_emptyStringSconCPX == 0) &&
+        (scpHnd == info.compCompHnd->getClassModule(impGetObjectClass())))
+    {
+        int length = -1;
+        info.compCompHnd->getStringLiteral(scpHnd, sconCPX, &length);
+        if (length == 0)
+        {
+            s_emptyStringSconCPX = sconCPX;
+        }
+    }
 
     LPVOID         pValue;
-    InfoAccessType iat =
-        info.compCompHnd->constructStringLiteral(tree->AsStrCon()->gtScpHnd, tree->AsStrCon()->gtSconCPX, &pValue);
+    InfoAccessType iat = info.compCompHnd->constructStringLiteral(scpHnd, sconCPX, &pValue);
 
     tree = gtNewStringLiteralNode(iat, pValue);
 

@@ -9491,6 +9491,8 @@ public:
 
 //-------------------------- Global Compiler Data ------------------------------------
 
+    static unsigned s_emptyStringSconCPX;
+
 #ifdef DEBUG
 private:
     static LONG s_compMethodsCount; // to produce unique label names

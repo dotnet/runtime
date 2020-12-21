@@ -1393,6 +1393,8 @@ bool Compiler::s_dspMemStats = false;
 const bool Compiler::Options::compNoPInvokeInlineCB = false;
 #endif
 
+unsigned Compiler::s_emptyStringSconCPX = 0;
+
 /*****************************************************************************
  *
  *  One time initialization code
