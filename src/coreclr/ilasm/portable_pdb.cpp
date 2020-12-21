@@ -223,6 +223,7 @@ HRESULT PortablePdbWriter::DefineSequencePoints(Method* method)
     LinePC* prevNonHiddenSeqPoint = NULL;
     LinePC* nextSeqPoint = NULL;
     BOOL isValid = TRUE;
+    BOOL hasEmptyMethodBody = method->m_LinePCList.COUNT() == 0;
 
     for (UINT32 i = 0; i < method->m_LinePCList.COUNT(); i++)
     {
@@ -304,9 +305,10 @@ HRESULT PortablePdbWriter::DefineSequencePoints(Method* method)
     }
 
     // finally define sequence points for the method
-    if (isValid && currSeqPoint != NULL)
+    if ((isValid && currSeqPoint != NULL) || hasEmptyMethodBody)
     {
-        ULONG documentRid = RidFromToken(currSeqPoint->pOwnerDocument->GetToken());
+        mdDocument document = hasEmptyMethodBody ? m_currentDocument->GetToken() : currSeqPoint->pOwnerDocument->GetToken();
+        ULONG documentRid = RidFromToken(document);
         hr = m_pdbEmitter->DefineSequencePoints(documentRid, blob->ptr(), blob->length());
     }
 

@@ -6828,6 +6828,11 @@ public:
                              BasicBlock* basicBlock);
 #endif
 
+    // Redundant branch opts
+    //
+    PhaseStatus optRedundantBranches();
+    bool optRedundantBranch(BasicBlock* const block);
+
 #if ASSERTION_PROP
     /**************************************************************************
      *               Value/Assertion propagation
