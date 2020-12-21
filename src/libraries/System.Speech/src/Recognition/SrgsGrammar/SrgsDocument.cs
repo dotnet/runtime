@@ -76,9 +76,11 @@ namespace System.Speech.Recognition.SrgsGrammar
             Helpers.ThrowIfNull(builder, nameof(builder));
 
             // New grammar
-            _grammar = new SrgsGrammar();
+            _grammar = new SrgsGrammar
+            {
 #pragma warning disable 56504 // The Culture property is the Grammar builder is already checked.
-            _grammar.Culture = builder.Culture;
+                Culture = builder.Culture
+            };
 #pragma warning restore 56504
 
             // Creates SrgsDocument elements
@@ -350,10 +352,12 @@ namespace System.Speech.Recognition.SrgsGrammar
         internal void Load(XmlReader srgsGrammar)
         {
             // New grammar
-            _grammar = new SrgsGrammar();
+            _grammar = new SrgsGrammar
+            {
 
-            // For SrgsGrammar, the default is IPA, for xml grammars, it is sapi.
-            _grammar.PhoneticAlphabet = AlphabetType.Sapi;
+                // For SrgsGrammar, the default is IPA, for xml grammars, it is sapi.
+                PhoneticAlphabet = AlphabetType.Sapi
+            };
 
             // create an XMl Parser
             XmlParser srgsParser = new(srgsGrammar, null);

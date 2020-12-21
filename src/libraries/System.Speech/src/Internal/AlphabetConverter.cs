@@ -275,10 +275,12 @@ namespace System.Speech.Internal
                     int i;
                     for (i = 0; i < size; i++)
                     {
-                        _convertTable[i] = new ConversionUnit();
-                        _convertTable[i].sapi = ReadPhoneString(reader);
-                        _convertTable[i].ups = ReadPhoneString(reader);
-                        _convertTable[i].isDefault = reader.ReadInt32() != 0 ? true : false;
+                        _convertTable[i] = new ConversionUnit
+                        {
+                            sapi = ReadPhoneString(reader),
+                            ups = ReadPhoneString(reader),
+                            isDefault = reader.ReadInt32() != 0 ? true : false
+                        };
                     }
 
                     _prefixSapiTable = InitializePrefix(true);

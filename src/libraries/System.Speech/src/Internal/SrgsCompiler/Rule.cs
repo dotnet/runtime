@@ -143,9 +143,11 @@ namespace System.Speech.Internal.SrgsCompiler
             int offsetName = symbol.Add(ruleName, out idWord);
 
             rule._id = ruleName;
-            rule._cfgRule = new CfgRule(idWord, offsetName, _cfgRule._flag);
-            rule._cfgRule.DirtyRule = true;
-            rule._cfgRule.FirstArcIndex = 0;
+            rule._cfgRule = new CfgRule(idWord, offsetName, _cfgRule._flag)
+            {
+                DirtyRule = true,
+                FirstArcIndex = 0
+            };
             return rule;
         }
 

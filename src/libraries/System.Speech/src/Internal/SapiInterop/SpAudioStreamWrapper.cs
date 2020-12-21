@@ -20,7 +20,6 @@ namespace System.Speech.Internal.SapiInterop
         // Constructors
         //
         //*******************************************************************
-
         #region Constructors
 
         internal SpAudioStreamWrapper(Stream stream, SpeechAudioFormatInfo audioFormat) : base(stream)

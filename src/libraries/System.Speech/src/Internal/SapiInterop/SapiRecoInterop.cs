@@ -541,15 +541,17 @@ namespace System.Speech.Internal.SapiInterop
                 for (int i = 0; i < words.Length; i++)
                 {
                     RecognizedWordUnit word = words[i];
-                    elements[i] = new SPPHRASEELEMENT();
+                    elements[i] = new SPPHRASEELEMENT
+                    {
 
-                    // diplay + confidence
-                    elements[i].bDisplayAttributes = RecognizedWordUnit.DisplayAttributesToSapiAttributes(word.DisplayAttributes == DisplayAttributes.None ? DisplayAttributes.OneTrailingSpace : word.DisplayAttributes);
-                    elements[i].SREngineConfidence = word.Confidence;
+                        // diplay + confidence
+                        bDisplayAttributes = RecognizedWordUnit.DisplayAttributesToSapiAttributes(word.DisplayAttributes == DisplayAttributes.None ? DisplayAttributes.OneTrailingSpace : word.DisplayAttributes),
+                        SREngineConfidence = word.Confidence,
 
-                    // Timing information
-                    elements[i].ulAudioTimeOffset = unchecked((uint)(word._audioPosition.Ticks * 10000 / TimeSpan.TicksPerMillisecond));
-                    elements[i].ulAudioSizeTime = unchecked((uint)(word._audioDuration.Ticks * 10000 / TimeSpan.TicksPerMillisecond));
+                        // Timing information
+                        ulAudioTimeOffset = unchecked((uint)(word._audioPosition.Ticks * 10000 / TimeSpan.TicksPerMillisecond)),
+                        ulAudioSizeTime = unchecked((uint)(word._audioDuration.Ticks * 10000 / TimeSpan.TicksPerMillisecond))
+                    };
 
                     // DLP information
                     if (word.Text != null)
@@ -588,8 +590,10 @@ namespace System.Speech.Internal.SapiInterop
             SPPHRASE spPhrase = new();
             spPhrase.cbSize = (uint)Marshal.SizeOf(spPhrase.GetType());
             spPhrase.LangID = (ushort)culture.LCID;
-            spPhrase.Rule = new SPPHRASERULE();
-            spPhrase.Rule.ulCountOfElements = (uint)words.Length;
+            spPhrase.Rule = new SPPHRASERULE
+            {
+                ulCountOfElements = (uint)words.Length
+            };
 
             spPhrase.pElements = coMem;
 

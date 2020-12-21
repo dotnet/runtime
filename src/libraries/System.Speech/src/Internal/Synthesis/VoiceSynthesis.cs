@@ -83,8 +83,10 @@ namespace System.Speech.Internal.Synthesis
             _site.VoiceRate = _defaultRate = (int)GetDefaultRate();
 
             // Start the worker thread
-            _workerThread = new Thread(new ThreadStart(ThreadProc));
-            _workerThread.IsBackground = true;
+            _workerThread = new Thread(new ThreadStart(ThreadProc))
+            {
+                IsBackground = true
+            };
             _workerThread.Start();
 
             // Default TTS engines events to be notified
