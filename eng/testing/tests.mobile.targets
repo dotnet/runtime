@@ -6,6 +6,8 @@
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
     <JSEngine Condition="'$(TargetOS)' == 'Browser' and '$(JSEngine)' == ''">V8</JSEngine>
     <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
+
+    <PublishingTestsRun>true</PublishingTestsRun>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
@@ -165,6 +167,15 @@
       <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' != '$(MSBuildProjectName).dll')" >
         <TrimMode>link</TrimMode>
       </ManagedAssemblyToLink>
+      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' == '$(AssemblyName).dll')" >
+        <TrimMode>copy</TrimMode>
+      </ManagedAssemblyToLink>
+      <TrimmerRootAssembly Include="WasmTestRunner"/>
+      <TrimmerRootAssembly Include="$(AssemblyName)"/>
+    </ItemGroup>
+    <ItemGroup>
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml">
+      </TrimmerRootDescriptor>
     </ItemGroup>
   </Target>
 
@@ -187,12 +198,14 @@
 
       <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
       <!-- WasmTestRunner referenced assemblies -->
+      <!--
       <WasmAssembliesToBundle Include="$(OutDir)\System.Globalization.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\System.Reflection.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\System.Runtime.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\System.Runtime.Extensions.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\System.Threading.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\System.Xml.XDocument.dll" />
+      -->
 
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
@@ -209,8 +222,7 @@
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
 
-      <!-- Exclude xunit assemblies as those should be resolved by our own package references -->
-      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" Condition="!$([System.String]::Copy('%(Filename)').StartsWith('xunit.'))" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
+      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 
