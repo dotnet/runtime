@@ -1631,9 +1631,6 @@ namespace System.Diagnostics.Tests
         {
             // testing Process.Responding using a real unresponsive process would be very hard to do properly
             // instead of this, we just test the implementation to ensure that #36768 is not coming back
-
-            Assert.NotEmpty(GetRefreshableBooleanFields());
-
             var process = new Process();
 
             VerifyPrivateFieldsValues(process, shouldHaveDefaultValues: true);
@@ -1648,18 +1645,12 @@ namespace System.Diagnostics.Tests
 
             static void VerifyPrivateFieldsValues(Process process, bool shouldHaveDefaultValues)
             {
-                foreach (var booleanField in GetRefreshableBooleanFields())
-                {
-                    if (shouldHaveDefaultValues)
-                    {
-                        Assert.False((bool)booleanField.GetValue(process), $"{booleanField.Name} had unexpected value");
-                    }
-                    else
-                    {
-                        Assert.True((bool)booleanField.GetValue(process), $"{booleanField.Name} had unexpected value");
-                    }
-                    
-                }
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_exited"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveWorkingSetLimits"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveProcessorAffinity"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_havePriorityClass"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveExitTime"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_havePriorityBoostEnabled"));
 
                 Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_processInfo"));
                 Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_threads"));
@@ -1668,15 +1659,20 @@ namespace System.Diagnostics.Tests
                 if (OperatingSystem.IsWindows())
                 {
                     Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_mainWindowTitle"));
+                    Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_signaled"));
+                    Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveMainWindow"));
+                    Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveResponding"));
                 }
             }
 
             static void SetPrivateFieldsToNonDefaultValues(Process process)
             {
-                foreach (var booleanField in GetRefreshableBooleanFields())
-                {
-                    booleanField.SetValue(process, true);
-                }
+                SetPrivateFieldValue(process, "_exited", true);
+                SetPrivateFieldValue(process, "_haveWorkingSetLimits", true);
+                SetPrivateFieldValue(process, "_haveProcessorAffinity", true);
+                SetPrivateFieldValue(process, "_havePriorityClass", true);
+                SetPrivateFieldValue(process, "_haveExitTime", true);
+                SetPrivateFieldValue(process, "_havePriorityBoostEnabled", true);
 
                 SetPrivateFieldValue(process, "_processInfo", typeof(Process).Assembly.GetType("System.Diagnostics.ProcessInfo").GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>()).Invoke(null));
                 SetPrivateFieldValue(process, "_threads", new ProcessThreadCollection(Array.Empty<ProcessThread>()));
@@ -1684,15 +1680,12 @@ namespace System.Diagnostics.Tests
 
                 if (OperatingSystem.IsWindows())
                 {
+                    SetPrivateFieldValue(process, "_signaled", true);
+                    SetPrivateFieldValue(process, "_haveMainWindow", true);
                     SetPrivateFieldValue(process, "_mainWindowTitle", "notNull");
+                    SetPrivateFieldValue(process, "_haveResponding", true);
                 }
             }
-
-            static FieldInfo[] GetRefreshableBooleanFields() => typeof(Process)
-                .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(field => field.Name.StartsWith("_have") && field.FieldType == typeof(bool)
-                    && field.Name != "_haveProcessId" && field.Name != "_haveProcessHandle") // these fields should not be reset by Refresh)
-                .ToArray();
 
             static object GetPrivateFieldValue(Process process, string fieldName) => typeof(Process)
                 .GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
