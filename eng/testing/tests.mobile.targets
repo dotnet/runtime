@@ -171,6 +171,7 @@
         <TrimMode>copy</TrimMode>
       </ManagedAssemblyToLink>
       <TrimmerRootAssembly Include="WasmTestRunner"/>
+      <TrimmerRootAssembly Include="$(AssemblyName)"/>
     </ItemGroup>
     <ItemGroup>
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml">
