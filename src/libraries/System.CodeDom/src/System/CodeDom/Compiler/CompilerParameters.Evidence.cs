@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Additional implementation to keep public API in Mono (it has a reference to this file)
 // https://github.com/dotnet/corefx/pull/15945

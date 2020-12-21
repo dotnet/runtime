@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -142,7 +141,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(BaseClass), nameof(BaseClass.PublicEvent), typeof(BaseClass), nameof(BaseClass.PublicEvent), true)]
         [InlineData(typeof(BaseClass), nameof(BaseClass.PublicEvent), typeof(SubClass), nameof(SubClass.PublicEvent), false)]
         [InlineData(typeof(BaseClass), nameof(BaseClass.PublicEvent), typeof(BaseClass), nameof(BaseClass.PublicStaticEvent), false)]
-        public void Equals(Type type1, string name1, Type type2, string name2, bool expected)
+        public void EqualsTest(Type type1, string name1, Type type2, string name2, bool expected)
         {
             EventInfo eventInfo1 = GetEventInfo(type1, name1);
             EventInfo eventInfo2 = GetEventInfo(type2, name2);

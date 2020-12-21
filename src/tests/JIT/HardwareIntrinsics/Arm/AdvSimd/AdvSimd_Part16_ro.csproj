@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Xor.Vector64.Single.cs" />
+    <Compile Include="Xor.Vector64.UInt16.cs" />
+    <Compile Include="Xor.Vector64.UInt32.cs" />
+    <Compile Include="Xor.Vector64.UInt64.cs" />
+    <Compile Include="Xor.Vector128.Byte.cs" />
+    <Compile Include="Xor.Vector128.Double.cs" />
+    <Compile Include="Xor.Vector128.Int16.cs" />
+    <Compile Include="Xor.Vector128.Int32.cs" />
+    <Compile Include="Xor.Vector128.Int64.cs" />
+    <Compile Include="Xor.Vector128.SByte.cs" />
+    <Compile Include="Xor.Vector128.Single.cs" />
+    <Compile Include="Xor.Vector128.UInt16.cs" />
+    <Compile Include="Xor.Vector128.UInt32.cs" />
+    <Compile Include="Xor.Vector128.UInt64.cs" />
+    <Compile Include="ZeroExtendWideningLower.Vector64.Byte.cs" />
+    <Compile Include="ZeroExtendWideningLower.Vector64.Int16.cs" />
+    <Compile Include="ZeroExtendWideningLower.Vector64.Int32.cs" />
+    <Compile Include="ZeroExtendWideningLower.Vector64.SByte.cs" />
+    <Compile Include="ZeroExtendWideningLower.Vector64.UInt16.cs" />
+    <Compile Include="ZeroExtendWideningLower.Vector64.UInt32.cs" />
+    <Compile Include="ZeroExtendWideningUpper.Vector128.Byte.cs" />
+    <Compile Include="ZeroExtendWideningUpper.Vector128.Int16.cs" />
+    <Compile Include="ZeroExtendWideningUpper.Vector128.Int32.cs" />
+    <Compile Include="ZeroExtendWideningUpper.Vector128.SByte.cs" />
+    <Compile Include="ZeroExtendWideningUpper.Vector128.UInt16.cs" />
+    <Compile Include="ZeroExtendWideningUpper.Vector128.UInt32.cs" />
+    <Compile Include="Program.AdvSimd_Part16.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

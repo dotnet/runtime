@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Linq;
@@ -27,7 +26,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void CollectionSyncProperties()
         {
-            AttributeCollection collection = new AttributeCollection(null);
+            var collection = new EventDescriptorCollection(null);
 
             Assert.Null(((ICollection)collection).SyncRoot);
             Assert.False(((ICollection)collection).IsSynchronized);

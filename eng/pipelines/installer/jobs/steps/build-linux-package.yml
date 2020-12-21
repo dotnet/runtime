@@ -1,36 +1,19 @@
 parameters:
-  buildTraversalBuildDependencies: false
-  distroRid: null
+  packageType: null
   image: null
-  outputRidArg: ''
   packageStepDescription: null
   packagingArgs: ''
   subsetArg: ''
 
 steps:
-- ${{ if eq(parameters.buildTraversalBuildDependencies, true) }}:
-  - script: |
-      set -x
-      df -h
-      $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
-        --ci \
-        /root/runtime/tools-local/tasks/installer.tasks/installer.tasks.csproj \
-        /t:Restore /t:Build /t:CreateHostMachineInfoFile \
-        $(CommonMSBuildArgs) \
-        /bl:msbuild.${{ parameters.distroRid }}.traversaldependencies.binlog
-    displayName: ====== Build traversal build dependencies - ${{ parameters.distroRid }}
-
 - script: |
     set -x
     df -h
     $(DockerRunMSBuild) ${{ parameters.image }} $(BuildScript) \
       --ci \
       ${{ parameters.subsetArg }} \
-      /p:UsePrebuiltPortableBinariesForInstallers=true \
-      $(PackagePortableBitsArgs) \
-      /p:GenerateProjectInstallers=true \
       ${{ parameters.packagingArgs }} \
       $(CommonMSBuildArgs) \
-      ${{ parameters.outputRidArg }} \
-      /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.distroRid }}.installers.binlog
-  displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.distroRid }}
+      $(LiveOverridePathArgs) \
+      /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.packageType }}.installers.binlog
+  displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.packageType }}

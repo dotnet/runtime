@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -1340,14 +1339,7 @@ namespace System.Collections.Tests
 
             try
             {
-                var cultureNames = new string[]
-                {
-                    "cs-CZ","da-DK","de-DE","el-GR","en-US",
-                    "es-ES","fi-FI","fr-FR","hu-HU","it-IT",
-                    "ja-JP","ko-KR","nb-NO","nl-NL","pl-PL",
-                    "pt-BR","pt-PT","ru-RU","sv-SE","tr-TR",
-                    "zh-CN","zh-HK","zh-TW"
-                };
+                var cultureNames = Helpers.TestCultureNames;
 
                 var installedCultures = new CultureInfo[cultureNames.Length];
                 var cultureDisplayNames = new string[installedCultures.Length];

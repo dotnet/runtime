@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -28,6 +27,7 @@ namespace System.Net
         public WebProxy(System.Uri? Address, bool BypassOnLocal, string[]? BypassList, System.Net.ICredentials? Credentials) { }
         public System.Uri? Address { get { throw null; } set { } }
         public System.Collections.ArrayList BypassArrayList { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string[] BypassList { get { throw null; } set { } }
         public bool BypassProxyOnLocal { get { throw null; } set { } }
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }

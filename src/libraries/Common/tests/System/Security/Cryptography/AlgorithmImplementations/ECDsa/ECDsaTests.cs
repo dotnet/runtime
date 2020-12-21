@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -12,6 +11,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public sealed class ECDsaTests_Array : ECDsaTests
     {
         protected override bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm) =>
@@ -87,6 +87,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
     }
 
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public sealed class ECDsaTests_Stream : ECDsaTests
     {
         protected override bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm)
@@ -124,6 +125,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
     }
 
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract partial class ECDsaTests : ECDsaTestsBase
     {
         protected bool VerifyData(ECDsa ecdsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>

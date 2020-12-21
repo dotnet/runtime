@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.DirectoryServices.Interop;
@@ -22,9 +21,9 @@ namespace System.DirectoryServices
 
         private readonly DirectoryEntry _entry;
         private UpdateType _updateType = UpdateType.None;
-        private readonly ArrayList _changeList = null;
-        private readonly bool _allowMultipleChange = false;
-        private readonly bool _needNewBehavior = false;
+        private readonly ArrayList _changeList;
+        private readonly bool _allowMultipleChange;
+        private readonly bool _needNewBehavior;
 
         internal PropertyValueCollection(DirectoryEntry entry, string propertyName)
         {

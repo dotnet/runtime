@@ -13,12 +13,13 @@
     <Compile Include="DataHelper.cs" />
     <Compile Include="ExceptionVerifier.cs" />
     <Compile Include="MyNavigator.cs" />
+    <Compile Include="ReaderType.cs" />
     <Compile Include="ThreadFunc.cs" />
     <Compile Include="XSLTransform.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\TestFiles\**\*"
+    <Content Include="..\TestFiles\**\*"
           Link="TestFiles\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
           Visible="false" />

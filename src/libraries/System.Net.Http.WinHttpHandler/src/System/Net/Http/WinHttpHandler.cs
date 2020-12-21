@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,6 +7,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -49,13 +49,14 @@ namespace System.Net.Http
         private static StringBuilder t_requestHeadersBuilder;
 
         private readonly object _lockObject = new object();
-        private bool _doManualDecompressionCheck = false;
-        private WinInetProxyHelper _proxyHelper = null;
+        private bool _doManualDecompressionCheck;
+        private WinInetProxyHelper _proxyHelper;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
         private CookieUsePolicy _cookieUsePolicy = CookieUsePolicy.UseInternalCookieStoreOnly;
-        private CookieContainer _cookieContainer = null;
+        private CookieContainer _cookieContainer;
+        private bool _enableMultipleHttp2Connections;
 
         private SslProtocols _sslProtocols = SslProtocols.None; // Use most secure protocols available.
         private Func<
@@ -63,19 +64,26 @@ namespace System.Net.Http
             X509Certificate2,
             X509Chain,
             SslPolicyErrors,
-            bool> _serverCertificateValidationCallback = null;
-        private bool _checkCertificateRevocationList = false;
+            bool> _serverCertificateValidationCallback;
+        private bool _checkCertificateRevocationList;
         private ClientCertificateOption _clientCertificateOption = ClientCertificateOption.Manual;
-        private X509Certificate2Collection _clientCertificates = null; // Only create collection when required.
-        private ICredentials _serverCredentials = null;
-        private bool _preAuthenticate = false;
+        private X509Certificate2Collection _clientCertificates; // Only create collection when required.
+        private ICredentials _serverCredentials;
+        private bool _preAuthenticate;
         private WindowsProxyUsePolicy _windowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinHttpProxy;
-        private ICredentials _defaultProxyCredentials = null;
-        private IWebProxy _proxy = null;
+        private ICredentials _defaultProxyCredentials;
+        private IWebProxy _proxy;
         private int _maxConnectionsPerServer = int.MaxValue;
         private TimeSpan _sendTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveHeadersTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
+
+        // Using OS defaults for "Keep-alive timeout" and "keep-alive interval"
+        // as documented in https://docs.microsoft.com/en-us/windows/win32/winsock/sio-keepalive-vals#remarks
+        private TimeSpan _tcpKeepAliveTime = TimeSpan.FromHours(2);
+        private TimeSpan _tcpKeepAliveInterval = TimeSpan.FromSeconds(1);
+        private bool _tcpKeepAliveEnabled;
+
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private int _maxResponseDrainSize = 64 * 1024;
         private IDictionary<string, object> _properties; // Only create dictionary when required.
@@ -160,7 +168,7 @@ namespace System.Net.Http
             }
         }
 
-        public CookieContainer CookieContainer
+        public CookieContainer? CookieContainer
         {
             get
             {
@@ -188,12 +196,13 @@ namespace System.Net.Http
             }
         }
 
+
         public Func<
             HttpRequestMessage,
             X509Certificate2,
             X509Chain,
             SslPolicyErrors,
-            bool> ServerCertificateValidationCallback
+            bool>? ServerCertificateValidationCallback
         {
             get
             {
@@ -273,7 +282,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials ServerCredentials
+        public ICredentials? ServerCredentials
         {
             get
             {
@@ -308,7 +317,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials DefaultProxyCredentials
+        public ICredentials? DefaultProxyCredentials
         {
             get
             {
@@ -322,7 +331,7 @@ namespace System.Net.Http
             }
         }
 
-        public IWebProxy Proxy
+        public IWebProxy? Proxy
         {
             get
             {
@@ -369,15 +378,12 @@ namespace System.Net.Http
 
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
+                CheckTimeSpanPropertyValue(value);
                 CheckDisposedOrStarted();
                 _sendTimeout = value;
             }
         }
+
 
         public TimeSpan ReceiveHeadersTimeout
         {
@@ -388,11 +394,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
+                CheckTimeSpanPropertyValue(value);
                 CheckDisposedOrStarted();
                 _receiveHeadersTimeout = value;
             }
@@ -407,13 +409,77 @@ namespace System.Net.Http
 
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
+                CheckTimeSpanPropertyValue(value);
                 CheckDisposedOrStarted();
                 _receiveDataTimeout = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether TCP keep-alive is enabled.
+        /// </summary>
+        /// <remarks>
+        /// Only supported on Windows 10 version 2004 or newer.
+        /// If enabled, the values of <see cref="TcpKeepAliveInterval" /> and <see cref="TcpKeepAliveTime"/> will be forwarded
+        /// to set WINHTTP_OPTION_TCP_KEEPALIVE, enabling and configuring TCP keep-alive for the backing TCP socket.
+        /// </remarks>
+        [SupportedOSPlatform("windows10.0.19041")]
+        public bool TcpKeepAliveEnabled
+        {
+            get
+            {
+                return _tcpKeepAliveEnabled;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _tcpKeepAliveEnabled = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the TCP keep-alive timeout.
+        /// </summary>
+        /// <remarks>
+        /// Only supported on Windows 10 version 2004 or newer.
+        /// Has no effect if <see cref="TcpKeepAliveEnabled"/> is <see langword="false" />.
+        /// The default value of this property is 2 hours.
+        /// </remarks>
+        [SupportedOSPlatform("windows10.0.19041")]
+        public TimeSpan TcpKeepAliveTime
+        {
+            get
+            {
+                return _tcpKeepAliveTime;
+            }
+            set
+            {
+                CheckTimeSpanPropertyValue(value);
+                CheckDisposedOrStarted();
+                _tcpKeepAliveTime = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the TCP keep-alive interval.
+        /// </summary>
+        /// <remarks>
+        /// Only supported on Windows 10 version 2004 or newer.
+        /// Has no effect if <see cref="TcpKeepAliveEnabled"/> is <see langword="false" />.
+        /// The default value of this property is 1 second.
+        /// </remarks>
+        [SupportedOSPlatform("windows10.0.19041")]
+        public TimeSpan TcpKeepAliveInterval
+        {
+            get
+            {
+                return _tcpKeepAliveInterval;
+            }
+            set
+            {
+                CheckTimeSpanPropertyValue(value);
+                CheckDisposedOrStarted();
+                _tcpKeepAliveInterval = value;
             }
         }
 
@@ -458,6 +524,19 @@ namespace System.Net.Http
 
                 CheckDisposedOrStarted();
                 _maxResponseDrainSize = value;
+            }
+        }
+
+        public bool EnableMultipleHttp2Connections
+        {
+            get
+            {
+                return _enableMultipleHttp2Connections;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _enableMultipleHttp2Connections = value;
             }
         }
 
@@ -717,7 +796,7 @@ namespace System.Net.Http
                             accessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY;
                         }
 
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Proxy accessType={accessType}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Proxy accessType={accessType}");
 
                         sessionHandle = Interop.WinHttp.WinHttpOpen(
                             IntPtr.Zero,
@@ -729,7 +808,7 @@ namespace System.Net.Http
                         if (sessionHandle.IsInvalid)
                         {
                             int lastError = Marshal.GetLastWin32Error();
-                            if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"error={lastError}");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
                             if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER)
                             {
                                 ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
@@ -890,7 +969,10 @@ namespace System.Net.Http
                 // Since the headers have been read, set the "receive" timeout to be based on each read
                 // call of the response body data. WINHTTP_OPTION_RECEIVE_TIMEOUT sets a timeout on each
                 // lower layer winsock read.
-                uint optionData = unchecked((uint)_receiveDataTimeout.TotalMilliseconds);
+                // Timeout.InfiniteTimeSpan will be converted to uint.MaxValue milliseconds (~ 50 days).
+                // The result a of double->uint cast is unspecified for -1 and may differ on ARM, returning 0 instead of uint.MaxValue.
+                // To handle Timeout.InfiniteTimespan correctly, we need to cast to int first.
+                uint optionData = (uint)(int)_receiveDataTimeout.TotalMilliseconds;
                 SetWinHttpOption(state.RequestHandle, Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT, ref optionData);
 
                 HttpResponseMessage responseMessage =
@@ -898,12 +980,12 @@ namespace System.Net.Http
                 state.Tcs.TrySetResult(responseMessage);
 
                 // HttpStatusCode cast is needed for 308 Moved Permenantly, which we support but is not included in NetStandard status codes.
-                if (NetEventSource.IsEnabled &&
+                if (NetEventSource.Log.IsEnabled() &&
                     ((responseMessage.StatusCode >= HttpStatusCode.MultipleChoices && responseMessage.StatusCode <= HttpStatusCode.SeeOther) ||
                      (responseMessage.StatusCode >= HttpStatusCode.RedirectKeepVerb && responseMessage.StatusCode <= (HttpStatusCode)308)) &&
                     state.RequestMessage.RequestUri.Scheme == Uri.UriSchemeHttps && responseMessage.Headers.Location?.Scheme == Uri.UriSchemeHttp)
                 {
-                    NetEventSource.Error(this, $"Insecure https to http redirect from {state.RequestMessage.RequestUri.ToString()} to {responseMessage.Headers.Location.ToString()} blocked.");
+                    NetEventSource.Error(this, $"Insecure https to http redirect from {state.RequestMessage.RequestUri} to {responseMessage.Headers.Location} blocked.");
                 }
             }
             catch (Exception ex)
@@ -922,6 +1004,31 @@ namespace System.Net.Http
             SetSessionHandleConnectionOptions(sessionHandle);
             SetSessionHandleTlsOptions(sessionHandle);
             SetSessionHandleTimeoutOptions(sessionHandle);
+            SetDisableHttp2StreamQueue(sessionHandle);
+            SetTcpKeepalive(sessionHandle);
+        }
+
+        private unsafe void SetTcpKeepalive(SafeWinHttpHandle sessionHandle)
+        {
+            if (_tcpKeepAliveEnabled)
+            {
+                var tcpKeepalive = new Interop.WinHttp.tcp_keepalive
+                {
+                    onoff = 1,
+
+                    // Timeout.InfiniteTimeSpan will be converted to uint.MaxValue milliseconds (~ 50 days)
+                    // The result a of double->uint cast is unspecified for -1 and may differ on ARM, returning 0 instead of uint.MaxValue.
+                    // To handle Timeout.InfiniteTimespan correctly, we need to cast to int first.
+                    keepaliveinterval = (uint)(int)_tcpKeepAliveInterval.TotalMilliseconds,
+                    keepalivetime = (uint)(int)_tcpKeepAliveTime.TotalMilliseconds
+                };
+
+                SetWinHttpOption(
+                    sessionHandle,
+                    Interop.WinHttp.WINHTTP_OPTION_TCP_KEEPALIVE,
+                    (IntPtr)(&tcpKeepalive),
+                    (uint)sizeof(Interop.WinHttp.tcp_keepalive));
+            }
         }
 
         private void SetSessionHandleConnectionOptions(SafeWinHttpHandle sessionHandle)
@@ -1201,11 +1308,27 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP2_PLUS_CLIENT_CERT,
                 ref optionData))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert supported");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP/2 with TLS client cert supported");
             }
             else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert not supported");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP/2 with TLS client cert not supported");
+            }
+        }
+
+        private void SetDisableHttp2StreamQueue(SafeWinHttpHandle sessionHandle)
+        {
+            if (_enableMultipleHttp2Connections)
+            {
+                uint optionData = 1;
+                if (Interop.WinHttp.WinHttpSetOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_DISABLE_STREAM_QUEUE, ref optionData))
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Multiple HTTP/2 connections enabled.");
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Multiple HTTP/2 connections cannot be enabled.");
+                }
             }
         }
 
@@ -1251,11 +1374,11 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL,
                 ref optionData))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HTTP/2 option supported, setting to {optionData}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HTTP/2 option supported, setting to {optionData}");
             }
             else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 option not supported");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP/2 option not supported");
             }
         }
 
@@ -1333,6 +1456,14 @@ namespace System.Net.Http
             }
         }
 
+        private static void CheckTimeSpanPropertyValue(TimeSpan timeSpan)
+        {
+            if (timeSpan != Timeout.InfiniteTimeSpan && (timeSpan <= TimeSpan.Zero || timeSpan > s_maxTimeout))
+            {
+                throw new ArgumentOutOfRangeException("value");
+            }
+        }
+
         private void SetStatusCallback(
             SafeWinHttpHandle requestHandle,
             Interop.WinHttp.WINHTTP_STATUS_CALLBACK callback)
@@ -1364,7 +1495,7 @@ namespace System.Net.Http
             if (handle.IsInvalid)
             {
                 int lastError = Marshal.GetLastWin32Error();
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"error={lastError}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
                 throw WinHttpException.CreateExceptionUsingError(lastError, nameOfCalledFunction);
             }
         }
@@ -1376,7 +1507,7 @@ namespace System.Net.Http
                 state.Pin();
                 if (!Interop.WinHttp.WinHttpSendRequest(
                     state.RequestHandle,
-                    null,
+                    IntPtr.Zero,
                     0,
                     IntPtr.Zero,
                     0,

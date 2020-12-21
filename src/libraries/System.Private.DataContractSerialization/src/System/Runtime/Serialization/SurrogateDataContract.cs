@@ -1,12 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information
 
 namespace System.Runtime.Serialization
 {
     using System;
     using System.Security;
     using System.Runtime.CompilerServices;
+    using System.Diagnostics;
 
     internal sealed class SurrogateDataContract : DataContract
     {
@@ -15,7 +15,7 @@ namespace System.Runtime.Serialization
         internal SurrogateDataContract(Type type, ISerializationSurrogate serializationSurrogate)
             : base(new SurrogateDataContractCriticalHelper(type, serializationSurrogate))
         {
-            _helper = base.Helper as SurrogateDataContractCriticalHelper;
+            _helper = (base.Helper as SurrogateDataContractCriticalHelper)!;
         }
 
         internal ISerializationSurrogate SerializationSurrogate
@@ -23,21 +23,23 @@ namespace System.Runtime.Serialization
             get { return _helper.SerializationSurrogate; }
         }
 
-        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
+            Debug.Assert(context != null);
+
             SerializationInfo serInfo = new SerializationInfo(UnderlyingType, XmlObjectSerializer.FormatterConverter, !context.UnsafeTypeForwardingEnabled);
             SerializationSurrogateGetObjectData(obj, serInfo, context.GetStreamingContext());
             context.WriteSerializationInfo(xmlWriter, UnderlyingType, serInfo);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private object SerializationSurrogateSetObjectData(object obj, SerializationInfo serInfo, StreamingContext context)
+        private object? SerializationSurrogateSetObjectData(object obj, SerializationInfo serInfo, StreamingContext context)
         {
             return SerializationSurrogate.SetObjectData(obj, serInfo, context, null);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static object GetRealObject(IObjectReference obj, StreamingContext context)
+        internal static object? GetRealObject(IObjectReference obj, StreamingContext context)
         {
             return obj.GetRealObject(context);
         }
@@ -54,15 +56,17 @@ namespace System.Runtime.Serialization
             SerializationSurrogate.GetObjectData(obj, serInfo, context);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
+            Debug.Assert(context != null);
+
             xmlReader.Read();
             Type objType = UnderlyingType;
-            object obj = objType.IsArray ? Array.CreateInstance(objType.GetElementType(), 0) : GetUninitializedObject(objType);
+            object obj = objType.IsArray ? Array.CreateInstance(objType.GetElementType()!, 0) : GetUninitializedObject(objType);
             context.AddNewObject(obj);
             string objectId = context.GetObjectId();
             SerializationInfo serInfo = context.ReadSerializationInfo(xmlReader, objType);
-            object newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext());
+            object? newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext());
             if (newObj == null)
                 newObj = obj;
             if (newObj is IDeserializationCallback)

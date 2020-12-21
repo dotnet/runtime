@@ -1,66 +1,32 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
-    internal class CacheEntryHelper
+    internal static class CacheEntryHelper
     {
-        private static readonly AsyncLocal<CacheEntryStack> _scopes = new AsyncLocal<CacheEntryStack>();
-
-        internal static CacheEntryStack Scopes
-        {
-            get { return _scopes.Value; }
-            set { _scopes.Value = value; }
-        }
+        private static readonly AsyncLocal<CacheEntry> _current = new AsyncLocal<CacheEntry>();
 
         internal static CacheEntry Current
         {
-            get
-            {
-                var scopes = GetOrCreateScopes();
-                return scopes.Peek();
-            }
+            get => _current.Value;
+            private set => _current.Value = value;
         }
 
-        internal static IDisposable EnterScope(CacheEntry entry)
+        internal static CacheEntry EnterScope(CacheEntry current)
         {
-            var scopes = GetOrCreateScopes();
-
-            var scopeLease = new ScopeLease(scopes);
-            Scopes = scopes.Push(entry);
-
-            return scopeLease;
+            CacheEntry previous = Current;
+            Current = current;
+            return previous;
         }
 
-        private static CacheEntryStack GetOrCreateScopes()
+        internal static void ExitScope(CacheEntry current, CacheEntry previous)
         {
-            var scopes = Scopes;
-            if (scopes == null)
-            {
-                scopes = CacheEntryStack.Empty;
-                Scopes = scopes;
-            }
-
-            return scopes;
-        }
-
-        private sealed class ScopeLease : IDisposable
-        {
-            private readonly CacheEntryStack _cacheEntryStack;
-
-            public ScopeLease(CacheEntryStack cacheEntryStack)
-            {
-                _cacheEntryStack = cacheEntryStack;
-            }
-
-            public void Dispose()
-            {
-                Scopes = _cacheEntryStack;
-            }
+            Debug.Assert(Current == current, "Entries disposed in invalid order");
+            Current = previous;
         }
     }
 }

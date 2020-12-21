@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -15,9 +14,6 @@ namespace System.Net.Security
 {
     internal class CipherSuitesPolicyPal
     {
-        private static readonly byte[] RequireEncryptionDefault =
-            Encoding.ASCII.GetBytes("DEFAULT\0");
-
         private static readonly byte[] AllowNoEncryptionDefault =
             Encoding.ASCII.GetBytes("ALL:eNULL\0");
 
@@ -172,12 +168,12 @@ namespace System.Net.Security
             return policy.Pal._tls13CipherSuites;
         }
 
-        private static byte[] CipherListFromEncryptionPolicy(EncryptionPolicy policy)
+        private static byte[]? CipherListFromEncryptionPolicy(EncryptionPolicy policy)
         {
             switch (policy)
             {
                 case EncryptionPolicy.RequireEncryption:
-                    return RequireEncryptionDefault;
+                    return null;
                 case EncryptionPolicy.AllowNoEncryption:
                     return AllowNoEncryptionDefault;
                 case EncryptionPolicy.NoEncryption:

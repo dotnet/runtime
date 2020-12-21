@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Microsoft.Test.ModuleCore
 {
@@ -20,22 +20,32 @@ namespace Microsoft.Test.ModuleCore
         private int _ppass = 0;
         private int _pfail = 0;
         private int _pskip = 0;
+        private StringBuilder _failureInfo;
         public int PassCount
         {
             get { return _ppass; }
             set { _ppass = value; }
         }
 
-        public int FailCount
-        {
-            get { return _pfail; }
-            set { _pfail = value; }
-        }
+        public int FailCount => _pfail;
+        public bool HasFailures => _pfail > 0;
 
         public int SkipCount
         {
             get { return _pskip; }
             set { _pskip = value; }
+        }
+
+        public void AddFailure(string description)
+        {
+            _failureInfo = _failureInfo ?? new StringBuilder();
+            _failureInfo.AppendLine(description);
+            _pfail++;
+        }
+
+        public string GetFailuresInfo()
+        {
+            return _failureInfo?.ToString() ?? string.Empty;
         }
 
         //Constructors

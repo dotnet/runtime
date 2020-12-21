@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __HOST_INTERFACE_H__
 #define __HOST_INTERFACE_H__
 
 #include <cstddef>
 #include "pal.h"
+#include "bundle/info.h"
 
 enum host_mode_t
 {
@@ -58,6 +58,7 @@ struct host_interface_t
     const pal::char_t* host_info_host_path;
     const pal::char_t* host_info_dotnet_root;
     const pal::char_t* host_info_app_path;
+    size_t single_file_bundle_header_offset;
     // !! WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING
     // !! 1. Only append to this structure to maintain compat.
     // !! 2. Any nested structs should not use compiler specific padding (pack with _HOST_INTERFACE_PACK)
@@ -91,7 +92,8 @@ static_assert(offsetof(host_interface_t, host_command) == 26 * sizeof(size_t), "
 static_assert(offsetof(host_interface_t, host_info_host_path) == 27 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, host_info_dotnet_root) == 28 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, host_info_app_path) == 29 * sizeof(size_t), "Struct offset breaks backwards compatibility");
-static_assert(sizeof(host_interface_t) == 30 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
+static_assert(offsetof(host_interface_t, single_file_bundle_header_offset) == 30 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(sizeof(host_interface_t) == 31 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
 
 #define HOST_INTERFACE_LAYOUT_VERSION_HI 0x16041101 // YYMMDD:nn always increases when layout breaks compat.
 #define HOST_INTERFACE_LAYOUT_VERSION_LO sizeof(host_interface_t)

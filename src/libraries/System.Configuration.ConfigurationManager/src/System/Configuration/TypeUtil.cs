@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Configuration.Internal;
 using System.Reflection;
@@ -86,23 +85,24 @@ namespace System.Configuration
         // exception as indicated by throwOnError.
         internal static Type GetType(string typeString, bool throwOnError)
         {
-            Type type = null;
-            Exception originalException = null;
+            Type type;
 
             try
             {
                 type = Type.GetType(typeString, throwOnError);
             }
-            catch (Exception e)
+            catch
             {
-                originalException = e;
+                type = GetImplicitType(typeString);
+                if (type == null)
+                {
+                    throw;
+                }
             }
 
             if (type == null)
             {
                 type = GetImplicitType(typeString);
-                if ((type == null) && (originalException != null))
-                    throw originalException;
             }
 
             return type;
@@ -113,23 +113,23 @@ namespace System.Configuration
         // exception as indicated by throwOnError.
         internal static Type GetType(IInternalConfigHost host, string typeString, bool throwOnError)
         {
-            Type type = null;
-            Exception originalException = null;
-
+            Type type;
             try
             {
                 type = host.GetConfigType(typeString, throwOnError);
             }
-            catch (Exception e)
+            catch
             {
-                originalException = e;
+                type = GetImplicitType(typeString);
+                if (type == null)
+                {
+                    throw;
+                }
             }
 
             if (type == null)
             {
                 type = GetImplicitType(typeString);
-                if ((type == null) && (originalException != null))
-                    throw originalException;
             }
 
             return type;

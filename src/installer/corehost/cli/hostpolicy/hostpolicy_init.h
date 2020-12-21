@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __HOSTPOLICY_INIT_H__
 #define __HOSTPOLICY_INIT_H__
@@ -8,6 +7,7 @@
 #include "host_interface.h"
 #include "host_startup_info.h"
 #include "fx_definition.h"
+#include "bundle/info.h"
 
 struct hostpolicy_init_t
 {

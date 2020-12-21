@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -106,7 +105,7 @@ namespace System.Collections.Specialized.Tests
         public void Keys_CopyTo(int count, int index)
         {
             MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(count);
-            Keys_CopyTo(nameObjectCollection, index);
+            Keys_CopyTo_Helper(nameObjectCollection, index);
         }
 
         [Fact]
@@ -118,10 +117,10 @@ namespace System.Collections.Specialized.Tests
             nameObjectCollection.Add(null, null);
             nameObjectCollection.Add(null, new Foo("3"));
 
-            Keys_CopyTo(nameObjectCollection, 0);
+            Keys_CopyTo_Helper(nameObjectCollection, 0);
         }
 
-        private static void Keys_CopyTo(MyNameObjectCollection nameObjectCollection, int index)
+        private static void Keys_CopyTo_Helper(MyNameObjectCollection nameObjectCollection, int index)
         {
             ICollection keys = nameObjectCollection.Keys;
             string[] keysArray = new string[index + keys.Count + index];

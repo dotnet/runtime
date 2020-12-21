@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+#nullable enable
 
 using System;
 
@@ -21,12 +22,12 @@ namespace Microsoft.Extensions.Logging
         public static IExternalScopeProvider Instance { get; } = new NullExternalScopeProvider();
 
         /// <inheritdoc />
-        void IExternalScopeProvider.ForEachScope<TState>(Action<object, TState> callback, TState state)
+        void IExternalScopeProvider.ForEachScope<TState>(Action<object?, TState> callback, TState state)
         {
         }
 
         /// <inheritdoc />
-        IDisposable IExternalScopeProvider.Push(object state)
+        IDisposable IExternalScopeProvider.Push(object? state)
         {
             return NullScope.Instance;
         }

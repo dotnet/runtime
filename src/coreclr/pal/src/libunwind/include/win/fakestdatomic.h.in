@@ -1,0 +1,36 @@
+// This is a non-atomic fake implementation of stdatomic.h for when
+// compiler C11 stdatomic support is missing and only single threaded
+// operation is required
+
+#ifndef FAKE_STD_ATOMICS_H
+#define FAKE_STD_ATOMICS_H
+
+#include <inttypes.h>
+
+#define _Atomic volatile
+#define ATOMIC_FLAG_INIT 0
+
+typedef uint8_t atomic_bool;
+typedef uint8_t atomic_flag;
+
+#define atomic_compare_and_exchange_strong(x, y, z) return ((*(x) == *(y)) ? ((*(x) = z), true) : ((*(y) = *(x)),false))
+
+#define atomic_fetch_add(x, y) *(x) += (y), (*(x) - (y))  
+
+static inline void atomic_flag_clear(volatile atomic_flag* flag)
+{
+  *flag = ATOMIC_FLAG_INIT;
+}
+
+static inline atomic_bool atomic_flag_test_and_set( volatile atomic_flag* flag )
+{
+  atomic_bool result = *flag;
+  *flag = 1;
+  return result;
+}
+
+#define atomic_load(x) (*(x))
+#define atomic_store(x, y) do { *(x) = (y); } while (0)
+
+
+#endif // FAKE_STD_ATOMICS_H

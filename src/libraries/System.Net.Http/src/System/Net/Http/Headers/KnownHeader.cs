@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Net.Http.HPack;
@@ -21,7 +20,6 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
             Debug.Assert(name[0] == ':' || HttpRuleParser.GetTokenLength(name, 0) == name.Length);
-            Debug.Assert(knownValues == null || (headerType & HttpHeaderType.Custom) != HttpHeaderType.Custom);
 
             Name = name;
             HeaderType = headerType;

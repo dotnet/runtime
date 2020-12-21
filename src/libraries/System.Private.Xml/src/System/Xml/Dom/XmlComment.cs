@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Xml.XPath;
@@ -10,20 +9,20 @@ namespace System.Xml
     // Represents the content of an XML comment.
     public class XmlComment : XmlCharacterData
     {
-        protected internal XmlComment(string comment, XmlDocument doc) : base(comment, doc)
+        protected internal XmlComment(string? comment, XmlDocument doc) : base(comment, doc)
         {
         }
 
         // Gets the name of the node.
         public override string Name
         {
-            get { return OwnerDocument.strCommentName; }
+            get { return OwnerDocument!.strCommentName; }
         }
 
         // Gets the name of the current node without the namespace prefix.
         public override string LocalName
         {
-            get { return OwnerDocument.strCommentName; }
+            get { return OwnerDocument!.strCommentName; }
         }
 
         // Gets the type of the current node.

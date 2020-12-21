@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Transactions
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public sealed partial class CommittableTransaction : System.Transactions.Transaction, System.IAsyncResult
     {
         public CommittableTransaction() { }
@@ -219,6 +219,7 @@ namespace System.Transactions
         public TransactionPromotionException(string? message) { }
         public TransactionPromotionException(string? message, System.Exception? innerException) { }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public sealed partial class TransactionScope : System.IDisposable
     {
         public TransactionScope() { }

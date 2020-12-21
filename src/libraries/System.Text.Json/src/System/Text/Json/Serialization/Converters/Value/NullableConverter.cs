@@ -1,8 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-namespace System.Text.Json.Serialization
+using System.Diagnostics;
+
+namespace System.Text.Json.Serialization.Converters
 {
     internal class NullableConverter<T> : JsonConverter<T?> where T : struct
     {
@@ -13,10 +14,13 @@ namespace System.Text.Json.Serialization
         public NullableConverter(JsonConverter<T> converter)
         {
             _converter = converter;
+            IsInternalConverterForNumberType = converter.IsInternalConverterForNumberType;
         }
 
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            // We do not check _converter.HandleNull, as the underlying struct cannot be null.
+            // A custom converter for some type T? can handle null.
             if (reader.TokenType == JsonTokenType.Null)
             {
                 return null;
@@ -30,11 +34,40 @@ namespace System.Text.Json.Serialization
         {
             if (!value.HasValue)
             {
+                // We do not check _converter.HandleNull, as the underlying struct cannot be null.
+                // A custom converter for some type T? can handle null.
                 writer.WriteNullValue();
             }
             else
             {
                 _converter.Write(writer, value.Value, options);
+            }
+        }
+
+        internal override T? ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling numberHandling)
+        {
+            // We do not check _converter.HandleNull, as the underlying struct cannot be null.
+            // A custom converter for some type T? can handle null.
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return null;
+            }
+
+            T value = _converter.ReadNumberWithCustomHandling(ref reader, numberHandling);
+            return value;
+        }
+
+        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T? value, JsonNumberHandling handling)
+        {
+            if (!value.HasValue)
+            {
+                // We do not check _converter.HandleNull, as the underlying struct cannot be null.
+                // A custom converter for some type T? can handle null.
+                writer.WriteNullValue();
+            }
+            else
+            {
+                _converter.WriteNumberWithCustomHandling(writer, value.Value, handling);
             }
         }
     }

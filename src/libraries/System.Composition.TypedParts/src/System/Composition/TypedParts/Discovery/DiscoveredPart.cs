@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -99,6 +98,11 @@ namespace System.Composition.TypedParts.Discovery
                     }
                 }
 
+                if (_constructor == null && _partType.IsGenericType)
+                {
+                    _constructor = GetConstructorInfoFromGenericType(_partType);
+                }
+
                 if (_constructor == null)
                     _constructor = _partType.DeclaredConstructors
                         .FirstOrDefault(ci => ci.IsPublic && !(ci.IsStatic || ci.GetParameters().Any()));
@@ -129,6 +133,34 @@ namespace System.Composition.TypedParts.Discovery
                         yield return optional;
                 }
             }
+        }
+
+        private ConstructorInfo GetConstructorInfoFromGenericType(TypeInfo type)
+        {
+            Type genericPartType = type.GetGenericTypeDefinition();
+            TypeInfo genericPartTypeInfo = genericPartType.GetTypeInfo();
+            int constructorsCount = genericPartTypeInfo.DeclaredConstructors.Count();
+            ConstructorInfo constructor = null;
+
+            for (var index = 0; index < constructorsCount; index++)
+            {
+                ConstructorInfo constructorInfo = genericPartTypeInfo.DeclaredConstructors.ElementAt(index);
+
+                if (!constructorInfo.IsPublic || constructorInfo.IsStatic) continue;
+
+                if (_attributeContext.GetDeclaredAttribute<ImportingConstructorAttribute>(genericPartType, constructorInfo) != null)
+                {
+                    if (constructor != null)
+                    {
+                        string message = SR.Format(SR.DiscoveredPart_MultipleImportingConstructorsFound, type);
+                        throw new CompositionFailedException(message);
+                    }
+
+                    constructor = type.DeclaredConstructors.ElementAt(index);
+                }
+            }
+
+            return constructor;
         }
 
         public CompositeActivator GetActivator(DependencyAccessor definitionAccessor, IEnumerable<CompositionDependency> dependencies)

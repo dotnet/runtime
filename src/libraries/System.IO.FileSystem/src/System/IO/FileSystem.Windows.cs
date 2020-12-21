@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -325,7 +324,7 @@ namespace System.IO
 
             // As we successfully removed all of the files we shouldn't care about the directory itself
             // not being empty. As file deletion is just a marker to remove the file when all handles
-            // are closed we could still have contents hanging around.
+            // are closed we could still have undeleted contents.
             RemoveDirectoryInternal(fullPath, topLevel: topLevel, allowDirectoryNotEmpty: true);
         }
 

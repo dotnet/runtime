@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -94,6 +93,13 @@ namespace System.Tests
             Assert.Equal(expected, span.ToArray());
         }
 
+        public override void ConvertFromHalf(Half num, byte[] expected)
+        {
+            Span<byte> span = new Span<byte>(new byte[2]);
+            Assert.True(BitConverter.TryWriteBytes(span, num));
+            Assert.Equal(expected, span.ToArray());
+        }
+
         public override void ConvertFromFloat(float num, byte[] expected)
         {
             Span<byte> span = new Span<byte>(new byte[4]);
@@ -149,6 +155,12 @@ namespace System.Tests
         {
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToUInt64(span.Slice(index)));
+        }
+
+        public override void ToHalf(int index, Half expected, byte[] byteArray)
+        {
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
+            Assert.Equal(expected, BitConverter.ToHalf(span.Slice(index)));
         }
 
         public override void ToSingle(int index, float expected, byte[] byteArray)

@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Reflection.TypeExtensions</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup>
@@ -11,6 +10,6 @@
     <Compile Include="System\Reflection\TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

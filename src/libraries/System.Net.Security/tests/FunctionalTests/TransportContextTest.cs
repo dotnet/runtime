@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -36,7 +35,7 @@ namespace System.Net.Security.Tests
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
                 {
-                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls, false);
+                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.None, false);
 
                     TransportContext context = sslStream.TransportContext;
                     CheckTransportContext(context);
@@ -56,7 +55,7 @@ namespace System.Net.Security.Tests
 
             Assert.True(cbt1 != null, "ChannelBindingKind.Endpoint token data should be returned.");
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 Assert.True(cbt2 == null, "ChannelBindingKind.Unique token data is not expected on OSX platform.");
             }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.IO.Pipes;
@@ -136,6 +135,7 @@ namespace System.IO.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // IO.Pipes not supported
         public void FlushCanBeUsedOnPipes_Success(bool? flushToDisk)
         {
             using (var pipeStream = new AnonymousPipeServerStream(PipeDirection.In))

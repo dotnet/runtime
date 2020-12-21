@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -54,19 +53,19 @@ namespace System.Xml.Xsl.IlGen
         private PossibleXmlStates _xstatesInitial, _xstatesFinal, _xstatesBeginLoop, _xstatesEndLoop;
         private bool _isNmspInScope, _mightHaveNmsp, _mightHaveAttrs, _mightHaveDupAttrs, _mightHaveNmspAfterAttrs;
         private XmlILConstructMethod _constrMeth;
-        private XmlILConstructInfo _parentInfo;
-        private ArrayList _callersInfo;
+        private XmlILConstructInfo? _parentInfo;
+        private ArrayList? _callersInfo;
         private bool _isReadOnly;
 
-        private static volatile XmlILConstructInfo s_default;
+        private static volatile XmlILConstructInfo? s_default;
 
         /// <summary>
         /// Get ConstructInfo annotation for the specified node.  Lazily create if necessary.
         /// </summary>
         public static XmlILConstructInfo Read(QilNode nd)
         {
-            XmlILAnnotation ann = nd.Annotation as XmlILAnnotation;
-            XmlILConstructInfo constrInfo = (ann != null) ? ann.ConstructInfo : null;
+            XmlILAnnotation? ann = nd.Annotation as XmlILAnnotation;
+            XmlILConstructInfo? constrInfo = (ann != null) ? ann.ConstructInfo : null;
 
             if (constrInfo == null)
             {
@@ -92,7 +91,7 @@ namespace System.Xml.Xsl.IlGen
         public static XmlILConstructInfo Write(QilNode nd)
         {
             XmlILAnnotation ann = XmlILAnnotation.Write(nd);
-            XmlILConstructInfo constrInfo = ann.ConstructInfo;
+            XmlILConstructInfo? constrInfo = ann.ConstructInfo;
 
             if (constrInfo == null || constrInfo._isReadOnly)
             {
@@ -261,7 +260,7 @@ namespace System.Xml.Xsl.IlGen
         /// If the annotated expression will be constructed as the content of another constructor, and this can be
         /// guaranteed at compile-time, then this property will be the non-null XmlILConstructInfo of that constructor.
         /// </summary>
-        public XmlILConstructInfo ParentInfo
+        public XmlILConstructInfo? ParentInfo
         {
             //get { return this.parentInfo; }
             set
@@ -275,7 +274,7 @@ namespace System.Xml.Xsl.IlGen
         /// If the annotated expression will be constructed as the content of an ElementCtor, and this can be
         /// guaranteed at compile-time, then this property will be the non-null XmlILConstructInfo of that constructor.
         /// </summary>
-        public XmlILConstructInfo ParentElementInfo
+        public XmlILConstructInfo? ParentElementInfo
         {
             get
             {
@@ -423,7 +422,7 @@ namespace System.Xml.Xsl.IlGen
     /// </summary>
     internal class XmlILStateAnalyzer
     {
-        protected XmlILConstructInfo parentInfo;
+        protected XmlILConstructInfo? parentInfo;
         protected QilFactory fac;
         protected PossibleXmlStates xstates;
         protected bool withinElem;
@@ -440,7 +439,7 @@ namespace System.Xml.Xsl.IlGen
         /// Perform analysis on the specified constructor and its content.  Return the ndContent that was passed in,
         /// or a replacement.
         /// </summary>
-        public virtual QilNode Analyze(QilNode ndConstr, QilNode ndContent)
+        public virtual QilNode? Analyze(QilNode? ndConstr, QilNode? ndContent)
         {
             if (ndConstr == null)
             {
@@ -515,7 +514,7 @@ namespace System.Xml.Xsl.IlGen
                     ndContent = AnalyzeContent(ndContent);
 
                 if (ndConstr.NodeType == QilNodeType.Choice)
-                    AnalyzeChoice(ndConstr as QilChoice, this.parentInfo);
+                    AnalyzeChoice((ndConstr as QilChoice)!, this.parentInfo);
 
                 // Since Function will never be another node's content, set its final states here
                 if (ndConstr.NodeType == QilNodeType.Function)
@@ -559,10 +558,10 @@ namespace System.Xml.Xsl.IlGen
 
             switch (nd.NodeType)
             {
-                case QilNodeType.Loop: AnalyzeLoop(nd as QilLoop, info); break;
-                case QilNodeType.Sequence: AnalyzeSequence(nd as QilList, info); break;
-                case QilNodeType.Conditional: AnalyzeConditional(nd as QilTernary, info); break;
-                case QilNodeType.Choice: AnalyzeChoice(nd as QilChoice, info); break;
+                case QilNodeType.Loop: AnalyzeLoop((nd as QilLoop)!, info); break;
+                case QilNodeType.Sequence: AnalyzeSequence((nd as QilList)!, info); break;
+                case QilNodeType.Conditional: AnalyzeConditional((nd as QilTernary)!, info); break;
+                case QilNodeType.Choice: AnalyzeChoice((nd as QilChoice)!, info); break;
 
                 case QilNodeType.Error:
                 case QilNodeType.Warning:
@@ -571,7 +570,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 case QilNodeType.Nop:
-                    ndChild = (nd as QilUnary).Child;
+                    ndChild = (nd as QilUnary)!.Child;
                     switch (ndChild.NodeType)
                     {
                         case QilNodeType.For:
@@ -605,7 +604,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         protected virtual void AnalyzeLoop(QilLoop ndLoop, XmlILConstructInfo info)
         {
-            XmlQueryType typ = ndLoop.XmlType;
+            XmlQueryType typ = ndLoop.XmlType!;
 
             // Ensure that construct method is Writer
             info.ConstructMethod = XmlILConstructMethod.Writer;
@@ -689,7 +688,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         protected virtual void AnalyzeCopy(QilNode ndCopy, XmlILConstructInfo info)
         {
-            XmlQueryType typ = ndCopy.XmlType;
+            XmlQueryType typ = ndCopy.XmlType!;
 
             // Copying item(s) to output involves looping if there is not exactly one item in the sequence
             if (!typ.IsSingleton)
@@ -806,9 +805,9 @@ namespace System.Xml.Xsl.IlGen
         /// Analyze the content argument of the ElementCtor.  Try to eliminate as many runtime checks as possible,
         /// both for the ElementCtor and for content constructors.
         /// </summary>
-        public override QilNode Analyze(QilNode ndElem, QilNode ndContent)
+        public override QilNode? Analyze(QilNode? ndElem, QilNode? ndContent)
         {
-            Debug.Assert(ndElem.NodeType == QilNodeType.ElementCtor);
+            Debug.Assert(ndElem!.NodeType == QilNodeType.ElementCtor);
             this.parentInfo = XmlILConstructInfo.Write(ndElem);
 
             // Start by assuming that these properties are false (they default to true, but analyzer might be able to
@@ -832,7 +831,7 @@ namespace System.Xml.Xsl.IlGen
         protected override void AnalyzeLoop(QilLoop ndLoop, XmlILConstructInfo info)
         {
             // Constructing attributes/namespaces in a loop can cause duplicates, namespaces after attributes, etc.
-            if (ndLoop.XmlType.MaybeMany)
+            if (ndLoop.XmlType!.MaybeMany)
                 CheckAttributeNamespaceConstruct(ndLoop.XmlType);
 
             base.AnalyzeLoop(ndLoop, info);
@@ -845,11 +844,13 @@ namespace System.Xml.Xsl.IlGen
         {
             if (ndCopy.NodeType == QilNodeType.AttributeCtor)
             {
-                AnalyzeAttributeCtor(ndCopy as QilBinary, info);
+                QilBinary? binaryNode = ndCopy as QilBinary;
+                Debug.Assert(binaryNode != null);
+                AnalyzeAttributeCtor(binaryNode, info);
             }
             else
             {
-                CheckAttributeNamespaceConstruct(ndCopy.XmlType);
+                CheckAttributeNamespaceConstruct(ndCopy.XmlType!);
             }
 
             base.AnalyzeCopy(ndCopy, info);
@@ -862,12 +863,13 @@ namespace System.Xml.Xsl.IlGen
         {
             if (ndAttr.Left.NodeType == QilNodeType.LiteralQName)
             {
-                QilName ndName = ndAttr.Left as QilName;
+                QilName? ndName = ndAttr.Left as QilName;
+                Debug.Assert(ndName != null);
                 XmlQualifiedName qname;
                 int idx;
 
                 // This attribute might be constructed on the parent element
-                this.parentInfo.MightHaveAttributes = true;
+                this.parentInfo!.MightHaveAttributes = true;
 
                 // Check to see whether this attribute is a duplicate of a previous attribute
                 if (!this.parentInfo.MightHaveDuplicateAttributes)
@@ -876,7 +878,7 @@ namespace System.Xml.Xsl.IlGen
 
                     for (idx = 0; idx < _dupAttrs.Count; idx++)
                     {
-                        XmlQualifiedName qnameDup = (XmlQualifiedName)_dupAttrs[idx];
+                        XmlQualifiedName qnameDup = (XmlQualifiedName)_dupAttrs[idx]!;
 
                         if ((object)qnameDup.Name == (object)qname.Name && (object)qnameDup.Namespace == (object)qname.Namespace)
                         {
@@ -899,7 +901,7 @@ namespace System.Xml.Xsl.IlGen
             else
             {
                 // Attribute prefix and namespace are not known at compile-time
-                CheckAttributeNamespaceConstruct(ndAttr.XmlType);
+                CheckAttributeNamespaceConstruct(ndAttr.XmlType!);
             }
         }
 
@@ -912,7 +914,7 @@ namespace System.Xml.Xsl.IlGen
             if ((typ.NodeKinds & XmlNodeKindFlags.Attribute) != XmlNodeKindFlags.None)
             {
                 // Mark element as possibly having attributes and duplicate attributes (since we don't know the names)
-                this.parentInfo.MightHaveAttributes = true;
+                this.parentInfo!.MightHaveAttributes = true;
                 this.parentInfo.MightHaveDuplicateAttributes = true;
 
                 // Attribute namespaces might be declared
@@ -923,7 +925,7 @@ namespace System.Xml.Xsl.IlGen
             if ((typ.NodeKinds & XmlNodeKindFlags.Namespace) != XmlNodeKindFlags.None)
             {
                 // Then element might have namespaces,
-                this.parentInfo.MightHaveNamespaces = true;
+                this.parentInfo!.MightHaveNamespaces = true;
 
                 // If attributes might already have been constructed,
                 if (this.parentInfo.MightHaveAttributes)
@@ -979,7 +981,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 case QilNodeType.Loop:
                     _addInScopeNmsp = false;
-                    AnalyzeContent((nd as QilLoop).Body);
+                    AnalyzeContent((nd as QilLoop)!.Body);
                     break;
 
                 case QilNodeType.Sequence:
@@ -989,13 +991,13 @@ namespace System.Xml.Xsl.IlGen
 
                 case QilNodeType.Conditional:
                     _addInScopeNmsp = false;
-                    AnalyzeContent((nd as QilTernary).Center);
-                    AnalyzeContent((nd as QilTernary).Right);
+                    AnalyzeContent((nd as QilTernary)!.Center);
+                    AnalyzeContent((nd as QilTernary)!.Right);
                     break;
 
                 case QilNodeType.Choice:
                     _addInScopeNmsp = false;
-                    QilList ndBranches = (nd as QilChoice).Branches;
+                    QilList ndBranches = (nd as QilChoice)!.Branches;
                     for (int idx = 0; idx < ndBranches.Count; idx++)
                         AnalyzeContent(ndBranches[idx]);
 
@@ -1007,8 +1009,8 @@ namespace System.Xml.Xsl.IlGen
                     _nsmgr.PushScope();
                     cntNmspSave = _cntNmsp;
 
-                    if (CheckNamespaceInScope(nd as QilBinary))
-                        AnalyzeContent((nd as QilBinary).Right);
+                    if (CheckNamespaceInScope((nd as QilBinary)!))
+                        AnalyzeContent((nd as QilBinary)!.Right);
 
                     _nsmgr.PopScope();
                     _addInScopeNmsp = false;
@@ -1017,15 +1019,15 @@ namespace System.Xml.Xsl.IlGen
 
                 case QilNodeType.AttributeCtor:
                     _addInScopeNmsp = false;
-                    CheckNamespaceInScope(nd as QilBinary);
+                    CheckNamespaceInScope((nd as QilBinary)!);
                     break;
 
                 case QilNodeType.NamespaceDecl:
-                    CheckNamespaceInScope(nd as QilBinary);
+                    CheckNamespaceInScope((nd as QilBinary)!);
                     break;
 
                 case QilNodeType.Nop:
-                    AnalyzeContent((nd as QilUnary).Child);
+                    AnalyzeContent((nd as QilUnary)!.Child);
                     break;
 
                 default:
@@ -1041,8 +1043,9 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         private bool CheckNamespaceInScope(QilBinary nd)
         {
-            QilName ndName;
-            string prefix, ns, prefixExisting, nsExisting;
+            QilName? ndName;
+            string prefix, ns;
+            string? prefixExisting, nsExisting;
             XPathNodeType nodeType;
 
             switch (nd.NodeType)
@@ -1082,7 +1085,7 @@ namespace System.Xml.Xsl.IlGen
                 return false;
 
             // Atomize names
-            prefix = _nsmgr.NameTable.Add(prefix);
+            prefix = _nsmgr.NameTable!.Add(prefix);
             ns = _nsmgr.NameTable.Add(ns);
 
             // Determine whether namespace is already in-scope
@@ -1091,10 +1094,10 @@ namespace System.Xml.Xsl.IlGen
                 _nsmgr.GetNamespaceDeclaration(iNmsp, out prefixExisting, out nsExisting);
 
                 // If prefix is already declared,
-                if ((object)prefix == (object)prefixExisting)
+                if ((object)prefix == (object?)prefixExisting)
                 {
                     // Then if the namespace is the same, this namespace is redundant
-                    if ((object)ns == (object)nsExisting)
+                    if ((object)ns == (object?)nsExisting)
                         XmlILConstructInfo.Write(nd).IsNamespaceInScope = true;
 
                     // Else quit searching, because any further matching prefixes will be hidden (not in-scope)

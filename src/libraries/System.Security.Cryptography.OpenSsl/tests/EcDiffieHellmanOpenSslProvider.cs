@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
@@ -26,7 +25,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         public bool IsCurveValid(Oid oid) => _ecdsaProvider.IsCurveValid(oid);
 
         public bool ExplicitCurvesSupported => _ecdsaProvider.ExplicitCurvesSupported;
-        public bool LimitedPrivateKeySupported => _ecdsaProvider.LimitedPrivateKeySupported;
     }
 
     public partial class ECDiffieHellmanFactory

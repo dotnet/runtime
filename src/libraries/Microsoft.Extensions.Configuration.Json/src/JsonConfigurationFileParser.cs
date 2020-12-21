@@ -1,30 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 
 namespace Microsoft.Extensions.Configuration.Json
 {
-    internal class JsonConfigurationFileParser
+    internal sealed class JsonConfigurationFileParser
     {
         private JsonConfigurationFileParser() { }
 
-        private readonly IDictionary<string, string> _data = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private readonly Stack<string> _context = new Stack<string>();
-        private string _currentPath;
+        private readonly SortedDictionary<string, string> _data = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Stack<string> _paths = new Stack<string>();
 
         public static IDictionary<string, string> Parse(Stream input)
             => new JsonConfigurationFileParser().ParseStream(input);
 
         private IDictionary<string, string> ParseStream(Stream input)
         {
-            _data.Clear();
-
             var jsonDocumentOptions = new JsonDocumentOptions
             {
                 CommentHandling = JsonCommentHandling.Skip,
@@ -36,7 +32,7 @@ namespace Microsoft.Extensions.Configuration.Json
             {
                 if (doc.RootElement.ValueKind != JsonValueKind.Object)
                 {
-                    throw new FormatException(SR.Format(SR.Error_UnsupportedJSONToken, doc.RootElement.ValueKind));
+                    throw new FormatException(SR.Format(SR.Error_InvalidTopLevelJSONElement, doc.RootElement.ValueKind));
                 }
                 VisitElement(doc.RootElement);
             }
@@ -44,25 +40,38 @@ namespace Microsoft.Extensions.Configuration.Json
             return _data;
         }
 
-        private void VisitElement(JsonElement element) {
-            foreach (var property in element.EnumerateObject())
+        private void VisitElement(JsonElement element)
+        {
+            var isEmpty = true;
+
+            foreach (JsonProperty property in element.EnumerateObject())
             {
+                isEmpty = false;
                 EnterContext(property.Name);
                 VisitValue(property.Value);
                 ExitContext();
+            }
+
+            if (isEmpty && _paths.Count > 0)
+            {
+                _data[_paths.Peek()] = null;
             }
         }
 
         private void VisitValue(JsonElement value)
         {
-            switch (value.ValueKind) {
+            Debug.Assert(_paths.Count > 0);
+
+            switch (value.ValueKind)
+            {
                 case JsonValueKind.Object:
                     VisitElement(value);
                     break;
 
                 case JsonValueKind.Array:
-                    var index = 0;
-                    foreach (var arrayElement in value.EnumerateArray()) {
+                    int index = 0;
+                    foreach (JsonElement arrayElement in value.EnumerateArray())
+                    {
                         EnterContext(index.ToString());
                         VisitValue(arrayElement);
                         ExitContext();
@@ -75,7 +84,7 @@ namespace Microsoft.Extensions.Configuration.Json
                 case JsonValueKind.True:
                 case JsonValueKind.False:
                 case JsonValueKind.Null:
-                    var key = _currentPath;
+                    string key = _paths.Peek();
                     if (_data.ContainsKey(key))
                     {
                         throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));
@@ -88,16 +97,11 @@ namespace Microsoft.Extensions.Configuration.Json
             }
         }
 
-        private void EnterContext(string context)
-        {
-            _context.Push(context);
-            _currentPath = ConfigurationPath.Combine(_context.Reverse());
-        }
+        private void EnterContext(string context) =>
+            _paths.Push(_paths.Count > 0 ?
+                _paths.Peek() + ConfigurationPath.KeyDelimiter + context :
+                context);
 
-        private void ExitContext()
-        {
-            _context.Pop();
-            _currentPath = ConfigurationPath.Combine(_context.Reverse());
-        }
+        private void ExitContext() => _paths.Pop();
     }
 }

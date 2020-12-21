@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -538,8 +537,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/27015", TargetFrameworkMonikers.Netcoreapp)]
-        public void GetObjectForNativeVariant_Record_ReturnsExpected()
+        public void GetObjectForNativeVariant_Record_Throws()
         {
             int record = 10;
             var recordInfo = new RecordInfo { Guid = typeof(int).GUID };
@@ -557,11 +555,8 @@ namespace System.Runtime.InteropServices.Tests
                         _recordInfo = pRecordInfo
                     }
                 });
-                Assert.Equal(10, GetObjectForNativeVariant(variant));
-                GetObjectForNativeVariant_NestedVariant_ReturnsExpected(variant, record);
 
-                variant.m_Variant.vt |= VT_BYREF;
-                Assert.Equal(10, GetObjectForNativeVariant(variant));
+                Assert.Throws<ArgumentException>(() => GetObjectForNativeVariant(variant));
             }
             finally
             {

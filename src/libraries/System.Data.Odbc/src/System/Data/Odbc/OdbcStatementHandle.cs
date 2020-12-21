@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Runtime.InteropServices;
 
 namespace System.Data.Odbc
 {
-    internal struct SQLLEN
+    internal readonly struct SQLLEN
     {
         private readonly IntPtr _value;
 
@@ -18,11 +17,7 @@ namespace System.Data.Odbc
 
         internal SQLLEN(long value)
         {
-#if WIN32
-            _value = new IntPtr(checked((int)value));
-#else
             _value = new IntPtr(value);
-#endif
         }
 
         internal SQLLEN(IntPtr value)
@@ -31,7 +26,7 @@ namespace System.Data.Odbc
         }
 
         public static implicit operator SQLLEN(int value)
-        { //
+        {
             return new SQLLEN(value);
         }
 
@@ -40,22 +35,17 @@ namespace System.Data.Odbc
             return new SQLLEN(value);
         }
 
-        public static unsafe implicit operator int(SQLLEN value)
+        public static implicit operator int(SQLLEN value)
         {
-#if WIN32
-            return (int)value._value.ToInt32();
-#else
-            long l = (long)value._value.ToInt64();
-            return checked((int)l);
-#endif
+            return value._value.ToInt32();
         }
 
-        public static unsafe explicit operator long(SQLLEN value)
+        public static explicit operator long(SQLLEN value)
         {
             return value._value.ToInt64();
         }
 
-        public unsafe long ToInt64()
+        public long ToInt64()
         {
             return _value.ToInt64();
         }
@@ -63,7 +53,7 @@ namespace System.Data.Odbc
 
     internal sealed class OdbcStatementHandle : OdbcHandle
     {
-        internal OdbcStatementHandle(OdbcConnectionHandle connectionHandle) : base(ODBC32.SQL_HANDLE.STMT, connectionHandle)
+        internal OdbcStatementHandle(OdbcConnectionHandle? connectionHandle) : base(ODBC32.SQL_HANDLE.STMT, connectionHandle)
         {
         }
 
@@ -216,7 +206,7 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode PrimaryKeys(string catalogName, string schemaName, string tableName)
+        internal ODBC32.RetCode PrimaryKeys(string? catalogName, string? schemaName, string tableName)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLPrimaryKeysW(this,
                             catalogName, ODBC.ShortStringLength(catalogName),          // CatalogName
@@ -243,10 +233,10 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode ProcedureColumns(string procedureCatalog,
-                                                 string procedureSchema,
-                                                 string procedureName,
-                                                 string columnName)
+        internal ODBC32.RetCode ProcedureColumns(string? procedureCatalog,
+                                                 string? procedureSchema,
+                                                 string? procedureName,
+                                                 string? columnName)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLProcedureColumnsW(this,
                                                                               procedureCatalog,
@@ -288,8 +278,8 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode Statistics(string tableCatalog,
-                                           string tableSchema,
+        internal ODBC32.RetCode Statistics(string? tableCatalog,
+                                           string? tableSchema,
                                            string tableName,
                                            short unique,
                                            short accuracy)

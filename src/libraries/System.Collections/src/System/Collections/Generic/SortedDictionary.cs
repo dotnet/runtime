@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -36,11 +35,22 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(dictionary));
             }
 
-            _set = new TreeSet<KeyValuePair<TKey, TValue>>(new KeyValuePairComparer(comparer));
+            var keyValuePairComparer = new KeyValuePairComparer(comparer);
 
-            foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+            if (dictionary is SortedDictionary<TKey, TValue> sortedDictionary &&
+                sortedDictionary._set.Comparer is KeyValuePairComparer kv &&
+                kv.keyComparer.Equals(keyValuePairComparer.keyComparer))
             {
-                _set.Add(pair);
+                _set = new TreeSet<KeyValuePair<TKey, TValue>>(sortedDictionary._set, keyValuePairComparer);
+            }
+            else
+            {
+                _set = new TreeSet<KeyValuePair<TKey, TValue>>(keyValuePairComparer);
+
+                foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+                {
+                    _set.Add(pair);
+                }
             }
         }
 
@@ -289,7 +299,7 @@ namespace System.Collections.Generic
             TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
             if (node == null)
             {
-                value = default(TValue)!;
+                value = default;
                 return false;
             }
             value = node.Item.Value;
@@ -327,7 +337,7 @@ namespace System.Collections.Generic
             {
                 if (IsCompatibleKey(key))
                 {
-                    TValue value;
+                    TValue? value;
                     if (TryGetValue((TKey)key, out value))
                     {
                         return value;
@@ -961,6 +971,8 @@ namespace System.Collections.Generic
         { }
 
         public TreeSet(IComparer<T>? comparer) : base(comparer) { }
+
+        internal TreeSet(TreeSet<T> set, IComparer<T>? comparer) : base(set, comparer) { }
 
         private TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
 

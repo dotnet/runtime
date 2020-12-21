@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -17,6 +16,13 @@ namespace System.Runtime.Intrinsics.X86
         internal Avx() { }
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
+
+        public new abstract class X64 : Sse42.X64
+        {
+            internal X64() { }
+
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
+        }
 
         /// <summary>
         /// __m256 _mm256_add_ps (__m256 a, __m256 b)

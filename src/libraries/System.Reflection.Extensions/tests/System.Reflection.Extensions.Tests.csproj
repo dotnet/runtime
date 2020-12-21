@@ -12,7 +12,7 @@
     <Compile Include="GetCustomAttributes_Assembly.cs" />
     <Compile Include="GetCustomAttributes_Compat.cs" />
     <Compile Include="GetCustomAttributes_MemberInfo.cs" />
-    <Compile Include="GetCustomAttributes_ParamterInfo.cs" />
+    <Compile Include="GetCustomAttributes_ParameterInfo.cs" />
     <Compile Include="ReflectionTestExtensions.cs" />
     <Compile Include="RuntimeReflectionExtensionTests.cs" />
     <Compile Include="RuntimeReflectionExtensionTestsWithQuirks.cs" />

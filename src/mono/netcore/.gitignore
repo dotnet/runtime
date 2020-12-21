@@ -13,3 +13,4 @@ packs/
 /obj
 .configured
 /config.make
+!Makefile

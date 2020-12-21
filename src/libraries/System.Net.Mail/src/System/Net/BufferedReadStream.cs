@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -97,7 +96,7 @@ namespace System.Net
 
         private async Task<int> ReadMoreAsync(int bytesAlreadyRead, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            int returnValue = await base.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+            int returnValue = await base.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
             return bytesAlreadyRead + returnValue;
         }
 

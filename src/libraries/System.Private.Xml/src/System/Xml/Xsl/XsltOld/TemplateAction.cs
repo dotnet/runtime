@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -15,9 +14,9 @@ namespace System.Xml.Xsl.XsltOld
     internal class TemplateAction : TemplateBaseAction
     {
         private int _matchKey = Compiler.InvalidQueryKey;
-        private XmlQualifiedName _name;
+        private XmlQualifiedName? _name;
         private double _priority = double.NaN;
-        private XmlQualifiedName _mode;
+        private XmlQualifiedName? _mode;
         private int _templateId;
         private bool _replaceNSAliasesDone;
 
@@ -26,7 +25,7 @@ namespace System.Xml.Xsl.XsltOld
             get { return _matchKey; }
         }
 
-        internal XmlQualifiedName Name
+        internal XmlQualifiedName? Name
         {
             get { return _name; }
         }
@@ -36,7 +35,7 @@ namespace System.Xml.Xsl.XsltOld
             get { return _priority; }
         }
 
-        internal XmlQualifiedName Mode
+        internal XmlQualifiedName? Mode
         {
             get { return _mode; }
         }
@@ -138,10 +137,10 @@ namespace System.Xml.Xsl.XsltOld
                 return;
             }
             // Split Unions:
-            TheQuery theQuery = (TheQuery)compiler.QueryStore[this.MatchKey];
+            TheQuery theQuery = (TheQuery)compiler.QueryStore![this.MatchKey]!;
             CompiledXpathExpr expr = (CompiledXpathExpr)theQuery.CompiledQuery;
             Query query = expr.QueryTree;
-            UnionExpr union;
+            UnionExpr? union;
             while ((union = query as UnionExpr) != null)
             {
                 Debug.Assert(!(union.qy2 is UnionExpr), "only qy1 can be union");

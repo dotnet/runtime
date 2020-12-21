@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -80,13 +79,13 @@ namespace System.Security.Cryptography.Xml.Tests
 
         [Fact]
         public void AsymmetricEncryptionRoundtripUseOAEP() =>
-            AsymmetricEncryptionRoundtrip(useOAEP: true); // OAEP is recommended
+            AsymmetricEncryptionRoundtrip_Helper(useOAEP: true); // OAEP is recommended
 
         [Fact]
         public void AsymmetricEncryptionRoundtrip() =>
-            AsymmetricEncryptionRoundtrip(useOAEP: false);
+            AsymmetricEncryptionRoundtrip_Helper(useOAEP: false);
 
-        private void AsymmetricEncryptionRoundtrip(bool useOAEP)
+        private void AsymmetricEncryptionRoundtrip_Helper(bool useOAEP)
         {
             const string testString = "some text node";
             const string exampleXmlRootElement = "example";

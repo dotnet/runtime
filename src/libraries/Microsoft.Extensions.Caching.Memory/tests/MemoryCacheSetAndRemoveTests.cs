@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -181,6 +181,9 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             Assert.False(cache.TryGetValue(key, out int obj));
+
+            // verify that throwing an exception doesn't leak CacheEntry objects
+            Assert.Null(CacheEntryHelper.Current);
         }
 
         [Fact]
@@ -200,6 +203,34 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             Assert.False(cache.TryGetValue(key, out int obj));
+
+            // verify that throwing an exception doesn't leak CacheEntry objects
+            Assert.Null(CacheEntryHelper.Current);
+        }
+
+        [Fact]
+        public void DisposingCacheEntryReleasesScope()
+        {
+            object GetScope(ICacheEntry entry)
+            {
+                return entry.GetType()
+                    .GetField("_previous", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(entry);
+            }
+
+            var cache = CreateCache();
+
+            ICacheEntry first = cache.CreateEntry("myKey1");
+            Assert.Null(GetScope(first)); // it's the first entry, so it has no previous cache entry set
+
+            ICacheEntry second = cache.CreateEntry("myKey2");
+            Assert.NotNull(GetScope(second)); // it's not first, so it has previous set
+            Assert.Same(first, GetScope(second)); // second.previous is set to first
+
+            second.Dispose();
+            Assert.Null(GetScope(second));
+            first.Dispose();
+            Assert.Null(GetScope(first));
         }
 
         [Fact]

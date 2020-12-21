@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-#pragma warning disable BCL0015
 
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -13,9 +10,9 @@ namespace System.Drawing
 {
     // Raw function imports for gdiplus
     // Functions are loaded manually in order to accomodate different shared library names on Unix.
-    internal static unsafe partial class SafeNativeMethods
+    internal static partial class SafeNativeMethods
     {
-        internal static partial class Gdip
+        internal static unsafe partial class Gdip
         {
             // Shared function imports (all platforms)
             [DllImport(LibraryName, ExactSpelling = true)]
@@ -1374,8 +1371,12 @@ namespace System.Drawing
 
             public static StartupInput GetDefault()
             {
+                OperatingSystem os = Environment.OSVersion;
                 StartupInput result = default;
-                result.GdiplusVersion = 1;
+
+                // In Windows 7 GDI+1.1 story is different as there are different binaries per GDI+ version.
+                bool isWindows7 = os.Platform == PlatformID.Win32NT && os.Version.Major == 6 && os.Version.Minor == 1;
+                result.GdiplusVersion = isWindows7 ? 1 : 2;
                 // result.DebugEventCallback = null;
                 result.SuppressBackgroundThread = false;
                 result.SuppressExternalCodecs = false;

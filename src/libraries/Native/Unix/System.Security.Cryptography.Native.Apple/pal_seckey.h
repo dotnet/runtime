@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -17,7 +16,7 @@ static const int32_t kErrorSeeError = -2;
 static const int32_t kErrorUnknownAlgorithm = -3;
 static const int32_t kErrorUnknownState = -4;
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Export a key object.
 
@@ -61,7 +60,7 @@ For ECC the value should not be used.
 */
 PALEXPORT uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey);
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Export a key and re-import it to the NULL keychain.
 

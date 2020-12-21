@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 
@@ -318,7 +315,7 @@ namespace System.Text.Json
                 Debug.Assert(status == OperationStatus.Done);
                 Debug.Assert(consumed == utf16Text.Length);
 
-                result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName);
+                result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
             }
 
             if (otherUtf8TextArray != null)
@@ -330,7 +327,7 @@ namespace System.Text.Json
             return result;
         }
 
-        internal bool TextEquals(int index, ReadOnlySpan<byte> otherUtf8Text, bool isPropertyName)
+        internal bool TextEquals(int index, ReadOnlySpan<byte> otherUtf8Text, bool isPropertyName, bool shouldUnescape)
         {
             CheckNotDisposed();
 
@@ -345,12 +342,12 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (otherUtf8Text.Length > segment.Length)
+            if (otherUtf8Text.Length > segment.Length || (!shouldUnescape && otherUtf8Text.Length != segment.Length))
             {
                 return false;
             }
 
-            if (row.HasComplexChildren)
+            if (row.HasComplexChildren && shouldUnescape)
             {
                 if (otherUtf8Text.Length < segment.Length / JsonConstants.MaxExpansionFactorWhileEscaping)
                 {
@@ -587,9 +584,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            char standardFormat = row.HasComplexChildren ? JsonConstants.ScientificNotationFormat : default;
-
-            if (Utf8Parser.TryParse(segment, out double tmp, out int bytesConsumed, standardFormat) &&
+            if (Utf8Parser.TryParse(segment, out double tmp, out int bytesConsumed) &&
                 segment.Length == bytesConsumed)
             {
                 value = tmp;
@@ -611,9 +606,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            char standardFormat = row.HasComplexChildren ? JsonConstants.ScientificNotationFormat : default;
-
-            if (Utf8Parser.TryParse(segment, out float tmp, out int bytesConsumed, standardFormat) &&
+            if (Utf8Parser.TryParse(segment, out float tmp, out int bytesConsumed) &&
                 segment.Length == bytesConsumed)
             {
                 value = tmp;
@@ -635,9 +628,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            char standardFormat = row.HasComplexChildren ? JsonConstants.ScientificNotationFormat : default;
-
-            if (Utf8Parser.TryParse(segment, out decimal tmp, out int bytesConsumed, standardFormat) &&
+            if (Utf8Parser.TryParse(segment, out decimal tmp, out int bytesConsumed) &&
                 segment.Length == bytesConsumed)
             {
                 value = tmp;
@@ -1068,21 +1059,6 @@ namespace System.Text.Json
                     else
                     {
                         database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
-
-                        if (tokenType == JsonTokenType.Number)
-                        {
-                            switch (reader._numberFormat)
-                            {
-                                case JsonConstants.ScientificNotationFormat:
-                                    database.SetHasComplexChildren(database.Length - DbRow.Size);
-                                    break;
-                                default:
-                                    Debug.Assert(
-                                        reader._numberFormat == default,
-                                        $"Unhandled numeric format {reader._numberFormat}");
-                                    break;
-                            }
-                        }
                     }
                 }
 
@@ -1090,7 +1066,7 @@ namespace System.Text.Json
             }
 
             Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
-            database.TrimExcess();
+            database.CompleteAllocations();
         }
 
         private void CheckNotDisposed()

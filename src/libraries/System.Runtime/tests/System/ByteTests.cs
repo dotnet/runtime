@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -68,7 +67,7 @@ namespace System.Tests
         [InlineData((byte)78, null, false)]
         [InlineData((byte)78, "78", false)]
         [InlineData((byte)78, 78, false)]
-        public static void Equals(byte b, object obj, bool expected)
+        public static void EqualsTest(byte b, object obj, bool expected)
         {
             if (obj is byte b2)
             {
@@ -120,7 +119,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(byte b, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(byte b, string format, IFormatProvider provider, string expected)
         {
             // Format is case insensitive
             string upperFormat = format.ToUpperInvariant();

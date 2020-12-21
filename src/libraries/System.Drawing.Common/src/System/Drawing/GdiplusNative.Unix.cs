@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Drawing.Drawing2D;
@@ -34,7 +33,10 @@ namespace System.Drawing
                 IntPtr lib = IntPtr.Zero;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    NativeLibrary.TryLoad("libgdiplus.dylib", assembly, default, out lib);
+                    if (!NativeLibrary.TryLoad("libgdiplus.dylib", assembly, default, out lib))
+                    {
+                        NativeLibrary.TryLoad("/usr/local/lib/libgdiplus.dylib", assembly, default, out lib);
+                    }
                 }
                 else
                 {
@@ -44,7 +46,7 @@ namespace System.Drawing
                     // the name suffixed with ".0".
                     if (!NativeLibrary.TryLoad("libgdiplus.so", assembly, default, out lib))
                     {
-                         NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
+                        NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
                     }
                 }
 
@@ -404,7 +406,7 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetPostScriptGraphicsContext(
-                [MarshalAs(UnmanagedType.LPStr)]string filename,
+                [MarshalAs(UnmanagedType.LPStr)] string filename,
                 int width, int height, double dpix, double dpiy, ref IntPtr graphics);
 
             [DllImport(LibraryName, ExactSpelling = true)]

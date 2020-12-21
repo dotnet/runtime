@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -279,7 +278,7 @@ namespace System.Text.Json.Serialization.Tests
 
             internal CollectionWithoutPublicParameterlessCtor()
             {
-                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
+                Debug.Fail("The JsonSerializer should not be calling non-public ctors, by default.");
             }
 
             public CollectionWithoutPublicParameterlessCtor(List<object> list)
@@ -287,7 +286,7 @@ namespace System.Text.Json.Serialization.Tests
                 _list = list;
             }
 
-            public object this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public object this[int index] { get => _list[index]; set => _list[index] = value; }
 
             public bool IsFixedSize => throw new NotImplementedException();
 

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <nullable>enable</nullable>
+    <!-- Referenced assembly 'FsCheck' does not have a strong name.-->
+    <NoWarn>CS8002</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+    <Compile Include="PropertyTests\CborPropertyTests.cs" />
+    <Compile Include="PropertyTests\CborRandomGenerators.cs" />
+    <Compile Include="Reader\CborReaderTests.cs" />
+    <Compile Include="Reader\CborReaderTests.ByteString.cs" />
+    <Compile Include="Reader\CborReaderTests.TextString.cs" />
+    <Compile Include="Reader\CborReaderTests.Integer.cs" />
+    <Compile Include="Reader\CborReaderTests.Helpers.cs" />
+    <Compile Include="Reader\CborReaderTests.Map.cs" />
+    <Compile Include="Reader\CborReaderTests.SkipValue.cs" />
+    <Compile Include="Reader\CborReaderTests.Simple.cs" />
+    <Compile Include="Reader\CborReaderTests.Tag.cs" />
+    <Compile Include="Reader\CborReaderTests.Array.cs" />
+    <Compile Include="Writer\CborWriterTests.Helpers.cs" />
+    <Compile Include="Writer\CborWriterTests.Array.cs" />
+    <Compile Include="Writer\CborWriterTests.cs" />
+    <Compile Include="Writer\CborWriterTests.Map.cs" />
+    <Compile Include="Writer\CborWriterTests.Simple.cs" />
+    <Compile Include="Writer\CborWriterTests.Tag.cs" />
+    <Compile Include="Writer\CborWriterTests.Integer.cs" />
+    <Compile Include="Writer\CborWriterTests.ByteString.cs" />
+    <Compile Include="Writer\CborWriterTests.TextString.cs" />
+    <Compile Include="CoseKeyHelpers.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Formats.Cbor.csproj" />
+    <ProjectReference Include="CborDocument\System.Formats.Cbor.Tests.DataModel.fsproj" />
+    <PackageReference Include="FsCheck" Version="$(FsCheckVersion)" />
+    <PackageReference Include="FsCheck.Xunit" Version="$(FsCheckVersion)" />
+  </ItemGroup>
+</Project>

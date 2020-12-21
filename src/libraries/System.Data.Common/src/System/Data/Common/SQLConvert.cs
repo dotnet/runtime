@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.SqlTypes;
 using System.Xml;
@@ -475,18 +474,18 @@ namespace System.Data.Common
                                     case StorageType.BigInteger:
                                         break;
                                     default:
-                                        IConvertible iconvertible = (value as IConvertible);
+                                        IConvertible? iconvertible = (value as IConvertible);
                                         if (null != iconvertible)
                                         {
                                             return iconvertible.ToString(formatProvider);
                                         }
                                         // catch additional classes like Guid
-                                        IFormattable iformattable = (value as IFormattable);
+                                        IFormattable? iformattable = (value as IFormattable);
                                         if (null != iformattable)
                                         {
                                             return iformattable.ToString(null, formatProvider);
                                         }
-                                        return value.ToString();
+                                        return value.ToString()!;
                                 }
                             }
                             else if (StorageType.TimeSpan == stype)
@@ -723,18 +722,18 @@ namespace System.Data.Common
                             case StorageType.DateTimeOffset:
                                 return XmlConvert.ToString((DateTimeOffset)value);
                             default:
-                                IConvertible iconvertible = (value as IConvertible);
+                                IConvertible? iconvertible = (value as IConvertible);
                                 if (null != iconvertible)
                                 {
                                     return iconvertible.ToString(System.Globalization.CultureInfo.InvariantCulture);
                                 }
                                 // catch additional classes like Guid
-                                IFormattable iformattable = (value as IFormattable);
+                                IFormattable? iformattable = (value as IFormattable);
                                 if (null != iformattable)
                                 {
                                     return iformattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture);
                                 }
-                                return value.ToString();
+                                return value.ToString()!;
                         }
                     }
             }

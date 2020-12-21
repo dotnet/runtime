@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "deps_entry.h"
 #include "deps_format.h"
 #include "utils.h"
 #include "trace.h"
+#include "bundle/info.h"
 #include <tuple>
 #include <array>
 #include <iterator>
@@ -426,16 +426,16 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
     m_deps_file = deps_path;
-    m_file_exists = pal::file_exists(deps_path);
+    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::file_exists(deps_path);
 
-    // If file doesn't exist, then assume parsed.
+    json_parser_t json;
     if (!m_file_exists)
     {
+        // If file doesn't exist, then assume parsed.
         trace::verbose(_X("Could not locate the dependencies manifest file [%s]. Some libraries may fail to resolve."), deps_path.c_str());
         return true;
     }
 
-    json_parser_t json;
     if (!json.parse_file(deps_path))
     {
         return false;

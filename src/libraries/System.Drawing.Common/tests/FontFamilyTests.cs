@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Drawing.Text;
@@ -100,6 +100,10 @@ namespace System.Drawing.Tests
             }
         }
 
+        // This will fail on any platform we use libgdiplus, with any
+        // installed system fonts whose name is longer than 31 chars.
+        // macOS 10.15+ ships out of the box with a problem font
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40937", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Families_Get_ReturnsExpected()
         {

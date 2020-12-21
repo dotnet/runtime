@@ -1,14 +1,22 @@
-<Project>
-  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
+    <BuildAllOOBPackages Condition="'$(BuildAllOOBPackages)' == ''">true</BuildAllOOBPackages>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <PackagingTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\tools\</PackagingTaskAssembly>
+    <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' == 'core'">$(PackagingTaskAssembly)netcoreapp2.1\</PackagingTaskAssembly>
+    <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' != 'core'">$(PackagingTaskAssembly)net472\</PackagingTaskAssembly>
+    <PackagingTaskAssembly>$(PackagingTaskAssembly)Microsoft.DotNet.Build.Tasks.Packaging.dll</PackagingTaskAssembly>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
+    <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
@@ -24,9 +32,9 @@
     ones that might do this. After we ship a stable set of packages this target should be ran and the
     changes to the package index should be commited to the repo.
   -->
-  <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
+  <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskAssembly)"/>
   <Target Name="UpdatePackageIndexWithStableVersions"
-          BeforeTargets="Build"
+          BeforeTargets="Build;Pack"
           Condition="'$(DotNetFinalVersionKind)' == 'release'">
     <ItemGroup>
       <!--
@@ -54,7 +62,7 @@
 
   <!-- Generate a version text file we include in our packages -->
   <Target Name="GenerateVersionFileForPackages"
-          BeforeTargets="Build"
+          BeforeTargets="Build;Pack"
           DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
     <Error Condition="'$(SourceRevisionId)' == ''" Text="SourceRevisionId is not set, which means the SourceLink targets are not included in the build. Those are needed to produce a correct sha for our build outputs." />
 
@@ -66,7 +74,7 @@
 
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
           Condition="'$(ContinuousIntegrationBuild)' == 'true'"
-          AfterTargets="Build">
+          AfterTargets="Build;Pack">
     <ItemGroup>
       <_PackageReports Include="$(PackageReportDir)*.json" />
     </ItemGroup>
@@ -74,8 +82,4 @@
     <Message Condition="'@(_PackageReports)' != '' and Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
   </Target>
 
-  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
-
-  <!-- Pack is a no-op and should just invoke build. -->
-  <Target Name="Pack" DependsOnTargets="Build" />
 </Project>

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Options
 {
@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Options
     /// Used for notifications when <typeparamref name="TOptions"/> instances change.
     /// </summary>
     /// <typeparam name="TOptions">The options type.</typeparam>
-    public interface IOptionsMonitor<out TOptions>
+    public interface IOptionsMonitor<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] out TOptions>
     {
         /// <summary>
         /// Returns the current <typeparamref name="TOptions"/> instance with the <see cref="Options.DefaultName"/>.

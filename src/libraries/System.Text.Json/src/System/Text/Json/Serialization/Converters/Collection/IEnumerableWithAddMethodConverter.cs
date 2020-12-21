@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -11,24 +10,31 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
-        protected override void Add(object? value, ref ReadStack state)
+        protected override void Add(in object? value, ref ReadStack state)
         {
-            Debug.Assert(state.Current.ReturnValue is TCollection);
-            Debug.Assert(state.Current.AddMethodDelegate != null);
-            ((Action<TCollection, object?>)state.Current.AddMethodDelegate)((TCollection)state.Current.ReturnValue!, value);
+            var addMethodDelegate = ((Action<TCollection, object?>?)state.Current.JsonClassInfo.AddMethodDelegate);
+            Debug.Assert(addMethodDelegate != null);
+            addMethodDelegate((TCollection)state.Current.ReturnValue!, value);
         }
 
-        protected override void CreateCollection(ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo.ConstructorDelegate? constructorDelegate = state.Current.JsonClassInfo.CreateObject;
+            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonClassInfo.ConstructorDelegate? constructorDelegate = classInfo.CreateObject;
 
             if (constructorDelegate == null)
             {
-                ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
 
             state.Current.ReturnValue = constructorDelegate();
-            state.Current.AddMethodDelegate = GetAddMethodDelegate(options);
+
+            // Initialize add method used to populate the collection.
+            if (classInfo.AddMethodDelegate == null)
+            {
+                // We verified this exists when we created the converter in the enumerable converter factory.
+                classInfo.AddMethodDelegate = options.MemberAccessorStrategy.CreateAddMethodDelegate<TCollection>();
+            }
         }
 
         protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
@@ -56,7 +62,8 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
-                if (!converter.TryWrite(writer, enumerator.Current, options, ref state))
+                object? element = enumerator.Current;
+                if (!converter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
@@ -64,19 +71,6 @@ namespace System.Text.Json.Serialization.Converters
             } while (enumerator.MoveNext());
 
             return true;
-        }
-
-        private Action<TCollection, object?>? _addMethodDelegate;
-
-        internal Action<TCollection, object?> GetAddMethodDelegate(JsonSerializerOptions options)
-        {
-            if (_addMethodDelegate == null)
-            {
-                // We verified this exists when we created the converter in the enumerable converter factory.
-                _addMethodDelegate = options.MemberAccessorStrategy.CreateAddMethodDelegate<TCollection>();
-            }
-
-            return _addMethodDelegate;
         }
     }
 }

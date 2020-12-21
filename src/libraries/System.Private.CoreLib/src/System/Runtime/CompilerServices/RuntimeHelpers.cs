@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Reflection;
 using Internal.Runtime.CompilerServices;
 
@@ -11,6 +10,9 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
+        // The special dll name to be used for DllImport of QCalls
+        internal const string QCall = "QCall";
+
         public delegate void TryCode(object? userData);
 
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
@@ -27,46 +29,43 @@ namespace System.Runtime.CompilerServices
 
             (int offset, int length) = range.GetOffsetAndLength(array.Length);
 
+            T[] dest;
+
             if (typeof(T).IsValueType || typeof(T[]) == array.GetType())
             {
-                // We know the type of the array to be exactly T[].
+                // We know the type of the array to be exactly T[] or an array variance
+                // compatible value type substitution like int[] <-> uint[].
 
                 if (length == 0)
                 {
                     return Array.Empty<T>();
                 }
 
-                var dest = new T[length];
-                Buffer.Memmove(
-                    ref MemoryMarshal.GetArrayDataReference(dest),
-                    ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), offset),
-                    (uint)length);
-                return dest;
+                dest = new T[length];
             }
             else
             {
-                // The array is actually a U[] where U:T.
-                T[] dest = (T[])Array.CreateInstance(array.GetType().GetElementType()!, length);
-                Array.Copy(array, offset, dest, 0, length);
-                return dest;
+                // The array is actually a U[] where U:T. We'll make sure to create
+                // an array of the exact same backing type. The cast to T[] will
+                // never fail.
+
+                dest = Unsafe.As<T[]>(Array.CreateInstance(array.GetType().GetElementType()!, length));
             }
+
+            // In either case, the newly-allocated array is the exact same type as the
+            // original incoming array. It's safe for us to Buffer.Memmove the contents
+            // from the source array to the destination array, otherwise the contents
+            // wouldn't have been valid for the source array in the first place.
+
+            Buffer.Memmove(
+                ref MemoryMarshal.GetArrayDataReference(dest),
+                ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), offset),
+                (uint)length);
+
+            return dest;
         }
 
-        public static object GetUninitializedObject(Type type)
-        {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-            }
-
-            if (!type.IsRuntimeImplemented())
-            {
-                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
-            }
-
-            return GetUninitializedObjectInternal(type);
-        }
-
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData)
         {
             if (code == null)
@@ -87,18 +86,22 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void PrepareContractedDelegate(Delegate d)
         {
         }
 
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ProbeForSufficientStack()
         {
         }
 
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void PrepareConstrainedRegions()
         {
         }
 
+        [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void PrepareConstrainedRegionsNoOP()
         {
         }

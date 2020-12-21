@@ -4,6 +4,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="WebHeaderCollectionTest.cs" />
-    <Compile Include="LoggingTest.cs" />
   </ItemGroup>
 </Project>

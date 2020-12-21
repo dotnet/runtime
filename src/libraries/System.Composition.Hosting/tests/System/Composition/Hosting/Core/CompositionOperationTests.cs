@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -10,7 +9,6 @@ namespace System.Composition.Hosting.Core.Tests
     public class CompositionOperationTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void Run_ValidContextAndAction_ReturnsExpected()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -50,7 +48,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void Run_NullActivator_ThrowsArgumentNullException()
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
@@ -63,7 +60,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AddNonPrequisiteAction_NullAction_ThrowsArgumentNullException()
         {
             object Activator(LifetimeContext context, CompositionOperation operation)
@@ -82,7 +78,6 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AddPostCompositionAction_NullAction_ThrowsArgumentNullException()
         {
             object Activator(LifetimeContext context, CompositionOperation operation)

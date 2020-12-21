@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
@@ -13,7 +12,9 @@ namespace System.Text.Json.Serialization.Tests
             get
             {
                 yield return new object[] { typeof(SimpleTestStruct), SimpleTestStruct.s_data };
+                yield return new object[] { typeof(SimpleTestStructWithFields), SimpleTestStructWithFields.s_data };
                 yield return new object[] { typeof(SimpleTestClass), SimpleTestClass.s_data };
+                yield return new object[] { typeof(SimpleTestClassWithFields), SimpleTestClassWithFields.s_data };
                 yield return new object[] { typeof(SimpleTestClassWithNullables), SimpleTestClassWithNullables.s_data };
                 yield return new object[] { typeof(SimpleTestClassWithNulls), SimpleTestClassWithNulls.s_data };
                 yield return new object[] { typeof(SimpleTestClassWithSimpleObject), SimpleTestClassWithSimpleObject.s_data };
@@ -51,12 +52,15 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { typeof(ClassWithComplexObjects), ClassWithComplexObjects.s_data };
             }
         }
+
         public static IEnumerable<object[]> WriteSuccessCases
         {
             get
             {
                 yield return new object[] { new SimpleTestStruct() };
+                yield return new object[] { new SimpleTestStructWithFields() };
                 yield return new object[] { new SimpleTestClass() };
+                yield return new object[] { new SimpleTestClassWithFields() };
                 yield return new object[] { new SimpleTestClassWithNullables() };
                 yield return new object[] { new SimpleTestClassWithNulls() };
                 yield return new object[] { new SimpleTestClassWithSimpleObject() };

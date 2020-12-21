@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +14,7 @@ namespace System.IO.Pipes.Tests
     /// The Specific NamedPipe tests cover edge cases or otherwise narrow cases that
     /// show up within particular server/client directional combinations.
     /// </summary>
-    public class NamedPipeTest_Specific : NamedPipeTestBase
+    public class NamedPipeTest_Specific
     {
         [Fact]
         public void InvalidConnectTimeout_Throws_ArgumentOutOfRangeException()
@@ -40,7 +38,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelConnectToNonExistentServer_Throws_OperationCanceledException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
@@ -60,7 +58,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses bidirectional sockets
         public void ConnectWithConflictingDirections_Throws_UnauthorizedAccessException()
         {
-            string serverName1 = GetUniquePipeName();
+            string serverName1 = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeServerStream server = new NamedPipeServerStream(serverName1, PipeDirection.Out))
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", serverName1, PipeDirection.Out))
             {
@@ -68,7 +66,7 @@ namespace System.IO.Pipes.Tests
                 Assert.False(client.IsConnected);
             }
 
-            string serverName2 = GetUniquePipeName();
+            string serverName2 = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeServerStream server = new NamedPipeServerStream(serverName2, PipeDirection.In))
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", serverName2, PipeDirection.In))
             {
@@ -82,7 +80,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(3)]
         public async Task MultipleWaitingClients_ServerServesOneAtATime(int numClients)
         {
-            string name = GetUniquePipeName();
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeServerStream server = new NamedPipeServerStream(name))
             {
                 var clients = new List<Task>(from i in Enumerable.Range(0, numClients) select ConnectClientAndReadAsync());
@@ -117,7 +115,7 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void MaxNumberOfServerInstances_TooManyServers_Throws()
         {
-            string name = GetUniquePipeName();
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
 
             using (new NamedPipeServerStream(name, PipeDirection.InOut, 1))
             {
@@ -154,7 +152,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(4)]
         public async Task MultipleServers_ServeMultipleClientsConcurrently(int numServers)
         {
-            string name = GetUniquePipeName();
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
 
             var servers = new NamedPipeServerStream[numServers];
             var clients = new NamedPipeClientStream[servers.Length];
@@ -206,7 +204,7 @@ namespace System.IO.Pipes.Tests
             byte[] received4 = new byte[] { 0, 0, 0, 0 };
             byte[] received5 = new byte[] { 0, 0 };
             byte[] received6 = new byte[] { 0, 0, 0, 0 };
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
 
             using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message, serverOptions))
             {
@@ -290,7 +288,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't support MaxNumberOfServerInstances
         public async Task Windows_Get_NumberOfServerInstances_Succeed()
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
 
             using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3))
             {
@@ -316,7 +314,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Win32 P/Invokes to verify the user name
         public async Task Windows_GetImpersonationUserName_Succeed(TokenImpersonationLevel level, bool expectedResult)
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
 
             using (var server = new NamedPipeServerStream(pipeName))
             {
@@ -350,7 +348,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invoke to verify the user name
         public async Task Unix_GetImpersonationUserName_Succeed()
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
 
             using (var server = new NamedPipeServerStream(pipeName))
             using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
@@ -370,7 +368,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix currently doesn't support message mode
         public void Unix_MessagePipeTransmissionMode()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.InOut, 1, PipeTransmissionMode.Message));
+            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), PipeDirection.InOut, 1, PipeTransmissionMode.Message));
         }
 
         [Theory]
@@ -381,7 +379,7 @@ namespace System.IO.Pipes.Tests
         public static void Unix_BufferSizeRoundtripping(PipeDirection direction)
         {
             int desiredBufferSize = 0;
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, desiredBufferSize, desiredBufferSize))
             using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut))
             {
@@ -416,7 +414,7 @@ namespace System.IO.Pipes.Tests
         public static void Windows_BufferSizeRoundtripping()
         {
             int desiredBufferSize = 10;
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, desiredBufferSize, desiredBufferSize))
             using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In))
             {
@@ -441,12 +439,15 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        public void PipeTransmissionMode_Returns_Byte()
+        public async Task PipeTransmissionMode_Returns_Byte()
         {
-            using (ServerClientPair pair = CreateServerClientPair())
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
             {
-                Assert.Equal(PipeTransmissionMode.Byte, pair.writeablePipe.TransmissionMode);
-                Assert.Equal(PipeTransmissionMode.Byte, pair.readablePipe.TransmissionMode);
+                await Task.WhenAll(server.WaitForConnectionAsync(), client.ConnectAsync());
+                Assert.Equal(PipeTransmissionMode.Byte, server.TransmissionMode);
+                Assert.Equal(PipeTransmissionMode.Byte, client.TransmissionMode);
             }
         }
 
@@ -454,7 +455,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't currently support message mode
         public void Windows_SetReadModeTo__PipeTransmissionModeByte()
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
             {
@@ -495,7 +496,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix doesn't currently support message mode
         public void Unix_SetReadModeTo__PipeTransmissionModeByte()
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
             {
@@ -535,7 +536,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In, PipeDirection.Out)]
         public void InvalidReadMode_Throws_ArgumentOutOfRangeException(PipeDirection serverDirection, PipeDirection clientDirection)
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(pipeName, serverDirection, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             using (var client = new NamedPipeClientStream(".", pipeName, clientDirection))
             {
@@ -548,7 +549,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks MaxLength for PipeName on Unix
         public void NameTooLong_MaxLengthPerPlatform()
         {
@@ -579,11 +580,11 @@ namespace System.IO.Pipes.Tests
 
             // Validate the length was expected
             string path = (string)e.ActualValue;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (OperatingSystem.IsLinux())
             {
                 Assert.Equal(108, path.Length);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 Assert.Equal(104, path.Length);
             }
@@ -596,7 +597,7 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public void ClientConnect_Throws_Timeout_When_Pipe_Not_Found()
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
             {
                 Assert.Throws<TimeoutException>(() => client.Connect(91));
@@ -607,7 +608,7 @@ namespace System.IO.Pipes.Tests
         [MemberData(nameof(GetCancellationTokens))]
         public async Task ClientConnectAsync_Throws_Timeout_When_Pipe_Not_Found(CancellationToken cancellationToken)
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
             {
                 Task waitingClient = client.ConnectAsync(92, cancellationToken);
@@ -619,7 +620,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Unix ignores MaxNumberOfServerInstances and second client also connects.
         public void ClientConnect_Throws_Timeout_When_Pipe_Busy()
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
 
             using (NamedPipeServerStream server = new NamedPipeServerStream(pipeName))
             using (NamedPipeClientStream firstClient = new NamedPipeClientStream(pipeName))
@@ -643,7 +644,7 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Unix ignores MaxNumberOfServerInstances and second client also connects.
         public async Task ClientConnectAsync_With_Cancellation_Throws_Timeout_When_Pipe_Busy(CancellationToken cancellationToken)
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
 
             using (NamedPipeServerStream server = new NamedPipeServerStream(pipeName))
             using (NamedPipeClientStream firstClient = new NamedPipeClientStream(pipeName))

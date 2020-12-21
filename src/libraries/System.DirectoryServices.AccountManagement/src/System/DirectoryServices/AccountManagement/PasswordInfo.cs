@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -19,7 +18,7 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // LastPasswordSet
-        private Nullable<DateTime> _lastPasswordSet = null;
+        private Nullable<DateTime> _lastPasswordSet;
         private LoadState _lastPasswordSetLoaded = LoadState.NotSet;
 
         public Nullable<DateTime> LastPasswordSet
@@ -31,7 +30,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // LastBadPasswordAttempt
-        private Nullable<DateTime> _lastBadPasswordAttempt = null;
+        private Nullable<DateTime> _lastBadPasswordAttempt;
         private LoadState _lastBadPasswordAttemptLoaded = LoadState.NotSet;
 
         public Nullable<DateTime> LastBadPasswordAttempt
@@ -43,7 +42,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // PasswordNotRequired
-        private bool _passwordNotRequired = false;
+        private bool _passwordNotRequired;
         private LoadState _passwordNotRequiredChanged = LoadState.NotSet;
 
         public bool PasswordNotRequired
@@ -61,7 +60,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // PasswordNeverExpires
-        private bool _passwordNeverExpires = false;
+        private bool _passwordNeverExpires;
         private LoadState _passwordNeverExpiresChanged = LoadState.NotSet;
 
         public bool PasswordNeverExpires
@@ -79,9 +78,9 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // UserCannotChangePassword
-        private bool _cannotChangePassword = false;
+        private bool _cannotChangePassword;
         private LoadState _cannotChangePasswordChanged = LoadState.NotSet;
-        private bool _cannotChangePasswordRead = false;
+        private bool _cannotChangePasswordRead;
 
         // For this property we are doing an on demand load.  The store will not load this property when load is called beacuse
         // the loading of this property is perf intensive.  HandleGet still needs to be called to load the other object properties if
@@ -109,7 +108,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // AllowReversiblePasswordEncryption
-        private bool _allowReversiblePasswordEncryption = false;
+        private bool _allowReversiblePasswordEncryption;
         private LoadState _allowReversiblePasswordEncryptionChanged = LoadState.NotSet;
 
         public bool AllowReversiblePasswordEncryption
@@ -130,7 +129,7 @@ namespace System.DirectoryServices.AccountManagement
         // Methods exposed to the public through AuthenticablePrincipal
         //
 
-        private string _storedNewPassword = null;
+        private string _storedNewPassword;
 
         public void SetPassword(string newPassword)
         {
@@ -167,7 +166,7 @@ namespace System.DirectoryServices.AccountManagement
             _owningPrincipal.GetStoreCtxToUse().ChangePassword(_owningPrincipal, oldPassword, newPassword);
         }
 
-        private bool _expirePasswordImmediately = false;
+        private bool _expirePasswordImmediately;
 
         public void ExpirePasswordNow()
         {

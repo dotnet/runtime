@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -197,13 +196,7 @@ namespace System.Security.Cryptography.Xml
             if (bytes == null)
                 return NullString;
 
-            StringBuilder builder = new StringBuilder(bytes.Length * 2);
-            foreach (byte b in bytes)
-            {
-                builder.Append(b.ToString("x2", CultureInfo.InvariantCulture));
-            }
-
-            return builder.ToString();
+            return HexConverter.ToString(bytes, HexConverter.Casing.Lower);
         }
 
         /// <summary>

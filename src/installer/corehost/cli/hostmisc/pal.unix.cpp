@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#if defined(TARGET_FREEBSD)
+#define _WITH_GETLINE
+#endif
+
+#include <getexepath.h>
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"
@@ -13,6 +17,7 @@
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <ctime>
+#include <locale>
 #include <pwd.h>
 #include "config.h"
 
@@ -20,12 +25,8 @@
 #include <mach-o/dyld.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
-#endif
-
-#if defined(TARGET_LINUX)
-#define symlinkEntrypointExecutable "/proc/self/exe"
-#elif !defined(TARGET_OSX)
-#define symlinkEntrypointExecutable "/proc/curproc/exe"
+#elif defined(__sun)
+#include <sys/utsname.h>
 #endif
 
 #if !HAVE_DIRENT_D_TYPE
@@ -35,7 +36,15 @@
 #define DT_LNK 10
 #endif
 
-pal::string_t pal::to_string(int value) { return std::to_string(value); }
+#ifdef __linux__
+#define PAL_CWD_SIZE 0
+#elif defined(MAXPATHLEN)
+#define PAL_CWD_SIZE MAXPATHLEN
+#elif defined(PATH_MAX)
+#define PAL_CWD_SIZE PATH_MAX
+#else
+#error "Don't know how to obtain max path on this platform"
+#endif
 
 pal::string_t pal::to_lower(const pal::string_t& in)
 {
@@ -66,7 +75,7 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
-void* pal::map_file_readonly(const pal::string_t& path, size_t& length)
+static void* map_file(const pal::string_t& path, size_t* length, int prot, int flags)
 {
     int fd = open(path.c_str(), O_RDONLY);
     if (fd == -1)
@@ -82,25 +91,39 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t& length)
         close(fd);
         return nullptr;
     }
+    size_t size = buf.st_size;
 
-    length = buf.st_size;
-    void* address = mmap(nullptr, length, PROT_READ, MAP_SHARED, fd, 0);
+    if (length != nullptr)
+    {
+        *length = size;
+    }
 
-    if(address == nullptr)
+    void* address = mmap(nullptr, size, prot, flags, fd, 0);
+
+    if (address == MAP_FAILED)
     {
         trace::error(_X("Failed to map file. mmap(%s) failed with error %d"), path.c_str(), errno);
-        close(fd);
-        return nullptr;
+        address = nullptr;
     }
 
     close(fd);
     return address;
 }
 
+const void* pal::mmap_read(const string_t& path, size_t* length)
+{
+    return map_file(path, length, PROT_READ, MAP_SHARED);
+}
+
+void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
+{
+    return map_file(path, length, PROT_READ | PROT_WRITE, MAP_PRIVATE);
+}
+
 bool pal::getcwd(pal::string_t* recv)
 {
     recv->clear();
-    pal::char_t* buf = ::getcwd(nullptr, 0);
+    pal::char_t* buf = ::getcwd(nullptr, PAL_CWD_SIZE);
     if (buf == nullptr)
     {
         if (errno == ENOENT)
@@ -111,6 +134,7 @@ bool pal::getcwd(pal::string_t* recv)
         trace::error(_X("getcwd() failed: %s"), strerror(errno));
         return false;
     }
+
     recv->assign(buf);
     ::free(buf);
     return true;
@@ -486,10 +510,10 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
 pal::string_t trim_quotes(pal::string_t stringToCleanup)
 {
     pal::char_t quote_array[2] = {'\"', '\''};
-    for(size_t index = 0; index < sizeof(quote_array)/sizeof(quote_array[0]); index++)
+    for (size_t index = 0; index < sizeof(quote_array)/sizeof(quote_array[0]); index++)
     {
         size_t pos = stringToCleanup.find(quote_array[index]);
-        while(pos != std::string::npos)
+        while (pos != std::string::npos)
         {
             stringToCleanup = stringToCleanup.erase(pos, 1);
             pos = stringToCleanup.find(quote_array[index]);
@@ -513,7 +537,6 @@ pal::string_t pal::get_current_os_rid_platform()
     // We will, instead, use kern.osrelease and use its major version number
     // as a means to formulate the OSX 10.X RID.
     //
-    // Needless to say, this will need to be updated if OSX RID were to become 11.* ever.
     size_t size = sizeof(str);
     int ret = sysctlbyname("kern.osrelease", str, &size, nullptr, 0);
     if (ret == 0)
@@ -522,18 +545,31 @@ pal::string_t pal::get_current_os_rid_platform()
         size_t pos = release.find('.');
         if (pos != std::string::npos)
         {
-            // Extract the major version and subtract 4 from it
-            // to get the Minor version used in OSX versioning scheme.
-            // That is, given a version 10.X.Y, we will get X below.
-            int minorVersion = stoi(release.substr(0, pos)) - 4;
-            if (minorVersion < 10)
+            int majorVersion = stoi(release.substr(0, pos));
+            // compat path with 10.x
+            if (majorVersion < 20)
             {
-                // On OSX, our minimum supported RID is 10.12.
-                minorVersion = 12;
-            }
+                // Extract the major version and subtract 4 from it
+                // to get the Minor version used in OSX versioning scheme.
+                // That is, given a version 10.X.Y, we will get X below.
+                //
+                // macOS Cataline 10.15.5 has kernel 19.5.0
+                int minorVersion = majorVersion - 4;
+                if (minorVersion < 10)
+                {
+                    // On OSX, our minimum supported RID is 10.12.
+                    minorVersion = 12;
+                }
 
-            ridOS.append(_X("osx.10."));
-            ridOS.append(pal::to_string(minorVersion));
+                ridOS.append(_X("osx.10."));
+                ridOS.append(pal::to_string(minorVersion));
+            }
+            else
+            {
+                // 11.0 shipped with kernel 20.0
+                ridOS.append(_X("osx.11."));
+                ridOS.append(pal::to_string(majorVersion - 20));
+            }
         }
     }
 
@@ -544,20 +580,85 @@ pal::string_t pal::get_current_os_rid_platform()
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
-
     char str[256];
-
     size_t size = sizeof(str);
     int ret = sysctlbyname("kern.osrelease", str, &size, NULL, 0);
+
     if (ret == 0)
     {
-        char *pos = strchr(str,'.');
+        char *pos = strchr(str, '.');
         if (pos)
         {
-            *pos = '\0';
+            ridOS.append(_X("freebsd."))
+                 .append(str, pos - str);
         }
-        ridOS.append(_X("freebsd."));
-        ridOS.append(str);
+    }
+
+    return ridOS;
+}
+#elif defined(TARGET_ILLUMOS)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    // Code:
+    //   struct utsname u;
+    //   if (uname(&u) != -1)
+    //       printf("sysname: %s, release: %s, version: %s, machine: %s\n", u.sysname, u.release, u.version, u.machine);
+    //
+    // Output examples:
+    //   on OmniOS
+    //       sysname: SunOS, release: 5.11, version: omnios-r151018-95eaa7e, machine: i86pc
+    //   on OpenIndiana Hipster:
+    //       sysname: SunOS, release: 5.11, version: illumos-63878f749f, machine: i86pc
+    //   on SmartOS:
+    //       sysname: SunOS, release: 5.11, version: joyent_20200408T231825Z, machine: i86pc
+
+    pal::string_t ridOS;
+    struct utsname utsname_obj;
+    if (uname(&utsname_obj) < 0)
+    {
+        return ridOS;
+    }
+
+    if (strncmp(utsname_obj.version, "omnios", strlen("omnios")) == 0)
+    {
+        ridOS.append(_X("omnios."))
+             .append(utsname_obj.version, strlen("omnios-r"), 2); // e.g. omnios.15
+    }
+    else if (strncmp(utsname_obj.version, "illumos-", strlen("illumos-")) == 0)
+    {
+        ridOS.append(_X("openindiana")); // version-less
+    }
+    else if (strncmp(utsname_obj.version, "joyent_", strlen("joyent_")) == 0)
+    {
+        ridOS.append(_X("smartos."))
+             .append(utsname_obj.version, strlen("joyent_"), 4); // e.g. smartos.2020
+    }
+
+    return ridOS;
+}
+#elif defined(__sun)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    // Code:
+    //   struct utsname u;
+    //   if (uname(&u) != -1)
+    //       printf("sysname: %s, release: %s, version: %s, machine: %s\n", u.sysname, u.release, u.version, u.machine);
+    //
+    // Output example on Solaris 11:
+    //       sysname: SunOS, release: 5.11, version: 11.3, machine: i86pc
+
+    pal::string_t ridOS;
+    struct utsname utsname_obj;
+    if (uname(&utsname_obj) < 0)
+    {
+        return ridOS;
+    }
+
+    char *pos = strchr(utsname_obj.version, '.');
+    if (pos)
+    {
+        ridOS.append(_X("solaris."))
+             .append(utsname_obj.version, pos - utsname_obj.version); // e.g. solaris.11
     }
 
     return ridOS;
@@ -687,73 +788,33 @@ pal::string_t pal::get_current_os_rid_platform()
 }
 #endif
 
-#if defined(TARGET_OSX)
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
-    uint32_t path_length = 0;
-    if (_NSGetExecutablePath(nullptr, &path_length) == -1)
+    char* path = getexepath();
+    if (!path)
     {
-        char path_buf[path_length];
-        if (_NSGetExecutablePath(path_buf, &path_length) == 0)
-        {
-            recv->assign(path_buf);
-            return true;
-        }
-    }
-    return false;
-}
-#elif defined(TARGET_FREEBSD)
-bool pal::get_own_executable_path(pal::string_t* recv)
-{
-    int mib[4];
-    mib[0] = CTL_KERN;
-    mib[1] = KERN_PROC;
-    mib[2] = KERN_PROC_PATHNAME;
-    mib[3] = -1;
-    char buf[PATH_MAX];
-    size_t cb = sizeof(buf);
-    int error_code = 0;
-    error_code = sysctl(mib, 4, buf, &cb, NULL, 0);
-    if (error_code == 0)
-    {
-        recv->assign(buf);
-        return true;
+        return false;
     }
 
-    // ENOMEM
-    if (error_code == ENOMEM)
-    {
-        size_t len = sysctl(mib, 4, NULL, NULL, NULL, 0);
-        std::unique_ptr<char[]> buffer (new (std::nothrow) char[len]);
-
-        if (buffer == NULL)
-        {
-            return false;
-        }
-
-        error_code = sysctl(mib, 4, buffer.get(), &len, NULL, 0);
-        if (error_code == 0)
-        {
-            recv->assign(buffer.get());
-            return true;
-        }
-    }
-    return false;
-}
-#else
-bool pal::get_own_executable_path(pal::string_t* recv)
-{
-    // Just return the symlink to the exe from /proc
-    // We'll call realpath on it later
-    recv->assign(symlinkEntrypointExecutable);
+    recv->assign(path);
+    free(path);
     return true;
 }
-#endif
 
 bool pal::get_own_module_path(string_t* recv)
 {
     Dl_info info;
     if (dladdr((void *)&pal::get_own_module_path, &info) == 0)
+        return false;
+
+    recv->assign(info.dli_fname);
+    return true;
+}
+
+bool pal::get_method_module_path(string_t* recv, void* method)
+{
+    Dl_info info;
+    if (dladdr(method, &info) == 0)
         return false;
 
     recv->assign(info.dli_fname);

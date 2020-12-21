@@ -5,7 +5,7 @@
  */
 #include <config.h>
 
-#if defined(HOST_WATCHOS) && (__WATCH_OS_VERSION_MIN_REQUIRED >= __WATCHOS_3_0)
+#if (defined(HOST_WATCHOS) && (__WATCH_OS_VERSION_MIN_REQUIRED >= __WATCHOS_3_0)) || defined(HOST_MACCAT)
 /* emitted by clang:
  *   > /Users/lewurm/work/mono-watch4/mono/utils/mono-log-darwin.c:35:2: error: 'asl_log' is \
  *   > deprecated: first deprecated in watchOS 3.0 - os_log(3) has replaced \

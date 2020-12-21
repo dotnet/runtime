@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 
 #if !HIDE_XSL
 using System.Xml.Xsl.Runtime;
@@ -54,10 +54,6 @@ namespace System.Xml
         // Text settings
         private Encoding _encoding;
 
-#if FEATURE_LEGACYNETCF
-        private bool dontWriteEncodingTag;
-#endif
-
         private bool _omitXmlDecl;
         private NewLineHandling _newLineHandling;
         private string _newLineChars;
@@ -77,9 +73,9 @@ namespace System.Xml
         private List<XmlQualifiedName> _cdataSections = new List<XmlQualifiedName>();
         private bool _doNotEscapeUriAttributes;
         private bool _mergeCDataSections;
-        private string _mediaType;
-        private string _docTypeSystem;
-        private string _docTypePublic;
+        private string? _mediaType;
+        private string? _docTypeSystem;
+        private string? _docTypePublic;
         private XmlStandalone _standalone;
         private bool _autoXmlDecl;
 
@@ -118,27 +114,13 @@ namespace System.Xml
             {
                 return _encoding;
             }
+            [MemberNotNull(nameof(_encoding))]
             set
             {
                 CheckReadOnly(nameof(Encoding));
                 _encoding = value;
             }
         }
-
-#if FEATURE_LEGACYNETCF
-        internal bool DontWriteEncodingTag
-        {
-            get
-            {
-                return dontWriteEncodingTag;
-            }
-            set
-            {
-                CheckReadOnly(nameof(DontWriteEncodingTag));
-                dontWriteEncodingTag = value;
-            }
-        }
-#endif
 
         // True if an xml declaration should *not* be written.
         public bool OmitXmlDeclaration
@@ -169,6 +151,7 @@ namespace System.Xml
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
+
                 _newLineHandling = value;
             }
         }
@@ -180,6 +163,7 @@ namespace System.Xml
             {
                 return _newLineChars;
             }
+            [MemberNotNull(nameof(_newLineChars))]
             set
             {
                 CheckReadOnly(nameof(NewLineChars));
@@ -188,6 +172,7 @@ namespace System.Xml
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
+
                 _newLineChars = value;
             }
         }
@@ -213,6 +198,7 @@ namespace System.Xml
             {
                 return _indentChars;
             }
+            [MemberNotNull(nameof(_indentChars))]
             set
             {
                 CheckReadOnly(nameof(IndentChars));
@@ -221,6 +207,7 @@ namespace System.Xml
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
+
                 _indentChars = value;
             }
         }
@@ -346,7 +333,7 @@ namespace System.Xml
         // can now be set independently of each other.
         public XmlWriterSettings Clone()
         {
-            XmlWriterSettings clonedSettings = MemberwiseClone() as XmlWriterSettings;
+            XmlWriterSettings clonedSettings = (MemberwiseClone() as XmlWriterSettings)!;
 
             // Deep clone shared settings that are not immutable
             clonedSettings._cdataSections = new List<XmlQualifiedName>(_cdataSections);
@@ -396,7 +383,7 @@ namespace System.Xml
         }
 
         // Used in Html writer when writing Meta element.  Null denotes the default media type.
-        internal string MediaType
+        internal string? MediaType
         {
             get
             {
@@ -410,7 +397,7 @@ namespace System.Xml
         }
 
         // System Id in doc-type declaration.  Null denotes the absence of the system Id.
-        internal string DocTypeSystem
+        internal string? DocTypeSystem
         {
             get
             {
@@ -424,7 +411,7 @@ namespace System.Xml
         }
 
         // Public Id in doc-type declaration.  Null denotes the absence of the public Id.
-        internal string DocTypePublic
+        internal string? DocTypePublic
         {
             get
             {
@@ -503,7 +490,7 @@ namespace System.Xml
                 newSettings.CloseOutput = true;
             }
 
-            FileStream fs = null;
+            FileStream? fs = null;
             try
             {
                 // open file stream
@@ -725,6 +712,9 @@ namespace System.Xml
         //
         // Private methods
         //
+        [MemberNotNull(nameof(_encoding))]
+        [MemberNotNull(nameof(_newLineChars))]
+        [MemberNotNull(nameof(_indentChars))]
         private void Initialize()
         {
             _encoding = Encoding.UTF8;
@@ -756,7 +746,7 @@ namespace System.Xml
         private XmlWriter AddConformanceWrapper(XmlWriter baseWriter)
         {
             ConformanceLevel confLevel = ConformanceLevel.Auto;
-            XmlWriterSettings baseWriterSettings = baseWriter.Settings;
+            XmlWriterSettings? baseWriterSettings = baseWriter.Settings;
             bool checkValues = false;
             bool checkNames = false;
             bool replaceNewLines = false;

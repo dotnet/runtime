@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Microsoft.Win32.SafeHandles;
@@ -94,6 +93,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34366", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void WaitAny_MaxHandles_STA()
         {
@@ -157,6 +157,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34366", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
         public static void WaitAll_SameNames()
         {
@@ -323,6 +324,7 @@ namespace System.Threading.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34366", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(SignalAndWait_MemberData))]
         public static void SignalAndWait(
             WaitHandle toSignal,

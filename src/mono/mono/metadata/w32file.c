@@ -788,10 +788,14 @@ ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar (void)
 gunichar2 
 ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar (void)
 {
+#if TARGET_WASM
+	return (gunichar2) '\\';	/* backslash issue https://github.com/mono/mono/issues/18933 */ 
+#else	
 	if (IS_PORTABILITY_SET)
 		return (gunichar2) '\\';	/* backslash */
 	else
 		return (gunichar2) '/';	/* forward slash */
+#endif		
 }
 
 gunichar2 
@@ -908,5 +912,9 @@ mono_filesize_from_fd (int fd)
 
 	return (gint64)buf.st_size;
 }
+
+#else
+
+MONO_EMPTY_SOURCE_FILE (w32file);
 
 #endif

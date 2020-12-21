@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
 using System.Text;
@@ -40,8 +39,7 @@ namespace System.Net.Mime
             EncodedStreamFactory factory = new EncodedStreamFactory();
             IEncodableStream stream = factory.GetEncoderForHeader(encoding, base64Encoding, headerLength);
 
-            byte[] buffer = encoding.GetBytes(value);
-            stream.EncodeBytes(buffer, 0, buffer.Length);
+            stream.EncodeString(value, encoding);
             return stream.GetEncodedString();
         }
 

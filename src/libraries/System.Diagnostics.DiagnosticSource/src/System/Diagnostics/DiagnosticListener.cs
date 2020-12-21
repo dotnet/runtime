@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Collections.Generic;
@@ -263,7 +262,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// We don't have Activities in NetStanard1.1. but it is a pain to ifdef out all references to the Activity type
+        /// We don't have Activities in NetStandard1.1. but it is a pain to ifdef out all references to the Activity type
         /// in DiagnosticSubscription so we just define a private type for it here just so things compile.
         /// </summary>
 #if NETSTANDARD1_1
@@ -279,7 +278,7 @@ namespace System.Diagnostics
             //    - IsEnabled1Arg invoked for DiagnosticSource.IsEnabled(string)
             //    - IsEnabled3Arg invoked for DiagnosticSource.IsEnabled(string, obj, obj)
             // Subscriber MUST set both IsEnabled1Arg and IsEnabled3Arg or none of them:
-            //     when Predicate<string> is provided in DiagosticListener.Subscribe,
+            //     when Predicate<string> is provided in DiagnosticListener.Subscribe,
             //       - IsEnabled1Arg is set to predicate
             //       - IsEnabled3Arg falls back to predicate ignoring extra arguments.
             //     similarly, when Func<string, obj, obj, bool> is provided,

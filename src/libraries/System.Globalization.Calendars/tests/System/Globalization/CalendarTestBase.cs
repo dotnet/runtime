@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -430,8 +429,8 @@ namespace System.Globalization.Tests
             Calendar calendar = Calendar;
             Assert.All(DateTime_TestData(calendar), dt =>
             {
-                // JapaneseCalendar throws on Unix (ICU), but not on Windows
-                if ((calendar is JapaneseCalendar && PlatformDetection.IsWindows) || calendar is HebrewCalendar || calendar is TaiwanLunisolarCalendar || calendar is JapaneseLunisolarCalendar)
+                // JapaneseCalendar throws on ICU, but not on NLS
+                if ((calendar is JapaneseCalendar && PlatformDetection.IsNlsGlobalization) || calendar is HebrewCalendar || calendar is TaiwanLunisolarCalendar || calendar is JapaneseLunisolarCalendar)
                 {
                     calendar.GetEra(dt);
                 }

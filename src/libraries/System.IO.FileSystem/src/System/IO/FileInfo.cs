@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Runtime.Versioning;
 
 #if MS_IO_REDIST
 namespace Microsoft.IO
@@ -99,9 +99,18 @@ namespace System.IO
             return new FileInfo(destinationPath, isNormalized: true);
         }
 
-        public FileStream Create() => File.Create(NormalizedPath);
+        public FileStream Create()
+        {
+            FileStream fileStream = File.Create(NormalizedPath);
+            Invalidate();
+            return fileStream;
+        }
 
-        public override void Delete() => FileSystem.DeleteFile(FullPath);
+        public override void Delete()
+        {
+            FileSystem.DeleteFile(FullPath);
+            Invalidate();
+        }
 
         public FileStream Open(FileMode mode)
             => Open(mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None);
@@ -174,8 +183,10 @@ namespace System.IO
             return new FileInfo(destinationFileName);
         }
 
+        [SupportedOSPlatform("windows")]
         public void Decrypt() => File.Decrypt(FullPath);
 
+        [SupportedOSPlatform("windows")]
         public void Encrypt() => File.Encrypt(FullPath);
     }
 }

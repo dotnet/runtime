@@ -103,6 +103,7 @@ __LogsDir="$__RootBinDir/log/$__BuildType"
 
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __CrossComponentBinDir="$__BinDir"
 
 __CrossArch="$__HostArch"

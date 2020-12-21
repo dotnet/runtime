@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Configuration.Internal;
 using System.IO;
@@ -14,7 +13,7 @@ namespace System.Configuration
     // the necessary information for reporting filename / line numbers.
     // Note: these classes will go away if webdata ever decides to incorporate line numbers
     // into the default XML classes.  This class could also go away if webdata brings back
-    // the UserData property to hang any info off of any node.
+    // the UserData property to attach any info off of any node.
     public sealed class ConfigXmlDocument : XmlDocument, IConfigErrorInfo
     {
         private XmlTextReader _reader;

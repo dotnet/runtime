@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -139,8 +138,7 @@ namespace System.Linq
 
         public IPartition<TElement> Take(int count) => new OrderedPartition<TElement>(this, 0, count - 1);
 
-        [return: MaybeNull]
-        public TElement TryGetElementAt(int index, out bool found)
+        public TElement? TryGetElementAt(int index, out bool found)
         {
             if (index == 0)
             {
@@ -159,11 +157,10 @@ namespace System.Linq
             }
 
             found = false;
-            return default!;
+            return default;
         }
 
-        [return: MaybeNull]
-        public TElement TryGetFirst(out bool found)
+        public TElement? TryGetFirst(out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();
             using (IEnumerator<TElement> e = _source.GetEnumerator())
@@ -171,7 +168,7 @@ namespace System.Linq
                 if (!e.MoveNext())
                 {
                     found = false;
-                    return default!;
+                    return default;
                 }
 
                 TElement value = e.Current;
@@ -190,15 +187,14 @@ namespace System.Linq
             }
         }
 
-        [return: MaybeNull]
-        public TElement TryGetLast(out bool found)
+        public TElement? TryGetLast(out bool found)
         {
             using (IEnumerator<TElement> e = _source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
                     found = false;
-                    return default!;
+                    return default;
                 }
 
                 CachingComparer<TElement> comparer = GetComparer();
@@ -218,15 +214,14 @@ namespace System.Linq
             }
         }
 
-        [return: MaybeNull]
-        public TElement TryGetLast(int minIdx, int maxIdx, out bool found)
+        public TElement? TryGetLast(int minIdx, int maxIdx, out bool found)
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             int count = buffer._count;
             if (minIdx >= count)
             {
                 found = false;
-                return default!;
+                return default;
             }
 
             found = true;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -83,8 +82,8 @@ namespace System.Runtime.CompilerServices.Tests
             return expr;
         }
 
-        [Fact(Skip = "Not yet implemented in compiler. Final behavior may differ.")]
-        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605", TestPlatforms.Any)]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605")]
         public static void SimpleExpression()
         {
             int notVal = 0;
@@ -92,8 +91,8 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal("notVal", IntParamMethod(notVal));
         }
 
-        [Fact(Skip = "Not yet implemented in compiler. Final behavior may differ.")]
-        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605", TestPlatforms.Any)]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605")]
         public static void ComplexExpression()
         {
             int x = 5;
@@ -102,8 +101,8 @@ namespace System.Runtime.CompilerServices.Tests
                 IntParamMethod(Math.Min(x + 20, x * x)));
         }
 
-        [Fact(Skip = "Not yet implemented in compiler. Final behavior may differ.")]
-        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605", TestPlatforms.Any)]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605")]
         public static void SurroundingWhitespaceHandling()
         {
             int notVal = 0;
@@ -111,8 +110,8 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal("notVal", IntParamMethod(notVal));
         }
 
-        [Fact(Skip = "Not yet implemented in compiler. Final behavior may differ.")]
-        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605", TestPlatforms.Any)]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605")]
         public static void InternalWhitespaceHandling()
         {
             int notVal = 0;
@@ -125,8 +124,8 @@ namespace System.Runtime.CompilerServices.Tests
                     notVal + 20)));
         }
 
-        [Fact(Skip = "Not yet implemented in compiler. Final behavior may differ.")]
-        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605", TestPlatforms.Any)]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605")]
         public static void InternalCommentHandling()
         {
             int notVal = 0;
@@ -137,8 +136,8 @@ namespace System.Runtime.CompilerServices.Tests
                 ));
         }
 
-        [Fact(Skip = "Not yet implemented in compiler. Final behavior may differ.")]
-        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605", TestPlatforms.Any)]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605")]
         public static void OptionalParameterHandling()
         {
             string suppliedVal = "supplied value";
@@ -162,8 +161,8 @@ namespace System.Runtime.CompilerServices.Tests
             return expr;
         }
 
-        [Fact(Skip = "Not yet implemented in compiler. Final behavior may differ.")]
-        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605", TestPlatforms.Any)]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605")]
         public static void ExtensionMethodThisParameterHandling()
         {
             int notVal = 0;
@@ -176,8 +175,8 @@ namespace System.Runtime.CompilerServices.Tests
             return expr;
         }
 
-        [Fact(Skip = "Not yet implemented in compiler. Final behavior may differ.")]
-        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605", TestPlatforms.Any)]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/19605")]
         public static void InstanceMethodThisHandling()
         {
             var instance = new InstanceTest();

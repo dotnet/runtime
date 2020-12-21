@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -91,7 +90,7 @@ namespace Microsoft.Test.ModuleCore
                             {
                                 System.Console.WriteLine(indent + var.Desc);
                                 System.Console.WriteLine(indent + " FAILED");
-                                module.FailCount++;
+                                module.AddFailure(var.Desc);
                             }
                             else
                             {
@@ -117,7 +116,7 @@ namespace Microsoft.Test.ModuleCore
                             System.Console.WriteLine(indent + var.Desc);
                             System.Console.WriteLine(e);
                             System.Console.WriteLine(indent + " FAILED");
-                            module.FailCount++;
+                            module.AddFailure(var.Desc + Environment.NewLine + e.ToString());
                         }
                     }
                 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -431,6 +430,37 @@ namespace System.Numerics.Tests
             float t = 0.5f;
 
             Vector2 expected = new Vector2(1.0f, 2.0f);
+            Vector2 actual = Vector2.Lerp(a, b, t);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Lerp did not return the expected value.");
+        }
+
+        // A test for Lerp (Vector2f, Vector2f, float)
+        // Lerp test with values known to be innacurate with the old lerp impl
+        [Fact]
+        public void Vector2LerpTest7()
+        {
+            Vector2 a = new Vector2(0.44728136f);
+            Vector2 b = new Vector2(0.46345946f);
+
+            float t = 0.26402435f;
+
+            Vector2 expected = new Vector2(0.45155275f);
+            Vector2 actual = Vector2.Lerp(a, b, t);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Lerp did not return the expected value.");
+        }
+
+        // A test for Lerp (Vector2f, Vector2f, float)
+        // Lerp test with values known to be innacurate with the old lerp impl
+        // (Old code incorrectly gets 0.33333588)
+        [Fact]
+        public void Vector2LerpTest8()
+        {
+            Vector2 a = new Vector2(-100);
+            Vector2 b = new Vector2(0.33333334f);
+
+            float t = 1f;
+
+            Vector2 expected = new Vector2(0.33333334f);
             Vector2 actual = Vector2.Lerp(a, b, t);
             Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Lerp did not return the expected value.");
         }

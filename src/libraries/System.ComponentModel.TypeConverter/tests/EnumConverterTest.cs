@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
@@ -15,7 +14,7 @@ namespace System.ComponentModel.Tests
         private static EnumConverter s_someFlagsEnumConverter = new EnumConverter(typeof(SomeFlagsEnum));
 
         [Fact]
-        public static void CanConvertFrom_WithContext()
+        public static void CanConvertFrom_WithContext_EnumConverter()
         {
             CanConvertFrom_WithContext(new object[2, 2]
                 {
@@ -26,7 +25,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void CanConvertTo_WithContext()
+        public static void CanConvertTo_WithContext_EnumConverter()
         {
             CanConvertTo_WithContext(new object[2, 2]
                 {
@@ -37,7 +36,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertFrom_WithContext()
+        public static void ConvertFrom_WithContext_EnumConverter()
         {
             ConvertFrom_WithContext(new object[2, 3]
                 {
@@ -62,7 +61,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertTo_WithContext()
+        public static void ConvertTo_WithContext_EnumConverter()
         {
             ConvertTo_WithContext(new object[1, 3]
                 {
@@ -109,7 +108,7 @@ namespace System.ComponentModel.Tests
         public static void ConvertTo_WithContext_Negative()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => EnumConverterTests.s_someEnumConverter.ConvertTo(TypeConverterTests.s_context, null, 3, typeof(string)));
-            AssertExtensions.Throws<ArgumentException>(null, "enumType", () => new EnumConverter(typeof(Enum)).ConvertTo(TypeConverterTests.s_context, null, SomeFlagsEnum.Option1, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => new EnumConverter(typeof(Enum)).ConvertTo(TypeConverterTests.s_context, null, SomeFlagsEnum.Option1, typeof(string)));
         }
 
         [Fact]

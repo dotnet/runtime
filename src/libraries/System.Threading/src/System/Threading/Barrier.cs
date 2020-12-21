@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -13,6 +12,7 @@
 
 using System.Diagnostics;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Security;
 
 namespace System.Threading
@@ -284,6 +284,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public long AddParticipant()
         {
             try
@@ -312,6 +313,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public long AddParticipants(int participantCount)
         {
             // check dispose
@@ -484,6 +486,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void SignalAndWait()
         {
             SignalAndWait(CancellationToken.None);
@@ -504,6 +507,7 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void SignalAndWait(CancellationToken cancellationToken)
         {
 #if DEBUG
@@ -533,6 +537,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool SignalAndWait(TimeSpan timeout)
         {
             return SignalAndWait(timeout, CancellationToken.None);
@@ -560,6 +565,7 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool SignalAndWait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -587,6 +593,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool SignalAndWait(int millisecondsTimeout)
         {
             return SignalAndWait(millisecondsTimeout, CancellationToken.None);
@@ -613,6 +620,7 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool SignalAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
@@ -856,6 +864,7 @@ namespace System.Threading
         /// <param name="token">cancellation token passed to SignalAndWait</param>
         /// <param name="observedPhase">The current phase number for this thread</param>
         /// <returns>True if the event is set or the phase number changed, false if the timeout expired</returns>
+        [UnsupportedOSPlatform("browser")]
         private bool DiscontinuousWait(ManualResetEventSlim currentPhaseEvent, int totalTimeout, CancellationToken token, long observedPhase)
         {
             int maxWait = 100; // 100 ms

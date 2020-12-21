@@ -1,0 +1,253 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+//
+// clr_std/utility
+//
+// Copy of some key Standard Template Library functionality
+// See http://msdn.microsoft.com/en-us/library/bb982077.aspx for documentation.
+//
+
+#ifdef _MSC_VER
+#pragma once
+#endif
+
+#ifdef USE_STL
+#include <utility>
+#else
+#ifndef __clr_std_utility_h__
+#define __clr_std_utility_h__
+
+#include "clr_std/type_traits"
+
+namespace std
+{
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE FUNCTION move
+    template<class T> inline
+    typename remove_reference<T>::type&&
+    move(T&& arg)
+    {   // forward _Arg as movable
+        return ((typename remove_reference<T>::type&&)arg);
+    }
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE FUNCTION swap (from <algorithm>)
+    template<class T> inline
+    void swap(T& left, T& right)
+    {   // exchange values stored at left and right
+        T tmp = std::move(left);
+        left = std::move(right);
+        right = std::move(tmp);
+    }
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE FUNCTION forward
+    template<class T> inline
+    T&&
+    forward(typename identity<T>::type& _Arg)
+    {   // forward _Arg, given explicitly specified type parameter
+        return ((T&&)_Arg);
+    }
+}
+
+namespace std
+{
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE STRUCT pair
+    template<class _Ty1, class _Ty2>
+    struct pair
+    {   // store a pair of values
+        typedef pair<_Ty1, _Ty2> _Myt;
+        typedef _Ty1 first_type;
+        typedef _Ty2 second_type;
+
+        pair()
+            : first(_Ty1()), second(_Ty2())
+        {   // construct from defaults
+        }
+
+        pair(const _Ty1& _Val1, const _Ty2& _Val2)
+            : first(_Val1.first), second(_Val2.second)
+        {   // construct from specified values
+        }
+
+        template<class _Other1, class _Other2>
+        pair(pair<_Other1, _Other2>& _Right)
+            : first(_Right.first), second(_Right.second)
+        {   // construct from compatible pair
+        }
+
+        template<class _Other1, class _Other2>
+        pair(const pair<_Other1, _Other2>& _Right)
+            : first(_Right.first), second(_Right.second)
+        {   // construct from compatible pair
+        }
+
+        void swap(_Myt& _Right)
+        {   // exchange contents with _Right
+            if (this != &_Right)
+            {   // different, worth swapping
+                swap(this->first, _Right.first);
+                swap(this->second, _Right.second);
+            }
+        }
+
+        _Myt& operator=(const _Myt& _Right)
+        {   // assign from copied pair
+            this->first = _Right.first;
+            this->second = _Right.second;
+            return (*this);
+        }
+
+        typedef typename remove_reference<_Ty1>::type _Ty1x;
+        typedef typename remove_reference<_Ty2>::type _Ty2x;
+
+        pair(_Ty1x&& _Val1, _Ty2x&& _Val2)
+            : first(std::move(_Val1)),
+              second(std::move(_Val2))
+        {   // construct from specified values
+        }
+
+        pair(const _Ty1x& _Val1, _Ty2x&& _Val2)
+            : first(_Val1),
+              second(std::move(_Val2))
+        {   // construct from specified values
+        }
+
+        pair(_Ty1x&& _Val1, const _Ty2x& _Val2)
+            : first(std::move(_Val1)),
+              second(_Val2)
+        {   // construct from specified values
+        }
+
+        template<class _Other1, class _Other2>
+        pair(_Other1&& _Val1, _Other2&& _Val2)
+            : first(std::move(_Val1)),
+              second(std::move(_Val2))
+        {   // construct from moved values
+        }
+
+        template<class _Other1, class _Other2>
+        pair(pair<_Other1, _Other2>&& _Right)
+            : first(std::move(_Right.first)),
+              second(std::move(_Right.second))
+        {   // construct from moved compatible pair
+        }
+
+        pair& operator=(pair<_Ty1, _Ty2>&& _Right)
+        {   // assign from moved pair
+            this->first = std::move(_Right.first);
+            this->second = std::move(_Right.second);
+            return (*this);
+        }
+
+        void swap(_Myt&& _Right)
+        {   // exchange contents with _Right
+            if (this != &_Right)
+            {   // different, worth swapping
+                this->first = std::move(_Right.first);
+                this->second = std::move(_Right.second);
+            }
+        }
+
+        _Ty1 first;     // the first stored value
+        _Ty2 second;    // the second stored value
+    }; // struct pair
+
+    //-----------------------------------------------------------------------------------------
+    // pair TEMPLATE FUNCTIONS
+
+    template<class _Ty1, class _Ty2> inline
+    void swap(pair<_Ty1, _Ty2>& _Left, pair<_Ty1, _Ty2>& _Right)
+    {   // swap _Left and _Right pairs
+        _Left.swap(_Right);
+    }
+
+    template<class _Ty1, class _Ty2> inline
+    void swap(pair<_Ty1, _Ty2>& _Left, pair<_Ty1, _Ty2>&& _Right)
+    {   // swap _Left and _Right pairs
+        typedef pair<_Ty1, _Ty2> _Myt;
+        _Left.swap(std::forward<_Myt>(_Right));
+    }
+
+    template<class _Ty1, class _Ty2> inline
+    void swap(
+        pair<_Ty1, _Ty2>&& _Left,
+        pair<_Ty1, _Ty2>& _Right)
+    {   // swap _Left and _Right pairs
+        typedef pair<_Ty1, _Ty2> _Myt;
+        _Right.swap(std::forward<_Myt>(_Left));
+    }
+
+    template<class _Ty1, class _Ty2> inline
+    bool operator==(
+        const pair<_Ty1, _Ty2>& _Left,
+        const pair<_Ty1, _Ty2>& _Right)
+    {   // test for pair equality
+        return (_Left.first == _Right.first && _Left.second == _Right.second);
+    }
+
+    template<class _Ty1, class _Ty2> inline
+        bool operator!=(
+            const pair<_Ty1, _Ty2>& _Left,
+            const pair<_Ty1, _Ty2>& _Right)
+    {   // test for pair inequality
+        return (!(_Left == _Right));
+    }
+
+    template<class _Ty1, class _Ty2> inline
+    bool operator<(
+        const pair<_Ty1, _Ty2>& _Left,
+        const pair<_Ty1, _Ty2>& _Right)
+    {   // test if _Left < _Right for pairs
+        return (_Left.first < _Right.first ||
+            (!(_Right.first < _Left.first) && _Left.second < _Right.second));
+    }
+
+    template<class _Ty1, class _Ty2> inline
+        bool operator>(
+            const pair<_Ty1, _Ty2>& _Left,
+            const pair<_Ty1, _Ty2>& _Right)
+    {   // test if _Left > _Right for pairs
+        return (_Right < _Left);
+    }
+
+    template<class _Ty1, class _Ty2> inline
+    bool operator<=(
+        const pair<_Ty1, _Ty2>& _Left,
+        const pair<_Ty1, _Ty2>& _Right)
+    {   // test if _Left <= _Right for pairs
+        return (!(_Right < _Left));
+    }
+
+    template<class _Ty1, class _Ty2> inline
+    bool operator>=(
+        const pair<_Ty1, _Ty2>& _Left,
+        const pair<_Ty1, _Ty2>& _Right)
+    {   // test if _Left >= _Right for pairs
+        return (!(_Left < _Right));
+    }
+
+    template<class _InIt> inline
+    _InIt begin(
+        const pair<_InIt, _InIt>& _Pair)
+    {   // return first element of pair
+        return (_Pair.first);
+    }
+
+    template<class _InIt> inline
+    _InIt end(
+        const pair<_InIt, _InIt>& _Pair)
+    {   // return second element of pair
+        return (_Pair.second);
+    }
+
+} // namespace std
+
+#endif /* __clr_std_utility_h__ */
+
+#endif // !USE_STL
+
+// Help the VIM editor figure out what kind of file this no-extension file is.
+// vim: filetype=cpp

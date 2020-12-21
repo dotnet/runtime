@@ -2,9 +2,9 @@
   <!--     There are some packages where we require only one ref for a specific framework to be present. In order to avoid problems with this package when targetting 
            dektop with RAR we will make sure there are no exclude=compile references in the package.
     For more info, please check issues:
-     - https://github.com/dotnet/corefx/issues/32457  -> Why reference assets were removed from the package
-     - https://github.com/aspnet/AspNetCore/issues/11206  -> Why ASP.NET required a ref to be added back for netcoreapp
-     - https://github.com/dotnet/corefx/issues/38729  -> Issue tracking to work of readding a ref to netcoreapp -->
+     - https://github.com/dotnet/runtime/issues/27470  -> Why reference assets were removed from the package
+     - https://github.com/dotnet/aspnetcore/issues/11206  -> Why ASP.NET required a ref to be added back for netcoreapp
+     - https://github.com/dotnet/runtime/issues/29966  -> Issue tracking to work of readding a ref to netcoreapp -->
   <Target Name="RemoveExcludeCompileFromPackageDependencies" Condition="'$(RemoveExcludeCompileFromPackageDependencies)' == 'true'" DependsOnTargets="GetPackageDependencies" BeforeTargets="ValidateExcludeCompileDesktop">
     <ItemGroup>
       <Dependency>
@@ -25,5 +25,17 @@
            Condition="$([System.String]::Copy('%(Dependency.TargetFramework)').StartsWith('net4')) and 
                       '$(_excludeCompile)' == 'true' and
                       '%(Dependency.Identity)' != '_._'" />
+  </Target>
+
+  <PropertyGroup>
+    <PkgProjPath>$(MSBuildProjectDirectory)\..\pkg\$(MSBuildProjectName).pkgproj</PkgProjPath>
+    <!-- Point to our custom pack target which builds the pkgproj instead. -->
+    <PackDependsOn Condition="'$(IsSourceProject)' == 'true' and
+                              Exists('$(PkgProjPath)')">_BuildPkgProj</PackDependsOn>
+  </PropertyGroup>
+
+  <Target Name="_BuildPkgProj">
+    <MSBuild Projects="$(PkgProjPath)"
+             Targets="Build" />
   </Target>
 </Project>

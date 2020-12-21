@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Collections;
@@ -12,9 +11,9 @@ namespace System.DirectoryServices.ActiveDirectory
         private readonly string _sourceDsaDN;
         internal int lastResult;
 
-        private readonly DirectoryServer _server = null;
-        private string _sourceServer = null;
-        private readonly Hashtable _nameTable = null;
+        private readonly DirectoryServer _server;
+        private string _sourceServer;
+        private readonly Hashtable _nameTable;
 
         internal ReplicationFailure(IntPtr addr, DirectoryServer server, Hashtable table)
         {

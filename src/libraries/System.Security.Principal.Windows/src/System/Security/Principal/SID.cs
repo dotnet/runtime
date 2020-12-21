@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -290,10 +290,10 @@ namespace System.Security.Principal
         private IdentifierAuthority _identifierAuthority;
         // values guaranteed to be non-null on account of CreateFromParts()
         // method called by every constructor in this class.
-        private int[] _subAuthorities = null!;
-        private byte[] _binaryForm = null!;
+        private int[] _subAuthorities;
+        private byte[] _binaryForm;
         private SecurityIdentifier? _accountDomainSid;
-        private bool _accountDomainSidInitialized = false;
+        private bool _accountDomainSidInitialized;
 
         //
         // Computed attributes of a SID
@@ -312,7 +312,9 @@ namespace System.Security.Principal
         //       the typecast
         //
 
-#if NETCOREAPP2_0
+        [MemberNotNull(nameof(_binaryForm))]
+        [MemberNotNull(nameof(_subAuthorities))]
+#if NETSTANDARD2_0
         private void CreateFromParts(IdentifierAuthority identifierAuthority, int[] subAuthorities)
 #else
         private void CreateFromParts(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
@@ -348,7 +350,7 @@ namespace System.Security.Principal
             //
 
             _identifierAuthority = identifierAuthority;
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
             _subAuthorities = (int[])subAuthorities.Clone();
 #else
             _subAuthorities = subAuthorities.ToArray();
@@ -396,6 +398,8 @@ namespace System.Security.Principal
             }
         }
 
+        [MemberNotNull(nameof(_binaryForm))]
+        [MemberNotNull(nameof(_subAuthorities))]
         private void CreateFromBinaryForm(byte[] binaryForm, int offset)
         {
             //
@@ -458,7 +462,7 @@ namespace System.Security.Principal
                 throw new ArgumentException(SR.ArgumentOutOfRange_ArrayTooSmall, nameof(binaryForm));
             }
 
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
             int[] subAuthorities = new int[subAuthoritiesLength];
 #else
             Span<int> subAuthorities = stackalloc int[MaxSubAuthorities];
@@ -490,7 +494,7 @@ namespace System.Security.Principal
 
             CreateFromParts(
                 authority,
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
                 subAuthorities
 #else
                 subAuthorities.Slice(0, subAuthoritiesLength)
@@ -640,7 +644,9 @@ namespace System.Security.Principal
 
             if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
                 throw new ArgumentException(new Win32Exception(error).Message, "sidType/domainSid");
+#pragma warning restore CS2208
             }
             else if (error != Interop.Errors.ERROR_SUCCESS)
             {
@@ -651,7 +657,7 @@ namespace System.Security.Principal
             CreateFromBinaryForm(resultSid!, 0);
         }
 
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
         internal SecurityIdentifier(IdentifierAuthority identifierAuthority, int[] subAuthorities)
 #else
         internal SecurityIdentifier(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
@@ -742,7 +748,7 @@ namespace System.Security.Principal
                 // otherwise you would see this: "S-1-NTAuthority-32-544"
                 //
 
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
                 StringBuilder result = new StringBuilder();
                 result.Append("S-1-").Append((ulong)_identifierAuthority);
                 for (int i = 0; i < SubAuthorityCount; i++)

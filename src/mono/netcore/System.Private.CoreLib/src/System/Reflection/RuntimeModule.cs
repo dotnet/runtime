@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2010 Novell, Inc (http://www.novell.com)
 //
@@ -21,6 +24,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -106,6 +110,7 @@ namespace System.Reflection
             return is_resource;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override
         Type[] FindTypes(TypeFilter? filter, object? filterCriteria)
         {
@@ -128,6 +133,7 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override
         FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
@@ -141,6 +147,7 @@ namespace System.Reflection
             return globalType?.GetField(name, bindingAttr);
         }
 
+        [RequiresUnreferencedCode("Fields might be removed")]
         public override
         FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
@@ -160,6 +167,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         protected
         override
         MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
@@ -175,6 +183,7 @@ namespace System.Reflection
             return globalType.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
         public
         override
         MethodInfo[] GetMethods(BindingFlags bindingFlags)
@@ -192,12 +201,13 @@ namespace System.Reflection
             GetPEKind(_impl, out peKind, out machine);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override
         Type GetType(string className, bool throwOnError, bool ignoreCase)
         {
             if (className == null)
                 throw new ArgumentNullException(nameof(className));
-            if (className == string.Empty)
+            if (className.Length == 0)
                 throw new ArgumentException("Type name can't be empty");
             return assembly.InternalGetType(this, className, throwOnError, ignoreCase);
         }
@@ -208,6 +218,7 @@ namespace System.Reflection
             return CustomAttribute.IsDefined(this, attributeType, inherit);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         FieldInfo ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
@@ -226,6 +237,7 @@ namespace System.Reflection
                 return FieldInfo.GetFieldFromHandle(new RuntimeFieldHandle(handle));
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         MemberInfo ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
@@ -244,6 +256,7 @@ namespace System.Reflection
                 return m;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         MethodBase ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
@@ -262,6 +275,7 @@ namespace System.Reflection
                 return RuntimeMethodInfo.GetMethodFromHandleNoGenericCheck(new RuntimeMethodHandle(handle));
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         string ResolveString(int metadataToken)
@@ -280,6 +294,7 @@ namespace System.Reflection
                 return s;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
@@ -298,6 +313,7 @@ namespace System.Reflection
                 return Type.GetTypeFromHandle(new RuntimeTypeHandle(handle));
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public
         override
         byte[] ResolveSignature(int metadataToken)
@@ -316,6 +332,7 @@ namespace System.Reflection
                 return res;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override
         Type[] GetTypes()
         {
@@ -372,6 +389,8 @@ namespace System.Reflection
             }
         }
 
+        internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
+
         // This calls ves_icall_reflection_get_token, so needs a Module argument
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int get_MetadataToken(Module module);
@@ -381,9 +400,6 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Type[] InternalGetTypes(IntPtr module);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetHINSTANCE(IntPtr module);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetGuidInternal(IntPtr module, byte[] guid);

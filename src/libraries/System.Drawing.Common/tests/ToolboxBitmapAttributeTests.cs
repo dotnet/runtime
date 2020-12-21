@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,6 +13,7 @@ namespace System.Drawing.Tests
 
     public class Icon_toolboxBitmapAttributeTest { }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class ToolboxBitmapAttributeTests
     {
         private static Size DefaultSize = new Size(16, 16);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,10 +35,7 @@ namespace System.Net.Sockets.Tests
 
                 for (int iters = 0; iters < 5; iters++)
                 {
-                    for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                    {
-                        sender.SendTo(new byte[DataLength], new IPEndPoint(loopback, port));
-                    }
+                    sender.SendTo(new byte[DataLength], new IPEndPoint(loopback, port));
 
                     if (changeReceiveBufferEachCall)
                     {
@@ -79,10 +75,7 @@ namespace System.Net.Sockets.Tests
 
                 for (int iters = 0; iters < 5; iters++)
                 {
-                    for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                    {
-                        sender.SendTo(new byte[DataLength], new IPEndPoint(loopback, port));
-                    }
+                    sender.SendTo(new byte[DataLength], new IPEndPoint(loopback, port));
 
                     SocketReceiveMessageFromResult result = await receiver.ReceiveMessageFromAsync(
                         new ArraySegment<byte>(new byte[DataLength], 0, DataLength), SocketFlags.None,

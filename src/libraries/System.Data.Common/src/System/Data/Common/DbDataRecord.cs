@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -20,11 +19,11 @@ namespace System.Data.Common
 
         public abstract byte GetByte(int i);
 
-        public abstract long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length);
+        public abstract long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length);
 
         public abstract char GetChar(int i);
 
-        public abstract long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length);
+        public abstract long GetChars(int i, long dataIndex, char[]? buffer, int bufferIndex, int length);
 
         public IDataReader GetData(int i) => GetDbDataReader(i);
 
@@ -69,6 +68,8 @@ namespace System.Data.Common
         // ICustomTypeDescriptor
         //
 
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+#nullable disable
         AttributeCollection ICustomTypeDescriptor.GetAttributes() => new AttributeCollection(null);
 
         string ICustomTypeDescriptor.GetClassName() => null;
@@ -94,5 +95,6 @@ namespace System.Data.Common
             new PropertyDescriptorCollection(null);
 
         object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd) => this;
+#nullable enable
     }
 }

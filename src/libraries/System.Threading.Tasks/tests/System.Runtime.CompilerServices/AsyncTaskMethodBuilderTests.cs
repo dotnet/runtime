@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -454,7 +453,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Running tasks with exceptions.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void FaultedTaskExceptions()
         {
             var twa1 = Task.Run(() => { throw new Exception("uh oh"); });
@@ -487,7 +486,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test that OCEs don't result in the unobserved event firing
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationDoesntResultInEventFiring()
         {
             var cts = new CancellationTokenSource();
@@ -533,7 +532,7 @@ namespace System.Threading.Tasks.Tests
             // We want to make sure that holding on to the resulting Task doesn't keep
             // that finalizable object alive.
 
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             Task t = null;
 
@@ -545,7 +544,7 @@ namespace System.Threading.Tasks.Tests
                     GC.KeepAlive(s); // keep s referenced by the state machine
                 }
 
-                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult(true) };
+                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult() };
                 var al = new AsyncLocal<object>() { Value = state }; // ensure the object is stored in ExecutionContext
                 t = YieldOnceAsync(state); // ensure the object is stored in the state machine
                 al.Value = null;
@@ -576,7 +575,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DroppedIncompleteStateMachine_RaisesIncompleteAsyncMethodEvent()
         {
             RemoteExecutor.Invoke(() =>
@@ -650,7 +649,7 @@ namespace System.Threading.Tasks.Tests
         {
             int local1 = 42;
             string local2 = "stored data";
-            await new TaskCompletionSource<bool>().Task; // await will never complete
+            await new TaskCompletionSource().Task; // await will never complete
             GC.KeepAlive(local1);
             GC.KeepAlive(local2);
         }

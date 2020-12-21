@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <UnicodeUcdVersion>13.0</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -46,14 +46,14 @@
       <Link>CharUnicodeInfo\UnicodeData.$(UnicodeUcdVersion).txt</Link>
       <LogicalName>UnicodeData.txt</LogicalName>
     </EmbeddedResource>
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs">
-      <Link>System\Text\UnicodeDebug.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs">
-      <Link>System\Text\UnicodeUtility.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs"
+             Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs"
+             Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <ProjectReference Include="..\src\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
 </Project>

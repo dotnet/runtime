@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -17,12 +16,12 @@ namespace System.Diagnostics.Tracing
 {
     internal class XplatEventLogger : EventListener
     {
-        private static Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
-        private static Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
+        private static readonly Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
+        private static readonly Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
 
         public XplatEventLogger() {}
 
-        private static bool initializedPersistentListener = false;
+        private static bool initializedPersistentListener;
 
         public static EventListener? InitializePersistentListener()
         {
@@ -132,9 +131,9 @@ namespace System.Diagnostics.Tracing
                     }
                     default:
                     {
-                        if (payload[i] != null)
+                        if (payload[i] is object o)
                         {
-                            sb.Append(payload[i]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                            sb.Append(o.ToString());
                         }
                         break;
                     }
@@ -183,12 +182,13 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private void LogOnEventWritten(EventWrittenEventArgs eventData)
+        private static void LogOnEventWritten(EventWrittenEventArgs eventData)
         {
             string payload = "";
             if (eventData.Payload != null)
             {
-                try{
+                try
+                {
                     payload = Serialize(eventData.PayloadNames, eventData.Payload, eventData.Message);
                 }
                 catch (Exception ex)

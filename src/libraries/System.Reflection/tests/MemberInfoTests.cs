@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -416,6 +415,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(NegativeTypeData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34328", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void HasSameMetadataDefinitionAs_Negative_NonRuntimeType(Type type)
         {
             Type mockType = new MockType();
@@ -429,6 +429,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34328", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(NegativeTypeData))]
         public static void HasSameMetadataDefinitionAs_Negative_Null(Type type)
         {
@@ -537,6 +538,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34328", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void HasSameMetadataDefinitionAs_CornerCase_CLSIDConstructor()
         {

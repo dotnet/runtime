@@ -111,9 +111,6 @@
   <data name="Arg_BitArrayTypeUnsupported" xml:space="preserve">
     <value>Only supported array types for CopyTo on BitArrays are Boolean[], Int32[] and Byte[].</value>
   </data>
-  <data name="Arg_HSCapacityOverflow" xml:space="preserve">
-    <value>HashSet capacity is too big.</value>
-  </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>

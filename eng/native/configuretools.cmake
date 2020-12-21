@@ -6,7 +6,7 @@ if (CMAKE_C_COMPILER MATCHES "-?[0-9]+(\.[0-9]+)?$")
   set(CLR_CMAKE_COMPILER_FILE_NAME_VERSION "${CMAKE_MATCH_0}")
 endif()
 
-if(NOT WIN32)
+if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(APPLE)
       set(TOOLSET_PREFIX "")
@@ -34,20 +34,20 @@ if(NOT WIN32)
       "${TOOLSET_PREFIX}${exec}")
 
     if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-      message(FATAL_ERROR "Unable to find toolchain executable for: ${exec}.")
+      message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
     endif()
     set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
   endfunction()
 
   locate_toolchain_exec(ar CMAKE_AR)
-  locate_toolchain_exec(link CMAKE_LINKER)
   locate_toolchain_exec(nm CMAKE_NM)
+  locate_toolchain_exec(ranlib CMAKE_RANLIB)
 
-  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    locate_toolchain_exec(ranlib CMAKE_RANLIB)
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    locate_toolchain_exec(link CMAKE_LINKER)
   endif()
 
-  if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
+  if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
     locate_toolchain_exec(objdump CMAKE_OBJDUMP)
 
     if(CLR_CMAKE_TARGET_ANDROID)
@@ -60,5 +60,27 @@ if(NOT WIN32)
     endif()
 
     locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
+  endif()
+endif()
+
+if (NOT CLR_CMAKE_HOST_WIN32)
+  # Ensure that awk is present
+  find_program(AWK awk)
+  if (AWK STREQUAL "AWK-NOTFOUND")
+    message(FATAL_ERROR "AWK not found")
+  endif()
+
+  # detect linker
+  set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
+  execute_process(COMMAND ${ldVersion}
+    ERROR_QUIET
+    OUTPUT_VARIABLE ldVersionOutput)
+
+  if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
+    set(LD_GNU 1)
+  elseif("${ldVersionOutput}" MATCHES "Solaris Link")
+    set(LD_SOLARIS 1)
+  else(CLR_CMAKE_HOST_OSX)
+    set(LD_OSX 1)
   endif()
 endif()

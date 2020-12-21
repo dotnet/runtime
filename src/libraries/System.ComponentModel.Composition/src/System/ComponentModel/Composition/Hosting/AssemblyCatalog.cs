@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -25,11 +24,11 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly object _thisLock = new object();
         private readonly ICompositionElement _definitionOrigin;
-        private volatile Assembly _assembly = null!; // Always initiialized with helper
-        private volatile ComposablePartCatalog? _innerCatalog = null;
-        private int _isDisposed = 0;
+        private volatile Assembly _assembly;
+        private volatile ComposablePartCatalog? _innerCatalog;
+        private int _isDisposed;
 
-        private readonly ReflectionContext? _reflectionContext = default(ReflectionContext);
+        private readonly ReflectionContext? _reflectionContext;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="AssemblyCatalog"/> class
@@ -387,6 +386,7 @@ namespace System.ComponentModel.Composition.Hosting
             _definitionOrigin = definitionOrigin;
         }
 
+        [MemberNotNull(nameof(_assembly))]
         private void InitializeAssemblyCatalog(Assembly assembly)
         {
             if (assembly.ReflectionOnly)

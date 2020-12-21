@@ -29,6 +29,7 @@ ECMA 335 - CLI
 - [ECMA 335 Standard Overview](http://www.ecma-international.org/publications/standards/Ecma-335.htm)
 - [ECMA 335 Standard (PDF)](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf)
 - [Wikipedia entry on CLI](http://en.wikipedia.org/wiki/Common_Language_Infrastructure)
+- [ECMA 335 Addendum](../design/specs/Ecma-335-Augments.md)
 
 **ECMA 335 Partitions with added Microsoft Specific Implementation Notes**
 

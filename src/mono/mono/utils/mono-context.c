@@ -164,6 +164,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 
 #ifdef HOST_WIN32
 #include <windows.h>
+#include <mono/utils/w32subset.h>
 #endif
 
 void
@@ -233,6 +234,43 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->gregs [AMD64_R13] = context->R13;
 	mctx->gregs [AMD64_R14] = context->R14;
 	mctx->gregs [AMD64_R15] = context->R15;
+
+	memcpy (&(mctx->fregs [AMD64_XMM0]), &(context->Xmm0), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM1]), &(context->Xmm1), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM2]), &(context->Xmm2), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM3]), &(context->Xmm3), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM4]), &(context->Xmm4), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM5]), &(context->Xmm5), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM6]), &(context->Xmm6), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM7]), &(context->Xmm7), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM8]), &(context->Xmm8), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM9]), &(context->Xmm9), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM10]), &(context->Xmm10), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM11]), &(context->Xmm11), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM12]), &(context->Xmm12), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM13]), &(context->Xmm13), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM14]), &(context->Xmm14), sizeof (MonoContextSimdReg));
+	memcpy (&(mctx->fregs [AMD64_XMM15]), &(context->Xmm15), sizeof (MonoContextSimdReg));
+
+#ifdef MONO_HAVE_SIMD_REG_AVX
+#if HAVE_API_SUPPORT_WIN32_CONTEXT_XSTATE
+	DWORD64 features = 0;
+	if (((context->ContextFlags & CONTEXT_XSTATE) != 0) && (GetXStateFeaturesMask (context, &features) == TRUE) && ((features & XSTATE_MASK_AVX) != 0)) {
+		DWORD feature_len = 0;
+		PM128A ymm = (PM128A)LocateXStateFeature (context, XSTATE_AVX, &feature_len);
+#ifdef ENABLE_CHECKED_BUILD
+		g_assert (ymm);
+		g_assert (feature_len == (sizeof (MonoContextSimdReg) * AMD64_XMM_NREG));
+#endif
+		memcpy (&(mctx->fregs [AMD64_XMM_NREG]), ymm, feature_len);
+	} else {
+		memset (&(mctx->fregs [AMD64_XMM_NREG]), 0, sizeof (MonoContextSimdReg) * AMD64_XMM_NREG);
+	}
+#else
+	memset (&(mctx->fregs [AMD64_XMM_NREG]), 0, sizeof (MonoContextSimdReg) * AMD64_XMM_NREG);
+#endif
+#endif
+
 #elif defined(__HAIKU__)
 	// Haiku uses sigcontext because there's no ucontext
 	struct sigcontext *ctx = (struct sigcontext *)sigctx;
@@ -326,6 +364,26 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	context->R13 = mctx->gregs [AMD64_R13];
 	context->R14 = mctx->gregs [AMD64_R14];
 	context->R15 = mctx->gregs [AMD64_R15];
+
+	// When using MONO_HAVE_SIMD_REG_AVX, Mono won't change YMM (read only), so no need to
+	// write extended context state.
+	memcpy (&(context->Xmm0), &(mctx->fregs [AMD64_XMM0]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm1), &(mctx->fregs [AMD64_XMM1]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm2), &(mctx->fregs [AMD64_XMM2]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm3), &(mctx->fregs [AMD64_XMM3]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm4), &(mctx->fregs [AMD64_XMM4]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm5), &(mctx->fregs [AMD64_XMM5]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm6), &(mctx->fregs [AMD64_XMM6]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm7), &(mctx->fregs [AMD64_XMM7]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm8), &(mctx->fregs [AMD64_XMM8]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm9), &(mctx->fregs [AMD64_XMM9]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm10), &(mctx->fregs [AMD64_XMM10]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm11), &(mctx->fregs [AMD64_XMM11]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm12), &(mctx->fregs [AMD64_XMM12]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm13), &(mctx->fregs [AMD64_XMM13]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm14), &(mctx->fregs [AMD64_XMM14]), sizeof (MonoContextSimdReg));
+	memcpy (&(context->Xmm15), &(mctx->fregs [AMD64_XMM15]), sizeof (MonoContextSimdReg));
+
 #elif defined(__HAIKU__)
 	// Haiku uses sigcontext because there's no ucontext
 	struct sigcontext *ctx = (struct sigcontext *)sigctx;

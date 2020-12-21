@@ -410,11 +410,14 @@ create_reloc (MonoImageWriter *acfg, const char *end, const char* start, int off
 	BinReloc *reloc;
 	reloc = (BinReloc *)mono_mempool_alloc0 (acfg->mempool, sizeof (BinReloc));
 	reloc->val1 = mono_mempool_strdup (acfg->mempool, end);
-	if (strcmp (start, ".") == 0) {
-		reloc->val2_section = acfg->cur_section;
-		reloc->val2_offset = acfg->cur_section->cur_offset;
-	} else {
-		reloc->val2 = mono_mempool_strdup (acfg->mempool, start);
+	if (start)
+	{
+		if (strcmp (start, ".") == 0) {
+			reloc->val2_section = acfg->cur_section;
+			reloc->val2_offset = acfg->cur_section->cur_offset;
+		} else {
+			reloc->val2 = mono_mempool_strdup (acfg->mempool, start);
+		}
 	}
 	reloc->offset = offset;
 	reloc->section = acfg->cur_section;
@@ -422,6 +425,13 @@ create_reloc (MonoImageWriter *acfg, const char *end, const char* start, int off
 	reloc->next = acfg->relocations;
 	acfg->relocations = reloc;
 	return reloc;
+}
+
+static void
+bin_writer_emit_symbol (MonoImageWriter *acfg, const char *symbol)
+{
+	create_reloc (acfg, symbol, NULL, 0);
+	acfg->cur_section->cur_offset += 4;
 }
 
 static void
@@ -1925,6 +1935,23 @@ asm_writer_emit_int32 (MonoImageWriter *acfg, int value)
 }
 
 static void
+asm_writer_emit_symbol (MonoImageWriter *acfg, const char *symbol)
+{
+	if (acfg->mode != EMIT_LONG) {
+		acfg->mode = EMIT_LONG;
+		acfg->col_count = 0;
+	}
+
+	symbol = get_label (symbol);
+
+	if ((acfg->col_count++ % 8) == 0)
+		fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
+	else
+		fprintf (acfg->fp, ",");
+	fprintf (acfg->fp, "%s", symbol);
+}
+
+static void
 asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char* start, int offset)
 {
 #ifdef TARGET_ASM_APPLE
@@ -2210,6 +2237,19 @@ mono_img_writer_emit_int32 (MonoImageWriter *acfg, int value)
 		asm_writer_emit_int32 (acfg, value);
 #else
 	asm_writer_emit_int32 (acfg, value);
+#endif
+}
+
+void
+mono_img_writer_emit_symbol (MonoImageWriter *acfg, const char *symbol)
+{
+#ifdef USE_BIN_WRITER
+	if (acfg->use_bin_writer)
+		bin_writer_emit_symbol (acfg, symbol);
+	else
+		asm_writer_emit_symbol (acfg, symbol);
+#else
+	asm_writer_emit_symbol (acfg, symbol);
 #endif
 }
 

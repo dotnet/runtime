@@ -1,0 +1,425 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+//
+// clr_std/string
+//
+// Copy of some key Standard Template Library functionality
+//
+// This was created for use with SuperPMI. It has the minimal functionality needed by SuperPMI. It hasn't
+// been tested elsewhere.
+
+#ifdef _MSC_VER
+#pragma once
+#endif
+
+#ifdef USE_STL
+#include <string>
+#else
+#ifndef __clr_std_string_h__
+#define __clr_std_string_h__
+
+#include "clr_std/vector"
+
+namespace std
+{
+
+template<class T>
+class basic_string
+{
+public:
+    typedef T value_type;
+    typedef size_t size_type;
+    typedef typename vector<T>::iterator iterator;
+    typedef typename vector<T>::const_iterator const_iterator;
+
+    basic_string()
+        : m_string(1) // start with a string of length 1 for null terminator
+    {
+        m_string[0] = T();
+    }
+
+    basic_string(const basic_string<T>& _Right)
+    {
+        assign(_Right);
+    }
+
+    // Initialize a string with _Count characters from the string pointed at by _Ptr.
+    // If you want to include the trailing null character, _Count needs to include that.
+    basic_string(const value_type* _Ptr, size_type _Count)
+        : m_string(_Count + 1) // add 1 for a null terminator
+    {
+        copy(_Ptr, _Count);
+    }
+
+    basic_string(const value_type* _Ptr) : basic_string(_Ptr, c_len(_Ptr))
+    {
+    }
+
+    void reserve(size_t newcapacity)
+    {
+        m_string.reserve(newcapacity + 1); // add 1 for the null terminator
+    }
+
+    //
+    // Assignment
+    //
+
+    basic_string<T>& operator=(const basic_string<T>& _Right)
+    {
+        if (this != &_Right)
+        {
+            assign(_Right);
+        }
+        return (*this);
+    }
+
+    basic_string<T>& assign(const basic_string<T>& _Right)
+    {
+        m_string.resize(_Right.size() + 1); // +1 for null terminator
+        copy(_Right);
+        return (*this);
+    }
+
+    //
+    // Basic data copying
+    //
+
+    void copy(const basic_string<T>& _Right)
+    {
+        assert(size() >= _Right.size());
+        size_type i;
+        for (i = 0; i < _Right.size(); i++)
+        {
+            m_string[i] = _Right.m_string[i];
+        }
+        m_string[i] = T();
+    }
+
+    void copy(const value_type* _Ptr, size_type _Count)
+    {
+        assert(size() >= _Count);
+        size_type i;
+        for (i = 0; i < _Count; i++)
+        {
+            m_string[i] = _Ptr[i];
+        }
+        m_string[i] = T();
+    }
+
+    //
+    // Appending
+    //
+
+    // Append a C-style string to the string.
+    basic_string<T>& operator+=(const value_type* _Ptr)
+    {
+        size_type oldsize = size();         // doesn't include null terminator
+        size_type addsize = c_len(_Ptr);    // doesn't include null terminator
+        size_type newsize = oldsize + addsize + 1;
+        m_string.resize(newsize);
+        size_type i;
+        for (i = oldsize; i < newsize - 1; i++)
+        {
+            m_string[i] = *_Ptr++;
+        }
+        m_string[i] = T();
+        return (*this);
+    }
+
+    basic_string<T>& operator+=(const basic_string<T>& _Right)
+    {
+        size_type oldsize = size();         // doesn't include null terminator
+        size_type addsize = _Right.size();  // doesn't include null terminator
+        size_type newsize = oldsize + addsize + 1;
+        m_string.resize(newsize);
+        size_type new_index = oldsize, right_index = 0;
+        while (right_index < addsize)
+        {
+            m_string[new_index] = _Right.m_string[right_index];
+            ++new_index;
+            ++right_index;
+        }
+        m_string[new_index] = T();
+        return (*this);
+    }
+
+    basic_string<T>& operator+=(value_type _Ch)
+    {
+        size_type oldsize = size();         // doesn't include null terminator
+        m_string[oldsize] = _Ch; // Replace the null terminator with the new symbol.
+        m_string.push_back(T()); // Return the replaced terminator again.
+        return (*this);
+    }
+
+    ~basic_string()
+    {
+        // vector destructor does all the work
+    }
+
+    size_t size() const
+    {
+        assert(m_string.size() > 0);
+        return m_string.size() - 1;      // Don't report the null terminator.
+    }
+
+    size_t length() const
+    {
+        return size();
+    }
+
+    T& operator[](size_t iIndex)
+    {
+        assert(iIndex < size() + 1);    // allow looking at the null terminator
+        return m_string[iIndex];
+    }
+
+    const T* c_str() const
+    {
+        return m_string.data();
+    }
+
+    iterator begin()
+    {
+        return m_string.begin();
+    }
+
+    iterator end()
+    {
+        return m_string.end();
+    }
+
+    const_iterator cbegin() const
+    {
+        return m_string.cbegin();
+    }
+
+    const_iterator cend() const
+    {
+        return m_string.cend();
+    }
+
+    basic_string<T> substr(size_type _Off = 0, size_type _Count = npos) const
+    {
+        size_type cursize = size();
+        if (_Off >= cursize)
+        {
+            // result will be empty
+            return basic_string<T>();
+        }
+        else
+        {
+            if ((_Count == npos) ||     // No count specified; take the whole string suffix
+                (_Off + _Count > cursize)) // Count specified is too many characters; just take the whole suffix
+            {
+                _Count = cursize - _Off;
+            }
+            return basic_string<T>(m_string.data() + _Off, _Count);
+        }
+    }
+
+    size_type find_last_of(value_type _Ch) const
+    {
+        for (size_type _Off = size(); _Off != 0; _Off--)
+        {
+            if (m_string[_Off - 1] == _Ch)
+            {
+                return _Off - 1;
+            }
+        }
+        return npos;
+    }
+
+    bool empty() const
+    {
+        return size() == 0;
+    }
+
+    int compare(const basic_string<T>& _Str) const
+    {
+        size_type i;
+        size_type compareSize = size();
+        if (_Str.size() < compareSize)
+        {
+            // This string is longer; compare character-by-character only as many characters as we have.
+            compareSize = _Str.size();
+        }
+        for (i = 0; i < compareSize; i++)
+        {
+            if (m_string[i] != _Str.m_string[i])
+            {
+                if (m_string[i] < _Str.m_string[i])
+                {
+                    return -1;
+                }
+                else
+                {
+                    return 1;
+                }
+            }
+        }
+
+        // All the characters we compared were identical, but one string might be longer than the other.
+        if (size() == _Str.size())
+        {
+            // We compared everything.
+            return 0;
+        }
+        else if (size() < _Str.size())
+        {
+            // _Str has more characters than this.
+            return -1;
+        }
+        else
+        {
+            // this has more characters than _Str
+            return 1;
+        }
+    }
+
+    static const size_type npos = size_type(-1);
+
+private:
+
+    // Compute the length in characters of a null-terminated C-style string, not including the trailing null character.
+    // _Ptr must not be nullptr.
+    size_type c_len(const value_type* _Ptr)
+    {
+        size_type count;
+        for (count = 0; *_Ptr != T(); _Ptr++)
+        {
+            count++;
+        }
+        return count;
+    }
+
+    vector<T>   m_string;   // use a vector<> to represent the string, to avoid reimplementing similar functionality
+
+}; // class basic_string
+
+//
+// String class instantiations
+//
+
+typedef basic_string<char> string;
+
+//
+// Numeric conversions
+//
+
+// convert integer T to string
+template<class T> inline
+string _IntToString(const char *_Fmt, T _Val)
+{
+    const size_t MaxIntBufSize = 21; /* can hold -2^63 and 2^64 - 1, plus NUL */
+	char buf[MaxIntBufSize];
+	int len = sprintf_s(buf, MaxIntBufSize, _Fmt, _Val);
+	return (string(buf, len));
+}
+
+inline string to_string(int _Val)
+{
+	return (_IntToString("%d", _Val));
+}
+
+inline string to_string(unsigned int _Val)
+{
+	return (_IntToString("%u", _Val));
+}
+
+inline string to_string(long _Val)
+{
+	return (_IntToString("%ld", _Val));
+}
+
+inline string to_string(unsigned long _Val)
+{
+	return (_IntToString("%lu", _Val));
+}
+
+inline string to_string(long long _Val)
+{
+	return (_IntToString("%lld", _Val));
+}
+
+inline string to_string(unsigned long long _Val)
+{
+	return (_IntToString("%llu", _Val));
+}
+
+//
+// Comparisons
+//
+
+template<class T> inline
+bool operator==(
+    const basic_string<T>& _Left,
+    const basic_string<T>& _Right)
+{
+    return (_Left.compare(_Right) == 0);
+}
+
+template<class T> inline
+bool operator!=(
+    const basic_string<T>& _Left,
+    const basic_string<T>& _Right)
+{
+    return (!(_Left == _Right));
+}
+
+template<class T> inline
+bool operator<(
+    const basic_string<T>& _Left,
+    const basic_string<T>& _Right)
+{
+    return (_Left.compare(_Right) < 0);
+}
+
+template<class T> inline
+bool operator>(
+    const basic_string<T>& _Left,
+    const basic_string<T>& _Right)
+{
+    return (_Right < _Left);
+}
+
+template<class T> inline
+bool operator<=(
+    const basic_string<T>& _Left,
+    const basic_string<T>& _Right)
+{
+    return (!(_Right < _Left));
+}
+
+template<class T> inline
+bool operator>=(
+    const basic_string<T>& _Left,
+    const basic_string<T>& _Right)
+{
+    return (!(_Left < _Right));
+}
+
+//
+// String concatenation and other string operations
+//
+
+template<class T> inline
+basic_string<T> operator+(
+    const basic_string<T>& _Left,
+    const basic_string<T>& _Right)
+{
+    basic_string<T> ret;
+    ret.reserve(_Left.size() + _Right.size());
+    ret += _Left;
+    ret += _Right;
+    return ret;
+}
+
+}; // namespace std
+
+#endif /* __clr_std_string_h__ */
+
+#endif // !USE_STL
+
+// Help the VIM editor figure out what kind of file this no-extension file is.
+// vim: filetype=cpp

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
@@ -55,7 +54,7 @@ namespace System
         public bool TryGetTarget([MaybeNullWhen(false), NotNullWhen(true)] out T target)
         {
             // Call the worker method that has more performant but less user friendly signature.
-            T o = this.Target;
+            T? o = this.Target;
             target = o!;
             return o != null;
         }

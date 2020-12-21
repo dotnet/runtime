@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Extensions.DependencyModel;
 using System.Linq;
@@ -10,9 +9,10 @@ namespace System.Collections.Generic
     public static class CollectionExtensions
     {
         public static RuntimeAssetGroup GetDefaultGroup(this IEnumerable<RuntimeAssetGroup> self) => GetGroup(self, string.Empty);
+
         public static RuntimeAssetGroup GetRuntimeGroup(this IEnumerable<RuntimeAssetGroup> self, string runtime)
         {
-            if(string.IsNullOrEmpty(runtime))
+            if (string.IsNullOrEmpty(runtime))
             {
                 throw new ArgumentNullException(nameof(runtime));
             }
@@ -27,7 +27,7 @@ namespace System.Collections.Generic
         public static IEnumerable<string> GetDefaultAssets(this IEnumerable<RuntimeAssetGroup> self) => GetAssets(self, string.Empty);
         public static IEnumerable<string> GetRuntimeAssets(this IEnumerable<RuntimeAssetGroup> self, string runtime)
         {
-            if(string.IsNullOrEmpty(runtime))
+            if (string.IsNullOrEmpty(runtime))
             {
                 throw new ArgumentNullException(nameof(runtime));
             }
@@ -36,9 +36,16 @@ namespace System.Collections.Generic
 
         private static IEnumerable<string> GetAssets(IEnumerable<RuntimeAssetGroup> groups, string runtime)
         {
-            return groups
-                .Where(a => string.Equals(a.Runtime, runtime, StringComparison.Ordinal))
-                .SelectMany(a => a.AssetPaths);
+            foreach (RuntimeAssetGroup group in groups)
+            {
+                if (group.Runtime == runtime)
+                {
+                    foreach (string path in group.AssetPaths)
+                    {
+                        yield return path;
+                    }
+                }
+            }
         }
 
         public static IEnumerable<RuntimeFile> GetDefaultRuntimeFileAssets(this IEnumerable<RuntimeAssetGroup> self) => GetRuntimeFiles(self, string.Empty);
@@ -53,9 +60,16 @@ namespace System.Collections.Generic
 
         private static IEnumerable<RuntimeFile> GetRuntimeFiles(IEnumerable<RuntimeAssetGroup> groups, string runtime)
         {
-            return groups
-                .Where(a => string.Equals(a.Runtime, runtime, StringComparison.Ordinal))
-                .SelectMany(a => a.RuntimeFiles);
+            foreach (RuntimeAssetGroup group in groups)
+            {
+                if (group.Runtime == runtime)
+                {
+                    foreach (RuntimeFile file in group.RuntimeFiles)
+                    {
+                        yield return file;
+                    }
+                }
+            }
         }
     }
 }

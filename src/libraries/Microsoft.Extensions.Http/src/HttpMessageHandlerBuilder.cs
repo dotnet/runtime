@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -45,7 +44,7 @@ namespace Microsoft.Extensions.Http
         /// from the dependency injection container.
         /// </summary>
         /// <remarks>
-        /// This property is sensitive to the value of 
+        /// This property is sensitive to the value of
         /// <see cref="HttpClientFactoryOptions.SuppressHandlerScope"/>. If <c>true</c> this
         /// property will be a reference to the application's root service provider. If <c>false</c>
         /// (default) this will be a reference to a scoped service provider that has the same
@@ -77,15 +76,15 @@ namespace Microsoft.Extensions.Http
                 throw new ArgumentNullException(nameof(additionalHandlers));
             }
 
-            var additionalHandlersList = additionalHandlers as IReadOnlyList<DelegatingHandler> ?? additionalHandlers.ToArray();
+            IReadOnlyList<DelegatingHandler> additionalHandlersList = additionalHandlers as IReadOnlyList<DelegatingHandler> ?? additionalHandlers.ToArray();
 
-            var next = primaryHandler;
-            for (var i = additionalHandlersList.Count - 1; i >= 0; i--)
+            HttpMessageHandler next = primaryHandler;
+            for (int i = additionalHandlersList.Count - 1; i >= 0; i--)
             {
-                var handler = additionalHandlersList[i];
+                DelegatingHandler handler = additionalHandlersList[i];
                 if (handler == null)
                 {
-                    var message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionalHandlerIsNull, nameof(additionalHandlers));
+                    string message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionalHandlerIsNull, nameof(additionalHandlers));
                     throw new InvalidOperationException(message);
                 }
 
@@ -93,7 +92,7 @@ namespace Microsoft.Extensions.Http
                 // work the way you want and it can be tricky for callers to figure out.
                 if (handler.InnerHandler != null)
                 {
-                    var message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionHandlerIsInvalid,
+                    string message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionHandlerIsInvalid,
                         nameof(DelegatingHandler.InnerHandler),
                         nameof(DelegatingHandler),
                         nameof(HttpMessageHandlerBuilder),

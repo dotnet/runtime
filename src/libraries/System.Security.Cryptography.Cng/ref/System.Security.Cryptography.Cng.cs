@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -170,7 +169,6 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.CngKeyUsages? KeyUsage { get { throw null; } set { } }
         public System.Security.Cryptography.CngPropertyCollection Parameters { get { throw null; } }
         public System.IntPtr ParentWindowHandle { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public System.Security.Cryptography.CngProvider Provider { get { throw null; } set { } }
         public System.Security.Cryptography.CngUIPolicy? UIPolicy { get { throw null; } set { } }
     }

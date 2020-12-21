@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Threading;
@@ -14,6 +14,7 @@ namespace System
     {
         private static readonly char[] SPECIAL_CHARS = { ',', '[', ']', '&', '*', '+', '\\' };
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal static Type? GetType(
             string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
@@ -36,6 +37,7 @@ namespace System
             return ConstructType(pname, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private static Type? ConstructType(
             ParsedName pname,
             Func<AssemblyName, Assembly?>? assemblyResolver,
@@ -137,6 +139,7 @@ namespace System
             }
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private static Type? ResolveType(Assembly assembly, List<string> names, Func<Assembly, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
             Type? type = null;

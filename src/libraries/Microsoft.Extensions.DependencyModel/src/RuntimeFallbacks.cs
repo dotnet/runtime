@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(runtime))
             {
-                throw new ArgumentException(nameof(runtime));
+                throw new ArgumentException(null, nameof(runtime));
             }
             if (fallbacks == null)
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -10,7 +9,7 @@ using Xunit;
 
 public partial class ConsoleEncoding
 {
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void InputEncoding_SetDefaultEncoding_Success()
     {
@@ -23,7 +22,7 @@ public partial class ConsoleEncoding
         }).Dispose();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void InputEncoding_SetUnicodeEncoding_SilentlyIgnoredInternally()
     {
@@ -39,7 +38,7 @@ public partial class ConsoleEncoding
         }).Dispose();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetDefaultEncoding_Success()
     {
@@ -52,7 +51,7 @@ public partial class ConsoleEncoding
         }).Dispose();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetUnicodeEncoding_SilentlyIgnoredInternally()
     {

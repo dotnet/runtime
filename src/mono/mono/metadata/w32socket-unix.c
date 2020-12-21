@@ -191,7 +191,7 @@ mono_w32socket_accept (SOCKET sock, struct sockaddr *addr, socklen_t *addrlen, g
 }
 
 int
-mono_w32socket_connect (SOCKET sock, const struct sockaddr *addr, int addrlen, gboolean blocking)
+mono_w32socket_connect (SOCKET sock, const struct sockaddr *addr, socklen_t addrlen, gboolean blocking)
 {
 	SocketHandle *sockethandle;
 	gint ret;
@@ -575,7 +575,7 @@ mono_w32socket_sendbuffers (SOCKET sock, WSABUF *buffers, guint32 count, guint32
 #define SF_BUFFER_SIZE	16384
 
 BOOL
-mono_w32socket_transmit_file (SOCKET sock, gpointer file_handle, TRANSMIT_FILE_BUFFERS *buffers, guint32 flags, gboolean blocking)
+mono_w32socket_transmit_file (SOCKET sock, gpointer file_handle, gpointer lpTransmitBuffers, guint32 flags, gboolean blocking)
 {
 	MonoThreadInfo *info;
 	SocketHandle *sockethandle;
@@ -586,6 +586,7 @@ mono_w32socket_transmit_file (SOCKET sock, gpointer file_handle, TRANSMIT_FILE_B
 #else
 	gpointer buffer;
 #endif
+	TRANSMIT_FILE_BUFFERS *buffers = (TRANSMIT_FILE_BUFFERS *)lpTransmitBuffers;
 
 	if (!mono_fdhandle_lookup_and_ref(sock, (MonoFDHandle**) &sockethandle)) {
 		mono_w32error_set_last (WSAENOTSOCK);
@@ -1547,6 +1548,9 @@ mono_w32socket_convert_error (gint error)
 #endif
 #ifdef ENONET
 	case ENONET: return WSAENETUNREACH;
+#endif
+#ifdef ENOKEY
+	case ENOKEY: return WSAENETUNREACH;
 #endif
 	default:
 		g_error ("%s: no translation into winsock error for (%d) \"%s\"", __func__, error, g_strerror (error));

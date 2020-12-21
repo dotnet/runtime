@@ -1,11 +1,8 @@
 {
   "runtimes": {
-    "Unix" : {      
+    "Unix" : {
     },
-    "WebAssembly" : {
-      "#import": [
-        "Linux"
-      ]
+    "Browser" : {
     },
     "Linux": {
       "#import": [
@@ -22,6 +19,11 @@
         "Unix"
         ]
       },
+    "tvOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
     "Android": {
       "#import": [
         "Linux"
@@ -33,6 +35,16 @@
         ]
       },
     "NetBSD": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "illumos": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "Solaris": {
       "#import": [
         "Unix"
         ]

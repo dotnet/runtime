@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -31,6 +34,7 @@
 //
 
 #if MONO_FEATURE_SRE
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -108,7 +112,7 @@ namespace System.Reflection.Emit
             Initialize(con, constructorArgs, namedProperties, propertyValues, namedFields, fieldValues);
         }
 
-        private bool IsValidType(Type t)
+        private static bool IsValidType(Type t)
         {
             /* FIXME: Add more checks */
             if (t.IsArray && t.GetArrayRank() > 1)
@@ -126,7 +130,7 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        private bool IsValidParam(object o, Type paramType)
+        private static bool IsValidParam(object o, Type paramType)
         {
             Type t = o.GetType();
             if (!IsValidType(t))
@@ -317,6 +321,8 @@ namespace System.Reflection.Emit
             return decode_string(data, pos, out pos);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
         internal static UnmanagedMarshal get_umarshal(CustomAttributeBuilder customBuilder, bool is_field)
         {
             byte[] data = customBuilder.Data;
@@ -493,6 +499,10 @@ namespace System.Reflection.Emit
             public object?[] namedParamValues;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
         internal static CustomAttributeInfo decode_cattr(CustomAttributeBuilder customBuilder)
         {
             byte[] data = customBuilder.Data;

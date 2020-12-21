@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -35,7 +34,7 @@ namespace System.IO.Ports
 
         protected override bool ReleaseHandle()
         {
-            Interop.Sys.Shutdown(handle, SocketShutdown.Both);
+            Interop.Serial.Shutdown(handle, SocketShutdown.Both);
             int result = Interop.Serial.SerialPortClose(handle);
 
             Debug.Assert(result == 0, $"Close failed with result {result} and error {Interop.Sys.GetLastErrorInfo()}");

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO.PortsTests;
@@ -20,6 +19,7 @@ namespace System.IO.Ports.Tests
         /// Check that all ports either open correctly or fail with UnauthorizedAccessException (which implies they're already open)
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OpenEveryPortName()
         {
             foreach (string portName in SerialPort.GetPortNames())

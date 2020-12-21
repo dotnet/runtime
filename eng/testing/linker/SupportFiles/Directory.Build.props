@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
+    <SelfContained>true</SelfContained>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <PlatformManifestFile />
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.NETCore.App" />
+  </ItemGroup>
+</Project>

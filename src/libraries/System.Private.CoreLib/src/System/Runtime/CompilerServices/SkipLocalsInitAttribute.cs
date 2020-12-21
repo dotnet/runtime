@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// Used to indicate to the compiler that the <c>.locals init</c> flag should
-    /// not be set in nested method headers when emitting to metadata.
+    /// Used to indicate to the compiler that the <c>.locals init</c>
+    /// flag should not be set in method headers.
     /// </summary>
     /// <remarks>
     /// This attribute is unsafe because it may reveal uninitialized memory to
@@ -21,6 +20,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Module
         | AttributeTargets.Class
         | AttributeTargets.Struct
+        | AttributeTargets.Interface
         | AttributeTargets.Constructor
         | AttributeTargets.Method
         | AttributeTargets.Property

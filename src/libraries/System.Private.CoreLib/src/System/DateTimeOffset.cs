@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -54,13 +54,15 @@ namespace System
 
         // Constructors
 
-        // Constructs a DateTimeOffset from a tick count and offset
-        public DateTimeOffset(long ticks, TimeSpan offset)
+        private DateTimeOffset(short validOffsetMinutes, DateTime validDateTime)
         {
-            _offsetMinutes = ValidateOffset(offset);
-            // Let the DateTime constructor do the range checks
-            DateTime dateTime = new DateTime(ticks);
-            _dateTime = ValidateDate(dateTime, offset);
+            _dateTime = validDateTime;
+            _offsetMinutes = validOffsetMinutes;
+        }
+
+        // Constructs a DateTimeOffset from a tick count and offset
+        public DateTimeOffset(long ticks, TimeSpan offset) : this(ValidateOffset(offset), ValidateDate(new DateTime(ticks), offset))
+        {
         }
 
         // Constructs a DateTimeOffset from a DateTime. For Local and Unspecified kinds,
@@ -174,7 +176,18 @@ namespace System
         // resolution of the returned value depends on the system timer.
         public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
 
-        public static DateTimeOffset UtcNow => new DateTimeOffset(DateTime.UtcNow);
+        public static DateTimeOffset UtcNow
+        {
+            get
+            {
+                DateTime utcNow = DateTime.UtcNow;
+                var result = new DateTimeOffset(0, utcNow);
+
+                Debug.Assert(new DateTimeOffset(utcNow) == result); // ensure lack of verification does not break anything
+
+                return result;
+            }
+        }
 
         public DateTime DateTime => ClockDateTime;
 
@@ -648,7 +661,7 @@ namespace System
         public DateTimeOffset ToUniversalTime() =>
             new DateTimeOffset(UtcDateTime);
 
-        public static bool TryParse(string? input, out DateTimeOffset result)
+        public static bool TryParse([NotNullWhen(true)] string? input, out DateTimeOffset result)
         {
             bool parsed = DateTimeParse.TryParse(input,
                                                     DateTimeFormatInfo.CurrentInfo,
@@ -666,7 +679,7 @@ namespace System
             return parsed;
         }
 
-        public static bool TryParse(string? input, IFormatProvider? formatProvider, DateTimeStyles styles, out DateTimeOffset result)
+        public static bool TryParse([NotNullWhen(true)] string? input, IFormatProvider? formatProvider, DateTimeStyles styles, out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null)
@@ -692,7 +705,7 @@ namespace System
             return parsed;
         }
 
-        public static bool TryParseExact(string? input, string? format, IFormatProvider? formatProvider, DateTimeStyles styles,
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, IFormatProvider? formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
@@ -721,7 +734,7 @@ namespace System
             return parsed;
         }
 
-        public static bool TryParseExact(string? input, string?[]? formats, IFormatProvider? formatProvider, DateTimeStyles styles,
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
@@ -742,7 +755,7 @@ namespace System
         }
 
         public static bool TryParseExact(
-            ReadOnlySpan<char> input, string?[]? formats, IFormatProvider? formatProvider, DateTimeStyles styles, out DateTimeOffset result)
+            ReadOnlySpan<char> input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, DateTimeStyles styles, out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
             bool parsed = DateTimeParse.TryParseExactMultiple(input, formats, DateTimeFormatInfo.GetInstance(formatProvider), styles, out DateTime dateResult, out TimeSpan offset);

@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -50,6 +49,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
         public static async Task RoundTripAsync()
         {
             byte[] buffer;
@@ -405,7 +405,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(8192)]
         [InlineData(16384)]
         [InlineData(65536)]
-        public static async void FlushThresholdTest(int bufferSize)
+        public static async Task FlushThresholdTest(int bufferSize)
         {
             // bufferSize * 0.9 is the threshold size from codebase, subtract 2 for [" characters, then create a 
             // string containing (threshold - 2) amount of char 'a' which when written into output buffer produces buffer 
@@ -542,7 +542,7 @@ namespace System.Text.Json.Serialization.Tests
                                 IsEmployee = false
                             },
                             Title = "Green Field",
-                            Message = "Down, down, down. Would the fall never come to an end! ‘I wonder how many miles I’ve fallen by this time. I think—’ (for, you see, Alice had learnt several things of this sort in her lessons in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to listen to her, still it was good practice to say it over) ‘—yes, that’s about the right distance—but then I wonder what Latitude or Longitude I’ve got to",
+                            Message = "Down, down, down. Would the fall never come to an end! 'I wonder how many miles I've fallen by this time. I think-' (for, you see, Alice had learnt several things of this sort in her lessons in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to listen to her, still it was good practice to say it over) '-yes, that's about the right distance-but then I wonder what Latitude or Longitude I've got to",
                             Responses = new List<Comment>()
                         }
                     },
@@ -574,7 +574,7 @@ namespace System.Text.Json.Serialization.Tests
                         SKU = "LL123" + j,
                         Brand = new TestClassWithInitializedProperties(),
                         ProductCategory = new SimpleTestClassWithNonGenericCollectionWrappers(),
-                        Description = "Down, down, down. Would the fall never come to an end! ‘I wonder how many miles I’ve fallen by this time. I think—’ (for, you see, Alice had learnt several things of this sort in her lessons in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to listen to her, still it was good practice to say it over) ‘—yes, that’s about the right distance—but then I wonder what Latitude or Longitude I’ve got to",
+                        Description = "Down, down, down. Would the fall never come to an end! 'I wonder how many miles I've fallen by this time. I think-' (for, you see, Alice had learnt several things of this sort in her lessons in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to listen to her, still it was good practice to say it over) '-yes, that's about the right distance-but then I wonder what Latitude or Longitude I've got to",
                         Created = new DateTime(2000, 10, 12),
                         Title = "Surface Pro 6 for Business - 512GB",
                         Price = new Price(),

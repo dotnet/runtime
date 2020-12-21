@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "comhost.h"
 #include "redirected_error_writer.h"
@@ -270,7 +269,7 @@ namespace
             0,
             REG_SZ,
             reinterpret_cast<const BYTE*>(entry.type.c_str()),
-            static_cast<DWORD>(sizeof(entry.type.size() + 1) * sizeof(entry.type[0])));
+            static_cast<DWORD>((entry.type.size() + 1) * sizeof(entry.type[0])));
         if (res != ERROR_SUCCESS)
             return __HRESULT_FROM_WIN32(res);
 
@@ -347,7 +346,7 @@ namespace
             0,
             REG_SZ,
             reinterpret_cast<const BYTE*>(defServerName),
-            static_cast<DWORD>(sizeof(defServerName) * sizeof(defServerName[0])));
+            static_cast<DWORD>(sizeof(defServerName)));
         if (res != ERROR_SUCCESS)
             return __HRESULT_FROM_WIN32(res);
 

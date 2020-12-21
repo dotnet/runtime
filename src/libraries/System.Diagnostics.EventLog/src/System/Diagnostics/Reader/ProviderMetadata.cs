@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Collections.Generic;
@@ -24,7 +23,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         private EventLogHandle _defaultProviderHandle = EventLogHandle.Zero;
 
-        private readonly EventLogSession _session = null;
+        private readonly EventLogSession _session;
 
         private readonly string _providerName;
         private readonly CultureInfo _cultureInfo;
@@ -32,15 +31,15 @@ namespace System.Diagnostics.Eventing.Reader
 
         // caching of the IEnumerable<EventLevel>, <EventTask>, <EventKeyword>, <EventOpcode> on the ProviderMetadata
         // they do not change with every call.
-        private IList<EventLevel> _levels = null;
-        private IList<EventOpcode> _opcodes = null;
-        private IList<EventTask> _tasks = null;
-        private IList<EventKeyword> _keywords = null;
-        private IList<EventLevel> _standardLevels = null;
-        private IList<EventOpcode> _standardOpcodes = null;
-        private IList<EventTask> _standardTasks = null;
-        private IList<EventKeyword> _standardKeywords = null;
-        private IList<EventLogLink> _channelReferences = null;
+        private IList<EventLevel> _levels;
+        private IList<EventOpcode> _opcodes;
+        private IList<EventTask> _tasks;
+        private IList<EventKeyword> _keywords;
+        private IList<EventLevel> _standardLevels;
+        private IList<EventOpcode> _standardOpcodes;
+        private IList<EventTask> _standardTasks;
+        private IList<EventKeyword> _standardKeywords;
+        private IList<EventLogLink> _channelReferences;
 
         private readonly object _syncObject;
 

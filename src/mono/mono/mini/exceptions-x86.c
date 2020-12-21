@@ -1175,7 +1175,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 #endif
 }
 
-#if MONO_SUPPORT_TASKLETS
+#if MONO_SUPPORT_TASKLETS && !defined(ENABLE_NETCORE)
 MonoContinuationRestore
 mono_tasklets_arch_restore (void)
 {
@@ -1241,4 +1241,16 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 		MONO_CONTEXT_SET_SP (ctx, (gsize)MONO_CONTEXT_GET_SP (ctx) - align);
 
 	MONO_CONTEXT_SET_IP (ctx, func);
+}
+
+void
+mono_arch_undo_ip_adjustment (MonoContext *ctx)
+{
+	ctx->eip++;
+}
+
+void
+mono_arch_do_ip_adjustment (MonoContext *ctx)
+{
+	ctx->eip--;
 }

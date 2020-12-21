@@ -1,15 +1,16 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Http
 {
-    internal class DefaultTypedHttpClientFactory<TClient> : ITypedHttpClientFactory<TClient>
+    internal class DefaultTypedHttpClientFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient> :
+        ITypedHttpClientFactory<TClient>
     {
         private readonly Cache _cache;
         private readonly IServiceProvider _services;
@@ -45,16 +46,16 @@ namespace Microsoft.Extensions.Http
         // as a transient, so that it doesn't close over the application root service provider.
         public class Cache
         {
-            private readonly static Func<ObjectFactory> _createActivator = () => ActivatorUtilities.CreateFactory(typeof(TClient), new Type[] { typeof(HttpClient), });
+            private static readonly Func<ObjectFactory> _createActivator = () => ActivatorUtilities.CreateFactory(typeof(TClient), new Type[] { typeof(HttpClient), });
 
             private ObjectFactory _activator;
             private bool _initialized;
             private object _lock;
 
             public ObjectFactory Activator => LazyInitializer.EnsureInitialized(
-                ref _activator, 
-                ref _initialized, 
-                ref _lock, 
+                ref _activator,
+                ref _initialized,
+                ref _lock,
                 _createActivator);
         }
     }

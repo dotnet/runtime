@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -8,8 +10,10 @@ namespace System.Runtime.CompilerServices
     {
         public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
-            if (array == null || fldHandle.Value == IntPtr.Zero)
-                throw new ArgumentNullException();
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (fldHandle.Value == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(fldHandle));
 
             InitializeArray(array, fldHandle.Value);
         }
@@ -109,6 +113,9 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
+        internal static ref byte GetRawData(this object obj) => ref obj.GetRawData();
+
+        [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>() => IsReferenceOrContainsReferences<T>();
 
         [Intrinsic]
@@ -124,9 +131,26 @@ namespace System.Runtime.CompilerServices
             return RuntimeTypeHandle.HasReferences(obj.GetType() as RuntimeType);
         }
 
-        private static object GetUninitializedObjectInternal(Type type)
+        public static object GetUninitializedObject(
+            // This API doesn't call any constructors, but the type needs to be seen as constructed.
+            // A type is seen as constructed if a constructor is kept.
+            // This obviously won't cover a type with no constructor. Reference types with no
+            // constructor are an academic problem. Valuetypes with no constructors are a problem,
+            // but IL Linker currently treats them as always implicitly boxed.
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type)
         {
-            return GetUninitializedObjectInternal(new RuntimeTypeHandle((RuntimeType)type).Value);
+            if (type is not RuntimeType rt)
+            {
+                if (type is null)
+                {
+                    throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
+                }
+
+                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
+            }
+
+            return GetUninitializedObjectInternal(new RuntimeTypeHandle(rt).Value);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

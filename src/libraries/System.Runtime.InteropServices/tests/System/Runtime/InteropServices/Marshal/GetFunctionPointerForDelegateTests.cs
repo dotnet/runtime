@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Reflection;
@@ -12,6 +11,7 @@ namespace System.Runtime.InteropServices.Tests
     public class GetFunctionPointerForDelegateTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_NormalDelegateNonGeneric_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -24,6 +24,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_MarshalledDelegateNonGeneric_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -40,6 +41,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_NormalDelegateGeneric_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -52,6 +54,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_MarshalledDelegateGeneric_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);

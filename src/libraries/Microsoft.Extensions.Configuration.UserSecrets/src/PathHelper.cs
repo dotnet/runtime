@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -31,7 +30,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
                 throw new ArgumentException(SR.Common_StringNullOrEmpty, nameof(userSecretsId));
             }
 
-            var badCharIndex = userSecretsId.IndexOfAny(Path.GetInvalidFileNameChars());
+            int badCharIndex = userSecretsId.IndexOfAny(Path.GetInvalidFileNameChars());
             if (badCharIndex != -1)
             {
                 throw new InvalidOperationException(
@@ -44,10 +43,10 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
             const string userSecretsFallbackDir = "DOTNET_USER_SECRETS_FALLBACK_DIR";
 
             // For backwards compat, this checks env vars first before using Env.GetFolderPath
-            var appData = Environment.GetEnvironmentVariable("APPDATA");
-            var root = appData                                                                   // On Windows it goes to %APPDATA%\Microsoft\UserSecrets\
+            string appData = Environment.GetEnvironmentVariable("APPDATA");
+            string root = appData                                                                   // On Windows it goes to %APPDATA%\Microsoft\UserSecrets\
                        ?? Environment.GetEnvironmentVariable("HOME")                             // On Mac/Linux it goes to ~/.microsoft/usersecrets/
-                       ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) 
+                       ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
                        ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
                        ?? Environment.GetEnvironmentVariable(userSecretsFallbackDir);            // this fallback is an escape hatch if everything else fails
 

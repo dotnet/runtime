@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // (C) Franklin Wise
 // (C) 2003 Martin Willemoes Hansen
@@ -375,7 +375,7 @@ namespace System.Data.Tests
 
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void DataColumnTypeSerialization()
         {
             DataTable dt = new DataTable("MyTable");
@@ -1767,7 +1767,7 @@ Assert.False(true);
             Assert.Equal("</xs:schema>", textString);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Serialize()
         {
             // Create an array with multiple elements refering to
@@ -1846,13 +1846,13 @@ Assert.False(true);
             Assert.False(col2.Unique);
         }
 
-        private void RowChanging(object o, DataRowChangeEventArgs e)
+        private void RowChangingEventHandler(object o, DataRowChangeEventArgs e)
         {
             Assert.Equal(_rowChangingExpectedAction, e.Action);
             _rowChangingRowChanging = true;
         }
 
-        private void RowChanged(object o, DataRowChangeEventArgs e)
+        private void RowChangedEventHandler(object o, DataRowChangeEventArgs e)
         {
             Assert.Equal(_rowChangingExpectedAction, e.Action);
             _rowChangingRowChanged = true;
@@ -1867,8 +1867,8 @@ Assert.False(true);
             DataTable dt = new DataTable("table");
             dt.Columns.Add("col1");
             dt.Columns.Add("col2");
-            dt.RowChanging += new DataRowChangeEventHandler(RowChanging);
-            dt.RowChanged += new DataRowChangeEventHandler(RowChanged);
+            dt.RowChanging += new DataRowChangeEventHandler(RowChangingEventHandler);
+            dt.RowChanged += new DataRowChangeEventHandler(RowChangedEventHandler);
             _rowChangingExpectedAction = DataRowAction.Add;
             dt.Rows.Add(new object[] { 1, 2 });
             Assert.True(_rowChangingRowChanging);
@@ -2887,7 +2887,7 @@ Assert.False(true);
             Assert.True(column3.Unique);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadXmlSchema_2()
         {
             DataTable dt = new DataTable();
@@ -3111,7 +3111,7 @@ Assert.False(true);
             Assert.Equal(0, dt2.Rows.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void WriteXmlSchema()
         {
             using (new ThreadCultureChange("en-GB"))

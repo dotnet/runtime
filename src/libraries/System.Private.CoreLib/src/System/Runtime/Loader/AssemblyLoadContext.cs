@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -14,6 +14,7 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
+        // Keep in sync with MonoManagedAssemblyLoadContextInternalState in object-internals.h
         private enum InternalState
         {
             /// <summary>
@@ -28,12 +29,19 @@ namespace System.Runtime.Loader
             Unloading
         }
 
-        private static readonly Dictionary<long, WeakReference<AssemblyLoadContext>> s_allContexts = new Dictionary<long, WeakReference<AssemblyLoadContext>>();
+        private static volatile Dictionary<long, WeakReference<AssemblyLoadContext>>? s_allContexts;
         private static long s_nextId;
+
+        [MemberNotNull(nameof(s_allContexts))]
+        private static Dictionary<long, WeakReference<AssemblyLoadContext>> AllContexts =>
+            s_allContexts ??
+            Interlocked.CompareExchange(ref s_allContexts, new Dictionary<long, WeakReference<AssemblyLoadContext>>(), null) ??
+            s_allContexts;
 
 #region private data members
         // If you modify any of these fields, you must also update the
         // AssemblyLoadContextBaseObject structure in object.h
+        // and MonoManagedAssemblyLoadContext in object-internals.h
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
@@ -94,10 +102,11 @@ namespace System.Runtime.Loader
             _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
 
             // Add this instance to the list of alive ALC
-            lock (s_allContexts)
+            Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
+            lock (allContexts)
             {
                 _id = s_nextId++;
-                s_allContexts.Add(_id, new WeakReference<AssemblyLoadContext>(this, true));
+                allContexts.Add(_id, new WeakReference<AssemblyLoadContext>(this, true));
             }
         }
 
@@ -140,9 +149,10 @@ namespace System.Runtime.Loader
                 _state = InternalState.Unloading;
             }
 
-            lock (s_allContexts)
+            Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
+            lock (allContexts)
             {
-                s_allContexts.Remove(_id);
+                allContexts.Remove(_id);
             }
         }
 
@@ -237,16 +247,24 @@ namespace System.Runtime.Loader
         {
             get
             {
-                _ = AssemblyLoadContext.Default; // Ensure default is initialized
+                _ = Default; // Ensure default is initialized
 
-                List<WeakReference<AssemblyLoadContext>>? alcList = null;
-                lock (s_allContexts)
+                Dictionary<long, WeakReference<AssemblyLoadContext>>? allContexts = s_allContexts;
+                Debug.Assert(allContexts != null, "Creating the default context should have initialized the contexts collection.");
+
+                WeakReference<AssemblyLoadContext>[] alcSnapshot;
+                lock (allContexts)
                 {
                     // To make this thread safe we need a quick snapshot while locked
-                    alcList = new List<WeakReference<AssemblyLoadContext>>(s_allContexts.Values);
+                    alcSnapshot = new WeakReference<AssemblyLoadContext>[allContexts.Count];
+                    int pos = 0;
+                    foreach (KeyValuePair<long, WeakReference<AssemblyLoadContext>> item in allContexts)
+                    {
+                        alcSnapshot[pos++] = item.Value;
+                    }
                 }
 
-                foreach (WeakReference<AssemblyLoadContext> weakAlc in alcList)
+                foreach (WeakReference<AssemblyLoadContext> weakAlc in alcSnapshot)
                 {
                     if (weakAlc.TryGetTarget(out AssemblyLoadContext? alc))
                     {
@@ -290,6 +308,7 @@ namespace System.Runtime.Loader
 
         // These methods load assemblies into the current AssemblyLoadContext
         // They may be used in the implementation of an AssemblyLoadContext derivation
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
             if (assemblyPath == null)
@@ -310,6 +329,7 @@ namespace System.Runtime.Loader
             }
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromNativeImagePath(string nativeImagePath, string? assemblyPath)
         {
             if (nativeImagePath == null)
@@ -335,11 +355,13 @@ namespace System.Runtime.Loader
             }
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromStream(Stream assembly)
         {
             return LoadFromStream(assembly, null);
         }
 
+        [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromStream(Stream assembly, Stream? assemblySymbols)
         {
             if (assembly == null)
@@ -422,9 +444,16 @@ namespace System.Runtime.Loader
 
         internal static void OnProcessExit()
         {
-            lock (s_allContexts)
+            Dictionary<long, WeakReference<AssemblyLoadContext>>? allContexts = s_allContexts;
+            if (allContexts is null)
             {
-                foreach (KeyValuePair<long, WeakReference<AssemblyLoadContext>> alcAlive in s_allContexts)
+                // If s_allContexts was never initialized, there are no contexts for which to raise an unload event.
+                return;
+            }
+
+            lock (allContexts)
+            {
+                foreach (KeyValuePair<long, WeakReference<AssemblyLoadContext>> alcAlive in allContexts)
                 {
                     if (alcAlive.Value.TryGetTarget(out AssemblyLoadContext? alc))
                     {
@@ -560,26 +589,6 @@ namespace System.Runtime.Loader
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 
             return context.ResolveUsingLoad(assemblyName);
-        }
-
-        // This method is invoked by the VM to resolve an assembly reference using the Resolving event
-        // after trying assembly resolution via Load override and TPA load context without success.
-        private static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-            // Invoke the AssemblyResolve event callbacks if wired up
-            return context.ResolveUsingEvent(assemblyName);
-        }
-
-        // This method is invoked by the VM to resolve a satellite assembly reference
-        // after trying assembly resolution via Load override without success.
-        private static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-            // Invoke the ResolveSatelliteAssembly method
-            return context.ResolveSatelliteAssembly(assemblyName);
         }
 
         private Assembly? GetFirstResolvedAssemblyFromResolvingEvent(AssemblyName assemblyName)
@@ -723,6 +732,8 @@ namespace System.Runtime.Loader
         }
 #endif // !CORERT
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Satellite assemblies have no code in them and loading is not a problem")]
         private Assembly? ResolveSatelliteAssembly(AssemblyName assemblyName)
         {
             // Called by native runtime when CultureName is not empty
@@ -739,7 +750,9 @@ namespace System.Runtime.Loader
 
             AssemblyLoadContext parentALC = GetLoadContext(parentAssembly)!;
 
-            string parentDirectory = Path.GetDirectoryName(parentAssembly.Location)!;
+            string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
+            if (parentDirectory == null)
+                 return null;
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 

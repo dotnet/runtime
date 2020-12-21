@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -14,14 +13,14 @@ namespace System.Xml.Xsl.Xslt
         public struct ScopeReord
         {
             public int scopeCount;
-            public string prefix;
-            public string nsUri;
+            public string? prefix;
+            public string? nsUri;
         }
         private ScopeReord[] _records = new ScopeReord[32];
-        private int _lastRecord = 0;
-        private int _lastScopes = 0;  // This is cash of records[lastRecord].scopeCount field;
-                                      // most often we will have PushScope()/PopScope pare over the same record.
-                                      // It has sence to avoid adresing this field through array access.
+        private int _lastRecord;
+        private int _lastScopes;  // Cache of records[lastRecord].scopeCount field;
+                                  // most often we will have PushScope()/PopScope over the same record.
+                                  // It makes sense to avoid accessing this field through the array.
 
         public OutputScopeManager()
         {
@@ -64,7 +63,7 @@ namespace System.Xml.Xsl.Xslt
             AddRecord(prefix, uri);
         }
 
-        private void AddRecord(string prefix, string uri)
+        private void AddRecord(string? prefix, string? uri)
         {
             _records[_lastRecord].scopeCount = _lastScopes;
             _lastRecord++;
@@ -118,7 +117,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void InvalidateNonDefaultPrefixes()
         {
-            string defaultNs = LookupNamespace(string.Empty);
+            string? defaultNs = LookupNamespace(string.Empty);
             if (defaultNs == null)
             {             // We don't know default NS anyway.
                 InvalidateAllPrefixes();
@@ -126,18 +125,19 @@ namespace System.Xml.Xsl.Xslt
             else
             {
                 if (
-                    _records[_lastRecord].prefix.Length == 0 &&
+                    _records[_lastRecord].prefix!.Length == 0 &&
                     _records[_lastRecord - 1].prefix == null
                 )
                 {
                     return;                       // Averything was already done
                 }
+
                 AddRecord(null, null);
                 AddRecord(string.Empty, defaultNs);
             }
         }
 
-        public string LookupNamespace(string prefix)
+        public string? LookupNamespace(string prefix)
         {
             Debug.Assert(prefix != null);
             for (
@@ -152,6 +152,7 @@ namespace System.Xml.Xsl.Xslt
                     return _records[record].nsUri;
                 }
             }
+
             return null;
         }
     }

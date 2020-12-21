@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SameNameDifferentAssembly.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="CustomMarshaler.csproj" />
+    <ProjectReference Include="CustomMarshaler2.csproj" />
+  </ItemGroup>
+</Project>

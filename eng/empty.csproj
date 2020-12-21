@@ -12,4 +12,6 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
 
+  <Import Project="versioning.targets" />
+
 </Project>

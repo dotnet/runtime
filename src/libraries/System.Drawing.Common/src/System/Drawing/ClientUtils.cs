@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -110,10 +109,11 @@ namespace System.Drawing
 
                 for (int i = 0; i < Count; i++)
                 {
-                    if (InnerList[i] != other.InnerList[i])
+                    object? thisObj = InnerList[i];
+                    object? otherObj = other.InnerList[i];
+                    if (thisObj != otherObj)
                     {
-                        // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
-                        if (InnerList[i] == null || !InnerList[i]!.Equals(other.InnerList[i]))
+                        if (thisObj is null || !thisObj.Equals(otherObj))
                         {
                             return false;
                         }

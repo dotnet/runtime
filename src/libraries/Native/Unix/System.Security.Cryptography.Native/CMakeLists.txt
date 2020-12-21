@@ -8,14 +8,10 @@ add_compile_options(-Wno-used-but-marked-unused)
 
 add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 
-if(CMAKE_STATIC_LIB_LINK)
-   set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-endif(CMAKE_STATIC_LIB_LINK)
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
-find_package(OpenSSL)
-if(NOT OPENSSL_FOUND)
-    message(FATAL_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!")
-endif(NOT OPENSSL_FOUND)
+set(NATIVE_LIBS_EXTRA)
+append_extra_cryptography_libs(NATIVE_LIBS_EXTRA)
 
 include_directories(${OPENSSL_INCLUDE_DIR})
 
@@ -39,7 +35,6 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_cipher.c
     pal_hmac.c
     pal_ocsp.c
-    pal_pkcs12.c
     pal_pkcs7.c
     pal_rsa.c
     pal_ssl.c
@@ -54,6 +49,10 @@ set(NATIVECRYPTO_SOURCES
 # that use OpenSSL at runtime.
 if (CLR_CMAKE_TARGET_OSX)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
+
+    # by default uninitialized variables like the shim _ptr functions, will turn into common symbols
+    # and on OSX those have linking problems in libraries (ELF vs. Mach-O difference)
+    add_compile_options(-fno-common)
 endif()
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)
@@ -65,46 +64,59 @@ endif()
 
 add_library(objlib OBJECT ${NATIVECRYPTO_SOURCES} ${VERSION_FILE_PATH})
 
-add_library(System.Security.Cryptography.Native.OpenSsl
-    SHARED
-    $<TARGET_OBJECTS:objlib>
-)
+if (GEN_SHARED_LIB)
+    add_library(System.Security.Cryptography.Native.OpenSsl
+        SHARED
+        $<TARGET_OBJECTS:objlib>
+    )
+endif()
 
 add_library(System.Security.Cryptography.Native.OpenSsl-Static
     STATIC
     $<TARGET_OBJECTS:objlib>
+    entrypoints.c
 )
 
 set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.OpenSsl CLEAN_DIRECT_OUTPUT 1)
 
-if (FEATURE_DISTRO_AGNOSTIC_SSL)
-    # on macOS the link step fails with undefined symbols, and the script doesn't run.
-    # if the build succeeds, the script would succeed, except it uses a Linux-only command.
-    #
-    # on Linux, the build will succeed with undefined symbols, then the script reports them
-    # and fails the build for us.
-    if (NOT APPLE)
+if (GEN_SHARED_LIB)
+    if (FEATURE_DISTRO_AGNOSTIC_SSL)
+        # on macOS the link step fails with undefined symbols, and the script doesn't run.
+        # if the build succeeds, the script would succeed, except it uses a Linux-only command.
+        #
+        # on Linux, the build will succeed with undefined symbols, then the script reports them
+        # and fails the build for us.
+        if (NOT APPLE)
+            add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
+                COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
+                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+                    $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
+                    "Verification failed. System.Security.Cryptography.Native.OpenSsl.so has undefined dependencies. These are likely OpenSSL APIs that need to be added to opensslshim.h"
+                VERBATIM
+            )
+        endif()
+    endif()
+
+    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
         add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
-            COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
-            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+            COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl entry points against entrypoints.c "
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
                 $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
-                "Verification failed. System.Security.Cryptography.Native.OpenSsl.so has undefined dependencies. These are likely OpenSSL APIs that need to be added to opensslshim.h"
+                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                ${CMAKE_NM}
             VERBATIM
         )
     endif()
 
-    # Link with libdl.so to get the dlopen / dlsym / dlclose
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
-      dl
-    )
-else()
-    target_link_libraries(System.Security.Cryptography.Native.OpenSsl
-      ${OPENSSL_CRYPTO_LIBRARY}
-      ${OPENSSL_SSL_LIBRARY}
+        ${NATIVE_LIBS_EXTRA}
     )
 endif()
 
 include(configure.cmake)
 
-install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
-install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION .)
+if (GEN_SHARED_LIB)
+    install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
+endif()
+
+install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION ${STATIC_LIB_DESTINATION})

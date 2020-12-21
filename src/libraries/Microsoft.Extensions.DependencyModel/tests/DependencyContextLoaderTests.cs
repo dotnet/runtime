@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using FluentAssertions;
 using System.Reflection;
@@ -82,7 +81,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var loader = new DependencyContextLoader();
             var context = loader.Load(typeof(DependencyContextLoaderTests).Assembly);
 
-            context.RuntimeLibraries.Should().Contain(l => l.Name == "Microsoft.Extensions.DependencyModel");
+            context.RuntimeLibraries.Should().Contain(l => l.Name == "nonentrypointassembly");
         }
 
         [Fact]

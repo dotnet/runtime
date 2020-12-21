@@ -37,17 +37,6 @@ This will run the stress framework for the default amount of time (15 hours) on 
 ## Functional Testing ##
 A functional test run executes the same code as a stress run, but only runs for 30 minutes.
 
-It is recommended that you run at least some of the below PR-triggered CI jobs:
-
-```
-@dotnet_bot test Windows_NT Checked longgc
-@dotnet_bot test OSX10.12 Checked longgc
-@dotnet_bot test Ubuntu Checked longgc
-@dotnet_bot test Windows_NT Checked standalone_gc
-@dotnet_bot test OSX10.12 Checked standalone_gc
-@dotnet_bot test Ubuntu Checked standalone_gc
-```
-
 The "Long GC" tests are a series of GC tests whose running time is too long or memory usage is too high to run with
 the rest of the Priority 0 unit tests. The "Standalone GC" build mode builds and runs the GC in a semi-standalone manner
 (see https://github.com/dotnet/coreclr/projects/3).
@@ -56,7 +45,7 @@ You may also wish to run the GC Simulator tests. They may take up to 24 hours to
 due to poor interactions with the Linux OOM killer. However, they have proven to be quite useful in finding bugs in the past:
 
 ```
-@dotnet_bot test Windows_NT Release gcsimulator
+@dotnet_bot test windows Release gcsimulator
 @dotnet_bot test Ubuntu Release gcsimulator
 @dotnet_bot test OSX10.12 Release gcsimulator
 ```

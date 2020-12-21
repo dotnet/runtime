@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Configuration;
 using Xunit;
@@ -40,6 +40,60 @@ namespace System.ConfigurationTests
                     this[nameof(IntProperty)] = value;
                 }
             }
+        }
+
+        public class SettingsWithProvider : ApplicationSettingsBase
+        {
+            [Setting]
+            [SettingsProvider(typeof(CustomProvider))]
+            public string StringPropertyWithProvider
+            {
+                get
+                {
+                    return (string)this[nameof(StringPropertyWithProvider)];
+                }
+                set
+                {
+                    this[nameof(StringPropertyWithProvider)] = value;
+                }
+            }
+
+            [UserScopedSetting]
+            public string StringProperty
+            {
+                get
+                {
+                    return (string)this[nameof(StringProperty)];
+                }
+                set
+                {
+                    this[nameof(StringProperty)] = value;
+                }
+            }
+
+            public class CustomProvider : SettingsProvider
+            {
+                public const string DefaultStringPropertyValue = "stringPropertySet";
+                public override string ApplicationName { get; set; }
+
+                public override SettingsPropertyValueCollection GetPropertyValues(SettingsContext context, SettingsPropertyCollection collection)
+                {
+                    SettingsPropertyValueCollection result = new SettingsPropertyValueCollection();
+                    SettingsProperty property = new SettingsProperty("StringPropertyWithProvider", typeof(string), this, false, DefaultStringPropertyValue, SettingsSerializeAs.String, new SettingsAttributeDictionary(), false, false);
+                    result.Add(new SettingsPropertyValue(new SettingsProperty(property)));
+                    return result;
+                }
+
+                public override void SetPropertyValues(SettingsContext context, SettingsPropertyValueCollection collection)
+                {
+                }
+
+                public override void Initialize(string name, NameValueCollection config)
+                {
+                    base.Initialize(name ?? "CustomProvider", config ?? new NameValueCollection());
+                }
+            }
+
         }
 
         private class PersistedSimpleSettings : SimpleSettings
@@ -190,6 +244,72 @@ namespace System.ConfigurationTests
             SettingsProperty property = settings.Properties["StringProperty"];
             Assert.Equal(typeof(TestProvider), property.Provider.GetType());
             Assert.Equal(SettingsSerializeAs.Binary, property.SerializeAs);
+        }
+
+        [Fact]
+        public void SettingsChanging_Success()
+        {
+            SimpleSettings settings = new SimpleSettings();
+            bool changingFired = false;
+            int newValue = 1976;
+
+            settings.SettingChanging += (object sender, SettingChangingEventArgs e)
+                =>
+                {
+                    changingFired = true;
+                    Assert.Equal(nameof(SimpleSettings.IntProperty), e.SettingName);
+                    Assert.Equal(typeof(SimpleSettings).FullName, e.SettingClass);
+                    Assert.Equal(newValue, e.NewValue);
+                };
+
+            settings.IntProperty = newValue;
+
+            Assert.True(changingFired);
+            Assert.Equal(newValue, settings.IntProperty);
+        }
+
+        [Fact]
+        public void SettingsChanging_Canceled()
+        {
+            int oldValue = 1776;
+            SimpleSettings settings = new SimpleSettings
+            {
+                IntProperty = oldValue
+            };
+
+            bool changingFired = false;
+            int newValue = 1976;
+
+            settings.SettingChanging += (object sender, SettingChangingEventArgs e)
+                =>
+            {
+                changingFired = true;
+                e.Cancel = true;
+            };
+
+            settings.IntProperty = newValue;
+
+            Assert.True(changingFired);
+            Assert.Equal(oldValue, settings.IntProperty);
+        }
+
+        [Fact]
+        public void OnSettingsLoaded_QueryProperty()
+        {
+            SettingsWithProvider settings = new SettingsWithProvider();
+            bool loadedFired = false;
+            string newStringPropertyValue = nameof(SettingsWithProvider.StringProperty);
+            settings.SettingsLoaded += (object s, SettingsLoadedEventArgs e)
+                =>
+            {
+                loadedFired = true;
+                Assert.Equal(SettingsWithProvider.CustomProvider.DefaultStringPropertyValue, settings.StringPropertyWithProvider);
+                if (string.IsNullOrEmpty(settings.StringProperty))
+                    settings.StringProperty = newStringPropertyValue;
+            };
+
+            Assert.Equal(newStringPropertyValue, settings.StringProperty);
+            Assert.True(loadedFired);
         }
     }
 }

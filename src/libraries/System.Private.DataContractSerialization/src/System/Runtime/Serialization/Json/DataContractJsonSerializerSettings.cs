@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Xml;
@@ -18,12 +17,12 @@ namespace System.Runtime.Serialization.Json
         /// <summary>
         /// Gets or sets Dummy documentation
         /// </summary>
-        public string RootName { get; set; }
+        public string? RootName { get; set; }
 
         /// <summary>
         /// Gets or sets Dummy documentation
         /// </summary>
-        public IEnumerable<Type> KnownTypes { get; set; }
+        public IEnumerable<Type>? KnownTypes { get; set; }
 
         /// <summary>
         /// Gets or sets Dummy documentation
@@ -54,7 +53,7 @@ namespace System.Runtime.Serialization.Json
         /// <summary>
         /// Gets or sets Dummy documentation
         /// </summary>
-        public DateTimeFormat DateTimeFormat { get; set; }
+        public DateTimeFormat? DateTimeFormat { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether Dummy documentation

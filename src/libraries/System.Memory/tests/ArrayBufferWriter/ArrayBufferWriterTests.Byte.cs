@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading.Tasks;
@@ -99,10 +98,20 @@ namespace System.Buffers.Tests
         [OuterLoop]
         public void GetMemory_ExceedMaximumBufferSize()
         {
-            var output = new ArrayBufferWriter<byte>(int.MaxValue / 2 + 1);
-            output.Advance(int.MaxValue / 2 + 1);
-            Memory<byte> memory = output.GetMemory(1); // Validate we can't double the buffer size, but can grow by sizeHint
-            Assert.Equal(1, memory.Length);
+            const int MaxArrayLength = 0X7FEFFFFF;
+
+            int initialCapacity = int.MaxValue / 2 + 1;
+
+            var output = new ArrayBufferWriter<byte>(initialCapacity);
+            output.Advance(initialCapacity);
+
+            // Validate we can't double the buffer size, but can grow
+            Memory<byte> memory = output.GetMemory(1);
+
+            // The buffer should grow more than the 1 byte requested otherwise performance will not be usable
+            // between 1GB and 2GB. The current implementation maxes out the buffer size to MaxArrayLength.
+            Assert.Equal(MaxArrayLength - initialCapacity, memory.Length);
+
             Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
         }
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "command_line.h"
 #include <error_codes.h>
@@ -9,6 +8,7 @@
 #include "sdk_info.h"
 #include <trace.h>
 #include <utils.h>
+#include "bundle/info.h"
 
 namespace
 {
@@ -144,7 +144,7 @@ namespace
         if (mode == host_mode_t::apphost)
         {
             app_candidate = host_info.app_path;
-            doesAppExist = pal::realpath(&app_candidate);
+            doesAppExist = bundle::info_t::is_single_file_bundle() || pal::realpath(&app_candidate);
         }
         else
         {

@@ -1,0 +1,5 @@
+{
+  "configProperties": {
+    "System.Diagnostics.DefaultActivityIdFormatIsHierarchial": true
+  }
+}

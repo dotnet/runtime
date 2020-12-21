@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Collections;
@@ -11,7 +10,7 @@ namespace System.Data.Common
     {
         private static readonly TimeSpan s_defaultValue = TimeSpan.Zero;
 
-        private TimeSpan[] _values;
+        private TimeSpan[] _values = default!; // Late-initialized
 
         public TimeSpanStorage(DataColumn column)
         : base(column, typeof(TimeSpan), s_defaultValue, StorageType.TimeSpan)
@@ -57,12 +56,12 @@ namespace System.Data.Common
                         }
                         return _nullValue;
 
-                    case AggregateType.First:
+                    case AggregateType.First: // Does not seem to be implemented
                         if (records.Length > 0)
                         {
                             return _values[records[0]];
                         }
-                        return null;
+                        return null!;
 
                     case AggregateType.Count:
                         return base.Aggregate(records, kind);
@@ -81,7 +80,7 @@ namespace System.Data.Common
                             {
                                 return TimeSpan.FromTicks((long)Math.Round(sum));
                             }
-                            return null;
+                            return null!; // TODO: This is incorrect, should be DBNull.Value
                         }
 
                     case AggregateType.Mean:
@@ -99,7 +98,7 @@ namespace System.Data.Common
                             {
                                 return TimeSpan.FromTicks((long)Math.Round(meanSum / meanCount));
                             }
-                            return null;
+                            return null!; // TODO: This is incorrect, should be DBNull.Value
                         }
 
                     case AggregateType.StDev:
@@ -133,7 +132,7 @@ namespace System.Data.Common
                                 }
                                 return TimeSpan.FromTicks((long)stDev);
                             }
-                            return null;
+                            return null!; // TODO: This is incorrect, should be DBNull.Value
                         }
                 }
             }
@@ -158,7 +157,7 @@ namespace System.Data.Common
             return TimeSpan.Compare(valueNo1, valueNo2);
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             System.Diagnostics.Debug.Assert(0 <= recordNo, "Invalid record");
             System.Diagnostics.Debug.Assert(null != value, "null value");
@@ -203,7 +202,7 @@ namespace System.Data.Common
             }
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (_nullValue != value)
             {

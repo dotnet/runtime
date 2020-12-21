@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Xunit;
@@ -14,7 +13,7 @@ namespace Microsoft.VisualBasic.Tests
 
         // The accuracy to which we can validate some numeric test cases depends on the platform.
         private static readonly int s_precision = IsArmOrArm64OrAlpine ? 12 :
-            PlatformDetection.IsNetFramework ? 14 : 15;
+            (PlatformDetection.IsBrowser || PlatformDetection.IsNetFramework) ? 14 : 15;
 
         [Theory]
         [InlineData(0, 1.0, 1.0, 1.0, 1.0, 0, 0)]

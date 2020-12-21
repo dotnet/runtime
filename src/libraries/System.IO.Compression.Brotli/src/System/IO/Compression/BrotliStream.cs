@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -111,21 +110,6 @@ namespace System.IO.Compression
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
             }
-        }
-
-        private static void ValidateParameters(byte[] array, int offset, int count)
-        {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedPosNum);
-
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedPosNum);
-
-            if (array.Length - offset < count)
-                throw new ArgumentException(SR.InvalidArgumentOffsetCount);
         }
 
         public Stream BaseStream => _stream;

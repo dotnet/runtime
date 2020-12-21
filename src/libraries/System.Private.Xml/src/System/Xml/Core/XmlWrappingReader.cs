@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -16,7 +15,7 @@ namespace System.Xml
         // Fields
         //
         protected XmlReader reader;
-        protected IXmlLineInfo readerAsIXmlLineInfo;
+        protected IXmlLineInfo? readerAsIXmlLineInfo;
 
         //
         // Constructor
@@ -31,7 +30,7 @@ namespace System.Xml
         //
         // XmlReader implementation
         //
-        public override XmlReaderSettings Settings { get { return reader.Settings; } }
+        public override XmlReaderSettings? Settings { get { return reader.Settings; } }
         public override XmlNodeType NodeType { get { return reader.NodeType; } }
         public override string Name { get { return reader.Name; } }
         public override string LocalName { get { return reader.LocalName; } }
@@ -53,15 +52,15 @@ namespace System.Xml
         public override XmlNameTable NameTable { get { return reader.NameTable; } }
         public override bool CanResolveEntity { get { return reader.CanResolveEntity; } }
 
-        public override IXmlSchemaInfo SchemaInfo { get { return reader.SchemaInfo; } }
+        public override IXmlSchemaInfo? SchemaInfo { get { return reader.SchemaInfo; } }
         public override char QuoteChar { get { return reader.QuoteChar; } }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             return reader.GetAttribute(name);
         }
 
-        public override string GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             return reader.GetAttribute(name, namespaceURI);
         }
@@ -76,7 +75,7 @@ namespace System.Xml
             return reader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             return reader.MoveToAttribute(name, ns);
         }
@@ -116,7 +115,7 @@ namespace System.Xml
             reader.Skip();
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             return reader.LookupNamespace(prefix);
         }
@@ -158,7 +157,7 @@ namespace System.Xml
         //
         //  Internal methods
         //
-        internal override IDtdInfo DtdInfo
+        internal override IDtdInfo? DtdInfo
         {
             get
             {

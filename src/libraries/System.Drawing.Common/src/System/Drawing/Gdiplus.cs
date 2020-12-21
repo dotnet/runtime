@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -178,6 +177,7 @@ namespace System.Drawing
         DC_PAPERNAMES = 16,
         DC_ORIENTATION = 17,
         DC_COPIES = 18,
+        DC_COLORDEVICE = 32,
         PD_ALLPAGES = 0x00000000,
         PD_SELECTION = 0x00000001,
         PD_PAGENUMS = 0x00000002,

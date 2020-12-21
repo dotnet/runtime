@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -181,7 +180,7 @@ namespace System.Diagnostics.Tracing
             this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags)) ??
                 this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
 
-        private TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos)
+        private static TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos)
         {
             if (paramInfos == null)
             {

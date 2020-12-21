@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 
@@ -48,7 +47,7 @@ namespace System.Reflection.Emit
 
             // Define property as:
             // public string AssemblyName {get { return this.assemblyName; } }
-            _ = attributeTypeBuilder.DefineProperty(
+            PropertyBuilder propertyBuilder = attributeTypeBuilder.DefineProperty(
                     "AssemblyName",
                     PropertyAttributes.None,
                     CallingConventions.HasThis,
@@ -61,6 +60,7 @@ namespace System.Reflection.Emit
                                                    CallingConventions.HasThis,
                                                    returnType: typeof(string),
                                                    parameterTypes: null);
+            propertyBuilder.SetGetMethod(getterMethodBuilder);
 
             // Generate body:
             // return this.assemblyName;

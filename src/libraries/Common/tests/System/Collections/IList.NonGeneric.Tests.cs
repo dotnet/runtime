@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -122,17 +121,6 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-
-                yield return (IEnumerable enumerable) =>
-                {
-                    IList casted = ((IList)enumerable);
-                    if (casted.Count > 0 && !casted.IsReadOnly)
-                    {
-                        casted[0] = CreateT(12);
-                        return true;
-                    }
-                    return false;
-                };
             }
             if ((operations & ModifyOperation.Remove) == ModifyOperation.Remove)
             {
@@ -152,6 +140,19 @@ namespace System.Collections.Tests
                     if (casted.Count > 0 && !casted.IsFixedSize && !casted.IsReadOnly)
                     {
                         casted.RemoveAt(0);
+                        return true;
+                    }
+                    return false;
+                };
+            }
+            if ((operations & ModifyOperation.Overwrite) == ModifyOperation.Overwrite)
+            {
+                yield return (IEnumerable enumerable) =>
+                {
+                    IList casted = ((IList)enumerable);
+                    if (casted.Count > 0 && !casted.IsReadOnly)
+                    {
+                        casted[0] = CreateT(12);
                         return true;
                     }
                     return false;

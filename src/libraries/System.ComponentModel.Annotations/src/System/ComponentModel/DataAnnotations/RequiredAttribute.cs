@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -37,7 +36,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="RequiredAttribute.AllowEmptyStrings" />
         ///     then <c>false</c> is returned only if <paramref name="value" /> is null.
         /// </returns>
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             if (value == null)
             {

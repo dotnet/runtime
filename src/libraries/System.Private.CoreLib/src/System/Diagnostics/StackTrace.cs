@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -201,8 +201,11 @@ namespace System.Diagnostics
 
         internal void ToString(TraceFormat traceFormat, StringBuilder sb)
         {
-            string word_At = SR.Word_At;
-            string inFileLineNum = SR.StackTrace_InFileLineNumber;
+            // Passing a default string for "at" in case SR.UsingResourceKeys() is true
+            // as this is a special case and we don't want to have "Word_At" on stack traces.
+            string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
+            // We also want to pass in a default for inFileLineNumber.
+            string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
@@ -225,8 +228,8 @@ namespace System.Diagnostics
                     bool methodChanged = false;
                     if (declaringType != null && declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false))
                     {
-                        isAsync = typeof(IAsyncStateMachine).IsAssignableFrom(declaringType);
-                        if (isAsync || typeof(IEnumerator).IsAssignableFrom(declaringType))
+                        isAsync = declaringType.IsAssignableTo(typeof(IAsyncStateMachine));
+                        if (isAsync || declaringType.IsAssignableTo(typeof(IEnumerator)))
                         {
                             methodChanged = TryResolveStateMachineMethod(ref mb, out declaringType);
                         }
@@ -326,7 +329,9 @@ namespace System.Diagnostics
                     if (sf.IsLastFrameFromForeignExceptionStackTrace && !isAsync)
                     {
                         sb.AppendLine();
-                        sb.Append(SR.Exception_EndStackTraceFromPreviousThrow);
+                        // Passing default for Exception_EndStackTraceFromPreviousThrow in case SR.UsingResourceKeys is set.
+                        sb.Append(SR.GetResourceString(nameof(SR.Exception_EndStackTraceFromPreviousThrow),
+                            defaultString: "--- End of stack trace from previous location ---"));
                     }
                 }
             }
@@ -380,7 +385,13 @@ namespace System.Diagnostics
                 return false;
             }
 
-            MethodInfo[]? methods = parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification = "Using Reflection to find the state machine's corresponding method is safe because the corresponding method is the only " +
+                                "caller of the state machine. If the state machine is present, the corresponding method will be, too.")]
+            static MethodInfo[]? GetDeclaredMethods(Type type) =>
+                type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+            MethodInfo[]? methods = GetDeclaredMethods(parentType);
             if (methods == null)
             {
                 return false;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -14,7 +13,7 @@ internal partial class Interop
         /// Provides extended attribute (EA) information. This structure is used primarily by network drivers.
         /// </summary>
         [StructLayoutAttribute(LayoutKind.Sequential)]
-        internal unsafe struct FILE_FULL_EA_INFORMATION
+        internal struct FILE_FULL_EA_INFORMATION
         {
             /// <summary>
             /// The offset of the next FILE_FULL_EA_INFORMATION-type entry. This member is zero if no other entries follow this one.

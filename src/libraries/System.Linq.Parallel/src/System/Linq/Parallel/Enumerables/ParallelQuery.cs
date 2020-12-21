@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -47,7 +46,7 @@ namespace System.Linq
         // is thrown.
         //
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "The derived class must override this method")]
         internal virtual ParallelQuery<TCastTo> Cast<TCastTo>()
         {
             Debug.Fail("The derived class must override this method.");
@@ -60,7 +59,7 @@ namespace System.Linq
         // the results.
         //
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "The derived class must override this method")]
         internal virtual ParallelQuery<TCastTo> OfType<TCastTo>()
         {
             Debug.Fail("The derived class must override this method.");
@@ -73,7 +72,7 @@ namespace System.Linq
         // IEnumerable<T>.
         //
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "The derived class must override this method")]
         internal virtual IEnumerator GetEnumeratorUntyped()
         {
             Debug.Fail("The derived class must override this method.");

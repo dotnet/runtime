@@ -1,17 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Common/*.cs" />
     <Compile Include="*.cs" />
+    <Compile Include="$(CommonTestPath)Extensions\ConfigurationRootTest.cs" Link="Common\Extensions\ConfigurationRootTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
-    <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
+    <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
@@ -14,7 +13,6 @@ namespace System.ComponentModel.Design
     public abstract class DesignerOptionService : IDesignerOptionService
     {
         private DesignerOptionCollection _options;
-        private static readonly char[] s_slash = { '\\' };
 
         /// <summary>
         /// Returns the options collection for this service. There is
@@ -48,7 +46,7 @@ namespace System.ComponentModel.Design
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, name.Length.ToString(), "0"), "name.Length");
+                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "name.Length"), nameof(name));
             }
 
             return new DesignerOptionCollection(this, parent, name, value);
@@ -70,7 +68,7 @@ namespace System.ComponentModel.Design
                 throw new ArgumentNullException(nameof(valueName));
             }
 
-            string[] optionNames = pageName.Split(s_slash);
+            string[] optionNames = pageName.Split('\\');
 
             DesignerOptionCollection options = Options;
             foreach (string optionName in optionNames)
@@ -124,6 +122,7 @@ namespace System.ComponentModel.Design
         /// properties if all the branch's children.
         /// </summary>
         [TypeConverter(typeof(DesignerOptionConverter))]
+        [Editor("", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public sealed class DesignerOptionCollection : IList
         {
             private readonly DesignerOptionService _service;

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
@@ -74,7 +74,9 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 Assert.Equal(WebSocketState.Open, cws.State);
 
-                var closeStatus = WebSocketCloseStatus.InvalidMessageType;
+                // See issue for Browser websocket differences https://github.com/dotnet/runtime/issues/45538
+                var closeStatus = PlatformDetection.IsBrowser ? WebSocketCloseStatus.NormalClosure : WebSocketCloseStatus.InvalidMessageType;
+
                 string closeDescription = "CloseAsync_InvalidMessageType";
 
                 await cws.CloseAsync(closeStatus, closeDescription, cts.Token);
@@ -101,6 +103,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45531", TestPlatforms.Browser)]
         public async Task CloseAsync_CloseDescriptionIsMaxLengthPlusOne_ThrowsArgumentException(Uri server)
         {
             string closeDescription = new string('C', CloseDescriptionMaxLength + 1);
@@ -132,7 +135,8 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                var closeStatus = WebSocketCloseStatus.InvalidMessageType;
+                // See issue for Browser websocket differences https://github.com/dotnet/runtime/issues/45538
+                var closeStatus = PlatformDetection.IsBrowser ? WebSocketCloseStatus.NormalClosure : WebSocketCloseStatus.InvalidMessageType;
                 string closeDescription = "CloseAsync_Containing\u016Cnicode.";
 
                 await cws.CloseAsync(closeStatus, closeDescription, cts.Token);
@@ -161,6 +165,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45468", TestPlatforms.Browser)]
         public async Task CloseOutputAsync_ClientInitiated_CanReceive_CanClose(Uri server)
         {
             string message = "Hello WebSockets!";
@@ -247,6 +252,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45468", TestPlatforms.Browser)]
         public async Task CloseOutputAsync_CloseDescriptionIsNull_Success(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
@@ -323,6 +329,49 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(WebSocketState.Aborted, cws.State);
                 }
             }
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
+        public async Task CloseAsync_CancelableEvenWhenPendingReceive_Throws()
+        {
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                try
+                {
+                    using (var cws = new ClientWebSocket())
+                    using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                    {
+                        await cws.ConnectAsync(uri, cts.Token);
+
+                        Task receiveTask = cws.ReceiveAsync(new byte[1], CancellationToken.None);
+
+                        var cancelCloseCts = new CancellationTokenSource();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                        {
+                            Task t = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, cancelCloseCts.Token);
+                            cancelCloseCts.Cancel();
+                            await t;
+                        });
+
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receiveTask);
+                    }
+                }
+                finally
+                {
+                    tcs.SetResult();
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                Dictionary<string, string> headers = await LoopbackHelper.WebSocketHandshakeAsync(connection);
+                Assert.NotNull(headers);
+
+                await tcs.Task;
+
+            }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
     }
 }

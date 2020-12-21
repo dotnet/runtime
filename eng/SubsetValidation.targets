@@ -2,7 +2,7 @@
   <!--
     The imported file supports the '/p:Subset=<desired subset string>' dev build argument.
 
-    Each subset has its own '<subset>ProjectToBuild' items so that a project in the build can depend
+    Each subset has its own '<subset>Project' items so that a project in the build can depend
     on a whole subset, and the dependency on the subset is disregarded automatically when Subset
     doesn't contain it.
 
@@ -15,7 +15,7 @@
 
   <Target Name="FindInvalidSpecifiedSubsetNames">
     <ItemGroup>
-      <SpecifiedSubsetName Include="$([MSBuild]::Unescape($(Subset.Replace('-', ';'))))" />
+      <SpecifiedSubsetName Include="$([MSBuild]::Unescape($(Subset.Replace('+', ';').Replace('-', ';'))))" />
 
       <!-- MSBuild Exclude is case-insensitive, which matches intended behavior. -->
       <InvalidSpecifiedSubsetName Include="@(SpecifiedSubsetName)" Exclude="@(SubsetName)" />
@@ -29,9 +29,7 @@
   <Target Name="ReportValidSubsetList"
           Condition="'@(InvalidSpecifiedSubsetName)' != ''">
     <ItemGroup>
-      <SubsetName Text="- " />
-      <SubsetName Condition="'%(Category)' != ''" Text="%(Text)%(Category)|" />
-      <SubsetName Text="%(Text)%(Identity)" />
+      <SubsetName Text="- %(Identity)" />
       <SubsetName Text="%(Text) [only runs on demand]" Condition="'%(SubsetName.OnDemand)' == 'true'" />
       <SubsetName Text="%(Text)%0A    %(Description)" />
     </ItemGroup>
@@ -41,7 +39,7 @@
     <Error Text="Subset not recognized: @(InvalidSpecifiedSubsetName, ' ')"
            Condition="'$(UserRequestedHelp)' != 'true'" />
 
-    <Error Text="Choose a subset to use, or do not specify a subset to perform the full build."
+    <Error Text="This is not an error. These are the available subsets. You can choose one or none at all for a full build."
            Condition="'$(UserRequestedHelp)' == 'true'" />
   </Target>
 

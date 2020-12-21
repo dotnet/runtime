@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 using Xunit;
 
@@ -49,14 +46,15 @@ namespace System.Reflection.Tests
         }
 
         [ConditionalFact(nameof(GetMetadataTokenSupported), nameof(IsReflectionEmitSupported))]
-        public static void UnbakedReflectionEmitType_HasNoMetadataToken()
+        public static void ReflectionEmitType_HasMetadataToken()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("dynamic"), AssemblyBuilderAccess.Run);
             ModuleBuilder module = assembly.DefineDynamicModule("dynamic.dll");
             TypeBuilder type = module.DefineType("T");
             MethodInfo method = type.DefineMethod("M", MethodAttributes.Public);
-            Assert.False(method.HasMetadataToken());
-            Assert.Throws<InvalidOperationException>(() => method.GetMetadataToken());
+
+            Assert.True(method.HasMetadataToken());
+            Assert.NotEqual(0, method.GetMetadataToken());
         }
 
         public static bool GetMetadataTokenSupported => true;

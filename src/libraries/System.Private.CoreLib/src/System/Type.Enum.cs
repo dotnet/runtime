@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,7 +23,7 @@ namespace System
                 throw new ArgumentNullException(nameof(value));
 
             if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(value));
 
             // Check if both of them are of the same type
             Type valueType = value.GetType();
@@ -70,7 +70,7 @@ namespace System
                 throw new ArgumentNullException(nameof(value));
 
             if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(value));
 
             Type valueType = value.GetType();
 
@@ -105,6 +105,8 @@ namespace System
             return values;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "Literal fields on enums can never be trimmed")]
         // This will return enumValues and enumNames sorted by the values.
         private void GetEnumData(out string[] enumNames, out Array enumValues)
         {

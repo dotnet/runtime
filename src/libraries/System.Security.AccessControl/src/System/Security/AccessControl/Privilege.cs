@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -40,12 +39,12 @@ namespace System.Security.AccessControl
         private static readonly Dictionary<string, Luid> luids = new Dictionary<string, Luid>();
         private static readonly ReaderWriterLockSlim privilegeLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
-        private bool needToRevert = false;
-        private bool initialState = false;
-        private bool stateWasChanged = false;
+        private bool needToRevert;
+        private bool initialState;
+        private bool stateWasChanged;
         private Luid luid;
         private readonly Thread currentThread = Thread.CurrentThread;
-        private TlsContents? tlsContents = null;
+        private TlsContents? tlsContents;
 
         public const string CreateToken = "SeCreateTokenPrivilege";
         public const string AssignPrimaryToken = "SeAssignPrimaryTokenPrivilege";
@@ -161,10 +160,10 @@ namespace System.Security.AccessControl
 
         private sealed class TlsContents : IDisposable
         {
-            private bool disposed = false;
+            private bool disposed;
             private int referenceCount = 1;
             private SafeTokenHandle? threadHandle = new SafeTokenHandle(IntPtr.Zero);
-            private readonly bool isImpersonating = false;
+            private readonly bool isImpersonating;
 
             private static volatile SafeTokenHandle processHandle = new SafeTokenHandle(IntPtr.Zero);
             private static readonly object syncRoot = new object();

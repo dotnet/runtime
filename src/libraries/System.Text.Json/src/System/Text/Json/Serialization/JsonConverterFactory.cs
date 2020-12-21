@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -40,14 +39,15 @@ namespace System.Text.Json.Serialization
 
         internal override JsonPropertyInfo CreateJsonPropertyInfo()
         {
-            // We should never get here.
-            Debug.Assert(false);
+            Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
         }
 
         internal override JsonParameterInfo CreateJsonParameterInfo()
         {
+            Debug.Fail("We should never get here.");
+
             throw new InvalidOperationException();
         }
 
@@ -71,8 +71,18 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref ReadStack state)
         {
-            // We should never get here.
-            Debug.Assert(false);
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override bool TryReadAsObject(
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            ref ReadStack state,
+            out object? value)
+        {
+            Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
         }
@@ -83,8 +93,7 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            // We should never get here.
-            Debug.Assert(false);
+            Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
         }
@@ -97,8 +106,17 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            // We should never get here.
-            Debug.Assert(false);
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override void WriteWithQuotesAsObject(
+            Utf8JsonWriter writer, object value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
+        {
+            Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
         }

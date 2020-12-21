@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -11,6 +10,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
     public abstract partial class DependencyInjectionSpecificationTests
     {
         protected abstract IServiceProvider CreateServiceProvider(IServiceCollection serviceCollection);
@@ -32,6 +32,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ServicesRegisteredWithImplementationType_ReturnDifferentInstancesPerResolution_ForTransientServices()
         {
             // Arrange
@@ -84,6 +85,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void TransientServiceCanBeResolvedFromProvider()
         {
             // Arrange
@@ -101,6 +103,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void TransientServiceCanBeResolvedFromScope()
         {
             // Arrange
@@ -173,6 +176,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void MultipleServiceCanBeIEnumerableResolved()
         {
             // Arrange
@@ -191,6 +195,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void RegistrationOrderIsPreservedWhenServicesAreIEnumerableResolved()
         {
             // Arrange
@@ -218,6 +223,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void OuterServiceCanHaveOtherServicesInjected()
         {
             // Arrange
@@ -267,6 +273,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void FactoryServicesAreCreatedAsPartOfCreatingObjectGraph()
         {
             // Arrange
@@ -311,6 +318,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void LastServiceReplacesPreviousServices()
         {
             // Arrange
@@ -358,6 +366,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ScopedServiceCanBeResolved()
         {
             // Arrange
@@ -379,6 +388,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void NestedScopedServiceCanBeResolved()
         {
             // Arrange
@@ -401,6 +411,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ScopedServices_FromCachedScopeFactory_CanBeResolvedAndDisposed()
         {
             // Arrange
@@ -436,6 +447,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void DisposingScopeDisposesService()
         {
             // Arrange
@@ -542,6 +554,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void NestedScopedServiceCanBeResolvedWithNoFallbackProvider()
         {
             // Arrange
@@ -576,6 +589,89 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             // Assert
             Assert.Same(singletonService, genericService.Value);
+        }
+
+        [Fact]
+        public void ConstrainedOpenGenericServicesCanBeResolved()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(ConstrainedFakeOpenGenericService<>));
+            var poco = new PocoClass();
+            collection.AddSingleton(poco);
+            collection.AddSingleton<IFakeSingletonService, FakeService>();
+            var provider = CreateServiceProvider(collection);
+            // Act
+            var allServices = provider.GetServices<IFakeOpenGenericService<PocoClass>>().ToList();
+            var constrainedServices = provider.GetServices<IFakeOpenGenericService<IFakeSingletonService>>().ToList();
+            var singletonService = provider.GetService<IFakeSingletonService>();
+            // Assert
+            Assert.Equal(2, allServices.Count);
+            Assert.Same(poco, allServices[0].Value);
+            Assert.Same(poco, allServices[1].Value);
+            Assert.Equal(1, constrainedServices.Count);
+            Assert.Same(singletonService, constrainedServices[0].Value);
+        }
+
+        [Fact]
+        public void ConstrainedOpenGenericServicesReturnsEmptyWithNoMatches()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(ConstrainedFakeOpenGenericService<>));
+            collection.AddSingleton<IFakeSingletonService, FakeService>();
+            var provider = CreateServiceProvider(collection);
+            // Act
+            var constrainedServices = provider.GetServices<IFakeOpenGenericService<IFakeSingletonService>>().ToList();
+            // Assert
+            Assert.Equal(0, constrainedServices.Count);
+        }
+
+        [Fact]
+        public void InterfaceConstrainedOpenGenericServicesCanBeResolved()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(ClassWithInterfaceConstraint<>));
+            var enumerableVal = new ClassImplementingIEnumerable();
+            collection.AddSingleton(enumerableVal);
+            collection.AddSingleton<IFakeSingletonService, FakeService>();
+            var provider = CreateServiceProvider(collection);
+            // Act
+            var allServices = provider.GetServices<IFakeOpenGenericService<ClassImplementingIEnumerable>>().ToList();
+            var constrainedServices = provider.GetServices<IFakeOpenGenericService<IFakeSingletonService>>().ToList();
+            var singletonService = provider.GetService<IFakeSingletonService>();
+            // Assert
+            Assert.Equal(2, allServices.Count);
+            Assert.Same(enumerableVal, allServices[0].Value);
+            Assert.Same(enumerableVal, allServices[1].Value);
+            Assert.Equal(1, constrainedServices.Count);
+            Assert.Same(singletonService, constrainedServices[0].Value);
+        }
+
+        [Fact]
+        public void AbstractClassConstrainedOpenGenericServicesCanBeResolved()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(ClassWithAbstractClassConstraint<>));
+            var poco = new PocoClass();
+            collection.AddSingleton(poco);
+            var classInheritingClassInheritingAbstractClass = new ClassInheritingClassInheritingAbstractClass();
+            collection.AddSingleton(classInheritingClassInheritingAbstractClass);
+            var provider = CreateServiceProvider(collection);
+            // Act
+            var allServices = provider.GetServices<IFakeOpenGenericService<ClassInheritingClassInheritingAbstractClass>>().ToList();
+            var constrainedServices = provider.GetServices<IFakeOpenGenericService<PocoClass>>().ToList();
+            // Assert
+            Assert.Equal(2, allServices.Count);
+            Assert.Same(classInheritingClassInheritingAbstractClass, allServices[0].Value);
+            Assert.Same(classInheritingClassInheritingAbstractClass, allServices[1].Value);
+            Assert.Equal(1, constrainedServices.Count);
+            Assert.Same(poco, constrainedServices[0].Value);
         }
 
         [Fact]
@@ -671,6 +767,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         [Theory]
         [MemberData(nameof(ServiceContainerPicksConstructorWithLongestMatchesData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ServiceContainerPicksConstructorWithLongestMatches(
             IServiceCollection serviceCollection,
             TypeWithSupersetConstructors expected)
@@ -747,6 +844,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         [InlineData(typeof(IFakeService), typeof(FakeService), typeof(IFakeService), ServiceLifetime.Singleton)]
         [InlineData(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>), typeof(IFakeOpenGenericService<IServiceProvider>), ServiceLifetime.Scoped)]
         [InlineData(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>), typeof(IFakeOpenGenericService<IServiceProvider>), ServiceLifetime.Singleton)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ResolvesDifferentInstancesForServiceWhenResolvingEnumerable(Type serviceType, Type implementation, Type resolve, ServiceLifetime lifetime)
         {
             // Arrange

@@ -1,11 +1,9 @@
-<#@ template debug="false" hostspecific="false" language="C#" #>
-<#@ assembly name="System.Core" #>
-<#@ output extension=".cs" #>
-<#@ import namespace="System" #><#
+<#@ assembly name="System.Core"
+#><#@ import namespace="System" #><#
     WriterType = RawTextWriterType.Utf8;
     ClassName = "XmlUtf8RawTextWriter";
     ClassNameIndent = "XmlUtf8RawTextWriterIndent";
-    BufferName = "bufBytes";
+    BufferName = "_bufBytes";
     BufferType = "byte";
     EncodeCharBody = @"/* Surrogate character */
 if (XmlCharType.IsSurrogate(ch))

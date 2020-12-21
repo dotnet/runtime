@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -23,8 +21,6 @@ internal static partial class Interop
 {
     internal static partial class OpenSsl
     {
-        private static readonly Ssl.SslCtxSetVerifyCallback s_verifyClientCertificate = VerifyClientCertificate;
-        private static readonly unsafe Ssl.SslCtxSetAlpnCallback s_alpnServerCallback = AlpnServerSelectCallback;
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
         #region internal methods
@@ -157,7 +153,10 @@ internal static partial class Interop
 
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
                 {
-                    Ssl.SslCtxSetVerify(innerContext, s_verifyClientCertificate);
+                    unsafe
+                    {
+                        Ssl.SslCtxSetVerify(innerContext, &VerifyClientCertificate);
+                    }
                 }
 
                 GCHandle alpnHandle = default;
@@ -168,7 +167,11 @@ internal static partial class Interop
                         if (sslAuthenticationOptions.IsServer)
                         {
                             alpnHandle = GCHandle.Alloc(sslAuthenticationOptions.ApplicationProtocols);
-                            Interop.Ssl.SslCtxSetAlpnSelectCb(innerContext, s_alpnServerCallback, GCHandle.ToIntPtr(alpnHandle));
+
+                            unsafe
+                            {
+                                Interop.Ssl.SslCtxSetAlpnSelectCb(innerContext, &AlpnServerSelectCallback, GCHandle.ToIntPtr(alpnHandle));
+                            }
                         }
                         else
                         {
@@ -190,7 +193,7 @@ internal static partial class Interop
                     if (!sslAuthenticationOptions.IsServer)
                     {
                         // The IdnMapping converts unicode input into the IDNA punycode sequence.
-                        string punyCode = s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
+                        string punyCode = string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ? string.Empty : s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
 
                         // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
                         if (!Ssl.SslSetTlsExtHostName(context, punyCode))
@@ -199,42 +202,11 @@ internal static partial class Interop
                         }
                     }
 
-                    if (hasCertificateAndKey)
+                    if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
                     {
-                        bool hasCertReference = false;
-                        try
+                        if (!Ssl.AddExtraChainCertificates(context, sslAuthenticationOptions.CertificateContext!.IntermediateCertificates))
                         {
-                            certHandle!.DangerousAddRef(ref hasCertReference);
-                            using (X509Certificate2 cert = new X509Certificate2(certHandle.DangerousGetHandle()))
-                            {
-                                X509Chain? chain = null;
-                                try
-                                {
-                                    chain = TLSCertificateExtensions.BuildNewChain(cert, includeClientApplicationPolicy: false);
-                                    if (chain != null && !Ssl.AddExtraChainCertificates(context, chain))
-                                    {
-                                        throw CreateSslException(SR.net_ssl_use_cert_failed);
-                                    }
-                                }
-                                finally
-                                {
-                                    if (chain != null)
-                                    {
-                                        int elementsCount = chain.ChainElements.Count;
-                                        for (int i = 0; i < elementsCount; i++)
-                                        {
-                                            chain.ChainElements[i].Certificate!.Dispose();
-                                        }
-
-                                        chain.Dispose();
-                                    }
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            if (hasCertReference)
-                                certHandle!.DangerousRelease();
+                            throw CreateSslException(SR.net_ssl_use_cert_failed);
                         }
                     }
 
@@ -462,6 +434,7 @@ internal static partial class Interop
             bindingHandle.SetCertHashLength(certHashLength);
         }
 
+        [UnmanagedCallersOnly]
         private static int VerifyClientCertificate(int preverify_ok, IntPtr x509_ctx_ptr)
         {
             // Full validation is handled after the handshake in VerifyCertificateProperties and the
@@ -472,10 +445,11 @@ internal static partial class Interop
             return OpenSslSuccess;
         }
 
-        private static unsafe int AlpnServerSelectCallback(IntPtr ssl, out byte* outp, out byte outlen, byte* inp, uint inlen, IntPtr arg)
+        [UnmanagedCallersOnly]
+        private static unsafe int AlpnServerSelectCallback(IntPtr ssl, byte** outp, byte* outlen, byte* inp, uint inlen, IntPtr arg)
         {
-            outp = null;
-            outlen = 0;
+            *outp = null;
+            *outlen = 0;
 
             GCHandle protocolHandle = GCHandle.FromIntPtr(arg);
             if (!(protocolHandle.Target is List<SslApplicationProtocol> protocolList))
@@ -494,8 +468,8 @@ internal static partial class Interop
                         Span<byte> clientProto = clientList.Slice(1, length);
                         if (clientProto.SequenceEqual(protocolList[i].Protocol.Span))
                         {
-                            fixed (byte* p = &MemoryMarshal.GetReference(clientProto)) outp = p;
-                            outlen = length;
+                            fixed (byte* p = &MemoryMarshal.GetReference(clientProto)) *outp = p;
+                            *outlen = length;
                             return Ssl.SSL_TLSEXT_ERR_OK;
                         }
 

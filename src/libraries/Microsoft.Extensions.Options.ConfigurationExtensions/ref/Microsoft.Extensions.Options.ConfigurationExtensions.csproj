@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Options.ConfigurationExtensions.cs" />
-    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration.Abstractions\ref\Microsoft.Extensions.Configuration.Abstractions.csproj" />
-    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration.Binder\ref\Microsoft.Extensions.Configuration.Binder.csproj" />
-    <ProjectReference Include="..\..\Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
-    <ProjectReference Include="..\..\Microsoft.Extensions.Options\ref\Microsoft.Extensions.Options.csproj" />
-    <ProjectReference Include="..\..\Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\ref\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\ref\Microsoft.Extensions.Configuration.Binder.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\ref\Microsoft.Extensions.Options.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -89,6 +88,7 @@ namespace System.Text.Tests
             new CodePageMapping("x-unicode-2-0-utf-8", 65001)
         };
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Fact]
         public void TestEncodingNameAndCopdepageNumber()
         {
@@ -99,6 +99,7 @@ namespace System.Text.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Fact]
         public void GetEncoding_EncodingName()
         {
@@ -118,6 +119,7 @@ namespace System.Text.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Fact]
         public void GetEncoding_WebName()
         {

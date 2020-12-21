@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -692,7 +691,7 @@ namespace System.Collections.Concurrent
         /// <remarks>For <see cref="ConcurrentStack{T}"/>, this operation will attempt to pope the object at
         /// the top of the <see cref="ConcurrentStack{T}"/>.
         /// </remarks>
-        bool IProducerConsumerCollection<T>.TryTake(out T item)
+        bool IProducerConsumerCollection<T>.TryTake([MaybeNullWhen(false)] out T item)
         {
             return TryPop(out item);
         }

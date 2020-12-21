@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -8,8 +7,10 @@ namespace System.Drawing
 {
     internal static class KnownColorNames
     {
+        //  Names of all colors (in order of definition in the KnownColor enum).
         private static readonly string[] s_colorNameTable = new string[]
         {
+            // "System" colors, Part 1
             "ActiveBorder",
             "ActiveCaption",
             "ActiveCaptionText",
@@ -36,6 +37,8 @@ namespace System.Drawing
             "Window",
             "WindowFrame",
             "WindowText",
+
+            // "Web" Colors, Part 1
             "Transparent",
             "AliceBlue",
             "AntiqueWhite",
@@ -177,18 +180,23 @@ namespace System.Drawing
             "WhiteSmoke",
             "Yellow",
             "YellowGreen",
+
+            // "System" colors, Part 2
             "ButtonFace",
             "ButtonHighlight",
             "ButtonShadow",
             "GradientActiveCaption",
             "GradientInactiveCaption",
             "MenuBar",
-            "MenuHighlight"
+            "MenuHighlight",
+
+            // "Web" colors, Part 2
+            "RebeccaPurple",
         };
 
         public static string KnownColorToName(KnownColor color)
         {
-            Debug.Assert(color > 0 && color <= KnownColor.MenuHighlight);
+            Debug.Assert(color > 0 && color <= KnownColor.RebeccaPurple);
             return s_colorNameTable[unchecked((int)color) - 1];
         }
     }

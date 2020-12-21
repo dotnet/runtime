@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -210,7 +209,6 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public void Ctor_NullSource_ThrowsArgumentNullException()
         {
-            var feed = new SyndicationFeed();
             AssertExtensions.Throws<ArgumentNullException>("source", () => new SyndicationFeedSubclass(null, true));
         }
 
@@ -252,18 +250,6 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.True(formatter.PreserveAttributeExtensions);
             Assert.True(formatter.PreserveElementExtensions);
             Assert.Equal("Atom10", formatter.Version);
-        }
-
-        [Fact]
-        public void GetRss20Formatter_Invoke_ReturnsExpected()
-        {
-            var feed = new SyndicationFeed();
-            Rss20FeedFormatter formatter = Assert.IsType<Rss20FeedFormatter>(feed.GetRss20Formatter());
-            Assert.Same(feed, formatter.Feed);
-            Assert.True(formatter.PreserveAttributeExtensions);
-            Assert.True(formatter.PreserveElementExtensions);
-            Assert.True(formatter.SerializeExtensionsAsAtom);
-            Assert.Equal("Rss20", formatter.Version);
         }
 
         [Theory]
@@ -482,8 +468,6 @@ namespace System.ServiceModel.Syndication.Tests
             public SyndicationFeedSubclass(SyndicationFeed source, bool cloneItems) : base(source, cloneItems) { }
 
             public SyndicationCategory CreateCategoryEntryPoint() => CreateCategory();
-
-            public SyndicationItem CreateItemEntryPoint() => CreateItem();
 
             public SyndicationLink CreateLinkEntryPoint() => CreateLink();
 

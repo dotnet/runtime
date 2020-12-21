@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -75,6 +74,7 @@ namespace System.Net.Sockets
             byte[] buffer = s_keepAliveValuesBuffer ?? (s_keepAliveValuesBuffer = new byte[3 * sizeof(uint)]);
             ioControlKeepAlive.Fill(buffer);
             int realOptionLength = 0;
+            Debug.Assert(OperatingSystem.IsWindows());
             return SocketPal.WindowsIoctl(handle, unchecked((int)IOControlCode.KeepAliveValues), buffer, null, out realOptionLength);
         }
 

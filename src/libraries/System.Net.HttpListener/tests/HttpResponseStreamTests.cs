@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -279,8 +278,8 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => outputStream.Write(new byte[2], offset, 0));
-                await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("offset", () => outputStream.WriteAsync(new byte[2], offset, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => outputStream.Write(new byte[2], offset, 0));
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => outputStream.WriteAsync(new byte[2], offset, 0));
             }
         }
 
@@ -293,8 +292,8 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => outputStream.Write(new byte[2], offset, size));
-                await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("size", () => outputStream.WriteAsync(new byte[2], offset, size));
+                Assert.Throws<ArgumentOutOfRangeException>(() => outputStream.Write(new byte[2], offset, size));
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => outputStream.WriteAsync(new byte[2], offset, size));
             }
         }
 
@@ -303,7 +302,7 @@ namespace System.Net.Tests
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -331,7 +330,7 @@ namespace System.Net.Tests
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -357,7 +356,7 @@ namespace System.Net.Tests
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -548,6 +547,7 @@ namespace System.Net.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses Socket.Begin/EndSend, which doesn't fail in this case
         [Fact]
         public async Task EndWrite_InvalidAsyncResult_ThrowsArgumentException()
         {
@@ -563,6 +563,7 @@ namespace System.Net.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses Socket.Begin/EndSend, which doesn't fail in this case
         [Fact]
         public async Task EndWrite_CalledTwice_ThrowsInvalidOperationException()
         {

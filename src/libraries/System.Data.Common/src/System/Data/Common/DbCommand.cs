@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -16,6 +16,7 @@ namespace System.Data.Common
 
         [DefaultValue("")]
         [RefreshProperties(RefreshProperties.All)]
+        [AllowNull]
         public abstract string CommandText { get; set; }
 
         public abstract int CommandTimeout { get; set; }
@@ -27,23 +28,23 @@ namespace System.Data.Common
         [Browsable(false)]
         [DefaultValue(null)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public DbConnection Connection
+        public DbConnection? Connection
         {
             get { return DbConnection; }
             set { DbConnection = value; }
         }
 
-        IDbConnection IDbCommand.Connection
+        IDbConnection? IDbCommand.Connection
         {
             get { return DbConnection; }
-            set { DbConnection = (DbConnection)value; }
+            set { DbConnection = (DbConnection?)value; }
         }
 
-        protected abstract DbConnection DbConnection { get; set; }
+        protected abstract DbConnection? DbConnection { get; set; }
 
         protected abstract DbParameterCollection DbParameterCollection { get; }
 
-        protected abstract DbTransaction DbTransaction { get; set; }
+        protected abstract DbTransaction? DbTransaction { get; set; }
 
         // By default, the cmd object is visible on the design surface (i.e. VS7 Server Tray)
         // to limit the number of components that clutter the design surface,
@@ -64,16 +65,16 @@ namespace System.Data.Common
         [Browsable(false)]
         [DefaultValue(null)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public DbTransaction Transaction
+        public DbTransaction? Transaction
         {
             get { return DbTransaction; }
             set { DbTransaction = value; }
         }
 
-        IDbTransaction IDbCommand.Transaction
+        IDbTransaction? IDbCommand.Transaction
         {
             get { return DbTransaction; }
-            set { DbTransaction = (DbTransaction)value; }
+            set { DbTransaction = (DbTransaction?)value; }
         }
 
         [DefaultValue(System.Data.UpdateRowSource.Both)]
@@ -128,7 +129,7 @@ namespace System.Data.Common
                 CancellationTokenRegistration registration = default;
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
+                    registration = cancellationToken.Register(s => ((DbCommand)s!).CancelIgnoreFailure(), this);
                 }
 
                 try
@@ -169,7 +170,7 @@ namespace System.Data.Common
                 CancellationTokenRegistration registration = default;
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
+                    registration = cancellationToken.Register(s => ((DbCommand)s!).CancelIgnoreFailure(), this);
                 }
 
                 try
@@ -187,30 +188,30 @@ namespace System.Data.Common
             }
         }
 
-        public Task<object> ExecuteScalarAsync() =>
+        public Task<object?> ExecuteScalarAsync() =>
             ExecuteScalarAsync(CancellationToken.None);
 
-        public virtual Task<object> ExecuteScalarAsync(CancellationToken cancellationToken)
+        public virtual Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return ADP.CreatedTaskWithCancellation<object>();
+                return ADP.CreatedTaskWithCancellation<object?>();
             }
             else
             {
                 CancellationTokenRegistration registration = default;
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(s => ((DbCommand)s).CancelIgnoreFailure(), this);
+                    registration = cancellationToken.Register(s => ((DbCommand)s!).CancelIgnoreFailure(), this);
                 }
 
                 try
                 {
-                    return Task.FromResult<object>(ExecuteScalar());
+                    return Task.FromResult<object?>(ExecuteScalar());
                 }
                 catch (Exception e)
                 {
-                    return Task.FromException<object>(e);
+                    return Task.FromException<object?>(e);
                 }
                 finally
                 {
@@ -219,7 +220,7 @@ namespace System.Data.Common
             }
         }
 
-        public abstract object ExecuteScalar();
+        public abstract object? ExecuteScalar();
 
         public abstract void Prepare();
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __COREHOST_INIT_H__
 #define __COREHOST_INIT_H__
@@ -8,7 +7,7 @@
 #include "host_interface.h"
 #include "host_startup_info.h"
 #include "fx_definition.h"
-
+ 
 class corehost_init_t
 {
 private:
@@ -37,6 +36,7 @@ private:
     const pal::string_t m_host_info_host_path;
     const pal::string_t m_host_info_dotnet_root;
     const pal::string_t m_host_info_app_path;
+
 public:
     corehost_init_t(
         const pal::string_t& host_command,

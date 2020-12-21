@@ -8,6 +8,7 @@
 #include <sys/types.h>
 
 #include "mini.h"
+#include "mono-private-unstable.h"
 #include "interp/interp.h"
 
 #ifdef TARGET_WASM
@@ -63,13 +64,7 @@ handle_enum:
 	}
 }
 
-#if TARGET_SIZEOF_VOID_P == 4
-#define FIDX(x) ((x) * 2)
-#else
 #define FIDX(x) (x)
-#endif
-
-
 
 typedef union {
 	gint64 l;
@@ -90,13 +85,17 @@ get_long_arg (InterpMethodArguments *margs, int idx)
 
 #include "wasm_m2n_invoke.g.h"
 
-void
-mono_wasm_interp_to_native_trampoline (void *target_func, InterpMethodArguments *margs)
+static int
+compare_icall_tramp (const void *key, const void *elem)
+{
+	return strcmp (key, *(void**)elem);
+}
+
+gpointer
+mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 {
 	char cookie [32];
 	int c_count;
-
-	MonoMethodSignature *sig = margs->sig;
 
 	c_count = sig->param_count + sig->hasthis + 1;
 	g_assert (c_count < sizeof (cookie)); //ensure we don't overflow the local
@@ -109,7 +108,28 @@ mono_wasm_interp_to_native_trampoline (void *target_func, InterpMethodArguments 
 	}
 	cookie [c_count] = 0;
 
-	icall_trampoline_dispatch (cookie, target_func, margs);
+	void *p = bsearch (cookie, interp_to_native_signatures, G_N_ELEMENTS (interp_to_native_signatures), sizeof (gpointer), compare_icall_tramp);
+	if (!p)
+		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
+	int idx = (const char**)p - (const char**)interp_to_native_signatures;
+	return interp_to_native_invokes [idx];
+}
+
+static MonoWasmGetNativeToInterpTramp get_native_to_interp_tramp_cb;
+
+MONO_API void
+mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb)
+{
+	get_native_to_interp_tramp_cb = cb;
+}
+
+gpointer
+mono_wasm_get_native_to_interp_trampoline (MonoMethod *method, gpointer extra_arg)
+{
+	if (get_native_to_interp_tramp_cb)
+		return get_native_to_interp_tramp_cb (method, extra_arg);
+	else
+		return NULL;
 }
 
 #else /* TARGET_WASM */

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -43,7 +42,7 @@ namespace System.Linq.Parallel
         // If value is not in set, add it and return true; otherwise return false
         internal bool Add(TKey key, TValue value)
         {
-            return !Find(key, true, false, ref value);
+            return !Find(key, true, false, ref value!);
         }
 
         // Check whether value is in set
@@ -56,7 +55,7 @@ namespace System.Linq.Parallel
         {
             set
             {
-                TValue v = value;
+                TValue? v = value;
                 Find(key, false, true, ref v);
             }
         }

@@ -1,0 +1,159 @@
+<Project>
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="WasmAOT" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmAOT</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
+  <Target Name="WasmBuildApp" AfterTargets="Publish" />
+
+  <Target Condition="'$(RunAOTCompilation)' == 'true'" Name="_WasmAotCompileApp">
+    <PropertyGroup>
+      <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
+      <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
+      <EmccPublishVersionFile>$(WasmAOTDir)emcc-version.txt</EmccPublishVersionFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
+      <MonoAOTCompilerDefaultAotArguments Include="static" />
+      <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
+      <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
+    </ItemGroup>
+    <ItemGroup>
+      <AotInputAssemblies Include="@(_WasmAssemblies->Distinct())">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
+
+      <_WasmAssemblies Remove="@(_WasmAssemblies)" />
+    </ItemGroup>
+
+    <MonoAOTCompiler
+      CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\mono-aot-cross"
+      Mode="LLVMOnly"
+      OutputType="AsmOnly"
+      Assemblies="@(AotInputAssemblies)"
+      UseAotDataFile="false"
+      AotModulesTablePath="$(WasmAOTDir)driver-gen.c"
+      UseLLVM="true"
+        DisableParallelAot="true"
+      LLVMPath="$(EMSDK_PATH)\upstream\bin">
+      <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblies" />
+    </MonoAOTCompiler>
+    <Message Text="_WasmAssemblies: @(_WasmAssemblies)" />
+  </Target>
+
+  <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">
+    <WasmLoadAssembliesAndReferences
+      Assemblies="@(_WasmAssemblies)"
+      AssemblySearchPaths="@(WasmAssemblySearchPaths)"
+      SkipMissingAssemblies="$(WasmSkipMissingAssemblies)">
+      <Output TaskParameter="ReferencedAssemblies" ItemName="_TmpWasmAssemblies" />
+    </WasmLoadAssembliesAndReferences>
+
+    <ItemGroup>
+      <_WasmAssemblies Remove="@(_WasmAssemblies)" />
+      <_WasmAssemblies Include="@(_TmpWasmAssemblies)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_BeforeWasmBuildApp">
+      <Error Condition="'$(WasmMainAssemblyPath)' == ''" Text="%24(WasmMainAssemblyPath) property needs to be set" />
+      <Error Condition="'$(WasmAppDir)' == ''" Text="%24(WasmAppDir) property needs to be set" />
+      <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(WasmAOTDir)' == ''" Text="%24(WasmAOTDir) property needs to be set" />
+      <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+      <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
+
+      <ItemGroup>
+          <_WasmAssemblies Include="$(WasmMainAssemblyPath);@(WasmAssembliesToBundle)" />
+      </ItemGroup>
+  </Target>
+
+  <Target Name="_WasmBuildApp" BeforeTargets="WasmBuildApp" DependsOnTargets="$(WasmBuildAppDependsOn)">
+    <WasmAppBuilder
+      AppDir="$(WasmAppDir)"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
+      MainAssembly="$(WasmMainAssemblyPath)"
+      MainJS="$(WasmMainJSPath)"
+      Assemblies="@(_WasmAssemblies)"
+      InvariantGlobalization="$(WasmInvariantGlobalization)"
+      SatelliteAssemblies="@(WasmSatelliteAssemblies)"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
+      IcuDataFileName="$(WasmIcuDataFileName)"
+      RemoteSources="@(WasmRemoteSources)"
+      DebugLevel="$(WasmDebugLevel)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </WasmAppBuilder>
+
+    <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
+  </Target>
+
+  <Target Name="_AfterWasmBuildApp" AfterTargets="_WasmBuildApp">
+    <!-- Run mono-cil-strip on the assemblies -->
+    <!-- TODO: replace this with a linker task -->
+    <ItemGroup>
+      <_managedAppAssemblies Include="$(WasmAppDir)managed\*.dll"/>
+    </ItemGroup>
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
+  </Target>
+
+  <Target Name="_WasmAOT" DependsOnTargets="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
+    <ReadLinesFromFile File="$(EmccFlagsFile)">
+        <Output TaskParameter="Lines" PropertyName="EmccFlags" />
+    </ReadLinesFromFile>
+
+    <PropertyGroup>
+      <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
+    </PropertyGroup>
+
+    <ReadLinesFromFile File="$(RuntimeEmccVersionFile)">
+        <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
+    </ReadLinesFromFile>
+
+    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc --version | head -1 > emcc-version.txt" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" />
+    <ReadLinesFromFile File="$(EmccPublishVersionFile)">
+        <Output TaskParameter="Lines" PropertyName="EmccVersion" />
+    </ReadLinesFromFile>
+    <Error Condition="'$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
+
+    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DCORE_BINDINGS -DENABLE_AOT=1 -DDRIVER_GEN=1 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/mono-2.0 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/wasm -I$(WasmAOTDir) $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/driver.c -c -o driver.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" StandardOutputImportance="Low" />
+    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/mono-2.0 $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/corebindings.c -c -o corebindings.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" StandardOutputImportance="Low" />
+    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DGEN_PINVOKE=1 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/wasm $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pinvoke.c -c -o pinvoke.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" StandardOutputImportance="Low" />
+    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -s TOTAL_MEMORY=536870912 --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/library_mono.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/binding_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/dotnet_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pal_random.js driver.o pinvoke.o corebindings.o @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') libmono-ee-interp.a libmonosgen-2.0.a libmono-ilgen.a libmono-icall-table.a libSystem.Native.a libSystem.IO.Compression.Native.a libicuuc.a libicui18n.a -o dotnet.js" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" StandardOutputImportance="Low" />
+  </Target>
+
+  <Target Name="_GenerateRunV8Script">
+    <PropertyGroup>
+      <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == ''">$(WasmAppDir)run-v8.sh</WasmRunV8ScriptPath>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(WasmRunV8ScriptPath)"
+      Lines="v8 --expose_wasm runtime.js -- --run $([System.IO.Path]::GetFileName('$(WasmMainAssemblyPath)')) $*"
+      Overwrite="true">
+    </WriteLinesToFile>
+
+    <ItemGroup>
+      <FileWrites Include="$(WasmRunV8ScriptPath)" />
+    </ItemGroup>
+
+    <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
+  </Target>
+
+  <Target Name="RebuildWasmAppBuilder">
+    <ItemGroup>
+      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+         Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+         Targets="Restore"/>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+         Properties="Configuration=Debug"
+         Targets="Build;Publish"/>
+  </Target>
+</Project>

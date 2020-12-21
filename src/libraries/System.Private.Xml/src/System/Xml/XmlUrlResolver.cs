@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Net;
@@ -12,9 +11,9 @@ namespace System.Xml
     // Resolves external XML resources named by a Uniform Resource Identifier (URI).
     public partial class XmlUrlResolver : XmlResolver
     {
-        private static XmlDownloadManager s_downloadManager;
-        private ICredentials _credentials;
-        private IWebProxy _proxy;
+        private static XmlDownloadManager? s_downloadManager;
+        private ICredentials? _credentials;
+        private IWebProxy? _proxy;
 
         private static XmlDownloadManager DownloadManager =>
             s_downloadManager ??
@@ -23,12 +22,14 @@ namespace System.Xml
 
         public XmlUrlResolver() { }
 
-        public override ICredentials Credentials
+        [UnsupportedOSPlatform("browser")]
+        public override ICredentials? Credentials
         {
             set { _credentials = value; }
         }
 
-        public IWebProxy Proxy
+        [UnsupportedOSPlatform("browser")]
+        public IWebProxy? Proxy
         {
             set { _proxy = value; }
         }
@@ -39,7 +40,7 @@ namespace System.Xml
         }
 
         // Maps a URI to an Object containing the actual resource.
-        public override object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
+        public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
         {
             if (ofObjectToReturn is null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(object))
             {
@@ -49,7 +50,7 @@ namespace System.Xml
             throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
         }
 
-        public override Uri ResolveUri(Uri baseUri, string relativeUri) =>
+        public override Uri ResolveUri(Uri? baseUri, string? relativeUri) =>
             base.ResolveUri(baseUri, relativeUri);
     }
 }

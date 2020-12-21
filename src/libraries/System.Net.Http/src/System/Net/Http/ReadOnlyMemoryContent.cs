@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,15 +11,12 @@ namespace System.Net.Http
     {
         private readonly ReadOnlyMemory<byte> _content;
 
-        public ReadOnlyMemoryContent(ReadOnlyMemory<byte> content)
-        {
+        public ReadOnlyMemoryContent(ReadOnlyMemory<byte> content) =>
             _content = content;
-            if (MemoryMarshal.TryGetArray(content, out ArraySegment<byte> array))
-            {
-                // If we have an array, allow HttpClient to take optimized paths by just
-                // giving it the array content to use as its already buffered data.
-                SetBuffer(array.Array!, array.Offset, array.Count);
-            }
+
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            stream.Write(_content.Span);
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
@@ -35,6 +30,9 @@ namespace System.Net.Http
             length = _content.Length;
             return true;
         }
+
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            new ReadOnlyMemoryStream(_content);
 
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(new ReadOnlyMemoryStream(_content));

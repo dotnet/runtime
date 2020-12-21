@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
@@ -14,6 +14,7 @@ namespace System.Runtime.InteropServices
     /// to and from COM calls.
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
+    [SupportedOSPlatform("windows")]
     internal partial struct Variant
     {
 #if DEBUG
@@ -174,11 +175,9 @@ namespace System.Runtime.InteropServices
                     *(uint*)this._typeUnion._unionTypes._byref = (uint)value;
                     break;
 
-#pragma warning disable 618 // ErrorWrapper is obsolete
                 case VarEnum.VT_ERROR:
                     *(int*)this._typeUnion._unionTypes._byref = ((ErrorWrapper)value).ErrorCode;
                     break;
-#pragma warning restore 618
 
                 case VarEnum.VT_I8:
                     *(long*)this._typeUnion._unionTypes._byref = (long)value;

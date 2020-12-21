@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,6 +15,11 @@ namespace System.Net.Security
 {
     internal static class SslStreamPal
     {
+        private static readonly bool UseNewCryptoApi =
+            // On newer Windows version we use new API to get TLS1.3.
+            // API is supported since Windows 10 1809 (17763) but there is no reason to use at the moment.
+            Environment.OSVersion.Version.Major >= 10 && Environment.OSVersion.Version.Build >= 18836;
+
         private const string SecurityPackage = "Microsoft Unified Security Protocol Provider";
 
         private const Interop.SspiCli.ContextFlags RequiredFlags =
@@ -106,7 +110,17 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        {
+            // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
+            return !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
+                        AcquireCredentialsHandleSchannelCred(certificateContext?.Certificate, protocols, policy, isServer) :
+                        AcquireCredentialsHandleSchCredentials(certificateContext?.Certificate, protocols, policy, isServer);
+        }
+
+        // This is legacy crypto API used on .NET Framework and older Windows versions.
+        // It only supports TLS up to 1.2
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
@@ -134,15 +148,87 @@ namespace System.Net.Security
                 flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
             Interop.SspiCli.SCHANNEL_CRED secureCredential = CreateSecureCredential(
-                Interop.SspiCli.SCHANNEL_CRED.CurrentVersion,
-                certificate,
                 flags,
                 protocolFlags,
                 policy);
 
-            return AcquireCredentialsHandle(direction, secureCredential);
+            Interop.Crypt32.CERT_CONTEXT* certificateHandle = null;
+            if (certificate != null)
+            {
+                secureCredential.cCreds = 1;
+                certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
+                secureCredential.paCred = &certificateHandle;
+            }
+
+            return AcquireCredentialsHandle(direction, &secureCredential);
+        }
+
+        // This function uses new crypto API to support TLS 1.3 and beyond.
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        {
+            int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
+            Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
+            Interop.SspiCli.CredentialUse direction;
+
+            if (isServer)
+            {
+                direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
+                flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
+            }
+            else
+            {
+                direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND;
+                flags =
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_DEFAULT_CREDS |
+                    Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
+            }
+
+            if (policy == EncryptionPolicy.RequireEncryption)
+            {
+                // Always opt-in SCH_USE_STRONG_CRYPTO for TLS.
+                if (!isServer && ((protocolFlags & Interop.SChannel.SP_PROT_SSL3) == 0))
+                {
+                    flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_USE_STRONG_CRYPTO;
+                }
+            }
+            else if (policy == EncryptionPolicy.AllowNoEncryption)
+            {
+                // Allow null encryption cipher in addition to other ciphers.
+                flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_ALLOW_NULL_ENCRYPTION;
+            }
+            else
+            {
+                throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(policy));
+            }
+
+            Interop.SspiCli.SCH_CREDENTIALS credential = default;
+            credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
+            credential.dwFlags = flags;
+
+            Interop.Crypt32.CERT_CONTEXT *certificateHandle = null;
+            if (certificate != null)
+            {
+                credential.cCreds = 1;
+                certificateHandle = (Interop.Crypt32.CERT_CONTEXT *)certificate.Handle;
+                credential.paCred = &certificateHandle;
+            }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
+
+            if (protocolFlags != 0)
+            {
+                // If we were asked to do specific protocol we need to fill TLS_PARAMETERS.
+                Interop.SspiCli.TLS_PARAMETERS tlsParameters = default;
+                tlsParameters.grbitDisabledProtocols = (uint)protocolFlags ^ uint.MaxValue;
+
+                credential.cTlsParameters = 1;
+                credential.pTlsParameters = &tlsParameters;
+            }
+
+            return AcquireCredentialsHandle(direction, &credential);
         }
 
         internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext context)
@@ -164,16 +250,7 @@ namespace System.Net.Security
         public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
             // Ensure that there is sufficient space for the message output.
-            int bufferSizeNeeded;
-            try
-            {
-                bufferSizeNeeded = checked(input.Length + headerSize + trailerSize);
-            }
-            catch
-            {
-                NetEventSource.Fail(securityContext, "Arguments out of range");
-                throw;
-            }
+            int bufferSizeNeeded = checked(input.Length + headerSize + trailerSize);
             if (output == null || output.Length < bufferSizeNeeded)
             {
                 output = new byte[bufferSizeNeeded];
@@ -214,7 +291,7 @@ namespace System.Net.Security
 
                 if (errorCode != 0)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                         NetEventSource.Info(securityContext, $"Encrypt ERROR {errorCode:X}");
                     resultSize = 0;
                     return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
@@ -310,7 +387,7 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(errorCode, attachException: true);
         }
 
-        public static unsafe SafeFreeContextBufferChannelBinding? QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
+        public static SafeFreeContextBufferChannelBinding? QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
         {
             return SSPIWrapper.QueryContextChannelBinding(GlobalSSPI.SSPISecureChannel, securityContext, (Interop.SspiCli.ContextAttribute)attribute);
         }
@@ -362,8 +439,6 @@ namespace System.Net.Security
         }
 
         private static Interop.SspiCli.SCHANNEL_CRED CreateSecureCredential(
-            int version,
-            X509Certificate? certificate,
             Interop.SspiCli.SCHANNEL_CRED.Flags flags,
             int protocols, EncryptionPolicy policy)
         {
@@ -372,12 +447,13 @@ namespace System.Net.Security
                 hRootStore = IntPtr.Zero,
                 aphMappers = IntPtr.Zero,
                 palgSupportedAlgs = IntPtr.Zero,
-                paCred = IntPtr.Zero,
+                paCred = null,
                 cCreds = 0,
                 cMappers = 0,
                 cSupportedAlgs = 0,
                 dwSessionLifespan = 0,
-                reserved = 0
+                reserved = 0,
+                dwVersion = Interop.SspiCli.SCHANNEL_CRED.CurrentVersion
             };
 
             if (policy == EncryptionPolicy.RequireEncryption)
@@ -403,14 +479,8 @@ namespace System.Net.Security
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(policy));
             }
 
-            credential.dwVersion = version;
             credential.dwFlags = flags;
             credential.grbitEnabledProtocols = protocols;
-            if (certificate != null)
-            {
-                credential.paCred = certificate.Handle;
-                credential.cCreds = 1;
-            }
 
             return credential;
         }
@@ -418,7 +488,7 @@ namespace System.Net.Security
         //
         // Security: we temporarily reset thread token to open the handle under process account.
         //
-        private static SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SCHANNEL_CRED secureCredential)
+        private static unsafe SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SCHANNEL_CRED* secureCredential)
         {
             // First try without impersonation, if it fails, then try the process account.
             // I.E. We don't know which account the certificate context was created under.
@@ -437,5 +507,26 @@ namespace System.Net.Security
                 return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
             }
         }
+
+        private static unsafe SafeFreeCredentials AcquireCredentialsHandle(Interop.SspiCli.CredentialUse credUsage, Interop.SspiCli.SCH_CREDENTIALS* secureCredential)
+        {
+            // First try without impersonation, if it fails, then try the process account.
+            // I.E. We don't know which account the certificate context was created under.
+            try
+            {
+                //
+                // For app-compat we want to ensure the credential are accessed under >>process<< account.
+                //
+                return WindowsIdentity.RunImpersonated<SafeFreeCredentials>(SafeAccessTokenHandle.InvalidHandle, () =>
+                {
+                    return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
+                });
+            }
+            catch
+            {
+                return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
+            }
+        }
+
     }
 }

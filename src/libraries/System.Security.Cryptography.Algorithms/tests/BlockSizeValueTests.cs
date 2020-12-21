@@ -1,31 +1,52 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class BlockSizeValueTests
     {
-        public static IEnumerable<object[]> GetBlockSizeValue()
+        [Fact]
+        public static void BlockSizeValueTest_HMACMD5()
         {
-            return new[]
-            {
-                new object[] { new HMACMD5Test().GetBlockSizeValue(),    64  },
-                new object[] { new HMACSHA1Test().GetBlockSizeValue(),   64  },
-                new object[] { new HMACSHA256Test().GetBlockSizeValue(), 64  },
-                new object[] { new HMACSHA384Test().GetBlockSizeValue(), 128 },
-                new object[] { new HMACSHA512Test().GetBlockSizeValue(), 128 },
-            };
+            int hmacBlockSizeValue = new HMACMD5Test().GetBlockSizeValue();
+            const int ExpectedBlockSize = 64;
+            Assert.Equal(ExpectedBlockSize, hmacBlockSizeValue);
         }
 
-        [Theory]
-        [MemberData(nameof(GetBlockSizeValue))]
-        public static void BlockSizeValueTest(int hmacBlockSizeValue, int expectedBlockSizeValue)
+        [Fact]
+        public static void BlockSizeValueTest_HMACSHA1()
         {
-            Assert.Equal(expectedBlockSizeValue, hmacBlockSizeValue);
+            int hmacBlockSizeValue = new HMACSHA1Test().GetBlockSizeValue();
+            const int ExpectedBlockSize = 64;
+            Assert.Equal(ExpectedBlockSize, hmacBlockSizeValue);
+        }
+
+        [Fact]
+        public static void BlockSizeValueTest_HMACSHA256()
+        {
+            int hmacBlockSizeValue = new HMACSHA256Test().GetBlockSizeValue();
+            const int ExpectedBlockSize = 64;
+            Assert.Equal(ExpectedBlockSize, hmacBlockSizeValue);
+        }
+
+        [Fact]
+        public static void BlockSizeValueTest_HMACSHA384()
+        {
+            int hmacBlockSizeValue = new HMACSHA384Test().GetBlockSizeValue();
+            const int ExpectedBlockSize = 128;
+            Assert.Equal(ExpectedBlockSize, hmacBlockSizeValue);
+        }
+
+        [Fact]
+        public static void BlockSizeValueTest_HMACSHA512()
+        {
+            int hmacBlockSizeValue = new HMACSHA512Test().GetBlockSizeValue();
+            const int ExpectedBlockSize = 128;
+            Assert.Equal(ExpectedBlockSize, hmacBlockSizeValue);
         }
     }
 

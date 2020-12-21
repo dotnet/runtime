@@ -15,6 +15,7 @@ pr:
     - docs/manpages/*
     - eng/pipelines/global-build.yml
     exclude:
+    - .github/*
     - docs/*
     - eng/pipelines/coreclr/*.*
     - eng/pipelines/libraries/*.*
@@ -22,18 +23,12 @@ pr:
     - eng/pipelines/*.*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
-    - LICENSE.TXT
     - PATENTS.TXT
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
-
 #
 # Build with Release config and Debug runtimeConfiguration
 #
@@ -42,7 +37,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
     platforms:
-    - Windows_NT_x86
+    - windows_x86
     - OSX_x64
     jobParameters:
       testGroup: innerloop
@@ -87,8 +82,21 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Mono_Libraries
-      buildArgs: -subsetCategory libraries-mono /p:RuntimeFlavor=Mono
+      buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
+
+#
+# SourceBuild Build
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    jobParameters:
+      nameSuffix: SourceBuild
+      buildArgs: /p:DotNetBuildFromSource=true
