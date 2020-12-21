@@ -82,7 +82,6 @@ namespace System.Speech.Internal.SrgsCompiler
         ///
         /// </summary>
         /// <param name="iRecursiveDepth"></param>
-        /// <returns></returns>
         internal void CheckForExitPath (ref int iRecursiveDepth)
         {
             //CfgGrammar.TraceInformation ("Rule::CheckForExitPath");
@@ -100,7 +99,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         ///
         /// </summary>
-        /// <returns></returns>
         internal void Validate()
         {
             //CfgGrammar.TraceInformation ("Rule::Validate");

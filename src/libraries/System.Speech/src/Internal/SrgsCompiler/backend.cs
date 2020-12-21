@@ -581,7 +581,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="extra"></param>
         /// <param name="srcToDestHash"></param>
         /// <param name="fromOrg"></param>
-        /// <returns></returns>
         internal void CloneSubGraph(Rule rule, Backend org, Backend extra, Dictionary<State, State> srcToDestHash, bool fromOrg)
         {
             Backend beSrc = fromOrg ? org : extra;
@@ -741,7 +740,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="rule"></param>
         /// <param name="dwAttributes"></param>
-        /// <returns></returns>
         internal void SetRuleAttributes(Rule rule, SPCFGRULEATTRIBUTES dwAttributes)
         {
             // Check if this is the Root rule
@@ -1295,7 +1293,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         ///
         /// </summary>
-        /// <returns></returns>
         private void ValidateAndTagRules()
         {
             //CfgGrammar.TraceInformation ("BackEnd::ValidateAndTagRules");

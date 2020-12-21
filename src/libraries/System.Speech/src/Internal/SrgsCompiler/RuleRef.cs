@@ -117,7 +117,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="backend"></param>
         /// <param name="parent"></param>
-        /// <returns></returns>
         internal void InitSpecialRuleRef(Backend backend, ParseElementCollection parent)
         {
             Rule rule = null;

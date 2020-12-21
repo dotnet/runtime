@@ -101,7 +101,6 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <summary>
         ///
         /// </summary>
-        /// <returns></returns>
         /// <param name="builders"></param>
         internal void CloneItems(RuleRefElement builders)
         {

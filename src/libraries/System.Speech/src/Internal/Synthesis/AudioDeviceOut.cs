@@ -206,7 +206,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Pause the playback of a sound.
         /// </summary>
-        /// <returns>MMSYSERR.NOERROR if successful</returns>
         internal override void Pause()
         {
             lock (_noWriteOutLock)
@@ -229,7 +228,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Resume the playback of a paused sound.
         /// </summary>
-        /// <returns>MMSYSERR.NOERROR if successful</returns>
         internal override void Resume()
         {
             lock (_noWriteOutLock)

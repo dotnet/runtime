@@ -77,13 +77,11 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Pause the playback of a sound.
         /// </summary>
-        /// <returns>MMSYSERR.NOERROR if successful</returns>
         internal abstract void Pause();
 
         /// <summary>
         /// Resume the playback of a paused sound.
         /// </summary>
-        /// <returns>MMSYSERR.NOERROR if successful</returns>
         internal abstract void Resume();
 
         /// <summary>
@@ -255,7 +253,6 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="waveEx"></param>
         /// <param name="position"></param>
         /// <param name="cData"></param>
-        /// <returns>Position in the stream for the header</returns>
         internal static void WriteWaveHeader(Stream stream, WAVEFORMATEX waveEx, long position, int cData)
         {
             RIFFHDR riff = new(0);

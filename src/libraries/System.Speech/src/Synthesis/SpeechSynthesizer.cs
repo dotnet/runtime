@@ -167,7 +167,6 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="prompt"></param>
-        /// <returns></returns>
         public void SpeakAsync(Prompt prompt)
         {
             Helpers.ThrowIfNull(prompt, nameof(prompt));
@@ -208,7 +207,6 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="textToSpeak"></param>
-        /// <returns></returns>
         public void Speak(string textToSpeak)
         {
             Speak(new Prompt(textToSpeak, SynthesisTextFormat.Text));
@@ -218,7 +216,6 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="prompt"></param>
-        /// <returns></returns>
         public void Speak(Prompt prompt)
         {
             Helpers.ThrowIfNull(prompt, nameof(prompt));
@@ -238,7 +235,6 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="promptBuilder"></param>
-        /// <returns></returns>
         public void Speak(PromptBuilder promptBuilder)
         {
             Speak(new Prompt(promptBuilder));
@@ -248,7 +244,6 @@ namespace System.Speech.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="textToSpeak"></param>
-        /// <returns></returns>
         public void SpeakSsml(string textToSpeak)
         {
             Speak(new Prompt(textToSpeak, SynthesisTextFormat.Ssml));

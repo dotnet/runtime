@@ -96,7 +96,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Deletet a state
         /// </summary>
         /// <param name="state"></param>
-        /// <returns></returns>
         internal void DeleteState(State state)
         {
 #if DEBUG

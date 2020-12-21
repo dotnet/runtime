@@ -193,7 +193,6 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <summary>
         ///
         /// </summary>
-        /// <returns></returns>
         /// <param name="builders"></param>
         internal void CloneItems(BuilderElements builders)
         {
@@ -209,7 +208,6 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="elementFactory"></param>
         /// <param name="parent"></param>
         /// <param name="ruleIds"></param>
-        /// <returns></returns>
         internal void CreateChildrenElements(IElementFactory elementFactory, IRule parent, IdentifierCollection ruleIds)
         {
             foreach (GrammarBuilderBase buider in Items)
@@ -230,7 +228,6 @@ namespace System.Speech.Internal.GrammarBuilding
         /// <param name="parent"></param>
         /// <param name="rule"></param>
         /// <param name="ruleIds"></param>
-        /// <returns></returns>
         internal void CreateChildrenElements(IElementFactory elementFactory, IItem parent, IRule rule, IdentifierCollection ruleIds)
         {
             foreach (GrammarBuilderBase buider in Items)

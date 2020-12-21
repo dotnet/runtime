@@ -123,7 +123,6 @@ namespace System.Speech.Internal.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="prompt"></param>
-        /// <returns></returns>
         internal void Speak(Prompt prompt)
         {
             bool done = false;
@@ -169,7 +168,6 @@ namespace System.Speech.Internal.Synthesis
         /// TODOC
         /// </summary>
         /// <param name="prompt"></param>
-        /// <returns></returns>
         internal void SpeakAsync(Prompt prompt)
         {
             QueuePrompt(prompt);
@@ -1799,7 +1797,6 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="textToSpeak"></param>
         /// <param name="prompt"></param>
         /// <param name="fIsXml"></param>
-        /// <returns></returns>
         private void Speak(string textToSpeak, Prompt prompt, bool fIsXml)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -1820,7 +1817,6 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         /// <param name="audio"></param>
         /// <param name="prompt"></param>
-        /// <returns></returns>
         private void SpeakStream(Uri audio, Prompt prompt)
         {
             //--- Add the Speak info to the pending TTS rendering list
