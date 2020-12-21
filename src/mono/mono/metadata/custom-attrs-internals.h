@@ -23,6 +23,9 @@ mono_class_metadata_foreach_custom_attr (MonoClass *klass, MonoAssemblyMetadataC
 void
 mono_method_metadata_foreach_custom_attr (MonoMethod *method, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data);
 
+void
+mono_field_metadata_foreach_custom_attr (MonoClassField *field, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data);
+
 gboolean
 mono_assembly_is_weak_field (MonoImage *image, guint32 field_idx);
 

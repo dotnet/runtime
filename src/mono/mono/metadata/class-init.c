@@ -787,6 +787,19 @@ method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const ch
 	return has_attr.has_attr;
 }
 
+static gboolean
+field_has_wellknown_attribute (MonoClassField *field, const char *nspace, const char *name, gboolean in_corlib)
+{
+	struct FoundAttrUD has_attr;
+	has_attr.nspace = nspace;
+	has_attr.name = name;
+	has_attr.in_corlib = in_corlib;
+	has_attr.has_attr = FALSE;
+
+	mono_field_metadata_foreach_custom_attr (field, has_wellknown_attribute_func, &has_attr);
+
+	return has_attr.has_attr;
+}
 
 static gboolean
 class_has_isbyreflike_attribute (MonoClass *klass)

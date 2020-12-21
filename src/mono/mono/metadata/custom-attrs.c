@@ -1918,6 +1918,17 @@ mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 	return result;
 }
 
+static guint32
+custom_attrs_idx_from_field (MonoClass *klass, MonoClassField *field)
+{
+	guint32 idx;
+	g_assert (!image_is_dynamic (m_class_get_image (klass)));
+	idx = find_field_index (klass, field);
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_FIELDDEF;
+	return idx;
+}
+
 MonoCustomAttrInfo*
 mono_custom_attrs_from_field_checked (MonoClass *klass, MonoClassField *field, MonoError *error)
 {
@@ -1928,9 +1939,7 @@ mono_custom_attrs_from_field_checked (MonoClass *klass, MonoClassField *field, M
 		field = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
 		return lookup_custom_attr (m_class_get_image (klass), field);
 	}
-	idx = find_field_index (klass, field);
-	idx <<= MONO_CUSTOM_ATTR_BITS;
-	idx |= MONO_CUSTOM_ATTR_FIELDDEF;
+	idx = custom_attrs_idx_from_field (klass, field);
 	return mono_custom_attrs_from_index_checked (m_class_get_image (klass), idx, FALSE, error);
 }
 
@@ -2607,6 +2616,35 @@ mono_method_metadata_foreach_custom_attr (MonoMethod *method, MonoAssemblyMetada
 		return;
 
 	guint32 idx = custom_attrs_idx_from_method (method);
+
+	metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
+}
+
+/**
+ * \param klass - the class field to iterate over
+ * \param func the funciton to call for each custom attribute
+ * \param user_data passed to \p func
+ *
+ * Calls \p func for each custom attribute type on the given field until \p func returns TRUE.
+ *
+ * Everything is done using low-level metadata APIs, so it is safe to use
+ * during assembly loading and class initialization.
+ *
+ * The MonoClass \p klass should have the following fields initialized (ie \c
+ * mono_class_setup_basic_field_info should have been called already):
+ *
+ * \c MonoClass:fields (only \c MonoClass:parent), \c MonoClass:fields.count,
+ * \c MonoClass:first_field_idx
+ */
+void
+mono_field_metadata_foreach_custom_attr (MonoClassField *field, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data)
+{
+	/* FIXME: field on a generic instance? */
+	MonoImage *image = m_class_get_image (field->parent);
+
+	g_assert (!image_is_dynamic (image));
+
+	guint32 idx = custom_attrs_idx_from_field (field->parent, field);
 
 	metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
 }
