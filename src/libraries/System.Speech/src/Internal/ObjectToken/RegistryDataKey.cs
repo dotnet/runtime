@@ -579,8 +579,8 @@ namespace System.Speech.Internal.ObjectTokens
             RegistryKey[] roots = new RegistryKey[] {
                 Registry.ClassesRoot,
                 Registry.LocalMachine,
-                Registry.CurrentUser
-                , Registry.CurrentConfig
+                Registry.CurrentUser,
+                Registry.CurrentConfig
             };
 
             foreach (RegistryKey key in roots)

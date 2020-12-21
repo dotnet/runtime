@@ -23,8 +23,8 @@ using System.Threading;
 namespace System.Speech.Recognition
 {
     /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase"]/*' />
-    internal class RecognizerBase : IRecognizerInternal, IDisposable
-, ISpGrammarResourceLoader
+    internal class RecognizerBase : IRecognizerInternal, IDisposable,
+ISpGrammarResourceLoader
     {
         //*******************************************************************
         //
