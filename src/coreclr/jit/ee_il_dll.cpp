@@ -341,10 +341,23 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 #endif // !FEATURE_SIMD
 }
 
-/*****************************************************************************
- * Returns the number of bytes required for the given type argument
- */
-
+//------------------------------------------------------------------------
+// eeGetArgSize: Returns the number of bytes required for the given type argument
+//   including padding after the actual value.
+//
+// Arguments:
+//   list - the arg list handle pointing to the argument
+//   sig  - the signature for the arg's method
+//
+// Return value:
+//   the number of stack slots in stack arguments for the call.
+//
+// Notes:
+//   - On most platforms arguments are passed with TARGET_POINTER_SIZE alignment,
+//   so all types take an integer number of TARGET_POINTER_SIZE slots.
+//   It is different for arm64 apple that packs some types without alignment and padding.
+//   If the argument is passed by reference then the method returns REF size.
+//
 unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig)
 {
 #if defined(TARGET_AMD64)
@@ -370,9 +383,15 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
     CORINFO_CLASS_HANDLE argClass;
     CorInfoType          argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
     var_types            argType    = JITtype2varType(argTypeJit);
+    unsigned             argSize;
+
+    var_types hfaType = TYP_UNDEF;
+    bool      isHfa   = false;
 
     if (varTypeIsStruct(argType))
     {
+        hfaType             = GetHfaType(argClass);
+        isHfa               = (hfaType != TYP_UNDEF);
         unsigned structSize = info.compCompHnd->getClassSize(argClass);
 
         // make certain the EE passes us back the right thing for refanys
@@ -395,8 +414,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
             // Is the struct larger than 16 bytes
             if (structSize > (2 * TARGET_POINTER_SIZE))
             {
-                var_types hfaType = GetHfaType(argClass); // set to float or double if it is an HFA, otherwise TYP_UNDEF
-                bool      isHfa   = (hfaType != TYP_UNDEF);
+
 #ifndef TARGET_UNIX
                 if (info.compIsVarArgs)
                 {
@@ -412,29 +430,59 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
                     return TARGET_POINTER_SIZE;
                 }
             }
-            // otherwise will we pass this struct by value in multiple registers
         }
-#elif defined(TARGET_ARM)
-//  otherwise will we pass this struct by value in multiple registers
-#else
+#elif !defined(TARGET_ARM)
         NYI("unknown target");
 #endif // defined(TARGET_XXX)
 #endif // FEATURE_MULTIREG_ARGS
 
-        // we pass this struct by value in multiple registers
-        return roundUp(structSize, TARGET_POINTER_SIZE);
+        // Otherwise we will pass this struct by value in multiple registers/stack bytes.
+        argSize = structSize;
     }
     else
     {
-#if !defined(OSX_ARM64_ABI)
-        unsigned argSize = sizeof(int) * genTypeStSz(argType);
-        argSize = roundUp(argSize, TARGET_POINTER_SIZE);
-#else
-        unsigned argSize = genTypeSize(argType);
-#endif
-        assert(0 < argSize && argSize <= sizeof(__int64));
-        return argSize;
+        argSize = genTypeSize(argType);
     }
+    const unsigned argAlignment       = eeGetArgAlignment(argType, (hfaType == TYP_FLOAT));
+    const unsigned argSizeWithPadding = roundUp(argSize, argAlignment);
+    return argSizeWithPadding;
+
+#endif
+}
+
+//------------------------------------------------------------------------
+// eeGetArgAlignment: Return arg passing alignment for the given type.
+//
+// Arguments:
+//   type - the argument type
+//   isFloatHfa - is it an HFA<float> type
+//
+// Return value:
+//   the required alignment in bytes.
+//
+// Notes:
+//   It currently doesn't return smaller than required alignment for arm32 (4 bytes for double and int64)
+//   but it does not lead to issues because its alignment requirements are satisfied in other code parts.
+//   TODO: fix this function and delete the other code that is handling this.
+//
+// static
+unsigned Compiler::eeGetArgAlignment(var_types type, bool isFloatHfa)
+{
+#if defined(OSX_ARM64_ABI)
+    if (isFloatHfa)
+    {
+        assert(varTypeIsStruct(type));
+        return sizeof(float);
+    }
+    if (varTypeIsStruct(type))
+    {
+        return TARGET_POINTER_SIZE;
+    }
+    const unsigned argSize = genTypeSize(type);
+    assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
+    return argSize;
+#else
+    return TARGET_POINTER_SIZE;
 #endif
 }
 

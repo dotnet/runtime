@@ -25,9 +25,9 @@
     <MonoStaticFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">libmonosgen-2.0.a</MonoStaticFileName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
-    <CoreClrTestCoreRoot>$(ArtifactsDir)tests\coreclr\$(TargetOS).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root</CoreClrTestCoreRoot>
-    <LibrariesTesthostRoot>$(ArtifactsDir)bin\testhost\$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesTestConfig)-$(Platform)\</LibrariesTesthostRoot>
-    <LibrariesTesthostRuntimeDir>$(LibrariesTesthostRoot)shared\Microsoft.NETCore.App\$(ProductVersion)\</LibrariesTesthostRuntimeDir>
+    <CoreClrTestCoreRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(TargetOS).$(Platform).$(CoreClrTestConfig)', 'Tests', 'Core_Root'))</CoreClrTestCoreRoot>
+    <LibrariesTesthostRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'testhost', '$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesTestConfig)-$(Platform)'))</LibrariesTesthostRoot>
+    <LibrariesTesthostRuntimeDir>$([MSBuild]::NormalizeDirectory('$(LibrariesTesthostRoot)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</LibrariesTesthostRuntimeDir>
     <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
@@ -35,7 +35,7 @@
     <MonoAOTEnableLLVM Condition="'$(TargetsiOS)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetstvOS)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
-    <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\config.h</CrossConfigH>
+    <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjDir)', 'cross', 'config.h'))</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
     <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true'">true</MonoAOTBundleLLVMOptimizer>
     <MonoCCompiler>$(Compiler)</MonoCCompiler>
@@ -143,7 +143,7 @@
 
     <!-- ARM Linux cross build options on CI -->
     <ItemGroup Condition="'$(TargetsAndroid)' != 'true' and '$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64')">
-      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(RepositoryEngineeringDir)/common/cross/toolchain.cmake" />
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'common', 'cross', 'toolchain.cmake'))" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="TARGET_BUILD_ARCH=arm64" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="TARGET_BUILD_ARCH=arm" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
@@ -314,7 +314,7 @@
     <PropertyGroup>
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
 
@@ -322,7 +322,7 @@
       <_MonoCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoCMakeBuildCommand) --verbose</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' != 'Windows_NT'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
-      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />
@@ -393,7 +393,7 @@
     <ItemGroup>
       <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
-      <MonoAOTCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$(MonoObjDir)cross/out"/>
+      <MonoAOTCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross', 'out'))"/>
       <MonoAOTCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
       <!-- FIXME: Disable more -->
       <MonoAOTCMakeArgs Include="-DENABLE_MINIMAL=com,remoting" />

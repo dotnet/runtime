@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     if (!relocsOnly)
                     {
-                        int index = _instanceCell.Table.IndexFromBeginningOfArray;
+                        int index = _containingImportSection.IndexFromBeginningOfArray;
                         // mov r4, #index
                         instructionEncoder.EmitMOV(Register.R4, index);
                         // push r4
@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
 
                     // mov r4, [module]
-                    instructionEncoder.EmitMOV(Register.R4, _moduleImport);
+                    instructionEncoder.EmitMOV(Register.R4, factory.ModuleImport);
                     // ldr r4, [r4]
                     instructionEncoder.EmitLDR(Register.R4, Register.R4);
                     // push r4
@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case Kind.Lazy:
                     // mov r1, [module]
-                    instructionEncoder.EmitMOV(Register.R1, _moduleImport);
+                    instructionEncoder.EmitMOV(Register.R1, factory.ModuleImport);
                     // ldr r1, [r1]
                     instructionEncoder.EmitLDR(Register.R1, Register.R1);
                     // mov r12, [helper]

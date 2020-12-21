@@ -9,10 +9,6 @@ schedules:
   always: true
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Release CoreCLR and Library builds

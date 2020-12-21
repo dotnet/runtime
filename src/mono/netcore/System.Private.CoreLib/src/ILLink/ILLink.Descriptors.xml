@@ -70,26 +70,6 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
-		<!-- domain.c: mono_defaults.array_class -->
-		<type fullname="System.Array">
-			<!-- InternalArray__%s_%s is used in aot-compiler.c and class-init.c -->
-			<method name="InternalArray__ICollection_get_Count" />
-			<method name="InternalArray__ICollection_get_IsReadOnly" />
-			<method name="InternalArray__IEnumerable_GetEnumerator" />
-			<method name="InternalArray__ICollection_Clear" />
-			<method name="InternalArray__ICollection_Add" />
-			<method name="InternalArray__ICollection_Remove" />
-			<method name="InternalArray__ICollection_Contains" />
-			<method name="InternalArray__ICollection_CopyTo" />
-			<method name="InternalArray__Insert" />
-			<method name="InternalArray__RemoveAt" />
-			<method name="InternalArray__IndexOf" />
-			<method name="InternalArray__get_Item" />
-			<method name="InternalArray__set_Item" />
-			<method name="InternalArray__IReadOnlyList_get_Item" />
-			<method name="InternalArray__IReadOnlyCollection_get_Count" />
-		</type>
-
 		<!-- mono/metadata/exception.c mono/metadata/marshal.c ... -->
 		<!-- exception.c (mono_get_exception_array_type_mismatch) -->
 		<type fullname="System.ArrayTypeMismatchException">

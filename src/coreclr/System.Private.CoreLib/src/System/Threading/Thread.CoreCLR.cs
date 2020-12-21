@@ -70,7 +70,7 @@ namespace System.Threading
             _startArg = obj;
 
             ExecutionContext? context = _executionContext;
-            if (context != null)
+            if (context != null && !context.IsDefault)
             {
                 ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
             }
@@ -87,7 +87,7 @@ namespace System.Threading
             Debug.Assert(_start is ThreadStart);
 
             ExecutionContext? context = _executionContext;
-            if (context != null)
+            if (context != null && !context.IsDefault)
             {
                 ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
             }
@@ -212,9 +212,6 @@ namespace System.Threading
             StartupSetApartmentStateInternal();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-            // Attach current thread's security principal object to the new
-            // thread. Be careful not to bind the current thread to a principal
-            // if it's not already bound.
             if (_delegate != null)
             {
                 // If we reach here with a null delegate, something is broken. But we'll let the StartInternal method take care of
@@ -226,6 +223,29 @@ namespace System.Threading
                 t.SetExecutionContextHelper(ec);
             }
 
+            StartInternal();
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        internal void UnsafeStart(object? parameter)
+        {
+            // We expect the thread to be setup with a ParameterizedThreadStart if this Start is called.
+            Debug.Assert(_delegate is ThreadStart);
+
+            _threadStartArg = parameter;
+            UnsafeStart();
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        internal void UnsafeStart()
+        {
+#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
+            // Eagerly initialize the COM Apartment state of the thread if we're allowed to.
+            StartupSetApartmentStateInternal();
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+            Debug.Assert(_delegate != null);
+            Debug.Assert(_delegate!.Target is ThreadHelper);
             StartInternal();
         }
 

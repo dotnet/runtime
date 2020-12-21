@@ -179,12 +179,18 @@
     </ItemGroup>
   </Target>
 
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp">
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
-      <WasmMainAssemblyPath>$(WasmTestRunnerDir)\WasmTestRunner.dll</WasmMainAssemblyPath>
+      <WasmAotDir>$(PublishDir)</WasmAotDir>
+      <WasmMainAssemblyPath>$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>

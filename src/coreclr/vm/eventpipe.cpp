@@ -169,7 +169,8 @@ void EventPipe::EnableViaEnvironmentVariables()
         int providerCnt = 0;
 
         // Create EventPipeProviderConfiguration and start tracing.
-        NewHolder<EventPipeProviderConfiguration> pProviders = nullptr;
+        NewArrayHolder<EventPipeProviderConfiguration> pProviders = nullptr;
+        NewArrayHolder<XplatEventLoggerConfiguration> pConfigurations = nullptr;
 
         // If COMPlus_EnableEventPipe is set to 1 but no configuration was specified, enable EventPipe session
         // with the default provider configurations.
@@ -183,7 +184,6 @@ void EventPipe::EnableViaEnvironmentVariables()
         }
         else
         {
-            auto configuration = XplatEventLoggerConfiguration();
             // Count how many providers there are to parse
             static WCHAR comma = W(',');
             while (*configToParse != '\0')
@@ -198,24 +198,27 @@ void EventPipe::EnableViaEnvironmentVariables()
             }
             configToParse = eventpipeConfig;
             pProviders = new EventPipeProviderConfiguration[providerCnt];
+            pConfigurations = new XplatEventLoggerConfiguration[providerCnt];
             int i = 0;
             while (*configToParse != '\0')
             {
                 auto end = wcschr(configToParse, comma);
-                configuration.Parse(configToParse);
+                pConfigurations[i].Parse(configToParse);
 
                 // if we find any invalid configuration, do not trace.
-                if (!configuration.IsValid())
+                if (!pConfigurations[i].IsValid())
                 {
                     return;
                 }
 
-                pProviders[i++] = EventPipeProviderConfiguration(
-                    configuration.GetProviderName(),
-                    configuration.GetEnabledKeywordsMask(),
-                    configuration.GetLevel(),
-                    configuration.GetArgument()
+                pProviders[i] = EventPipeProviderConfiguration(
+                    pConfigurations[i].GetProviderName(),
+                    pConfigurations[i].GetEnabledKeywordsMask(),
+                    pConfigurations[i].GetLevel(),
+                    pConfigurations[i].GetArgument()
                 );
+
+                ++i;
 
                 if (end == nullptr)
                 {

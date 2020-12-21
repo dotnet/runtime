@@ -428,6 +428,11 @@ namespace System.Reflection.Emit
             return sig;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Module.ResolveMethod is marked as RequiresUnreferencedCode because it relies on tokens " +
+                            "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break. " +
+                            "The usage here is not like that as all these tokens come from existing metadata loaded from some IL " +
+                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
         private static MethodBase GetGenericMethodBaseDefinition(MethodBase methodBase)
         {
             // methodInfo = G<Foo>.M<Bar> ==> methDef = G<T>.M<S>
@@ -601,6 +606,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private Type? GetTypeNoLock(string className, bool throwOnError, bool ignoreCase)
         {
             // public API to to a type. The reason that we need this function override from module

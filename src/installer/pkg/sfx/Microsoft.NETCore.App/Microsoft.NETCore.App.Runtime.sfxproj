@@ -39,9 +39,11 @@
     <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
   </PropertyGroup>
 
-  <ItemGroup>
-    <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(Version)" />
-  </ItemGroup>
+  <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
+    <ItemGroup>
+      <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Mobile uses a different hosting model, so we don't include the .NET host components. -->
   <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
