@@ -171,14 +171,24 @@ namespace System.Diagnostics.Tests
                     string stat = File.ReadAllText($"/proc/{process.Id}/stat");
                     Assert.Contains($"({scriptName.Substring(0, 15)})", stat);
                     string cmdline = File.ReadAllText($"/proc/{process.Id}/cmdline");
-                    Assert.Equal($"/bin/sh\0{filename}\0", cmdline);
 
-                    Assert.Equal(scriptName, process.ProcessName);
+                    if (string.IsNullOrEmpty(cmdline))
+                    {
+                        Assert.True(process.HasExited, $"/proc/{process.Id}/cmdline was empty, but the process was not a zombie");
+                    }
+                    else
+                    {
+                        Assert.Equal($"/bin/sh\0{filename}\0", cmdline);
+                        Assert.Equal(scriptName, process.ProcessName);
+                    }
                 }
                 finally
                 {
-                    process.Kill();
-                    process.WaitForExit();
+                    if (!process.HasExited)
+                    {
+                        process.Kill();
+                        process.WaitForExit();
+                    }
                 }
             }
         }
