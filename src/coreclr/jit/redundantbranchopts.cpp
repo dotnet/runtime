@@ -344,6 +344,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // list twice. Classification of preds should be cheap so we just rerun the
     // reachability checks twice as well.
     //
+    int               numPreds          = 0;
     int               numAmbiguousPreds = 0;
     int               numTruePreds      = 0;
     int               numFalsePreds     = 0;
@@ -358,6 +359,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
         BasicBlock* const predBlock = pred->flBlock;
+        numPreds++;
 
         // We don't do switch updates, yet.
         //
@@ -381,30 +383,25 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             continue;
         }
 
-        if (predBlock->bbNext == block)
-        {
-            JITDUMP(FMT_BB " is a fall-through pred\n", predBlock->bbNum);
-            assert(fallThroughPred == nullptr);
-            fallThroughPred = predBlock;
-        }
-
         if (isTruePred)
         {
             if (!BasicBlock::sameEHRegion(predBlock, trueTarget))
             {
                 JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
+                numAmbiguousPreds++;
                 continue;
             }
 
             if (numTruePreds == 0)
             {
-                numTruePreds++;
                 uniqueTruePred = predBlock;
             }
             else
             {
                 uniqueTruePred = nullptr;
             }
+
+            numTruePreds++;
             JITDUMP(FMT_BB " is a true pred\n", predBlock->bbNum);
         }
         else
@@ -414,21 +411,36 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             if (!BasicBlock::sameEHRegion(predBlock, falseTarget))
             {
                 JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
+                numAmbiguousPreds++;
                 continue;
             }
 
             if (numFalsePreds == 0)
             {
-                numFalsePreds++;
                 uniqueFalsePred = predBlock;
             }
             else
             {
                 uniqueFalsePred = nullptr;
             }
+
+            numFalsePreds++;
             JITDUMP(FMT_BB " is a false pred\n", predBlock->bbNum);
         }
+
+        // Note if the true or false pred is the fall through pred.
+        //
+        if (predBlock->bbNext == block)
+        {
+            JITDUMP(FMT_BB " is the fall-through pred\n", predBlock->bbNum);
+            assert(fallThroughPred == nullptr);
+            fallThroughPred = predBlock;
+        }
     }
+
+    // All preds should have been classified.
+    //
+    assert(numPreds == numTruePreds + numFalsePreds + numAmbiguousPreds);
 
     if ((numTruePreds == 0) && (numFalsePreds == 0))
     {
@@ -474,6 +486,12 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             continue;
         }
 
+        if (!BasicBlock::sameEHRegion(predBlock, isTruePred ? trueTarget : falseTarget))
+        {
+            // Skip over eh constrained preds, they will continue to flow to block.
+            continue;
+        }
+
         // Is this the one and only unambiguous fall through pred?
         //
         if (predBlock->bbNext == block)
@@ -513,11 +531,6 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             assert(predBlock->bbNext != block);
             if (isTruePred)
             {
-                if (!BasicBlock::sameEHRegion(predBlock, trueTarget))
-                {
-                    continue;
-                }
-
                 assert(!fgReachable(falseSuccessor, predBlock));
                 JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
                         " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
@@ -530,12 +543,6 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             else
             {
                 assert(isFalsePred);
-
-                if (!BasicBlock::sameEHRegion(predBlock, falseTarget))
-                {
-                    continue;
-                }
-
                 JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
                         " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                         predBlock->bbNum, block->bbNum, predBlock->bbNum, falseTarget->bbNum);
