@@ -134,16 +134,16 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public string BaseClass
         {
+            get
+            {
+                return _baseclass;
+            }
             set
             {
                 // base value can be null
 #pragma warning disable 56526
                 _baseclass = value;
 #pragma warning restore 56526
-            }
-            get
-            {
-                return _baseclass;
             }
         }
 
@@ -152,14 +152,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public string Script
         {
+            get
+            {
+                return _script;
+            }
             set
             {
                 Helpers.ThrowIfEmptyOrNull(value, nameof(value));
                 _script = value;
-            }
-            get
-            {
-                return _script;
             }
         }
 
@@ -168,14 +168,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public string OnInit
         {
+            get
+            {
+                return _onInit;
+            }
             set
             {
                 ValidateIdentifier(value);
                 _onInit = value;
-            }
-            get
-            {
-                return _onInit;
             }
         }
 
@@ -184,14 +184,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public string OnParse
         {
+            get
+            {
+                return _onParse;
+            }
             set
             {
                 ValidateIdentifier(value);
                 _onParse = value;
-            }
-            get
-            {
-                return _onParse;
             }
         }
 
@@ -200,14 +200,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public string OnError
         {
+            get
+            {
+                return _onError;
+            }
             set
             {
                 ValidateIdentifier(value);
                 _onError = value;
-            }
-            get
-            {
-                return _onError;
             }
         }
 
@@ -216,14 +216,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public string OnRecognition
         {
+            get
+            {
+                return _onRecognition;
+            }
             set
             {
                 ValidateIdentifier(value);
                 _onRecognition = value;
-            }
-            get
-            {
-                return _onRecognition;
             }
         }
 
@@ -402,13 +402,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Scope"]/*' />
         internal RuleDynamic Dynamic
         {
-            set
-            {
-                _dynamic = value;
-            }
             get
             {
                 return _dynamic;
+            }
+            set
+            {
+                _dynamic = value;
             }
         }
 

@@ -151,14 +151,14 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal uint MatchMode
         {
+            get
+            {
+                return (_flag1 >> 27) & 0x7;
+            }
             set
             {
                 _flag1 &= ~(0x38000000U);
                 _flag1 |= value << 27;
-            }
-            get
-            {
-                return (_flag1 >> 27) & 0x7;
             }
         }
 

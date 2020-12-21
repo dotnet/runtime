@@ -38,13 +38,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
         string IGrammar.Root
         {
-            set
-            {
-                _sRoot = value;
-            }
             get
             {
                 return _sRoot;
+            }
+            set
+            {
+                _sRoot = value;
             }
         }
 
@@ -239,13 +239,13 @@ namespace System.Speech.Internal.SrgsCompiler
         /// |/summary|
         string IGrammar.Language
         {
-            set
-            {
-                _cg._language = value;
-            }
             get
             {
                 return _cg._language;
+            }
+            set
+            {
+                _cg._language = value;
             }
         }
 
@@ -254,13 +254,13 @@ namespace System.Speech.Internal.SrgsCompiler
         /// |/summary|
         string IGrammar.Namespace
         {
-            set
-            {
-                _cg._namespace = value;
-            }
             get
             {
                 return _cg._namespace;
+            }
+            set
+            {
+                _cg._namespace = value;
             }
         }
 
@@ -269,13 +269,13 @@ namespace System.Speech.Internal.SrgsCompiler
         /// |/summary|
         Collection<string> IGrammar.CodeBehind
         {
-            set
-            {
-                _cg._codebehind = value;
-            }
             get
             {
                 return _cg._codebehind;
+            }
+            set
+            {
+                _cg._codebehind = value;
             }
         }
 
@@ -295,13 +295,13 @@ namespace System.Speech.Internal.SrgsCompiler
         /// |/summary|
         Collection<string> IGrammar.ImportNamespaces
         {
-            set
-            {
-                _cg._importNamespaces = value;
-            }
             get
             {
                 return _cg._importNamespaces;
+            }
+            set
+            {
+                _cg._importNamespaces = value;
             }
         }
 
@@ -310,13 +310,13 @@ namespace System.Speech.Internal.SrgsCompiler
         /// |/summary|
         Collection<string> IGrammar.AssemblyReferences
         {
-            set
-            {
-                _cg._assemblyReferences = value;
-            }
             get
             {
                 return _cg._assemblyReferences;
+            }
+            set
+            {
+                _cg._assemblyReferences = value;
             }
         }
 

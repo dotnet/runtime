@@ -362,6 +362,10 @@ namespace System.Speech.Recognition
         /// </summary>
         public CultureInfo Culture
         {
+            get
+            {
+                return _culture;
+            }
             set
             {
                 if (value == null)
@@ -370,10 +374,6 @@ namespace System.Speech.Recognition
                 }
 
                 _culture = value;
-            }
-            get
-            {
-                return _culture;
             }
         }
 

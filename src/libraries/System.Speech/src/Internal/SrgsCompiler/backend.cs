@@ -1412,13 +1412,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal AlphabetType Alphabet
         {
-            set
-            {
-                _alphabet = value;
-            }
             get
             {
                 return _alphabet;
+            }
+            set
+            {
+                _alphabet = value;
             }
         }
 

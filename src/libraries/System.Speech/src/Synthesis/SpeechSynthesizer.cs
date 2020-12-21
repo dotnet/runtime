@@ -635,6 +635,10 @@ namespace System.Speech.Synthesis
         /// </summary>
         public int Rate
         {
+            get
+            {
+                return VoiceSynthesizer.Rate;
+            }
             set
             {
                 if (value < -10 || value > 10)
@@ -643,10 +647,6 @@ namespace System.Speech.Synthesis
                 }
                 VoiceSynthesizer.Rate = value;
             }
-            get
-            {
-                return VoiceSynthesizer.Rate;
-            }
         }
 
         /// <summary>
@@ -654,6 +654,10 @@ namespace System.Speech.Synthesis
         /// </summary>
         public int Volume
         {
+            get
+            {
+                return VoiceSynthesizer.Volume;
+            }
             set
             {
                 if (value < 0 || value > 100)
@@ -661,10 +665,6 @@ namespace System.Speech.Synthesis
                     throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.ResourceUsageOutOfRange));
                 }
                 VoiceSynthesizer.Volume = value;
-            }
-            get
-            {
-                return VoiceSynthesizer.Volume;
             }
         }
 

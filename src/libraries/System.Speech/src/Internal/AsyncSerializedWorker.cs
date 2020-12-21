@@ -139,6 +139,13 @@ namespace System.Speech.Internal
 
         internal bool AsyncMode
         {
+            get
+            {
+                lock (_queue.SyncRoot)
+                {
+                    return _isAsyncMode;
+                }
+            }
             set
             {
                 bool notify = false;
@@ -158,13 +165,6 @@ namespace System.Speech.Internal
                 if (notify)
                 {
                     OnWorkItemPending();
-                }
-            }
-            get
-            {
-                lock (_queue.SyncRoot)
-                {
-                    return _isAsyncMode;
                 }
             }
         }

@@ -295,13 +295,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <value></value>
         string IGrammar.Root
         {
-            set
-            {
-                _sRoot = value;
-            }
             get
             {
                 return _sRoot;
+            }
+            set
+            {
+                _sRoot = value;
             }
         }
 
@@ -452,13 +452,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public Collection<string> CodeBehind
         {
-            set
-            {
-                throw new InvalidOperationException();
-            }
             get
             {
                 return _codebehind;
+            }
+            set
+            {
+                throw new InvalidOperationException();
             }
         }
 
@@ -482,14 +482,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public string Script
         {
+            get
+            {
+                return _script;
+            }
             set
             {
                 Helpers.ThrowIfEmptyOrNull(value, nameof(value));
                 _script = value;
-            }
-            get
-            {
-                return _script;
             }
         }
 
@@ -498,13 +498,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public Collection<string> ImportNamespaces
         {
-            set
-            {
-                throw new InvalidOperationException();
-            }
             get
             {
                 return _usings;
+            }
+            set
+            {
+                throw new InvalidOperationException();
             }
         }
 
@@ -513,13 +513,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public Collection<string> AssemblyReferences
         {
-            set
-            {
-                throw new InvalidOperationException();
-            }
             get
             {
                 return _assemblyReferences;
+            }
+            set
+            {
+                throw new InvalidOperationException();
             }
         }
         #endregion
@@ -548,13 +548,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         internal bool HasPronunciation
         {
-            set
-            {
-                _hasPronunciation = value;
-            }
             get
             {
                 return _hasPronunciation;
+            }
+            set
+            {
+                _hasPronunciation = value;
             }
         }
 
@@ -574,13 +574,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         internal bool HasSapiExtension
         {
-            set
-            {
-                _isSapiExtensionUsed = value;
-            }
             get
             {
                 return _isSapiExtensionUsed;
+            }
+            set
+            {
+                _isSapiExtensionUsed = value;
             }
         }
 

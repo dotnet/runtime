@@ -249,14 +249,14 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         internal int VoiceRate
         {
+            get
+            {
+                return _defaultRate;
+            }
             set
             {
                 _defaultRate = value;
                 _actions |= SPVESACTIONS.SPVES_RATE;
-            }
-            get
-            {
-                return _defaultRate;
             }
         }
 
@@ -265,14 +265,14 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         internal int VoiceVolume
         {
+            get
+            {
+                return _volume;
+            }
             set
             {
                 _volume = value;
                 _actions |= SPVESACTIONS.SPVES_VOLUME;
-            }
-            get
-            {
-                return _volume;
             }
         }
 
@@ -281,13 +281,13 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         internal Exception LastException
         {
-            set
-            {
-                _exception = value;
-            }
             get
             {
                 return _exception;
+            }
+            set
+            {
+                _exception = value;
             }
         }
 

@@ -961,13 +961,13 @@ namespace System.Speech.Internal.SapiInterop
     internal interface ISpeechRecognizer
     {
         // ISpeechRecognizer Methods
-        object Slot1 { set; get; } // [DispId(1)] SpObjectToken Recognizer { set; get; }
-        object Slot2 { set; get; } // [DispId(2)] bool AllowAudioInputFormatChangesOnNextSet { set; get; }
-        object Slot3 { set; get; } // [DispId(3)] SpObjectToken AudioInput { set; get; }
-        object Slot4 { set; get; } // [DispId(4)] ISpeechBaseStream AudioInputStream { set; get; }
+        object Slot1 { get; set; } // [DispId(1)] SpObjectToken Recognizer { set; get; }
+        object Slot2 { get; set; } // [DispId(2)] bool AllowAudioInputFormatChangesOnNextSet { set; get; }
+        object Slot3 { get; set; } // [DispId(3)] SpObjectToken AudioInput { set; get; }
+        object Slot4 { get; set; } // [DispId(4)] ISpeechBaseStream AudioInputStream { set; get; }
         object Slot5 { get; } // [DispId(5)] bool IsShared { get; }
-        object Slot6 { set; get; } // [DispId(8)] SpObjectToken Profile { set; get; }
-        object Slot7 { set; get; } // [DispId(6)] SpeechRecognizerState State { set; get; }
+        object Slot6 { get; set; } // [DispId(8)] SpObjectToken Profile { set; get; }
+        object Slot7 { get; set; } // [DispId(6)] SpeechRecognizerState State { set; get; }
         object Slot8 { get; } // [DispId(7)] ISpeechRecognizerStatus Status { get; }
         [DispId(9)]
         [PreserveSig]

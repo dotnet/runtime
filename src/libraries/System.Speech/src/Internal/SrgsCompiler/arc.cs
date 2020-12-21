@@ -669,6 +669,10 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal State Start
         {
+            get
+            {
+                return _start;
+            }
             set
             {
                 if (value != _start)
@@ -684,14 +688,14 @@ namespace System.Speech.Internal.SrgsCompiler
                     }
                 }
             }
-            get
-            {
-                return _start;
-            }
         }
 
         internal State End
         {
+            get
+            {
+                return _end;
+            }
             set
             {
                 // If no change, then do nothing
@@ -708,10 +712,6 @@ namespace System.Speech.Internal.SrgsCompiler
                     }
                 }
             }
-            get
-            {
-                return _end;
-            }
         }
 
         internal int WordId
@@ -724,6 +724,10 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal Rule RuleRef
         {
+            get
+            {
+                return _ruleRef;
+            }
             set
             {
                 if ((_start != null && !_start.OutArcs.IsEmpty) || (_end != null && !_end.InArcs.IsEmpty))
@@ -732,21 +736,17 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
                 _ruleRef = value;
             }
-            get
-            {
-                return _ruleRef;
-            }
         }
 
         internal float Weight
         {
-            set
-            {
-                _flWeight = value;
-            }
             get
             {
                 return _flWeight;
+            }
+            set
+            {
+                _flWeight = value;
             }
         }
 
@@ -761,13 +761,13 @@ namespace System.Speech.Internal.SrgsCompiler
 #if DEBUG
         internal bool CheckingForExitPath
         {
-            set
-            {
-                _fCheckingForExitPath = value;
-            }
             get
             {
                 return _fCheckingForExitPath;
+            }
+            set
+            {
+                _fCheckingForExitPath = value;
             }
         }
 

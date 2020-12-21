@@ -658,13 +658,13 @@ namespace System.Speech.Internal.Synthesis
         /// <value></value>
         internal int Rate
         {
-            set
-            {
-                _site.VoiceRate = _defaultRate = value;
-            }
             get
             {
                 return _site.VoiceRate;
+            }
+            set
+            {
+                _site.VoiceRate = _defaultRate = value;
             }
         }
 
@@ -674,13 +674,13 @@ namespace System.Speech.Internal.Synthesis
         /// <value></value>
         internal int Volume
         {
-            set
-            {
-                _site.VoiceVolume = value;
-            }
             get
             {
                 return _site.VoiceVolume;
+            }
+            set
+            {
+                _site.VoiceVolume = value;
             }
         }
 

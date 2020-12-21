@@ -322,13 +322,13 @@ namespace System.Speech.Internal.Synthesis
 
         internal virtual bool IsAborted
         {
-            set
-            {
-                _aborted = false;
-            }
             get
             {
                 return _aborted;
+            }
+            set
+            {
+                _aborted = false;
             }
         }
 

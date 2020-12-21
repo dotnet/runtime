@@ -391,13 +391,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal int SerializeId
         {
-            set
-            {
-                _iSerialize = value;
-            }
             get
             {
                 return _iSerialize;
+            }
+            set
+            {
+                _iSerialize = value;
             }
         }
 

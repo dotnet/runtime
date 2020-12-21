@@ -15,16 +15,16 @@ namespace System.Speech.Internal.SrgsParser
     {
         IRule CreateRule(string id, RulePublic publicRule, RuleDynamic dynamic, bool hasSCript);
 
-        string Root { set; get; }
-        System.Speech.Recognition.SrgsGrammar.SrgsTagFormat TagFormat { set; get; }
-        Collection<string> GlobalTags { set; get; }
+        string Root { get; set; }
+        System.Speech.Recognition.SrgsGrammar.SrgsTagFormat TagFormat { get; set; }
+        Collection<string> GlobalTags { get; set; }
         GrammarType Mode { set; }
         CultureInfo Culture { set; }
         Uri XmlBase { set; }
         AlphabetType PhoneticAlphabet { set; }
 
-        string Language { set; get; }
-        string Namespace { set; get; }
+        string Language { get; set; }
+        string Namespace { get; set; }
         bool Debug { set; }
         Collection<string> CodeBehind { get; set; }
         Collection<string> ImportNamespaces { get; set; }

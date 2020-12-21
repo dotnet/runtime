@@ -140,16 +140,16 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public Uri XmlBase
         {
+            get
+            {
+                return _grammar.XmlBase;
+            }
             set
             {
                 // base value can be null
 #pragma warning disable 56526
                 _grammar.XmlBase = value;
 #pragma warning restore 56526
-            }
-            get
-            {
-                return _grammar.XmlBase;
             }
         }
 
@@ -158,6 +158,10 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public CultureInfo Culture
         {
+            get
+            {
+                return _grammar.Culture;
+            }
             set
             {
                 Helpers.ThrowIfNull(value, nameof(value));
@@ -167,10 +171,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 }
                 _grammar.Culture = value;
             }
-            get
-            {
-                return _grammar.Culture;
-            }
         }
 
         /// <summary>
@@ -178,16 +178,16 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public SrgsRule Root
         {
+            get
+            {
+                return _grammar.Root;
+            }
             set
             {
                 // base value can be null
 #pragma warning disable 56526
                 _grammar.Root = value;
 #pragma warning restore 56526
-            }
-            get
-            {
-                return _grammar.Root;
             }
         }
 
@@ -196,13 +196,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public SrgsGrammarMode Mode
         {
-            set
-            {
-                _grammar.Mode = value == SrgsGrammarMode.Voice ? GrammarType.VoiceGrammar : GrammarType.DtmfGrammar;
-            }
             get
             {
                 return _grammar.Mode == GrammarType.VoiceGrammar ? SrgsGrammarMode.Voice : SrgsGrammarMode.Dtmf;
+            }
+            set
+            {
+                _grammar.Mode = value == SrgsGrammarMode.Voice ? GrammarType.VoiceGrammar : GrammarType.DtmfGrammar;
             }
         }
 
@@ -211,14 +211,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public SrgsPhoneticAlphabet PhoneticAlphabet
         {
+            get
+            {
+                return (SrgsPhoneticAlphabet)_grammar.PhoneticAlphabet;
+            }
             set
             {
                 _grammar.PhoneticAlphabet = (AlphabetType)value;
                 _grammar.HasPhoneticAlphabetBeenSet = true;
-            }
-            get
-            {
-                return (SrgsPhoneticAlphabet)_grammar.PhoneticAlphabet;
             }
         }
 
@@ -240,16 +240,16 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public string Language
         {
+            get
+            {
+                return _grammar.Language;
+            }
             set
             {
                 // Language can be set to null
 #pragma warning disable 56526
                 _grammar.Language = value;
 #pragma warning restore 56526
-            }
-            get
-            {
-                return _grammar.Language;
             }
         }
 
@@ -258,16 +258,16 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public string Namespace
         {
+            get
+            {
+                return _grammar.Namespace;
+            }
             set
             {
                 // namespace can be set to null
 #pragma warning disable 56526
                 _grammar.Namespace = value;
 #pragma warning restore 56526
-            }
-            get
-            {
-                return _grammar.Namespace;
             }
         }
 
@@ -302,14 +302,14 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// |/summary|
         public string Script
         {
+            get
+            {
+                return _grammar.Script;
+            }
             set
             {
                 Helpers.ThrowIfEmptyOrNull(value, nameof(value));
                 _grammar.Script = value;
-            }
-            get
-            {
-                return _grammar.Script;
             }
         }
 

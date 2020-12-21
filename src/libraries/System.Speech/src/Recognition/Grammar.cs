@@ -457,8 +457,8 @@ namespace System.Speech.Recognition
 
         internal uint SapiGrammarId
         {
-            set { _sapiGrammarId = value; }
             get { return _sapiGrammarId; }
+            set { _sapiGrammarId = value; }
         }
 
         /// <summary>

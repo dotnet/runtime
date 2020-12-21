@@ -212,13 +212,13 @@ namespace System.Speech.Synthesis.TtsEngine
         /// </summary>
         public int Type
         {
-            set
-            {
-                _type = value;
-            }
             get
             {
                 return _type;
+            }
+            set
+            {
+                _type = value;
             }
         }
         /// <summary>
@@ -226,13 +226,13 @@ namespace System.Speech.Synthesis.TtsEngine
         /// </summary>
         public int Count
         {
-            set
-            {
-                _count = value;
-            }
             get
             {
                 return _count;
+            }
+            set
+            {
+                _count = value;
             }
         }
 

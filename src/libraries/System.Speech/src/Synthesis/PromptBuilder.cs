@@ -1051,6 +1051,10 @@ namespace System.Speech.Synthesis
         public
             CultureInfo Culture
         {
+            get
+            {
+                return _culture;
+            }
             set
             {
                 if (value == null)
@@ -1059,10 +1063,6 @@ namespace System.Speech.Synthesis
                 }
 
                 _culture = value;
-            }
-            get
-            {
-                return _culture;
             }
         }
 
