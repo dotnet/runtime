@@ -53,7 +53,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// serialized format and either saves it to the stream provided by SetSaveOptions,
         /// or reloads it into the CFG engine.
         /// </summary>
-        /// <param name="streamBuffer"></param>
         internal void Commit(StreamMarshaler streamBuffer)
         {
             // For debugging purpose, assert if the position is not it is assumed it should be
@@ -210,13 +209,8 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Description:
         /// Combine the current data in a grammar with one comming from a CFG
         /// </summary>
-        /// <param name="ruleName"></param>
-        /// <param name="org"></param>
-        /// <param name="extra"></param>
         internal static Backend CombineGrammar(string ruleName, Backend org, Backend extra)
         {
-            // TODO jeanfp check the grammar options for phonetic alphabet
-
             Backend be = new();
             be._fLoadedFromBinary = true;
             be._fNeedWeightTable = org._fNeedWeightTable;
@@ -274,9 +268,6 @@ namespace System.Speech.Internal.SrgsCompiler
         ///       SPERR_RULE_NOT_FOUND        -- no rule found and we don't create a new one
         ///       SPERR_RULE_NAME_ID_CONFLICT -- rule name and id don't match
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="attributes"></param>
-        /// <returns></returns>
         internal Rule CreateRule(string name, SPCFGRULEATTRIBUTES attributes)
         {
             //CfgGrammar.TraceInformation ("BackEnd::CreateRule");
@@ -355,8 +346,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Internal method for finding rule in rule list
         /// </summary>
-        /// <param name="sRule"></param>
-        /// <returns></returns>
         internal Rule FindRule(string sRule)
         {
             //CfgGrammar.TraceInformation ("BackEnd::FindRule");
@@ -422,10 +411,9 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="rule">must be initial state of rule</param>
         /// <param name="parentRule">Rule calling the ruleref</param>
-        /// <param name="flWeight"></param>
+        /// <param name="flWeight">Weight</param>
         internal Arc RuleTransition(Rule rule, Rule parentRule, float flWeight)
         {
-            //CfgGrammar.TraceInformation ("BackEnd::AddRuleTransition");
             Rule ruleToTransitionTo = null;
 
             if (flWeight < 0.0f)
@@ -465,8 +453,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// The weight will be placed on the first arc (if there exists an arc with
         /// the same word but different weight we will create a new arc).
         /// </summary>
-        /// <param name="flWeight"></param>
-        /// <returns></returns>
         internal Arc EpsilonTransition(float flWeight)
         {
             return CreateTransition(null, flWeight, CfgGrammar.SP_NORMAL_CONFIDENCE);
@@ -499,10 +485,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// cloning each transition except ones originating from SrcEndState, and return
         /// the cloned state corresponding to SrcEndState.
         /// </summary>
-        /// <param name="srcFromState"></param>
-        /// <param name="srcEndState"></param>
-        /// <param name="destFromState"></param>
-        /// <returns></returns>
         internal State CloneSubGraph(State srcFromState, State srcEndState, State destFromState)
         {
             Dictionary<State, State> SrcToDestHash = new();    // Hash source state to destination state
@@ -564,11 +546,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// cloning each transition except ones originating from SrcEndState, and return
         /// the cloned state corresponding to SrcEndState.
         /// </summary>
-        /// <param name="rule"></param>
-        /// <param name="org"></param>
-        /// <param name="extra"></param>
-        /// <param name="srcToDestHash"></param>
-        /// <param name="fromOrg"></param>
         internal void CloneSubGraph(Rule rule, Backend org, Backend extra, Dictionary<State, State> srcToDestHash, bool fromOrg)
         {
             Backend beSrc = fromOrg ? org : extra;
@@ -675,7 +652,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Delete disconnected subgraph starting at hState.
         /// Traverse the graph starting from SrcStartState, and delete each state as we go along.
         /// </summary>
-        /// <param name="state"></param>
         internal void DeleteSubGraph(State state)
         {
             // Add initial state to DeleteStack.
@@ -726,8 +702,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Modify the placeholder rule attributes after it has been created.
         /// This is only safe to use in the context of SRGSGrammarCompiler.
         /// </summary>
-        /// <param name="rule"></param>
-        /// <param name="dwAttributes"></param>
         internal void SetRuleAttributes(Rule rule, SPCFGRULEATTRIBUTES dwAttributes)
         {
             // Check if this is the Root rule
@@ -756,7 +730,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Set the path from which relative grammar imports are calculated. As specified by xml:base / meta base
         /// Null or empty string will clear any existing base path.
         /// </summary>
-        /// <param name="sBasePath"></param>
         internal void SetBasePath(string sBasePath)
         {
             if (!string.IsNullOrEmpty(sBasePath))
@@ -778,8 +751,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// - Trim leading/trailing white spaces.
         /// - Collapse white space sequences to a single ' '.
         /// </summary>
-        /// <param name="sToken"></param>
-        /// <returns></returns>
         internal static string NormalizeTokenWhiteSpace(string sToken)
         {
             System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sToken));
@@ -847,8 +818,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Load compiled grammar data. This overwrites any existing data in the grammar
         /// We end up with containers of words, symbols, rules, arcs, states and state handles, etc.
         /// </summary>
-        /// <param name="streamHelper"></param>
-
         internal void InitFromBinaryGrammar(StreamMarshaler streamHelper)
         {
             //CfgGrammar.TraceInformation ("BackEnd::InitFromBinaryGrammar");
@@ -1006,8 +975,6 @@ namespace System.Speech.Internal.SrgsCompiler
                     }
                 }
             }
-
-            // TODO remove this line
             _fNeedWeightTable = true;
             if (header.BasePath != null)
             {
@@ -1029,15 +996,6 @@ namespace System.Speech.Internal.SrgsCompiler
             return AddSingleWordTransition(!string.IsNullOrEmpty(sWord) ? sWord : null, flWeight, requiredConfidence);
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="sortedStates"></param>
-        /// <param name="cBasePath"></param>
-        /// <param name="iSemanticGlobals"></param>
-        /// <param name="cArcs"></param>
-        /// <param name="pWeights"></param>
-        /// <returns></returns>
         private CfgGrammar.CfgSerializedHeader BuildHeader(List<State> sortedStates, int cBasePath, ushort iSemanticGlobals, out int cArcs, out float[] pWeights)
         {
             cArcs = 1; // Start with offset one! (0 indicates dead state).
@@ -1253,7 +1211,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Connect arc to the state graph.
         /// </summary>
-        /// <param name="arc"></param>
 #if DEBUG
         private
 #else
@@ -1266,9 +1223,6 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
         }
 
-        /// <summary>
-        ///
-        /// </summary>
         private void ValidateAndTagRules()
         {
             //CfgGrammar.TraceInformation ("BackEnd::ValidateAndTagRules");
@@ -1321,12 +1275,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="s"></param>
-        /// <param name="flWeight"></param>
-        /// <param name="requiredConfidence"></param>
         private Arc AddSingleWordTransition(string s, float flWeight, int requiredConfidence)
         {
             //CfgGrammar.TraceInformation ("BackEnd::CGramComp::AddSingleWordTransition");

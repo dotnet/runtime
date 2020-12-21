@@ -20,9 +20,6 @@ using System.Text;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     internal class AppDomainCompilerProxy : MarshalByRefObject
     {
         // This method is used. It is referenced through reflection

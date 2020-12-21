@@ -14,7 +14,6 @@ using RegistryEntry = System.Collections.Generic.KeyValuePair<string, object>;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo"]/*' />
     // This represents the attributes various speech recognizers may, or may not support.
 
     public class RecognizerInfo : IDisposable
@@ -109,38 +108,26 @@ namespace System.Speech.Recognition
         #endregion
 
         #region public Properties
-
-        /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo.Name"]/*' />
         public string Id
         {
             get { return _id; }
         }
-
-        /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo.Name"]/*' />
         public string Name
         {
             get { return _name; }
         }
-
-        /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo.DisplayName"]/*' />
         public string Description
         {
             get { return _description; }
         }
-
-        /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo.CultureInfo"]/*' />
         public CultureInfo Culture
         {
             get { return _culture; }
         }
-
-        /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo.SupportedAudioFormats"]/*' />
         public ReadOnlyCollection<SpeechAudioFormatInfo> SupportedAudioFormats
         {
             get { return _supportedAudioFormats; }
         }
-
-        /// TODOC <_include file='doc\RecognizerInfo.uex' path='docs/doc[@for="RecognizerInfo.AdditionalInfo"]/*' />
         public IDictionary<string, string> AdditionalInfo
         {
             get { return _attributes; }

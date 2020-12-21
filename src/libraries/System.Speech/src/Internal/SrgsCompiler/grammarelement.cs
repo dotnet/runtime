@@ -318,7 +318,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         /// <param name="sRuleId">Rule name</param>
         /// <param name="dwAttributes">Rule attributes</param>
-        /// <returns></returns>
         private Rule GetRule(string sRuleId, SPCFGRULEATTRIBUTES dwAttributes)
         {
             System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sRuleId));

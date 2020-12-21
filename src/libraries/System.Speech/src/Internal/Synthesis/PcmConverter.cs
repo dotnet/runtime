@@ -21,9 +21,6 @@ namespace System.Speech.Internal.Synthesis
         ///   4. mono  -> mono + resampling
         ///      mono  -> reSampling -> mono
         /// </summary>
-        /// <param name="inWavFormat"></param>
-        /// <param name="outWavFormat"></param>
-        /// <returns></returns>
         internal bool PrepareConverter(ref WAVEFORMATEX inWavFormat, ref WAVEFORMATEX outWavFormat)
         {
             bool convert = true;
@@ -72,8 +69,6 @@ namespace System.Speech.Internal.Synthesis
         ///   4. mono  -> mono + resampling
         ///      mono  -> reSampling -> mono
         /// </summary>
-        /// <param name="pvInSamples"></param>
-        /// <returns></returns>
         internal byte[] ConvertSamples(byte[] pvInSamples)
         {
             short[] pnBuff = null;
@@ -128,11 +123,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Convert the data from one sample rate to an another
         /// </summary>
-        /// <param name="inWavFormat"></param>
-        /// <param name="outWavFormat"></param>
-        /// <param name="pnBuff"></param>
-        /// <param name="memory"></param>
-        /// <returns></returns>
         private short[] Resample(WAVEFORMATEX inWavFormat, WAVEFORMATEX outWavFormat, short[] pnBuff, float[] memory)
         {
             if (inWavFormat.nSamplesPerSec != outWavFormat.nSamplesPerSec)
@@ -150,8 +140,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// convert short array to float array
         /// </summary>
-        /// <param name="inSamples"></param>
-        /// <returns></returns>
         private static float[] Short2Float(short[] inSamples)
         {
             float[] pdOut = new float[inSamples.Length];
@@ -167,8 +155,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// convert float array to short array
         /// </summary>
-        /// <param name="inSamples"></param>
-        /// <returns></returns>
         private static short[] Float2Short(float[] inSamples)
         {
             short[] outSamples = new short[inSamples.Length];
@@ -200,8 +186,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// convert mono speech to stereo speech
         /// </summary>
-        /// <param name="inSamples"></param>
-        /// <returns></returns>
         private static short[] Mono2Stereo(short[] inSamples)
         {
             short[] outSamples = new short[inSamples.Length * 2];
@@ -218,8 +202,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// convert stereo speech to mono speech
         /// </summary>
-        /// <param name="inSamples"></param>
-        /// <returns></returns>
         private static short[] Stereo2Mono(short[] inSamples)
         {
             short[] outSamples = new short[inSamples.Length / 2];
@@ -235,9 +217,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// merge 2 channel signals into one signal
         /// </summary>
-        /// <param name="leftSamples"></param>
-        /// <param name="rightSamples"></param>
-        /// <returns></returns>
         private static short[] MergeStereo(short[] leftSamples, short[] rightSamples)
         {
             short[] outSamples = new short[leftSamples.Length * 2];
@@ -254,9 +233,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// split stereo signals into 2 channel mono signals
         /// </summary>
-        /// <param name="inSamples"></param>
-        /// <param name="leftSamples"></param>
-        /// <param name="rightSamples"></param>
         private static void SplitStereo(short[] inSamples, out short[] leftSamples, out short[] rightSamples)
         {
             int length = inSamples.Length / 2;
@@ -271,11 +247,6 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="inHz"></param>
-        /// <param name="outHz"></param>
         private void CreateResamplingFilter(int inHz, int outHz)
         {
             int iLimitFactor;
@@ -310,9 +281,6 @@ namespace System.Speech.Internal.Synthesis
         /// Creates a low pass filter using the windowing method.
         /// dCutOff is spec. in normalized frequency
         /// </summary>
-        /// <param name="dCutOff"></param>
-        /// <param name="dGain"></param>
-        /// <returns></returns>
         private float[] WindowedLowPass(float dCutOff, float dGain)
         {
             float[] pdCoeffs = null;
@@ -339,11 +307,6 @@ namespace System.Speech.Internal.Synthesis
             return pdCoeffs;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="inHz"></param>
-        /// <param name="outHz"></param>
         private void FindResampleFactors(int inHz, int outHz)
         {
             int iDiv = 1;
@@ -449,9 +412,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Returns a vector with a Blackman window of the specified length.
         /// </summary>
-        /// <param name="iLength"></param>
-        /// <param name="bSymmetric"></param>
-        /// <returns></returns>
         private static float[] Blackman(int iLength, bool bSymmetric)
         {
             float[] pdWindow = new float[iLength];

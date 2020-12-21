@@ -8,26 +8,17 @@ using System.Speech.Internal;
 
 namespace System.Speech.Recognition
 {
-    /// <summary>
-    ///
-    /// </summary>
+
 
     [DebuggerDisplay("{_oneOf.DebugSummary}")]
     public class Choices
     {
         #region Constructors
 
-        /// <summary>
-        ///
-        /// </summary>
         public Choices()
         {
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="phrases"></param>
         public Choices(params string[] phrases)
         {
             Helpers.ThrowIfNull(phrases, nameof(phrases));
@@ -35,10 +26,6 @@ namespace System.Speech.Recognition
             Add(phrases);
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="alternateChoices"></param>
         public Choices(params GrammarBuilder[] alternateChoices)
         {
             Helpers.ThrowIfNull(alternateChoices, nameof(alternateChoices));
@@ -50,10 +37,6 @@ namespace System.Speech.Recognition
 
         #region Public Methods
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="phrases"></param>
         public void Add(params string[] phrases)
         {
             Helpers.ThrowIfNull(phrases, nameof(phrases));
@@ -66,10 +49,6 @@ namespace System.Speech.Recognition
             }
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="alternateChoices"></param>
         public void Add(params GrammarBuilder[] alternateChoices)
         {
             Helpers.ThrowIfNull(alternateChoices, nameof(alternateChoices));
@@ -81,11 +60,6 @@ namespace System.Speech.Recognition
                 _oneOf.Items.Add(new ItemElement(alternateChoice));
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <returns></returns>
         public GrammarBuilder ToGrammarBuilder()
         {
             return new GrammarBuilder(this);

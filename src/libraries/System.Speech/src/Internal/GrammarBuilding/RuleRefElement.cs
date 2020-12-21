@@ -9,28 +9,17 @@ using System.Text;
 
 namespace System.Speech.Internal.GrammarBuilding
 {
-    /// <summary>
-    ///
-    /// </summary>
+
     [DebuggerDisplay("{DebugSummary}")]
     internal sealed class RuleRefElement : GrammarBuilderBase
     {
         #region Constructors
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="rule"></param>
         internal RuleRefElement(RuleElement rule)
         {
             _rule = rule;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="rule"></param>
-        /// <param name="semanticKey"></param>
         internal RuleRefElement(RuleElement rule, string semanticKey)
         {
             _rule = rule;
@@ -40,8 +29,6 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
         public override bool Equals(object obj)
         {
             RuleRefElement refObj = obj as RuleRefElement;
@@ -51,8 +38,6 @@ namespace System.Speech.Internal.GrammarBuilding
             }
             return _semanticKey == refObj._semanticKey && _rule.Equals(refObj._rule);
         }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
         public override int GetHashCode()
         {
             return base.GetHashCode();
@@ -62,41 +47,21 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Internal Methods
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="item"></param>
         internal void Add(GrammarBuilderBase item)
         {
             _rule.Add(item);
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
         internal override GrammarBuilderBase Clone()
         {
             return new RuleRefElement(_rule, _semanticKey);
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="builders"></param>
         internal void CloneItems(RuleRefElement builders)
         {
             _rule.CloneItems(builders._rule);
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="elementFactory"></param>
-        /// <param name="parent"></param>
-        /// <param name="rule"></param>
-        /// <param name="ruleIds"></param>
-        /// <returns></returns>
         internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Create the new rule and add the reference to the item
@@ -127,9 +92,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Private Fields
 
-        /// <summary>
-        ///
-        /// </summary>
         private readonly RuleElement _rule;
         private readonly string _semanticKey;
 

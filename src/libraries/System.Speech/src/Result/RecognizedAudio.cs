@@ -10,8 +10,6 @@ using System.Speech.Internal;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio"]/*' />
-
     [Serializable]
     public class RecognizedAudio
     {
@@ -23,15 +21,12 @@ namespace System.Speech.Recognition
             _audioDuration = audioDuration;
             _rawAudioData = rawAudioData;
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio.Format"]/*' />
         public SpeechAudioFormatInfo Format
         {
             get { return _audioFormat; }
         }
 
         // Chronological "wall-clock" time the user started speaking the result at. This is useful for latency calculations etc.
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio.StartTime"]/*' />
         public DateTime StartTime
         {
             get { return _startTime; }
@@ -39,21 +34,18 @@ namespace System.Speech.Recognition
 
         // Position in the audio stream this audio starts at.
         // Note: the stream starts at zero when the engine first starts processing audio.
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio.AudioPosition"]/*' />
         public TimeSpan AudioPosition
         {
             get { return _audioPosition; }
         }
 
         // Length of this audio fragment
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio.Duration"]/*' />
         public TimeSpan Duration
         {
             get { return _audioDuration; }
         }
 
         // Different ways to store the audio, either as a binary data stream or as a wave file.
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio.WriteAudio1"]/*' />
         public void WriteToWaveStream(Stream outputStream)
         {
             Helpers.ThrowIfNull(outputStream, nameof(outputStream));
@@ -70,7 +62,6 @@ namespace System.Speech.Recognition
         }
 
         // Different ways to store the audio, either as a binary data stream or as a wave file.
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio.WriteAudio1"]/*' />
         public void WriteToAudioStream(Stream outputStream)
         {
             Helpers.ThrowIfNull(outputStream, nameof(outputStream));
@@ -82,7 +73,6 @@ namespace System.Speech.Recognition
         }
 
         // Get another audio object from this one representing a range of audio.
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedAudio.GetRange"]/*' />
         public RecognizedAudio GetRange(TimeSpan audioPosition, TimeSpan duration)
         {
             if (audioPosition.Ticks < 0)

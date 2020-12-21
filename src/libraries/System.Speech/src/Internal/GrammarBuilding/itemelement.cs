@@ -9,39 +9,22 @@ using System.Text;
 
 namespace System.Speech.Internal.GrammarBuilding
 {
-    /// <summary>
-    ///
-    /// </summary>
+
     [DebuggerDisplay("{DebugSummary}")]
     internal sealed class ItemElement : BuilderElements
     {
         #region Constructors
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="builder"></param>
         internal ItemElement(GrammarBuilderBase builder)
             : this(builder, 1, 1)
         {
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="minRepeat"></param>
-        /// <param name="maxRepeat"></param>
         internal ItemElement(int minRepeat, int maxRepeat)
             : this((GrammarBuilderBase)null, minRepeat, maxRepeat)
         {
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <param name="minRepeat"></param>
-        /// <param name="maxRepeat"></param>
         internal ItemElement(GrammarBuilderBase builder, int minRepeat, int maxRepeat)
         {
             if (builder != null)
@@ -52,12 +35,6 @@ namespace System.Speech.Internal.GrammarBuilding
             _maxRepeat = maxRepeat;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="builders"></param>
-        /// <param name="minRepeat"></param>
-        /// <param name="maxRepeat"></param>
         internal ItemElement(List<GrammarBuilderBase> builders, int minRepeat, int maxRepeat)
         {
             foreach (GrammarBuilderBase builder in builders)
@@ -68,10 +45,6 @@ namespace System.Speech.Internal.GrammarBuilding
             _maxRepeat = maxRepeat;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="builders"></param>
         internal ItemElement(GrammarBuilder builders)
         {
             foreach (GrammarBuilderBase builder in builders.InternalBuilder.Items)
@@ -83,8 +56,6 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
         public override bool Equals(object obj)
         {
             ItemElement refObj = obj as ItemElement;
@@ -98,8 +69,6 @@ namespace System.Speech.Internal.GrammarBuilding
             }
             return _minRepeat == refObj._minRepeat && _maxRepeat == refObj._maxRepeat;
         }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
         public override int GetHashCode()
         {
             return base.GetHashCode();
@@ -109,10 +78,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Internal Methods
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
         internal override GrammarBuilderBase Clone()
         {
             ItemElement item = new(_minRepeat, _maxRepeat);
@@ -120,14 +85,6 @@ namespace System.Speech.Internal.GrammarBuilding
             return item;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="elementFactory"></param>
-        /// <param name="parent"></param>
-        /// <param name="rule"></param>
-        /// <param name="ruleIds"></param>
-        /// <returns></returns>
         internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Create and return the real item (the item including the grammar)

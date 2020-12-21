@@ -5,14 +5,11 @@ using System.Speech.Internal;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\SpeechUI.uex' path='docs/doc[@for="SpeechUI"]/*' />
     public class SpeechUI
     {
         internal SpeechUI()
         {
         }
-
-        /// TODOC <_include file='doc\SpeechUI.uex' path='docs/doc[@for="SpeechUI.SendTextFeedback"]/*' />
         public static bool SendTextFeedback(RecognitionResult result, string feedback, bool isSuccessfulAction)
         {
             Helpers.ThrowIfNull(result, nameof(result));

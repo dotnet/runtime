@@ -443,8 +443,6 @@ namespace System.Speech.Internal.SapiInterop
         internal uint fAlphabet;
         // Not present in SAPI 5.1 results; on SAPI 5.without IPA this is set to zero, with IPA it will indicate
         // the alphabet of pronunciations the result
-
-        // TODO-hieung: Append SPRESULTHEADER to reflect new data on the managed side.
     }
 
     // Serialized phrase header from versions of SAPI prior to 5.2.
@@ -498,11 +496,6 @@ namespace System.Speech.Internal.SapiInterop
         /// test string. Each word in the string is converted to a phrase element.
         /// This is useful to create a phrase to pass to the EmulateRecognition method.
         /// </summary>
-        /// <param name="phrase"></param>
-        /// <param name="culture"></param>
-        /// <param name="memHandles"></param>
-        /// <param name="coMem"></param>
-        /// <returns></returns>
         internal static ISpPhrase CreatePhraseFromText(string phrase, CultureInfo culture, out GCHandle[] memHandles, out IntPtr coMem)
         {
             string[] words = phrase.Split(Array.Empty<char>(), StringSplitOptions.RemoveEmptyEntries);
@@ -519,11 +512,6 @@ namespace System.Speech.Internal.SapiInterop
         /// test string. Each word in the string is converted to a phrase element.
         /// This is useful to create a phrase to pass to the EmulateRecognition method.
         /// </summary>
-        /// <param name="words"></param>
-        /// <param name="culture"></param>
-        /// <param name="memHandles"></param>
-        /// <param name="coMem"></param>
-        /// <returns></returns>
         internal static ISpPhrase CreatePhraseFromWordUnits(RecognizedWordUnit[] words, CultureInfo culture, out GCHandle[] memHandles, out IntPtr coMem)
         {
             SPPHRASEELEMENT[] elements = new SPPHRASEELEMENT[words.Length];
@@ -1103,13 +1091,6 @@ namespace System.Speech.Internal.SapiInterop
         /// <summary>
         /// Load some data
         /// </summary>
-        /// <param name="bstrResourceUri"></param>
-        /// <param name="fAlwaysReload"></param>
-        /// <param name="pStream"></param>
-        /// <param name="pbstrMIMEType"></param>
-        /// <param name="pfModified"></param>
-        /// <param name="pbstrRedirectUrl"></param>
-        /// <returns></returns>
         [PreserveSig]
         int LoadResource(string bstrResourceUri, bool fAlwaysReload, out IStream pStream, ref string pbstrMIMEType, ref short pfModified, ref string pbstrRedirectUrl);
 
@@ -1117,15 +1098,11 @@ namespace System.Speech.Internal.SapiInterop
         /// Converts the resourcePath to a location in the file cache and returns a reference into the
         /// cache
         /// </summary>
-        /// <param name="resourcePath"></param>
-        /// <param name="mimeType"></param>
-        /// <param name="redirectUrl"></param>
         string GetLocalCopy(Uri resourcePath, out string mimeType, out Uri redirectUrl);
 
         /// <summary>
         /// Mark an entry in the file cache as unused.
         /// </summary>
-        /// <param name="path"></param>
         void ReleaseLocalCopy(string path);
     }
 

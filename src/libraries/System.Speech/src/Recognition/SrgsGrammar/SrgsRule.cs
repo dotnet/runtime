@@ -12,29 +12,22 @@ using System.Speech.Internal.SrgsParser;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule"]/*' />
     [Serializable]
     [DebuggerDisplay("Rule={_id.ToString()} Scope={_scope.ToString()}")]
     [DebuggerTypeProxy(typeof(SrgsRuleDebugDisplay))]
     public class SrgsRule : IRule
     {
         #region Constructors
-
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Rule1"]/*' />
         private SrgsRule()
         {
             _elements = new SrgsElementList();
         }
-
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Rule2"]/*' />
         public SrgsRule(string id)
             : this()
         {
             XmlParser.ValidateRuleId(id);
             Id = id;
         }
-
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Rule2"]/*' />
         public SrgsRule(string id, params SrgsElement[] elements)
             : this()
         {
@@ -56,11 +49,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public Method
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="element"></param>
         public void Add(SrgsElement element)
         {
             Helpers.ThrowIfNull(element, nameof(element));
@@ -71,8 +59,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public Properties
-
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Elements"]/*' />
         public Collection<SrgsElement> Elements
         {
             get
@@ -80,8 +66,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 return _elements;
             }
         }
-
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Id"]/*' />
         public string Id
         {
             get
@@ -94,8 +78,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _id = value;
             }
         }
-
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Scope"]/*' />
         public SrgsRuleScope Scope
         {
             get
@@ -363,8 +345,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region Internal Properties
-
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="Rule.Scope"]/*' />
         internal RuleDynamic Dynamic
         {
             get
@@ -548,17 +528,13 @@ namespace System.Speech.Recognition.SrgsGrammar
     }
 
     #region Public Enums
-
-    /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="SrgsRuleScope"]/*' />
     // SrgsRuleScope specifies how a rule behaves with respect to being able to be
     // referenced by other rules, and whether or not the rule can be activated
     // or not.
     public enum SrgsRuleScope
     {
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="SrgsRuleScope.Public"]/*' />
         // Public rules can be both activated as well as referenced by rules in other grammars
         Public,
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="SrgsRuleScope.Private"]/*' />
         // Private rules can not be activated, but they can be referenced by rules in the same grammar
         Private
     };

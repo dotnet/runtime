@@ -63,8 +63,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// Process the top level grammar element
         /// </summary>
-        /// <param name="source"></param>
-        /// <param name="grammar"></param>
         private void ProcessGrammarElement(SrgsGrammar source, IGrammar grammar)
         {
             grammar.Culture = source.Culture;
@@ -101,9 +99,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// Parse a rule
         /// </summary>
-        /// <param name="grammar"></param>
-        /// <param name="srgsRule"></param>
-        /// <returns></returns>
         private IRule ParseRule(IGrammar grammar, SrgsRule srgsRule)
         {
             string id = srgsRule.Id;
@@ -148,9 +143,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// Parse a ruleref
         /// </summary>
-        /// <param name="srgsRuleRef"></param>
-        /// <param name="parent"></param>
-        /// <returns></returns>
         private IRuleRef ParseRuleRef(SrgsRuleRef srgsRuleRef, IElement parent)
         {
             IRuleRef ruleRef = null;
@@ -186,10 +178,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// Parse a One-Of
         /// </summary>
-        /// <param name="srgsOneOf"></param>
-        /// <param name="parent"></param>
-        /// <param name="rule"></param>
-        /// <returns></returns>
         private IOneOf ParseOneOf(SrgsOneOf srgsOneOf, IElement parent, IRule rule)
         {
             IOneOf oneOf = _parser.CreateOneOf(parent, rule);
@@ -206,10 +194,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// Parse Item
         /// </summary>
-        /// <param name="srgsItem"></param>
-        /// <param name="parent"></param>
-        /// <param name="rule"></param>
-        /// <returns></returns>
         private IItem ParseItem(SrgsItem srgsItem, IElement parent, IRule rule)
         {
             IItem item = _parser.CreateItem(parent, rule, srgsItem.MinRepeat, srgsItem.MaxRepeat, srgsItem.RepeatProbability, srgsItem.Weight);
@@ -227,9 +211,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// Parse Token
         /// </summary>
-        /// <param name="srgsToken"></param>
-        /// <param name="parent"></param>
-        /// <returns></returns>
         private IToken ParseToken(SrgsToken srgsToken, IElement parent)
         {
             return _parser.CreateToken(parent, srgsToken.Text, srgsToken.Pronunciation, srgsToken.Display, -1);
@@ -242,11 +223,6 @@ namespace System.Speech.Internal.SrgsParser
         /// Tokens may also be delimited by double quotes.  In these cases, the double
         /// quotes token must be surrounded by white space or string boundary.
         /// </summary>
-        /// <param name="parent">Parent element</param>
-        /// <param name="sChars"></param>
-        /// <param name="pronunciation"></param>
-        /// <param name="display"></param>
-        /// <param name="reqConfidence"></param>
         private void ParseText(IElement parent, string sChars, string pronunciation, string display, float reqConfidence)
         {
             System.Diagnostics.Debug.Assert((parent != null) && (!string.IsNullOrEmpty(sChars)));
@@ -257,9 +233,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// Parse tag
         /// </summary>
-        /// <param name="srgsSubset"></param>
-        /// <param name="parent"></param>
-        /// <returns></returns>
         private ISubset ParseSubset(SrgsSubset srgsSubset, IElement parent)
         {
             MatchMode matchMode = MatchMode.Subsequence;
@@ -288,9 +261,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// Parse tag
         /// </summary>
-        /// <param name="srgsTag"></param>
-        /// <param name="parent"></param>
-        /// <returns></returns>
         private ISemanticTag ParseSemanticTag(SrgsSemanticInterpretationTag srgsTag, IElement parent)
         {
             ISemanticTag tag = _parser.CreateSemanticTag(parent);
@@ -303,9 +273,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// ParseNameValueTag tag
         /// </summary>
-        /// <param name="srgsTag"></param>
-        /// <param name="parent"></param>
-        /// <returns></returns>
         private IPropertyTag ParseNameValueTag(SrgsNameValueTag srgsTag, IElement parent)
         {
             IPropertyTag tag = _parser.CreatePropertyTag(parent);
@@ -321,9 +288,6 @@ namespace System.Speech.Internal.SrgsParser
         /// <summary>
         /// Calls the appropriate Parsing function based on the element type
         /// </summary>
-        /// <param name="srgsElement"></param>
-        /// <param name="parent"></param>
-        /// <param name="rule"></param>
         private void ProcessChildNodes(SrgsElement srgsElement, IElement parent, IRule rule)
         {
             Type elementType = srgsElement.GetType();

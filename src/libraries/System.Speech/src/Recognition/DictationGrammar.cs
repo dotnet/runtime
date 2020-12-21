@@ -7,7 +7,6 @@ using System.Diagnostics;
 namespace System.Speech.Recognition
 {
     // Class for grammars based on a statistical language model for doing dictation.
-    /// TODOC <_include file='doc\DictationGrammar.uex' path='docs/doc[@for="DictationGrammar"]/*' />
 
     public class DictationGrammar : Grammar
     {
@@ -19,13 +18,11 @@ namespace System.Speech.Recognition
         #region Constructors
 
         // Load the generic dictation language model.
-        /// TODOC <_include file='doc\DictationGrammar.uex' path='docs/doc[@for="DictationGrammar.DictationGrammar1"]/*' />
         public DictationGrammar() : base(s_defaultDictationUri, null, null)
         {
         }
 
         // Load a specific topic. The topic is of the form "grammar:dictation#topic"
-        /// TODOC <_include file='doc\DictationGrammar.uex' path='docs/doc[@for="DictationGrammar.DictationGrammar2"]/*' />
         public DictationGrammar(string topic) : base(new Uri(topic, UriKind.RelativeOrAbsolute), null, null)
         {
         }
@@ -33,8 +30,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
-
-        /// TODOC <_include file='doc\DictationGrammar.uex' path='docs/doc[@for="DictationGrammar.SetDictationContext"]/*' />
         public void SetDictationContext(string precedingText, string subsequentText)
         {
             if (State != GrammarState.Loaded)

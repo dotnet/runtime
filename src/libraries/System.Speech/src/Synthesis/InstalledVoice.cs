@@ -20,9 +20,6 @@ using RegistryEntry = System.Collections.Generic.KeyValuePair<string, object>;
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [DebuggerDisplay("{VoiceInfo.Name} [{Enabled ? \"Enabled\" : \"Disabled\"}]")]
     public class InstalledVoice
     {
@@ -38,10 +35,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region public Properties
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public VoiceInfo VoiceInfo
         {
             get
@@ -49,10 +42,6 @@ namespace System.Speech.Synthesis
                 return _voice;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public bool Enabled
         {
             get
@@ -68,8 +57,6 @@ namespace System.Speech.Synthesis
         #endregion Events
 
         #region public Methods
-
-        /// TODOC
         public override bool Equals(object obj)
         {
             InstalledVoice ti2 = obj as InstalledVoice;
@@ -80,8 +67,6 @@ namespace System.Speech.Synthesis
 
             return VoiceInfo.Name == ti2.VoiceInfo.Name && VoiceInfo.Age == ti2.VoiceInfo.Age && VoiceInfo.Gender == ti2.VoiceInfo.Gender && VoiceInfo.Culture.Equals(ti2.VoiceInfo.Culture);
         }
-
-        /// TODOC
         public override int GetHashCode()
         {
             return VoiceInfo.Name.GetHashCode();

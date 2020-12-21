@@ -20,31 +20,17 @@ using RegistryEntry = System.Collections.Generic.KeyValuePair<string, object>;
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public sealed class SpeechSynthesizer : IDisposable
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public SpeechSynthesizer()
         {
         }
 
-        /// <summary>
-        ///
-        /// </summary>
         ~SpeechSynthesizer()
         {
             Dispose(false);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -54,11 +40,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region public Methods
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="name"></param>
         public void SelectVoice(string name)
         {
             Helpers.ThrowIfEmptyOrNull(name, nameof(name));
@@ -71,44 +52,18 @@ namespace System.Speech.Synthesis
             }
             VoiceSynthesizer.Voice = ttsVoice;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="gender"></param>
         public void SelectVoiceByHints(VoiceGender gender)
         {
             SelectVoiceByHints(gender, VoiceAge.NotSet, 1, CultureInfo.CurrentUICulture);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="gender"></param>
-        /// <param name="age"></param>
         public void SelectVoiceByHints(VoiceGender gender, VoiceAge age)
         {
             SelectVoiceByHints(gender, age, 1, CultureInfo.CurrentUICulture);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="gender"></param>
-        /// <param name="age"></param>
-        /// <param name="voiceAlternate"></param>
         public void SelectVoiceByHints(VoiceGender gender, VoiceAge age, int voiceAlternate)
         {
             SelectVoiceByHints(gender, age, voiceAlternate, CultureInfo.CurrentUICulture);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="gender"></param>
-        /// <param name="age"></param>
-        /// <param name="voiceAlternate"></param>
-        /// <param name="culture"></param>
         public void SelectVoiceByHints(VoiceGender gender, VoiceAge age, int voiceAlternate, CultureInfo culture)
         {
             Helpers.ThrowIfNull(culture, nameof(culture));
@@ -136,12 +91,6 @@ namespace System.Speech.Synthesis
             }
             VoiceSynthesizer.Voice = ttsVoice;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <returns></returns>
         public Prompt SpeakAsync(string textToSpeak)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -150,11 +99,6 @@ namespace System.Speech.Synthesis
             SpeakAsync(prompt);
             return prompt;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="prompt"></param>
         public void SpeakAsync(Prompt prompt)
         {
             Helpers.ThrowIfNull(prompt, nameof(prompt));
@@ -162,12 +106,6 @@ namespace System.Speech.Synthesis
             prompt.Synthesizer = this;
             VoiceSynthesizer.SpeakAsync(prompt);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <returns></returns>
         public Prompt SpeakSsmlAsync(string textToSpeak)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -176,12 +114,6 @@ namespace System.Speech.Synthesis
             SpeakAsync(prompt);
             return prompt;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="promptBuilder"></param>
-        /// <returns></returns>
         public Prompt SpeakAsync(PromptBuilder promptBuilder)
         {
             Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
@@ -190,20 +122,10 @@ namespace System.Speech.Synthesis
             SpeakAsync(prompt);
             return prompt;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="textToSpeak"></param>
         public void Speak(string textToSpeak)
         {
             Speak(new Prompt(textToSpeak, SynthesisTextFormat.Text));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="prompt"></param>
         public void Speak(Prompt prompt)
         {
             Helpers.ThrowIfNull(prompt, nameof(prompt));
@@ -218,20 +140,10 @@ namespace System.Speech.Synthesis
             prompt._syncSpeak = true;
             VoiceSynthesizer.Speak(prompt);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="promptBuilder"></param>
         public void Speak(PromptBuilder promptBuilder)
         {
             Speak(new Prompt(promptBuilder));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="textToSpeak"></param>
         public void SpeakSsml(string textToSpeak)
         {
             Speak(new Prompt(textToSpeak, SynthesisTextFormat.Ssml));
@@ -265,7 +177,6 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// Cancel playback of all Prompts currently in the queue.
         /// </summary>
-        /// <param name="prompt"></param>
         public void SpeakAsyncCancel(Prompt prompt)
         {
             Helpers.ThrowIfNull(prompt, nameof(prompt));
@@ -280,11 +191,6 @@ namespace System.Speech.Synthesis
         {
             VoiceSynthesizer.Abort();
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="path"></param>
         // The stream is disposed when the speech synthesizer is disposed
         public void SetOutputToWaveFile(string path)
         {
@@ -293,12 +199,6 @@ namespace System.Speech.Synthesis
             SetOutputToNull();
             SetOutputStream(new FileStream(path, FileMode.Create, FileAccess.Write), null, true, true);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="formatInfo"></param>
         // The stream is disposed when the speech synthesizer is disposed
         public void SetOutputToWaveFile(string path, SpeechAudioFormatInfo formatInfo)
         {
@@ -308,23 +208,12 @@ namespace System.Speech.Synthesis
             SetOutputToNull();
             SetOutputStream(new FileStream(path, FileMode.Create, FileAccess.Write), formatInfo, true, true);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="audioDestination"></param>
         public void SetOutputToWaveStream(Stream audioDestination)
         {
             Helpers.ThrowIfNull(audioDestination, nameof(audioDestination));
 
             SetOutputStream(audioDestination, null, true, false);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="audioDestination"></param>
-        /// <param name="formatInfo"></param>
         public void SetOutputToAudioStream(Stream audioDestination, SpeechAudioFormatInfo formatInfo)
         {
             Helpers.ThrowIfNull(audioDestination, nameof(audioDestination));
@@ -332,18 +221,10 @@ namespace System.Speech.Synthesis
 
             SetOutputStream(audioDestination, formatInfo, false, false);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void SetOutputToDefaultAudioDevice()
         {
             SetOutputStream(null, null, true, false);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         // The stream is disposed when the speech synthesizer is disposed
         public void SetOutputToNull()
         {
@@ -362,31 +243,15 @@ namespace System.Speech.Synthesis
             }
             _outputStream = Stream.Null;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         // Dynamic content, use a method instead of a property to denote that fact
         public Prompt GetCurrentlySpokenPrompt()
         {
             return VoiceSynthesizer.Prompt;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public ReadOnlyCollection<InstalledVoice> GetInstalledVoices()
         {
             return VoiceSynthesizer.GetInstalledVoices(null);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="culture"></param>
-        /// <returns></returns>
         public ReadOnlyCollection<InstalledVoice> GetInstalledVoices(CultureInfo culture)
         {
             Helpers.ThrowIfNull(culture, nameof(culture));
@@ -398,23 +263,12 @@ namespace System.Speech.Synthesis
 
             return VoiceSynthesizer.GetInstalledVoices(culture);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="mediaType"></param>
         public void AddLexicon(Uri uri, string mediaType)
         {
             Helpers.ThrowIfNull(uri, nameof(uri));
 
             VoiceSynthesizer.AddLexicon(uri, mediaType);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="uri"></param>
         public void RemoveLexicon(Uri uri)
         {
             Helpers.ThrowIfNull(uri, nameof(uri));
@@ -423,10 +277,6 @@ namespace System.Speech.Synthesis
         }
 
         #region public Events
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public event EventHandler<SpeakStartedEventArgs> SpeakStarted
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -442,10 +292,6 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer._speakStarted -= value;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public event EventHandler<SpeakCompletedEventArgs> SpeakCompleted
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -461,10 +307,6 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer._speakCompleted -= value;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public event EventHandler<SpeakProgressEventArgs> SpeakProgress
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -480,10 +322,6 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer.RemoveEvent<SpeakProgressEventArgs>(TtsEventId.WordBoundary, ref VoiceSynthesizer._speakProgress, value);
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public event EventHandler<BookmarkReachedEventArgs> BookmarkReached
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -499,10 +337,6 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer.RemoveEvent<BookmarkReachedEventArgs>(TtsEventId.Bookmark, ref VoiceSynthesizer._bookmarkReached, value);
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public event EventHandler<VoiceChangeEventArgs> VoiceChange
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -520,10 +354,6 @@ namespace System.Speech.Synthesis
         }
 
         #region WinFx
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public event EventHandler<PhonemeReachedEventArgs> PhonemeReached
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -539,10 +369,6 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer.RemoveEvent<PhonemeReachedEventArgs>(TtsEventId.Phoneme, ref VoiceSynthesizer._phonemeReached, value);
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public event EventHandler<VisemeReachedEventArgs> VisemeReached
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -560,11 +386,6 @@ namespace System.Speech.Synthesis
         }
 
         #endregion
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public event EventHandler<StateChangedEventArgs> StateChanged
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -586,11 +407,6 @@ namespace System.Speech.Synthesis
         #endregion Events
 
         #region public Properties
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public SynthesizerState State
         {
             get
@@ -598,10 +414,6 @@ namespace System.Speech.Synthesis
                 return VoiceSynthesizer.State;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int Rate
         {
             get
@@ -617,10 +429,6 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer.Rate = value;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int Volume
         {
             get
@@ -636,11 +444,6 @@ namespace System.Speech.Synthesis
                 VoiceSynthesizer.Volume = value;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public VoiceInfo Voice
         {
             get
@@ -657,14 +460,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region Private Methods
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="formatInfo"></param>
-        /// <param name="headerInfo"></param>
-        /// <param name="closeStreamOnExit"></param>
         private void SetOutputStream(Stream stream, SpeechAudioFormatInfo formatInfo, bool headerInfo, bool closeStreamOnExit)
         {
             SetOutputToNull();
@@ -674,11 +469,6 @@ namespace System.Speech.Synthesis
             // Need to serialize into a proper wav file before closing the stream
             VoiceSynthesizer.SetOutput(stream, formatInfo, headerInfo);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="disposing"></param>
         private void Dispose(bool disposing)
         {
             if (!_isDisposed && disposing)
@@ -756,39 +546,16 @@ namespace System.Speech.Synthesis
     }
 
     #region Public Enums
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public enum SynthesizerState
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Ready,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Speaking,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Paused
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [Flags]
     public enum SynthesizerEmphasis
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Stressed = 1,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Emphasized = 2
     }
 

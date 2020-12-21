@@ -24,8 +24,6 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Internal Methods
 
 #pragma warning disable 56507
-
-        /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.RepeatProbability"]/*' />
         // The probability that this item will be repeated.
         void IPropertyTag.NameValue(IElement parent, string name, object value)
         {

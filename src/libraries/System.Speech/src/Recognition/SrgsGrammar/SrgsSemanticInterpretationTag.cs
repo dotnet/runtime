@@ -10,21 +10,16 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag"]/*' />
     [Serializable]
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsSemanticInterpretationTag : SrgsElement, ISemanticTag
     {
         #region Constructors
-
-        /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.Tag1"]/*' />
         public SrgsSemanticInterpretationTag()
         {
         }
 
 #pragma warning disable 56507
-
-        /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.Tag2"]/*' />
         public SrgsSemanticInterpretationTag(string script)
         {
             Helpers.ThrowIfNull(script, nameof(script));
@@ -35,8 +30,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public Properties
-
-        /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.Script"]/*' />
         public string Script
         {
             get

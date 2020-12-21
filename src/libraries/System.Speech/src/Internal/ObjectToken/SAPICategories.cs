@@ -38,7 +38,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// under 'HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\AudioOutput' then a multimedia device is looked
         /// for with this token. Otherwise, picks the default WAVE_MAPPER is returned.
         /// </summary>
-        /// <returns></returns>
         internal static int DefaultDeviceOut()
         {
             int device = -1;
@@ -163,9 +162,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Try to get the prefered token for a category
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="defaultLocation"></param>
-        /// <returns></returns>
         private static ObjectToken GetPreference(string category, string defaultLocation)
         {
             ObjectToken token = null;
@@ -188,10 +184,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Takes two tokens and compares them using version info.
         /// Note only tokens that match on Vendor, ProductLine, Language get compared, the pfDidCompare flag indicates this
         /// </summary>
-        /// <param name="token1"></param>
-        /// <param name="token2"></param>
-        /// <param name="pfDidCompare"></param>
-        /// <returns></returns>
         private static int CompareTokenVersions(ObjectToken token1, ObjectToken token2, out bool pfDidCompare)
         {
             pfDidCompare = false;
@@ -252,9 +244,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Takes two version number strings and compares them.
         /// If V1 or V2 invalid format then the valid string is returned as being greater.
         /// </summary>
-        /// <param name="sV1"></param>
-        /// <param name="sV2"></param>
-        /// <returns></returns>
         private static int CompareVersions(string sV1, string sV2)
         {
             ushort[] v1 = new ushort[4];
@@ -299,9 +288,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// where a,b,c,d are +ve integers, 0 . 9999. If b,c,d are missing those
         /// version values are set as zero.
         /// </summary>
-        /// <param name="s"></param>
-        /// <param name="Version"></param>
-        /// <returns></returns>
         private static bool ParseVersion(string s, ushort[] Version)
         {
             bool fIsValid = true;

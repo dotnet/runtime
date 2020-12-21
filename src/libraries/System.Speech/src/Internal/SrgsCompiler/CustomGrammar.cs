@@ -67,8 +67,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Creates the assembly and makes sure the it is valid.
         /// Get the IL and PDB for the embeded code for this grammar
         /// </summary>
-        /// <param name="il"></param>
-        /// <param name="pdb"></param>
         internal void CreateAssembly(out byte[] il, out byte[] pdb)
         {
             // Temporary file for the IL
@@ -107,8 +105,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Create a DLL with the CFG as a resource
         /// </summary>
-        /// <param name="path"></param>
-        /// <param name="cfgResources"></param>
         internal void CreateAssembly(string path, List<CustomGrammar.CfgResource> cfgResources)
         {
             CreateAssembly(path, _fDebugScript, cfgResources);
@@ -118,8 +114,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Add the scripts defined in 'cg' to the set of scripts defined in 'cgCombined'.
         /// Build the union of teh codebehind files and assembly references
         /// </summary>
-        /// <param name="cg"></param>
-        /// <param name="innerCode"></param>
         internal void Combine(CustomGrammar cg, string innerCode)
         {
             if (_rules.Count == 0)
@@ -441,7 +435,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Keeps this routine outside of CreateAssembly to avoid loading both the
         /// CSharp compiler, the VB compiler and JSccript compiler.
         /// </summary>
-        /// <returns></returns>
         private static CodeDomProvider CreateCSharpCompiler()
         {
             return new CSharpCodeProvider();
@@ -535,7 +528,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Keeps this routine outside of CreateAssembly to avoid loading both the
         /// CSharp compiler, the VB compiler and JSccript compiler.
         /// </summary>
-        /// <returns></returns>
         private static CodeDomProvider CreateVBCompiler()
         {
             return new VBCodeProvider();

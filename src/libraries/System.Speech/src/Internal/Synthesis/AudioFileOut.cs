@@ -59,7 +59,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Begin to play
         /// </summary>
-        /// <param name="wfx"></param>
         internal override void Begin(byte[] wfx)
         {
             if (_deviceOpen)
@@ -112,7 +111,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Play a wave file.
         /// </summary>
-        /// <param name="buffer"></param>
         internal override void Play(byte[] buffer)
         {
             if (!_deviceOpen)

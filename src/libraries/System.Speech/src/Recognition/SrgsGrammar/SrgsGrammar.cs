@@ -15,9 +15,6 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// |summary|
-    /// Summary description for Grammar.
-    /// |/summary|
     [Serializable]
     internal sealed class SrgsGrammar : IGrammar
     {
@@ -273,7 +270,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Sets the Root element
         /// </summary>
-        /// <value></value>
         string IGrammar.Root
         {
             get
@@ -565,7 +561,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Write the attributes of the grammar element for strongly typed grammars
         /// </summary>
-        /// <param name="writer"></param>
         private void WriteSTGAttributes(XmlWriter writer)
         {
             // Write the 'language' attribute
@@ -599,7 +594,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Write the the references to the referenced assemblies and the various scripts
         /// </summary>
-        /// <param name="writer"></param>
         private void WriteGrammarElements(XmlWriter writer)
         {
             // Writeall the <assmblyReference> entries
@@ -630,7 +624,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Write all Rules.
         /// </summary>
-        /// <param name="writer"></param>
         private void WriteRules(XmlWriter writer)
         {
             // Write <grammar> body and footer.
@@ -643,7 +636,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Write the script that are global to this grammar
         /// </summary>
-        /// <param name="writer"></param>
         private void WriteGlobalScripts(XmlWriter writer)
         {
             if (_script.Length > 0)

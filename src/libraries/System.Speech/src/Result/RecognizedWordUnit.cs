@@ -7,7 +7,6 @@ using System.Speech.Internal;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedWordUnit"]/*' />
     [Serializable]
     [DebuggerDisplay("Text: {Text}")]
 
@@ -19,7 +18,6 @@ namespace System.Speech.Recognition
 #pragma warning disable 6507
 
         // Constructor for recognized 'word'
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedWordUnit.ctor"]/*' />
         public RecognizedWordUnit(string text, float confidence, string pronunciation, string lexicalForm, DisplayAttributes displayAttributes, TimeSpan audioPosition, TimeSpan audioDuration)
         {
             if (lexicalForm == null)
@@ -48,20 +46,16 @@ namespace System.Speech.Recognition
 
         #region Public Properties
         // Spoken text of the word {No conversion to display form}
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedWordUnit.Text"]/*' />
         public string Text
         {
             get { return _text; }
         }
 
         // Confidence score
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedWordUnit.Confidence"]/*' />
         public float Confidence
         {
             get { return _confidence; }
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedWordUnit.PronunciationString"]/*' />
         public string Pronunciation
         {
             get
@@ -69,18 +63,10 @@ namespace System.Speech.Recognition
                 return _pronunciation;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public string LexicalForm
         {
             get { return _lexicalForm; }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public DisplayAttributes DisplayAttributes
         {
             get { return _displayAttributes; }
@@ -119,20 +105,13 @@ namespace System.Speech.Recognition
 
         #endregion
     }
-
-    /// TODOC
     [Flags]
     public enum DisplayAttributes
     {
-        /// TODOC
         None = 0x00,
-        /// TODOC
         ZeroTrailingSpaces = 0x02,
-        /// TODOC
         OneTrailingSpace = 0x04,
-        /// TODOC
         TwoTrailingSpaces = 0x08,
-        /// TODOC
         ConsumeLeadingSpaces = 0x10,
     }
 }

@@ -6,7 +6,6 @@ using System.ComponentModel;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\EmulateRecognizeCompletedEventArgs.uex' path='docs/doc[@for="EmulateRecognizeCompletedEventArgs"]/*' />
     public class EmulateRecognizeCompletedEventArgs : AsyncCompletedEventArgs
     {
         #region Constructors
@@ -20,8 +19,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Properties
-
-        /// TODOC <_include file='doc\RecognizeCompletedEventArgs.uex' path='docs/doc[@for="RecognizeCompletedEventArgs.Result"]/*' />
         public RecognitionResult Result
         {
             get { return _result; }

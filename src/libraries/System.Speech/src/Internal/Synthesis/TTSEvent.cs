@@ -8,9 +8,7 @@ using System.Speech.Synthesis.TtsEngine;
 
 namespace System.Speech.Internal.Synthesis
 {
-    /// <summary>
-    ///
-    /// </summary>
+
     internal class TTSEvent
     {
         #region Constructors

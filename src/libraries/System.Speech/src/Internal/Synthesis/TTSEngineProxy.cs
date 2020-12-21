@@ -113,9 +113,6 @@ namespace System.Speech.Internal.Synthesis
         #endregion
     }
 
-    /// <summary>
-    ///
-    /// </summary>
     internal class TtsProxySapi : ITtsEngineProxy
     {
         #region Constructors

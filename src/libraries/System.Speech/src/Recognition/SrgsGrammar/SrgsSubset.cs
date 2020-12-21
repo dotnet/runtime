@@ -10,7 +10,6 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\Subset.uex' path='docs/doc[@for="Subset"]/*' />
     // Note that currently if multiple words are stored in a Subset they are treated internally
     // and in the result as multiple tokens.
     [Serializable]
@@ -18,14 +17,10 @@ namespace System.Speech.Recognition.SrgsGrammar
     public class SrgsSubset : SrgsElement, ISubset
     {
         #region Constructors
-
-        /// TODOC
         public SrgsSubset(string text)
             : this(text, SubsetMatchingMode.Subsequence)
         {
         }
-
-        /// TODOC
         public SrgsSubset(string text, SubsetMatchingMode matchingMode)
         {
             Helpers.ThrowIfEmptyOrNull(text, nameof(text));
@@ -44,8 +39,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public Properties
-
-        /// TODOC <_include file='doc\Subset.uex' path='docs/doc[@for="Subset.Text"]/*' />
         public SubsetMatchingMode MatchingMode
         {
             get
@@ -62,8 +55,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _matchMode = value;
             }
         }
-
-        /// TODOC <_include file='doc\Subset.uex' path='docs/doc[@for="Subset.Pronunciation"]/*' />
         public string Text
         {
             get

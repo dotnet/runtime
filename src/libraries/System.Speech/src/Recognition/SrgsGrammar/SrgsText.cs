@@ -9,21 +9,16 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText"]/*' />
     [Serializable]
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsText : SrgsElement, IElementText
     {
         #region Constructors
-
-        /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText.SrgsText1"]/*' />
         public SrgsText()
         {
         }
 
 #pragma warning disable 56507
-
-        /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText.SrgsText2"]/*' />
         public SrgsText(string text)
         {
             Helpers.ThrowIfNull(text, nameof(text));
@@ -34,8 +29,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public Properties
-
-        /// TODOC <_include file='doc\SrgsText.uex' path='docs/doc[@for="SrgsText.Text"]/*' />
         public string Text
         {
             get

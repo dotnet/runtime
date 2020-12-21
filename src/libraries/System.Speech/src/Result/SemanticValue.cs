@@ -10,7 +10,6 @@ using System.Speech.Internal;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue"]/*' />
     [Serializable]
     [DebuggerDisplay("'{_keyName}'= {Value}  -  Children = {_dictionary.Count}")]
     [DebuggerTypeProxy(typeof(SemanticValueDebugDisplay))]
@@ -19,13 +18,6 @@ namespace System.Speech.Recognition
         #region Constructors
 
 #pragma warning disable 6504, 56507
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="keyName"></param>
-        /// <param name="value"></param>
-        /// <param name="confidence"></param>
         public SemanticValue(string keyName, object value, float confidence)
         {
             Helpers.ThrowIfNull(keyName, nameof(keyName));
@@ -36,11 +28,6 @@ namespace System.Speech.Recognition
             _value = value;
         }
 #pragma warning restore 6504, 56507
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="value"></param>
         public SemanticValue(object value)
             : this(string.Empty, value, -1f)
         {
@@ -49,12 +36,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
         public override bool Equals(object obj)
         {
             SemanticValue refObj = obj as SemanticValue;
@@ -72,11 +53,6 @@ namespace System.Speech.Recognition
             }
             return true;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <returns></returns>
         public override int GetHashCode()
         {
             return Count;
@@ -88,7 +64,6 @@ namespace System.Speech.Recognition
 
         // The value returned from the script / tags etc.
         // This can be cast to a more useful type {currently it will be string or int until we have .Net grammars}.
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.Value"]/*' />
         public object Value
         {
             get
@@ -102,7 +77,6 @@ namespace System.Speech.Recognition
         }
 
         // Confidence score associated with the semantic item.
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.Confidence"]/*' />
         public float Confidence
         {
             get
@@ -115,27 +89,19 @@ namespace System.Speech.Recognition
 
         #region IDictionary implementation
         // Expose the common query methods directly.
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.this2"]/*' />
         public SemanticValue this[string key]
         {
             get { return _dictionary[key]; }
             set { throw new InvalidOperationException(SR.Get(SRID.CollectionReadOnly)); }
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.Contains"]/*' />
         public bool Contains(KeyValuePair<string, SemanticValue> item)
         {
             return (_dictionary.ContainsKey(item.Key) && _dictionary.ContainsValue(item.Value));
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.ContainsKey"]/*' />
         public bool ContainsKey(string key)
         {
             return _dictionary.ContainsKey(key);
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.Count"]/*' />
         public int Count
         {
             get { return _dictionary.Count; }
@@ -168,14 +134,10 @@ namespace System.Speech.Recognition
         {
             throw new NotSupportedException(SR.Get(SRID.CollectionReadOnly));
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.CopyTo"]/*' />
         void ICollection<KeyValuePair<string, SemanticValue>>.CopyTo(KeyValuePair<string, SemanticValue>[] array, int index)
         {
             ((ICollection<KeyValuePair<string, SemanticValue>>)_dictionary).CopyTo(array, index);
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.GetEnumerator"]/*' />
         IEnumerator<KeyValuePair<string, SemanticValue>> IEnumerable<KeyValuePair<string, SemanticValue>>.GetEnumerator()
         {
             return _dictionary.GetEnumerator();
@@ -195,8 +157,6 @@ namespace System.Speech.Recognition
         {
             get { return _dictionary.Values; }
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="SemanticValue.GetEnumerator"]/*' />
         IEnumerator IEnumerable.GetEnumerator()
         {
             return ((IEnumerable<KeyValuePair<string, SemanticValue>>)this).GetEnumerator();

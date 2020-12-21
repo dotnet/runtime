@@ -22,15 +22,11 @@ using System.Threading;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase"]/*' />
     internal class RecognizerBase : IRecognizerInternal, IDisposable,
 ISpGrammarResourceLoader
     {
         #region Constructors
 
-        /// <summary>
-        ///
-        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -49,8 +45,6 @@ ISpGrammarResourceLoader
         #region Methods to Load and Unload grammars:
 
         // Synchronous:
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.LoadGrammar"]/*' />
         internal void LoadGrammar(Grammar grammar)
         {
             try
@@ -109,8 +103,6 @@ ISpGrammarResourceLoader
         }
 
         // Asynchronous:
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.LoadGrammarAsync"]/*' />
         internal void LoadGrammarAsync(Grammar grammar)
         {
             // Stream and SrgsDocument Grammars get reset on Unload and can't be loaded again. Url Grammars can be reloaded.
@@ -148,8 +140,6 @@ ISpGrammarResourceLoader
         }
 
         // Unload grammars:
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.UnloadGrammar"]/*' />
         internal void UnloadGrammar(Grammar grammar)
         {
             // Currently we have no good way of deleting grammars that are still being loaded.
@@ -174,8 +164,6 @@ ISpGrammarResourceLoader
             grammar.State = GrammarState.Unloaded;
             grammar.InternalData = null;
         }
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.UnloadAllGrammars"]/*' />
         internal void UnloadAllGrammars()
         {
             // Use a new collection as otherwise can't delete from current enumeration.
@@ -279,7 +267,6 @@ ISpGrammarResourceLoader
                     if (grammar.IsDictation(grammar.Uri))
                     {
                         // This is not supported in SAPI currently.
-                        // TODO: Maybe it should be - Generally dictation wants to be lower priority than anything else,
                         // but not necessarily always.
                         throw new NotSupportedException(SR.Get(SRID.CannotSetPriorityOnDictation));
                     }
@@ -326,24 +313,18 @@ ISpGrammarResourceLoader
         }
 
         #endregion
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.EmulateRecognize1"]/*' />
         internal RecognitionResult EmulateRecognize(string inputText)
         {
             Helpers.ThrowIfEmptyOrNull(inputText, nameof(inputText));
 
             return InternalEmulateRecognize(inputText, SpeechEmulationCompareFlags.SECFDefault, false, null);
         }
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.EmulateRecognize1"]/*' />
         internal void EmulateRecognizeAsync(string inputText)
         {
             Helpers.ThrowIfEmptyOrNull(inputText, nameof(inputText));
 
             InternalEmulateRecognizeAsync(inputText, SpeechEmulationCompareFlags.SECFDefault, false, null);
         }
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.EmulateRecognize2"]/*' />
         internal RecognitionResult EmulateRecognize(string inputText, CompareOptions compareOptions)
         {
             Helpers.ThrowIfEmptyOrNull(inputText, nameof(inputText));
@@ -362,8 +343,6 @@ ISpGrammarResourceLoader
 
             return InternalEmulateRecognize(inputText, ConvertCompareOptions(compareOptions), !defaultCasing, null);
         }
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.EmulateRecognize2"]/*' />
         internal void EmulateRecognizeAsync(string inputText, CompareOptions compareOptions)
         {
             Helpers.ThrowIfEmptyOrNull(inputText, nameof(inputText));
@@ -382,8 +361,6 @@ ISpGrammarResourceLoader
 
             InternalEmulateRecognizeAsync(inputText, ConvertCompareOptions(compareOptions), !defaultCasing, null);
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
         internal RecognitionResult EmulateRecognize(RecognizedWordUnit[] wordUnits, CompareOptions compareOptions)
         {
             // In Sapi 5.1 the only option is case-sensitive search with extendedWordFormat checking.
@@ -407,8 +384,6 @@ ISpGrammarResourceLoader
 
             return InternalEmulateRecognize(null, ConvertCompareOptions(compareOptions), true, wordUnits);
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
         internal void EmulateRecognizeAsync(RecognizedWordUnit[] wordUnits, CompareOptions compareOptions)
         {
             // In Sapi 5.1 the only option is case-sensitive search with extendedWordFormat checking.
@@ -434,13 +409,10 @@ ISpGrammarResourceLoader
         }
 
         // Methods to pause the recognizer to do atomic updates:
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.RequestRecognizerUpdate1"]/*' />
         internal void RequestRecognizerUpdate()
         {
             RequestRecognizerUpdate(null);
         }
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.RequestRecognizerUpdate2"]/*' />
         internal void RequestRecognizerUpdate(object userToken)
         {
             uint bookmarkId = AddBookmarkItem(userToken);
@@ -448,8 +420,6 @@ ISpGrammarResourceLoader
             // This fires the bookmark as soon as possible so we set the time as zero and don't set the SPBO_AHEAD flag.
             SapiContext.Bookmark(SPBOOKMARKOPTIONS.SPBO_PAUSE, 0, new IntPtr(bookmarkId));
         }
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.RequestRecognizerUpdate3"]/*' />
         internal void RequestRecognizerUpdate(object userToken, TimeSpan audioPositionAheadToRaiseUpdate)
         {
             if (audioPositionAheadToRaiseUpdate < TimeSpan.Zero)
@@ -469,9 +439,6 @@ ISpGrammarResourceLoader
                 (ulong)audioPositionAheadToRaiseUpdate.Ticks, new IntPtr(bookmarkId));
         }
 
-        // Other internal methods:
-
-        // TODO jeanfp remove the second parameter
         internal void Initialize(SapiRecognizer recognizer, bool inproc)
         {
             // Create RecoContext:
@@ -761,7 +728,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Set the current input for the recognizer to a file
         /// </summary>
-        /// <param name="path"></param>
         internal void SetInput(string path)
         {
             Stream inputStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -774,8 +740,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Set the current input for the recognizer to a file
         /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="audioFormat"></param>
         internal void SetInput(Stream stream, SpeechAudioFormatInfo audioFormat)
         {
             lock (SapiRecognizer) // Lock to protect _isRecognizing and _haveInputSource
@@ -1070,14 +1034,12 @@ ISpGrammarResourceLoader
         }
 
         // Gives access to the collection of grammars that are currently active. Read-only.
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.Grammars"]/*' />
         internal ReadOnlyCollection<Grammar> Grammars
         {
             get { return _readOnlyGrammars; }
         }
 
         // Gives access to the set of attributes exposed by this recognizer.
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.RecognizerInfo"]/*' />
         internal RecognizerInfo RecognizerInfo
         {
             get
@@ -1099,7 +1061,6 @@ ISpGrammarResourceLoader
         }
 
         // Data on the audio stream the recognizer is processing
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.AudioStatus"]/*' />
         internal AudioState AudioState
         {
             get
@@ -1213,8 +1174,6 @@ ISpGrammarResourceLoader
                 }
             }
         }
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.AudioFormat"]/*' />
         internal SpeechAudioFormatInfo AudioFormat
         {
             get
@@ -1235,8 +1194,6 @@ ISpGrammarResourceLoader
                 return _audioFormat;
             }
         }
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.MaxAlternates"]/*' />
         internal int MaxAlternates
         {
             get { return _maxAlternates; }
@@ -1262,30 +1219,23 @@ ISpGrammarResourceLoader
         internal event EventHandler<RecognizeCompletedEventArgs> RecognizeCompleted;
 
         // Fired when the RecognizeAsync process completes.
-        /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.RecognizeCompleted"]/*' />
         internal event EventHandler<EmulateRecognizeCompletedEventArgs> EmulateRecognizeCompleted;
 
         // Internal event used to hook up the SpeechRecognizer StateChanged event.
         internal event EventHandler<StateChangedEventArgs> StateChanged;
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.LoadGrammarCompleted"]/*' />
         internal event EventHandler<LoadGrammarCompletedEventArgs> LoadGrammarCompleted;
 
         // The event fired when speech is detected. Used for barge-in.
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.SpeechDetected"]/*' />
         internal event EventHandler<SpeechDetectedEventArgs> SpeechDetected;
 
         // The event fired on a recognition.
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.SpeechRecognized"]/*' />
         internal event EventHandler<SpeechRecognizedEventArgs> SpeechRecognized;
 
         // The event fired on a no recognition
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.SpeechRecognitionRejected"]/*' />
         internal event EventHandler<SpeechRecognitionRejectedEventArgs> SpeechRecognitionRejected;
 
 #pragma warning disable 6504
         // Occurs when a spoken phrase is partially recognized.
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.SpeechHypothesized"]/*' />
         internal event EventHandler<SpeechHypothesizedEventArgs> SpeechHypothesized
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -1308,8 +1258,6 @@ ISpGrammarResourceLoader
                 }
             }
         }
-
-        /// TODOC
         internal event EventHandler<AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -1332,8 +1280,6 @@ ISpGrammarResourceLoader
                 }
             }
         }
-
-        /// TODOC
         internal event EventHandler<AudioLevelUpdatedEventArgs> AudioLevelUpdated
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -1356,8 +1302,6 @@ ISpGrammarResourceLoader
                 }
             }
         }
-
-        /// TODOC
         internal event EventHandler<AudioStateChangedEventArgs> AudioStateChanged
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -1374,15 +1318,11 @@ ISpGrammarResourceLoader
         }
 
 #pragma warning restore 6504
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.RecognizerUpdateReached"]/*' />
         internal event EventHandler<RecognizerUpdateReachedEventArgs> RecognizerUpdateReached;
 
         #endregion
 
         #region Protected Methods
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.Dispose"]/*' />
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -1541,13 +1481,6 @@ ISpGrammarResourceLoader
         ///
         /// Returns the CFG data for a given file and builds a tree of rule ref dependencies.
         /// </summary>
-        /// <param name="bstrResourceUri"></param>
-        /// <param name="fAlwaysReload"></param>
-        /// <param name="pStream"></param>
-        /// <param name="pbstrMIMEType"></param>
-        /// <param name="pfModified"></param>
-        /// <param name="pbstrRedirectUrl"></param>
-        /// <returns></returns>
         int ISpGrammarResourceLoader.LoadResource(string bstrResourceUri, bool fAlwaysReload, out IStream pStream, ref string pbstrMIMEType, ref short pfModified, ref string pbstrRedirectUrl)
         {
             try
@@ -1622,10 +1555,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Unused
         /// </summary>
-        /// <param name="resourcePath"></param>
-        /// <param name="mimeType"></param>
-        /// <param name="redirectUrl"></param>
-        /// <returns></returns>
         string ISpGrammarResourceLoader.GetLocalCopy(Uri resourcePath, out string mimeType, out Uri redirectUrl)
         {
             redirectUrl = null;
@@ -1636,7 +1565,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Unused
         /// </summary>
-        /// <param name="path"></param>
         void ISpGrammarResourceLoader.ReleaseLocalCopy(string path)
         {
         }
@@ -1660,7 +1588,7 @@ ISpGrammarResourceLoader
                 {
                     _loadException = null;
                     _topLevel = grammar;
-                    // TODO jeanfp remove this limitation
+
                     if (_inproc)
                     {
                         // Use the resource loader for Sapi 5.3 and above
@@ -2250,8 +2178,6 @@ ISpGrammarResourceLoader
             // Set the initial silence timeout running.
             // We wait until this event in case there was some error that prevented the recognition from starting.
 
-            // TODO: Currently disable timeouts in Multiple mode. But what is the right behavior?
-
             TimeSpan initialSilenceTimeout = InitialSilenceTimeout; // This gets the value in a thread-safe manner.
 
             // Add bookmark at desired InitialSilence Timeout
@@ -2573,7 +2499,6 @@ ISpGrammarResourceLoader
             else
             {
                 //
-                // TODO-hieung: This test for _isWaitingRecognition is a hack. A PHRASE_START event must be always
                 // followed by a recognition/false recognition event. But it is not the case at this point as we
                 // actually receive multiple SR_END_STREAM events for a single emulation, and the first SR_END_STREAM
                 // is not preceeded by a recognition event. Until we found the problem in SAPI, this is only a workaround
@@ -2946,7 +2871,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Fire the SpeechDetected event.
         /// </summary>
-        /// <param name="audioPosition"></param>
         private void FireSpeechDetectedEvent(TimeSpan audioPosition)
         {
             EventHandler<SpeechDetectedEventArgs> speechDetectedHandler = SpeechDetected;
@@ -2959,7 +2883,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Fire the hypothesis event.
         /// </summary>
-        /// <param name="result"></param>
         private void FireSpeechHypothesizedEvent(RecognitionResult result)
         {
             EventHandler<SpeechHypothesizedEventArgs> speechHypothesizedHandler = _speechHypothesizedDelegate;
@@ -2972,7 +2895,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Fire the rejected recognition on the recognizer.
         /// </summary>
-        /// <param name="result"></param>
         private void FireSpeechRecognitionRejectedEvent(RecognitionResult result)
         {
             EventHandler<SpeechRecognitionRejectedEventArgs> recognitionHandler = SpeechRecognitionRejected;
@@ -2986,7 +2908,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Fire the recognition on the grammar.
         /// </summary>
-        /// <param name="recognitionEventArgs"></param>
         private void FireSpeechRecognizedEvent(SpeechRecognizedEventArgs recognitionEventArgs)
         {
             EventHandler<SpeechRecognizedEventArgs> recognitionHandler = SpeechRecognized;
@@ -2999,13 +2920,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Fire the recognition completed event.
         /// </summary>
-        /// <param name="result"></param>
-        /// <param name="initialSilenceTimeoutReached"></param>
-        /// <param name="babbleTimeoutReached"></param>
-        /// <param name="isStreamReleased"></param>
-        /// <param name="audioPosition"></param>
-        /// <param name="exception"></param>
-        /// <param name="isRecognizeCancelled"></param>
         private void FireRecognizeCompletedEvent(RecognitionResult result, bool initialSilenceTimeoutReached, bool babbleTimeoutReached, bool isStreamReleased, TimeSpan audioPosition, Exception exception, bool isRecognizeCancelled)
         {
             // In the synchronous case, fire the private event
@@ -3027,9 +2941,6 @@ ISpGrammarResourceLoader
         /// <summary>
         /// Fire the emulate completed event.
         /// </summary>
-        /// <param name="result"></param>
-        /// <param name="exception"></param>
-        /// <param name="isRecognizeCancelled"></param>
         private void FireEmulateRecognizeCompletedEvent(RecognitionResult result, Exception exception, bool isRecognizeCancelled)
         {
             EventHandler<EmulateRecognizeCompletedEventArgs> emulateRecognizeCompletedHandler;
@@ -3152,7 +3063,6 @@ ISpGrammarResourceLoader
         private Exception _loadException;
         private Grammar _topLevel;
 
-        // TODO jeanfp remove that
         private bool _inproc;
 
         // private event used to hook up the SpeechRecognitionEngine RecognizeCompleted event.
@@ -3184,13 +3094,6 @@ ISpGrammarResourceLoader
             ///
             /// Returns the CFG data for a given file and builds a tree of rule ref dependencies.
             /// </summary>
-            /// <param name="bstrResourceUri"></param>
-            /// <param name="fAlwaysReload"></param>
-            /// <param name="pStream"></param>
-            /// <param name="pbstrMIMEType"></param>
-            /// <param name="pfModified"></param>
-            /// <param name="pbstrRedirectUrl"></param>
-            /// <returns></returns>
             int ISpGrammarResourceLoader.LoadResource(string bstrResourceUri, bool fAlwaysReload, out IStream pStream, ref string pbstrMIMEType, ref short pfModified, ref string pbstrRedirectUrl)
             {
                 return ((ISpGrammarResourceLoader)Recognizer).LoadResource(bstrResourceUri, fAlwaysReload, out pStream, ref pbstrMIMEType, ref pfModified, ref pbstrRedirectUrl);
@@ -3199,10 +3102,6 @@ ISpGrammarResourceLoader
             /// <summary>
             /// Unused
             /// </summary>
-            /// <param name="resourcePath"></param>
-            /// <param name="mimeType"></param>
-            /// <param name="redirectUrl"></param>
-            /// <returns></returns>
             string ISpGrammarResourceLoader.GetLocalCopy(Uri resourcePath, out string mimeType, out Uri redirectUrl)
             {
                 return ((ISpGrammarResourceLoader)Recognizer).GetLocalCopy(resourcePath, out mimeType, out redirectUrl);
@@ -3211,7 +3110,6 @@ ISpGrammarResourceLoader
             /// <summary>
             /// Unused
             /// </summary>
-            /// <param name="path"></param>
             void ISpGrammarResourceLoader.ReleaseLocalCopy(string path)
             {
                 ((ISpGrammarResourceLoader)Recognizer).ReleaseLocalCopy(path);

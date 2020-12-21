@@ -16,10 +16,6 @@ using System.Diagnostics;
 namespace System.Speech.Synthesis.TtsEngine
 {
     #region Public Interface
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  abstract class TtsEngineSsml
     {
@@ -63,23 +59,13 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <param name="site">Engine site</param>
         public abstract void Speak(TextFragment[] fragment, IntPtr waveHeader, ITtsEngineSite site);
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [ImmutableObject(true)]
 
     public
  struct SpeechEventInfo : IEquatable<SpeechEventInfo>
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public short EventId { get { return _eventId; } internal set { _eventId = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public short ParameterType { get { return _parameterType; } internal set { _parameterType = value; } }
         /// <summary>
         /// Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
@@ -89,8 +75,6 @@ namespace System.Speech.Synthesis.TtsEngine
         /// Can be a numeric type, or pointer to string.
         /// </summary>
         public IntPtr Param2 { get { return _param2; } internal set { _param2 = value; } }
-
-        /// TODOC
         public SpeechEventInfo(short eventId,
                                short parameterType,
                                int param1,
@@ -101,26 +85,18 @@ namespace System.Speech.Synthesis.TtsEngine
             _param1 = param1;
             _param2 = param2;
         }
-
-        /// TODOC
         public static bool operator ==(SpeechEventInfo event1, SpeechEventInfo event2)
         {
             return event1.EventId == event2.EventId && event1.ParameterType == event2.ParameterType && event1.Param1 == event2.Param1 && event1.Param2 == event2.Param2;
         }
-
-        /// TODOC
         public static bool operator !=(SpeechEventInfo event1, SpeechEventInfo event2)
         {
             return !(event1 == event2);
         }
-
-        /// TODOC
         public bool Equals(SpeechEventInfo other)
         {
             return this == other;
         }
-
-        /// TODOC
         public override bool Equals(object obj)
         {
             if (!(obj is SpeechEventInfo))
@@ -130,8 +106,6 @@ namespace System.Speech.Synthesis.TtsEngine
 
             return Equals((SpeechEventInfo)obj);
         }
-
-        /// TODOC
         public override int GetHashCode()
         {
             return base.GetHashCode();
@@ -142,56 +116,19 @@ namespace System.Speech.Synthesis.TtsEngine
         private int _param1;   // Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         private IntPtr _param2;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  interface ITtsEngineSite
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         void AddEvents(SpeechEventInfo[] events, int count);
-        /// <summary>
-        /// TODOC
-        /// </summary>
         int Write(IntPtr data, int count);
-        /// <summary>
-        /// TODOC
-        /// </summary>
         SkipInfo GetSkipInfo();
-        /// <summary>
-        /// TODOC
-        /// </summary>
         void CompleteSkip(int skipped);
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Stream LoadResource(Uri uri, string mediaType);
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         int EventInterest { get; }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         int Actions { get; }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         int Rate { get; }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         int Volume { get; }
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
-
     public
  class SkipInfo
     {
@@ -200,10 +137,6 @@ namespace System.Speech.Synthesis.TtsEngine
             _type = type;
             _count = count;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int Type
         {
             get
@@ -215,9 +148,6 @@ namespace System.Speech.Synthesis.TtsEngine
                 _type = value;
             }
         }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int Count
         {
             get
@@ -229,10 +159,6 @@ namespace System.Speech.Synthesis.TtsEngine
                 _count = value;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public SkipInfo()
         {
         }
@@ -244,40 +170,18 @@ namespace System.Speech.Synthesis.TtsEngine
     #endregion
 
     #region Public Types
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
 
     [DebuggerDisplay("{State.Action} {TextToSpeak!=null?TextToSpeak:\"\"}")]
     public
  class TextFragment
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public TextFragment()
         {
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public FragmentState State { get { return _state; } set { _state = value; } }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public string TextToSpeak { get { return _textToSpeak; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _textToSpeak = value; } }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int TextOffset { get { return _textOffset; } set { _textOffset = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int TextLength { get { return _textLength; } set { _textLength = value; } }
 
         internal TextFragment(FragmentState fragState)
@@ -311,45 +215,18 @@ namespace System.Speech.Synthesis.TtsEngine
         private int _textOffset;
         private int _textLength;
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [ImmutableObject(true)]
 
     public
  struct FragmentState : IEquatable<FragmentState>
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public TtsEngineAction Action { get { return _action; } internal set { _action = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int LangId { get { return _langId; } internal set { _langId = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int Emphasis { get { return _emphasis; } internal set { _emphasis = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int Duration { get { return _duration; } internal set { _duration = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public SayAs SayAs { get { return _sayAs; } internal set { Helpers.ThrowIfNull(value, nameof(value)); _sayAs = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public Prosody Prosody { get { return _prosody; } internal set { Helpers.ThrowIfNull(value, nameof(value)); _prosody = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public char[] Phoneme { get { return _phoneme; } internal set { Helpers.ThrowIfNull(value, nameof(value)); _phoneme = value; } }
-
-        /// TODOC
         public FragmentState(TtsEngineAction action,
                              int langId,
                              int emphasis,
@@ -366,26 +243,18 @@ namespace System.Speech.Synthesis.TtsEngine
             _prosody = prosody;
             _phoneme = phonemes;
         }
-
-        /// TODOC
         public static bool operator ==(FragmentState state1, FragmentState state2)
         {
             return state1.Action == state2.Action && state1.LangId == state2.LangId && state1.Emphasis == state2.Emphasis && state1.Duration == state2.Duration && state1.SayAs == state2.SayAs && state1.Prosody == state2.Prosody && Array.Equals(state1.Phoneme, state2.Phoneme);
         }
-
-        /// TODOC
         public static bool operator !=(FragmentState state1, FragmentState state2)
         {
             return !(state1 == state2);
         }
-
-        /// TODOC
         public bool Equals(FragmentState other)
         {
             return this == other;
         }
-
-        /// TODOC
         public override bool Equals(object obj)
         {
             if (!(obj is FragmentState))
@@ -395,8 +264,6 @@ namespace System.Speech.Synthesis.TtsEngine
 
             return Equals((FragmentState)obj);
         }
-
-        /// TODOC
         public override int GetHashCode()
         {
             return base.GetHashCode();
@@ -410,51 +277,22 @@ namespace System.Speech.Synthesis.TtsEngine
         private Prosody _prosody;
         private char[] _phoneme;
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public
  class Prosody
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ProsodyNumber Pitch { get { return _pitch; } set { _pitch = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ProsodyNumber Range { get { return _range; } set { _range = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ProsodyNumber Rate { get { return _rate; } set { _rate = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int Duration { get { return _duration; } set { _duration = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ProsodyNumber Volume { get { return _volume; } set { _volume = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ContourPoint[] GetContourPoints() { return _contourPoints; }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void SetContourPoints(ContourPoint[] points)
         {
             Helpers.ThrowIfNull(points, nameof(points));
 
             _contourPoints = (ContourPoint[])points.Clone();
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public Prosody()
         {
             Pitch = new ProsodyNumber((int)ProsodyPitch.Default); ;
@@ -481,56 +319,32 @@ namespace System.Speech.Synthesis.TtsEngine
         internal ProsodyNumber _volume;
         internal ContourPoint[] _contourPoints;
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [ImmutableObject(true)]
 
     public
  struct ContourPoint : IEquatable<ContourPoint>
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public float Start { get { return _start; } /* internal set { _start = value; }  */}
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public float Change { get { return _change; } /* internal set { _change = value; } */ }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ContourPointChangeType ChangeType { get { return _changeType; } /* internal set { _changeType = value; } */ }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ContourPoint(float start, float change, ContourPointChangeType changeType)
         {
             _start = start;
             _change = change;
             _changeType = changeType;
         }
-
-        /// TODOC
         public static bool operator ==(ContourPoint point1, ContourPoint point2)
         {
             return point1.Start.Equals(point2.Start) && point1.Change.Equals(point2.Change) && point1.ChangeType.Equals(point2.ChangeType);
         }
-
-        /// TODOC
         public static bool operator !=(ContourPoint point1, ContourPoint point2)
         {
             return !(point1 == point2);
         }
-
-        /// TODOC
         public bool Equals(ContourPoint other)
         {
             return this == other;
         }
-
-        /// TODOC
         public override bool Equals(object obj)
         {
             if (!(obj is ContourPoint))
@@ -540,8 +354,6 @@ namespace System.Speech.Synthesis.TtsEngine
 
             return Equals((ContourPoint)obj);
         }
-
-        /// TODOC
         public override int GetHashCode()
         {
             return base.GetHashCode();
@@ -551,42 +363,15 @@ namespace System.Speech.Synthesis.TtsEngine
         private float _change;
         private ContourPointChangeType _changeType;
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [ImmutableObject(true)]
     public
  struct ProsodyNumber : IEquatable<ProsodyNumber>
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int SsmlAttributeId { get { return _ssmlAttributeId; } internal set { _ssmlAttributeId = value; } }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public bool IsNumberPercent { get { return _isPercent; } internal set { _isPercent = value; } }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public float Number { get { return _number; } internal set { _number = value; } }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ProsodyUnit Unit { get { return _unit; } internal set { _unit = value; } }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public const int AbsoluteNumber = int.MaxValue;
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ProsodyNumber(int ssmlAttributeId)
         {
             _ssmlAttributeId = ssmlAttributeId;
@@ -594,10 +379,6 @@ namespace System.Speech.Synthesis.TtsEngine
             _isPercent = true;
             _unit = ProsodyUnit.Default;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public ProsodyNumber(float number)
         {
             _ssmlAttributeId = int.MaxValue;
@@ -605,26 +386,18 @@ namespace System.Speech.Synthesis.TtsEngine
             _isPercent = false;
             _unit = ProsodyUnit.Default;
         }
-
-        /// TODOC
         public static bool operator ==(ProsodyNumber prosodyNumber1, ProsodyNumber prosodyNumber2)
         {
             return prosodyNumber1._ssmlAttributeId == prosodyNumber2._ssmlAttributeId && prosodyNumber1.Number.Equals(prosodyNumber2.Number) && prosodyNumber1.IsNumberPercent == prosodyNumber2.IsNumberPercent && prosodyNumber1.Unit == prosodyNumber2.Unit;
         }
-
-        /// TODOC
         public static bool operator !=(ProsodyNumber prosodyNumber1, ProsodyNumber prosodyNumber2)
         {
             return !(prosodyNumber1 == prosodyNumber2);
         }
-
-        /// TODOC
         public bool Equals(ProsodyNumber other)
         {
             return this == other;
         }
-
-        /// TODOC
         public override bool Equals(object obj)
         {
             if (!(obj is ProsodyNumber))
@@ -634,8 +407,6 @@ namespace System.Speech.Synthesis.TtsEngine
 
             return Equals((ProsodyNumber)obj);
         }
-
-        /// TODOC
         public override int GetHashCode()
         {
             return base.GetHashCode();
@@ -646,25 +417,12 @@ namespace System.Speech.Synthesis.TtsEngine
         private float _number;
         private ProsodyUnit _unit;
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public
  class SayAs
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public string InterpretAs { get { return _interpretAs; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _interpretAs = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public string Format { get { return _format; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _format = value; } }
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public string Detail { get { return _detail; } set { Helpers.ThrowIfEmptyOrNull(value, nameof(value)); _detail = value; } }
 
         [MarshalAs(UnmanagedType.LPWStr)]
@@ -680,374 +438,127 @@ namespace System.Speech.Synthesis.TtsEngine
     #endregion
 
     #region Public Enums
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum TtsEngineAction
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Speak,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Silence,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Pronounce,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Bookmark,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         SpellOut,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         StartSentence,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         StartParagraph,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ParseUnknownTag,
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum EmphasisWord : int
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Default,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Strong,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Moderate,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         None,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Reduced
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum EmphasisBreak : int
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         None = -1,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraWeak = -2,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Weak = -3,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Medium = -4,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Strong = -5,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraStrong = -6,
         /// <summary>
         /// Equivalent to the empty <Break />
         /// </summary>
         Default = -7,
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum ProsodyPitch
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Default,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraLow,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Low,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Medium,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         High,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraHigh
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum ProsodyRange
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Default,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraLow,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Low,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Medium,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         High,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraHigh
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum ProsodyRate
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Default,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraSlow,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Slow,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Medium,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Fast,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraFast
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum ProsodyVolume : int
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Default = -1,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Silent = -2,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraSoft = -3,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Soft = -4,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Medium = -5,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Loud = -6,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         ExtraLoud = -7
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum ProsodyUnit : int
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Default,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Hz,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Semitone
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum TtsEventId
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         StartInputStream = 1,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         EndInputStream = 2,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         VoiceChange = 3,   // lparam_is_token
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Bookmark = 4,   // lparam_is_string
-        /// <summary>
-        /// TODOC
-        /// </summary>
         WordBoundary = 5,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Phoneme = 6,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         SentenceBoundary = 7,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Viseme = 8,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         AudioLevel = 9,   // wparam contains current output audio level
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum EventParameterType
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Undefined = 0x0000,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Token = 0x0001,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Object = 0x0002,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Pointer = 0x0003,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         String = 0x0004
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum SpeakOutputFormat
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         WaveFormat = 0,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Text = 1
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum ContourPointChangeType
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Hz = 0,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Percentage = 1
     }
 
     #endregion
 
     #region Internal Interface
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct TextFragmentInterop
     {
@@ -1075,10 +586,6 @@ namespace System.Speech.Synthesis.TtsEngine
             return ret;
         }
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     internal struct FragmentStateInterop
     {
         internal TtsEngineAction _action;
@@ -1129,10 +636,6 @@ namespace System.Speech.Synthesis.TtsEngine
             _prosody = ProsodyInterop.ProsodyToPtr(state.Prosody, memoryBlocks);
         }
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct ProsodyInterop
     {

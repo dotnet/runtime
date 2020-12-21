@@ -11,13 +11,8 @@ namespace System.Speech.Recognition.SrgsGrammar
     /// Summary description for Rules.
     /// </summary>
     [Serializable]
-
     public sealed class SrgsRulesCollection : KeyedCollection<string, SrgsRule>
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="rules"></param>
         public void Add(params SrgsRule[] rules)
         {
             Helpers.ThrowIfNull(rules, nameof(rules));
@@ -31,12 +26,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 base.Add(rules[iRule]);
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="rule"></param>
-        /// <returns></returns>
         protected override string GetKeyForItem(SrgsRule rule)
         {
             if (rule == null)

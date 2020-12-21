@@ -17,10 +17,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Process the 'subset' element.
         /// </summary>
-        /// <param name="parent"></param>
-        /// <param name="backend"></param>
-        /// <param name="text"></param>
-        /// <param name="mode"></param>
         public Subset(ParseElementCollection parent, Backend backend, string text, MatchMode mode)
             : base(parent._rule)
         {
@@ -44,10 +40,6 @@ namespace System.Speech.Internal.SrgsCompiler
         #endregion
 
         #region Intenal Method
-
-        /// <summary>
-        /// </summary>
-        /// <param name="parentElement"></param>
         void IElement.PostParse(IElement parentElement)
         {
         }

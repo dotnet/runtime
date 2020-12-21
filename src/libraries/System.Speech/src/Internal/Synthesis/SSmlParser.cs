@@ -20,9 +20,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Parse an SSML stream and build a set of SSML Text Fragments
         /// </summary>
-        /// <param name="ssml"></param>
-        /// <param name="engine"></param>
-        /// <param name="voice"></param>
         internal static void Parse(string ssml, ISsmlParser engine, object voice)
         {
             // Remove the CR and LF
@@ -37,9 +34,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Parse an SSML stream and build a set of SSML Text Fragments
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="engine"></param>
-        /// <param name="voice"></param>
         internal static void Parse(XmlReader reader, ISsmlParser engine, object voice)
         {
             try
@@ -1781,9 +1775,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Ensure the this element is properly placed in the SSML markup
         /// </summary>
-        /// <param name="possibleElements"></param>
-        /// <param name="currentElement"></param>
-        /// <param name="sElement"></param>
         private static string ValidateElement(SsmlElement possibleElements, SsmlElement currentElement, string sElement)
         {
             if ((possibleElements & currentElement) == 0)
@@ -1796,8 +1787,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Throws an Exception with the error specified by the resource ID.
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="args"></param>
         private static void ThrowFormatException(SRID id, params object[] args)
         {
             throw new FormatException(SR.Get(id, args));
@@ -1806,9 +1795,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Throws an Exception with the error specified by the resource ID.
         /// </summary>
-        /// <param name="innerException"></param>
-        /// <param name="id"></param>
-        /// <param name="args"></param>
         private static void ThrowFormatException(Exception innerException, SRID id, params object[] args)
         {
             throw new FormatException(SR.Get(id, args), innerException);
@@ -1846,7 +1832,7 @@ namespace System.Speech.Internal.Synthesis
             internal VoiceAge _age;
             internal VoiceGender _gender;
             internal string _baseUri;
-            internal short _cPromptOutput; // (jeanfp) must be short, otherwise it crashes on the 32 bit version of XP!
+            internal short _cPromptOutput;
             internal List<SsmlXmlAttribute> _unknownNamespaces;
 
             internal bool AddUnknowAttribute(SsmlXmlAttribute attribute, ref List<SsmlXmlAttribute> extraAttributes)

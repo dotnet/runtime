@@ -29,7 +29,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         ///  Process the '/item' element.
         /// </summary>
-        /// <param name="parentElement"></param>
         void IElement.PostParse(IElement parentElement)
         {
             // Special case of no words but only tags. Returns an error as the result is ambiguous

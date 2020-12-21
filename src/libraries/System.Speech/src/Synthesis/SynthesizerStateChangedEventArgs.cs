@@ -5,18 +5,9 @@ using System;
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public class StateChangedEventArgs : EventArgs
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="state"></param>
-        /// <param name="previousState"></param>
         internal StateChangedEventArgs(SynthesizerState state, SynthesizerState previousState)
         {
             _state = state;
@@ -28,10 +19,6 @@ namespace System.Speech.Synthesis
         #region public Properties
 
         // Use Add* naming convention.
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public SynthesizerState State
         {
             get
@@ -39,10 +26,6 @@ namespace System.Speech.Synthesis
                 return _state;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public SynthesizerState PreviousState
         {
             get

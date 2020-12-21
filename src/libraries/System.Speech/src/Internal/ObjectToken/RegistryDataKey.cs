@@ -162,10 +162,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Writes the specified binary data to the registry.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <param name="cbData"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int SetData(
             [MarshalAs(UnmanagedType.LPWStr)] string valueName,
@@ -178,10 +174,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Reads the specified binary data from the registry.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <param name="pcbData"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int GetData(
             [MarshalAs(UnmanagedType.LPWStr)] string valueName,
@@ -195,9 +187,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Writes the specified string value from the registry. If valueName
         /// is NULL then the default value of the registry key is read.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int SetStringValue(
             [MarshalAs(UnmanagedType.LPWStr)] string valueName,
@@ -210,9 +199,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Reads the specified string value to the registry. If valueName is
         /// NULL then the default value of the registy key is read.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int GetStringValue(
             [MarshalAs(UnmanagedType.LPWStr)] string valueName,
@@ -224,9 +210,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Writes the specified DWORD to the registry.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int SetDWORD(
             [MarshalAs(UnmanagedType.LPWStr)] string valueName,
@@ -238,9 +221,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Reads the specified DWORD from the registry.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <param name="pdwValue"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int GetDWORD([MarshalAs(UnmanagedType.LPWStr)] string valueName, ref uint pdwValue)
         {
@@ -251,9 +231,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Opens a sub-key and returns a new object which supports SpDataKey
         /// for the specified sub-key.
         /// </summary>
-        /// <param name="subKeyName"></param>
-        /// <param name="ppSubKey"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int OpenKey([MarshalAs(UnmanagedType.LPWStr)] string subKeyName, out ISpDataKey ppSubKey)
         {
@@ -264,9 +241,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Creates a sub-key and returns a new object which supports SpDataKey
         /// for the specified sub-key.
         /// </summary>
-        /// <param name="subKeyName"></param>
-        /// <param name="ppSubKey"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int CreateKey([MarshalAs(UnmanagedType.LPWStr)] string subKeyName, out ISpDataKey ppSubKey)
         {
@@ -276,8 +250,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Deletes the specified key.
         /// </summary>
-        /// <param name="subKeyName"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int DeleteKey([MarshalAs(UnmanagedType.LPWStr)] string subKeyName)
         {
@@ -287,8 +259,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Deletes the specified value from the key.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int DeleteValue([MarshalAs(UnmanagedType.LPWStr)] string valueName)
         {
@@ -298,9 +268,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Retrieve a key name by index
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="ppszSubKeyName"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int EnumKeys(uint index, [MarshalAs(UnmanagedType.LPWStr)] out string ppszSubKeyName)
         {
@@ -310,9 +277,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Retrieves a key value by index
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="valueName"></param>
-        /// <returns></returns>
         [PreserveSig]
         public int EnumValues(uint index, [MarshalAs(UnmanagedType.LPWStr)] out string valueName)
         {
@@ -351,9 +315,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Reads the specified string value to the registry. If valueName is
         /// NULL then the default value of the registy key is read.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
         internal bool TryGetString(string valueName, out string value)
         {
             if (null == valueName)
@@ -370,8 +331,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Opens a sub-key and returns a new object which supports SpDataKey
         /// for the specified sub-key.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <returns></returns>
         internal bool HasValue(string valueName)
         {
             string unusedString;
@@ -387,9 +346,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Reads the specified DWORD from the registry.
         /// </summary>
-        /// <param name="valueName"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
         internal bool TryGetDWORD(string valueName, ref uint value)
         {
             if (string.IsNullOrEmpty(valueName))
@@ -404,8 +360,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Opens a sub-key and returns a new object which supports SpDataKey
         /// for the specified sub-key.
         /// </summary>
-        /// <param name="keyName"></param>
-        /// <returns></returns>
         internal RegistryDataKey OpenKey(string keyName)
         {
             Helpers.ThrowIfEmptyOrNull(keyName, nameof(keyName));
@@ -425,8 +379,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Creates a sub-key and returns a new object which supports SpDataKey
         /// for the specified sub-key.
         /// </summary>
-        /// <param name="keyName"></param>
-        /// <returns></returns>
         internal RegistryDataKey CreateKey(string keyName)
         {
             Helpers.ThrowIfEmptyOrNull(keyName, nameof(keyName));
@@ -446,7 +398,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// returns the name for all the values in this registry entry
         /// </summary>
-        /// <returns></returns>
         internal string[] GetValueNames()
         {
             List<string> valueNames = new();
@@ -483,11 +434,6 @@ namespace System.Speech.Internal.ObjectTokens
         #endregion
 
         #region Protected Methods
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (disposing && _sapiRegKey != null && _disposeSapiKey)

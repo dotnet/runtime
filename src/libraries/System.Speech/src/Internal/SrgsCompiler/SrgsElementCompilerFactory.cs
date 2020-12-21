@@ -213,11 +213,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// AddTransition(NormalizedToken, Parent.EndState, NewState)
         /// Parent.EndState = NewState
         /// </summary>
-        /// <param name="parent">Parent element</param>
-        /// <param name="sToken">Token string</param>
-        /// <param name="pronunciation"></param>
-        /// <param name="display"></param>
-        /// <param name="reqConfidence"></param>
         private void ParseToken(ParseElementCollection parent, string sToken, string pronunciation, string display, float reqConfidence)
         {
             int requiredConfidence = (parent != null) ? parent._confidence : CfgGrammar.SP_NORMAL_CONFIDENCE;
@@ -315,7 +310,6 @@ namespace System.Speech.Internal.SrgsCompiler
             else
             {
                 // Add transition to the new state with normalized token.
-                // TODO: Current implementation separates tokens containing spaces into multiple words.
                 parent.AddArc(_backend.WordTransition(sToken, 1.0f, requiredConfidence));
             }
         }
@@ -325,8 +319,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Escape token.  "/" -> "\/", "\" -> "\\"
         /// </summary>
-        /// <param name="sToken"></param>
-        /// <returns></returns>
         private static string EscapeToken(string sToken)                     // String to escape
         {
             System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sToken));

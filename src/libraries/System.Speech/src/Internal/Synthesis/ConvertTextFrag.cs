@@ -254,8 +254,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Produces the SAPI "RATE" tag
         /// </summary>
-        /// <param name="rate"></param>
-        /// <returns></returns>
         private static int SapiRate(ProsodyNumber rate)
         {
             // Okay, we have a RATE element, but what do we set the rate to?

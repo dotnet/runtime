@@ -5,7 +5,6 @@ using System;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\AudioStatusChangedEventArgs.uex' path='docs/doc[@for="AudioStatusChangedEventArgs"]/*' />
     // EventArgs used in the AudioSignalProblemOccurredEventArgs event.
 
     public class AudioSignalProblemOccurredEventArgs : EventArgs
@@ -23,26 +22,18 @@ namespace System.Speech.Recognition
         #endregion
 
         #region public Properties
-
-        /// TODOC
         public AudioSignalProblem AudioSignalProblem
         {
             get { return _audioSignalProblem; }
         }
-
-        /// TODOC
         public int AudioLevel
         {
             get { return _audioLevel; }
         }
-
-        /// TODOC
         public TimeSpan AudioPosition
         {
             get { return _audioPosition; }
         }
-
-        /// TODOC
         public TimeSpan RecognizerAudioPosition
         {
             get { return _recognizerPosition; }

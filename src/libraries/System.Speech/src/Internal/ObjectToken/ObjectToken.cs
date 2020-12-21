@@ -42,7 +42,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Creates a ObjectToken from an already-existing ISpObjectToken.
         /// Assumes the token was created through enumeration, thus should not be disposed by us.
         /// </summary>
-        /// <param name="sapiObjectToken"></param>
         /// <returns>ObjectToken object</returns>
         internal static ObjectToken Open(ISpObjectToken sapiObjectToken)
         {
@@ -54,9 +53,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Unlike the other Open overload, this one creates a new SAPI object, so Dispose must be called if
         /// you are creating ObjectTokens with this function.
         /// </summary>
-        /// <param name="sCategoryId"></param>
-        /// <param name="sTokenId"></param>
-        /// <param name="fCreateIfNotExist"></param>
         /// <returns>ObjectToken object</returns>
         internal static ObjectToken Open(string sCategoryId, string sTokenId, bool fCreateIfNotExist)
         {
@@ -143,7 +139,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Returns the Age from a voice token
         /// </summary>
-        /// <value></value>
         internal string Age
         {
             get
@@ -160,7 +155,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Returns the gender
         /// </summary>
-        /// <value></value>
         internal string Gender
         {
             get
@@ -178,7 +172,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// Returns the Name for the voice
         /// Look first in the Name attribute, if not available then get the default string
         /// </summary>
-        /// <value></value>
         internal string TokenName()
         {
             string name = string.Empty;
@@ -197,7 +190,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Returns the Culture defined in the Language field for a token
         /// </summary>
-        /// <returns></returns>
         internal CultureInfo Culture
         {
             get
@@ -215,7 +207,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// <summary>
         /// Returns the Culture defined in the Language field for a token
         /// </summary>
-        /// <returns></returns>
         internal string Description
         {
             get
@@ -262,8 +253,6 @@ namespace System.Speech.Internal.ObjectTokens
         /// attributes list has the same format as the required attributes given to
         /// SpEnumTokens.
         /// </summary>
-        /// <param name="sAttributes"></param>
-        /// <returns></returns>
         internal bool MatchesAttributes(string[] sAttributes)
         {
             bool fMatch = true;
@@ -311,7 +300,6 @@ namespace System.Speech.Internal.ObjectTokens
                 }
                 else
                 {
-                    // TODO: We should throw a NotImplementedException exception here
                     Debug.Fail("Cannot query for interface " + typeof(ISpObjectWithToken).GUID + " from COM class " + clsid);
                 }
             }

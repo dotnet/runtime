@@ -11,27 +11,20 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag"]/*' />
     [Serializable]
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     public class SrgsNameValueTag : SrgsElement, IPropertyTag
     {
         #region Constructors
-
-        /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag.PropertyTag2"]/*' />
         public SrgsNameValueTag()
         {
         }
-
-        /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag.PropertyTag2"]/*' />
         public SrgsNameValueTag(object value)
         {
             Helpers.ThrowIfNull(value, nameof(value));
 
             Value = value;
         }
-
-        /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag.PropertyTag3"]/*' />
         public SrgsNameValueTag(string name, object value)
             : this(value)
         {
@@ -41,8 +34,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public Properties
-
-        /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag.Name"]/*' />
         // Name of semantic property contained inside the <tag> element.
         public string Name
         {
@@ -58,8 +49,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         // Prefast cannot figure out that paramater checking is done
 #pragma warning disable 56526
-
-        /// TODOC <_include file='doc\PropertyTag.uex' path='docs/doc[@for="PropertyTag.Value"]/*' />
         // Value of semantic property contained inside the <tag> element.
         public object Value
         {
@@ -183,9 +172,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Checks if the name is not null and just made of blanks
         /// Returned the trimmed name
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="parameterName"></param>
-        /// <returns></returns>
         private static string GetTrimmedName(string name, string parameterName)
         {
             Helpers.ThrowIfEmptyOrNull(name, parameterName);

@@ -11,16 +11,6 @@ namespace System.Speech.Synthesis
     public class PhonemeReachedEventArgs : PromptEventArgs
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="prompt"></param>
-        /// <param name="currentPhoneme"></param>
-        /// <param name="audioPosition"></param>
-        /// <param name="duration"></param>
-        /// <param name="emphasis"></param>
-        /// <param name="nextPhoneme"></param>
         internal PhonemeReachedEventArgs(Prompt prompt, string currentPhoneme, TimeSpan audioPosition, TimeSpan duration, SynthesizerEmphasis emphasis, string nextPhoneme) : base(prompt)
         {
             _currentPhoneme = currentPhoneme;
@@ -33,47 +23,22 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region Public Properties
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public string Phoneme
         {
             get { return _currentPhoneme; }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public TimeSpan AudioPosition
         {
             get { return _audioPosition; }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public TimeSpan Duration
         {
             get { return _duration; }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public SynthesizerEmphasis Emphasis
         {
             get { return _emphasis; }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public string NextPhoneme
         {
             get { return _nextPhoneme; }

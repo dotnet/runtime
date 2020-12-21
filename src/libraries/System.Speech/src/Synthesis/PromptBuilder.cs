@@ -14,26 +14,14 @@ using System.Xml;
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [Serializable]
     public class PromptBuilder
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public PromptBuilder()
             : this(CultureInfo.CurrentUICulture)
         {
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="culture"></param>
         public PromptBuilder(CultureInfo culture)
         {
             Helpers.ThrowIfNull(culture, nameof(culture));
@@ -66,7 +54,6 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// Append Text to the SSML stream
         /// </summary>
-        /// <param name="textToSpeak"></param>
         public void AppendText(string textToSpeak)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -76,12 +63,6 @@ namespace System.Speech.Synthesis
 
             _elements.Add(new Element(ElementType.Text, textToSpeak));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <param name="rate"></param>
         public void AppendText(string textToSpeak, PromptRate rate)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -120,12 +101,6 @@ namespace System.Speech.Synthesis
                 prosodyElement._attributes.Add(new AttributeItem("rate", sPromptRate));
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <param name="volume"></param>
         public void AppendText(string textToSpeak, PromptVolume volume)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -166,12 +141,6 @@ namespace System.Speech.Synthesis
                 prosodyElement._attributes.Add(new AttributeItem("volume", sVolumeLevel));
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <param name="emphasis"></param>
         public void AppendText(string textToSpeak, PromptEmphasis emphasis)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -193,11 +162,6 @@ namespace System.Speech.Synthesis
                 emphasisElement._attributes.Add(new AttributeItem("level", emphasis.ToString().ToLowerInvariant()));
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="style"></param>
         public void StartStyle(PromptStyle style)
         {
             Helpers.ThrowIfNull(style, nameof(style));
@@ -288,10 +252,6 @@ namespace System.Speech.Synthesis
 
             _elementStack.Push(new StackElement(possibleChildren, ssmlState, stackElement._culture));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void EndStyle()
         {
             StackElement stackElement = _elementStack.Pop();
@@ -311,11 +271,6 @@ namespace System.Speech.Synthesis
                 }
             }
         }
-
-        /// <summary>
-        /// TODOC [voice]
-        /// </summary>
-        /// <param name="voice"></param>
         public void StartVoice(VoiceInfo voice)
         {
             Helpers.ThrowIfNull(voice, nameof(voice));
@@ -366,60 +321,28 @@ namespace System.Speech.Synthesis
 
             _elementStack.Push(new StackElement(SsmlElement.Sentence | SsmlElement.AudioMarkTextWithStyle, SsmlState.Voice, culture));
         }
-
-        /// <summary>
-        /// TODOC [voice]
-        /// </summary>
-        /// <param name="name"></param>
         public void StartVoice(string name)
         {
             Helpers.ThrowIfEmptyOrNull(name, nameof(name));
 
             StartVoice(new VoiceInfo(name));
         }
-
-        /// <summary>
-        /// TODOC [voice]
-        /// </summary>
-        /// <param name="gender"></param>
         public void StartVoice(VoiceGender gender)
         {
             StartVoice(new VoiceInfo(gender));
         }
-
-        /// <summary>
-        /// TODOC [voice]
-        /// </summary>
-        /// <param name="gender"></param>
-        /// <param name="age"></param>
         public void StartVoice(VoiceGender gender, VoiceAge age)
         {
             StartVoice(new VoiceInfo(gender, age));
         }
-
-        /// <summary>
-        /// TODOC [voice]
-        /// </summary>
-        /// <param name="gender"></param>
-        /// <param name="age"></param>
-        /// <param name="voiceAlternate"></param>
         public void StartVoice(VoiceGender gender, VoiceAge age, int voiceAlternate)
         {
             StartVoice(new VoiceInfo(gender, age, voiceAlternate));
         }
-
-        /// <summary>
-        /// TODOC [voice]
-        /// </summary>
-        /// <param name="culture"></param>
         public void StartVoice(CultureInfo culture)
         {
             StartVoice(new VoiceInfo(culture));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void EndVoice()
         {
             if (_elementStack.Pop()._state != SsmlState.Voice)
@@ -431,18 +354,10 @@ namespace System.Speech.Synthesis
         }
 
         // <paragraph>, <sentence>
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void StartParagraph()
         {
             StartParagraph(null);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void StartParagraph(CultureInfo culture)
         {
             // check for well formed document
@@ -467,10 +382,6 @@ namespace System.Speech.Synthesis
             }
             _elementStack.Push(new StackElement(SsmlElement.AudioMarkTextWithStyle | SsmlElement.Sentence, SsmlState.Paragraph, culture));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void EndParagraph()
         {
             if (_elementStack.Pop()._state != SsmlState.Paragraph)
@@ -479,18 +390,10 @@ namespace System.Speech.Synthesis
             }
             _elements.Add(new Element(ElementType.EndParagraph));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void StartSentence()
         {
             StartSentence(null);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void StartSentence(CultureInfo culture)
         {
             // check for well formed document
@@ -516,10 +419,6 @@ namespace System.Speech.Synthesis
             }
             _elementStack.Push(new StackElement(SsmlElement.AudioMarkTextWithStyle, SsmlState.Sentence, culture));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void EndSentence()
         {
             if (_elementStack.Pop()._state != SsmlState.Sentence)
@@ -528,12 +427,6 @@ namespace System.Speech.Synthesis
             }
             _elements.Add(new Element(ElementType.EndSentence));
         }
-
-        /// <summary>
-        /// TODOC - [say-as]
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <param name="sayAs"></param>
         public void AppendTextWithHint(string textToSpeak, SayAs sayAs)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -653,12 +546,6 @@ namespace System.Speech.Synthesis
                 AppendText(textToSpeak);
             }
         }
-
-        /// <summary>
-        /// TODOC - [say-as]
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <param name="sayAs"></param>
         public void AppendTextWithHint(string textToSpeak, string sayAs)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -673,12 +560,6 @@ namespace System.Speech.Synthesis
             sayAsElement._attributes = new Collection<AttributeItem>();
             sayAsElement._attributes.Add(new AttributeItem("interpret-as", sayAs));
         }
-
-        /// <summary>
-        /// TODOC - [phoneme]
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <param name="pronunciation"></param>
         public void AppendTextWithPronunciation(string textToSpeak, string pronunciation)
         {
             Helpers.ThrowIfEmptyOrNull(textToSpeak, nameof(textToSpeak));
@@ -696,12 +577,6 @@ namespace System.Speech.Synthesis
             phoneElement._attributes = new Collection<AttributeItem>();
             phoneElement._attributes.Add(new AttributeItem("ph", pronunciation));
         }
-
-        /// <summary>
-        /// TODOC - [sub]
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <param name="substitute"></param>
         public void AppendTextWithAlias(string textToSpeak, string substitute)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -716,10 +591,6 @@ namespace System.Speech.Synthesis
             subElement._attributes = new Collection<AttributeItem>();
             subElement._attributes.Add(new AttributeItem("alias", substitute));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public void AppendBreak()
         {
             // check for well formed document
@@ -727,11 +598,6 @@ namespace System.Speech.Synthesis
 
             _elements.Add(new Element(ElementType.Break));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="strength"></param>
         public void AppendBreak(PromptBreak strength)
         {
             // check for well formed document
@@ -775,11 +641,6 @@ namespace System.Speech.Synthesis
             breakElement._attributes = new Collection<AttributeItem>();
             breakElement._attributes.Add(new AttributeItem("strength", sBreak));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="duration"></param>
         public void AppendBreak(TimeSpan duration)
         {
             // check for well formed document
@@ -798,11 +659,6 @@ namespace System.Speech.Synthesis
         }
 
         // <audio>
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="path"></param>
         public void AppendAudio(string path)
         {
             Helpers.ThrowIfEmptyOrNull(path, nameof(path));
@@ -822,11 +678,6 @@ namespace System.Speech.Synthesis
 
             AppendAudio(uri);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="audioFile"></param>
         public void AppendAudio(Uri audioFile)
         {
             Helpers.ThrowIfNull(audioFile, nameof(audioFile));
@@ -840,12 +691,6 @@ namespace System.Speech.Synthesis
             audioElement._attributes = new Collection<AttributeItem>();
             audioElement._attributes.Add(new AttributeItem("src", audioFile.ToString()));
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="audioFile"></param>
-        /// <param name="alternateText"></param>
         public void AppendAudio(Uri audioFile, string alternateText)
         {
             Helpers.ThrowIfNull(audioFile, nameof(audioFile));
@@ -862,11 +707,6 @@ namespace System.Speech.Synthesis
         }
 
         // <mark>
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="bookmarkName"></param>
         public void AppendBookmark(string bookmarkName)
         {
             Helpers.ThrowIfEmptyOrNull(bookmarkName, nameof(bookmarkName));
@@ -880,11 +720,6 @@ namespace System.Speech.Synthesis
             bookmarkElement._attributes = new Collection<AttributeItem>();
             bookmarkElement._attributes.Add(new AttributeItem("name", bookmarkName));
         }
-
-        /// <summary>
-        /// TODOC - Embed another prompt into this prompt.
-        /// </summary>
-        /// <param name="promptBuilder"></param>
         public void AppendPromptBuilder(PromptBuilder promptBuilder)
         {
             Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
@@ -895,22 +730,12 @@ namespace System.Speech.Synthesis
             reader.Close();
             sr.Close();
         }
-
-        /// <summary>
-        /// TODOC - Embed soundFile into this document.
-        /// </summary>
-        /// <param name="path"></param>
         public void AppendSsml(string path)
         {
             Helpers.ThrowIfEmptyOrNull(path, nameof(path));
 
             AppendSsml(new Uri(path, UriKind.Relative));
         }
-
-        /// <summary>
-        /// TODOC - Embed SSML into this document.
-        /// </summary>
-        /// <param name="ssmlFile"></param>
         public
  void AppendSsml(Uri ssmlFile)
         {
@@ -930,11 +755,6 @@ namespace System.Speech.Synthesis
                 }
             }
         }
-
-        /// <summary>
-        /// TODOC - Embed ssmlFile into this document.
-        /// </summary>
-        /// <param name="ssmlFile"></param>
         public void AppendSsml(XmlReader ssmlFile)
         {
             Helpers.ThrowIfNull(ssmlFile, nameof(ssmlFile));
@@ -943,10 +763,6 @@ namespace System.Speech.Synthesis
         }
 
         // Advanced: Extensibility model to write through to the underlying stream writer.
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public void AppendSsmlMarkup(string ssmlMarkup)
         {
@@ -954,11 +770,6 @@ namespace System.Speech.Synthesis
 
             _elements.Add(new Element(ElementType.SsmlMarkup, ssmlMarkup));
         }
-
-        /// <summary>
-        /// TODOC - Returns the resulting SSML.
-        /// </summary>
-        /// <returns></returns>
         public string ToXml()
         {
             using (StringWriter sw = new(CultureInfo.InvariantCulture))
@@ -1011,11 +822,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region public Properties
-
-        /// <summary>
-        /// TODOC - [speak xml:lang]
-        /// </summary>
-        /// <value></value>
         public bool IsEmpty
         {
             get
@@ -1023,11 +829,6 @@ namespace System.Speech.Synthesis
                 return _elements.Count == 0;
             }
         }
-
-        /// <summary>
-        /// TODOC - [speak xml:lang]
-        /// </summary>
-        /// <value></value>
         public
             CultureInfo Culture
         {
@@ -1068,11 +869,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region Private Methods
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="writer"></param>
         private void WriteXml(XmlTextWriter writer)
         {
             writer.WriteStartElement("speak");
@@ -1163,8 +959,6 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// Ensure the this element is properly placed in the SSML markup
         /// </summary>
-        /// <param name="stackElement"></param>
-        /// <param name="currentElement"></param>
         private static void ValidateElement(StackElement stackElement, SsmlElement currentElement)
         {
             if ((stackElement._possibleChildren & currentElement) == 0)
@@ -1172,11 +966,6 @@ namespace System.Speech.Synthesis
                 throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, SR.Get(SRID.PromptBuilderInvalidElement), currentElement.ToString(), stackElement._state.ToString()));
             }
         }
-
-        /// <summary>
-        /// TODOC - Embed ssmlFile into this document.
-        /// </summary>
-        /// <param name="ssmlFile"></param>
         private void AppendSsmlInternal(XmlReader ssmlFile)
         {
             // check for well formed document

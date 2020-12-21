@@ -11,32 +11,22 @@ namespace System.Speech.Internal.SrgsParser
     }
 
     #region Internal Enums
-
-    /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="RuleScope"]/*' />
     // RuleScope specifies how a rule behaves with respect to being able to be
     // referenced by other rules, and whether or not the rule can be activated
     // or not.
     internal enum RuleDynamic
     {
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="RuleScope.Public"]/*' />
         True,
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="RuleScope.Private"]/*' />
         False,
-        //TODOC
         NotSet
     };
-
-    /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="RuleScope"]/*' />
     // RuleScope specifies how a rule behaves with respect to being able to be
     // referenced by other rules, and whether or not the rule can be activated
     // or not.
     internal enum RulePublic
     {
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="RuleScope.Public"]/*' />
         True,
-        /// TODOC <_include file='doc\Rule.uex' path='docs/doc[@for="RuleScope.Private"]/*' />
         False,
-        //TODOC
         NotSet
     };
 

@@ -8,17 +8,11 @@ using System.Text;
 
 namespace System.Speech.Internal.GrammarBuilding
 {
-    /// <summary>
-    ///
-    /// </summary>
+
     internal sealed class SemanticKeyElement : BuilderElements
     {
         #region Constructors
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="semanticKey"></param>
         internal SemanticKeyElement(string semanticKey)
         {
             _semanticKey = semanticKey;
@@ -31,8 +25,6 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
         public override bool Equals(object obj)
         {
             SemanticKeyElement refObj = obj as SemanticKeyElement;
@@ -47,8 +39,6 @@ namespace System.Speech.Internal.GrammarBuilding
             // No need to check for the equality on _ruleRef. The children are in the Items, not the underlying rule
             return _semanticKey == refObj._semanticKey;
         }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
         public override int GetHashCode()
         {
             return base.GetHashCode();
@@ -58,19 +48,11 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Internal Methods
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="phrase"></param>
         internal new void Add(string phrase)
         {
             _ruleRef.Add(new GrammarBuilderPhrase(phrase));
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="builder"></param>
         internal new void Add(GrammarBuilder builder)
         {
             foreach (GrammarBuilderBase item in builder.InternalBuilder.Items)
@@ -79,10 +61,6 @@ namespace System.Speech.Internal.GrammarBuilding
             }
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
         internal override GrammarBuilderBase Clone()
         {
             SemanticKeyElement semanticKeyElement = new(_semanticKey);
@@ -90,14 +68,6 @@ namespace System.Speech.Internal.GrammarBuilding
             return semanticKeyElement;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="elementFactory"></param>
-        /// <param name="parent"></param>
-        /// <param name="rule"></param>
-        /// <param name="ruleIds"></param>
-        /// <returns></returns>
         internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Create the rule associated with this key
@@ -125,9 +95,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Private Fields
 
-        /// <summary>
-        ///
-        /// </summary>
         private readonly string _semanticKey;
         private readonly RuleRefElement _ruleRef;
 

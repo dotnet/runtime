@@ -8,28 +8,14 @@ using System.Speech.Internal;
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [DebuggerDisplay("{_text}")]
     public class Prompt
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="textToSpeak"></param>
         public Prompt(string textToSpeak)
             : this(textToSpeak, SynthesisTextFormat.Text)
         {
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="promptBuilder"></param>
-        /// <returns></returns>
         public Prompt(PromptBuilder promptBuilder)
         {
             Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
@@ -40,12 +26,6 @@ namespace System.Speech.Synthesis
 
         // Disable parameter validation check for empty strings
 #pragma warning disable 56507
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="textToSpeak"></param>
-        /// <param name="media"></param>
         public Prompt(string textToSpeak, SynthesisTextFormat media)
         {
             Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
@@ -63,12 +43,6 @@ namespace System.Speech.Synthesis
         }
 
 #pragma warning restore 56507
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="promptFile"></param>
-        /// <param name="media"></param>
         internal Prompt(Uri promptFile, SynthesisMediaType media)
         {
             Helpers.ThrowIfNull(promptFile, nameof(promptFile));
@@ -110,11 +84,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region public Properties
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public bool IsCompleted
         {
             get
@@ -189,48 +158,21 @@ namespace System.Speech.Synthesis
     }
 
     #region Public Enums
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public enum SynthesisMediaType
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Text = 0,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Ssml = 1,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         WaveAudio
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public enum SynthesisTextFormat
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Text = 0,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Ssml = 1,
     }
 
     #endregion
 
     #region Internal Types
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     internal enum PromptPriority
     {
         Normal,

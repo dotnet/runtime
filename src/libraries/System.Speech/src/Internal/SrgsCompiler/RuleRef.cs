@@ -20,8 +20,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Special private constructor for Special Rulerefs
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="rule"></param>
         private RuleRef(SpecialRuleRefType type, Rule rule)
             : base(rule)
         {
@@ -31,12 +29,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Add transition corresponding to Special or Uri.
         /// </summary>
-        /// <param name="parent"></param>
-        /// <param name="backend"></param>
-        /// <param name="uri"></param>
-        /// <param name="undefRules"></param>
-        /// <param name="semanticKey"></param>
-        /// <param name="initParameters"></param>
         internal RuleRef(ParseElementCollection parent, Backend backend, Uri uri, List<Rule> undefRules, string semanticKey, string initParameters)
             : base(parent._rule)
         {
@@ -104,8 +96,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Returns the initial state of a special rule.
         /// For each type of special rule we make a rule with a numeric id and return a reference to it.
         /// </summary>
-        /// <param name="backend"></param>
-        /// <param name="parent"></param>
         internal void InitSpecialRuleRef(Backend backend, ParseElementCollection parent)
         {
             Rule rule = null;
@@ -152,10 +142,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Return the initial state of the rule with the specified name.
         /// If the rule is not defined yet, create a placeholder Rule.
         /// </summary>
-        /// <param name="backend"></param>
-        /// <param name="sRuleId">Rule name</param>
-        /// <param name="undefRules"></param>
-        /// <returns></returns>
         private static Rule GetRuleRef(Backend backend, string sRuleId, List<Rule> undefRules)
         {
             System.Diagnostics.Debug.Assert(!string.IsNullOrEmpty(sRuleId));
@@ -205,22 +191,17 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Private Fields
 
         #region Private Enums
-
-        /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType"]/*' />
         // Special rule references allow grammars based on CFGs to have powerful
         // additional features, such as transitions into dictation (both recognized
         // or not recognized) and word seqeuences from SAPI 5.0.
         private enum SpecialRuleRefType
         {
-            /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType.Null"]/*' />
             // Defines a rule that is automatically matched that is, matched without
             // the user speaking any word.
             Null,
-            /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType.Void"]/*' />
             // Defines a rule that can never be spoken. Inserting VOID into a sequence
             // automatically makes that sequence unspeakable.
             Void,
-            /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType.Garbage"]/*' />
             // Defines a rule that may match any speech up until the next rule match,
             // the next token or until the end of spoken input.
             // Designed for applications that would like to recognize some phrases

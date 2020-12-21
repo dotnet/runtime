@@ -5,18 +5,9 @@ using System;
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC - Summary description for VoiceChangeEventArgs.
-    /// </summary>
     public class VoiceChangeEventArgs : PromptEventArgs
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="prompt"></param>
-        /// <param name="voice"></param>
         internal VoiceChangeEventArgs(Prompt prompt, VoiceInfo voice) : base(prompt)
         {
             _voice = voice;
@@ -25,11 +16,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region public Properties
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public VoiceInfo Voice
         {
             get

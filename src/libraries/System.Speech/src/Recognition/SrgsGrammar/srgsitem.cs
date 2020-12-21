@@ -14,21 +14,16 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item"]/*' />
     [Serializable]
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     [DebuggerTypeProxy(typeof(SrgsItemDebugDisplay))]
     public class SrgsItem : SrgsElement, IItem
     {
         #region Constructors
-
-        /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item.Item1"]/*' />
         public SrgsItem()
         {
             _elements = new SrgsElementList();
         }
-
-        /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item.Item2"]/*' />
         public SrgsItem(string text)
             : this()
         {
@@ -36,8 +31,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
             _elements.Add(new SrgsText(text));
         }
-
-        /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item.Item8"]/*' />
         public SrgsItem(params SrgsElement[] elements)
             : this()
         {
@@ -52,22 +45,11 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _elements.Add(elements[iElement]);
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="repeatCount"></param>
         public SrgsItem(int repeatCount)
             : this()
         {
             SetRepeat(repeatCount);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="min"></param>
-        /// <param name="max"></param>
         public SrgsItem(int min, int max)
             : this()
         {
@@ -75,25 +57,11 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         //overloads with setting the repeat.
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="min"></param>
-        /// <param name="max"></param>
-        /// <param name="text"></param>
         public SrgsItem(int min, int max, string text)
             : this(text)
         {
             SetRepeat(min, max);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="min"></param>
-        /// <param name="max"></param>
-        /// <param name="elements"></param>
         public SrgsItem(int min, int max, params SrgsElement[] elements)
             : this(elements)
         {
@@ -103,11 +71,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region Public Method
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="count"></param>
         public void SetRepeat(int count)
         {
             // Negative values are not allowed
@@ -117,12 +80,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             _minRepeat = _maxRepeat = count;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="minRepeat"></param>
-        /// <param name="maxRepeat"></param>
         public void SetRepeat(int minRepeat, int maxRepeat)
         {
             // Negative values are not allowed
@@ -143,11 +100,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             _minRepeat = minRepeat;
             _maxRepeat = maxRepeat;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="element"></param>
         public void Add(SrgsElement element)
         {
             Helpers.ThrowIfNull(element, nameof(element));
@@ -158,8 +110,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region Public Properties
-
-        /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item.Elements"]/*' />
         public Collection<SrgsElement> Elements
         {
             get
@@ -167,8 +117,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 return _elements;
             }
         }
-
-        /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item.RepeatProbability"]/*' />
         // The probability that this item will be repeated.
         public float RepeatProbability
         {
@@ -186,8 +134,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _repeatProbability = value;
             }
         }
-
-        /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item.MinRepeat"]/*' />
         // The minimum number of occurrences this item can/must be repeated.
         public int MinRepeat
         {
@@ -196,8 +142,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 return _minRepeat == NotSet ? 1 : _minRepeat;
             }
         }
-
-        /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item.MaxRepeat"]/*' />
         // The maximum number of occurrences this item can/must be repeated.
         public int MaxRepeat
         {
@@ -206,8 +150,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 return _maxRepeat == NotSet ? 1 : _maxRepeat;
             }
         }
-
-        /// TODOC <_include file='doc\Item.uex' path='docs/doc[@for="Item.Weight"]/*' />
         public float Weight
         {
             get
@@ -232,7 +174,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Write the XML fragment describing the object.
         /// </summary>
-        /// <param name="writer"></param>
         internal override void WriteSrgs(XmlWriter writer)
         {
             // Write <item weight="1.0" repeat-prob="0.5" repeat="m-n">
@@ -343,7 +284,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Allows the Srgs Element base class to implement
         /// features requiring recursion in the elements tree.
         /// </summary>
-        /// <value></value>
         internal override SrgsElement[] Children
         {
             get

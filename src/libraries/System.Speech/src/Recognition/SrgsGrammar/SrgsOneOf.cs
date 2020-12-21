@@ -14,20 +14,15 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\OneOf.uex' path='docs/doc[@for="OneOf"]/*' />
     [Serializable]
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     [DebuggerTypeProxy(typeof(OneOfDebugDisplay))]
     public class SrgsOneOf : SrgsElement, IOneOf
     {
         #region Constructors
-
-        /// TODOC <_include file='doc\OneOf.uex' path='docs/doc[@for="OneOf.OneOf1"]/*' />
         public SrgsOneOf()
         {
         }
-
-        /// TODOC <_include file='doc\OneOf.uex' path='docs/doc[@for="OneOf.OneOf2"]/*' />
         public SrgsOneOf(params string[] items)
             : this()
         {
@@ -43,8 +38,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _items.Add(new SrgsItem(items[i]));
             }
         }
-
-        /// TODOC <_include file='doc\OneOf.uex' path='docs/doc[@for="OneOf.OneOf3"]/*' />
         public SrgsOneOf(params SrgsItem[] items)
             : this()
         {
@@ -65,11 +58,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public Method
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="item"></param>
         public void Add(SrgsItem item)
         {
             Helpers.ThrowIfNull(item, nameof(item));
@@ -82,7 +70,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region public Properties
 
         // ISSUE: Do we need more construcors? Take a look at RuleElementCollection.AddOneOf methods. [Bug# 37115]
-        /// TODOC <_include file='doc\OneOf.uex' path='docs/doc[@for="OneOf.Elements"]/*' />
         public Collection<SrgsItem> Items
         {
             get
@@ -122,7 +109,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// Allows the Srgs Element base class to implement
         /// features requiring recursion in the elements tree.
         /// </summary>
-        /// <value></value>
         internal override SrgsElement[] Children
         {
             get

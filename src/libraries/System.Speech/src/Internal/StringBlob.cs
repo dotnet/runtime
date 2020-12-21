@@ -110,8 +110,6 @@ namespace System.Speech.Internal
         /// <summary>
         /// Only DEBUG code should use this
         /// </summary>
-        /// <param name="offset"></param>
-        /// <returns></returns>
         internal string FromOffset(int offset)
         {
             int iPos = 1;

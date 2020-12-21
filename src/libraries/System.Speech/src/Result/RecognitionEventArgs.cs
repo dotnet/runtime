@@ -5,8 +5,6 @@ using System;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC
-
     [Serializable]
     public abstract class RecognitionEventArgs : EventArgs
     {
@@ -19,7 +17,6 @@ namespace System.Speech.Recognition
 
         #region Public Properties
         // All this class has is a property to access the main result.
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionEventArgs.Result"]/*' />
         public RecognitionResult Result
         {
             get { return _result; }
@@ -30,8 +27,6 @@ namespace System.Speech.Recognition
         private RecognitionResult _result;
         #endregion
     }
-
-    /// TODOC
     [Serializable]
     public class SpeechRecognizedEventArgs : RecognitionEventArgs
     {
@@ -44,8 +39,6 @@ namespace System.Speech.Recognition
 
         #endregion
     }
-
-    /// TODOC
     [Serializable]
     public class SpeechRecognitionRejectedEventArgs : RecognitionEventArgs
     {
@@ -58,8 +51,6 @@ namespace System.Speech.Recognition
 
         #endregion
     }
-
-    /// TODOC
     [Serializable]
     public class SpeechHypothesizedEventArgs : RecognitionEventArgs
     {

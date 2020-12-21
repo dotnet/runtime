@@ -15,9 +15,6 @@ namespace System.Speech.Internal.Synthesis
     internal sealed class SpeakInfo
     {
         #region Constructors
-
-        /// <summary>
-        /// </summary>
         /// <param name="voiceSynthesis">Voice synthesizer used</param>
         /// <param name="ttsVoice">Default engine to use</param>
         internal SpeakInfo(VoiceSynthesis voiceSynthesis, TTSVoice ttsVoice)

@@ -22,7 +22,6 @@ namespace System.Speech.Recognition
 {
     // Class for grammars which are to be loaded from SRGS or CFG.
     // In contrast to dictation grammars which inherit from this.
-    /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar"]/*' />
     [DebuggerDisplay("Grammar: {(_uri != null ? \"uri=\" + _uri.ToString () + \" \" : \"\") + \"rule=\" + _ruleName }")]
     public class Grammar
     {
@@ -30,8 +29,6 @@ namespace System.Speech.Recognition
 
 #pragma warning disable 6504
 #pragma warning disable 6507
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar1"]/*' />
         internal Grammar(Uri uri, string ruleName, object[] parameters)
         {
             Helpers.ThrowIfNull(uri, nameof(uri));
@@ -39,20 +36,14 @@ namespace System.Speech.Recognition
             _uri = uri;
             InitialGrammarLoad(ruleName, parameters, false);
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar1"]/*' />
         public Grammar(string path)
             : this(path, (string)null, null)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar2"]/*' />
         public Grammar(string path, string ruleName)
             : this(path, ruleName, null)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar2"]/*' />
         public Grammar(string path, string ruleName, object[] parameters)
         {
             try
@@ -66,33 +57,23 @@ namespace System.Speech.Recognition
 
             InitialGrammarLoad(ruleName, parameters, false);
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar3"]/*' />
         public Grammar(SrgsDocument srgsDocument)
             : this(srgsDocument, null, null, null)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar4"]/*' />
         public Grammar(SrgsDocument srgsDocument, string ruleName)
             : this(srgsDocument, ruleName, null, null)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar4"]/*' />
         public Grammar(SrgsDocument srgsDocument, string ruleName, object[] parameters)
             : this(srgsDocument, ruleName, null, parameters)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar5"]/*' />
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public Grammar(SrgsDocument srgsDocument, string ruleName, Uri baseUri)
             : this(srgsDocument, ruleName, baseUri, null)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar5"]/*' />
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public Grammar(SrgsDocument srgsDocument, string ruleName, Uri baseUri, object[] parameters)
         {
@@ -103,33 +84,23 @@ namespace System.Speech.Recognition
             _baseUri = baseUri;
             InitialGrammarLoad(ruleName, parameters, false);
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar6"]/*' />
         public Grammar(Stream stream)
             : this(stream, null, null, null)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar7"]/*' />
         public Grammar(Stream stream, string ruleName)
             : this(stream, ruleName, null, null)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar7"]/*' />
         public Grammar(Stream stream, string ruleName, object[] parameters)
             : this(stream, ruleName, null, parameters)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar8"]/*' />
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public Grammar(Stream stream, string ruleName, Uri baseUri)
             : this(stream, ruleName, baseUri, null)
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar8"]/*' />
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public Grammar(Stream stream, string ruleName, Uri baseUri, object[] parameters)
         {
@@ -144,10 +115,6 @@ namespace System.Speech.Recognition
             InitialGrammarLoad(ruleName, parameters, false);
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="builder"></param>
         public Grammar(GrammarBuilder builder)
         {
             Helpers.ThrowIfNull(builder, nameof(builder));
@@ -162,13 +129,9 @@ namespace System.Speech.Recognition
             _onInitParameters = onInitParameters;
             InitialGrammarLoad(ruleName, null, true);
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar1"]/*' />
         protected Grammar()
         {
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Grammar1"]/*' />
         protected void StgInit(object[] parameters)
         {
             _parameters = parameters;
@@ -181,8 +144,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
-
-        /// TODOC <_include file='doc\RecognizerBase.uex' path='docs/doc[@for="RecognizerBase.LoadGrammar"]/*' />
         public static Grammar LoadLocalizedGrammarFromType(Type type, params object[] onInitParameters)
         {
             Helpers.ThrowIfNull(type, nameof(type));
@@ -237,7 +198,6 @@ namespace System.Speech.Recognition
         // Standard properties to control grammar:
 
         // Controls whether this grammar is actually included in the recognition. True by default. Can be set at any point.
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Enabled"]/*' />
         public bool Enabled
         {
             get { return _enabled; }
@@ -254,7 +214,6 @@ namespace System.Speech.Recognition
         }
 
         // Relative weight of this Grammar/Rule.
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Weight"]/*' />
         public float Weight
         {
             get { return _weight; }
@@ -278,8 +237,6 @@ namespace System.Speech.Recognition
         // If different grammars have paths which match the same words,
         // then the result will be returned for the grammar with the highest priority.
         // Defualt value zero {lowest value}.
-        // TODO: Should negative values be allowed? Otherwise you can't go lower than the default.
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Priority"]/*' />
         public int Priority
         {
             get { return _priority; }
@@ -300,7 +257,6 @@ namespace System.Speech.Recognition
 
         // Simple property that allows a name to be attached to the Grammar.
         // This has no effect but could be convenient for certain apps.
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Name"]/*' />
         public string Name
         {
             get { return _grammarName; }
@@ -314,20 +270,14 @@ namespace System.Speech.Recognition
 #pragma warning restore 6526
             }
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.RuleName"]/*' />
         public string RuleName
         {
             get { return _ruleName; }
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Loaded"]/*' />
         public bool Loaded
         {
             get { return _grammarState == GrammarState.Loaded; }
         }
-
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.Uri"]/*' />
         internal Uri Uri
         {
             get { return _uri; }
@@ -338,7 +288,6 @@ namespace System.Speech.Recognition
         #region public Events
 
         // The event fired upon a recognition.
-        /// TODOC <_include file='doc\Grammar.uex' path='docs/doc[@for="Grammar.SpeechRecognized"]/*' />
         public event EventHandler<SpeechRecognizedEventArgs> SpeechRecognized;
 
         #endregion
@@ -463,11 +412,6 @@ namespace System.Speech.Recognition
         ///
         /// The grammar name can be either pointing to a CFG, an Srgs or DLL (stand alone or GAC).
         /// </summary>
-        /// <param name="grammarName"></param>
-        /// <param name="ruleName"></param>
-        /// <param name="onInitParameter"></param>
-        /// <param name="redirectUri"></param>
-        /// <returns></returns>
         internal static Grammar Create(string grammarName, string ruleName, string onInitParameter, out Uri redirectUri)
         {
             redirectUri = null;
@@ -597,7 +541,6 @@ namespace System.Speech.Recognition
         /// <summary>
         /// Find a grammar in a tree or rule refs grammar from a rule name
         /// </summary>
-        /// <param name="ruleName"></param>
         /// <returns>null if not found</returns>
         internal Grammar Find(string ruleName)
         {
@@ -623,8 +566,6 @@ namespace System.Speech.Recognition
         /// <summary>
         /// Add a rule ref grammar to a grammar.
         /// </summary>
-        /// <param name="ruleRef"></param>
-        /// <param name="grammarId"></param>
         internal void AddRuleRef(Grammar ruleRef, uint grammarId)
         {
             if (_ruleRefs == null)
@@ -655,10 +596,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Protected Methods
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         protected string ResourceName
         {
             get
@@ -714,7 +651,6 @@ namespace System.Speech.Recognition
         /// <summary>
         /// Returns a stream object for a grammar.
         /// </summary>
-        /// <returns></returns>
         private MemoryStream LoadCfg(bool isImportedGrammar, bool stgInit)
         {
             // No parameters to the constructors
@@ -779,10 +715,6 @@ namespace System.Speech.Recognition
         /// dependant classes.
         /// The matching algorithm pick a class that match the culture.
         /// </summary>
-        /// <param name="assembly"></param>
-        /// <param name="ruleName"></param>
-        /// <param name="onInitParameters"></param>
-        /// <returns></returns>
         private static Grammar LoadGrammarFromAssembly(Assembly assembly, string ruleName, string onInitParameters)
         {
             Type grammarType = typeof(Grammar);
@@ -845,11 +777,6 @@ namespace System.Speech.Recognition
         /// <summary>
         /// Construct a list of parameters from a sapi:params string.
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="onInitParameters"></param>
-        /// <param name="grammar"></param>
-        /// <param name="rule"></param>
-        /// <returns></returns>
         private static object[] MatchInitParameters(Type type, string onInitParameters, string grammar, string rule)
         {
             ConstructorInfo[] cis = type.GetConstructors();
@@ -905,9 +832,6 @@ namespace System.Speech.Recognition
         /// Parse the value for a type from a string to a strong type.
         /// If the type does not support the Parse method then the operation fails.
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
         private static object ParseValue(Type type, string value)
         {
             if (type == typeof(string))
@@ -920,8 +844,6 @@ namespace System.Speech.Recognition
         /// <summary>
         /// Returns the list of the possible parameter names and type for a grammar
         /// </summary>
-        /// <param name="cis"></param>
-        /// <returns></returns>
         private static string FormatConstructorParameters(ConstructorInfo[] cis)
         {
             StringBuilder sb = new();
@@ -949,8 +871,6 @@ namespace System.Speech.Recognition
         /// Split the init parameter strings into an array of name/values
         /// The format must be "name:value". If the ':' then parameter is anonymous.
         /// </summary>
-        /// <param name="initParameters"></param>
-        /// <returns></returns>
         private static NameValuePair[] ParseInitParams(string initParameters)
         {
             if (string.IsNullOrEmpty(initParameters))
@@ -1024,7 +944,6 @@ namespace System.Speech.Recognition
 
             if (stream == null)
             {
-                //TODO add a more to the point message
                 throw new FormatException(SR.Get(SRID.RecognizerInvalidBinaryGrammar));
             }
             try
@@ -1049,13 +968,6 @@ namespace System.Speech.Recognition
             return stream;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="rule"></param>
-        /// <param name="stream"></param>
-        /// <param name="extraRules"></param>
-        /// <returns></returns>
         private static MemoryStream CombineCfg(string rule, Stream stream, SrgsRule[] extraRules)
         {
             using (MemoryStream streamExtra = new())

@@ -23,9 +23,6 @@ namespace System.Speech.Internal.SapiInterop
             _endOfStreamPosition = stream.Length;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
         public void Dispose()
         {
             _stream.Dispose();

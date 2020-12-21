@@ -25,7 +25,6 @@ using System.Xml.XPath;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult"]/*' />
     [DebuggerDisplay("{DebuggerDisplayString ()}")]
     [Serializable]
     public sealed class RecognitionResult : RecognizedPhrase, ISerializable
@@ -40,12 +39,6 @@ namespace System.Speech.Recognition
         internal RecognitionResult()
         {
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="context"></param>
         private RecognitionResult(SerializationInfo info, StreamingContext context)
         {
             // Get the set of serializable members for our class and base classes
@@ -73,8 +66,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.GetAudioForWordRange"]/*' />
         public RecognizedAudio GetAudioForWordRange(RecognizedWordUnit firstWord, RecognizedWordUnit lastWord)
         {
             Helpers.ThrowIfNull(firstWord, nameof(firstWord));
@@ -125,7 +116,6 @@ namespace System.Speech.Recognition
                 }
             }
         }
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.SetTextFeedback"]/*' />
         internal bool SetTextFeedback(string text, bool isSuccessfulAction)
         {
             if (_sapiRecoResult == null)
@@ -156,7 +146,6 @@ namespace System.Speech.Recognition
         #region Public Properties
 
         // Recognized Audio:
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.Audio"]/*' />
         public RecognizedAudio Audio
         {
             get
@@ -210,7 +199,6 @@ namespace System.Speech.Recognition
 
         // Alternates. This returns a list of Alternate recognitions.
         // We use the same class here for alternates as the main RecognitionResult class. This simplifies the API surface. Calling Alternates on a Result that's already an Alternate will throw a NotSupportedException.
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.Alternates"]/*' />
         public ReadOnlyCollection<RecognizedPhrase> Alternates
         {
             get
@@ -226,8 +214,6 @@ namespace System.Speech.Recognition
         /// <summary>
         /// This method convert a given pronunciation from SAPI phonetic alphabet to IPA for a given language
         /// </summary>
-        /// <param name="pronunciation"></param>
-        /// <param name="langId"></param>
         /// <returns>New pronunciation in IPA alphabet</returns>
         internal string ConvertPronunciation(string pronunciation, int langId)
         {
@@ -406,8 +392,6 @@ namespace System.Speech.Recognition
                         bool hasIPAPronunciation = (_header.fAlphabet & (uint)SPRESULTALPHABET.SPRA_ENGINE_UPS) != 0;
 
                         phrase.InitializeFromSerializedBuffer(this, serializedPhrase, phraseBuffer, serializedPhraseSize, isSapi53Header, hasIPAPronunciation);
-
-                        // TODO Suppress this line
                         if (isSapi53Header)
                         {
                             offset += ((serializedPhraseSize + 7) & ~7); // advance over phrase with alignment padding

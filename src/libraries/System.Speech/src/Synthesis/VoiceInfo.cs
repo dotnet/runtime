@@ -15,29 +15,16 @@ using System.Xml;
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [DebuggerDisplay("{(_name != null ? \"'\" + _name + \"' \" : \"\") +  (_culture != null ? \" '\" + _culture.ToString () + \"' \" : \"\") + (_gender != VoiceGender.NotSet ? \" '\" + _gender.ToString () + \"' \" : \"\") + (_age != VoiceAge.NotSet ? \" '\" + _age.ToString () + \"' \" : \"\") + (_variant > 0 ? \" \" + _variant.ToString () : \"\")}")]
     [Serializable]
     public class VoiceInfo
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="name"></param>
         internal VoiceInfo(string name)
         {
             Helpers.ThrowIfEmptyOrNull(name, nameof(name));
             _name = name;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="culture"></param>
         internal VoiceInfo(CultureInfo culture)
         {
             // Fails if no culture is provided
@@ -108,33 +95,15 @@ namespace System.Speech.Synthesis
                 _audioFormats = new ReadOnlyCollection<SpeechAudioFormatInfo>(new List<SpeechAudioFormatInfo>());
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="gender"></param>
         internal VoiceInfo(VoiceGender gender)
         {
             _gender = gender;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="gender"></param>
-        /// <param name="age"></param>
         internal VoiceInfo(VoiceGender gender, VoiceAge age)
         {
             _gender = gender;
             _age = age;
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="gender"></param>
-        /// <param name="age"></param>
-        /// <param name="voiceAlternate"></param>
         internal VoiceInfo(VoiceGender gender, VoiceAge age, int voiceAlternate)
         {
             if (voiceAlternate < 0)
@@ -177,11 +146,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region public Properties
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public VoiceGender Gender
         {
             get
@@ -189,11 +153,6 @@ namespace System.Speech.Synthesis
                 return _gender;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public VoiceAge Age
         {
             get
@@ -201,11 +160,6 @@ namespace System.Speech.Synthesis
                 return _age;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public string Name
         {
             get
@@ -215,12 +169,10 @@ namespace System.Speech.Synthesis
         }
 
         /// <summary>
-        /// TODOC
         ///
         /// Return a copy of the internal Language set. This disable client
         /// applications to modify the internal languages list.
         /// </summary>
-        /// <value></value>
         public CultureInfo Culture
         {
             get
@@ -228,11 +180,6 @@ namespace System.Speech.Synthesis
                 return _culture;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public string Id
         {
             get
@@ -240,11 +187,6 @@ namespace System.Speech.Synthesis
                 return _id;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public string Description
         {
             get
@@ -252,11 +194,6 @@ namespace System.Speech.Synthesis
                 return _description != null ? _description : string.Empty;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public ReadOnlyCollection<SpeechAudioFormatInfo> SupportedAudioFormats
         {
@@ -265,11 +202,6 @@ namespace System.Speech.Synthesis
                 return _audioFormats;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public IDictionary<string, string> AdditionalInfo
         {
@@ -298,11 +230,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region Internal Property
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         internal int Variant
         {
             get
@@ -310,11 +237,6 @@ namespace System.Speech.Synthesis
                 return _variant;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         internal string AssemblyName
         {
             get
@@ -322,11 +244,6 @@ namespace System.Speech.Synthesis
                 return _assemblyName;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         internal string Clsid
         {
             get
@@ -334,11 +251,6 @@ namespace System.Speech.Synthesis
                 return _clsid;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         internal string RegistryKeyPath
         {
             get

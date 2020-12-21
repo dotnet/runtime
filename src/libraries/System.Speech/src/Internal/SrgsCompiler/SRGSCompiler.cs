@@ -116,8 +116,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
             // Optimize in-memory graph representation of the grammar.
             backend.Optimize();
-
-            // TODO, does not work for all custom culture info
             culture = backend.LangId == 0x540A ? new CultureInfo("es-us") : new CultureInfo(backend.LangId);
 
             // A grammar may contains references to other files in codebehind.
@@ -200,8 +198,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Build the state machine for a grammar and returns it in a Memory Stream.
         /// </summary>
-        /// <param name="backend"></param>
-        /// <returns></returns>
         private static MemoryStream BuildCfg(Backend backend)
         {
             // Creates a DLL
@@ -223,8 +219,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Generate the assembly code for a back. The scripts are defined in custom
         /// grammars.
         /// </summary>
-        /// <param name="backend"></param>
-        /// <param name="cg"></param>
         private static void CreateAssembly(Backend backend, CustomGrammar cg)
         {
             if (cg.HasScript)

@@ -5,19 +5,9 @@ using System;
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC - Summary description for BookmarkEventArgs.
-    /// </summary>
     public class BookmarkReachedEventArgs : PromptEventArgs
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="prompt"></param>
-        /// <param name="bookmark"></param>
-        /// <param name="audioPosition"></param>
         internal BookmarkReachedEventArgs(Prompt prompt, string bookmark, TimeSpan audioPosition)
             : base(prompt)
         {
@@ -28,11 +18,6 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region public Properties
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public string Bookmark
         {
             get
@@ -40,11 +25,6 @@ namespace System.Speech.Synthesis
                 return _bookmark;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public TimeSpan AudioPosition
         {
             get

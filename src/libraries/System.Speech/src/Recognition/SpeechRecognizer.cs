@@ -14,26 +14,18 @@ using System.Speech.AudioFormat;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer"]/*' />
-
     public class SpeechRecognizer : IDisposable
     {
         #region Constructors
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.SpeechRecognizer"]/*' />
         public SpeechRecognizer()
         {
             _sapiRecognizer = new SapiRecognizer(SapiRecognizer.RecognizerType.Shared);
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.Dispose1"]/*' />
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.Dispose2"]/*' />
         protected virtual void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
@@ -57,27 +49,17 @@ namespace System.Speech.Recognition
         #region public Properties
 
         // Determines whether the recognizer is listening or not.
-        // TODO:
-        // What does RecognizerState mean?
-        // When Hoolie running we either match GetRecoState and Hoolie should update,
-        // or use some other mechanism to tell whether Hoolie is running.
-        // When Hoolie not installed - this property has no effect unless there are SAPI apps altering the state
-        // or the language bar.
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.State"]/*' />
         public RecognizerState State
         {
             get { return RecoBase.State; }
         }
 
         // Are the grammars attached to this SpeechRecognizer active?  Default = true
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.Enabled"]/*' />
         public bool Enabled
         {
             get { return RecoBase.Enabled; }
             set { RecoBase.Enabled = value; }
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.PauseRecognizerOnRecognition"]/*' />
         public bool PauseRecognizerOnRecognition
         {
             get { return RecoBase.PauseRecognizerOnRecognition; }
@@ -85,54 +67,44 @@ namespace System.Speech.Recognition
         }
 
         // Gives access to the collection of grammars that are currently active. Read-only.
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.Grammars"]/*' />
         public ReadOnlyCollection<Grammar> Grammars
         {
             get { return RecoBase.Grammars; }
         }
 
         // Gives access to the set of attributes exposed by this recognizer.
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.RecognizerInfo"]/*' />
         public RecognizerInfo RecognizerInfo
         {
             get { return RecoBase.RecognizerInfo; }
         }
 
         // Data on the audio stream the recognizer is processing
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.AudioStatus"]/*' />
         public AudioState AudioState
         {
             get { return RecoBase.AudioState; }
         }
 
         // Data on the audio stream the recognizer is processing
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.AudioStatus"]/*' />
         public int AudioLevel
         {
             get { return RecoBase.AudioLevel; }
         }
 
         // Data on the audio stream the recognizer is processing
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.AudioStatus"]/*' />
         public TimeSpan AudioPosition
         {
             get { return RecoBase.AudioPosition; }
         }
 
         // Data on the audio stream the recognizer is processing
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.AudioStatus"]/*' />
         public TimeSpan RecognizerAudioPosition
         {
             get { return RecoBase.RecognizerAudioPosition; }
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.AudioFormat"]/*' />
         public SpeechAudioFormatInfo AudioFormat
         {
             get { return RecoBase.AudioFormat; }
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.MaxAlternates"]/*' />
         public int MaxAlternates
         {
             get { return RecoBase.MaxAlternates; }
@@ -142,32 +114,22 @@ namespace System.Speech.Recognition
         #endregion
 
         #region public Methods
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.LoadGrammar"]/*' />
         public void LoadGrammar(Grammar grammar)
         {
             RecoBase.LoadGrammar(grammar);
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.LoadGrammarAsync"]/*' />
         public void LoadGrammarAsync(Grammar grammar)
         {
             RecoBase.LoadGrammarAsync(grammar);
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.UnloadGrammar"]/*' />
         public void UnloadGrammar(Grammar grammar)
         {
             RecoBase.UnloadGrammar(grammar);
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.UnloadAllGrammars"]/*' />
         public void UnloadAllGrammars()
         {
             RecoBase.UnloadAllGrammars();
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize1"]/*' />
         public RecognitionResult EmulateRecognize(string inputText)
         {
             if (Enabled)
@@ -179,8 +141,6 @@ namespace System.Speech.Recognition
                 throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
         public RecognitionResult EmulateRecognize(string inputText, CompareOptions compareOptions)
         {
             if (Enabled)
@@ -192,8 +152,6 @@ namespace System.Speech.Recognition
                 throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
         public RecognitionResult EmulateRecognize(RecognizedWordUnit[] wordUnits, CompareOptions compareOptions)
         {
             if (Enabled)
@@ -205,8 +163,6 @@ namespace System.Speech.Recognition
                 throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize1"]/*' />
         public void EmulateRecognizeAsync(string inputText)
         {
             if (Enabled)
@@ -218,8 +174,6 @@ namespace System.Speech.Recognition
                 throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
         public void EmulateRecognizeAsync(string inputText, CompareOptions compareOptions)
         {
             if (Enabled)
@@ -231,8 +185,6 @@ namespace System.Speech.Recognition
                 throw new InvalidOperationException(SR.Get(SRID.RecognizerNotEnabled));
             }
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.EmulateRecognize2"]/*' />
         public void EmulateRecognizeAsync(RecognizedWordUnit[] wordUnits, CompareOptions compareOptions)
         {
             if (Enabled)
@@ -246,19 +198,14 @@ namespace System.Speech.Recognition
         }
 
         // Methods to pause the recognizer to do atomic updates:
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.RequestRecognizerUpdate1"]/*' />
         public void RequestRecognizerUpdate()
         {
             RecoBase.RequestRecognizerUpdate();
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.RequestRecognizerUpdate2"]/*' />
         public void RequestRecognizerUpdate(object userToken)
         {
             RecoBase.RequestRecognizerUpdate(userToken);
         }
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.RequestRecognizerUpdate3"]/*' />
         public void RequestRecognizerUpdate(object userToken, TimeSpan audioPositionAheadToRaiseUpdate)
         {
             RecoBase.RequestRecognizerUpdate(userToken, audioPositionAheadToRaiseUpdate);
@@ -267,34 +214,23 @@ namespace System.Speech.Recognition
         #endregion
 
         #region public Events
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.StateChanged"]/*' />
         public event EventHandler<StateChangedEventArgs> StateChanged;
 
         // Fired when the RecognizeAsync process completes.
-        /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.RecognizeCompleted"]/*' />
         public event EventHandler<EmulateRecognizeCompletedEventArgs> EmulateRecognizeCompleted;
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.LoadGrammarCompleted"]/*' />
         public event EventHandler<LoadGrammarCompletedEventArgs> LoadGrammarCompleted;
 
         // The event fired when speech is detected. Used for barge-in.
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.SpeechDetected"]/*' />
         public event EventHandler<SpeechDetectedEventArgs> SpeechDetected;
 
         // The event fired on a recognition.
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.SpeechRecognized"]/*' />
         public event EventHandler<SpeechRecognizedEventArgs> SpeechRecognized;
 
         // The event fired on a no recognition
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.SpeechRecognitionRejected"]/*' />
         public event EventHandler<SpeechRecognitionRejectedEventArgs> SpeechRecognitionRejected;
-
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.RecognizerUpdateReached"]/*' />
         public event EventHandler<RecognizerUpdateReachedEventArgs> RecognizerUpdateReached;
 
         // Occurs when a spoken phrase is partially recognized.
-        /// TODOC <_include file='doc\SpeechRecognizer.uex' path='docs/doc[@for="SpeechRecognizer.SpeechHypothesized"]/*' />
         public event EventHandler<SpeechHypothesizedEventArgs> SpeechHypothesized
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -319,8 +255,6 @@ namespace System.Speech.Recognition
                 }
             }
         }
-
-        /// TODOC
         public event EventHandler<AudioSignalProblemOccurredEventArgs> AudioSignalProblemOccurred
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -345,8 +279,6 @@ namespace System.Speech.Recognition
                 }
             }
         }
-
-        /// TODOC
         public event EventHandler<AudioLevelUpdatedEventArgs> AudioLevelUpdated
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -371,8 +303,6 @@ namespace System.Speech.Recognition
                 }
             }
         }
-
-        /// TODOC
         public event EventHandler<AudioStateChangedEventArgs> AudioStateChanged
         {
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
@@ -542,7 +472,6 @@ namespace System.Speech.Recognition
 
                     // For the SpeechRecognizer the RecoState is never altered:
                     // - By default that will mean recognition will progress as long as one grammar is loaded and enabled.
-                    // - If Hoolie is running it will control the RecoState.
 
                     // Add event handlers for low-overhead events:
                     _recognizerBase.StateChanged += StateChangedProxy;

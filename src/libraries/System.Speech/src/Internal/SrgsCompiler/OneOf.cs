@@ -17,8 +17,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Process the 'one-of' element.
         /// </summary>
-        /// <param name="rule"></param>
-        /// <param name="backend"></param>
         public OneOf(Rule rule, Backend backend)
             : base(backend, rule)
         {
@@ -45,7 +43,6 @@ namespace System.Speech.Internal.SrgsCompiler
         ///
         /// Verify OneOf contains at least one child 'item'.
         /// </summary>
-        /// <param name="parentElement"></param>
         void IElement.PostParse(IElement parentElement)
         {
             if (_startArc.End.OutArcs.IsEmpty)
@@ -68,8 +65,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Adds a new arc to the one-of
         /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
         internal override void AddArc(Arc start, Arc end)
         {
             start = TrimStart(start, _backend);

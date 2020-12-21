@@ -122,12 +122,6 @@ namespace System.Speech.Internal.SrgsParser
         /// Tokens may also be delimited by double quotes.  In these cases, the double
         /// quotes token must be surrounded by white space or string boundary.
         /// </summary>
-        /// <param name="parent">Parent element</param>
-        /// <param name="sChars"></param>
-        /// <param name="pronunciation"></param>
-        /// <param name="display"></param>
-        /// <param name="reqConfidence"></param>
-        /// <param name="createTokens"></param>
         internal static void ParseText(IElement parent, string sChars, string pronunciation, string display, float reqConfidence, CreateTokenCallback createTokens)
         {
             sChars = sChars.Trim(Helpers._achTrimChars);
@@ -197,8 +191,6 @@ namespace System.Speech.Internal.SrgsParser
         /// Throws an Exception with the error specified by the resource ID.
         /// Add the line and column number if the XmlReader is a TextReader
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="args"></param>
         internal static void ThrowSrgsException(SRID id, params object[] args)
         {
             throw new FormatException(SR.Get(id, args));
@@ -208,10 +200,6 @@ namespace System.Speech.Internal.SrgsParser
         /// Throws an Exception with the error specified by the resource ID.
         /// Add the line and column number if the XmlReader is a TextReader
         /// </summary>
-        /// <param name="filename"></param>
-        /// <param name="xmlReader"></param>
-        /// <param name="sError"></param>
-        /// <param name="innerException"></param>
         internal static void ThrowSrgsExceptionWithPosition(string filename, XmlReader xmlReader, string sError, Exception innerException)
         {
             // Add the line and column number if the XmlReader is a XmlTextReader
@@ -998,7 +986,6 @@ namespace System.Speech.Internal.SrgsParser
                                 switch (reader.Value)
                                 {
                                     case "high":
-                                        //TODO check these 3 values
                                         reqConfidence = 0.8f;
                                         break;
 
@@ -1051,11 +1038,6 @@ namespace System.Speech.Internal.SrgsParser
         /// Tokens may also be delimited by double quotes.  In these cases, the double
         /// quotes token must be surrounded by white space or string boundary.
         /// </summary>
-        /// <param name="parent">Parent element</param>
-        /// <param name="sChars"></param>
-        /// <param name="pronunciation"></param>
-        /// <param name="display"></param>
-        /// <param name="reqConfidence"></param>
         private void ParseText(IElement parent, string sChars, string pronunciation, string display, float reqConfidence)
         {
             System.Diagnostics.Debug.Assert((parent != null) && (!string.IsNullOrEmpty(sChars)));
@@ -1126,7 +1108,6 @@ namespace System.Speech.Internal.SrgsParser
         ///     uri: required
         ///     type: optional
         /// </summary>
-        /// <param name="reader"></param>
         private static void ParseLexicon(XmlReader reader)
         {
             bool isInvalidAttribute = false;
@@ -1158,8 +1139,6 @@ namespace System.Speech.Internal.SrgsParser
             {
                 ThrowSrgsException(SRID.MissingRequiredAttribute, "uri", "lexicon");
             }
-            // TODO jeanfp
-            //ThrowSrgsException (SRID.UnsupportedLexicon);
         }
 
         /// <summary>
@@ -1169,7 +1148,6 @@ namespace System.Speech.Internal.SrgsParser
         ///     name and http-equiv: one or the other but not bothsd
         ///     content: required
         /// </summary>
-        /// <param name="reader"></param>
         private static void ParseMeta(XmlReader reader)
         {
             bool fFoundContent = false;
@@ -1702,8 +1680,6 @@ namespace System.Speech.Internal.SrgsParser
             reader.Read();                                          // Move to next sibling
             return sb.ToString();
         }
-
-        /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.RepeatProbability"]/*' />
         private static void ParsePropertyTag(string sTag, out string name, out object value)
         {
             // Default value
@@ -1797,9 +1773,6 @@ namespace System.Speech.Internal.SrgsParser
         /// Valid formats: n|n-|n-m     n,m integers
         ///                integer = [whitespace] [+] [0[{x|X}]] [digits]
         /// </summary>
-        /// <param name="repeat"></param>
-        /// <param name="minRepeat"></param>
-        /// <param name="maxRepeat"></param>
         private static void SetRepeatValues(string repeat, out int minRepeat, out int maxRepeat)
         {
             minRepeat = maxRepeat = 1;

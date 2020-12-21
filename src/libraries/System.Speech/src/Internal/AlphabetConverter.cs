@@ -37,7 +37,6 @@ namespace System.Speech.Internal
         /// <summary>
         /// Convert from SAPI phonemes to IPA phonemes.
         /// </summary>
-        /// <param name="phonemes"></param>
         /// <returns>
         /// Return an array of unicode characters each of which represents an IPA phoneme if the SAPI phonemes are valid.
         /// Otherwise, return null.
@@ -50,10 +49,8 @@ namespace System.Speech.Internal
         /// <summary>
         /// Convert from IPA phonemes to SAPI phonemes.
         /// </summary>
-        /// <param name="phonemes"></param>
         /// Return an array of unicode characters each of which represents a SAPI phoneme if the IPA phonemes are valid.
         /// Otherwise, return null.
-        /// <returns></returns>
         internal char[] IpaToSapi(char[] phonemes)
         {
             return Convert(phonemes, false);
@@ -65,7 +62,6 @@ namespace System.Speech.Internal
         /// </summary>
         /// <param name="phonemes">The string of SAPI or UPS phoneme ids</param>
         /// <param name="isSapi">To indicate whether parameter phonemes is in SAPI or UPS phonemes</param>
-        /// <returns></returns>
         internal bool IsPrefix(string phonemes, bool isSapi)
         {
             return _phoneMap.IsPrefix(phonemes, isSapi);
@@ -292,7 +288,6 @@ namespace System.Speech.Internal
             /// Create a hash table of all possible prefix substrings for each ConversionUnit
             /// </summary>
             /// <param name="isSapi">Creating a SAPI or UPS prefix table</param>
-            /// <returns></returns>
             private Hashtable InitializePrefix(bool isSapi)
             {
                 int i, j;

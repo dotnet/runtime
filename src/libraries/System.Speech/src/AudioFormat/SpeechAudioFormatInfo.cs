@@ -7,8 +7,6 @@ using System.Speech.Internal.Synthesis;
 
 namespace System.Speech.AudioFormat
 {
-    /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo"]/*' />
-
     [Serializable]
     public
  class SpeechAudioFormatInfo
@@ -62,8 +60,6 @@ namespace System.Speech.AudioFormat
                     break;
             }
         }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.AudioFormatInfo1"]/*' />
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public SpeechAudioFormatInfo(EncodingFormat encodingFormat, int samplesPerSecond, int bitsPerSample, int channelCount, int averageBytesPerSecond, int blockAlign, byte[] formatSpecificData)
             : this(encodingFormat, samplesPerSecond, (short)bitsPerSample, (short)channelCount, formatSpecificData)
@@ -80,8 +76,6 @@ namespace System.Speech.AudioFormat
             _averageBytesPerSecond = averageBytesPerSecond;
             _blockAlign = (short)blockAlign;
         }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.AudioFormatInfo2"]/*' />
         public SpeechAudioFormatInfo(int samplesPerSecond, AudioBitsPerSample bitsPerSample, AudioChannel channel)
             : this(EncodingFormat.Pcm, samplesPerSecond, (short)bitsPerSample, (short)channel, null)
         {
@@ -93,36 +87,20 @@ namespace System.Speech.AudioFormat
         #endregion
 
         #region Public Properties
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.AverageBytesPerSecond"]/*' />
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public int AverageBytesPerSecond { get { return _averageBytesPerSecond; } }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.BitsPerSample"]/*' />
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public int BitsPerSample { get { return _bitsPerSample; } }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.BlockAlign"]/*' />
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public int BlockAlign { get { return _blockAlign; } }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Format"]/*' />
         public EncodingFormat EncodingFormat { get { return _encodingFormat; } }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.NumberOfChannels"]/*' />
         public int ChannelCount { get { return _channelCount; } }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.SamplesPerSecond"]/*' />
         public int SamplesPerSecond { get { return _samplesPerSecond; } }
 
         #endregion
 
         #region Public Methods
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.FormatSpecificData"]/*' />
         public byte[] FormatSpecificData() { return (byte[])_formatSpecificData.Clone(); }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
         public override bool Equals(object obj)
         {
             SpeechAudioFormatInfo refObj = obj as SpeechAudioFormatInfo;
@@ -153,8 +131,6 @@ namespace System.Speech.AudioFormat
             }
             return true;
         }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
         public override int GetHashCode()
         {
             return _averageBytesPerSecond.GetHashCode();
@@ -203,36 +179,16 @@ namespace System.Speech.AudioFormat
     }
 
     #region Public Properties
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum AudioChannel
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Mono = 1,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Stereo = 2
     }
-
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public
  enum AudioBitsPerSample
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Eight = 8,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Sixteen = 16
     }
 

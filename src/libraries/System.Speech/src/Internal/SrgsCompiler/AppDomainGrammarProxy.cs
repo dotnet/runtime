@@ -17,9 +17,6 @@ using System.Text;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     internal class AppDomainGrammarProxy : MarshalByRefObject
     {
         internal SrgsRule[] OnInit(string method, object[] parameters, string onInitParameters, out Exception exceptionThrown)
@@ -179,11 +176,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Construct a list of parameters from a sapi:params string.
         /// </summary>
-        /// <param name="method"></param>
-        /// <param name="onInitParameters"></param>
-        /// <param name="grammar"></param>
-        /// <param name="rule"></param>
-        /// <returns></returns>
         private object[] MatchInitParameters(string method, string onInitParameters, string grammar, string rule)
         {
             MethodInfo[] mis = _grammarType.GetMethods();
@@ -244,9 +236,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Parse the value for a type from a string to a strong type.
         /// If the type does not support the Parse method then the operation fails.
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
         private static object ParseValue(Type type, string value)
         {
             if (type == typeof(string))
@@ -259,9 +248,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Returns the list of the possible parameter names and type for a grammar
         /// </summary>
-        /// <param name="cis"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
         private static string FormatConstructorParameters(MethodInfo[] cis, string method)
         {
             StringBuilder sb = new();
@@ -292,8 +278,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Split the init parameter strings into an array of name/values
         /// The format must be "name:value". If the ':' then parameter is anonymous.
         /// </summary>
-        /// <param name="initParameters"></param>
-        /// <returns></returns>
         private static NameValuePair[] ParseInitParams(string initParameters)
         {
             string[] parameters = initParameters.Split(new char[] { ';' }, StringSplitOptions.None);

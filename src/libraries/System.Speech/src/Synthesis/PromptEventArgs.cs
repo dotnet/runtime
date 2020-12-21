@@ -6,17 +6,9 @@ using System.ComponentModel;
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public abstract class PromptEventArgs : AsyncCompletedEventArgs
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="prompt"></param>
         internal PromptEventArgs(Prompt prompt) : base(prompt._exception, prompt._exception != null, prompt)
         {
             _prompt = prompt;
@@ -27,11 +19,6 @@ namespace System.Speech.Synthesis
         #region public Properties
 
         // Use Add* naming convention.
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public Prompt Prompt
         {
             get
@@ -48,17 +35,9 @@ namespace System.Speech.Synthesis
 
         #endregion
     }
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public class SpeakStartedEventArgs : PromptEventArgs
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="prompt"></param>
         internal SpeakStartedEventArgs(Prompt prompt)
             : base(prompt)
         {

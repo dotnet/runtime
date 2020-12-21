@@ -273,9 +273,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Compare the contents and number of output arcs from the start state.
         /// The comparison is done by Arc content, number of arcs at then and the id for the last arc
         /// </summary>
-        /// <param name="arc1"></param>
-        /// <param name="arc2"></param>
-        /// <returns></returns>
         internal static int CompareForDuplicateInputTransitions(Arc arc1, Arc arc2)
         {
             int iContentCompare = Arc.CompareContent(arc1, arc2);
@@ -293,9 +290,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Compare the contents and number of input arcs to the end state.
         /// The comparison is done by Arc content, number of arcs at then and the id for the last arc
         /// </summary>
-        /// <param name="arc1"></param>
-        /// <param name="arc2"></param>
-        /// <returns></returns>
         internal static int CompareForDuplicateOutputTransitions(Arc arc1, Arc arc2)
         {
             // Compare content and number of other input transitions to the end state.
@@ -313,9 +307,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Compare the contents and start/end states of two arcs.
         /// </summary>
-        /// <param name="arc1"></param>
-        /// <param name="arc2"></param>
-        /// <returns></returns>
         internal static int CompareIdenticalTransitions(Arc arc1, Arc arc2)
         {
             // Same start arc
@@ -513,7 +504,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Is the arc an epsilon transition?
         /// </summary>
-        /// <returns></returns>
         internal bool IsEpsilonTransition
         {
             get

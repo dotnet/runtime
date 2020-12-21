@@ -20,8 +20,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Compiles a grammar to a file
         /// </summary>
-        /// <param name="inputPath"></param>
-        /// <param name="outputStream"></param>
         public static void Compile(string inputPath, Stream outputStream)
         {
             Helpers.ThrowIfEmptyOrNull(inputPath, nameof(inputPath));
@@ -36,8 +34,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Compiles an Srgs documentto a file
         /// </summary>
-        /// <param name="srgsGrammar"></param>
-        /// <param name="outputStream"></param>
         public static void Compile(SrgsDocument srgsGrammar, Stream outputStream)
         {
             Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
@@ -49,8 +45,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Compiles a grammar to a file
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="outputStream"></param>
         public static void Compile(XmlReader reader, Stream outputStream)
         {
             Helpers.ThrowIfNull(reader, nameof(reader));
@@ -62,10 +56,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Compiles a grammar to a file
         /// </summary>
-        /// <param name="inputPaths"></param>
-        /// <param name="outputPath"></param>
-        /// <param name="referencedAssemblies"></param>
-        /// <param name="keyFile"></param>
         public static void CompileClassLibrary(string[] inputPaths, string outputPath, string[] referencedAssemblies, string keyFile)
         {
             Helpers.ThrowIfNull(inputPaths, nameof(inputPaths));
@@ -100,10 +90,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Compiles an Srgs documentto a file
         /// </summary>
-        /// <param name="srgsGrammar"></param>
-        /// <param name="outputPath"></param>
-        /// <param name="referencedAssemblies"></param>
-        /// <param name="keyFile"></param>
         public static void CompileClassLibrary(SrgsDocument srgsGrammar, string outputPath, string[] referencedAssemblies, string keyFile)
         {
             Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
@@ -115,10 +101,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Compiles a grammar to a file
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="outputPath"></param>
-        /// <param name="referencedAssemblies"></param>
-        /// <param name="keyFile"></param>
         public static void CompileClassLibrary(XmlReader reader, string outputPath, string[] referencedAssemblies, string keyFile)
         {
             Helpers.ThrowIfNull(reader, nameof(reader));

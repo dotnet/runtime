@@ -46,8 +46,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Adds events directly to an event sink.
         /// </summary>
-        /// <param name="events"></param>
-        /// <param name="ulCount"></param>
         public void AddEvents([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] SpeechEventInfo[] events, int ulCount)
         {
             try
@@ -85,8 +83,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Queries the voice object to determine which real-time action(s) to perform.
         /// </summary>
-        /// <param name="pBuff"></param>
-        /// <param name="cb"></param>
         public int Write(IntPtr pBuff, int cb)
         {
             try
@@ -112,7 +108,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Notifies that the last skip request has been completed and to pass it the results.
         /// </summary>
-        /// <param name="ulNumSkipped"></param>
         public void CompleteSkip(int ulNumSkipped)
         {
             return;
@@ -132,7 +127,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         ///  Queries the voice object to determine which real-time action(s) to perform
         /// </summary>
-        /// <returns></returns>
         public int Actions
         {
             get
@@ -168,8 +162,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Load a file either from a local network or from the Internet.
         /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="mediaType"></param>
         public Stream LoadResource(Uri uri, string mediaType)
         {
             try

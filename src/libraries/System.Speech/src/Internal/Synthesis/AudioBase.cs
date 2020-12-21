@@ -31,7 +31,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Play a wave file.
         /// </summary>
-        /// <param name="wfx"></param>
         internal abstract void Begin(byte[] wfx);
 
         /// <summary>
@@ -42,8 +41,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Play a wave file.
         /// </summary>
-        /// <param name="pBuff"></param>
-        /// <param name="cb"></param>
         internal virtual void Play(IntPtr pBuff, int cb)
         {
             byte[] buffer = new byte[cb];
@@ -54,7 +51,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Play a wave file.
         /// </summary>
-        /// <param name="buffer"></param>
         internal virtual void Play(byte[] buffer)
         {
             GCHandle gc = GCHandle.Alloc(buffer);
@@ -75,7 +71,6 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Throw an event synchronized with the audio stream
         /// </summary>
-        /// <param name="ttsEvent"></param>
         internal abstract void InjectEvent(TTSEvent ttsEvent);
 
         /// <summary>
@@ -234,13 +229,6 @@ namespace System.Speech.Internal.Synthesis
             return wfx;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="waveEx"></param>
-        /// <param name="position"></param>
-        /// <param name="cData"></param>
         internal static void WriteWaveHeader(Stream stream, WAVEFORMATEX waveEx, long position, int cData)
         {
             RIFFHDR riff = new(0);

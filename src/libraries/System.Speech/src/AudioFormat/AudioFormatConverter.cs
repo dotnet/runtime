@@ -49,8 +49,6 @@ namespace System.Speech.Internal
         /// <summary>
         /// This method converts the specified stream format into a wave format
         /// </summary>
-        /// <param name="eFormat"></param>
-        /// <returns></returns>
         private static SpeechAudioFormatInfo ConvertFormat(StreamFormat eFormat)
         {
             WaveFormatEx waveEx = new();

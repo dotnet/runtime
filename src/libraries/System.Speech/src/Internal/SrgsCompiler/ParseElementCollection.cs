@@ -23,7 +23,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Attach a semantic tag to word. If the word is a rule ref then an
         /// epsilon transition must be created
         /// </summary>
-        /// <param name="propertyInfo"></param>
         internal void AddSemanticInterpretationTag(CfgGrammar.CfgProperty propertyInfo)
         {
             // If the word is a rule ref, an epsilon transition must be created
@@ -64,10 +63,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Insert an epsilon state either before or after the current arc
         /// </summary>
-        /// <param name="arc"></param>
-        /// <param name="weight"></param>
-        /// <param name="position"></param>
-        /// <returns></returns>
         protected Arc InsertState(Arc arc, float weight, Position position)
         {
             // If the arc is a epsilon, creating a new epsilon arc might not be needed
@@ -105,9 +100,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Remove all the epsilon transitions at the beginning of a sub graph
         /// </summary>
-        /// <param name="start"></param>
-        /// <param name="backend"></param>
-        /// <returns></returns>
         protected static Arc TrimStart(Arc start, Backend backend)
         {
             Arc startArc = start;
@@ -138,9 +130,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Remove all the epsilon transition at the end
         /// </summary>
-        /// <param name="end"></param>
-        /// <param name="backend"></param>
-        /// <returns></returns>
         protected static Arc TrimEnd(Arc end, Backend backend)
         {
             Arc endArc = end;
@@ -188,8 +177,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// New sets of arcs are added after the last arc
         /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
         internal virtual void AddArc(Arc start, Arc end)
         {
             State state = null;

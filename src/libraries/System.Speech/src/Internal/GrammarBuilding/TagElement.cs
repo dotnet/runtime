@@ -9,39 +9,23 @@ using System.Text;
 
 namespace System.Speech.Internal.GrammarBuilding
 {
-    /// <summary>
-    ///
-    /// </summary>
+
     [DebuggerDisplay("{DebugSummary}")]
     internal sealed class TagElement : BuilderElements
     {
         #region Constructors
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="value"></param>
         internal TagElement(object value)
         {
             _value = value;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <param name="value"></param>
         internal TagElement(GrammarBuilderBase builder, object value)
             : this(value)
         {
             Add(builder);
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="builder"></param>
-        /// <param name="value"></param>
         internal TagElement(GrammarBuilder builder, object value)
             : this(value)
         {
@@ -51,8 +35,6 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.Equals"]/*' />
         public override bool Equals(object obj)
         {
             TagElement refObj = obj as TagElement;
@@ -66,8 +48,6 @@ namespace System.Speech.Internal.GrammarBuilding
             }
             return _value.Equals(refObj._value);
         }
-
-        /// TODOC <_include file='doc\SpeechAudioFormatInfo.uex' path='docs/doc[@for="SpeechAudioFormatInfo.GetHashCode"]/*' />
         public override int GetHashCode()
         {
             return base.GetHashCode();
@@ -77,10 +57,6 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Internal Methods
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
         internal override GrammarBuilderBase Clone()
         {
             TagElement tag = new(_value);
@@ -88,14 +64,6 @@ namespace System.Speech.Internal.GrammarBuilding
             return tag;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="elementFactory"></param>
-        /// <param name="parent"></param>
-        /// <param name="rule"></param>
-        /// <param name="ruleIds"></param>
-        /// <returns></returns>
         internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
         {
             // Create the children elements

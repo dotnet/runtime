@@ -6,8 +6,6 @@ using System.ComponentModel;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\RecognizeCompletedEventArgs.uex' path='docs/doc[@for="RecognizeCompletedEventArgs"]/*' />
-
     public class RecognizeCompletedEventArgs : AsyncCompletedEventArgs
     {
         #region Constructors
@@ -27,32 +25,22 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Properties
-
-        /// TODOC <_include file='doc\RecognizeCompletedEventArgs.uex' path='docs/doc[@for="RecognizeCompletedEventArgs.Result"]/*' />
         public RecognitionResult Result
         {
             get { return _result; }
         }
-
-        /// TODOC <_include file='doc\RecognizeCompletedEventArgs.uex' path='docs/doc[@for="RecognizeCompletedEventArgs.SilenceTimeout"]/*' />
         public bool InitialSilenceTimeout
         {
             get { return _initialSilenceTimeout; }
         }
-
-        /// TODOC <_include file='doc\RecognizeCompletedEventArgs.uex' path='docs/doc[@for="RecognizeCompletedEventArgs.BabbleTimeout"]/*' />
         public bool BabbleTimeout
         {
             get { return _babbleTimeout; }
         }
-
-        /// TODOC <_include file='doc\RecognizeCompletedEventArgs.uex' path='docs/doc[@for="RecognizeCompletedEventArgs.BabbleTimeout"]/*' />
         public bool InputStreamEnded
         {
             get { return _inputStreamEnded; }
         }
-
-        /// TODOC <_include file='doc\RecognizeCompletedEventArgs.uex' path='docs/doc[@for="RecognizeCompletedEventArgs.AudioPosition"]/*' />
         public TimeSpan AudioPosition
         {
             get { return _audioPosition; }

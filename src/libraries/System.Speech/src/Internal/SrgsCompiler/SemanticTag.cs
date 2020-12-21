@@ -22,8 +22,6 @@ namespace System.Speech.Internal.SrgsCompiler
         #endregion
 
         #region Internal Methods
-
-        /// TODOC <_include file='doc\Tag.uex' path='docs/doc[@for="Tag.RepeatProbability"]/*' />
         // The probability that this item will be repeated.
         void ISemanticTag.Content(IElement parentElement, string sTag, int iLine)
         {

@@ -17,9 +17,6 @@ using System.Xml.XPath;
 
 namespace System.Speech.Recognition
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
 
@@ -38,10 +35,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Properties
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public DisplayAttributes DisplayAttributes
         {
             get
@@ -49,10 +42,6 @@ namespace System.Speech.Recognition
                 return _displayAttributes;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public string Text
         {
             get
@@ -60,10 +49,6 @@ namespace System.Speech.Recognition
                 return _text;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int FirstWordIndex
         {
             get
@@ -71,10 +56,6 @@ namespace System.Speech.Recognition
                 return _wordIndex;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int CountOfWords
         {
             get

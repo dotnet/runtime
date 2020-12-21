@@ -29,7 +29,6 @@ namespace System.Speech.Internal
         /// <summary>
         /// Returns the cached version of the universal phone converter.
         /// </summary>
-        /// <returns></returns>
         internal static PhonemeConverter UpsConverter
         {
             get
@@ -41,9 +40,6 @@ namespace System.Speech.Internal
         /// <summary>
         /// Convert a pronunciation string to code points
         /// </summary>
-        /// <param name="pronunciation">pronunciation</param>
-        /// <param name="lcid"></param>
-        /// <returns></returns>
         internal static string ConvertPronToId(string pronunciation, int lcid)
         {
             //CfgGrammar.TraceInformation ("BackEnd::ConvertPronToId");
@@ -69,8 +65,6 @@ namespace System.Speech.Internal
         /// The internal phones are space separated and may have a space
         /// at the end.
         /// </summary>
-        /// <param name="sPhone"></param>
-        /// <returns></returns>
         internal string ConvertPronToId(string sPhone)    // Internal phone string
         {
             //CfgGrammar.TraceInformation ("CSpPhoneConverter::PhoneToId");
@@ -150,8 +144,6 @@ namespace System.Speech.Internal
         /// <summary>
         /// Builds the Phoneme maps from the compressed form.
         /// </summary>
-        /// <param name="pmComps"></param>
-        /// <returns></returns>
         private static PhoneMap[] DecompressPhoneMaps(PhoneMapCompressed[] pmComps)
         {
             PhoneMap[] phoneMaps = new PhoneMap[pmComps.Length];

@@ -11,53 +11,40 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef"]/*' />
     [Serializable]
     [ImmutableObject(true)]
     [DebuggerDisplay("{DebuggerDisplayString()}")]
     public class SrgsRuleRef : SrgsElement, IRuleRef
     {
         #region Constructors
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef2"]/*' />
         public SrgsRuleRef(Uri uri)
         {
             UriInit(uri, null, null, null);
         }
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef2"]/*' />
         public SrgsRuleRef(Uri uri, string rule)
         {
             Helpers.ThrowIfEmptyOrNull(rule, nameof(rule));
 
             UriInit(uri, rule, null, null);
         }
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(Uri uri, string rule, string semanticKey)
         {
             Helpers.ThrowIfEmptyOrNull(semanticKey, nameof(semanticKey));
 
             UriInit(uri, rule, semanticKey, null);
         }
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(Uri uri, string rule, string semanticKey, string parameters)
         {
             Helpers.ThrowIfEmptyOrNull(parameters, nameof(parameters));
 
             UriInit(uri, rule, semanticKey, parameters);
         }
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(SrgsRule rule)
         {
             Helpers.ThrowIfNull(rule, nameof(rule));
 
             _uri = new Uri("#" + rule.Id, UriKind.Relative);
         }
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(SrgsRule rule, string semanticKey)
             : this(rule)
         {
@@ -65,8 +52,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
             _semanticKey = semanticKey;
         }
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.RuleRef3"]/*' />
         public SrgsRuleRef(SrgsRule rule, string semanticKey, string parameters)
             : this(rule)
         {
@@ -82,7 +67,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Special private constructor for Special Rulerefs
         /// </summary>
-        /// <param name="type"></param>
         private SrgsRuleRef(SpecialRuleRefType type)
         {
             _type = type;
@@ -98,8 +82,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public Properties
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.Uri"]/*' />
         // Uri of the rule this rule reference references.
         public Uri Uri
         {
@@ -112,7 +94,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Set the semanticKey for a Ruleref
         /// </summary>
-        /// <value></value>
         public string SemanticKey
         {
             get
@@ -124,7 +105,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Set the init parameters for a Ruleref
         /// </summary>
-        /// <value></value>
         public string Params
         {
             get
@@ -132,26 +112,16 @@ namespace System.Speech.Recognition.SrgsGrammar
                 return _params;
             }
         }
-
-        /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Null"]/*' />
         // The Null SpecialRuleRef defines a rule that is automatically matched:
         // that is, matched without the user speaking any word.
         public static readonly SrgsRuleRef Null = new(SpecialRuleRefType.Null);
-
-        /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Void"]/*' />
         // The Void SpecialRuleRef defines a rule that can never be spoken. Inserting
         // VOID into a sequence automatically makes that sequence unspeakable.
         public static readonly SrgsRuleRef Void = new(SpecialRuleRefType.Void);
-
-        /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRef.Garbage"]/*' />
         // The Garbage SpecialRuleRef defines a rule that may match any speech up until
         // the next rule match, the next token or until the end of spoken input.
         public static readonly SrgsRuleRef Garbage = new(SpecialRuleRefType.Garbage);
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.Dictation"]/*' />
         public static readonly SrgsRuleRef Dictation = new(new Uri("grammar:dictation"));
-
-        /// TODOC <_include file='doc\RuleRef.uex' path='docs/doc[@for="RuleRef.Dictation"]/*' />
         public static readonly SrgsRuleRef MnemonicSpelling = new(new Uri("grammar:dictation#spelling"));
 
         #endregion
@@ -209,7 +179,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Validate the SRGS element.
         /// </summary>
-        /// <param name="grammar"></param>
         internal override void Validate(SrgsGrammar grammar)
         {
             bool fScript = _params != null || _semanticKey != null;
@@ -275,10 +244,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Call by constructors. No check is made on the paramaters except for the the Uri
         /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="rule"></param>
-        /// <param name="semanticKey"></param>
-        /// <param name="initParameters"></param>
         private void UriInit(Uri uri, string rule, string semanticKey, string initParameters)
         {
             Helpers.ThrowIfNull(uri, nameof(uri));
@@ -300,22 +265,17 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Private Fields
 
         #region Private Enums
-
-        /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType"]/*' />
         // Special rule references allow grammars based on CFGs to have powerful
         // additional features, such as transitions into dictation (both recognized
         // or not recognized) and word seqeuences from SAPI 5.0.
         private enum SpecialRuleRefType
         {
-            /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType.Null"]/*' />
             // Defines a rule that is automatically matched that is, matched without
             // the user speaking any word.
             Null,
-            /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType.Void"]/*' />
             // Defines a rule that can never be spoken. Inserting VOID into a sequence
             // automatically makes that sequence unspeakable.
             Void,
-            /// TODOC <_include file='doc\SpecialRuleRef.uex' path='docs/doc[@for="SpecialRuleRefType.Garbage"]/*' />
             // Defines a rule that may match any speech up until the next rule match,
             // the next token or until the end of spoken input.
             // Designed for applications that would like to recognize some phrases

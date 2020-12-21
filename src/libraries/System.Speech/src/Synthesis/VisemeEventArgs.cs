@@ -3,22 +3,9 @@
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// TODOC
-    /// </summary>
     public class VisemeReachedEventArgs : PromptEventArgs
     {
         #region Constructors
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="speakPrompt"></param>
-        /// <param name="currentViseme"></param>
-        /// <param name="audioPosition"></param>
-        /// <param name="duration"></param>
-        /// <param name="emphasis"></param>
-        /// <param name="nextViseme"></param>
         internal VisemeReachedEventArgs(Prompt speakPrompt, int currentViseme, TimeSpan audioPosition, TimeSpan duration, SynthesizerEmphasis emphasis, int nextViseme) : base(speakPrompt)
         {
             _currentViseme = currentViseme;
@@ -31,47 +18,22 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region Public Properties
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public int Viseme
         {
             get { return _currentViseme; }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public TimeSpan AudioPosition
         {
             get { return _audioPosition; }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public TimeSpan Duration
         {
             get { return _duration; }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public SynthesizerEmphasis Emphasis
         {
             get { return _emphasis; }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <value></value>
         public int NextViseme
         {
             get { return _nextViseme; }

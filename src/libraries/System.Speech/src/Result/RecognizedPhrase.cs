@@ -19,7 +19,6 @@ using System.Xml.XPath;
 
 namespace System.Speech.Recognition
 {
-    /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognizedPhrase"]/*' />
     [Serializable]
 
     [DebuggerDisplay("{Text}")]
@@ -34,8 +33,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.ConstructSMLFromSemantics"]/*' />
         public IXPathNavigable ConstructSmlFromSemantics()
         {
             if (!string.IsNullOrEmpty(_smlContent))
@@ -85,8 +82,6 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Properties
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.Text"]/*' />
         public string Text
         {
             get
@@ -148,8 +143,6 @@ namespace System.Speech.Recognition
                 return _text;
             }
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.Confidence"]/*' />
         public float Confidence
         {
             get
@@ -157,8 +150,6 @@ namespace System.Speech.Recognition
                 return _confidence;
             }
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.Words"]/*' />
         public ReadOnlyCollection<RecognizedWordUnit> Words
         {
             get
@@ -223,7 +214,6 @@ namespace System.Speech.Recognition
         }
 
         // Semantic data about result:
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.Semantics"]/*' />
         public SemanticValue Semantics
         {
             get
@@ -246,7 +236,6 @@ namespace System.Speech.Recognition
         }
 
         // Homophonic alternates for this phrase
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.Homophones"]/*' />
         public ReadOnlyCollection<RecognizedPhrase> Homophones
         {
             get
@@ -272,8 +261,6 @@ namespace System.Speech.Recognition
                 return _homophones;
             }
         }
-
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.Grammar"]/*' />
         public Grammar Grammar
         {
             get
@@ -291,8 +278,6 @@ namespace System.Speech.Recognition
                 return _grammar;
             }
         }
-
-        /// TODOC
         public Collection<ReplacementText> ReplacementWordUnits
         {
             get
@@ -324,10 +309,6 @@ namespace System.Speech.Recognition
                 return _replacementText;
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
         public int HomophoneGroupId
         {
             get
@@ -421,7 +402,6 @@ namespace System.Speech.Recognition
         #region Private Methods
 
         // Semantic data about result:
-        /// TODOC <_include file='doc\RecognitionResult.uex' path='docs/doc[@for="RecognitionResult.Semantics"]/*' />
         private void CalcSemantics(Grammar grammar)
         {
             if (_semantics == null && _serializedPhrase.SemanticErrorInfoOffset == 0)
@@ -1151,7 +1131,6 @@ namespace System.Speech.Recognition
             /// </summary>
             /// <param name="firstElement">First word mathcing the property</param>
             /// <param name="count">Count of words</param>
-            /// <returns></returns>
             internal RuleNode Find(uint firstElement, uint count)
             {
                 // If the count of word is set to zero. It means that the tag is located just before a word.

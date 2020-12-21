@@ -34,10 +34,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             _grammar = new SrgsGrammar();
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="path"></param>
         public SrgsDocument(string path)
         {
             Helpers.ThrowIfEmptyOrNull(path, nameof(path));
@@ -47,22 +43,12 @@ namespace System.Speech.Recognition.SrgsGrammar
                 Load(reader);
             }
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="srgsGrammar"></param>
         public SrgsDocument(XmlReader srgsGrammar)
         {
             Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
 
             Load(srgsGrammar);
         }
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="builder"></param>
         public SrgsDocument(GrammarBuilder builder)
         {
             Helpers.ThrowIfNull(builder, nameof(builder));
@@ -82,10 +68,6 @@ namespace System.Speech.Recognition.SrgsGrammar
             builder.CreateGrammar(elementFactory);
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="grammarRootRule"></param>
         public SrgsDocument(SrgsRule grammarRootRule) : this()
         {
             Helpers.ThrowIfNull(grammarRootRule, nameof(grammarRootRule));
@@ -97,11 +79,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public methods
-
-        /// <summary>
-        /// TODOC
-        /// </summary>
-        /// <param name="srgsGrammar"></param>
         public void WriteSrgs(XmlWriter srgsGrammar)
         {
             Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
@@ -436,32 +413,17 @@ namespace System.Speech.Recognition.SrgsGrammar
     }
 
     #region Enumerations
-
-    /// TODOC <_include file='doc\SrgsGrammar.uex' path='docs/doc[@for="SrgsGrammarMode"]/*' />
     // Grammar mode.  Voice, Dtmf
     public enum SrgsGrammarMode
     {
-        /// TODOC <_include file='doc\SrgsGrammar.uex' path='docs/doc[@for="SrgsGrammarMode.Voice"]/*' />
         Voice,
-        /// TODOC <_include file='doc\SrgsGrammar.uex' path='docs/doc[@for="SrgsGrammarMode.Dtmf"]/*' />
         Dtmf
     }
-
-    /// TODOC <_include file='doc\SrgsGrammar.uex' path='docs/doc[@for="SrgsGrammarMode"]/*' />
     // Grammar mode.  Voice, Dtmf
     public enum SrgsPhoneticAlphabet
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Sapi,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Ipa,
-        /// <summary>
-        /// TODOC
-        /// </summary>
         Ups
     }
 

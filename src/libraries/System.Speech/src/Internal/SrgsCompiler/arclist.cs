@@ -21,7 +21,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Build a List with all the arcs
         /// </summary>
-        /// <returns></returns>
         internal List<Arc> ToList()
         {
             List<Arc> collection = new();

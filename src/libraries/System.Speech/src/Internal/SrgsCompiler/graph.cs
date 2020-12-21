@@ -71,8 +71,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Creates a new state handle in a given rule
         /// </summary>
-        /// <param name="rule"></param>
-        /// <returns></returns>
         internal State CreateNewState(Rule rule)
         {
             //CfgGrammar.TraceInformation ("BackEnd::CreateNewState");
@@ -89,7 +87,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <summary>
         /// Deletet a state
         /// </summary>
-        /// <param name="state"></param>
         internal void DeleteState(State state)
         {
 #if DEBUG
@@ -174,8 +171,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// - If SourceState == RuleInitialState, RuleInitialState = DestState
         /// - Delete SourceState
         /// </summary>
-        /// <param name="srcState"></param>
-        /// <param name="destState"></param>
         internal void MoveInputTransitionsAndDeleteState(State srcState, State destState)
         {
             System.Diagnostics.Debug.Assert(srcState != null);
@@ -223,8 +218,6 @@ namespace System.Speech.Internal.SrgsCompiler
         ///   - DestState.OutputArcs += Transition
         /// - Delete SourceState
         /// </summary>
-        /// <param name="srcState"></param>
-        /// <param name="destState"></param>
         internal void MoveOutputTransitionsAndDeleteState(State srcState, State destState)
         {
             System.Diagnostics.Debug.Assert(srcState != null);
@@ -755,11 +748,8 @@ namespace System.Speech.Internal.SrgsCompiler
         /// MoveReferences = false: Return if arc does not own semantic tag after the move.
         ///                         The arc can still be referenced by other semantic tags.
         /// </summary>
-        /// <param name="arc"></param>
-        /// <returns></returns>
         internal static bool MoveSemanticTagLeft(Arc arc)
         {
-            // ToDo: Temporarily force semantic tag references to always move with tag.  See 37583.
             //       This changes the range of words spanned by the tag, which is a bug for SAPI grammars.
             State startState = arc.Start;
 
@@ -791,8 +781,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Force semantic tag references to always move with tag.  See 37583.
         ///      This changes the range of words spanned by the tag, which is a bug for SAPI grammars.
         /// </summary>
-        /// <param name="arc"></param>
-        /// <returns></returns>
         internal static bool MoveSemanticTagRight(Arc arc)
         {
             System.Diagnostics.Debug.Assert(arc.End != null);
@@ -821,9 +809,6 @@ namespace System.Speech.Internal.SrgsCompiler
         ///     - Semantic interpretation. Tags cannot be moved if they would end up over a rule ref.
         ///     - Sapi properties. Tag can be put anywhere.
         /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <returns></returns>
         internal static bool CanTagsBeMoved(Arc start, Arc end)
         {
             return (start.RuleRef == null) && (end.RuleRef == null) && (end.SpecialTransitionIndex == 0);
@@ -838,7 +823,6 @@ namespace System.Speech.Internal.SrgsCompiler
         ///        Arc.EndState == null
         ///        Arc.Optional == true
         /// </summary>
-        /// <param name="arc"></param>
         private static void DeleteTransition(Arc arc)
         {
             // Arc cannot own SemanticTag
@@ -856,8 +840,6 @@ namespace System.Speech.Internal.SrgsCompiler
         ///    Merge identical transitions with identical content, StartState, and EndState.
         ///
         /// </summary>
-        /// <param name="arcs"></param>
-        /// <param name="identicalWords"></param>
         private static void MergeIdenticalTransitions(ArcList arcs, List<Arc> identicalWords)
         {
             // Need at least two transitions to merge.
@@ -926,7 +908,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// non-null tags.
         /// - MoveSemanticTagReferences(DuplicateArc, CommonArc)
         /// </summary>
-        /// <param name="identicalWords"></param>
         private static void MergeIdenticalTransitions(List<Arc> identicalWords)
         {
             Collection<Arc> arcsToDelete = null;
@@ -961,7 +942,6 @@ namespace System.Speech.Internal.SrgsCompiler
         /// Normalize the weights of output transitions from this state.
         /// See GrammarOptimization.doc for details.
         /// </summary>
-        /// <param name="state"></param>
         private static void NormalizeTransitionWeights(State state)
         {
             float flSumWeights = 0.0f;

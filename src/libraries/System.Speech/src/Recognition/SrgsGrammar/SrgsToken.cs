@@ -10,7 +10,6 @@ using System.Xml;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// TODOC <_include file='doc\Token.uex' path='docs/doc[@for="Token"]/*' />
     // Note that currently if multiple words are stored in a Token they are treated internally
     // and in the result as multiple tokens.
     [Serializable]
@@ -18,8 +17,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     public class SrgsToken : SrgsElement, IToken
     {
         #region Constructors
-
-        /// TODOC <_include file='doc\Token.uex' path='docs/doc[@for="Token.Token2"]/*' />
         public SrgsToken(string text)
         {
             Helpers.ThrowIfEmptyOrNull(text, nameof(text));
@@ -29,8 +26,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         #endregion
 
         #region public Properties
-
-        /// TODOC <_include file='doc\Token.uex' path='docs/doc[@for="Token.Text"]/*' />
         public string Text
         {
             get
@@ -50,8 +45,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _text = text;
             }
         }
-
-        /// TODOC <_include file='doc\Token.uex' path='docs/doc[@for="Token.Pronunciation"]/*' />
         public string Pronunciation
         {
             get
@@ -64,8 +57,6 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _pronunciation = value;
             }
         }
-
-        /// TODOC <_include file='doc\Token.uex' path='docs/doc[@for="Token.Display"]/*' />
         public string Display
         {
             get

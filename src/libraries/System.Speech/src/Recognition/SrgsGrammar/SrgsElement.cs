@@ -18,9 +18,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [DebuggerTypeProxy(typeof(SrgsElementDebugDisplay))]
     public abstract class SrgsElement : MarshalByRefObject, IElement
     {
-        /// <summary>
-        /// TODOC
-        /// </summary>
         protected SrgsElement()
         {
         }
@@ -57,7 +54,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Protected Properties
 
-        //TODOC Add Documentation
         internal virtual SrgsElement[] Children
         {
             get
@@ -70,7 +66,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Private Types
 
-        // Used by the debbugger display attribute
+        // Used by the debugger display attribute
         internal class SrgsElementDebugDisplay
         {
             public SrgsElementDebugDisplay(SrgsElement element)

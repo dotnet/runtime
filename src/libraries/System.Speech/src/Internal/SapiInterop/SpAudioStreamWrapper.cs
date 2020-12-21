@@ -79,7 +79,6 @@ namespace System.Speech.Internal.SapiInterop
         /// <summary>
         /// Builds the
         /// </summary>
-        /// <param name="stream"></param>
         internal void GetStreamOffsets(Stream stream)
         {
             BinaryReader br = new(stream);

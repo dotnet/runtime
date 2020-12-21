@@ -16,10 +16,6 @@ namespace System.Speech.Internal
         /// <summary>
         /// Load a file either from a local network or from the Internet.
         /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="mimeType"></param>
-        /// <param name="baseUri"></param>
-        /// <param name="localPath"></param>
         internal Stream LoadFile(Uri uri, out string mimeType, out Uri baseUri, out string localPath)
         {
             localPath = null;
@@ -66,7 +62,6 @@ namespace System.Speech.Internal
         /// <summary>
         /// Release a file from a cache if any
         /// </summary>
-        /// <param name="localPath"></param>
         internal void UnloadFile(string localPath)
         {
         }
@@ -85,9 +80,6 @@ namespace System.Speech.Internal
         /// Dowload data from the web.
         /// Set the redirectUri as the location of the file could be redirected in ASP pages.
         /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="redirectedUri"></param>
-        /// <returns></returns>
         private static Stream DownloadData(Uri uri, out Uri redirectedUri)
         {
 #pragma warning disable SYSLIB0014

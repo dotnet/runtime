@@ -80,8 +80,7 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 BinaryReader br = new(stream);
                 ulTotalSerializedSize = br.ReadUInt32();
-                if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 ||
- ulTotalSerializedSize > int.MaxValue)
+                if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 || ulTotalSerializedSize > int.MaxValue)
                 {
                     // Size is either negative or too small.
                     XmlParser.ThrowSrgsException(SRID.UnsupportedFormat);
@@ -101,8 +100,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 cchWords = br.ReadInt32();
                 cWords = br.ReadInt32();
                 pszWords = br.ReadUInt32();
-                if (pszWords < SP_SPCFGSERIALIZEDHEADER_500 ||
- pszWords > ulTotalSerializedSize)
+                if (pszWords < SP_SPCFGSERIALIZEDHEADER_500 || pszWords > ulTotalSerializedSize)
                 {
                     // First data points before or before valid range.
                     XmlParser.ThrowSrgsException(SRID.UnsupportedFormat);
@@ -142,8 +140,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 cfgLength = 0;
                 BinaryReader br = new(stream);
                 uint ulTotalSerializedSize = br.ReadUInt32();
-                if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 ||
- ulTotalSerializedSize > int.MaxValue)
+                if (ulTotalSerializedSize < SP_SPCFGSERIALIZEDHEADER_500 || ulTotalSerializedSize > int.MaxValue)
                 {
                     // Size is either negative or too small.
                     return false;
@@ -271,8 +268,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // read all the common fields
             header.rules = Load<CfgRule>(streamHelper, cfgSerializedHeader.pRules, cfgSerializedHeader.cRules);
 
-            if (includeAllGrammarData ||
- loadSymbols)
+            if (includeAllGrammarData || loadSymbols)
             {
                 header.pszSymbols = LoadStringBlob(streamHelper, cfgSerializedHeader.pszSymbols, cfgSerializedHeader.cchSymbols);
             }
