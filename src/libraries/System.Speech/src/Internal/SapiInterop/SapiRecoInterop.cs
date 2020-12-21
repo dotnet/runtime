@@ -729,8 +729,8 @@ namespace System.Speech.Internal.SapiInterop
         internal UInt32 pszNameOffset;
         internal UInt32 ulId;
         internal UInt32 pszValueOffset;
-        internal UInt16 vValue;					// sizeof unsigned short
-        internal UInt64 SpVariantSubset;			// sizeof DOUBLE
+        internal UInt16 vValue;                    // sizeof unsigned short
+        internal UInt64 SpVariantSubset;            // sizeof DOUBLE
         internal UInt32 ulFirstElement;
         internal UInt32 ulCountOfElements;
         internal UInt32 pNextSiblingOffset;

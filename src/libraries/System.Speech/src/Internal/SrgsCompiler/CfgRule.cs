@@ -70,10 +70,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal bool DefaultActive
         {
-            //			get
-            //			{
-            //				return ((_flag & 0x0002) != 0);
-            //			}
             set
             {
                 if (value)
@@ -89,10 +85,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal bool PropRule
         {
-            //			get
-            //			{
-            //				return ((_flag & 0x0004) != 0);
-            //			}
             set
             {
                 if (value)
@@ -150,17 +142,6 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 return ((_flag & 0x0020) != 0);
             }
-            //			set
-            //			{
-            //				if (value)
-            //				{
-            //					_flag |= 0x0020;
-            //				}
-            //				else
-            //				{
-            //					_flag &= ~(uint) 0x0020;
-            //				}
-            //			}
         }
 
         internal bool Dynamic
@@ -219,31 +200,8 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        //		internal bool Reserved
-        //		{
-        //			get
-        //			{
-        //				return ((_flag & 0x40000000) != 0);
-        //			}
-        //			set
-        //			{
-        //				if (value)
-        //				{
-        //					_flag |= 0x40000000;
-        //				}
-        //				else
-        //				{
-        //					_flag &= ~(uint) 0x40000000;
-        //				}
-        //			}
-        //		}
-
         internal bool DirtyRule
         {
-            //			get
-            //			{
-            //				return ((_flag & 0x80000000) != 0);
-            //			}
             set
             {
                 if (value)

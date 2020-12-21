@@ -288,14 +288,6 @@ namespace System.Speech.Recognition
 
         #region public Methods
 
-        /* TODO
-	    // User profile related methods:
-        public void LoadProfile(RecognizerProfile profile)
-        {
-        }
-        */
-
-
         /// TODOC <_include file='doc\SpeechRecognitionEngine.uex' path='docs/doc[@for="SpeechRecognitionEngine.SetInput2"]/*' />
         public void SetInputToWaveFile(string path)
         {

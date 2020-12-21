@@ -5,8 +5,6 @@ using System;
 using System.IO;
 using System.Globalization;
 
-#pragma warning disable 1634, 1691 // Allows suppression of certain PreSharp messages.
-
 namespace System.Speech.Internal
 {
     internal static class Helpers

@@ -162,9 +162,9 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Description:
-        /// 	Change all transitions ending at SourceState to end at DestState, instead.
-        /// 	Replace references to SourceState with references to DestState before deleting SourceState.
-        /// 	- There may be additional duplicate input transitions at DestState after the move.
+        ///     Change all transitions ending at SourceState to end at DestState, instead.
+        ///     Replace references to SourceState with references to DestState before deleting SourceState.
+        ///     - There may be additional duplicate input transitions at DestState after the move.
         ///
         /// Assumptions:
         /// - SourceState == !null, RuleInitialState, !DestState,   ...
@@ -213,11 +213,11 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Description:
-        /// 	Change all transitions starting at SourceState to start at DestState, instead.
-        /// 	Deleting SourceState.
-        /// 	- The weights on the transitions have been properly adjusted.
-        /// 		The weights are not changed when moving transitions.
-        /// 	- There may be additional duplicate input transitions at DestState after the move.
+        ///     Change all transitions starting at SourceState to start at DestState, instead.
+        ///     Deleting SourceState.
+        ///     - The weights on the transitions have been properly adjusted.
+        ///         The weights are not changed when moving transitions.
+        ///     - There may be additional duplicate input transitions at DestState after the move.
         ///
         /// Assumptions:
         /// - SourceState == !null, !RuleInitialState, !DestState,   ...
@@ -299,15 +299,15 @@ namespace System.Speech.Internal.SrgsCompiler
 #if DEBUG
         /// <summary>
         ///   Description:
-        ///		Removing epsilon states from the grammar network.
-        ///		See GrammarOptimization.doc for details.
-        ///		- There may be additional duplicate transitions after removing epsilon transitions.
+        ///        Removing epsilon states from the grammar network.
+        ///        See GrammarOptimization.doc for details.
+        ///        - There may be additional duplicate transitions after removing epsilon transitions.
         ///
         ///   Algorithm:
         ///   - For each State in the graph,
         ///     - If the state has a single input epsilon transition and is not the rule initial state,
-        /// 	- Move properties to the right, if necessary.
-        /// 	- If EpsilonTransition does not have properties and is not referenced by other properties,
+        ///     - Move properties to the right, if necessary.
+        ///     - If EpsilonTransition does not have properties and is not referenced by other properties,
         ///   - Delete EpsilonTransition.
         ///   - Multiply weight of all transitions from State by EpsilonTransition.Weight.
         ///   - MoveOutputTransitionsAndDeleteState(State, EpsilonTransition.StartState)
@@ -383,8 +383,8 @@ namespace System.Speech.Internal.SrgsCompiler
 #endif
         /// <summary>
         /// Description:
-        /// 	Remove duplicate transitions starting from the same state, or ending at the same state.
-        /// 	See GrammarOptimization.doc for details.
+        ///     Remove duplicate transitions starting from the same state, or ending at the same state.
+        ///     See GrammarOptimization.doc for details.
         ///
         /// Algorithm:
         /// - Add all states to ToDoList
@@ -471,19 +471,19 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Description:
-        ///		Sort and iterate through the input arcs and remove duplicate input transitions.
-        ///		See GrammarOptimization.doc for details.
+        ///        Sort and iterate through the input arcs and remove duplicate input transitions.
+        ///        See GrammarOptimization.doc for details.
         ///
         /// Algorithm:
         ///   - MergeIdenticalTransitions(Arcs)
         ///   - Sort the input transitions from the state (by content and # output arcs from start state)
         ///   - For each set of transitions with identical content and StartState.OutputArcs.Count() == 1
-        ///			- Move semantic properties to the left, if necessary.
-        ///			- Label the first property-less transition as CommonArc
-        ///			- For each successive property-less transition (DuplicateArc)
-        ///			  - Delete DuplicateArc
-        ///			  - MoveInputTransitionsAndDeleteState(DuplicateArc.StartState, CommonArc.StartState)
-        ///			- Add CommonArc.StartState to ToDoList if not there already.
+        ///            - Move semantic properties to the left, if necessary.
+        ///            - Label the first property-less transition as CommonArc
+        ///            - For each successive property-less transition (DuplicateArc)
+        ///            - Delete DuplicateArc
+        ///            - MoveInputTransitionsAndDeleteState(DuplicateArc.StartState, CommonArc.StartState)
+        ///            - Add CommonArc.StartState to ToDoList if not there already.
         ///
         ///  Moving SemanticTag:
         ///  - Duplicate input transitions can move its semantic tag ownerships/references to the left.
@@ -613,23 +613,23 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Description:
-        /// 	Sort and iterate through the output arcs and remove duplicate output transitions.
-        /// 	See GrammarOptimization.doc for details.
+        ///     Sort and iterate through the output arcs and remove duplicate output transitions.
+        ///     See GrammarOptimization.doc for details.
         ///
         /// Algorithm:
         ///   - MergeIdenticalTransitions(Arcs)
         ///   - Sort the output transitions from the state (by content and # input arcs from end state)
         ///   - For each set of transitions with identical content, EndState != null, and EndState.InputArcs.Count() == 1
-        /// 	- Move semantic properties to the right, if necessary.
-        /// 	- Label the first property-less transition as CommonArc
-        /// 	- For each property-less transition (DuplicateArc) including CommonArc
-        /// 	  - Multiply the weights of output transitions from DuplicateArc.EndState by DuplicateArc.Weight.
-        /// 	  - If DuplicateArc != CommonArc
-        /// 	    - CommonArc.Weight += DuplicateArc.Weight
-        /// 	    - Delete DuplicateArc
-        /// 	    - MoveOutputTransitionsAndDeleteState(DuplicateArc.EndState, CommonArc.EndState)
-        /// 	- Normalize weights of output transitions from CommonArc.EndState.
-        /// 	- Add CommonArc.EndtState to ToDoList if not there already.
+        ///     - Move semantic properties to the right, if necessary.
+        ///     - Label the first property-less transition as CommonArc
+        ///     - For each property-less transition (DuplicateArc) including CommonArc
+        ///       - Multiply the weights of output transitions from DuplicateArc.EndState by DuplicateArc.Weight.
+        ///       - If DuplicateArc != CommonArc
+        ///       - CommonArc.Weight += DuplicateArc.Weight
+        ///       - Delete DuplicateArc
+        ///       - MoveOutputTransitionsAndDeleteState(DuplicateArc.EndState, CommonArc.EndState)
+        ///     - Normalize weights of output transitions from CommonArc.EndState.
+        ///     - Add CommonArc.EndtState to ToDoList if not there already.
         ///
         /// Moving SemanticTag:
         /// - Duplicate output transitions can move its semantic tag ownerships/references to the right.
@@ -850,12 +850,12 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Description:
-        ///		Detach and delete the specified transition from the graph.
-        ///		Relocate or delete referencing semantic tags before deleting the transition.
+        ///        Detach and delete the specified transition from the graph.
+        ///        Relocate or delete referencing semantic tags before deleting the transition.
         ///
         /// Special Case:
-        ///		Arc.EndState == null
-        ///		Arc.Optional == true
+        ///        Arc.EndState == null
+        ///        Arc.Optional == true
         /// </summary>
         /// <param name="arc"></param>
         private static void DeleteTransition(Arc arc)

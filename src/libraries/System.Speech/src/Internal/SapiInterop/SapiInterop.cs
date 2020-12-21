@@ -68,26 +68,10 @@ namespace System.Speech.Internal.SapiInterop
 
     internal static class SapiConstants
     {
-        // SPProperties strings
-        // internal const string SPPROP_RESOURCE_USAGE = "ResourceUsage";
-        // internal const string SPPROP_ACCURARY_THRESHOLD = "AccuraryThreshold";
-        //internal const string SPPROP_HIGH_CONFIDENCE_THRESHOLD = "HighConfidenceThreshold";
-        //internal const string SPPROP_NORMAL_CONFIDENCE_THRESHOLD = "NormalConfidenceThreshold";
-        //internal const string SPPROP_LOW_CONFIDENCE_THRESHOLD = "LowConfidenceThreshold";
         internal const string SPPROP_RESPONSE_SPEED = "ResponseSpeed";
         internal const string SPPROP_COMPLEX_RESPONSE_SPEED = "ComplexResponseSpeed";
-        //internal const string SPPROP_ADAPTATION_ON = "AdaptationOn";
         internal const string SPPROP_CFG_CONFIDENCE_REJECTION_THRESHOLD = "CFGConfidenceRejectionThreshold";
 
-        // internal const UInt32   SPVALUETYPE
-        // internal const UInt32 SPDF_PROPERTY	= 0x1;
-        // internal const UInt32 SPDF_REPLACEMENT	= 0x2;
-        // internal const UInt32 SPDF_RULE	= 0x4;
-        // internal const UInt32 SPDF_DISPLAYTEXT	= 0x8;
-        // internal const UInt32 SPDF_LEXICALFORM	= 0x10;
-        // internal const UInt32 SPDF_PRONUNCIATION	= 0x20;
-        // internal const UInt32 SPDF_AUDIO	= 0x40;
-        // internal const UInt32 SPDF_ALTERNATES	= 0x80;
         internal const UInt32 SPDF_ALL = 0xff;
 
         // Throws exception if the specified Rule does not have a valid Id.
