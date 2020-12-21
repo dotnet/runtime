@@ -167,7 +167,7 @@
     <Compile Include="Recognition\SrgsGrammar\SrgsElementList.cs" />
     <Compile Include="Recognition\SrgsGrammar\SrgsGrammar.cs" />
     <Compile Include="Recognition\SrgsGrammar\SrgsGrammarCompiler.cs" />
-    <Compile Include="Recognition\SrgsGrammar\srgsitem.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsItem.cs" />
     <Compile Include="Recognition\SrgsGrammar\SrgsItemList.cs" />
     <Compile Include="Recognition\SrgsGrammar\SrgsNameValueTag.cs" />
     <Compile Include="Recognition\SrgsGrammar\SrgsOneOf.cs" />
