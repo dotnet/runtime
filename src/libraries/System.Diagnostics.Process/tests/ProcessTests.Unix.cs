@@ -159,7 +159,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(~TestPlatforms.OSX)] // On OSX, ProcessName returns the script interpreter.
         public void ProcessNameMatchesScriptName()
         {
-            string scriptName = GetTestFileName();
+            const string scriptName = nameof(ProcessNameMatchesScriptName);
             string filename = Path.Combine(TestDirectory, scriptName);
             File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
             ChMod(filename, "744"); // set x-bit
