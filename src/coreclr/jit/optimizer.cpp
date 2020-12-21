@@ -4472,10 +4472,6 @@ void Compiler::optOptimizeLoops()
 
         optFindNaturalLoops();
 
-        // Check if any of the loops need alignment
-
-        optIdentifyLoopsForAlignment();
-
         unsigned loopNum = 0;
 
         /* Iterate over the flow graph, marking all loops */
@@ -4553,6 +4549,10 @@ void Compiler::optOptimizeLoops()
                 break;
             }
         }
+
+        // Check if any of the loops need alignment
+
+        optIdentifyLoopsForAlignment();
 
 #if COUNT_LOOPS
         totalUnnatLoopCount += loopNum;

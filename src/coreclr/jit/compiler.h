@@ -9042,7 +9042,7 @@ public:
 // based on experimenting with various benchmarks.
 
 // Default minimum loop block weight required to enable loop alignment.
-#define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 10
+#define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 8
 
 // By default a loop will be aligned at 32B address boundary to get better
 // performance as per architecture manuals.
