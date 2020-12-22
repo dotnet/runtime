@@ -9775,7 +9775,7 @@ CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 
 namespace
 {
-    CorInfoCallConvExtension getUnmanagedCallConvForSig(Module* mod, PCCOR_SIGNATURE pSig, DWORD cbSig, bool* pSuppressGCTransition)
+    CorInfoCallConvExtension getUnmanagedCallConvForSig(CORINFO_MODULE_HANDLE mod, PCCOR_SIGNATURE pSig, DWORD cbSig, bool* pSuppressGCTransition)
     {
         SigParser parser(pSig, cbSig);
         ULONG rawCallConv;
@@ -9800,7 +9800,16 @@ namespace
         {
             CorUnmanagedCallingConvention callConvMaybe;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, &errorResID);
+            HRESULT hr;
+            if (IsDynamicScope(mod))
+            {
+                hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetDynamicResolver(mod), pSig, cbSig, &callConvMaybe, &errorResID);
+            }
+            else
+            {
+                hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetModule(mod), pSig, cbSig, &callConvMaybe, &errorResID);
+            }
+
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 
@@ -9904,7 +9913,7 @@ namespace
         }
         else
         {
-            return getUnmanagedCallConvForSig(pMD->GetModule(), pSig, cbSig, pSuppressGCTransition);
+            return getUnmanagedCallConvForSig(CORINFO_MODULE_HANDLE(pMD->GetModule()), pSig, cbSig, pSuppressGCTransition);
         }
     }
 }
@@ -9939,7 +9948,7 @@ CorInfoCallConvExtension CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
     else
     {
         _ASSERTE(callSiteSig != nullptr);
-        callConv = getUnmanagedCallConvForSig(GetModule(callSiteSig->scope), callSiteSig->pSig, callSiteSig->cbSig, pSuppressGCTransition);
+        callConv = getUnmanagedCallConvForSig(callSiteSig->scope, callSiteSig->pSig, callSiteSig->cbSig, pSuppressGCTransition);
     }
 
     EE_TO_JIT_TRANSITION();
