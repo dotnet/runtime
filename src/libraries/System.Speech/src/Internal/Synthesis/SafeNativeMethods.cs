@@ -110,11 +110,20 @@ namespace System.Speech.Internal.Synthesis
 
         internal delegate void WaveOutProc(IntPtr hwo, MM_MSG uMsg, IntPtr dwInstance, IntPtr dwParam1, IntPtr dwParam2);
 
+#pragma warning disable CA1823 // unused fields
         internal struct WAVEOUTCAPS
         {
+            private ushort wMid;
+            private ushort wPid;
+            private uint vDriverVersion;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             internal string szPname;
+            private uint dwFormats;
+            private ushort wChannels;
+            private ushort wReserved1;
+            private ushort dwSupport;
         }
+#pragma warning restore CA1823
 
         /// <summary>
         /// This function queries a specified waveform device to determine its
