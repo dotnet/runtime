@@ -16,8 +16,4 @@
   <PropertyGroup>
     <CL_MPCount>$(NumberOfCores)</CL_MPCount>
   </PropertyGroup>
-  <PropertyGroup>
-    <!-- Enables Strict mode for Roslyn compiler -->
-    <Features>strict;nullablePublicOnly</Features>
-  </PropertyGroup>
 </Project>

@@ -33,11 +33,6 @@
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
   </PropertyGroup>
 
-
-  <PropertyGroup>
-    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(DisableSourceLink)' == 'true'">
     <EnableSourceLink>false</EnableSourceLink>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>

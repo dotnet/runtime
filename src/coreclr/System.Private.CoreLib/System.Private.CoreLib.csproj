@@ -8,8 +8,6 @@
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
-    <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
-    <DebugType>Portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
@@ -91,7 +89,6 @@
 
   <!-- Signing -->
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
   </PropertyGroup>
 

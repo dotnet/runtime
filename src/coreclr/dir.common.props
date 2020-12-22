@@ -4,10 +4,6 @@
        projects and test projects. It's imported by
        tests/dir.common.props, and the global dir.props. -->
 
-  <PropertyGroup>
-    <CoreclrDir>$(MSBuildThisFileDirectory)</CoreclrDir>
-  </PropertyGroup>
-
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <!-- TODO: Cleanup use of __BuildArch and __BuildType in the CI scripts -->
@@ -22,7 +18,6 @@
     <Configuration Condition="'$(Configuration)' == 'checked'">Checked</Configuration>
 
     <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>
-
     <PlatformConfigPathPart>$(TargetOS).$(TargetArchitecture).$(Configuration)</PlatformConfigPathPart>
   </PropertyGroup>
 
@@ -39,11 +34,6 @@
          fails to write packages to it if the path contains the forward slash.
     -->
     <PackagesBinDir>$(RuntimeBinDir).nuget\</PackagesBinDir>
-  </PropertyGroup>
-
-  <!-- Set the kind of PDB to Portable -->
-  <PropertyGroup>
-    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
   </PropertyGroup>
 
   <!-- Output paths -->
