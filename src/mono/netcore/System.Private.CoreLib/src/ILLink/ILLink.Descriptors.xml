@@ -2,9 +2,7 @@
 <linker>
 	<assembly fullname="System.Private.CoreLib">
 		<!-- domain.c: mono_defaults.appdomain_class -->
-		<type fullname="Mono.MonoDomain">
-			<field name="_mono_app_domain"/>
-		</type>
+		<type fullname="Mono.MonoDomain" preserve="nothing" />
 
 		<!-- appdomain.c: mono_runtime_init -->
 		<type fullname="Mono.MonoDomainSetup" preserve="fields" >

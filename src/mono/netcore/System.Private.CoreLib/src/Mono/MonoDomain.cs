@@ -6,13 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono
 {
-    [StructLayout(LayoutKind.Sequential)]
     internal sealed partial class MonoDomain
     {
-#pragma warning disable 169
-        #region Sync with object-internals.h
-        private IntPtr _mono_app_domain;
-        #endregion
-#pragma warning restore 169
     }
 }

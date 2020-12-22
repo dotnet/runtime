@@ -344,7 +344,9 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 		ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_pinned_handle (domain, klass, error));
 		goto_if_nok (error, exit);
 
+#ifndef ENABLE_NETCORE
 		MONO_HANDLE_SETVAL (ad, data, MonoDomain*, domain);
+#endif
 		domain->domain = MONO_HANDLE_RAW (ad);
 		domain->setup = MONO_HANDLE_RAW (setup);
 	}
@@ -759,7 +761,9 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 
 	MonoAppDomainHandle ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_handle (data, adclass, error));
 	goto_if_nok (error, leave);
+#ifndef ENABLE_NETCORE
 	MONO_HANDLE_SETVAL (ad, data, MonoDomain*, data);
+#endif
 	data->domain = MONO_HANDLE_RAW (ad);
 	data->friendly_name = g_strdup (friendly_name);
 
@@ -2328,6 +2332,7 @@ mono_domain_from_appdomain (MonoAppDomain *appdomain_raw)
 MonoDomain *
 mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain)
 {
+#ifndef ENABLE_NETCORE
 	HANDLE_FUNCTION_ENTER ();
 	MonoDomain *dom = NULL;
 	if (MONO_HANDLE_IS_NULL (appdomain))
@@ -2343,6 +2348,9 @@ mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain)
 
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (dom);
+#else
+	return mono_get_root_domain ();
+#endif
 }
 
 
