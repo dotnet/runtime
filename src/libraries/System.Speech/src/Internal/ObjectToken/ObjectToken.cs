@@ -10,9 +10,6 @@ using System.Speech.Internal.SapiInterop;
 
 namespace System.Speech.Internal.ObjectTokens
 {
-    /// <summary>
-    /// Summary description for ObjectToken.
-    /// </summary>
     [DebuggerDisplay("{Name}")]
     internal class ObjectToken : RegistryDataKey, ISpObjectToken
     {

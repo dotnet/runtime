@@ -203,7 +203,7 @@ namespace System.Speech.Recognition
         #region Internal Methods
 
         /// <summary>
-        /// This method convert a given pronunciation from SAPI phonetic alphabet to IPA for a given language
+        /// This method converts a given pronunciation from SAPI phonetic alphabet to IPA for a given language
         /// </summary>
         /// <returns>New pronunciation in IPA alphabet</returns>
         internal string ConvertPronunciation(string pronunciation, int langId)

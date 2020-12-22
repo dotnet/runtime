@@ -8,9 +8,6 @@ using System.Text;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// Summary description for Rule.
-    /// </summary>
     [DebuggerDisplay("{Name}")]
     internal sealed class Rule : ParseElementCollection, IRule, IComparable<Rule>
     {

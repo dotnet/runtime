@@ -767,7 +767,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// MoveReferences = false: Return if arc does not own semantic tag after the move.
         ///                         The arc can still be referenced by other semantic tags.
         ///
-        /// Force semantic tag references to always move with tag.  See 37583.
+        /// Force semantic tag references to always move with tag.
         ///      This changes the range of words spanned by the tag, which is a bug for SAPI grammars.
         /// </summary>
         internal static bool MoveSemanticTagRight(Arc arc)

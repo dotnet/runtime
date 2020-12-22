@@ -11,9 +11,6 @@ using System.Text;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// Summary description for Arc.
-    /// </summary>
 #if DEBUG
     [DebuggerDisplay("{ToString ()}")]
 #endif

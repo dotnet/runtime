@@ -6,9 +6,6 @@ using System.Speech.Internal.SrgsParser;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// Summary description for ScriptRef.
-    /// </summary>
     // list of rules with scripts
     [DebuggerDisplay("rule=\"{_rule}\" method=\"{_sMethod}\" operation=\"{_method.ToString ()}\"")]
     internal class ScriptRef

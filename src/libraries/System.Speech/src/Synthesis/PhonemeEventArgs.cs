@@ -3,9 +3,6 @@
 
 namespace System.Speech.Synthesis
 {
-    /// <summary>
-    /// Summary description for PhonemeEventArgs.
-    /// </summary>
     public class PhonemeReachedEventArgs : PromptEventArgs
     {
         #region Constructors

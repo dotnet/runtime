@@ -54,21 +54,24 @@ namespace System.Speech.Synthesis.TtsEngine
         /// <param name="site">Engine site</param>
         public abstract void Speak(TextFragment[] fragment, IntPtr waveHeader, ITtsEngineSite site);
     }
+
     [StructLayout(LayoutKind.Sequential)]
     [ImmutableObject(true)]
-
     public struct SpeechEventInfo : IEquatable<SpeechEventInfo>
     {
         public short EventId { get { return _eventId; } internal set { _eventId = value; } }
         public short ParameterType { get { return _parameterType; } internal set { _parameterType = value; } }
+
         /// <summary>
         /// Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         /// </summary>
-        public int Param1 { get { return _param1; } internal set { _param1 = value; } }   //
+        public int Param1 { get { return _param1; } internal set { _param1 = value; } }
+
         /// <summary>
         /// Can be a numeric type, or pointer to string.
         /// </summary>
         public IntPtr Param2 { get { return _param2; } internal set { _param2 = value; } }
+
         public SpeechEventInfo(short eventId,
                                short parameterType,
                                int param1,

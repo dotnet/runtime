@@ -280,10 +280,6 @@ namespace System.Speech.Internal.SrgsCompiler
         internal string[] _constructors;
 
         #region Private Types
-
-        /// <summary>
-        /// Summary description for ScriptRef.
-        /// </summary>
         // list of rules with scripts
         private class ScriptRefStruct
         {

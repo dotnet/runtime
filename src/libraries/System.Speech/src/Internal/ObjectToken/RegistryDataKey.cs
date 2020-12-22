@@ -11,9 +11,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Speech.Internal.ObjectTokens
 {
-    /// <summary>
-    /// Summary description for SpRegDataKey.
-    /// </summary>
     [DebuggerDisplay("{Name}")]
     internal class RegistryDataKey : ISpDataKey, IEnumerable<RegistryDataKey>, IDisposable
     {

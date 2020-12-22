@@ -8,9 +8,6 @@ using Microsoft.Win32;
 
 namespace System.Speech.Internal.ObjectTokens
 {
-    /// <summary>
-    /// Summary description for SAPICategories.
-    /// </summary>
     internal static class SAPICategories
     {
         #region internal Methods

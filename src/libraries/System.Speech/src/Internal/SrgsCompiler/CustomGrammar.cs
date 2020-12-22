@@ -16,9 +16,6 @@ using Microsoft.VisualBasic;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// Summary description for CustomGrammar.
-    /// </summary>
     internal class CustomGrammar
     {
         #region Constructors

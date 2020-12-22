@@ -5,9 +5,6 @@ using System.Collections.Generic;
 
 namespace System.Speech.Internal
 {
-    /// <summary>
-    /// Summary description for StringBlob.
-    /// </summary>
     internal class StringBlob
     {
         #region Constructors

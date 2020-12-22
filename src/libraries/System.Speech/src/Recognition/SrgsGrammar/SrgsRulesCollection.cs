@@ -6,9 +6,6 @@ using System.Speech.Internal;
 
 namespace System.Speech.Recognition.SrgsGrammar
 {
-    /// <summary>
-    /// Summary description for Rules.
-    /// </summary>
     [Serializable]
     public sealed class SrgsRulesCollection : KeyedCollection<string, SrgsRule>
     {

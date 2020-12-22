@@ -6,9 +6,6 @@ using System.Speech.Internal.SrgsParser;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// Summary description for Rule.
-    /// </summary>
     internal sealed class PropertyTag : ParseElement, IPropertyTag
     {
         #region Constructors

@@ -6,9 +6,6 @@ using System.Text;
 
 namespace System.Speech.Internal
 {
-    /// <summary>
-    /// Summary description for PhonemeConverter.
-    /// </summary>
     internal sealed class PhonemeConverter
     {
         #region Constructors

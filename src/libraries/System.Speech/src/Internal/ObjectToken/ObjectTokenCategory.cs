@@ -9,9 +9,6 @@ using System.Speech.Internal.SapiInterop;
 
 namespace System.Speech.Internal.ObjectTokens
 {
-    /// <summary>
-    /// Summary description for ObjectTokenCategory.
-    /// </summary>
     internal class ObjectTokenCategory : RegistryDataKey, IEnumerable<ObjectToken>
     {
         #region Constructors

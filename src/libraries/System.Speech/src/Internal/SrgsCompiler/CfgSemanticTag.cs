@@ -6,9 +6,6 @@ using System.Speech.Internal.SrgsParser;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// Summary description for CfgSemanticTag.
-    /// </summary>
     [StructLayout(LayoutKind.Explicit)]
     internal struct CfgSemanticTag
     {

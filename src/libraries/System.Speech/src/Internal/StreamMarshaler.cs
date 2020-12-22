@@ -7,9 +7,6 @@ using System.Text;
 
 namespace System.Speech.Internal
 {
-    /// <summary>
-    /// Summary description for StreamMarshaler.
-    /// </summary>
     internal sealed class StreamMarshaler : IDisposable
     {
         #region Constructors

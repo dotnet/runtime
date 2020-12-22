@@ -10,9 +10,6 @@ using System.Text;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// Summary description for GrammarBackEnd.
-    /// </summary>
     internal sealed partial class Backend
     {
         #region Constructors

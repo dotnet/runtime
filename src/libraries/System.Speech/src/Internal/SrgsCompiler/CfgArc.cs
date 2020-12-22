@@ -5,9 +5,6 @@ using System.Speech.Internal.SrgsParser;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// Summary description for CfgArc.
-    /// </summary>
     internal struct CfgArc
     {
         #region Constructors

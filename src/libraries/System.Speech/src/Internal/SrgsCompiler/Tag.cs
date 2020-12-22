@@ -5,9 +5,6 @@ using System.Diagnostics;
 
 namespace System.Speech.Internal.SrgsCompiler
 {
-    /// <summary>
-    /// Summary description for SemanticTag.
-    /// </summary>
 #if DEBUG
     [DebuggerDisplay("{_be.Symbols.FromOffset (_cfgTag._nameOffset == 0 ? _cfgTag._valueOffset : _cfgTag._nameOffset)}")]
 #endif
