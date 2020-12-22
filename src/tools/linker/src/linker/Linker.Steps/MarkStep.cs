@@ -588,7 +588,13 @@ namespace Mono.Linker.Steps
 
 			if (spec.MarshalInfo is CustomMarshalInfo marshaler) {
 				MarkType (marshaler.ManagedType, reason, sourceLocationMember);
-				MarkGetInstanceMethod (marshaler.ManagedType.Resolve (), in reason, sourceLocationMember);
+				TypeDefinition type = marshaler.ManagedType.Resolve ();
+				if (type != null) {
+					MarkICustomMarshalerMethods (type, in reason, sourceLocationMember);
+					MarkCustomMarshalerGetInstance (type, in reason, sourceLocationMember);
+				} else {
+					HandleUnresolvedType (marshaler.ManagedType);
+				}
 			}
 		}
 
@@ -2007,14 +2013,43 @@ namespace Mono.Linker.Steps
 			return MarkMethodIf (type.Methods, MethodDefinitionExtensions.IsDefaultConstructor, reason, sourceLocationMember) != null;
 		}
 
-		void MarkGetInstanceMethod (TypeDefinition type, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		void MarkCustomMarshalerGetInstance (TypeDefinition type, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
-			if (type?.HasMethods != true)
+			if (!type.HasMethods)
 				return;
 
 			MarkMethodIf (type.Methods, m =>
-				m.Name == "GetInstance" && m.Parameters.Count == 1 && m.Parameters[0].ParameterType.MetadataType == MetadataType.String,
+				m.Name == "GetInstance" && m.IsStatic && m.Parameters.Count == 1 && m.Parameters[0].ParameterType.MetadataType == MetadataType.String,
 				reason, sourceLocationMember);
+		}
+
+		void MarkICustomMarshalerMethods (TypeDefinition type, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
+		{
+			do {
+				if (!type.HasInterfaces)
+					continue;
+
+				foreach (var iface in type.Interfaces) {
+					var iface_type = iface.InterfaceType;
+					if (!iface_type.IsTypeOf ("System.Runtime.InteropServices", "ICustomMarshaler"))
+						continue;
+
+					//
+					// Instead of trying to guess where to find the interface declaration linker walks
+					// the list of implemented interfaces and resolve the declaration from there
+					//
+					var tdef = iface_type.Resolve ();
+					if (tdef == null) {
+						HandleUnresolvedType (iface_type);
+						return;
+					}
+
+					MarkMethodsIf (tdef.Methods, m => !m.IsStatic, reason, sourceLocationMember);
+
+					MarkInterfaceImplementation (iface, type);
+					return;
+				}
+			} while ((type = type.BaseType?.Resolve ()) != null);
 		}
 
 		static bool IsNonEmptyStaticConstructor (MethodDefinition method)
