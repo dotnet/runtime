@@ -70,9 +70,9 @@ namespace TestStackOverflow
             List<string> lines;
             if (TestStackOverflow("stackoverflow", "smallframe main", out lines))
             {
-                if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow.Program.Main(System.String[])"))
+                if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Main(System.String[])")))
                 {
-                    Console.WriteLine("Missing \"Main\" method frame at the last line");
+                    Console.WriteLine("Missing \"Main\" method frame");
                     return false;
                 }
 
@@ -222,9 +222,9 @@ namespace TestStackOverflow
             List<string> lines;
             if (TestStackOverflow("stackoverflow3", "", out lines))
             {
-                if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow3.Program.Main()"))
+                if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow3.Program.Main()")))
                 {
-                    Console.WriteLine("Missing \"Main\" method frame at the last line");
+                    Console.WriteLine("Missing \"Main\" method frame");
                     return false;
                 }
 
