@@ -38,6 +38,18 @@
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PkgProjPath>$(MSBuildProjectDirectory)\..\pkg\$(MSBuildProjectName).pkgproj</PkgProjPath>
+    <!-- Controls if packages for libraries should be created by default. -->
+    <PackAllLibraries Condition="'$(BuildLibrariesPackages)' = '' and
+                                 '$(PreReleaseVersionLabel)' != 'servicing'">true</PackAllLibraries>
+    <IsPackable Condition="'$(IsSourceProject)' == 'true' and
+                           Exists('$(PkgProjPath)') and
+                           '$(PackAllLibraries)' == 'true'">true</IsPackable>
+    <!-- Pkgprojs by default set IsPackable to true, hence disabling it during servicing. -->
+    <IsPackable Condition="'$(PackAllLibraries)' != 'true' and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsPackable>
+  </PropertyGroup>
+
   <Import Condition="Exists('$(PkgDir)baseline\baseline.props') and '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
 
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">

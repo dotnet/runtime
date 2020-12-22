@@ -27,11 +27,11 @@
                       '%(Dependency.Identity)' != '_._'" />
   </Target>
 
-  <PropertyGroup>
-    <PkgProjPath>$(MSBuildProjectDirectory)\..\pkg\$(MSBuildProjectName).pkgproj</PkgProjPath>
-    <!-- Point to our custom pack target which builds the pkgproj instead. -->
-    <PackDependsOn Condition="'$(IsSourceProject)' == 'true' and
-                              Exists('$(PkgProjPath)')">_BuildPkgProj</PackDependsOn>
+  <PropertyGroup Condition="'$(IsSourceProject)' == 'true' and
+                            '$(IsPackable)' == 'true' and
+                            Exists('$(PkgProjPath)')">
+    <!-- Point to the custom pack target which invokes the pkgproj. -->
+    <PackDependsOn>_BuildPkgProj</PackDependsOn>
   </PropertyGroup>
 
   <Target Name="_BuildPkgProj">
