@@ -9,39 +9,32 @@ if [[ "$#" -lt 2 ]]; then
   exit 1
 fi
 
-output=$2
-printf "" > $output
-
 function printIdAsBinary() {
   id="$1"
 
   # Print length in bytes
-  bytesLength=${#id}
-  printf "0x%02x, " "$((bytesLength/2))" > "$output"
+  bytesLength="${#id}"
+  printf "0x%02x, " "$((bytesLength/2))"
 
   # Print each pair of hex digits with 0x prefix followed by a comma
-  while [[ $id ]]; do
+  while [[ "$id" ]]; do
     printf '0x%s, ' "${id:0:2}"
     id=${id:2}
-  done >> "$output"
+  done
 }
 
-OSName=$(uname -s)
-
-case "$OSName" in
+case "$(uname -s)" in
 Darwin)
-  array=($(dwarfdump -u $1))
-  id="${array[1]}"
-  id="${id//-/}"
-  printIdAsBinary "$id"
-  ;;
+  cmd="dwarfdump -u $1"
+  pattern='^UUID: ([0-9A-Fa-f\-]+)';;
 *)
-  while read -r line; do
-    if [[ "$line" =~ ^[[:space:]]*"Build ID:" ]]; then
-      array=($line)
-      printIdAsBinary "${array[2]}"
-      break
-    fi
-  done < <(readelf -n $1)
-  ;;
+  cmd="readelf -n $1"
+  pattern='^[[:space:]]*Build ID: ([0-9A-Fa-f\-]+)';;
 esac
+
+while read -r line; do
+  if [[ "$line" =~ $pattern ]]; then
+    printIdAsBinary "${BASH_REMATCH[1]//-/}"
+    break
+  fi
+done < <(eval "$cmd") > "$2"
