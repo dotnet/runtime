@@ -1,7 +1,8 @@
-<Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)..\, Directory.Build.props))\Directory.Build.props" />
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
     <NoWarn>$(NoWarn);PKG0001</NoWarn>
+    <PackageDescription>EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>
 </Project>

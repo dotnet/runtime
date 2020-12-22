@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <PackageReportDir Condition="'$(PackageReportDir)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'reports'))</PackageReportDir>
-    <PackageDescriptionFile>$(PkgDir)descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>

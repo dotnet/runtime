@@ -2,5 +2,24 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <PackageDescription>This package provides collections that are thread safe and guaranteed to never change their contents, also known as immutable collections. Like strings, any methods that perform modifications will not change the existing instance but instead return a new instance. For efficiency reasons, the implementation uses a sharing mechanism to ensure that newly created instances share as much data as possible with the previous instance while ensuring that operations have a predictable time complexity.
+
+Commonly Used Types:
+System.Collections.Immutable.ImmutableArray
+System.Collections.Immutable.ImmutableArray<T>
+System.Collections.Immutable.ImmutableDictionary
+System.Collections.Immutable.ImmutableDictionary<TKey,TValue>
+System.Collections.Immutable.ImmutableHashSet
+System.Collections.Immutable.ImmutableHashSet<T>
+System.Collections.Immutable.ImmutableList
+System.Collections.Immutable.ImmutableList<T>
+System.Collections.Immutable.ImmutableQueue
+System.Collections.Immutable.ImmutableQueue<T>
+System.Collections.Immutable.ImmutableSortedDictionary
+System.Collections.Immutable.ImmutableSortedDictionary<TKey,TValue>
+System.Collections.Immutable.ImmutableSortedSet
+System.Collections.Immutable.ImmutableSortedSet<T>
+System.Collections.Immutable.ImmutableStack
+System.Collections.Immutable.ImmutableStack<T></PackageDescription>
   </PropertyGroup>
 </Project>

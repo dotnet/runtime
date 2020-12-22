@@ -5,5 +5,12 @@
     <!-- This is a preview package. Do not mark as stable. -->
     <SuppressFinalPackageVersion>true</SuppressFinalPackageVersion>
     <IsShippingAssembly>false</IsShippingAssembly>
+    <PackageDescription>Tensor class which represents and extends multi-dimensional arrays.
+
+Commonly Used Types:
+System.Numerics.Tensors.Tensor<T>
+System.Numerics.Tensors.CompressedSparseTensor<T>
+System.Numerics.Tensors.DenseTensor<T>
+System.Numerics.Tensors.SparseTensor<T></PackageDescription>
   </PropertyGroup>
 </Project>
