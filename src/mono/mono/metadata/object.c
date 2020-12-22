@@ -5147,7 +5147,11 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 #ifndef ENABLE_NETCORE
 		field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "UnhandledException", NULL);
 #else
-		field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+		static gboolean inited;
+		if (!inited) {
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+			inited = TRUE;
+		}
 #endif
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
