@@ -11,4 +11,9 @@
   <assembly fullname="xunit.core">
     <namespace fullname="Xunit" />
   </assembly>
+  <assembly fullname="Microsoft.DotNet.RemoteExecutor">
+    <type fullname="Microsoft.DotNet.RemoteExecutor.Program">
+      <method signature="System.Int32 Main(System.String[])" />
+    </type>
+  </assembly>
 </linker>
