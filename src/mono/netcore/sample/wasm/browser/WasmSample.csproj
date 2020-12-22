@@ -60,6 +60,19 @@
     </Content>
   </ItemGroup>
 
+  <Target Name="PrepareRunScript" BeforeTargets="CopySampleAppToHelixTestDir" Condition="'$(ArchiveTests)' == 'true'" >
+    <PropertyGroup>
+      <RunScriptCommand>
+        $HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --browser=Chrome  --html-file=index.html --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- WasmSample.dll --testing
+      </RunScriptCommand>
+    </PropertyGroup>
+
+    <MSBuild Projects ="$(RepoRoot)eng/testing/tests.targets"
+        Condition="'$(ArchiveTests)' == 'true'" 
+        Properties="OutDir=$(AppDir);RunScriptInputPath=$(RepoRoot)eng/testing/WasmRunnerTemplate.sh;InstallerTasksAssemblyPath=$(RepoRoot)artifacts/obj/installer.tasks/Debug/netstandard2.0/installer.tasks.dll;RunScriptCommand=$(RunScriptCommand)" 
+        Targets="GenerateRunScript" />
+  </Target>
+
   <Target Name="CopySampleAppToHelixTestDir" 
           Condition="'$(ArchiveTests)' == 'true'" 
           AfterTargets="Build" 

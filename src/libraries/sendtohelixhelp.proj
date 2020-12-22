@@ -250,13 +250,19 @@
       </HelixWorkItem>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'">
+      <!-- Create a work item for run-only WASM console app  -->
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/console/*.zip" />
+      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
+        <PayloadArchive>%(Identity)</PayloadArchive>
+      </HelixWorkItem>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'">
       <!-- Create a work item for run-only WASM browser app  -->
       <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/browser/*.zip" />
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
-        <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --browser=Chrome  --html-file=index.html --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- WasmSample.dll --testing</Command>
       </HelixWorkItem>
     </ItemGroup>
 
