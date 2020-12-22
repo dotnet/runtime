@@ -64,7 +64,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // Create the DLL if this needs to be done
             if (!fOutputCfg)
             {
-                cgCombined.CreateAssembly(filename, cfgResources);
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -94,9 +94,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // Create the DLL if this needs to be done
             if (!fOutputCfg)
             {
-                CustomGrammar cgCombined = new();
-                cgCombined.Combine((CustomGrammar)cg, innerCode.ToString());
-                cgCombined.CreateAssembly(filename, cfgResources);
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -145,16 +143,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // If the target is a dll, then create first the CFG and stuff it as an embedded resource
             if (!fOutputCfg)
             {
-                // Creates a DLL with the CFG is a resource
-                // Create the CFG
-                CustomGrammar.CfgResource resource = new();
-                resource.data = BuildCfg(backend).ToArray();
-                resource.name = iCfg.ToString(CultureInfo.InvariantCulture) + ".CFG";
-                ((List<CustomGrammar.CfgResource>)cfgResources).Add(resource);
-
-                // Sanity check, create the DLL and checks that all the methods can be called
-                // Combine all the scripts
-                innerCode.Append(cg.CreateAssembly(iCfg, filename, culture));
+                throw new PlatformNotSupportedException();
             }
             else
             {
@@ -192,26 +181,6 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         /// <summary>
-        /// Build the state machine for a grammar and returns it in a Memory Stream.
-        /// </summary>
-        private static MemoryStream BuildCfg(Backend backend)
-        {
-            // Creates a DLL
-            MemoryStream cfgStream = new();
-
-            // Save binary grammar to dest
-            using (StreamMarshaler streamHelper = new(cfgStream))
-            {
-                // no IL
-                backend.IL = null;
-                backend.PDB = null;
-                // Generate the binary blob
-                backend.Commit(streamHelper);
-            }
-            return cfgStream;
-        }
-
-        /// <summary>
         /// Generate the assembly code for a back. The scripts are defined in custom
         /// grammars.
         /// </summary>
@@ -219,13 +188,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             if (cg.HasScript)
             {
-                // Create the IL and checks that the signature for all the methods for scriptRefs are ok
-                // Pass a reference to the IL and scriptRefs to the backend.
-                byte[] il;
-                byte[] symbols;
-                cg.CreateAssembly(out il, out symbols);
-                backend.IL = il;
-                backend.PDB = symbols;
+                throw new PlatformNotSupportedException();
             }
         }
     }

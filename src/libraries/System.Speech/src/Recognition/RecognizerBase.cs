@@ -295,10 +295,8 @@ ISpGrammarResourceLoader
 
         void IRecognizerInternal.SetDictationContext(Grammar grammar, string precedingText, string subsequentText)
         {
-#pragma warning disable 6507
             if (precedingText == null) { precedingText = string.Empty; }
             if (subsequentText == null) { subsequentText = string.Empty; }
-#pragma warning restore 6507
 
             SPTEXTSELECTIONINFO selectionInfo = new(0, 0, (uint)precedingText.Length, 0);
             string textString = precedingText + subsequentText + "\0\0";

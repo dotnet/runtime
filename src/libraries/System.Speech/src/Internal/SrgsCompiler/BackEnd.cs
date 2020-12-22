@@ -185,17 +185,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             // Write the assembly bits
-            System.Diagnostics.Debug.Assert(header.pIL == 0 || streamBuffer.Stream.Position - startStreamPostion == header.pIL);
-            if (_il != null && _il.Length > 0)
-            {
-                streamBuffer.Stream.Write(_il, 0, _il.Length);
-            }
-
-            System.Diagnostics.Debug.Assert(header.pPDB == 0 || streamBuffer.Stream.Position - startStreamPostion == header.pPDB);
-            if (_pdb != null && _pdb.Length > 0)
-            {
-                streamBuffer.Stream.Write(_pdb, 0, _pdb.Length);
-            }
+            // (Not supported on this platform)
         }
 
         /// <summary>
@@ -688,7 +678,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Modify the placeholder rule attributes after it has been created.
-        /// This is only safe to use in the context of SRGSGrammarCompiler.
+        /// This is only safe to use in the context of SrgsGrammarCompiler.
         /// </summary>
         internal void SetRuleAttributes(Rule rule, SPCFGRULEATTRIBUTES dwAttributes)
         {
@@ -1081,11 +1071,11 @@ namespace System.Speech.Internal.SrgsCompiler
             header.cScripts = _scriptRefs.Count;
             header.pScripts = header.cScripts > 0 ? ulOffset : 0;
             ulOffset += (uint)(_scriptRefs.Count * Marshal.SizeOf(typeof(CfgScriptRef)));
-            header.cIL = _il != null ? _il.Length : 0;
-            header.pIL = header.cIL > 0 ? ulOffset : 0;
+            header.cIL = 0;
+            header.pIL = 0;
             ulOffset += (uint)(header.cIL * Marshal.SizeOf(typeof(byte)));
-            header.cPDB = _pdb != null ? _pdb.Length : 0;
-            header.pPDB = header.cPDB > 0 ? ulOffset : 0;
+            header.cPDB = 0;
+            header.pPDB = 0;
             ulOffset += (uint)(header.cPDB * Marshal.SizeOf(typeof(byte)));
             header.ulTotalSerializedSize = ulOffset;
             return header;
@@ -1342,22 +1332,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal byte[] IL
-        {
-            set
-            {
-                _il = value;
-            }
-        }
-
-        internal byte[] PDB
-        {
-            set
-            {
-                _pdb = value;
-            }
-        }
-
         #endregion
 
         #region Private Fields
@@ -1412,12 +1386,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
         // List of cd /reference Rule->rule 'on'method-> .NET method
         private Collection<ScriptRef> _scriptRefs = new();
-
-        // Grammar code assembly
-        private byte[] _il;
-
-        // Grammar debug symbols
-        private byte[] _pdb;
 
         private bool _fLoadedFromBinary;
 

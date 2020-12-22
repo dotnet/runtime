@@ -27,7 +27,6 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="SR.cs" />
     <Compile Include="SRID.cs" />
-    <Compile Include="FileHelper.cs" />
     <Compile Include="AudioFormat\AudioFormatConverter.cs" />
     <Compile Include="AudioFormat\EncodingFormat.cs" />
     <Compile Include="AudioFormat\SpeechAudioFormatInfo.cs" />
@@ -71,7 +70,6 @@
     <Compile Include="Internal\SapiInterop\SpAudioStreamWrapper.cs" />
     <Compile Include="Internal\SapiInterop\SpeechEvent.cs" />
     <Compile Include="Internal\SapiInterop\SpStreamWrapper.cs" />
-    <Compile Include="Internal\SrgsCompiler\AppDomainCompilerProxy.cs" />
     <Compile Include="Internal\SrgsCompiler\AppDomainGrammarProxy.cs" />
     <Compile Include="Internal\SrgsCompiler\Arc.cs" />
     <Compile Include="Internal\SrgsCompiler\ArcList.cs" />

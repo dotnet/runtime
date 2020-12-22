@@ -653,15 +653,7 @@ namespace System.Speech.Recognition
 
             if (uriGrammar != null)
             {
-                // Read the data from a URI
-                string mimeTypeUnused;
-                string localPath;
-                using (Stream uriStream = s_resourceLoader.LoadFile(uriGrammar, out mimeTypeUnused, out _baseUri, out localPath))
-                {
-                    uriStream.Position = 0; // Reset stream pos
-                    SrgsGrammarCompiler.CompileXmlOrCopyCfg(uriStream, stream, uriGrammar);
-                }
-                s_resourceLoader.UnloadFile(localPath);
+                throw new PlatformNotSupportedException();
             }
             else if (_srgsDocument != null)
             {
