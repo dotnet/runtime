@@ -1356,7 +1356,7 @@ public:
                 dwStubFlags,
                 iLCIDParamIdx,
                 pTargetMD,
-                SF_IsForwardStub(dwStubFlags) && pTargetMD->ShouldSuppressGCTransition())
+                TargetSupressGCTransition(dwStubFlags, pTargetMD))
     {
         STANDARD_VM_CONTRACT;
 
@@ -1391,6 +1391,12 @@ private:
         // 'this' pointer, but the unmanaged target will not.
         //
         return SF_IsForwardDelegateStub(dwStubFlags);
+    }
+
+    static BOOL TargetSupressGCTransition(DWORD dwStubFlags, MethodDesc* pTargetMD)
+    {
+        return (dwStubFlags & NDIRECTSTUB_FL_SUPPRESSGCTRANSITION)
+            || (SF_IsForwardStub(dwStubFlags) && pTargetMD && pTargetMD->ShouldSuppressGCTransition());
     }
 };
 
@@ -2557,7 +2563,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2572,7 +2578,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pMD));
@@ -2673,7 +2679,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pModule));
@@ -2693,7 +2699,7 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pMD));
@@ -2976,8 +2982,8 @@ namespace
     {
         CONTRACTL
         {
-            NOTHROW;
-            GC_NOTRIGGER;
+            THROWS;
+            GC_TRIGGERS;
             MODE_ANY;
         }
         CONTRACTL_END
@@ -2999,8 +3005,8 @@ void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -6737,13 +6743,13 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         // need to convert the CALLI signature to stub signature with managed calling convention
         BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
 
-        bool suppressGCTransition = false;
 
         // Unmanaged calling convention indicates modopt should be read
         if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {
             CorUnmanagedCallingConvention callConvMaybe;
             UINT errorResID;
+            bool suppressGCTransition = false;
             HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &suppressGCTransition, &errorResID);
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
@@ -6755,6 +6761,11 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
             else
             {
                 callConv = MetaSig::GetDefaultUnmanagedCallingConvention();
+            }
+
+            if (suppressGCTransition)
+            {
+                dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
             }
         }
 

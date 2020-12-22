@@ -5286,12 +5286,13 @@ namespace
     {
         CONTRACTL
         {
-            NOTHROW;
-            GC_NOTRIGGER;
-            FORBID_FAULT;
+            THROWS;
+            GC_TRIGGERS;
             MODE_ANY;
         }
         CONTRACTL_END
+
+        GCX_PREEMP();
 
         TypeHandle type;
         MethodDesc* pMD;
@@ -5319,9 +5320,8 @@ namespace
     {
         CONTRACTL
         {
-            NOTHROW;
-            GC_NOTRIGGER;
-            FORBID_FAULT;
+            THROWS;
+            GC_TRIGGERS;
             MODE_ANY;
             PRECONDITION(callConvOut != NULL);
             PRECONDITION(errorResID != NULL);
