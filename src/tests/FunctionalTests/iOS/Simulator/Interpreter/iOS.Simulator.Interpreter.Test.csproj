@@ -1,16 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <OutputPath>bin</OutputPath>
-    <DebugType>Portable</DebugType>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <TargetOS>iOS</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)\runtimes\ios-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <RuntimeIdentifier>ios-$(TargetArchitecture)</RuntimeIdentifier>
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>Link</TrimMode>
-  </PropertyGroup>
+  
+  <Import Project="..\..\common.props" />
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
