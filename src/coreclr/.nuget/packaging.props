@@ -11,6 +11,8 @@
 
     <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
     <SkipIndexCheck>true</SkipIndexCheck>
+
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsPackable)' == 'true'">
