@@ -5566,9 +5566,13 @@ try_resource_resolve_name (MonoReflectionAssemblyHandle assembly_handle, MonoStr
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, resolve_method)
 
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		resolve_method = mono_class_get_method_from_name_checked (alc_class, "OnResourceResolve", -1, 0, error);
+		static gboolean inited;
+		if (!inited) {
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			resolve_method = mono_class_get_method_from_name_checked (alc_class, "OnResourceResolve", -1, 0, error);
+			inited = TRUE;
+		}
 		mono_error_cleanup (error);
 		error_init_reuse (error);
 
