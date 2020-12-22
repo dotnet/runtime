@@ -2,7 +2,6 @@
 <Project>
 
   <PropertyGroup>
-    <PackageDescriptionFile>$(MSBuildThisFileDirectory)/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(CoreclrDir)/LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(CoreclrDir)/THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
 

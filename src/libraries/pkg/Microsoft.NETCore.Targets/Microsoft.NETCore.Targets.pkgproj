@@ -4,6 +4,7 @@
     <SkipValidatePackage>true</SkipValidatePackage>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
+    <PackageDescription>Provides supporting infrastructure for portable projects: support identifiers that define framework and runtime for support targets and packages that reference the minimum supported package versions when targeting these.</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
     <!-- make this package installable and noop in a packages.config-based project -->
