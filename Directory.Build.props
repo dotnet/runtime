@@ -80,6 +80,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>$(CopyrightNetFoundation)</Copyright>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <PackageVersionFile>$(ArtifactsObjDir)version.txt</PackageVersionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
 
     <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->

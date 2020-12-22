@@ -41,27 +41,17 @@
 
   <Import Condition="Exists('$(PkgDir)baseline\baseline.props') and '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
 
-  <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
-    <!--
-      Building packages fails for two reasons.
-      First, nuget doesn't like the paths in the nuspec having backslashes as directory separators.
-      Second, we aren't yet building pdbs, which the nuspecs specify.
-    -->
-    <SkipBuildPackages>true</SkipBuildPackages>
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <IncludePackageVersionFile>true</IncludePackageVersionFile>
+    <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
-    <!-- Add version file to packages -->
-    <File Condition="Exists('$(VersionFileForPackages)')"
-          Include="$(VersionFileForPackages)">
-        <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
-    <File Condition="'$(IncludeDesignerMarker)' != 'false'"
-          Include="$(MSBuildThisFileDirectory)useSharedDesignerContext.txt">
-        <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
+    <None Include="$(PackageDesignerMarkerFile)"
+          PackagePath="$([System.IO.Path]::GetFileName('$(PackageDesignerMarkerFile)'))"
+          Pack="true"
+          Condition="'$(IncludeDesignerMarker)' != 'false'" />
 
     <!-- Make sure that NETStandard.Library package never gets added as a dependency for .NET 4.6.1 -->
     <SuppressMetaPackage Include="NETStandard.Library" TargetFramework="net461" />

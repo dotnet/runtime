@@ -26,4 +26,17 @@
     <MSBuild Projects="$(RepoTasksDir)tasks.proj"
              Targets="BuildAndRestoreIncrementally"/>
   </Target>
+
+  <!-- Generate a version text file we include in our packages. -->
+  <Target Name="GenerateVersionFileForPackages"
+          BeforeTargets="Build;Pack"
+          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
+    <Error Condition="'$(SourceRevisionId)' == ''" Text="SourceRevisionId is not set, which means the SourceLink targets are not included in the build. Those are needed to produce a correct sha for our build outputs." />
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(PackageVersionFile)))" />
+    <WriteLinesToFile File="$(PackageVersionFile)"
+                      Lines="$(SourceRevisionId)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
 </Project>

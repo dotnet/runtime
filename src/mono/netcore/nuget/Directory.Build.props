@@ -1,28 +1,23 @@
 <Project>
 
   <!-- Packaging projects (.pkgproj) are non-SDK-style, so they need to directly import Directory.Build.props -->
-  <Import Project="../../Directory.Build.props" />
-
+  <Import Project="..\..\Directory.Build.props" />
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.props" />
 
   <PropertyGroup>
-    <PackageIndexFile>$(MSBuildThisFileDirectory)/packageIndex.json</PackageIndexFile>
+    <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile>
     <PackagePlatform>AnyCPU</PackagePlatform>
 
     <!-- mono doesn't currently use the index so don't force it to be in sync -->
     <SkipIndexCheck>true</SkipIndexCheck>
+  </PropertyGroup>
 
-    <VersionTxtFile Condition="'$(VersionTxtFile)' == ''">$(ArtifactsObjDir)version.txt</VersionTxtFile>
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <IncludePackageVersionFile>true</IncludePackageVersionFile>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <PackageIndex Include="$(PackageIndexFile)" />
-
-    <!-- Add version file to packages -->
-    <File Include="$(VersionTxtFile)"
-          Condition="Exists('$(VersionTxtFile)')">
-          <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
   </ItemGroup>
 
 </Project>
