@@ -2060,6 +2060,7 @@ FunctionSigBuilder::FunctionSigBuilder() :
     m_callingConv(IMAGE_CEE_CS_CALLCONV_DEFAULT)
 {
     STANDARD_VM_CONTRACT;
+    m_qbCallConvModOpts.Init();
     m_qbReturnSig.ReSizeThrows(1);
     *(CorElementType *)m_qbReturnSig.Ptr() = ELEMENT_TYPE_VOID;
 }
@@ -2075,7 +2076,7 @@ void FunctionSigBuilder::SetReturnType(LocalDesc* pLoc)
     CONTRACTL_END;
 
     m_qbReturnSig.ReSizeThrows(pLoc->cbType);
-    memcpyNoGCRefs(m_qbReturnSig.Ptr(), pLoc->ElementType, pLoc->cbType);
+    memcpyNoGCRefs((BYTE*)m_qbReturnSig.Ptr(), pLoc->ElementType, pLoc->cbType);
 
     size_t i = 0;
 
@@ -2160,6 +2161,19 @@ void FunctionSigBuilder::SetSig(PCCOR_SIGNATURE pSig, DWORD cSig)
     m_pbSigCursor += cbSigLen;
 }
 
+//--------------------------------------------------------------------------------------
+//
+
+void
+FunctionSigBuilder::AddCallConvModOpt(mdToken token)
+{
+    int temp;
+    ULONG len = CorSigCompressToken(token, &temp);
+    m_qbCallConvModOpts.ReSizeThrows(m_qbCallConvModOpts.Size() + 1 + len);
+    SET_UNALIGNED_PTR((BYTE*)m_qbCallConvModOpts.Ptr() + m_qbCallConvModOpts.Size() - len - 1, (BYTE)ELEMENT_TYPE_CMOD_OPT);
+    memcpyNoGCRefs((BYTE*)m_qbCallConvModOpts.Ptr() + m_qbCallConvModOpts.Size() - len, &temp, len);
+}
+
 //---------------------------------------------------------------------------------------
 //
 DWORD
@@ -2171,11 +2185,14 @@ FunctionSigBuilder::GetSigSize()
     DWORD  cbEncodedLen     = CorSigCompressData(m_nItems, temp);
     SIZE_T cbEncodedRetType = m_qbReturnSig.Size();
 
+    DWORD cbEncodedCallConv = m_qbCallConvModOpts.Size();
+
     CONSISTENCY_CHECK(cbEncodedRetType > 0);
 
     S_UINT32 cbSigSize =
         S_UINT32(1) +                   // calling convention
         S_UINT32(cbEncodedLen) +        // encoded number of args
+        S_UINT32(cbEncodedCallConv) +   // encoded callconv modopts
         S_UINT32(cbEncodedRetType) +    // encoded return type
         S_UINT32(m_cbSig) +             // types
         S_UINT32(1);                    // ELEMENT_TYPE_END
@@ -2195,12 +2212,13 @@ FunctionSigBuilder::GetSig(
 {
     STANDARD_VM_CONTRACT;
     BYTE    tempLen[4];
-    size_t  cbEncodedLen     = CorSigCompressData(m_nItems, tempLen);
-    size_t  cbEncodedRetType = m_qbReturnSig.Size();
+    size_t  cbEncodedLen      = CorSigCompressData(m_nItems, tempLen);
+    size_t  cbEncodedCallConv = m_qbCallConvModOpts.Size();
+    size_t  cbEncodedRetType  = m_qbReturnSig.Size();
 
     CONSISTENCY_CHECK(cbEncodedRetType > 0);
 
-    _ASSERTE((1 + cbEncodedLen + cbEncodedRetType + m_cbSig + 1) == GetSigSize());
+    _ASSERTE((1 + cbEncodedLen + cbEncodedCallConv + cbEncodedRetType + m_cbSig + 1) == GetSigSize());
 
     if ((1 + cbEncodedLen + cbEncodedRetType + m_cbSig + 1) <= cbBuffer)
     {
@@ -2210,6 +2228,9 @@ FunctionSigBuilder::GetSig(
 
         memcpyNoGCRefs(pbCursor, tempLen, cbEncodedLen);
         pbCursor += cbEncodedLen;
+
+        memcpyNoGCRefs(pbCursor, m_qbCallConvModOpts.Ptr(), m_qbCallConvModOpts.Size());
+        pbCursor += m_qbCallConvModOpts.Size();
 
         memcpyNoGCRefs(pbCursor, m_qbReturnSig.Ptr(), m_qbReturnSig.Size());
         pbCursor += m_qbReturnSig.Size();
@@ -2315,9 +2336,32 @@ static BOOL SigHasVoidReturnType(const Signature &signature)
     return (ELEMENT_TYPE_VOID == retType);
 }
 
+namespace
+{
+    PTR_MethodTable GetModOptTypeForCallConv(CorUnmanagedCallingConvention callConv)
+    {
+        switch(callConv)
+        {
+            case IMAGE_CEE_CS_CALLCONV_C:
+                return CoreLibBinder::GetClass(CLASS__CALLCONV_CDECL);
+                break;
+            case IMAGE_CEE_CS_CALLCONV_STDCALL:
+                return CoreLibBinder::GetClass(CLASS__CALLCONV_STDCALL);
+                break;
+            case IMAGE_CEE_CS_CALLCONV_THISCALL:
+                return CoreLibBinder::GetClass(CLASS__CALLCONV_THISCALL);
+                break;
+            case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+                return CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL);
+                break;
+            default:
+                return NULL;
+        }
+    }
+}
 
 ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD,
-                           BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub, BOOL fIsReverseStub) :
+                           BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub, BOOL fIsReverseStub, BOOL fSuppressGCTransition) :
     m_pCodeStreamList(NULL),
     m_stubSig(signature),
     m_pTypeContext(pTypeContext),
@@ -2341,6 +2385,11 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     CONTRACTL_END
 
     m_managedSigPtr = signature.CreateSigPointer();
+    if (fSuppressGCTransition)
+    {
+        m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_SUPRESS_GC_TRANSITION)));
+        m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_UNMANAGED);
+    }
     if (!signature.IsEmpty())
     {
         // Until told otherwise, assume that the stub has the same return type as the signature.
@@ -2413,7 +2462,26 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
             m_iTargetStackDelta--;
         }
 
-        m_nativeFnSigBuilder.SetCallingConv((CorCallingConvention)uNativeCallingConv);
+        if (m_nativeFnSigBuilder.GetCallingConv() == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+        {
+            switch((CorUnmanagedCallingConvention)uNativeCallingConv)
+            {
+                case IMAGE_CEE_CS_CALLCONV_C:
+                case IMAGE_CEE_CS_CALLCONV_STDCALL:
+                case IMAGE_CEE_CS_CALLCONV_THISCALL:
+                case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+                    m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(GetModOptTypeForCallConv((CorUnmanagedCallingConvention)uNativeCallingConv)));
+                    break;
+                default:
+                    // Ignore the Unmanaged callconv since it already has the modopts we need.
+                    // Ignore other callconvs since we'll set the right one later.
+                    break;
+            }
+        }
+        else
+        {
+            m_nativeFnSigBuilder.SetCallingConv((CorCallingConvention)uNativeCallingConv);
+        }
 
         if (uStubCallingConvInfo & IMAGE_CEE_CS_CALLCONV_GENERIC)
             IfFailThrow(m_managedSigPtr.GetData(NULL));    // skip number of type parameters
@@ -2678,7 +2746,15 @@ void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingC
 {
     LIMITED_METHOD_CONTRACT;
     CorCallingConvention originalCallingConvention = m_nativeFnSigBuilder.GetCallingConv();
-    m_nativeFnSigBuilder.SetCallingConv(uNativeCallingConv);
+    if (originalCallingConvention == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+    {
+        m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(GetModOptTypeForCallConv((CorUnmanagedCallingConvention)uNativeCallingConv)));
+    }
+    else
+    {
+        m_nativeFnSigBuilder.SetCallingConv(uNativeCallingConv);
+    }
+
     if (!m_fIsReverseStub)
     {
         if ( (originalCallingConvention & CORINFO_CALLCONV_HASTHIS) && !(uNativeCallingConv & CORINFO_CALLCONV_HASTHIS))

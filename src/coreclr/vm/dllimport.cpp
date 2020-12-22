@@ -260,8 +260,9 @@ protected:
                 BOOL fStubHasThis,
                 DWORD dwStubFlags,
                 int iLCIDParamIdx,
-                MethodDesc* pTargetMD)
-            : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx, fTargetHasThis, fStubHasThis)
+                MethodDesc* pTargetMD,
+                BOOL fSuppressGCTransition)
+            : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx, fTargetHasThis, fStubHasThis, fSuppressGCTransition)
     {
         STANDARD_VM_CONTRACT;
 
@@ -1225,7 +1226,8 @@ public:
             FALSE,
             dwStubFlags,
             -1 /* We have no LCID parameter */,
-            nullptr),
+            nullptr,
+            FALSE),
         m_nativeSize(pMT->GetNativeSize())
     {
         LIMITED_METHOD_CONTRACT;
@@ -1353,7 +1355,8 @@ public:
                 StubHasThis(dwStubFlags),
                 dwStubFlags,
                 iLCIDParamIdx,
-                pTargetMD)
+                pTargetMD,
+                SF_IsForwardStub(dwStubFlags) && pTargetMD->ShouldSuppressGCTransition())
     {
         STANDARD_VM_CONTRACT;
 
@@ -1406,7 +1409,8 @@ public:
                 TRUE,
                 dwStubFlags,
                 iLCIDParamIdx,
-                pTargetMD)
+                pTargetMD,
+                FALSE)
     {
         STANDARD_VM_CONTRACT;
 
@@ -1474,7 +1478,8 @@ public:
                 TRUE,
                 dwStubFlags,
                 iLCIDParamIdx,
-                pTargetMD)
+                pTargetMD,
+                FALSE)
     {
         STANDARD_VM_CONTRACT;
     }
@@ -1540,8 +1545,9 @@ NDirectStubLinker::NDirectStubLinker(
             MethodDesc* pTargetMD,
             int  iLCIDParamIdx,
             BOOL fTargetHasThis,
-            BOOL fStubHasThis)
-     : ILStubLinker(pModule, signature, pTypeContext, pTargetMD, fTargetHasThis, fStubHasThis, !SF_IsCOMStub(dwStubFlags), SF_IsReverseStub(dwStubFlags)),
+            BOOL fStubHasThis,
+            BOOL fSuppressGCTransition)
+     : ILStubLinker(pModule, signature, pTypeContext, pTargetMD, fTargetHasThis, fStubHasThis, !SF_IsCOMStub(dwStubFlags), SF_IsReverseStub(dwStubFlags), fSuppressGCTransition),
     m_pCleanupFinallyBeginLabel(NULL),
     m_pCleanupFinallyEndLabel(NULL),
     m_pSkipExceptionCleanupLabel(NULL),

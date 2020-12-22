@@ -234,6 +234,8 @@ public:
         m_callingConv = callingConv;
     }
 
+    void AddCallConvModOpt(mdToken token);
+
     CorCallingConvention GetCallingConv()
     {
         LIMITED_METHOD_CONTRACT;
@@ -266,6 +268,7 @@ public:
 protected:
     CorCallingConvention m_callingConv;
     CQuickBytes          m_qbReturnSig;
+    CQuickBytes          m_qbCallConvModOpts;
 };  // class FunctionSigBuilder
 
 #endif // DACCESS_COMPILE
@@ -461,7 +464,7 @@ class ILStubLinker
 public:
 
     ILStubLinker(Module* pModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD,
-                 BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub = FALSE, BOOL fIsReverseStub = FALSE);
+                 BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub = FALSE, BOOL fIsReverseStub = FALSE, BOOL fSuppressGCTransition = FALSE);
     ~ILStubLinker();
 
     void GenerateCode(BYTE* pbBuffer, size_t cbBufferSize);

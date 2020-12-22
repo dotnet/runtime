@@ -445,7 +445,8 @@ public:
                 MethodDesc* pTargetMD,
                 int  iLCIDParamIdx,
                 BOOL fTargetHasThis,
-                BOOL fStubHasThis);
+                BOOL fStubHasThis,
+                BOOL fSuppressGCTransition);
 
     void    SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL fIsVarArg);
 
