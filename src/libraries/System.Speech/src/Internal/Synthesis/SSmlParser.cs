@@ -753,7 +753,7 @@ namespace System.Speech.Internal.Synthesis
                                     break;
 
                                 default:
-                                    throw new FormatException(SR.Get(SRID.UnsupportedAlphabet));
+                                    throw new FormatException(SR.Get(SRID.UnsupportedAlphabet, sAlphabet));
                             }
                             break;
 

@@ -19,7 +19,7 @@ namespace System.Speech
             }
             else if (args != null && args.Length != 0)
             {
-                text = string.Format(CultureInfo.InvariantCulture, text, args);
+                text = string.Format(text, args);
             }
             return text;
         }
