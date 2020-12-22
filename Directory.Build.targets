@@ -1,5 +1,4 @@
-<Project>
-
+<Project InitialTargets="ErrorForMissingPackageDescription">
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -33,4 +32,10 @@
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
   </PropertyGroup>
+
+  <!-- Remove when https://github.com/NuGet/Home/issues/10405 is implemented and consumed. -->
+  <Target Name="ErrorForMissingPackageDescription"
+          Condition="'$(IsPackable)' == 'true' and '$(PackageDescription)' == ''">
+    <Error Text="Required property 'PackageDescription' is missing for $(MSBuildProjectName)." />
+  </Target>
 </Project>
