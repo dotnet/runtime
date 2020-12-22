@@ -124,6 +124,15 @@ BOOL NExportSEH(EXCEPTION_REGISTRATION_RECORD* pEHR)
     return FALSE;
 }
 
+BOOL FastNExportSEH(EXCEPTION_REGISTRATION_RECORD* pEHR)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if ((LPVOID)pEHR->Handler == (LPVOID)FastNExportExceptHandler)
+        return TRUE;
+    return FALSE;
+}
+
 BOOL ReverseCOMSEH(EXCEPTION_REGISTRATION_RECORD* pEHR)
 {
     LIMITED_METHOD_CONTRACT;
@@ -146,9 +155,10 @@ BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD *pEstablisherF
 
     //
     // ComPlusFrameSEH() is for COMPlusFrameHandler & COMPlusNestedExceptionHandler.
+    // FastNExportSEH() is for FastNExportExceptHandler.
     // NExportSEH() is for UMThunkPrestubHandler.
     //
-    return (ComPlusFrameSEH(pEstablisherFrame) || NExportSEH(pEstablisherFrame) || ReverseCOMSEH(pEstablisherFrame));
+    return (ComPlusFrameSEH(pEstablisherFrame) || FastNExportSEH(pEstablisherFrame) || NExportSEH(pEstablisherFrame) || ReverseCOMSEH(pEstablisherFrame));
 }
 
 Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
@@ -3351,6 +3361,26 @@ EXCEPTION_REGISTRATION_RECORD *FindNestedEstablisherFrame(EXCEPTION_REGISTRATION
     }
     return pEstablisherFrame;
 }
+
+EXCEPTION_HANDLER_IMPL(FastNExportExceptHandler)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // Most of our logic is in commin with COMPlusFrameHandler.
+    EXCEPTION_DISPOSITION retval = EXCEPTION_HANDLER_FWD(COMPlusFrameHandler);
+
+#ifdef _DEBUG
+    // If the exception is escaping the last CLR personality routine on the stack,
+    // then state a flag on the thread to indicate so.
+    if (retval == ExceptionContinueSearch)
+    {
+        SetReversePInvokeEscapingUnhandledExceptionStatus(IS_UNWINDING(pExceptionRecord->ExceptionFlags), pEstablisherFrame);
+    }
+#endif // _DEBUG
+
+    return retval;
+}
+
 
 // Just like a regular NExport handler -- except it pops an extra frame on unwind.  A handler
 // like this is needed by the COMMethodStubProlog code.  It first pushes a frame -- and then

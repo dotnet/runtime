@@ -5347,6 +5347,10 @@ EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 // Forward declaration
 EXTERN_C void STDCALL ReversePInvokeBadTransition();
 
+#ifndef FEATURE_EH_FUNCLETS
+EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
+#endif
+
 // This is a slower version of the reverse PInvoke enter function.
 NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame)
 {
@@ -5431,6 +5435,12 @@ void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame, CO
     {
         JIT_ReversePInvokeEnterRare(frame);
     }
+
+#ifndef FEATURE_EH_FUNCLETS
+    frame->record.m_pEntryFrame = thread->GetFrame();
+    frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
+    INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#endif
 }
 
 void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
@@ -5442,6 +5452,10 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     // This is a trade off with GC suspend performance. We are opting
     // to make this exit faster.
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
+
+#ifndef FEATURE_EH_FUNCLETS
+    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#endif
 
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackTransitions())
