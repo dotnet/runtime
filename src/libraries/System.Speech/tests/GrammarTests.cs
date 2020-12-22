@@ -99,7 +99,7 @@ namespace SampleSynthesisTests
             grammar.Name = "test";
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No SAPI on Nano
+        [ConditionalFact(typeof(SynthesizeRecognizeTests), nameof(SynthesizeRecognizeTests.HasInstalledRecognizers))]
         public void GrammarBuilder()
         {
             Choices colorChoice = new Choices(new string[] { "red", "green", "blue" });

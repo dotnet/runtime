@@ -20,7 +20,10 @@ namespace SampleSynthesisTests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No SAPI on Nano
     public class SynthesizeRecognizeTests : FileCleanupTestBase
     {
-        [Fact]
+        // Our Windows 7 and Windows 8.1 queues seem to have no recognizers installed
+        public static bool HasInstalledRecognizers => PlatformDetection.IsNotWindowsNanoServer && SpeechRecognitionEngine.InstalledRecognizers().Count > 0;
+
+        [ConditionalFact(nameof(HasInstalledRecognizers))]
         public void SpeechSynthesizerToSpeechRecognitionEngine()
         {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
@@ -49,7 +52,7 @@ namespace SampleSynthesisTests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(HasInstalledRecognizers))]
         public void SpeechRecognizerInvalidInput()
         {
             using var ms = new MemoryStream();
@@ -61,7 +64,7 @@ namespace SampleSynthesisTests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(HasInstalledRecognizers))]
         public void SpeechRecognizerProperties()
         {
             using (var rec = new SpeechRecognitionEngine())
