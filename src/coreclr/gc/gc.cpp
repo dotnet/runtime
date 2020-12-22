@@ -2668,7 +2668,9 @@ size_t gc_heap::allocation_quantum = CLR_SIZE;
 GCSpinLock gc_heap::more_space_lock_soh;
 GCSpinLock gc_heap::more_space_lock_uoh;
 
+#ifdef BACKGROUND_GC
 VOLATILE(int32_t) gc_heap::uoh_alloc_thread_count = 0;
+#endif //BACKGROUND_GC
 
 #ifdef SYNCHRONIZATION_STATS
 unsigned int gc_heap::good_suspension = 0;
@@ -9349,6 +9351,60 @@ size_t gc_heap::sort_mark_list()
     }
 #endif //USE_VXSORT
 
+    uint8_t** x = mark_list;
+
+#ifdef USE_REGIONS
+    // first set the pieces for all regions to empty
+    size_t lowest_region_index = (size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr;
+    size_t highest_region_index = (size_t)g_gc_highest_address >> gc_heap::min_segment_size_shr;
+    size_t region_count = highest_region_index - lowest_region_index + 1;
+    if (mark_list_piece_size < region_count)
+    {
+        delete[] mark_list_piece_start;
+        delete[] mark_list_piece_end;
+
+        mark_list_piece_start = new (nothrow) uint8_t * *[region_count];
+        mark_list_piece_end = new (nothrow) uint8_t * *[region_count];
+        if (mark_list_piece_start && mark_list_piece_end)
+        {
+            mark_list_piece_size = region_count;
+        }
+        else
+        {
+            if (mark_list_piece_start)
+                delete[] mark_list_piece_start;
+            if (mark_list_piece_end)
+                delete[] mark_list_piece_end;
+            mark_list_piece_size = 0;
+            return 0;
+        }
+    }
+    for (size_t region_index = 0; region_index < region_count; region_index++)
+    {
+        mark_list_piece_start[region_index] = NULL;
+        mark_list_piece_end[region_index] = NULL;
+    }
+
+    // predicate means: x is still within the mark list, and within the bounds of this region
+#define predicate(x) (((x) < local_mark_list_index) && (*(x) < region_limit))
+
+    while (x < local_mark_list_index)
+    {
+        heap_segment* region = get_region_info_for_address (*x);
+
+        // sanity check - the object on the mark list should be within the region
+        assert (heap_segment_mem (region) <= *x && *x < heap_segment_allocated (region));
+
+        size_t region_index = ((size_t)heap_segment_mem (region) >> gc_heap::min_segment_size_shr) - lowest_region_index;
+        uint8_t* region_limit = heap_segment_allocated (region);
+
+        uint8_t*** mark_list_piece_start_ptr = &mark_list_piece_start[region_index];
+        uint8_t*** mark_list_piece_end_ptr = &mark_list_piece_end[region_index];
+#else // USE_REGIONS
+
+// predicate means: x is still within the mark list, and within the bounds of this heap
+#define predicate(x) (((x) < local_mark_list_index) && (*(x) < heap->ephemeral_high))
+
     // first set the pieces for all heaps to empty
     int heap_num;
     for (heap_num = 0; heap_num < n_heaps; heap_num++)
@@ -9356,11 +9412,6 @@ size_t gc_heap::sort_mark_list()
         mark_list_piece_start[heap_num] = NULL;
         mark_list_piece_end[heap_num] = NULL;
     }
-
-    uint8_t** x = mark_list;
-
-// predicate means: x is still within the mark list, and within the bounds of this heap
-#define predicate(x) (((x) < local_mark_list_index) && (*(x) < heap->ephemeral_high))
 
     heap_num = -1;
     while (x < local_mark_list_index)
@@ -9381,10 +9432,14 @@ size_t gc_heap::sort_mark_list()
         }
         while (!(*x >= heap->ephemeral_low && *x < heap->ephemeral_high));
 
-        // x is the start of the mark list piece for this heap
-        mark_list_piece_start[heap_num] = x;
+        uint8_t*** mark_list_piece_start_ptr = &mark_list_piece_start[heap_num];
+        uint8_t*** mark_list_piece_end_ptr = &mark_list_piece_end[heap_num];
+#endif // USE_REGIONS
 
-        // to find the end of the mark list piece for this heap, find the first x
+        // x is the start of the mark list piece for this heap/region
+        *mark_list_piece_start_ptr = x;
+
+        // to find the end of the mark list piece for this heap/region, find the first x
         // that has !predicate(x), i.e. that is either not in this heap, or beyond the end of the list
         if (predicate(x))
         {
@@ -9392,7 +9447,7 @@ size_t gc_heap::sort_mark_list()
             if (predicate(local_mark_list_index -1))
             {
                 x = local_mark_list_index;
-                mark_list_piece_end[heap_num] = x;
+                *mark_list_piece_end_ptr = x;
                 break;
             }
 
@@ -9429,7 +9484,7 @@ size_t gc_heap::sort_mark_list()
             // so the spot we're looking for is one further
             x += 1;
         }
-        mark_list_piece_end[heap_num] = x;
+        *mark_list_piece_end_ptr = x;
     }
 
 #undef predicate
@@ -9472,13 +9527,15 @@ static int __cdecl cmp_mark_list_item (const void* vkey, const void* vdatum)
 }
 #endif // _DEBUG
 
+#ifdef USE_REGIONS
+uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
+{
+    size_t lowest_region_number = (size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr;
+    size_t region_number = ((size_t)start >> gc_heap::min_segment_size_shr) - lowest_region_number;
+    size_t source_number = region_number;
+#else //USE_REGIONS
 void gc_heap::merge_mark_lists (size_t total_mark_list_size)
 {
-    uint8_t** source[MAX_SUPPORTED_CPUS];
-    uint8_t** source_end[MAX_SUPPORTED_CPUS];
-    int source_heap[MAX_SUPPORTED_CPUS];
-    int source_count = 0;
-
     // in case of mark list overflow, don't bother
     if (total_mark_list_size == 0)
     {
@@ -9507,24 +9564,34 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
 
     dprintf(3, ("merge_mark_lists: heap_number = %d  starts out with %Id entries", 
         heap_number, (mark_list_index - mark_list)));
+
+    int source_number = heap_number;
+#endif //USE_REGIONS
+
+    uint8_t** source[MAX_SUPPORTED_CPUS];
+    uint8_t** source_end[MAX_SUPPORTED_CPUS];
+    int source_heap[MAX_SUPPORTED_CPUS];
+    int source_count = 0;
+
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap* heap = g_heaps[i];
-        if (heap->mark_list_piece_start[heap_number] < heap->mark_list_piece_end[heap_number])
+        if (heap->mark_list_piece_start[source_number] < heap->mark_list_piece_end[source_number])
         {
-            source[source_count] = heap->mark_list_piece_start[heap_number];
-            source_end[source_count] = heap->mark_list_piece_end[heap_number];
+            source[source_count] = heap->mark_list_piece_start[source_number];
+            source_end[source_count] = heap->mark_list_piece_end[source_number];
             source_heap[source_count] = i;
             if (source_count < MAX_SUPPORTED_CPUS)
                 source_count++;
         }
     }
 
-    dprintf(3, ("heap_number = %d  has %d sources\n", heap_number, source_count));
+    dprintf(3, ("source_number = %d  has %d sources\n", source_number, source_count));
+
 #if defined(_DEBUG) || defined(TRACE_GC)
     for (int j = 0; j < source_count; j++)
     {
-        dprintf(3, ("heap_number = %d  ", heap_number));
+        dprintf(3, ("source_number = %d  ", source_number));
         dprintf(3, (" source from heap %d = %Ix .. %Ix (%Id entries)",
             (size_t)(source_heap[j]), (size_t)(source[j][0]), 
             (size_t)(source_end[j][-1]), (size_t)(source_end[j] - source[j])));
@@ -9533,7 +9600,7 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
         {
             if (x[0] > x[1])
             {
-                dprintf(3, ("oops, mark_list from source %d for heap %d isn't sorted\n", j, heap_number));
+                dprintf(3, ("oops, mark_list from source %d for heap %d isn't sorted\n", j, source_number));
                 assert (0);
             }
         }
@@ -9625,7 +9692,24 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
         }
     }
 #endif //_DEBUG || TRACE_GC
+
+#ifdef USE_REGIONS
+    *mark_list_end_ptr = mark_list_index;
+    return mark_list;
+#endif // USE_REGIONS
 }
+#else
+
+#ifdef USE_REGIONS
+uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
+{
+    assert (!"not yet implemented");
+
+    // idea: do a binary search over the sorted marked list to find start and end of the
+    // mark list for this region
+    return nullptr;
+}
+#endif //USE_REGIONS
 #endif //MULTIPLE_HEAPS
 
 void gc_heap::grow_mark_list ()
@@ -11856,7 +11940,16 @@ gc_heap* gc_heap::make_gc_heap (
     res->alloc_context_count = 0;
 
 #ifdef MARK_LIST
-    res->mark_list_piece_start = new (nothrow) uint8_t**[n_heaps];
+#ifdef USE_REGIONS
+    size_t lowest_region_index = (size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr;
+    size_t highest_region_index = (size_t)g_gc_highest_address >> gc_heap::min_segment_size_shr;
+    size_t region_count = highest_region_index - lowest_region_index + 1;
+    res->mark_list_piece_size = 0;
+    size_t slot_count = region_count;
+#else //USE_REGIONS
+    size_t slot_count = n_heaps;
+#endif //USE_REGIONS
+    res->mark_list_piece_start = new (nothrow) uint8_t * *[slot_count];
     if (!res->mark_list_piece_start)
         return 0;
 
@@ -11864,7 +11957,7 @@ gc_heap* gc_heap::make_gc_heap (
 #pragma warning(push)
 #pragma warning(disable:22011) // Suppress PREFast warning about integer underflow/overflow
 #endif // _PREFAST_
-    res->mark_list_piece_end = new (nothrow) uint8_t**[n_heaps + 32]; // +32 is padding to reduce false sharing
+    res->mark_list_piece_end = new (nothrow) uint8_t**[slot_count + 32]; // +32 is padding to reduce false sharing
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif // _PREFAST_
@@ -11872,6 +11965,10 @@ gc_heap* gc_heap::make_gc_heap (
     if (!res->mark_list_piece_end)
         return 0;
 #endif //MARK_LIST
+
+#ifdef USE_REGIONS
+    res->mark_list_piece_size = region_count;
+#endif
 
 #endif //MULTIPLE_HEAPS
 
@@ -18397,7 +18494,7 @@ void gc_heap::init_background_gc ()
 #endif //DOUBLY_LINKED_FL
 
     //reset the plan allocation for each segment
-    for (heap_segment* seg = generation_allocation_segment (gen); seg != ephemeral_heap_segment;
+    for (heap_segment* seg = generation_allocation_segment (gen); seg != nullptr && seg != ephemeral_heap_segment;
         seg = heap_segment_next_rw (seg))
     {
         heap_segment_plan_allocated (seg) = heap_segment_allocated (seg);
@@ -23174,9 +23271,9 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //MULTIPLE_HEAPS
     }
 
-#if defined(MULTIPLE_HEAPS) && defined(MARK_LIST)
+#if defined(MULTIPLE_HEAPS) && defined(MARK_LIST) && !defined(USE_REGIONS)
     merge_mark_lists(total_mark_list_size);
-#endif //MULTIPLE_HEAPS && MARK_LIST
+#endif //MULTIPLE_HEAPS && MARK_LIST !USE_REGIONS
 
 #ifdef BACKGROUND_GC
     total_promoted_bytes = promoted_bytes (heap_number);
@@ -24928,7 +25025,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
 #ifdef MARK_LIST
     BOOL use_mark_list = FALSE;
-    uint8_t** mark_list_next = &mark_list[0];
 #ifdef GC_CONFIG_DRIVEN
     dprintf (3, ("total number of marked objects: %Id (%Id)",
                  (mark_list_index - &mark_list[0]), (mark_list_end - &mark_list[0])));
@@ -25098,9 +25194,19 @@ void gc_heap::plan_phase (int condemned_gen_number)
     uint8_t*  first_condemned_address = get_soh_start_object (seg1, condemned_gen1);
     uint8_t*  x = first_condemned_address;
 
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+#ifdef MARK_LIST
+    uint8_t** mark_list_end = nullptr;
+    uint8_t** mark_list_next = nullptr;
+    if (use_mark_list)
+        mark_list_next = get_region_mark_list (x, end, &mark_list_end);
+#endif //MARK_LIST
+#else // USE_REGIONS
     assert (!marked (x));
-#endif //!USE_REGIONS
+#ifdef MARK_LIST
+    uint8_t** mark_list_next = &mark_list[0];
+#endif //MARK_LIST
+#endif //USE_REGIONS
     uint8_t*  plug_end = x;
     uint8_t*  tree = 0;
     size_t  sequence_number = 0;
@@ -25342,6 +25448,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 end = heap_segment_allocated (seg1);
                 plug_end = x = heap_segment_mem (seg1);
                 current_brick = brick_of (x);
+#if defined(USE_REGIONS) && defined(MARK_LIST)
+                if (use_mark_list)
+                    mark_list_next = get_region_mark_list(x, end, &mark_list_end);
+#endif //USE_REGIONS && MARK_LIST
                 dprintf(3,( " From %Ix to %Ix", (size_t)x, (size_t)end));
                 continue;
             }
@@ -25402,7 +25512,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     end = heap_segment_allocated (seg1);
                     plug_end = x = heap_segment_mem (seg1);
                     current_brick = brick_of (x);
-                    dprintf (REGIONS_LOG,("h%d switching to gen%d start region %Ix to %Ix", 
+#ifdef MARK_LIST
+                    if (use_mark_list)
+                        mark_list_next = get_region_mark_list(x, end, &mark_list_end);
+#endif //MARK_LIST
+                    dprintf (REGIONS_LOG,("h%d switching to gen%d start region %Ix to %Ix",
                         heap_number, active_old_gen_number, x, end));
                     continue;
                 }
@@ -30319,12 +30433,12 @@ void gc_heap::background_mark_phase ()
     {
         seg->flags &= ~heap_segment_flags_swept;
 
+#ifndef USE_REGIONS
         if (heap_segment_allocated (seg) == heap_segment_mem (seg))
         {
             FATAL_GC_ERROR();
         }
 
-#ifndef USE_REGIONS
         if (seg == ephemeral_heap_segment)
         {
             heap_segment_background_allocated (seg) = generation_allocation_start (generation_of (max_generation - 1));
@@ -36695,6 +36809,7 @@ void gc_heap::process_background_segment_end (heap_segment* seg,
             FATAL_GC_ERROR();
         }
 
+#ifndef USE_REGIONS
         if (allocated == heap_segment_mem (seg))
         {
             // this can happen with UOH segments when multiple threads
@@ -36702,6 +36817,7 @@ void gc_heap::process_background_segment_end (heap_segment* seg,
             // satisfy allocation requests.
             assert (gen->gen_num > max_generation);
         }
+#endif // USE_REGIONS
 
         if (last_plug_end == heap_segment_mem (seg))
         {

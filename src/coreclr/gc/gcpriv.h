@@ -54,7 +54,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For 
 // Server GC we will balance regions between heaps.
 #ifdef HOST_64BIT
-//#define USE_REGIONS
+#define USE_REGIONS
 #endif //HOST_64BIT
 
 #ifdef USE_REGIONS
@@ -62,7 +62,7 @@ inline void FATAL_GC_ERROR()
 // + creates some pins on our own
 // + creates some ro segs
 // We can add more mechanisms here.
-#define STRESS_REGIONS
+//#define STRESS_REGIONS
 #endif //USE_REGIONS
 
 // FEATURE_STRUCTALIGN was added by Midori. In CLR we are not interested
@@ -102,9 +102,9 @@ inline void FATAL_GC_ERROR()
 
 // Temporarily disabling using the mark list for regions. We would need to have 
 // each region find their starting and ending positions on the sorted mark list.
-#ifndef USE_REGIONS
+//#ifndef USE_REGIONS
 #define MARK_LIST         //used sorted list to speed up plan phase
-#endif //!USE_REGIONS
+//#endif //!USE_REGIONS
 
 #define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
 
@@ -3116,6 +3116,11 @@ protected:
 #ifdef MARK_LIST
     PER_HEAP_ISOLATED
     void grow_mark_list();
+
+#ifdef USE_REGIONS
+    PER_HEAP
+    uint8_t** get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
+#endif //USE_REGIONS
 #endif //MARK_LIST
 
 #ifdef BACKGROUND_GC
@@ -4104,6 +4109,10 @@ protected:
     PER_HEAP
     uint8_t*** mark_list_piece_start;
     uint8_t*** mark_list_piece_end;
+#ifdef USE_REGIONS
+    PER_HEAP
+    size_t mark_list_piece_size;
+#endif //USE_REGIONS
 #endif //MARK_LIST
 
     PER_HEAP
@@ -5419,6 +5428,7 @@ inline gc_oh_num heap_segment_oh (heap_segment * inst)
     }
 }
 
+#ifdef BACKGROUND_GC
 #ifdef USE_REGIONS
 inline
 bool heap_segment_overflow_p (heap_segment* inst)
@@ -5427,7 +5437,6 @@ bool heap_segment_overflow_p (heap_segment* inst)
 }
 #endif //USE_REGIONS
 
-#ifdef BACKGROUND_GC
 inline
 BOOL heap_segment_decommitted_p (heap_segment * inst)
 {
