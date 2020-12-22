@@ -5080,7 +5080,11 @@ mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 	MONO_STATIC_POINTER_INIT (MonoClassField, field)
 
-		field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
+		static gboolean inited;
+		if (!inited) {
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
+			inited = TRUE;
+		}
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
 
