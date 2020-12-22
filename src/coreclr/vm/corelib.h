@@ -774,7 +774,7 @@ DEFINE_CLASS(CALLCONV_CDECL,                 CompilerServices,       CallConvCde
 DEFINE_CLASS(CALLCONV_STDCALL,               CompilerServices,       CallConvStdcall)
 DEFINE_CLASS(CALLCONV_THISCALL,              CompilerServices,       CallConvThiscall)
 DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFastcall)
-DEFINE_CLASS(CALLCONV_SUPRESS_GC_TRANSITION, CompilerServices,       CallConvSuppressGCTransition)
+DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
 
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
 DEFINE_FIELD_U(handle,                     SafeHandle,            m_handle)

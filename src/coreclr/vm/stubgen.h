@@ -454,6 +454,17 @@ struct ILStubEHClauseBuilder
     DWORD typeToken;
 };
 
+
+enum ILStubLinkerFlags
+{
+    ILSTUB_LINKER_FLAG_NONE                 = 0x00,
+    ILSTUB_LINKER_FLAG_TARGET_HAS_THIS      = 0x01,
+    ILSTUB_LINKER_FLAG_STUB_HAS_THIS        = 0x02,
+    ILSTUB_LINKER_FLAG_NDIRECT              = 0x04,
+    ILSTUB_LINKER_FLAG_REVERSE              = 0x08,
+    ILSTUB_LINKER_FLAG_SUPPRESSGCTRANSITION = 0x10,
+};
+
 //---------------------------------------------------------------------------------------
 //
 class ILStubLinker
@@ -463,8 +474,7 @@ class ILStubLinker
 
 public:
 
-    ILStubLinker(Module* pModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD,
-                 BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub = FALSE, BOOL fIsReverseStub = FALSE, BOOL fSuppressGCTransition = FALSE);
+    ILStubLinker(Module* pModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD, ILStubLinkerFlags flags);
     ~ILStubLinker();
 
     void GenerateCode(BYTE* pbBuffer, size_t cbBufferSize);

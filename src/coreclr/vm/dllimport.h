@@ -152,8 +152,8 @@ enum NDirectStubFlags
     NDIRECTSTUB_FL_FIELDSETTER              = 0x00004000, // COM->CLR field setter
 #endif // FEATURE_COMINTEROP
     NDIRECTSTUB_FL_SUPPRESSGCTRANSITION     = 0x00008000,
-    // unused                               = 0x00010000,
-    // unused                               = 0x00020000,
+    NDIRECTSTUB_FL_STUB_HAS_THIS            = 0x00010000,
+    NDIRECTSTUB_FL_TARGET_HAS_THIS          = 0x00020000,
     // unused                               = 0x00080000,
     // unused                               = 0x00100000,
     // unused                               = 0x00200000,
@@ -443,10 +443,7 @@ public:
                 const Signature &signature,
                 SigTypeContext *pTypeContext,
                 MethodDesc* pTargetMD,
-                int  iLCIDParamIdx,
-                BOOL fTargetHasThis,
-                BOOL fStubHasThis,
-                BOOL fSuppressGCTransition);
+                int  iLCIDParamIdx);
 
     void    SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL fIsVarArg);
 

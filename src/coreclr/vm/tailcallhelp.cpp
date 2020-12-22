@@ -24,7 +24,7 @@ FCIMPL2(void*, TailCallHelp::AllocTailCallArgBuffer, INT32 size, void* gcDesc)
     _ASSERTE(size >= 0);
 
     void* result = GetThread()->GetTailCallTls()->AllocArgBuffer(size, gcDesc);
-    
+
     if (result == NULL)
         FCThrow(kOutOfMemoryException);
 
@@ -341,8 +341,7 @@ MethodDesc* TailCallHelp::CreateStoreArgsStub(TailCallInfo& info)
                     Signature(pSig, cbSig),
                     &emptyCtx,
                     NULL,
-                    FALSE,
-                    FALSE);
+                    ILSTUB_LINKER_FLAG_NONE);
 
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
@@ -462,8 +461,7 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
                     Signature(pSig, cbSig),
                     &emptyCtx,
                     NULL,
-                    FALSE,
-                    FALSE);
+                    ILSTUB_LINKER_FLAG_NONE);
 
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 

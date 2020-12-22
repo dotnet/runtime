@@ -256,13 +256,10 @@ protected:
                 Module* pStubModule,
                 const Signature &signature,
                 SigTypeContext* pTypeContext,
-                BOOL fTargetHasThis,
-                BOOL fStubHasThis,
                 DWORD dwStubFlags,
                 int iLCIDParamIdx,
-                MethodDesc* pTargetMD,
-                BOOL fSuppressGCTransition)
-            : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx, fTargetHasThis, fStubHasThis, fSuppressGCTransition)
+                MethodDesc* pTargetMD)
+            : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx)
     {
         STANDARD_VM_CONTRACT;
 
@@ -1222,12 +1219,9 @@ public:
             pMT->GetModule(),
             signature,
             pTypeContext,
-            FALSE,
-            FALSE,
             dwStubFlags,
             -1 /* We have no LCID parameter */,
-            nullptr,
-            FALSE),
+            nullptr),
         m_nativeSize(pMT->GetNativeSize())
     {
         LIMITED_METHOD_CONTRACT;
@@ -1351,12 +1345,9 @@ public:
                 pStubModule,
                 signature,
                 pTypeContext,
-                TargetHasThis(dwStubFlags),
-                StubHasThis(dwStubFlags),
-                dwStubFlags,
+                UpdateStubFlags(dwStubFlags, pTargetMD),
                 iLCIDParamIdx,
-                pTargetMD,
-                TargetSupressGCTransition(dwStubFlags, pTargetMD))
+                pTargetMD)
     {
         STANDARD_VM_CONTRACT;
 
@@ -1374,6 +1365,23 @@ public:
     }
 
 private:
+    static DWORD UpdateStubFlags(DWORD dwStubFlags, MethodDesc* pTargetMD)
+    {
+        if (TargetHasThis(dwStubFlags))
+        {
+            dwStubFlags |= NDIRECTSTUB_FL_TARGET_HAS_THIS;
+        }
+        if (StubHasThis(dwStubFlags))
+        {
+            dwStubFlags |= NDIRECTSTUB_FL_STUB_HAS_THIS;
+        }
+        if (TargetSuppressGCTransition(dwStubFlags, pTargetMD))
+        {
+            dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
+        }
+        return dwStubFlags;
+    }
+
     static BOOL TargetHasThis(DWORD dwStubFlags)
     {
         //
@@ -1393,10 +1401,9 @@ private:
         return SF_IsForwardDelegateStub(dwStubFlags);
     }
 
-    static BOOL TargetSupressGCTransition(DWORD dwStubFlags, MethodDesc* pTargetMD)
+    static BOOL TargetSuppressGCTransition(DWORD dwStubFlags, MethodDesc* pTargetMD)
     {
-        return (dwStubFlags & NDIRECTSTUB_FL_SUPPRESSGCTRANSITION)
-            || (SF_IsForwardStub(dwStubFlags) && pTargetMD && pTargetMD->ShouldSuppressGCTransition());
+        return SF_IsForwardStub(dwStubFlags) && pTargetMD && pTargetMD->ShouldSuppressGCTransition();
     }
 };
 
@@ -1411,12 +1418,9 @@ public:
                 pStubModule,
                 signature,
                 pTypeContext,
-                TRUE,
-                TRUE,
-                dwStubFlags,
+                dwStubFlags | NDIRECTSTUB_FL_STUB_HAS_THIS | NDIRECTSTUB_FL_TARGET_HAS_THIS,
                 iLCIDParamIdx,
-                pTargetMD,
-                FALSE)
+                pTargetMD)
     {
         STANDARD_VM_CONTRACT;
 
@@ -1480,12 +1484,9 @@ public:
                 pStubModule,
                 signature,
                 pTypeContext,
-                TRUE,
-                TRUE,
-                dwStubFlags,
+                dwStubFlags | NDIRECTSTUB_FL_STUB_HAS_THIS | NDIRECTSTUB_FL_TARGET_HAS_THIS,
                 iLCIDParamIdx,
-                pTargetMD,
-                FALSE)
+                pTargetMD)
     {
         STANDARD_VM_CONTRACT;
     }
@@ -1542,6 +1543,31 @@ protected:
 };
 #endif // FEATURE_COMINTEROP
 
+ILStubLinkerFlags GetILStubLinkerFlagsForNDirectStubFlags(NDirectStubFlags flags)
+{
+    DWORD result = ILSTUB_LINKER_FLAG_NONE;
+    if (!SF_IsCOMStub(flags))
+    {
+        result |= ILSTUB_LINKER_FLAG_NDIRECT;
+    }
+    if (SF_IsReverseStub(flags))
+    {
+        result |= ILSTUB_LINKER_FLAG_REVERSE;
+    }
+    if (flags & NDIRECTSTUB_FL_SUPPRESSGCTRANSITION)
+    {
+        result |= ILSTUB_LINKER_FLAG_SUPPRESSGCTRANSITION;
+    }
+    if (flags & NDIRECTSTUB_FL_STUB_HAS_THIS)
+    {
+        result |= ILSTUB_LINKER_FLAG_STUB_HAS_THIS;
+    }
+    if (flags & NDIRECTSTUB_FL_TARGET_HAS_THIS)
+    {
+        result |= ILSTUB_LINKER_FLAG_TARGET_HAS_THIS;
+    }
+    return (ILStubLinkerFlags)result;
+}
 
 NDirectStubLinker::NDirectStubLinker(
             DWORD dwStubFlags,
@@ -1549,18 +1575,15 @@ NDirectStubLinker::NDirectStubLinker(
             const Signature &signature,
             SigTypeContext *pTypeContext,
             MethodDesc* pTargetMD,
-            int  iLCIDParamIdx,
-            BOOL fTargetHasThis,
-            BOOL fStubHasThis,
-            BOOL fSuppressGCTransition)
-     : ILStubLinker(pModule, signature, pTypeContext, pTargetMD, fTargetHasThis, fStubHasThis, !SF_IsCOMStub(dwStubFlags), SF_IsReverseStub(dwStubFlags), fSuppressGCTransition),
+            int  iLCIDParamIdx)
+     : ILStubLinker(pModule, signature, pTypeContext, pTargetMD, GetILStubLinkerFlagsForNDirectStubFlags((NDirectStubFlags)dwStubFlags)),
     m_pCleanupFinallyBeginLabel(NULL),
     m_pCleanupFinallyEndLabel(NULL),
     m_pSkipExceptionCleanupLabel(NULL),
     m_fHasCleanupCode(FALSE),
     m_fHasExceptionCleanupCode(FALSE),
     m_fCleanupWorkListIsSetup(FALSE),
-    m_targetHasThis(fTargetHasThis),
+    m_targetHasThis((dwStubFlags & NDIRECTSTUB_FL_TARGET_HAS_THIS) != 0),
     m_dwThreadLocalNum(-1),
     m_dwCleanupWorkListLocalNum(-1),
     m_dwRetValLocalNum(-1),
@@ -2990,7 +3013,7 @@ namespace
 
         CorUnmanagedCallingConvention callConvMaybe;
         bool suppressGCTransition;
-        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe, &suppressGCTransition, errorResID);
+        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pModule), pSig, cSig, &callConvMaybe, &suppressGCTransition, errorResID);
         if (hr != S_OK)
             return hr;
 
@@ -6750,7 +6773,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
             CorUnmanagedCallingConvention callConvMaybe;
             UINT errorResID;
             bool suppressGCTransition = false;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &suppressGCTransition, &errorResID);
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &suppressGCTransition, &errorResID);
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 

@@ -9777,6 +9777,11 @@ namespace
 {
     CorInfoCallConvExtension getUnmanagedCallConvForSig(CORINFO_MODULE_HANDLE mod, PCCOR_SIGNATURE pSig, DWORD cbSig, bool* pSuppressGCTransition)
     {
+        CONTRACTL {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        } CONTRACTL_END;
         SigParser parser(pSig, cbSig);
         ULONG rawCallConv;
         if (FAILED(parser.GetCallingConv(&rawCallConv)))
@@ -9800,15 +9805,7 @@ namespace
         {
             CorUnmanagedCallingConvention callConvMaybe;
             UINT errorResID;
-            HRESULT hr;
-            if (IsDynamicScope(mod))
-            {
-                hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetDynamicResolver(mod), pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
-            }
-            else
-            {
-                hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetModule(mod), pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
-            }
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
 
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
@@ -9832,6 +9829,12 @@ namespace
 
     CorInfoCallConvExtension getUnmanagedCallConvForMethod(MethodDesc* pMD, bool* pSuppressGCTransition)
     {
+        CONTRACTL {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        } CONTRACTL_END;
+
         ULONG methodCallConv;
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
@@ -9913,7 +9916,7 @@ namespace
         }
         else
         {
-            return getUnmanagedCallConvForSig(CORINFO_MODULE_HANDLE(pMD->GetModule()), pSig, cbSig, pSuppressGCTransition);
+            return getUnmanagedCallConvForSig(GetScopeHandle(pMD->GetModule()), pSig, cbSig, pSuppressGCTransition);
         }
     }
 }

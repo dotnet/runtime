@@ -5306,126 +5306,33 @@ namespace
 
         return S_OK;
     }
-    //----------------------------------------------------------
-    // Returns the unmanaged calling convention.
-    //----------------------------------------------------------
-    template<class T>
-    HRESULT TryGetUnmanagedCallingConventionFromModOpt(
-        _In_ T *pTokenResolver,
-        _In_ PCCOR_SIGNATURE pSig,
-        _In_ ULONG cSig,
-        _Out_ CorUnmanagedCallingConvention *callConvOut,
-        _Out_ bool* suppressGCTransitionOut,
-        _Out_ UINT *errorResID)
+
+    HRESULT GetNameOfTypeRefOrDef(
+        _In_ CORINFO_MODULE_HANDLE pModule,
+        _In_ mdToken token,
+        _Out_ LPCSTR *namespaceOut,
+        _Out_ LPCSTR *nameOut)
     {
         CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_ANY;
-            PRECONDITION(callConvOut != NULL);
-            PRECONDITION(errorResID != NULL);
         }
         CONTRACTL_END
 
-        *suppressGCTransitionOut = false;
-        HRESULT hr;
-
-        // Instantiations aren't relevant here
-        SigPointer sigPtr(pSig, cSig);
-        ULONG sigCallConv = 0;
-        IfFailRet(sigPtr.GetCallingConvInfo(&sigCallConv)); // call conv
-        if (sigCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        if (IsDynamicScope(pModule))
         {
-            IfFailRet(sigPtr.GetData(NULL)); // type param count
+            return GetNameOfTypeRefOrDef(GetDynamicResolver(pModule), token, namespaceOut, nameOut);
         }
-        IfFailRet(sigPtr.GetData(NULL)); // arg count
-
-        PCCOR_SIGNATURE pWalk = sigPtr.GetPtr();
-        _ASSERTE(pWalk <= pSig + cSig);
-
-        *callConvOut = (CorUnmanagedCallingConvention)0;
-        bool found = false;
-        while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
+        else
         {
-            BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
-
-            pWalk++;
-            if (pWalk + CorSigUncompressedDataSize(pWalk) > pSig + cSig)
-            {
-                *errorResID = BFA_BAD_SIGNATURE;
-                return COR_E_BADIMAGEFORMAT; // Bad formatting
-            }
-
-            mdToken tk;
-            pWalk += CorSigUncompressToken(pWalk, &tk);
-
-            if (!fIsOptional)
-                continue;
-
-            LPCSTR typeNamespace;
-            LPCSTR typeName;
-
-            // Check for CallConv types specified in modopt
-            if (FAILED(GetNameOfTypeRefOrDef(pTokenResolver, tk, &typeNamespace, &typeName)))
-                continue;
-
-            if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
-                continue;
-
-            if (::strcmp(typeName, CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION) == 0)
-            {
-                *suppressGCTransitionOut = true;
-                continue;
-            }
-
-            const struct {
-                LPCSTR name;
-                CorUnmanagedCallingConvention value;
-            } knownCallConvs[] = {
-                { CMOD_CALLCONV_NAME_CDECL,     IMAGE_CEE_UNMANAGED_CALLCONV_C },
-                { CMOD_CALLCONV_NAME_STDCALL,   IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL },
-                { CMOD_CALLCONV_NAME_THISCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL },
-                { CMOD_CALLCONV_NAME_FASTCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL } };
-
-            for (const auto &callConv : knownCallConvs)
-            {
-                // Look for a recognized calling convention in metadata.
-                if (::strcmp(typeName, callConv.name) == 0)
-                {
-                    // Error if there are multiple recognized calling conventions
-                    if (found)
-                    {
-                        *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
-                        return COR_E_INVALIDPROGRAM;
-                    }
-
-                    *callConvOut = callConv.value;
-                    found = true;
-                }
-            }
+            return GetNameOfTypeRefOrDef(GetModule(pModule), token, namespaceOut, nameOut);
         }
 
-        return found ? S_OK : S_FALSE;
     }
 }
 
-//----------------------------------------------------------
-// Returns the unmanaged calling convention.
-//----------------------------------------------------------
-/*static*/
-HRESULT
-MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
-    _In_ Module *pModule,
-    _In_ PCCOR_SIGNATURE pSig,
-    _In_ ULONG cSig,
-    _Out_ CorUnmanagedCallingConvention *callConvOut,
-    _Out_ bool* suppressGCTransitionOut,
-    _Out_ UINT *errorResID)
-{
-    LIMITED_METHOD_CONTRACT;
-    return ::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, callConvOut, suppressGCTransitionOut, errorResID);
-}
 
 //----------------------------------------------------------
 // Returns the unmanaged calling convention.
@@ -5433,15 +5340,102 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 /*static*/
 HRESULT
 MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
-    _In_ DynamicResolver *pModule,
+    _In_ CORINFO_MODULE_HANDLE pModule,
     _In_ PCCOR_SIGNATURE pSig,
     _In_ ULONG cSig,
     _Out_ CorUnmanagedCallingConvention *callConvOut,
     _Out_ bool* suppressGCTransitionOut,
     _Out_ UINT *errorResID)
 {
-    LIMITED_METHOD_CONTRACT;
-    return ::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, callConvOut, suppressGCTransitionOut, errorResID);
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(callConvOut != NULL);
+        PRECONDITION(errorResID != NULL);
+    }
+    CONTRACTL_END
+
+    *suppressGCTransitionOut = false;
+    HRESULT hr;
+
+    // Instantiations aren't relevant here
+    SigPointer sigPtr(pSig, cSig);
+    ULONG sigCallConv = 0;
+    IfFailRet(sigPtr.GetCallingConvInfo(&sigCallConv)); // call conv
+    if (sigCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        IfFailRet(sigPtr.GetData(NULL)); // type param count
+    }
+    IfFailRet(sigPtr.GetData(NULL)); // arg count
+
+    PCCOR_SIGNATURE pWalk = sigPtr.GetPtr();
+    _ASSERTE(pWalk <= pSig + cSig);
+
+    *callConvOut = (CorUnmanagedCallingConvention)0;
+    bool found = false;
+    while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
+    {
+        BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
+
+        pWalk++;
+        if (pWalk + CorSigUncompressedDataSize(pWalk) > pSig + cSig)
+        {
+            *errorResID = BFA_BAD_SIGNATURE;
+            return COR_E_BADIMAGEFORMAT; // Bad formatting
+        }
+
+        mdToken tk;
+        pWalk += CorSigUncompressToken(pWalk, &tk);
+
+        if (!fIsOptional)
+            continue;
+
+        LPCSTR typeNamespace;
+        LPCSTR typeName;
+
+        // Check for CallConv types specified in modopt
+        if (FAILED(GetNameOfTypeRefOrDef(pModule, tk, &typeNamespace, &typeName)))
+            continue;
+
+        if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
+            continue;
+
+        if (::strcmp(typeName, CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION) == 0)
+        {
+            *suppressGCTransitionOut = true;
+            continue;
+        }
+
+        const struct {
+            LPCSTR name;
+            CorUnmanagedCallingConvention value;
+        } knownCallConvs[] = {
+            { CMOD_CALLCONV_NAME_CDECL,     IMAGE_CEE_UNMANAGED_CALLCONV_C },
+            { CMOD_CALLCONV_NAME_STDCALL,   IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL },
+            { CMOD_CALLCONV_NAME_THISCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL },
+            { CMOD_CALLCONV_NAME_FASTCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL } };
+
+        for (const auto &callConv : knownCallConvs)
+        {
+            // Look for a recognized calling convention in metadata.
+            if (::strcmp(typeName, callConv.name) == 0)
+            {
+                // Error if there are multiple recognized calling conventions
+                if (found)
+                {
+                    *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
+                    return COR_E_INVALIDPROGRAM;
+                }
+
+                *callConvOut = callConv.value;
+                found = true;
+            }
+        }
+    }
+
+    return found ? S_OK : S_FALSE;
 }
 
 //---------------------------------------------------------------------------------------

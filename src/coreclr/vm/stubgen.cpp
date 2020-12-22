@@ -2185,7 +2185,7 @@ FunctionSigBuilder::GetSigSize()
     DWORD  cbEncodedLen     = CorSigCompressData(m_nItems, temp);
     SIZE_T cbEncodedRetType = m_qbReturnSig.Size();
 
-    DWORD cbEncodedCallConv = m_qbCallConvModOpts.Size();
+    SIZE_T cbEncodedCallConv = m_qbCallConvModOpts.Size();
 
     CONSISTENCY_CHECK(cbEncodedRetType > 0);
 
@@ -2342,16 +2342,16 @@ namespace
     {
         switch(callConv)
         {
-            case IMAGE_CEE_CS_CALLCONV_C:
+            case IMAGE_CEE_UNMANAGED_CALLCONV_C:
                 return CoreLibBinder::GetClass(CLASS__CALLCONV_CDECL);
                 break;
-            case IMAGE_CEE_CS_CALLCONV_STDCALL:
+            case IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL:
                 return CoreLibBinder::GetClass(CLASS__CALLCONV_STDCALL);
                 break;
-            case IMAGE_CEE_CS_CALLCONV_THISCALL:
+            case IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL:
                 return CoreLibBinder::GetClass(CLASS__CALLCONV_THISCALL);
                 break;
-            case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+            case IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL:
                 return CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL);
                 break;
             default:
@@ -2360,8 +2360,7 @@ namespace
     }
 }
 
-ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD,
-                           BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub, BOOL fIsReverseStub, BOOL fSuppressGCTransition) :
+ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD, ILStubLinkerFlags flags) :
     m_pCodeStreamList(NULL),
     m_stubSig(signature),
     m_pTypeContext(pTypeContext),
@@ -2369,7 +2368,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     m_pStubSigModule(pStubSigModule),
     m_pLabelList(NULL),
     m_StubHasVoidReturnType(FALSE),
-    m_fIsReverseStub(fIsReverseStub),
+    m_fIsReverseStub((flags & ILSTUB_LINKER_FLAG_REVERSE) != 0),
     m_iTargetStackDelta(0),
     m_cbCurrentCompressedSigLen(1),
     m_nLocals(0),
@@ -2385,9 +2384,9 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     CONTRACTL_END
 
     m_managedSigPtr = signature.CreateSigPointer();
-    if (fSuppressGCTransition)
+    if ((flags & ILSTUB_LINKER_FLAG_SUPPRESSGCTRANSITION) != 0)
     {
-        m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_SUPRESS_GC_TRANSITION)));
+        m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_SUPPRESSGCTRANSITION)));
         m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_UNMANAGED);
     }
     if (!signature.IsEmpty())
@@ -2404,7 +2403,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
         ULONG   uStubCallingConvInfo;
         IfFailThrow(m_managedSigPtr.GetCallingConvInfo(&uStubCallingConvInfo));
 
-        if (fStubHasThis)
+        if ((flags & ILSTUB_LINKER_FLAG_STUB_HAS_THIS) != 0)
         {
             m_fHasThis = true;
         }
@@ -2441,7 +2440,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
             // convention to be vararg for non-PInvoke stubs, so we just use
             // the default callconv.
             //
-            if (!fIsNDirectStub)
+            if ((flags & ILSTUB_LINKER_FLAG_NDIRECT) == 0)
                 uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_DEFAULT;
             else
                 uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_NATIVEVARARG;
@@ -2451,13 +2450,13 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
             uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_DEFAULT;
         }
 
-        if (fTargetHasThis && !fIsNDirectStub)
+        if ((flags & (ILSTUB_LINKER_FLAG_TARGET_HAS_THIS | ILSTUB_LINKER_FLAG_NDIRECT)) == ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
         {
             // ndirect native sig never has a 'this' pointer
             uNativeCallingConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
         }
 
-        if (fTargetHasThis && !fIsReverseStub)
+        if ((flags & (ILSTUB_LINKER_FLAG_TARGET_HAS_THIS | ILSTUB_LINKER_FLAG_REVERSE)) == ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
         {
             m_iTargetStackDelta--;
         }
@@ -2473,8 +2472,9 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
                     m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(GetModOptTypeForCallConv((CorUnmanagedCallingConvention)uNativeCallingConv)));
                     break;
                 default:
-                    // Ignore the Unmanaged callconv since it already has the modopts we need.
-                    // Ignore other callconvs since we'll set the right one later.
+                    // If the calling convention isn't one of the unmanaged calling conventions
+                    // and we've already decided that we need to emit the Unmanaged calling convention in metadata,
+                    // let the code that builds the stub set the calling convention.
                     break;
             }
         }
@@ -2491,7 +2491,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
         // If we are a reverse stub, then the target signature called in the stub
         // is the managed signature. In that case, we calculate the target IL stack delta
         // here from the managed signature.
-        if (fIsReverseStub)
+        if ((flags & ILSTUB_LINKER_FLAG_REVERSE) != 0)
         {
             // As per ECMA 335, the max number of parameters is 0x1FFFFFFF (see section 11.23.2), which fits in a 32-bit signed integer
             // So this cast is safe.
