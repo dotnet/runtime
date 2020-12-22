@@ -916,7 +916,7 @@ ISpGrammarResourceLoader
         // Note on locking implementation:
         //
         // In general operations are not locked on the RecognizerBase - there's no single lock that makes everything thread safe.
-        // This is the normal .Net design pattern.
+        // This is the normal .NET design pattern.
         //
         // However, because there is processing of sapi events, going on on different threads that the app does not control,
         // we need to protect certain members.
@@ -2656,7 +2656,7 @@ ISpGrammarResourceLoader
             }
         }
 
-        // Convert the .Net CompareOptions into the SAPI SpeechEmulationCompareFlags.
+        // Convert the .NET CompareOptions into the SAPI SpeechEmulationCompareFlags.
         private static SpeechEmulationCompareFlags ConvertCompareOptions(CompareOptions compareOptions)
         {
             CompareOptions handledOptions = CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.Ordinal;

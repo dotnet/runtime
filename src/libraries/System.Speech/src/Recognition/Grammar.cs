@@ -906,7 +906,7 @@ namespace System.Speech.Recognition
 
         private void CreateSandbox(MemoryStream stream)
         {
-            // Checks if it contains .Net Semantic code
+            // Checks if it contains .NET Semantic code
             byte[] assemblyContent;
             byte[] assemblyDebugSymbols;
             ScriptRef[] scripts;

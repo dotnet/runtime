@@ -1413,7 +1413,7 @@ namespace System.Speech.Internal.SrgsCompiler
         private static char[] s_achZero = new char[] { '\0' };
         private int _cImportedRules;
 
-        // List of cd /reference Rule->rule 'on'method-> .Net method
+        // List of cd /reference Rule->rule 'on'method-> .NET method
         private Collection<ScriptRef> _scriptRefs = new();
 
         // Grammar code assembly

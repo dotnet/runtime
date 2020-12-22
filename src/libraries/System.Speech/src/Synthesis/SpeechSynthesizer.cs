@@ -528,7 +528,7 @@ namespace System.Speech.Synthesis
         // Count of number of consecutive calls to Paused
         private bool _paused;
 
-        // .Net Stream - keep a reference to it to avoid it to be GC
+        // .NET Stream - keep a reference to it to avoid it to be GC
         private Stream _outputStream;
 
         // If stream were created in SpeechFx then close it, otherwise it should remain open.

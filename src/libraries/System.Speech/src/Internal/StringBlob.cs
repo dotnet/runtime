@@ -214,7 +214,7 @@ namespace System.Speech.Internal
         // Cached value for the total string sizes - The first digit is always zero.
         private int _totalStringSizes = 1;
 
-        // .Net is Unicode so 2 bytes per characters
+        // .NET is Unicode so 2 bytes per characters
         private const int _sizeOfChar = 2;
 
         #endregion

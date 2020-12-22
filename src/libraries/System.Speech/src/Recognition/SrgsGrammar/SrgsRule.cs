@@ -406,7 +406,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         // class name for the code behind
         private string _baseclass;
 
-        // .Net Language for this grammar
+        // .NET Language for this grammar
         private string _script = string.Empty;
 
         private string _onInit;

@@ -118,7 +118,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             _assembly = Assembly.Load(il, pdb);
 
-            // Get the grammar class carrying the .Net Semantics code
+            // Get the grammar class carrying the .NET Semantics code
             _grammarType = GetTypeForRule(_assembly, rule);
 
             // Something is Wrong if the grammar class cannot be found

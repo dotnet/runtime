@@ -751,7 +751,7 @@ namespace System.Speech.Internal.SrgsCompiler
             byte[] data = null;
             if (!string.IsNullOrEmpty(path))
             {
-                // return the memory blob with the IL for .Net Semantics
+                // return the memory blob with the IL for .NET Semantics
                 using (FileStream fs = new(path, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     data = Helpers.ReadStreamToByteArray(fs, (int)fs.Length);

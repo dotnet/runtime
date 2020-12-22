@@ -177,7 +177,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _tagFormat = SrgsTagFormat.W3cV1;
             }
 
-            // Force the tag format to Sapi fprperties if .Net semantics are used.
+            // Force the tag format to Sapi fprperties if .NET semantics are used.
             if (_fContainsCode)
             {
                 if (_tagFormat == SrgsTagFormat.Default)
@@ -185,7 +185,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                     _tagFormat = SrgsTagFormat.KeyValuePairs;
                 }
 
-                // SAPI semantics only for .Net Semantics
+                // SAPI semantics only for .NET Semantics
                 if (_tagFormat != SrgsTagFormat.KeyValuePairs)
                 {
                     XmlParser.ThrowSrgsException(SRID.InvalidSemanticProcessingType);
@@ -669,10 +669,10 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         internal bool _fContainsCode;  // Set in *.Validate()
 
-        // .Net Language for this grammar
+        // .NET Language for this grammar
         private string _language;
 
-        // .Net Language for this grammar
+        // .NET Language for this grammar
         private Collection<string> _codebehind = new();
 
         // namespace for the code behind
@@ -681,16 +681,16 @@ namespace System.Speech.Recognition.SrgsGrammar
         // Insert #line statements in the sources code if set
         internal bool _fDebug;
 
-        // .Net language script
+        // .NET language script
         private string _script = string.Empty;
 
-        // .Net language script
+        // .NET language script
         private List<XmlParser.ForwardReference> _scriptsForwardReference = new();
 
-        // .Net Namespaces to import
+        // .NET Namespaces to import
         private Collection<string> _usings = new();
 
-        // .Net Namespaces to import
+        // .NET Namespaces to import
         private Collection<string> _assemblyReferences = new();
         #endregion
 

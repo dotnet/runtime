@@ -91,7 +91,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 XmlParser.ThrowSrgsException(SRID.UndefRuleRef, rule.Name);
             }
 
-            // SAPI semantics only for .Net Semantics
+            // SAPI semantics only for .NET Semantics
             bool containsCode = ((IGrammar)this).CodeBehind.Count > 0 || ((IGrammar)this).ImportNamespaces.Count > 0 || ((IGrammar)this).AssemblyReferences.Count > 0 || CustomGrammar._scriptRefs.Count > 0;
             if (containsCode && ((IGrammar)this).TagFormat != System.Speech.Recognition.SrgsGrammar.SrgsTagFormat.KeyValuePairs)
             {

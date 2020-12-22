@@ -324,7 +324,7 @@ namespace System.Speech.Internal.SrgsCompiler
             //We know that in SAPI 5.0 grammar format pszWords follows header immediately.
             if (pFH.pszWords < Marshal.SizeOf(typeof(CfgSerializedHeader)))
             {
-                // Must be SAPI 6.0 or above to hold a .Net script
+                // Must be SAPI 6.0 or above to hold a .NET script
                 return null;
             }
 
