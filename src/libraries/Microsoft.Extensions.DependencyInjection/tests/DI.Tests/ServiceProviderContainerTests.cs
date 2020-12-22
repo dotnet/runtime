@@ -412,6 +412,17 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [Fact]
         public async Task GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock()
         {
+            // Thread 1: Thing1 (transient) -> Thing0 (singleton)
+            // Thread 2: Thing2 (singleton) -> Thing1 (transient) -> Thing0 (singleton)
+
+            // 1. Thread 1 resolves the Thing1 which is a transient service
+            // 2. In parallel, Thread 2 resolves Thing2 which is a singleton
+            // 3. Thread 1 enters the factory callback for Thing1 and takes the lazy lock
+            // 4. Thread 2 takes callsite for Thing2 as a singleton lock when it resolves Thing2
+            // 5. Thread 2 enters the factory callback for Thing1 and waits on the lazy lock
+            // 6. Thread 1 calls GetRequiredService<Thing0> on the service provider, takes callsite for Thing0 causing no deadlock
+            // (rather than taking the locks that are already taken - either the lazy lock or the Thing2 callsite lock)
+
             Thing0 thing0 = null;
             Thing1 thing1 = null;
             Thing2 thing2 = null;
@@ -467,6 +478,41 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(thing0);
             Assert.NotNull(thing1);
             Assert.NotNull(thing2);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36458")]
+        public void GetRequiredService_CircularReference_ThrowsSOEAndHangs()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddSingleton<Thing3>();
+            IServiceProvider sp = services.BuildServiceProvider();
+            using var scope1 = sp.CreateScope();
+
+            bool doesNotHang = Task.Run(() =>
+            {
+                SingleThreadedSynchronizationContext.Run(() =>
+                {
+                    // Act
+                    Assert.Throws<StackOverflowException>(() =>
+                    {
+                        // ctor disposes ServiceProvider
+                        var service = sp.GetRequiredService<Thing3>();
+                    });
+                });
+            }).Wait(TimeSpan.FromSeconds(10));
+
+            // Assert
+            Assert.False(doesNotHang);
+        }
+
+        private class Thing3
+        {
+            public Thing3(IServiceProvider sp)
+            {
+                sp.GetRequiredService<Thing3>();
+            }
         }
 
         private class Thing2
