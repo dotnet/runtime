@@ -75,6 +75,14 @@ namespace Mono
         internal int major, minor, build, revision, arch;
     }
 
+    internal unsafe ref struct ICallArg<T> where T : class?
+    {
+        private void *_ptr;
+        internal ICallArg (ref T o) {
+            _ptr = Internal.Runtime.CompilerServices.Unsafe.AsPointer (ref o);
+        }
+    }
+
     // Used to implement generic sharing
     // See mini-generic-sharing.c
     // We use these instead of the normal ValueTuple types to avoid linking in the
