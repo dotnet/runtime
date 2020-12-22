@@ -2958,7 +2958,7 @@ struct HasReferenceAssemblyAttributeIterData {
 };
 
 static gboolean
-has_reference_assembly_attribute_iterator (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, gpointer user_data)
+has_reference_assembly_attribute_iterator (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, const char *cattr_blob, gpointer user_data)
 {
 	gboolean stop_scanning = FALSE;
 	struct HasReferenceAssemblyAttributeIterData *iter_data = (struct HasReferenceAssemblyAttributeIterData*)user_data;

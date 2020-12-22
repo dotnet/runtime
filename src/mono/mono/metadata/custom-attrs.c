@@ -2534,6 +2534,9 @@ metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAsse
 			break;
 		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
 		i ++;
+		uint32_t value_idx = cols [MONO_CUSTOM_ATTR_VALUE];
+		const char* value = value_idx ? mono_metadata_blob_heap (image, value_idx) : NULL;
+
 		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
 		switch (cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) {
 		case MONO_CUSTOM_ATTR_TYPE_METHODDEF:
@@ -2554,7 +2557,7 @@ metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAsse
 		if (!custom_attr_class_name_from_method_token (image, mtoken, &assembly_token, &nspace, &name))
 			continue;
 
-		stop_iterating = func (image, assembly_token, nspace, name, mtoken, user_data);
+		stop_iterating = func (image, assembly_token, nspace, name, mtoken, value, user_data);
 	}
 }
 
