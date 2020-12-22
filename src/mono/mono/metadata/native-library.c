@@ -571,10 +571,12 @@ netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAsse
 		MonoClass *native_lib_class = mono_class_get_native_library_class ();
 		g_assert (native_lib_class);
 		resolve = mono_class_get_method_from_name_checked (native_lib_class, "MonoLoadLibraryCallbackStub", -1, 0, local_error);
-		mono_error_assert_ok (local_error);
+		mono_error_cleanup (error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve)
-	g_assert (resolve);
+
+	if (!resolve)
+		return NULL;
 
 	if (mono_runtime_get_no_exec ())
 		return NULL;

@@ -349,11 +349,12 @@ mono_alc_invoke_resolve_using_resolving_event (MonoAssemblyLoadContext *alc, Mon
 		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
 		g_assert (alc_class);
 		resolve = mono_class_get_method_from_name_checked (alc_class, "MonoResolveUsingResolvingEvent", -1, 0, local_error);
-		mono_error_assert_ok (local_error);
+		mono_error_cleanup (error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve)
 
-	g_assert (resolve);
+	if (!resolve)
+		return NULL;
 
 	return invoke_resolve_method (resolve, alc, aname, error);
 }

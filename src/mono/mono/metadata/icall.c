@@ -5569,10 +5569,12 @@ try_resource_resolve_name (MonoReflectionAssemblyHandle assembly_handle, MonoStr
 		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
 		g_assert (alc_class);
 		resolve_method = mono_class_get_method_from_name_checked (alc_class, "OnResourceResolve", -1, 0, error);
+		mono_error_cleanup (error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve_method)
 
-	goto_if_nok (error, return_null);
+	if (!resolve_method)
+		goto return_null;
 
 	gpointer args [2];
 	args [0] = MONO_HANDLE_RAW (assembly_handle);

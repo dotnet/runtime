@@ -1003,7 +1003,9 @@ typedef struct {
 	MonoClass *iremotingtypeinfo_class;
 #endif
 	MonoClass *mono_method_message_class;
+#ifndef ENABLE_NETCORE
 	MonoClass *appdomain_class;
+#endif
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
 	MonoClass *stack_frame_class;

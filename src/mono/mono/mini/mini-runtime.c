@@ -358,6 +358,7 @@ mono_print_method_from_ip (void *ip)
  */
 gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 {
+#ifndef ENABLE_NETCORE
 	MonoMethod *cmethod;
 
 	if (!caller || caller->is_trampoline || !callee || callee->is_trampoline)
@@ -376,7 +377,7 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 		 /* The InvokeInDomain methods change the current appdomain */
 		return FALSE;
 	}
-
+#endif
 	return TRUE;
 }
 
