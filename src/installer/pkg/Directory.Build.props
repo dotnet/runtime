@@ -10,7 +10,6 @@
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageDescriptionFile>$(InstallerProjectRoot)pkg/projects/descriptions.json</PackageDescriptionFile>
     <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
