@@ -907,10 +907,16 @@ mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, M
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		method = mono_class_get_method_from_name_checked (alc_class, "OnTypeResolve", -1, 0, error);
-		mono_error_cleanup (error);
+		static gboolean inited;
+		// avoid repeatedly calling mono_class_get_method_from_name_checked
+		if (!inited) {
+			ERROR_DECL (local_error);
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			method = mono_class_get_method_from_name_checked (alc_class, "OnTypeResolve", -1, 0, local_error);
+			mono_error_cleanup (local_error);
+			inited = TRUE;
+		}
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
@@ -3519,4 +3525,3 @@ mono_runtime_install_appctx_properties (void)
 }
 
 #endif
-
