@@ -83,7 +83,9 @@ namespace System.Threading
 
         private string? _name;
         private Delegate? m_start;
+#if !TARGET_BROWSER
         private object? m_start_arg;
+#endif
         private CultureInfo? culture, ui_culture;
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
