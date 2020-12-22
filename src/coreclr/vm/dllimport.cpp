@@ -2983,7 +2983,8 @@ namespace
         CONTRACTL_END
 
         CorUnmanagedCallingConvention callConvMaybe;
-        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe, errorResID);
+        bool suppressGCTransition;
+        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe, &suppressGCTransition, errorResID);
         if (hr != S_OK)
             return hr;
 
@@ -6736,12 +6737,14 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         // need to convert the CALLI signature to stub signature with managed calling convention
         BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
 
+        bool suppressGCTransition = false;
+
         // Unmanaged calling convention indicates modopt should be read
         if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {
             CorUnmanagedCallingConvention callConvMaybe;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &errorResID);
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &suppressGCTransition, &errorResID);
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 

@@ -794,6 +794,7 @@ class MetaSig
             _In_ PCCOR_SIGNATURE pSig,
             _In_ ULONG cSig,
             _Out_ CorUnmanagedCallingConvention *callConvOut,
+            _Out_ bool* suppressGCTransitionOut,
             _Out_ UINT *errorResID);
 
         //----------------------------------------------------------
@@ -811,6 +812,7 @@ class MetaSig
             _In_ PCCOR_SIGNATURE pSig,
             _In_ ULONG cSig,
             _Out_ CorUnmanagedCallingConvention *callConvOut,
+            _Out_ bool* suppressGCTransitionOut,
             _Out_ UINT *errorResID);
 
         static CorUnmanagedCallingConvention GetDefaultUnmanagedCallingConvention()

@@ -9803,11 +9803,11 @@ namespace
             HRESULT hr;
             if (IsDynamicScope(mod))
             {
-                hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetDynamicResolver(mod), pSig, cbSig, &callConvMaybe, &errorResID);
+                hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetDynamicResolver(mod), pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
             }
             else
             {
-                hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetModule(mod), pSig, cbSig, &callConvMaybe, &errorResID);
+                hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetModule(mod), pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
             }
 
             if (FAILED(hr))

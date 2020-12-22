@@ -5314,6 +5314,7 @@ namespace
         _In_ PCCOR_SIGNATURE pSig,
         _In_ ULONG cSig,
         _Out_ CorUnmanagedCallingConvention *callConvOut,
+        _Out_ bool* suppressGCTransitionOut,
         _Out_ UINT *errorResID)
     {
         CONTRACTL
@@ -5327,6 +5328,7 @@ namespace
         }
         CONTRACTL_END
 
+        *suppressGCTransitionOut = false;
         HRESULT hr;
 
         // Instantiations aren't relevant here
@@ -5371,6 +5373,12 @@ namespace
             if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
                 continue;
 
+            if (::strcmp(typeName, CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION) == 0)
+            {
+                *suppressGCTransitionOut = true;
+                continue;
+            }
+
             const struct {
                 LPCSTR name;
                 CorUnmanagedCallingConvention value;
@@ -5412,10 +5420,11 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     _In_ PCCOR_SIGNATURE pSig,
     _In_ ULONG cSig,
     _Out_ CorUnmanagedCallingConvention *callConvOut,
+    _Out_ bool* suppressGCTransitionOut,
     _Out_ UINT *errorResID)
 {
     LIMITED_METHOD_CONTRACT;
-    return ::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, callConvOut, errorResID);
+    return ::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, callConvOut, suppressGCTransitionOut, errorResID);
 }
 
 //----------------------------------------------------------
@@ -5428,10 +5437,11 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     _In_ PCCOR_SIGNATURE pSig,
     _In_ ULONG cSig,
     _Out_ CorUnmanagedCallingConvention *callConvOut,
+    _Out_ bool* suppressGCTransitionOut,
     _Out_ UINT *errorResID)
 {
     LIMITED_METHOD_CONTRACT;
-    return ::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, callConvOut, errorResID);
+    return ::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, callConvOut, suppressGCTransitionOut, errorResID);
 }
 
 //---------------------------------------------------------------------------------------
