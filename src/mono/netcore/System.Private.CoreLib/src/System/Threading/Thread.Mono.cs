@@ -97,12 +97,14 @@ namespace System.Threading
 
         private Thread()
         {
-            InitInternal(this);
+            Thread t = this;
+            InitInternal(new Mono.ICallArg<Thread>(ref t));
         }
 
         ~Thread()
         {
-            FreeInternal();
+            Thread t = this;
+            FreeInternal(new Mono.ICallArg<Thread>(ref t));
         }
 
         internal static ulong CurrentOSThreadId
@@ -117,7 +119,8 @@ namespace System.Threading
         {
             get
             {
-                ThreadState state = GetState(this);
+                Thread t = this;
+                ThreadState state = GetState(new Mono.ICallArg<Thread>(ref t));
                 return (state & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
             }
         }
@@ -134,11 +137,13 @@ namespace System.Threading
                 ValidateThreadState();
                 if (value)
                 {
-                    SetState(this, ThreadState.Background);
+                    Thread t = this;
+                    SetState(new Mono.ICallArg<Thread>(ref t), ThreadState.Background);
                 }
                 else
                 {
-                    ClrState(this, ThreadState.Background);
+                    Thread t = this;
+                    ClrState(new Mono.ICallArg<Thread>(ref t), ThreadState.Background);
                     _mayNeedResetForThreadPool = true;
                 }
             }
@@ -178,7 +183,8 @@ namespace System.Threading
             set
             {
                 // TODO: arguments check
-                SetPriority(this, (int)value);
+                Thread t = this;
+                SetPriority(new Mono.ICallArg<Thread>(ref t), (int)value);
                 if (value != ThreadPriority.Normal)
                 {
                     _mayNeedResetForThreadPool = true;
@@ -186,7 +192,12 @@ namespace System.Threading
             }
         }
 
-        public ThreadState ThreadState => GetState(this);
+        public ThreadState ThreadState {
+            get {
+                Thread t = this;
+                return GetState(new Mono.ICallArg<Thread>(ref t));
+            }
+        }
 
         private void Create(ThreadStart start) => SetStartHelper((Delegate)start, 0); // 0 will setup Thread with default stackSize
 
@@ -218,14 +229,16 @@ namespace System.Threading
 
         public void Interrupt()
         {
-            InterruptInternal(this);
+            Thread t = this;
+            InterruptInternal(new Mono.ICallArg<Thread>(ref t));
         }
 
         public bool Join(int millisecondsTimeout)
         {
             if (millisecondsTimeout < Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return JoinInternal(this, millisecondsTimeout);
+            Thread t = this;
+            return JoinInternal(new Mono.ICallArg<Thread>(ref t), millisecondsTimeout);
         }
 
         private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
@@ -266,7 +279,8 @@ namespace System.Threading
         public void Start()
         {
             _executionContext = ExecutionContext.Capture();
-            StartInternal(this);
+            Thread t = this;
+            StartInternal(new Mono.ICallArg<Thread>(ref t));
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -282,7 +296,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         internal void UnsafeStart()
         {
-            StartInternal(this);
+            Thread t = this;
+            StartInternal(new Mono.ICallArg<Thread>(ref t));
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -354,7 +369,7 @@ namespace System.Threading
         [DynamicDependency(nameof(StartCallback))]
         [DynamicDependency(nameof(ThrowThreadStartException))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void StartInternal(Thread runtime_thread);
+        private static extern void StartInternal(Mono.ICallArg<Thread> runtime_thread);
 #endif
 
         partial void ThreadNameChanged(string? value)
@@ -385,7 +400,8 @@ namespace System.Threading
 
         private ThreadState ValidateThreadState()
         {
-            ThreadState state = GetState(this);
+            Thread t = this;
+            ThreadState state = GetState(new Mono.ICallArg<Thread>(ref t));
             if ((state & ThreadState.Stopped) != 0)
                 throw new ThreadStateException("Thread is dead; state can not be accessed.");
             return state;
@@ -395,40 +411,40 @@ namespace System.Threading
         private static extern ulong GetCurrentOSThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InitInternal(Thread thread);
+        private static extern void InitInternal(Mono.ICallArg<Thread> thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InitializeCurrentThread_icall([NotNull] ref Thread? thread);
+        private static extern void InitializeCurrentThread_icall(Mono.ICallArg<Thread> thread);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            InitializeCurrentThread_icall(ref t_currentThread);
-            return t_currentThread;
+            InitializeCurrentThread_icall(new Mono.ICallArg<Thread>(ref t_currentThread!));
+            return t_currentThread!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void FreeInternal();
+        private static extern void FreeInternal(Mono.ICallArg<Thread> thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern ThreadState GetState(Thread thread);
+        private static extern ThreadState GetState(Mono.ICallArg<Thread> thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SetState(Thread thread, ThreadState set);
+        private static extern void SetState(Mono.ICallArg<Thread> thread, ThreadState set);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void ClrState(Thread thread, ThreadState clr);
+        private static extern void ClrState(Mono.ICallArg<Thread> thread, ThreadState clr);
+
+        // [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        // private static extern string GetName(Thread thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern string GetName(Thread thread);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void SetName_icall(Thread thread, char* name, int nameLength);
+        private static extern unsafe void SetName_icall(Mono.ICallArg<Thread> thread, char* name, int nameLength);
 
         private static unsafe void SetName(Thread thread, string? name)
         {
             fixed (char* fixed_name = name)
-                SetName_icall(thread, fixed_name, name?.Length ?? 0);
+                SetName_icall(new Mono.ICallArg<Thread>(ref thread), fixed_name, name?.Length ?? 0);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -442,16 +458,16 @@ namespace System.Threading
         {
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Thread CreateInternal();
+        //[MethodImplAttribute(MethodImplOptions.InternalCall)]
+        //private static extern Thread CreateInternal();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool JoinInternal(Thread thread, int millisecondsTimeout);
+        private static extern bool JoinInternal(Mono.ICallArg<Thread> thread, int millisecondsTimeout);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InterruptInternal(Thread thread);
+        private static extern void InterruptInternal(Mono.ICallArg<Thread> thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SetPriority(Thread thread, int priority);
+        private static extern void SetPriority(Mono.ICallArg<Thread> thread, int priority);
     }
 }
