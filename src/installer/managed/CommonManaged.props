@@ -18,16 +18,4 @@
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
   </PropertyGroup>
-
-  <!-- Add required legal files to packages -->
-  <ItemGroup>
-    <Content Condition="Exists('$(PackageLicenseFile)')"
-             Include="$(PackageLicenseFile)">
-      <PackagePath />
-    </Content>
-    <Content Condition="Exists('$(PackageThirdPartyNoticesFile)')"
-             Include="$(PackageThirdPartyNoticesFile)">
-      <PackagePath />
-    </Content>
-  </ItemGroup>
 </Project>
