@@ -22,7 +22,7 @@ namespace System.Speech.Recognition
             Helpers.ThrowIfEmptyOrNull(phrase, nameof(phrase));
             Helpers.ThrowIfNull(value, nameof(value));
 
-            _tag = new TagElement(new GrammarBuilderPhrase((string)phrase.Clone()), value);
+            _tag = new TagElement(new GrammarBuilderPhrase(phrase), value);
         }
         public SemanticResultValue(GrammarBuilder builder, object value)
         {

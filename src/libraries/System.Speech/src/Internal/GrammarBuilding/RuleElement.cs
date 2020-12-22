@@ -37,6 +37,7 @@ namespace System.Speech.Internal.GrammarBuilding
             }
             return _name == refObj._name;
         }
+
         public override int GetHashCode()
         {
             return base.GetHashCode();

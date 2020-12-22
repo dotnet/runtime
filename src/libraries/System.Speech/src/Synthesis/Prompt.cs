@@ -167,13 +167,4 @@ namespace System.Speech.Synthesis
     }
 
     #endregion
-
-    #region Internal Types
-    internal enum PromptPriority
-    {
-        Normal,
-        High
-    }
-
-    #endregion
 }

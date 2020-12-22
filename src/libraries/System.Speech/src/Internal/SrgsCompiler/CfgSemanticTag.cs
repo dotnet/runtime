@@ -105,25 +105,6 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal bool StartParallelEpsilonArc
-        {
-            get
-            {
-                return ((_flag1 & 0x400000) != 0);
-            }
-            set
-            {
-                if (value)
-                {
-                    _flag1 |= 0x400000;
-                }
-                else
-                {
-                    _flag1 &= ~(uint)0x400000;
-                }
-            }
-        }
-
         internal uint EndArcIndex
         {
             get
@@ -139,25 +120,6 @@ namespace System.Speech.Internal.SrgsCompiler
 
                 _flag2 &= ~(uint)0x3FFFFF;
                 _flag2 |= value;
-            }
-        }
-
-        internal bool EndParallelEpsilonArc
-        {
-            get
-            {
-                return ((_flag2 & 0x400000) != 0);
-            }
-            set
-            {
-                if (value)
-                {
-                    _flag2 |= 0x400000;
-                }
-                else
-                {
-                    _flag2 &= ~(uint)0x400000;
-                }
             }
         }
 

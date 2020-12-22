@@ -11,9 +11,7 @@ namespace System.Speech.Internal.SrgsParser
     }
 
     #region Internal Enums
-    // RuleScope specifies how a rule behaves with respect to being able to be
-    // referenced by other rules, and whether or not the rule can be activated
-    // or not.
+
     internal enum RuleDynamic
     {
         True,
@@ -21,9 +19,6 @@ namespace System.Speech.Internal.SrgsParser
         NotSet
     };
 
-    // RuleScope specifies how a rule behaves with respect to being able to be
-    // referenced by other rules, and whether or not the rule can be activated
-    // or not.
     internal enum RulePublic
     {
         True,

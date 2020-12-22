@@ -33,11 +33,6 @@ namespace System.Speech.Synthesis.TtsEngine
         public GCHandle gcSayAsCategory;
     }
 
-    internal enum SPVSKIPTYPE
-    {
-        SPVST_SENTENCE = 1,
-    }
-
     [ComConversionLossAttribute]
     [TypeLibTypeAttribute(16)]
     internal struct SPVSTATE

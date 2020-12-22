@@ -11,27 +11,6 @@ namespace System.Speech.Internal.SapiInterop
 {
     #region Enum
 
-    [Flags]
-    internal enum SPEAKFLAGS : int
-    {
-        SPF_DEFAULT = 0x0000,   // Synchronous, no purge, xml auto detect
-        SPF_ASYNC = 0x0001,   // Asynchronous call
-        SPF_PURGEBEFORESPEAK = 0x0002,   // Purge current data prior to speaking this
-        SPF_IS_FILENAME = 0x0004,   // The string passed to Speak() is a file name
-        SPF_IS_XML = 0x0008,   // The input text will be parsed for XML markup
-        SPF_IS_NOT_XML = 0x0010,   // The input text will not be parsed for XML markup
-        SPF_PERSIST_XML = 0x0020,   // Persists XML global state changes
-        SPF_NLP_SPEAK_PUNC = 0x0040,   // The normalization processor should speak the punctuation
-        SPF_PARSE_SAPI = 0x0080,   // Force XML parsing as MS SAPI
-        SPF_PARSE_SSML = 0x0100    // Force XML parsing as W3C SSML
-    }
-
-    internal enum SpeechRunState
-    {
-        SPRS_DONE,
-        SPRS_IS_SPEAKING
-    }
-
     internal enum SPRECOSTATE
     {
         SPRST_INACTIVE = 0x00000000,
@@ -39,13 +18,6 @@ namespace System.Speech.Internal.SapiInterop
         SPRST_ACTIVE_ALWAYS = 0x00000002,
         SPRST_INACTIVE_WITH_PURGE = 0x00000003,
         SPRST_NUM_STATES = 0x00000004
-    }
-
-    internal enum SPVPRIORITY
-    {
-        SPVPRI_NORMAL = 0x00000000,
-        SPVPRI_ALERT = 0x00000001,
-        SPVPRI_OVER = 0x00000002
     }
 
     internal enum SPLOADOPTIONS
@@ -136,27 +108,6 @@ namespace System.Speech.Internal.SapiInterop
         SPBO_TIME_UNITS = 0x0004
     }
 
-    internal enum SPCATEGORYTYPE
-    {
-        SPCT_COMMAND = 0x00000000,   // Command category
-        SPCT_DICTATION = 0x00000001,   // Dictation category
-        SPCT_SUB_COMMAND = 0x00000002,   // Command sub-category
-        SPCT_SUB_DICTATION = 0x00000003    // Dictation sub-category
-    }
-
-    internal enum SPCATEGORYSTATE
-    {
-        SPCAS_ENABLED = 0x00000000,
-        SPCAS_DISABLED = 0x00000001
-    }
-
-    internal enum SapiConfidenceLevels
-    {
-        SP_LOW_CONFIDENCE = -1,
-        SP_NORMAL_CONFIDENCE = 0,
-        SP_HIGH_CONFIDENCE = 1
-    }
-
     internal enum SPAUDIOOPTIONS
     {
         SPAO_NONE = 0,
@@ -178,16 +129,6 @@ namespace System.Speech.Internal.SapiInterop
         SPCF_ADD_TO_USER_LEXICON = 0x01,
         SPCF_DEFINITE_CORRECTION = 0x02
     };
-
-    [Flags]
-    internal enum SPDISPLAYATTRIBUTES
-    {
-        SPAF_ZERO_TRAILING_SPACE = 0x00,
-        SPAF_ONE_TRAILING_SPACE = 0x02,
-        SPAF_TWO_TRAILING_SPACES = 0x04,
-        SPAF_CONSUME_LEADING_SPACES = 0x08,
-        SPAF_USER_SPECIFIED = 0x80,
-    }
 
     internal enum SPAUDIOSTATE
     {
@@ -726,24 +667,6 @@ namespace System.Speech.Internal.SapiInterop
         internal uint pszReplacementText;
         internal uint ulFirstElement;
         internal uint ulCountOfElements;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct SPVOICESTATUS
-    {
-        internal uint ulCurrentStream;
-        internal uint ulLastStreamQueued;
-        internal int hrLastResult;
-        internal SpeechRunState dwRunningState;
-        internal uint ulInputWordPos;
-        internal uint ulInputWordLen;
-        internal uint ulInputSentPos;
-        internal uint ulInputSentLen;
-        internal int lBookmarkId;
-        internal ushort PhonemeId;
-        internal int VisemeId;
-        internal uint dwReserved1;
-        internal uint dwReserved2;
     }
 
     [StructLayout(LayoutKind.Sequential)]

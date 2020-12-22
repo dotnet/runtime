@@ -66,9 +66,9 @@ namespace System.Speech.Synthesis
 
         #region Private Fields
 
-        private PromptRate _rate = PromptRate.NotSet;
-        private PromptVolume _volume = PromptVolume.NotSet;
-        private PromptEmphasis _emphasis = PromptEmphasis.NotSet;
+        private PromptRate _rate;
+        private PromptVolume _volume;
+        private PromptEmphasis _emphasis;
 
         #endregion
     }

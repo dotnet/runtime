@@ -16,7 +16,7 @@ using System.Text;
 
 namespace System.Speech.Recognition
 {
-    [DebuggerDisplay("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString())}")]
     [Serializable]
     public sealed class RecognitionResult : RecognizedPhrase, ISerializable
     {
@@ -26,10 +26,10 @@ namespace System.Speech.Recognition
             Initialize(recognizer, recoResult, sapiResultBlob, maxAlternates);
         }
 
-        // empty constructor needed for some MSS unit tests
         internal RecognitionResult()
         {
         }
+
         private RecognitionResult(SerializationInfo info, StreamingContext context)
         {
             // Get the set of serializable members for our class and base classes

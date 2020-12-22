@@ -1132,7 +1132,7 @@ namespace System.Speech.Recognition
 #pragma warning restore 56524
 
         private IRecognizerInternal _recognizer;
-        private GrammarState _grammarState = GrammarState.Unloaded;
+        private GrammarState _grammarState;
         private Exception _loadException;
         private Uri _uri;
         private Uri _baseUri;

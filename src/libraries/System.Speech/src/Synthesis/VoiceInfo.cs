@@ -265,7 +265,7 @@ namespace System.Speech.Synthesis
 
         private CultureInfo _culture;
 
-        private VoiceGender _gender = VoiceGender.NotSet;
+        private VoiceGender _gender;
 
         private VoiceAge _age;
 

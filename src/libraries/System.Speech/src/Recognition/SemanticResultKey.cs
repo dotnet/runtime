@@ -29,7 +29,7 @@ namespace System.Speech.Recognition
             // Build a grammar builder with all the phrases
             foreach (string phrase in phrases)
             {
-                _semanticKey.Add((string)phrase.Clone());
+                _semanticKey.Add(phrase);
             }
         }
 

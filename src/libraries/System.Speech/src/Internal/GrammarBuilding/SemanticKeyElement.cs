@@ -37,6 +37,7 @@ namespace System.Speech.Internal.GrammarBuilding
             // No need to check for the equality on _ruleRef. The children are in the Items, not the underlying rule
             return _semanticKey == refObj._semanticKey;
         }
+
         public override int GetHashCode()
         {
             return base.GetHashCode();

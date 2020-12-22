@@ -321,7 +321,7 @@ namespace System.Speech.Internal.ObjectTokens
             int SetObjectToken(ISpObjectToken pToken);
             [PreserveSig]
             int GetObjectToken(IntPtr ppToken);
-        };
+        }
 
         #endregion
         #region private Fields
@@ -334,14 +334,4 @@ namespace System.Speech.Internal.ObjectTokens
 
         #endregion
     }
-
-    internal enum VoiceCategory
-    {
-        Default,
-        ScanSoft
-    }
-
-    #region SAPI interface
-
-    #endregion
 }

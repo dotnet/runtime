@@ -290,7 +290,7 @@ namespace System.Speech.Internal.ObjectTokens
         {
             get
             {
-                return (string)_sKeyId.Clone();
+                return _sKeyId;
             }
         }
 

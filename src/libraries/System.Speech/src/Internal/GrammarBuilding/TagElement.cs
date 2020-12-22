@@ -45,6 +45,7 @@ namespace System.Speech.Internal.GrammarBuilding
             }
             return _value.Equals(refObj._value);
         }
+
         public override int GetHashCode()
         {
             return base.GetHashCode();

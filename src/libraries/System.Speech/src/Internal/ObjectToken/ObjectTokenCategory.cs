@@ -102,14 +102,5 @@ namespace System.Speech.Internal.ObjectTokens
         #endregion
 
         #endregion
-
-        #region Protected Methods
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-        }
-
-        #endregion
     }
 }
