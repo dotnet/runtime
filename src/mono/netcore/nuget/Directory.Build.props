@@ -6,12 +6,6 @@
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.props" />
 
   <PropertyGroup>
-    <PackageLicenseFile>$(CoreclrDir)/LICENSE.TXT</PackageLicenseFile>
-
-    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
-
-    <ProjectUrl>https://dot.net</ProjectUrl>
-
     <PackageIndexFile>$(MSBuildThisFileDirectory)/packageIndex.json</PackageIndexFile>
     <PackagePlatform>AnyCPU</PackagePlatform>
 

@@ -1,14 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project>
-
   <PropertyGroup>
-    <PackageLicenseFile>$(CoreclrDir)/LICENSE.TXT</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(CoreclrDir)/THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-
-    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
-
-    <ProjectUrl>https://dot.net</ProjectUrl>
-
     <!-- Defined in Packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
