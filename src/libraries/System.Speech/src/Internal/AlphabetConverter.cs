@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Microsoft.Win32;
 
 namespace System.Speech.Internal
 {
@@ -91,6 +93,8 @@ namespace System.Speech.Internal
             }
             if (i == s_langIds.Length)
             {
+                string dump = DumpRegistry();
+                Debug.Fail($"No phoneme map for LCID {langId}, maps exist for {string.Join(',', s_langIds)}\n{dump}\n");
                 _currentLangId = langId;
                 _phoneMap = null;
             }
@@ -107,6 +111,33 @@ namespace System.Speech.Internal
                 }
             }
             return oldLangId;
+        }
+
+        private string DumpRegistry()
+        {
+            StringBuilder sb = new();
+            RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Speech\Voices\Tokens");
+            Traverse(key);
+
+            void Traverse(RegistryKey key, int indent = 0)
+            {
+                sb.AppendLine(key.Name);
+                string[] valnames = key.GetValueNames();
+                foreach (string valname in valnames)
+                {
+                    sb.AppendLine(new string(' ', indent) + valname + ":" + key.GetValue(valname));
+
+                }
+
+                string[] names = key.GetSubKeyNames();
+
+                foreach (var subkeyname in names)
+                {
+                    Traverse(key.OpenSubKey(subkeyname), indent++);
+                }
+            }
+
+            return sb.ToString();
         }
         #endregion
 
