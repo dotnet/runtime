@@ -2265,7 +2265,7 @@ namespace System
             var gt = (RuntimeType)MakeGenericType(genericType, new Type[] { genericArgument });
             RuntimeConstructorInfo? ctor = gt.GetDefaultConstructor();
             if (ctor is null)
-                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt.FullName));
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt));
 
             return ctor.InternalInvoke(null, null, wrapExceptions: true)!;
         }
