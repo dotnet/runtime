@@ -583,8 +583,6 @@ namespace System.Speech.Recognition
 
         internal GrammarOptions _semanticTag;
 
-        internal AppDomain _appDomain;
-
         internal System.Speech.Internal.SrgsCompiler.AppDomainGrammarProxy _proxy;
 
         internal ScriptRef[] _scripts;
@@ -920,11 +918,7 @@ namespace System.Speech.Recognition
             {
                 // Check all methods referenced in the rule; availability, public and arguments
                 Assembly executingAssembly = Assembly.GetExecutingAssembly();
-
-                _appDomain = AppDomain.CreateDomain("sandbox");
-
-                // Create the app domain
-                _proxy = new AppDomainGrammarProxy();//(AppDomainGrammarProxy) _appDomain.CreateInstanceFromAndUnwrap (executingAssembly.GetName ().CodeBase, "System.Speech.Internal.SrgsCompiler.AppDomainGrammarProxy");
+                _proxy = new AppDomainGrammarProxy();
                 _proxy.Init(_ruleName, assemblyContent, assemblyDebugSymbols);
                 _scripts = scripts;
             }

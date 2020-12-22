@@ -700,48 +700,28 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             // Check all methods referenced in the rule; availability, public and arguments
             Assembly executingAssembly = Assembly.GetExecutingAssembly();
-            AppDomain appDomain = null;
-            try
+            AppDomainCompilerProxy proxy = new();
+            int count = _scriptRefs.Count;
+            string[] rules = new string[count];
+            string[] methods = new string[count];
+            int[] methodScripts = new int[count];
+
+            for (int i = 0; i < count; i++)
             {
-                appDomain = AppDomain.CreateDomain("Loading Domain");
-                // AppDomainCompilerProxy proxy = (AppDomainCompilerProxy) appDomain.CreateInstanceFromAndUnwrap (executingAssembly.GetName ().CodeBase, "System.Speech.Internal.SrgsCompiler.AppDomainCompilerProxy");
-                AppDomainCompilerProxy proxy = new();
-
-                // Marshalling between App domains prevents to use complex types as they cannot
-                // be marhalled accross app domain boundaries. Use 3 arrays instead
-                int count = _scriptRefs.Count;
-                string[] rules = new string[count];
-                string[] methods = new string[count];
-                int[] methodScripts = new int[count];
-
-                for (int i = 0; i < count; i++)
-                {
-                    ScriptRef scriptRef = _scriptRefs[i];
-                    rules[i] = scriptRef._rule;
-                    methods[i] = scriptRef._sMethod;
-                    methodScripts[i] = (int)scriptRef._method;
-                }
-
-                // Marshalling of all parameters must be achieved
-                Exception e = proxy.CheckAssembly(il, iCfg, _language, _namespace, rules, methods, methodScripts);
-
-                // Throw the error if any
-                if (e != null)
-                {
-                    throw e;
-                }
-
-                // Get the constructors and the types
-                AssociateConstructorsWithRules(proxy, rules, _rules, iCfg, _language);
+                ScriptRef scriptRef = _scriptRefs[i];
+                rules[i] = scriptRef._rule;
+                methods[i] = scriptRef._sMethod;
+                methodScripts[i] = (int)scriptRef._method;
             }
-            finally
+
+            Exception ex = proxy.CheckAssembly(il, iCfg, _language, _namespace, rules, methods, methodScripts);
+
+            if (ex != null)
             {
-                if (appDomain != null)
-                {
-                    AppDomain.Unload(appDomain);
-                    appDomain = null;
-                }
+                throw ex;
             }
+
+            AssociateConstructorsWithRules(proxy, rules, _rules, iCfg, _language);
         }
 
         private static void AssociateConstructorsWithRules(AppDomainCompilerProxy proxy, string[] names, List<Rule> rules, int iCfg, string language)

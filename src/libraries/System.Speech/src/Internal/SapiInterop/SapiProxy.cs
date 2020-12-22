@@ -242,7 +242,14 @@ namespace System.Speech.Internal.SapiInterop
                     {
                         _exception = e;
                     }
-                    _done.Set();
+                    try
+                    {
+                        _done.Set();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        break;
+                    }
                 }
             }
 
