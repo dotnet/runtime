@@ -15,6 +15,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
+    public class CallConvSuppressGCTransition
+    {
+        public CallConvSuppressGCTransition() { }
+    }
     public class CallConvThiscall
     {
         public CallConvThiscall() { }
