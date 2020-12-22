@@ -164,7 +164,7 @@
       </ManagedAssemblyToLink>
     </ItemGroup>
     <ItemGroup>
-      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' != '$(MSBuildProjectName).dll')" >
+      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' != '$(MSBuildProjectName).dll') and ('%(ManagedAssemblyToLink.FileName).dll' != 'Microsoft.DotNet.RemoteExecutor.dll')" >
         <TrimMode>link</TrimMode>
       </ManagedAssemblyToLink>
       <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' == '$(AssemblyName).dll')" >
