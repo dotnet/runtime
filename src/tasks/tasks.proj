@@ -28,12 +28,12 @@
     </ItemGroup>
 
     <MSBuild Projects="@(TaskProject)"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=Debug;Platform=AnyCPU"
-             Targets="Restore"/>
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=Debug;Platform=AnyCPU;RESTORE_TASK_BINLOG_PARAMETERS=$(ArtifactsLogDir)Restore-tasks.proj.binlog"
+             Targets="Restore" />
 
     <MSBuild Projects="@(TaskProject)"
              Properties="Configuration=Debug;Platform=AnyCPU"
-             Targets="Build"/>
+             Targets="Build" />
 
     <WriteLinesToFile File="$(TasksIntermediateFile)"
                       Lines="$(TasksIntermediateFile)"

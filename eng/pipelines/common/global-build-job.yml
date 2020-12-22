@@ -14,11 +14,14 @@ parameters:
   pool: ''
   platform: ''
   condition: true
+  useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
   dependOnEvaluatePaths: false
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
   helixQueues: ''
+  enablePublishTestResults: false
+  testResultsFormat: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
 
@@ -31,6 +34,9 @@ jobs:
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
+    testResultsFormat: ${{ parameters.testResultsFormat }}
+
     workspace:
       clean: all
 
@@ -88,6 +94,8 @@ jobs:
     # Build
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter)
       displayName: Build product
+      ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
+        continueOnError: ${{ parameters.shouldContinueOnError }}
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: |

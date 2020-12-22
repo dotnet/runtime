@@ -206,13 +206,7 @@ HRESULT PortablePdbWriter::DefineSequencePoints(Method* method)
     // Blob ::= header SequencePointRecord (SequencePointRecord | document-record)*
     // SequencePointRecord :: = sequence-point-record | hidden-sequence-point-record
 
-    // header ::= {LocalSignature, InitialDocument}
-    // LocalSignature
-    ULONG localSigRid = RidFromToken(method->m_LocalsSig);
-    CompressUnsignedLong(localSigRid, blob);
-    // InitialDocument TODO: skip this for now
-
-    // SequencePointRecord
+    ULONG localSigRid = 0;
     ULONG offset = 0;
     ULONG deltaLines = 0;
     LONG deltaColumns = 0;
@@ -225,6 +219,16 @@ HRESULT PortablePdbWriter::DefineSequencePoints(Method* method)
     BOOL isValid = TRUE;
     BOOL hasEmptyMethodBody = method->m_LinePCList.COUNT() == 0;
 
+    // header ::= {LocalSignature, InitialDocument}
+    if (!hasEmptyMethodBody)
+    {
+        // LocalSignature
+        localSigRid = RidFromToken(method->m_LocalsSig);
+        CompressUnsignedLong(localSigRid, blob);
+        // InitialDocument TODO: skip this for now
+    }
+
+    // SequencePointRecord :: = sequence-point-record | hidden-sequence-point-record
     for (UINT32 i = 0; i < method->m_LinePCList.COUNT(); i++)
     {
         currSeqPoint = method->m_LinePCList.PEEK(i);

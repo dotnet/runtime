@@ -133,3 +133,18 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+# Run disabled installer tests on Linux x64
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_x64
+    jobParameters:
+      nameSuffix: Installer_Tests
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      buildArgs: -s clr+libs+host+packs -restore -build -test -c $(_BuildConfig) -lc Debug /p:PortableBuild=true /p:RunOnStaging=true
+      useContinueOnErrorDuringBuild: true
+      enablePublisTestResults: true
+      testResultsFormat: xunit
