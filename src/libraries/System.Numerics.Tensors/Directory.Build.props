@@ -8,9 +8,9 @@
     <PackageDescription>Tensor class which represents and extends multi-dimensional arrays.
 
 Commonly Used Types:
-System.Numerics.Tensors.Tensor<T>
-System.Numerics.Tensors.CompressedSparseTensor<T>
-System.Numerics.Tensors.DenseTensor<T>
-System.Numerics.Tensors.SparseTensor<T></PackageDescription>
+System.Numerics.Tensors.Tensor&lt;T&gt;
+System.Numerics.Tensors.CompressedSparseTensor&lt;T&gt;
+System.Numerics.Tensors.DenseTensor&lt;T&gt;
+System.Numerics.Tensors.SparseTensor&lt;T&gt;</PackageDescription>
   </PropertyGroup>
 </Project>

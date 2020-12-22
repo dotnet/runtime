@@ -6,6 +6,6 @@
 
 Commonly Used Types:
 System.Threading.Channel
-System.Threading.Channel<T></PackageDescription>
+System.Threading.Channel&lt;T&gt;</PackageDescription>
   </PropertyGroup>
 </Project>

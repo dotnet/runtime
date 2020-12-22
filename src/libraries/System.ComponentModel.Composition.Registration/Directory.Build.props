@@ -7,7 +7,7 @@
 Commonly Used Types:
 System.ComponentModel.Composition.Registration.RegistrationBuilder
 System.ComponentModel.Composition.Registration.PartBuilder
-System.ComponentModel.Composition.Registration.PartBuilder<T>
+System.ComponentModel.Composition.Registration.PartBuilder&lt;T&gt;
 System.ComponentModel.Composition.Registration.ParameterImportBuilder
 System.ComponentModel.Composition.Registration.ImportBuilder
 System.ComponentModel.Composition.Registration.ExportBuilder</PackageDescription>

@@ -6,20 +6,20 @@
 
 Commonly Used Types:
 System.Collections.Immutable.ImmutableArray
-System.Collections.Immutable.ImmutableArray<T>
+System.Collections.Immutable.ImmutableArray&lt;T&gt;
 System.Collections.Immutable.ImmutableDictionary
-System.Collections.Immutable.ImmutableDictionary<TKey,TValue>
+System.Collections.Immutable.ImmutableDictionary&lt;TKey,TValue&gt;
 System.Collections.Immutable.ImmutableHashSet
-System.Collections.Immutable.ImmutableHashSet<T>
+System.Collections.Immutable.ImmutableHashSet&lt;T&gt;
 System.Collections.Immutable.ImmutableList
-System.Collections.Immutable.ImmutableList<T>
+System.Collections.Immutable.ImmutableList&lt;T&gt;
 System.Collections.Immutable.ImmutableQueue
-System.Collections.Immutable.ImmutableQueue<T>
+System.Collections.Immutable.ImmutableQueue&lt;T&gt;
 System.Collections.Immutable.ImmutableSortedDictionary
-System.Collections.Immutable.ImmutableSortedDictionary<TKey,TValue>
+System.Collections.Immutable.ImmutableSortedDictionary&lt;TKey,TValue&gt;
 System.Collections.Immutable.ImmutableSortedSet
-System.Collections.Immutable.ImmutableSortedSet<T>
+System.Collections.Immutable.ImmutableSortedSet&lt;T&gt;
 System.Collections.Immutable.ImmutableStack
-System.Collections.Immutable.ImmutableStack<T></PackageDescription>
+System.Collections.Immutable.ImmutableStack&lt;T&gt;</PackageDescription>
   </PropertyGroup>
 </Project>
