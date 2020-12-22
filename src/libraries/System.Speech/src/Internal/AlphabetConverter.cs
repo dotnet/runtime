@@ -63,11 +63,17 @@ namespace System.Speech.Internal
         /// <param name="isSapi">To indicate whether parameter phonemes is in SAPI or UPS phonemes</param>
         internal bool IsPrefix(string phonemes, bool isSapi)
         {
+            if (_phoneMap == null)
+                return false;
+
             return _phoneMap.IsPrefix(phonemes, isSapi);
         }
 
         internal bool IsConvertibleUnit(string phonemes, bool isSapi)
         {
+            if (_phoneMap == null)
+                return false;
+
             return _phoneMap.ConvertPhoneme(phonemes, isSapi) != null;
         }
 
@@ -93,8 +99,7 @@ namespace System.Speech.Internal
             }
             if (i == s_langIds.Length)
             {
-                string dump = DumpRegistry();
-                Debug.Fail($"No phoneme map for LCID {langId}, maps exist for {string.Join(',', s_langIds)}\n{dump}\n");
+                //Debug.Fail($"No phoneme map for LCID {langId}, maps exist for {string.Join(',', s_langIds)}\n");
                 _currentLangId = langId;
                 _phoneMap = null;
             }
@@ -111,33 +116,6 @@ namespace System.Speech.Internal
                 }
             }
             return oldLangId;
-        }
-
-        private string DumpRegistry()
-        {
-            StringBuilder sb = new();
-            RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Speech\Voices\Tokens");
-            Traverse(key);
-
-            void Traverse(RegistryKey key, int indent = 0)
-            {
-                sb.AppendLine(key.Name);
-                string[] valnames = key.GetValueNames();
-                foreach (string valname in valnames)
-                {
-                    sb.AppendLine(new string(' ', indent) + valname + ":" + key.GetValue(valname));
-
-                }
-
-                string[] names = key.GetSubKeyNames();
-
-                foreach (var subkeyname in names)
-                {
-                    Traverse(key.OpenSubKey(subkeyname), indent++);
-                }
-            }
-
-            return sb.ToString();
         }
         #endregion
 
