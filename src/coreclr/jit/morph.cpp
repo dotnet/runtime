@@ -3476,9 +3476,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             newArgEntry =
                 call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, byteSize, argAlignBytes, isStructArg,
                                            isFloatHfa, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
-                                                                         UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
-                                                                             UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
-                                                                                 UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
+                                                           UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
+                                                               UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
+                                                                   UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
             newArgEntry->SetIsBackFilled(isBackFilled);
             newArgEntry->isNonStandard = isNonStandard;
 
