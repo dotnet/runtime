@@ -256,7 +256,7 @@ build_Tests()
         fi
     fi
 
-    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
+    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" ]]; then
         build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
@@ -624,6 +624,8 @@ echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
 
 if [ "$__TargetOS" == "Android" ]; then
     build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
+elif [ "$__TargetOS" == "iOS" ]; then
+    build_MSBuild_projects "Create_iOS_App" "$__RepoRootDir/src/tests/run.proj" "Create iOS Apps" "/t:BuildAlliOSApp"
 fi
 
 if [[ "$__RunTests" -ne 0 ]]; then

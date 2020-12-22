@@ -707,6 +707,80 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildAndroidApp" Properties="_CMDDIR=%(TestDirectories.Identity)" />
   </Target>
 
+  <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+
+  <Target Name="BuildiOSApp">
+    <PropertyGroup>
+      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
+      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
+      <XUnitWrapperFileName>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/', '.')).XUnitWrapper.dll</XUnitWrapperFileName>
+      <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
+      <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AssemblyName>$(Category)</AssemblyName>
+      <BuildDir>$(IntermediateOutputPath)/iOSApps</BuildDir>
+      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)/$(Configuration)/runtimes/ios-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" />
+    </ItemGroup>
+    <ItemGroup>
+      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
+      <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
+      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
+      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(BuildDir)" />
+
+    <ItemGroup>
+      <Hobert Include="$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a" />
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib" />
+    </ItemGroup>
+    <RemoveDir Directories="$(BundleDir)" />
+    <Copy
+        SourceFiles="@(RuntimePackNativeLibs)"
+        DestinationFolder="$(BuildDir)" />
+    <Copy
+        SourceFiles="$(TestDlls)"
+        DestinationFolder="$(BuildDir)" />
+    <Copy
+        SourceFiles="$(XUnitWrapperDll)"
+        DestinationFolder="$(BuildDir)" />
+
+    <AppleAppBuilderTask
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(AssemblyName)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
+        Assemblies="@(BundleAssemblies)"
+        MainLibraryFileName="$(XUnitWrapperDll)"
+        ForceInterpreter="$(MonoForceInterpreter)"
+        UseConsoleUITemplate="True"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        Optimized="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(BundleDir)"
+        AppDir="$(BuildDir)"
+    >
+      <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+      <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+  </Target>
+
+  <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildiOSApp" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+  </Target>
+
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.$(TestScriptExtension)"/>
