@@ -980,7 +980,7 @@ Possible constructors are: '{2}'.</value>
     <value>A rule reference in a grammar was made to a named rule that was never defined.</value>
   </data>
   <data name="SapiErrorEmptyRule" xml:space="preserve">
-    <value>A none dynamic grammar rule is empty.</value>
+    <value>A non dynamic grammar rule is empty.</value>
   </data>
   <data name="SapiErrorGrammarCompilerInternalError" xml:space="preserve">
     <value>The grammar compiler failed due to an internal state error.</value>
@@ -1210,24 +1210,6 @@ Possible constructors are: '{2}'.</value>
   <data name="SapiErrorRootRuleAlreadyDefined" xml:space="preserve">
     <value>There is already a root rule for this grammar.</value>
   </data>
-  <data name="SapiErrorUnused1" xml:space="preserve">
-    <value>Error code not used.</value>
-  </data>
-  <data name="SapiErrorUnused2" xml:space="preserve">
-    <value>Error code not used.</value>
-  </data>
-  <data name="SapiErrorUnused3" xml:space="preserve">
-    <value>Error code not used.</value>
-  </data>
-  <data name="SapiErrorUnused4" xml:space="preserve">
-    <value>Error code not used.</value>
-  </data>
-  <data name="SapiErrorUnused5" xml:space="preserve">
-    <value>Error code not used.</value>
-  </data>
-  <data name="SapiErrorUnused6" xml:space="preserve">
-    <value>Error code not used.</value>
-  </data>
   <data name="SapiErrorScriptDisallowed" xml:space="preserve">
     <value>Support for embedded script not supported because browser security settings have disabled it.</value>
   </data>
@@ -1279,7 +1261,7 @@ Possible constructors are: '{2}'.</value>
   <data name="NotSupported" xml:space="preserve">
     <value>This combination of function call and input is not supported.</value>
   </data>
-  <data name="SapiErrorTopicNotADaptable" xml:space="preserve">
+  <data name="SapiErrorTopicNotAdaptable" xml:space="preserve">
     <value>This topic cannot be modified.</value>
   </data>
   <data name="SapiErrorPhonemeConversion" xml:space="preserve">

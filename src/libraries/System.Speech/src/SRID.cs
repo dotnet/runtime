@@ -263,6 +263,8 @@ namespace System.Speech
         NotWholeNumberBlocks,
         BlockSignatureInvalid,
         NumberOfSamplesInvalid,
+        // Do not change ordering of codes below here; they correspond to the
+        // numerical codes in sperror.h, from SPERR_UNINITIALIZED onwards.
         SapiErrorUninitialized,
         SapiErrorAlreadyInitialized,
         SapiErrorNotSupportedFormat,
@@ -368,12 +370,6 @@ namespace System.Speech
         SapiErrorSMLGenerationFail,
         SapiErrorNotPromptVoice,
         SapiErrorRootRuleAlreadyDefined,
-        SapiErrorUnused1,
-        SapiErrorUnused2,
-        SapiErrorUnused3,
-        SapiErrorUnused4,
-        SapiErrorUnused5,
-        SapiErrorUnused6,
         SapiErrorScriptDisallowed,
         SapiErrorRemoteCallTimedOutStart,
         SapiErrorRemoteCallTimedOutConnect,
@@ -391,8 +387,20 @@ namespace System.Speech
         SapiErrorCannotNormalize,
         LimitReached,
         NotSupported,
-        SapiErrorTopicNotADaptable,
+        SapiErrorTopicNotAdaptable,
         SapiErrorPhonemeConversion,
         SapiErrorNotSupportedForInprocRecognizer
+        /* would continue as follows:
+        SPERR_OVERLOAD The operation cannot be carried out due to overload and should be attempted again.
+        SPERR_LEX_INVALID_DATA The lexicon data is invalid or corrupted.
+        SPERR_CFG_INVALID_DATA The data in the CFG grammar is invalid or corrupted   // currently == SPERR_LAST
+        SPERR_LEX_UNEXPECTED_FORMAT The lexicon is not in the expected format.
+        SPERR_STRING_TOO_LONG The string is too long.
+        SPERR_STRING_EMPTY The string cannot be empty.
+        SPERR_NON_WORD_TRANSITION One of the parse transitions is not a word transition.
+        SPERR_SISR_ATTRIBUTES_NOT_ALLOWED Attributes are not allowed at the top level.
+        SPERR_SISR_MIXED_NOT_ALLOWED Mixed content is not allowed at the top level.
+        SPERR_VOICE_NOT_FOUND NO given voice is found
+*/
     }
 }

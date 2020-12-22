@@ -8,6 +8,7 @@ namespace System.Speech.Internal.SapiInterop
 {
     #region Enum
 
+    // See sperror.h
     internal enum SAPIErrorCodes
     {
         S_OK = 0,            // 0x00000000
