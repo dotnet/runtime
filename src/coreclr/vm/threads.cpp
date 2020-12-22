@@ -1460,7 +1460,6 @@ Thread::Thread()
     NewHolder<Dbg_TrackSyncStack> trackSyncHolder(static_cast<Dbg_TrackSyncStack*>(m_pTrackSync));
 #endif  // TRACK_SYNC
 
-    m_RequestedStackSize = 0;
     m_PreventAsync = 0;
     m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
