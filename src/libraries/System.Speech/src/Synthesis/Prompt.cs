@@ -105,6 +105,11 @@ namespace System.Speech.Synthesis
             }
         }
 
+        /// <summary>
+        /// What errors occurred during this operation?
+        /// </summary>
+        internal Exception Exception { get; set; }
+
         #endregion
 
         #region Internal Fields
@@ -128,11 +133,6 @@ namespace System.Speech.Synthesis
         /// Is this prompt played asynchrounously
         /// </summary>
         internal bool _syncSpeak;
-
-        /// <summary>
-        /// What errors occurred during this operation?
-        /// </summary>
-        internal Exception _exception;
 
         #endregion
 

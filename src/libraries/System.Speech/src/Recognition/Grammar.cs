@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Speech.Internal;
 using System.Speech.Internal.SrgsCompiler;
 using System.Speech.Recognition.SrgsGrammar;
@@ -1007,7 +1008,7 @@ namespace System.Speech.Recognition
                     onInitInvoked = true;
                     if (appDomainException != null)
                     {
-                        throw appDomainException;
+                        ExceptionDispatchInfo.Throw(appDomainException);
                     }
                 }
                 else

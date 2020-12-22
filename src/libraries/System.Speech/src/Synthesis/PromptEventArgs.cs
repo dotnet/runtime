@@ -8,7 +8,7 @@ namespace System.Speech.Synthesis
     public abstract class PromptEventArgs : AsyncCompletedEventArgs
     {
         #region Constructors
-        internal PromptEventArgs(Prompt prompt) : base(prompt._exception, prompt._exception != null, prompt)
+        internal PromptEventArgs(Prompt prompt) : base(prompt.Exception, prompt.Exception != null, prompt)
         {
             _prompt = prompt;
         }

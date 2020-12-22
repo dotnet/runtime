@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Speech.Internal.SapiInterop;
 using System.Speech.Internal.SrgsCompiler;
@@ -521,7 +522,7 @@ namespace System.Speech.Recognition
 
             if (exceptionThrown != null)
             {
-                throw exceptionThrown;
+                ExceptionDispatchInfo.Throw(exceptionThrown);
             }
 
             //
@@ -877,7 +878,7 @@ namespace System.Speech.Recognition
 
                             if (appDomainException != null)
                             {
-                                throw appDomainException;
+                                ExceptionDispatchInfo.Throw(appDomainException);
                             }
                         }
                         else
@@ -919,7 +920,7 @@ namespace System.Speech.Recognition
                             grammar._proxy.OnError(script._rule, script._sMethod, parameters, out appDomainException);
                             if (appDomainException != null)
                             {
-                                throw appDomainException;
+                                ExceptionDispatchInfo.Throw(appDomainException);
                             }
                         }
                         else
@@ -963,7 +964,7 @@ namespace System.Speech.Recognition
                                 resultValue = grammar._proxy.OnRecognition(script._sMethod, parameters, out appDomainException);
                                 if (appDomainException != null)
                                 {
-                                    throw appDomainException;
+                                    ExceptionDispatchInfo.Throw(appDomainException);
                                 }
                             }
                             else

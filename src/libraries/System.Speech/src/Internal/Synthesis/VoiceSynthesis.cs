@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Speech.AudioFormat;
 using System.Speech.Internal.ObjectTokens;
@@ -125,9 +126,9 @@ namespace System.Speech.Internal.Synthesis
                 }
 
                 // Throw if an exception occured
-                if (prompt._exception != null)
+                if (prompt.Exception != null)
                 {
-                    throw prompt._exception;
+                    ExceptionDispatchInfo.Throw(prompt.Exception);
                 }
             }
             finally
@@ -391,7 +392,7 @@ namespace System.Speech.Internal.Synthesis
                         ParametersSpeak paramSpeak = parameter._parameter as ParametersSpeak;
                         if (paramSpeak != null)
                         {
-                            paramSpeak._prompt._exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
+                            paramSpeak._prompt.Exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
                         }
                     }
                     // Restart the worker thread
@@ -416,7 +417,7 @@ namespace System.Speech.Internal.Synthesis
                     ParametersSpeak paramSpeak = parameters._parameter as ParametersSpeak;
                     if (paramSpeak._prompt == prompt)
                     {
-                        paramSpeak._prompt._exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
+                        paramSpeak._prompt.Exception = new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
                         found = true;
                         break;
                     }
@@ -749,9 +750,9 @@ namespace System.Speech.Internal.Synthesis
                                 ParametersSpeak paramSpeak = (ParametersSpeak)parameters._parameter;
                                 try
                                 {
-                                    InjectEvent(TtsEventId.StartInputStream, paramSpeak._prompt, paramSpeak._prompt._exception, null);
+                                    InjectEvent(TtsEventId.StartInputStream, paramSpeak._prompt, paramSpeak._prompt.Exception, null);
 
-                                    if (paramSpeak._prompt._exception == null)
+                                    if (paramSpeak._prompt.Exception == null)
                                     {
                                         // No lexicon yet
                                         List<LexiconEntry> lexicons = new(); ;
@@ -790,7 +791,7 @@ namespace System.Speech.Internal.Synthesis
                                         System.Diagnostics.Debug.Assert(speakInfo != null);
                                         SpeakText(speakInfo, paramSpeak._prompt, lexicons);
                                     }
-                                    ChangeStateToReady(paramSpeak._prompt, paramSpeak._prompt._exception);
+                                    ChangeStateToReady(paramSpeak._prompt, paramSpeak._prompt.Exception);
                                 }
 
 #pragma warning disable 6500
@@ -944,7 +945,7 @@ namespace System.Speech.Internal.Synthesis
                             {
                                 Exception lastException = _site.LastException;
                                 _site.LastException = null;
-                                throw lastException;
+                                ExceptionDispatchInfo.Throw(lastException);
                             }
                             //--- Always inject the end of stream and complete event on failure
                             throw new OperationCanceledException(SR.Get(SRID.PromptAsyncOperationCancelled));
@@ -980,7 +981,7 @@ namespace System.Speech.Internal.Synthesis
                 {
                     _site.EventMapper.FlushEvent();
                 }
-                prompt._exception = exception;
+                prompt.Exception = exception;
             }
 
             int evtMask = 1 << (int)evtId;
@@ -1548,7 +1549,7 @@ namespace System.Speech.Internal.Synthesis
 
             // Raise the appropriate events
             TtsEventId eventId = ttsEvent.Id;
-            prompt._exception = ttsEvent.Exception;
+            prompt.Exception = ttsEvent.Exception;
             switch (eventId)
             {
                 case TtsEventId.StartInputStream:

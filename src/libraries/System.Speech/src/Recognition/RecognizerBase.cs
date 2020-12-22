@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Speech.AudioFormat;
@@ -1620,7 +1621,7 @@ ISpGrammarResourceLoader
                     case ((SAPIErrorCodes)(-1)):
                         if (_loadException != null)
                         {
-                            throw _loadException;
+                            ExceptionDispatchInfo.Throw(_loadException);
                         }
                         ThrowIfSapiErrorCode((SAPIErrorCodes)e.ErrorCode);
                         break;
