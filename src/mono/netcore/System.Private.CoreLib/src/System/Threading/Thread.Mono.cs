@@ -13,7 +13,7 @@ namespace System.Threading
     //
     // Under netcore, there is only one thread object per thread
     //
-    [Mono.MonoRuntimeLayoutAware]
+    [Mono.MonoRuntimeLayoutAware(nameof(_runtime))]
     public partial class Thread
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -77,7 +77,6 @@ namespace System.Threading
         }
 
 #pragma warning disable 169, CA1823
-        [Mono.MonoRuntimeLayoutAwareAttribute("keep in sync with metadata/object-internals.h")]
         private RuntimeLayout _runtime;
 #pragma warning restore 169, CA1823
 
@@ -94,6 +93,8 @@ namespace System.Threading
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
         // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
         private bool _mayNeedResetForThreadPool;
+
+        internal IntPtr garbage;
 
         private Thread()
         {

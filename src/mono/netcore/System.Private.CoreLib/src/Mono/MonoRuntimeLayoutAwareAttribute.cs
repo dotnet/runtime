@@ -6,11 +6,9 @@ using System;
 namespace Mono
 {
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field)]
-    public class MonoRuntimeLayoutAwareAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class)]
+    internal class MonoRuntimeLayoutAwareAttribute : Attribute
     {
-        public MonoRuntimeLayoutAwareAttribute () {}
-
-        public MonoRuntimeLayoutAwareAttribute (string keepInSyncWith) {}
+        public MonoRuntimeLayoutAwareAttribute (string fieldName) {}
     }
 }
