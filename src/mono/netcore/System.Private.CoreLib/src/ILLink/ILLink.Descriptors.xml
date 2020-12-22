@@ -612,12 +612,7 @@
 		</type>
 
 		<!-- domain.c: mono_defaults.thread_class -->
-		<!-- FIXME: -->
-		<type fullname="System.Threading.Thread">
-			<field name="_runtime" />
-		</type>
-		<!-- object-internals.h: _MonoInternalThread -->
-		<type fullname="System.Threading.Thread.RuntimeLayout" preserve="fields" />
+		<type fullname="System.Threading.Thread" preserve="nothing" />
 
 		<!-- domain.c: mono_defaults.threadabortexception_class -->
 		<!-- exception.c (mono_get_exception_thread_abort) -->
