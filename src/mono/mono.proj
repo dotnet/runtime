@@ -64,7 +64,7 @@
     <Error Condition="('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(Platform)' != 'x64' and '$(Platform)' != 'x86' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
     <Error Condition="'$(TargetsBrowser)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
-    <Error Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_NDK_ROOT)' == '' and '$(_SkipMonoCrossJitConfigure)' != 'true'" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
+    <Error Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_NDK_ROOT)' == '' and '$(SkipMonoCrossJitConfigure)' != 'true'" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
     <Error Condition="'$(OS)' == 'Windows_NT' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
 
     <!-- check if Ninja is available and default to it on Unix platforms -->
@@ -329,8 +329,8 @@
 
     <MakeDir Directories="$(MonoObjDir)" />
     <!-- configure -->
-    <Message Condition="'$(_SkipMonoCrossJitConfigure)' != 'true'" Text="Running '$(_MonoCMakeConfigureCommand)' in '$(MonoObjDir)'" Importance="High"/>
-    <Exec Condition="'$(_SkipMonoCrossJitConfigure)' != 'true'" Command="$(_MonoCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Message Condition="'$(SkipMonoCrossJitConfigure)' != 'true'" Text="Running '$(_MonoCMakeConfigureCommand)' in '$(MonoObjDir)'" Importance="High"/>
+    <Exec Condition="'$(SkipMonoCrossJitConfigure)' != 'true'" Command="$(_MonoCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <!-- build -->
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="Running '$(_MonoCMakeBuildCommand)' in '$(MonoObjDir)'" Importance="High"/>
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="$(_MonoCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>

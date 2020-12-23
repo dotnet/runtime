@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="BuildMonoCrossAllTargets">
   <PropertyGroup>
-    <MonoAotDefaultTargets>android-x64;android-arm64;android-x86;android-arm</MonoAotDefaultTargets>
-    <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">$(MonoAotDefaultTargets)</MonoAotTargets>
+    <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">android-x64;android-arm64;android-x86;android-arm</MonoAotTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,7 +26,7 @@
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="MonoAotCrossTarget='$(MonoAotTargets)';BuildMonoAOTCrossCompilerOnly=true;_SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+             Properties="BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
     <ItemGroup>
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid)\**" />
