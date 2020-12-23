@@ -161,8 +161,6 @@
         <IsTrimmable>true</IsTrimmable>
         <TrimMode>link</TrimMode>
       </ManagedAssemblyToLink>
-    </ItemGroup>
-    <ItemGroup>
       <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' != '$(MSBuildProjectName).dll')" >
         <TrimMode>link</TrimMode>
       </ManagedAssemblyToLink>
@@ -171,10 +169,7 @@
       </ManagedAssemblyToLink>
       <TrimmerRootAssembly Include="WasmTestRunner"/>
       <TrimmerRootAssembly Include="$(AssemblyName)"/>
-    </ItemGroup>
-    <ItemGroup>
-      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml">
-      </TrimmerRootDescriptor>
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
     </ItemGroup>
   </Target>
 
@@ -185,7 +180,7 @@
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmAotDir>$(PublishDir)</WasmAotDir>
