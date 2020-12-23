@@ -13,8 +13,6 @@
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
     <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>link</TrimMode>
     <EventSourceSupport>false</EventSourceSupport>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
@@ -155,7 +153,8 @@
 
   </Target>
 
-  <Target Name="ConfigureTrimming"
+  <Target Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
+          Name="ConfigureTrimming"
           BeforeTargets="PrepareForILLink">
     <ItemGroup>
       <ManagedAssemblyToLink Include="$(OutDir)\*xunit*">
@@ -179,6 +178,11 @@
     </ItemGroup>
   </Target>
 
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
@@ -198,15 +202,6 @@
       </WasmSatelliteAssemblies>
 
       <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
-      <!-- WasmTestRunner referenced assemblies -->
-      <!--
-      <WasmAssembliesToBundle Include="$(OutDir)\System.Globalization.dll" />
-      <WasmAssembliesToBundle Include="$(OutDir)\System.Reflection.dll" />
-      <WasmAssembliesToBundle Include="$(OutDir)\System.Runtime.dll" />
-      <WasmAssembliesToBundle Include="$(OutDir)\System.Runtime.Extensions.dll" />
-      <WasmAssembliesToBundle Include="$(OutDir)\System.Threading.dll" />
-      <WasmAssembliesToBundle Include="$(OutDir)\System.Xml.XDocument.dll" />
-      -->
 
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
@@ -232,9 +227,5 @@
           AfterTargets="Build"
           DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
 
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
-  <PropertyGroup>
-      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
-  </PropertyGroup>
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(TargetOS)' == 'Browser'" />
 </Project>

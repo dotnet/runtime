@@ -30,6 +30,10 @@
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'">
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+  </PropertyGroup>
 
   <!-- Provide runtime options to Mono (interpreter, aot, debugging, etc) -->
   <ItemGroup Condition="'$(MonoEnvOptions)' != '' and '$(TargetsMobile)' != 'true'">

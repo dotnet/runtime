@@ -6,9 +6,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ArrayPool\HelloTest.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(RunNormal)' == 'true'">
     <Compile Include="ArrayPool\ArrayPoolTest.cs" />
     <Compile Include="ArrayPool\CollectionTests.cs" />
     <Compile Include="ArrayPool\UnitTests.cs" />
