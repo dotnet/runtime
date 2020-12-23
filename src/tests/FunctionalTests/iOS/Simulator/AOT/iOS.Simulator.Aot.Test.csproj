@@ -21,7 +21,7 @@
 
   <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
-      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
+      <AppDir>$(PublishDir)\app</AppDir>
       <IosSimulator Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86'">iPhone 11</IosSimulator>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
     </PropertyGroup>
@@ -29,11 +29,13 @@
     <RemoveDir Directories="$(AppDir)" />
 
     <ItemGroup>
-      <AotInputAssemblies Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
+      <AotInputAssemblies Include="$(PublishDir)\*.dll">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </AotInputAssemblies>
     </ItemGroup>
+
+    <Message Importance="High" Text="Output publish dir: $(PublishDir)"/>
 
     <MonoAOTCompiler
         CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\mono-aot-cross"
@@ -61,7 +63,7 @@
         Optimized="$(Optimized)"
         ForceAOT="$(ForceAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"
-        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
+        AppDir="$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>

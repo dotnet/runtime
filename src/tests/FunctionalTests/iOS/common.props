@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <OutputPath>bin</OutputPath>
+    <OutputPath>$(AssemblyBinDirOutputPath)</OutputPath>
     <DebugType>Portable</DebugType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetOS>iOS</TargetOS>

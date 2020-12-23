@@ -17,7 +17,7 @@
 
   <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
-      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
+      <AppDir>$(PublishDir)\app</AppDir>
       <IosSimulator Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86'">iPhone 11</IosSimulator>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
     </PropertyGroup>
@@ -25,7 +25,7 @@
     <RemoveDir Directories="$(AppDir)" />
 
     <ItemGroup>
-      <BundleAssemblies Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
+      <BundleAssemblies Include="$(PublishDir)\*.dll" />
     </ItemGroup>
 
     <AppleAppBuilderTask
@@ -42,7 +42,7 @@
         Optimized="$(Optimized)"
         ForceAOT="False"
         ForceInterpreter="$(MonoForceInterpreter)"
-        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
+        AppDir="$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
