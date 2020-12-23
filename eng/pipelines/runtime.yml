@@ -184,23 +184,17 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 # Build Mono AOT offset headers once, for consumption elsewhere
-# Only when libraries, mono or installer are changed
+# Only when mono changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    runtimeFlavor: mono
     platforms:
     - Android_x64
     jobParameters:
-      testGroup: innerloop
-      nameSuffix: Offsets_Mono
       condition: >-
         or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 # Build the whole product using Mono runtime
@@ -464,8 +458,8 @@ jobs:
     runtimeFlavor: mono
     buildConfig: debug
     platforms:
-    # - OSX_x64
-    # - Linux_x64
+    - OSX_x64
+    - Linux_x64
     - Linux_arm64
     # - Linux_musl_arm64
     - windows_x64
@@ -473,22 +467,21 @@ jobs:
     # - windows_arm
     # - windows_arm64
     jobParameters:
-      dependsOn: mono__offsets_Android_x64_debug
       condition: >-
         or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
-# Build Mono debug, with Android AOT cross-compilers
-# Only when libraries or mono changed
+# Build Mono release Android AOT cross-compiler
+# Only when mono changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
     runtimeFlavor: mono
-    buildConfig: debug
+    buildConfig: release
     platforms:
     - OSX_x64
     - Linux_x64
@@ -499,11 +492,11 @@ jobs:
     # - windows_arm
     # - windows_arm64
     jobParameters:
-      dependsOn: mono__offsets_Android_x64_debug
-      buildCross: android
+      runtimeVariant: crossandroid
+      dependsOn: mono_android_offsets
+      monoCrossAOTTargetOS: Android
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
