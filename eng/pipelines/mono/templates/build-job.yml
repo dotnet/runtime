@@ -96,6 +96,8 @@ jobs:
     - ${{ if eq(parameters.monoCrossAOTTargetOS, 'Android') }}:
       - name: aotCrossParameter
         value: /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+      - name: osOverride
+        value: '-os Android'
     - ${{ parameters.variables }}
 
     steps:
