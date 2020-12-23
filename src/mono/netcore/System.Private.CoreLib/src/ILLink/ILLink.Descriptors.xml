@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <linker>
 	<assembly fullname="System.Private.CoreLib">
-		<!-- domain.c: mono_defaults.appdomain_class -->
-		<type fullname="Mono.MonoDomain">
-			<field name="_mono_app_domain"/>
-		</type>
-
 		<!-- appdomain.c: mono_runtime_init -->
 		<type fullname="Mono.MonoDomainSetup" preserve="fields" >
 			<!-- appdomain.c mono_object_new_checked in mono_domain_create_appdomain_checked -->
