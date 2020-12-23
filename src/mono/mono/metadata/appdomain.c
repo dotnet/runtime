@@ -163,7 +163,16 @@ static GENERATE_GET_CLASS_WITH_CACHE (assembly, "System.Reflection", "Assembly")
 static GENERATE_GET_CLASS_WITH_CACHE (app_context, "System", "AppContext");
 #endif
 
+#ifndef ENABLE_NETCORE
 GENERATE_GET_CLASS_WITH_CACHE (appdomain, MONO_APPDOMAIN_CLASS_NAME_SPACE, MONO_APPDOMAIN_CLASS_NAME);
+#else
+MonoClass*
+mono_class_get_appdomain_class (void)
+{
+	return mono_defaults.object_class;
+}
+#endif
+
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_setup, MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE, MONO_APPDOMAIN_SETUP_CLASS_NAME);
 
 static MonoDomain *
