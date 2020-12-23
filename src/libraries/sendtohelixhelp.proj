@@ -242,27 +242,13 @@
       <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/console/*.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/browser/*.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-      </HelixWorkItem>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'">
-      <!-- Create a work item for run-only WASM console app  -->
-      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/console/*.zip" />
-      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
-        <PayloadArchive>%(Identity)</PayloadArchive>
-      </HelixWorkItem>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'">
-      <!-- Create a work item for run-only WASM browser app  -->
-      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/browser/*.zip" />
-      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
-        <PayloadArchive>%(Identity)</PayloadArchive>
       </HelixWorkItem>
     </ItemGroup>
 
