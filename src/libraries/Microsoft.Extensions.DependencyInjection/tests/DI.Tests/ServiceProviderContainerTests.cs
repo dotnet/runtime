@@ -481,37 +481,108 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36458")]
-        public void GetRequiredService_CircularReference_ThrowsSOEAndHangs()
+        public async Task GetRequiredService_BiggerObjectGraphWithOpenGenerics_NoDeadlock()
         {
-            // Arrange
-            var services = new ServiceCollection();
-            services.AddSingleton<Thing3>();
-            IServiceProvider sp = services.BuildServiceProvider();
-            using var scope1 = sp.CreateScope();
+            // Thread 1: IFakeOpenGenericService<Thing4> (transient) -> Thing3 (singleton) -> Thing2 (singleton)    -> Thing1 (singleton) -> Thing0 (singleton)
+            // Thread 2: IFakeOpenGenericService<Thing5> (singleton) -> Thing4 (transient) -> Thing3 (singleton) -> Thing2 (singleton) -> Thing1 (singleton) -> Thing0 (singleton)
 
-            bool doesNotHang = Task.Run(() =>
+            // 1. Thread 1 resolves the IFakeOpenGenericService<Thing4> which is a transient service
+            // 2. In parallel, Thread 2 resolves IFakeOpenGenericService<Thing5> which is a singleton
+            // 3. Thread 1 enters the factory callback for Thing4 and takes the lazy lock
+            // 4. Thread 2 takes callsite for Thing5 as a singleton lock when it resolves Thing5
+            // 5. Thread 2 enters the factory callback for Thing4 and waits on the lazy lock
+            // 6. Thread 1 calls GetRequiredService<Thing3> on the service provider, takes callsite for Thing3 all the way to Thing0 causing no deadlock
+            // (rather than taking the locks that are already taken
+
+            // Arrange
+            List<IFakeOpenGenericService<Thing4>> constrainedThing4Services = null;
+            List<IFakeOpenGenericService<Thing5>> constrainedThing5Services = null;
+
+            Thing3 thing3 = null;
+            IServiceProvider sp = null;
+
+            var services = new ServiceCollection();
+
+            services.AddSingleton<Thing0>();
+            services.AddSingleton<Thing1>();
+            services.AddSingleton<Thing2>();
+            services.AddSingleton<Thing3>();
+            services.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+
+            var lazy = new Lazy<Thing4>(() =>
             {
-                SingleThreadedSynchronizationContext.Run(() =>
+                thing3 = sp.GetRequiredService<Thing3>();
+                return new Thing4(thing3);
+            });
+
+            services.AddTransient(sp =>
+            {
+                if (ThreadId == 1)
                 {
-                    // Act
-                    Assert.Throws<StackOverflowException>(() =>
-                    {
-                        // ctor disposes ServiceProvider
-                        var service = sp.GetRequiredService<Thing3>();
-                    });
-                });
-            }).Wait(TimeSpan.FromSeconds(10));
+                    Thread.Sleep(1000);
+                }
+                else
+                {
+                    // Let Thread 1 over take Thread 2
+                    Thread.Sleep(3000);
+                }
+
+                return lazy.Value;
+            });
+            services.AddSingleton<Thing5>();
+
+            sp = services.BuildServiceProvider();
+
+            // Act
+            var t1 = Task.Run(() =>
+            {
+                ThreadId = 1;
+                using var scope1 = sp.CreateScope();
+                constrainedThing4Services = sp.GetServices<IFakeOpenGenericService<Thing4>>().ToList();
+            });
+
+            var t2 = Task.Run(() =>
+            {
+                ThreadId = 2;
+                using var scope2 = sp.CreateScope();
+                constrainedThing5Services = sp.GetServices<IFakeOpenGenericService<Thing5>>().ToList();
+            });
+
+            // Act
+            await t1;
+            await t2;
+
+            var thing4 = sp.GetRequiredService<Thing4>();
+            var thing5 = sp.GetRequiredService<Thing5>();
 
             // Assert
-            Assert.False(doesNotHang);
+            Assert.NotNull(thing3);
+            Assert.NotNull(thing4);
+            Assert.NotNull(thing5);
+            Assert.Equal(1, constrainedThing4Services.Count);
+            Assert.Equal(1, constrainedThing5Services.Count);
+            Assert.Same(thing4, constrainedThing4Services[0].Value);
+            Assert.Same(thing5, constrainedThing5Services[0].Value);
+        }
+
+        private class Thing5
+        {
+            public Thing5(Thing4 thing)
+            {
+            }
+        }
+
+        private class Thing4
+        {
+            public Thing4(Thing3 thing)
+            {
+            }
         }
 
         private class Thing3
         {
-            public Thing3(IServiceProvider sp)
+            public Thing3(Thing2 thing)
             {
-                sp.GetRequiredService<Thing3>();
             }
         }
 
@@ -533,6 +604,41 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             public Thing0()
             {
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36458")]
+        public void GetRequiredService_CircularReference_ThrowsSOEAndHangs()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddSingleton<RecursiveThing>();
+            IServiceProvider sp = services.BuildServiceProvider();
+            using var scope1 = sp.CreateScope();
+
+            bool doesNotHang = Task.Run(() =>
+            {
+                SingleThreadedSynchronizationContext.Run(() =>
+                {
+                    // Act
+                    Assert.Throws<StackOverflowException>(() =>
+                    {
+                        // ctor disposes ServiceProvider
+                        var service = sp.GetRequiredService<RecursiveThing>();
+                    });
+                });
+            }).Wait(TimeSpan.FromSeconds(10));
+
+            // Assert
+            Assert.False(doesNotHang);
+        }
+
+        private class RecursiveThing
+        {
+            public RecursiveThing(IServiceProvider sp)
+            {
+                sp.GetRequiredService<RecursiveThing>();
             }
         }
 
@@ -583,7 +689,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             Assert.Same(serviceRef1, servicesRef1);
         }
-
 
         [Fact]
         public async Task ProviderDisposeAsyncCallsDisposeAsyncOnServices()
