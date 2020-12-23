@@ -11256,6 +11256,7 @@ void gc_heap::make_generation (int gen_num, heap_segment* seg, uint8_t* start)
     gen->gen_num = gen_num;
 #ifndef USE_REGIONS
     gen->allocation_start = start;
+    gen->plan_allocation_start = 0;
 #endif //USE_REGIONS
     gen->allocation_context.alloc_ptr = 0;
     gen->allocation_context.alloc_limit = 0;
@@ -11271,7 +11272,6 @@ void gc_heap::make_generation (int gen_num, heap_segment* seg, uint8_t* start)
     gen->tail_ro_region = 0;
 #endif //USE_REGIONS
     gen->allocation_segment = seg;
-    gen->plan_allocation_start = 0;
     gen->free_list_space = 0;
     gen->pinned_allocated = 0;
     gen->free_list_allocated = 0;
@@ -17026,11 +17026,13 @@ uint8_t* gc_heap::allocate_in_condemned_generations (generation* gen,
                                                   uint8_t* old_loc
                                                   REQD_ALIGN_AND_OFFSET_DCL)
 {
+#ifndef USE_REGIONS
     // Make sure that the youngest generation gap hasn't been allocated
     if (settings.promotion)
     {
         assert (generation_plan_allocation_start (youngest_generation) == 0);
     }
+#endif //!USE_REGIONS
 
     size = Align (size);
     assert (size >= Align (min_obj_size));
@@ -25247,7 +25249,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
         generation_allocated_in_pinned_free (condemned_gen2) = 0;
         generation_allocated_since_last_pin (condemned_gen2) = 0;
 #endif //FREE_USAGE_STATS
+
+#ifndef USE_REGIONS
         generation_plan_allocation_start (condemned_gen2) = 0;
+#endif //!USE_REGIONS
         generation_allocation_segment (condemned_gen2) =
             heap_segment_rw (generation_start_segment (condemned_gen2));
 

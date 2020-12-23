@@ -1,4 +1,4 @@
-<Project>
+<Project InitialTargets="_OverridePackDependsOn">
   <!--     There are some packages where we require only one ref for a specific framework to be present. In order to avoid problems with this package when targetting 
            dektop with RAR we will make sure there are no exclude=compile references in the package.
     For more info, please check issues:
@@ -27,12 +27,15 @@
                       '%(Dependency.Identity)' != '_._'" />
   </Target>
 
-  <PropertyGroup>
-    <PkgProjPath>$(MSBuildProjectDirectory)\..\pkg\$(MSBuildProjectName).pkgproj</PkgProjPath>
-    <!-- Point to our custom pack target which builds the pkgproj instead. -->
-    <PackDependsOn Condition="'$(IsSourceProject)' == 'true' and
-                              Exists('$(PkgProjPath)')">_BuildPkgProj</PackDependsOn>
-  </PropertyGroup>
+  <Target Name="_OverridePackDependsOn"
+          Condition="'$(IsSourceProject)' == 'true' and
+                     '$(IsPackable)' == 'true' and
+                     Exists('$(PkgProjPath)')">
+    <PropertyGroup>
+      <!-- Point to the custom pack target which invokes the pkgproj. -->
+      <PackDependsOn>_BuildPkgProj</PackDependsOn>
+    </PropertyGroup>
+  </Target>
 
   <Target Name="_BuildPkgProj">
     <MSBuild Projects="$(PkgProjPath)"

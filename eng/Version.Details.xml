@@ -38,9 +38,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>e9b75e1cd4e63570624006a6d5bdb48b5b40b513</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.20618.3">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.20621.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>e9b75e1cd4e63570624006a6d5bdb48b5b40b513</Sha>
+      <Sha>de751cfbff9d3256e0f216328aaf9df000ce4c01</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.20618.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -66,13 +66,13 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>e9b75e1cd4e63570624006a6d5bdb48b5b40b513</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" Version="6.0.0-beta.20618.3">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" Version="6.0.0-beta.20621.12">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>e9b75e1cd4e63570624006a6d5bdb48b5b40b513</Sha>
+      <Sha>3ba79fbd73d6765b67d0f75ac9dac148d6bea346</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="6.0.0-beta.20618.3">
+    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="6.0.0-beta.20621.12">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>e9b75e1cd4e63570624006a6d5bdb48b5b40b513</Sha>
+      <Sha>3ba79fbd73d6765b67d0f75ac9dac148d6bea346</Sha>
     </Dependency>
     <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20200806.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
@@ -198,9 +198,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>f8f63b1fde85119c925313caa475d9936297b463</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.0-alpha.1.20621.2">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.0-alpha.1.20622.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>9d47fbfb5f2fcd2d209ab4b4847f5dd6f2074067</Sha>
+      <Sha>8ecdb90f69bacd96eb8a171d01a29b83494c0611</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20621.4">
       <Uri>https://github.com/dotnet/xharness</Uri>
