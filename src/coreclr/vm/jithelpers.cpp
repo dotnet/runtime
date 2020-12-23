@@ -5437,7 +5437,7 @@ void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame, CO
     }
 
 #ifndef FEATURE_EH_FUNCLETS
-    frame->record.m_pEntryFrame = thread->GetFrame();
+    frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
