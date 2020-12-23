@@ -1101,7 +1101,7 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
 #endif
 
 MonoClass* mono_class_get_appdomain_class (void);
-GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_setup)
+MonoClass* mono_class_get_appdomain_setup_class (void);
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)

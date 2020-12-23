@@ -349,8 +349,12 @@ struct _MonoDomain {
 	 * keep all the managed objects close to each other for the precise GC
 	 * For the Boehm GC we additionally keep close also other GC-tracked pointers.
 	 */
+#ifndef ENABLE_NETCORE
 #define MONO_DOMAIN_FIRST_OBJECT setup
 	MonoAppDomainSetup *setup;
+#else
+#define MONO_DOMAIN_FIRST_OBJECT domain
+#endif
 	MonoAppDomain      *domain;
 	MonoAppContext     *default_context;
 	MonoException      *out_of_memory_ex;
@@ -591,8 +595,10 @@ mono_domain_unset (void);
 void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception);
 
+#ifndef ENABLE_NETCORE
 gboolean
 mono_domain_set_config_checked (MonoDomain *domain, const char *base_dir, const char *config_file_name, MonoError *error);
+#endif
 
 MonoTryBlockHoleTableJitInfo*
 mono_jit_info_get_try_block_hole_table_info (MonoJitInfo *ji);
@@ -649,7 +655,9 @@ mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, Mono
 MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error);
 
+#ifndef ENABLE_NETCORE
 void mono_domain_set_options_from_config (MonoDomain *domain);
+#endif
 
 int mono_framework_version (void);
 
