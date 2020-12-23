@@ -93,6 +93,9 @@
 
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+
+    <!-- Set IsPackable true for all pkgproj as Arcade unconditionally overrides the value. -->
+    <IsPackable Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">true</IsPackable>
   </PropertyGroup>
 
   <!-- Language configuration -->

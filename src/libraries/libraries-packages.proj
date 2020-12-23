@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
-    <BuildAllOOBPackages Condition="'$(BuildAllOOBPackages)' == ''">true</BuildAllOOBPackages>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -15,8 +14,9 @@
 
   <ItemGroup>
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
-    <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
+                      Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true')"
+                      Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->

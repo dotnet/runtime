@@ -734,6 +734,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.threadabortexception_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "ThreadAbortException");
 
+#ifdef ENABLE_NETCORE
+	mono_defaults.appdomain_class = mono_defaults.object_class;
+#else
 	mono_defaults.appdomain_class = mono_class_get_appdomain_class ();
 #endif
 
