@@ -10867,22 +10867,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     ehUpdateForDeletedBlock(bNext);
 
-    /* If we're collapsing a block created after the dominators are
-       computed, rename the block and reuse dominator information from
-       the other block */
-    if (fgDomsComputed && block->bbNum > fgDomBBcount)
-    {
-        BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-        BlockSetOps::ClearD(this, bNext->bbReach);
-
-        block->bbIDom = bNext->bbIDom;
-        bNext->bbIDom = nullptr;
-
-        // In this case, there's no need to update the preorder and postorder numbering
-        // since we're changing the bbNum, this makes the basic block all set.
-        block->bbNum = bNext->bbNum;
-    }
-
     /* Set the jump targets */
 
     switch (bNext->bbJumpKind)
@@ -10959,6 +10943,45 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         default:
             noway_assert(!"Unexpected bbJumpKind");
             break;
+    }
+
+    // If we're collapsing a block created after the dominators are
+    // computed, copy block number the block and reuse dominator
+    // information from bNext to block.
+    //
+    // Note we have to do this renumbering after the full set of pred list
+    // updates above, since those updates rely on stable bbNums; if we renumber
+    // before the updates, we can create pred lists with duplicate m_block->bbNum
+    // values (though different m_blocks).
+    //
+    if (fgDomsComputed && (block->bbNum > fgDomBBcount))
+    {
+        BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
+        BlockSetOps::ClearD(this, bNext->bbReach);
+
+        block->bbIDom = bNext->bbIDom;
+        bNext->bbIDom = nullptr;
+
+        // In this case, there's no need to update the preorder and postorder numbering
+        // since we're changing the bbNum, this makes the basic block all set.
+        //
+        JITDUMP("Renumbering BB%02u to be BB%02u to preserve dominator information\n", block->bbNum, bNext->bbNum);
+
+        block->bbNum = bNext->bbNum;
+
+        // Because we may have reordered pred lists when we swapped in
+        // block for bNext above, we now need to re-reorder pred lists
+        // to reflect the bbNum update.
+        //
+        // This process of reordering and re-reordering could likely be avoided
+        // via a different update strategy. But because it's probably rare,
+        // and we avoid most of the work if pred lists are already in order,
+        // we'll just ensure everything is properly ordered.
+        //
+        for (BasicBlock* checkBlock = fgFirstBB; checkBlock != nullptr; checkBlock = checkBlock->bbNext)
+        {
+            checkBlock->ensurePredListOrder(this);
+        }
     }
 
     fgUpdateLoopsAfterCompacting(block, bNext);
@@ -11942,7 +11965,7 @@ bool Compiler::fgRenumberBlocks()
     //
     if (renumbered && fgComputePredsDone)
     {
-        for (block = fgFirstBB; block; block = block->bbNext)
+        for (block = fgFirstBB; block != nullptr; block = block->bbNext)
         {
             block->ensurePredListOrder(this);
         }
