@@ -991,6 +991,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
                                     unsigned          byteSize,
                                     unsigned          byteAlignment,
                                     bool              isStruct,
+                                    bool              isFloatHfa,
                                     bool              isVararg /*=false*/)
 {
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
@@ -1026,7 +1027,8 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->isNonStandard = false;
     curArgTabEntry->isStruct      = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
-    curArgTabEntry->SetByteSize(byteSize, byteAlignment);
+    curArgTabEntry->SetByteAlignment(byteAlignment);
+    curArgTabEntry->SetByteSize(byteSize, isStruct, isFloatHfa);
     curArgTabEntry->SetByteOffset(0);
 
     hasRegArgs = true;
@@ -1043,6 +1045,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned                                    
                                     unsigned                                                         byteSize,
                                     unsigned                                                         byteAlignment,
                                     const bool                                                       isStruct,
+                                    const bool                                                       isFloatHfa,
                                     const bool                                                       isVararg,
                                     const regNumber                                                  otherRegNum,
                                     const unsigned                                                   structIntRegs,
@@ -1050,7 +1053,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned                                    
                                     const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr)
 {
     fgArgTabEntry* curArgTabEntry =
-        AddRegArg(argNum, node, use, regNum, numRegs, byteSize, byteAlignment, isStruct, isVararg);
+        AddRegArg(argNum, node, use, regNum, numRegs, byteSize, byteAlignment, isStruct, isFloatHfa, isVararg);
     assert(curArgTabEntry != nullptr);
 
     curArgTabEntry->isStruct        = isStruct; // is this a struct arg
@@ -1080,6 +1083,7 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
                                     unsigned          byteSize,
                                     unsigned          byteAlignment,
                                     bool              isStruct,
+                                    bool              isFloatHfa,
                                     bool              isVararg /*=false*/)
 {
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
@@ -1121,14 +1125,14 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->isStruct      = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
 
-    curArgTabEntry->SetByteSize(byteSize, byteAlignment);
+    curArgTabEntry->SetByteAlignment(byteAlignment);
+    curArgTabEntry->SetByteSize(byteSize, isStruct, isFloatHfa);
     curArgTabEntry->SetByteOffset(nextStackByteOffset);
 
     hasStackArgs = true;
     AddArg(curArgTabEntry);
     DEBUG_ARG_SLOTS_ONLY(nextSlotNum += numSlots;)
     nextStackByteOffset += curArgTabEntry->GetByteSize();
-    assert(nextStackByteOffset % curArgTabEntry->GetByteAlignment() == 0);
 
     return curArgTabEntry;
 }
@@ -2788,11 +2792,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         const unsigned  byteSize      = TARGET_POINTER_SIZE;
         const unsigned  byteAlignment = TARGET_POINTER_SIZE;
         const bool      isStruct      = false;
+        const bool      isFloatHfa    = false;
 
         // This is a register argument - put it in the table.
         call->fgArgInfo->AddRegArg(argIndex, argx, call->gtCallThisArg, regNum, numRegs, byteSize, byteAlignment,
-                                   isStruct, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(REG_STK) UNIX_AMD64_ABI_ONLY_ARG(0)
-                                                 UNIX_AMD64_ABI_ONLY_ARG(0) UNIX_AMD64_ABI_ONLY_ARG(nullptr));
+                                   isStruct, isFloatHfa,
+                                   callIsVararg UNIX_AMD64_ABI_ONLY_ARG(REG_STK) UNIX_AMD64_ABI_ONLY_ARG(0)
+                                       UNIX_AMD64_ABI_ONLY_ARG(0) UNIX_AMD64_ABI_ONLY_ARG(nullptr));
 
         intArgRegNum++;
 #ifdef WINDOWS_AMD64_ABI
@@ -2994,6 +3000,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             compFloatingPointUsed = true;
         }
 #endif // FEATURE_HFA
+
+        const bool isFloatHfa = (hfaType == TYP_FLOAT);
 
 #ifdef TARGET_ARM
         passUsingFloatRegs    = !callIsVararg && (isHfaArg || varTypeUsesFloatReg(argx)) && !opts.compUseSoftFP;
@@ -3219,7 +3227,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // Arm64 Apple has a special ABI for passing small size arguments on stack,
         // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
         // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-        unsigned argAlignBytes = eeGetArgAlignment(argType, (hfaType == TYP_FLOAT));
+        unsigned argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
 #endif
 
         //
@@ -3465,12 +3473,12 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif
 
             // This is a register argument - put it in the table
-            newArgEntry = call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, byteSize, argAlignBytes,
-                                                     isStructArg, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
-                                                                      UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
-                                                                          UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
-                                                                              UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
-
+            newArgEntry =
+                call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, byteSize, argAlignBytes, isStructArg,
+                                           isFloatHfa, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
+                                                           UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
+                                                               UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
+                                                                   UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
             newArgEntry->SetIsBackFilled(isBackFilled);
             newArgEntry->isNonStandard = isNonStandard;
 
@@ -3531,7 +3539,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             // This is a stack argument - put it in the table
             newArgEntry = call->fgArgInfo->AddStkArg(argIndex, argx, args, size, byteSize, argAlignBytes, isStructArg,
-                                                     callIsVararg);
+                                                     isFloatHfa, callIsVararg);
 #ifdef UNIX_AMD64_ABI
             // TODO-Amd64-Unix-CQ: This is temporary (see also in fgMorphArgs).
             if (structDesc.passedInRegisters)
