@@ -31,9 +31,6 @@
 #include "utilcode.h"
 #endif
 
-// To include definition of CAPTURE_BUCKETS_AT_TRANSITION
-#include "exstate.h"
-
 // The two threads need to communicate some information.  Any object references must
 // be declared to GC.
 struct SharedState
