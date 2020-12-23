@@ -61,7 +61,7 @@
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(AppDir)"
         Optimized="$(Optimized)"
-        ForceAOT="$(ForceAOT)"
+        ForceAOT="True"
         ForceInterpreter="$(MonoForceInterpreter)"
         AppDir="$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
