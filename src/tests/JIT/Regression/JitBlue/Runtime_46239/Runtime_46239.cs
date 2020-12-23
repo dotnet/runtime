@@ -1,9 +1,12 @@
-using System;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // The test was reproducing an issue on Arm32 when we required an 8-byte alignment
 // for a struct which size was rounded to 4-byte.
+
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace Runtime_46239
 {

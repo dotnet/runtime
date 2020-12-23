@@ -1801,34 +1801,34 @@ public:
     {
 
 #ifdef OSX_ARM64_ABI
-        unsigned roudnedByteSize;
+        unsigned roundedByteSize;
         // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
         if (isStruct && !isFloatHfa)
         {
-            roudnedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
         }
         else
         {
-            roudnedByteSize = byteSize;
+            roundedByteSize = byteSize;
         }
 #else  // OSX_ARM64_ABI
-        unsigned roudnedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+        unsigned roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
 #endif // OSX_ARM64_ABI
 
 #if !defined(TARGET_ARM)
         // Arm32 could have a struct with 8 byte alignment
         // which rounded size % 8 is not 0.
         assert(m_byteAlignment != 0);
-        assert(roudnedByteSize % m_byteAlignment == 0);
+        assert(roundedByteSize % m_byteAlignment == 0);
 #endif // TARGET_ARM
 
 #if defined(DEBUG_ARG_SLOTS)
         if (!isStruct)
         {
-            assert(roudnedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
+            assert(roundedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
         }
 #endif
-        m_byteSize = roudnedByteSize;
+        m_byteSize = roundedByteSize;
     }
 
     unsigned GetByteSize() const
