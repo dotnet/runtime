@@ -34,7 +34,7 @@
         ProjectName="iOS.Simulator.Interpreter.Test"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
-        MainLibraryFileName="Program.dll"
+        MainLibraryFileName="iOS.Simulator.Interpreter.Test.dll"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"

@@ -53,7 +53,7 @@
         ProjectName="iOS.Simulator.Aot.Test"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
-        MainLibraryFileName="Program.dll"
+        MainLibraryFileName="iOS.Simulator.Aot.Test.dll"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
