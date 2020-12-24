@@ -377,6 +377,7 @@ namespace System
             return result;
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<char>(string? value) =>
             value != null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;

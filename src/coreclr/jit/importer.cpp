@@ -4318,6 +4318,129 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+// TODO-CQ: Enable for 32bit
+#ifdef TARGET_64BIT
+            case NI_System_MemoryExtensions_StartsWith:
+            {
+                // Looking for
+                // 
+                //   bool x = MemoryExtensions.StartsWith<char>(arg0, String.op_Implicit("CNS_STR"));
+                //
+                // In order to optimize into
+                //
+                //   bool x = arg0.Length >= 4 && *(arg0._pointer) == ToHexConst("CNS_STR");
+                //
+                // TODO-CQ: Do the same for StartsWith + OrdinalIgnoreCase/InvariantIngoreCase
+
+                GenTree* arg0 = impStackTop(1).val;
+                GenTree* arg1 = impStackTop(0).val;
+                if (arg1->OperIs(GT_RET_EXPR))
+                {
+                    GenTreeCall* strToSpanCall = arg1->AsRetExpr()->gtInlineCandidate->AsCall();
+                    if (!(strToSpanCall->gtFlags & CORINFO_FLG_JIT_INTRINSIC) ||
+                        (lookupNamedIntrinsic(strToSpanCall->gtCallMethHnd) != NI_System_String_op_Implicit))
+                    {
+                        // strToSpanCall must be `ReadOnlySpan<char> String.op_Implicit(String)`
+                        break;
+                    }
+
+                    if (strToSpanCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
+                    {
+                        // For now we only support constant strings
+                        break;
+                    }
+
+                    GenTreeStrCon* cnsStr = strToSpanCall->gtCallArgs->GetNode()->AsStrCon();
+
+                    // Grab the actual string literal from VM
+                    int strLen = -1;
+                    LPCWSTR str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &strLen);
+
+                    if (strLen == 0)
+                    {
+                        // return true for `span.StartsWith("")`
+                        retNode = gtNewIconNode(1);
+                        strToSpanCall->ReplaceWith(gtNewNothingNode(), this);
+                        impPopStack();
+                        impPopStack();
+                        break;
+                    }
+
+                    if ((str == nullptr) || (strLen < 1))
+                    {
+                        // getStringLiteral couldn't manage to get the literal (e.g. in dynamic context)
+                        break;
+                    }
+
+                    if (strLen != 4)
+                    {
+                        // TODO-CQ: Support 1-3 and emit SIMD for larger strings
+                    }
+
+                    UINT64 strAsUlong = 0;
+                    for (int i = 0; i < strLen; i++)
+                    {
+                        UINT64 strChar = str[i];
+                        if (strChar > '\x007f')
+                        {
+                            // str is not ASCII - bail out.
+                            break;
+                        }
+                        strAsUlong |= (strChar << 16UL * i);
+                    }
+
+                    // We're going to emit the following tree:
+                    //
+                    //  \--*  QMARK     int   
+                    //     +--*  GE        int   
+                    //     |  +--*  FIELD     int    Span<char>._length
+                    //     |  \--*  CNS_INT   int    %strLen%
+                    //     \--*  COLON     int   
+                    //        +--*  CNS_INT   int    0 (false)
+                    //        \--*  EQ        int   
+                    //           +--*  IND       long  
+                    //           |  \--*  FIELD     byref  Span<char>._pointer
+                    //           \--*  CNS_INT   long   %strAsUlong%
+                    //
+
+                    CORINFO_CLASS_HANDLE arg0cls       = gtGetStructHandle(arg0);
+                    CORINFO_FIELD_HANDLE pointerHnd    = info.compCompHnd->getFieldInClass(arg0cls, 0);
+                    CORINFO_FIELD_HANDLE lengthHnd     = info.compCompHnd->getFieldInClass(arg0cls, 1);
+                    const unsigned       pointerOffset = info.compCompHnd->getFieldOffset(pointerHnd);
+                    const unsigned       lengthOffset  = info.compCompHnd->getFieldOffset(lengthHnd);
+
+                    GenTree* spanRef = arg0;
+                    if (arg0->TypeIs(TYP_STRUCT))
+                    {
+                        spanRef = gtNewOperNode(GT_ADDR, TYP_BYREF, arg0);
+                    }
+                    assert(spanRef->TypeIs(TYP_BYREF));
+
+                    // We're going to use spanRef twice so need to clone it
+                    GenTree* spanRefClone = nullptr;
+                    spanRef = impCloneExpr(spanRef, &spanRefClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("spanRef"));
+
+                    GenTree*      spanData     = gtNewFieldRef(TYP_BYREF, pointerHnd, spanRefClone, pointerOffset);
+                    GenTree*      indirCmp     = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(TYP_LONG, spanData), gtNewIconNode(strAsUlong, TYP_LONG));
+                    GenTree*      spanLenField = gtNewFieldRef(TYP_INT, lengthHnd, spanRef, lengthOffset);
+                    GenTreeColon* colon        = new(this, GT_COLON) GenTreeColon(TYP_INT, indirCmp, gtNewIconNode(0));
+                    GenTreeQmark* qmark        = gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_GE, TYP_INT, spanLenField, gtNewIconNode(strLen)), colon);
+
+                    // Spill qmark into a temp.
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling STARTSWITH root qmark"));
+                    impAssignTempGen(tmp, qmark, (unsigned)CHECK_SPILL_NONE);
+                    retNode = gtNewLclvNode(tmp, TYP_INT);
+
+                    // We don't need strToSpanCall anymore, replace with No-op
+                    strToSpanCall->ReplaceWith(gtNewNothingNode(), this);
+                    impPopStack();
+                    impPopStack();
+                    break;
+                }
+                break;
+            }
+#endif
+
             case NI_System_Threading_Thread_get_ManagedThreadId:
             {
                 if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
@@ -4829,6 +4952,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "IsAssignableTo") == 0)
             {
                 result = NI_System_Type_IsAssignableTo;
+            }
+        }
+        else if (strcmp(className, "MemoryExtensions") == 0)
+        {
+            if (strcmp(methodName, "StartsWith") == 0)
+            {
+                result = NI_System_MemoryExtensions_StartsWith;
+            }
+        }
+        else if (strcmp(className, "String") == 0)
+        {
+            if (strcmp(methodName, "op_Implicit") == 0)
+            {
+                result = NI_System_String_op_Implicit;
             }
         }
     }

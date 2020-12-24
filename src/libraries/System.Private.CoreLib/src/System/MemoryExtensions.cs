@@ -1059,6 +1059,7 @@ namespace System
         /// Determines whether the specified sequence appears at the start of the span.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             int valueLength = value.Length;
