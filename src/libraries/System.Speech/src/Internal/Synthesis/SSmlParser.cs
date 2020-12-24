@@ -188,7 +188,7 @@ namespace System.Speech.Internal.Synthesis
                 ThrowFormatException(SRID.MissingRequiredAttribute, "lang", "speak");
             }
 
-            // append the local attributes to list of unknow attributes
+            // append the local attributes to list of unknown attributes
             List<SsmlXmlAttribute> extraAttributes = null;
             foreach (SsmlXmlAttribute attribute in extraSpeakAttributes)
             {
@@ -1182,7 +1182,7 @@ namespace System.Speech.Internal.Synthesis
                 }
             }
 
-            // append the local attributes to list of unknow attributes
+            // append the local attributes to list of unknown attributes
             if (extraAttributesVoice != null)
             {
                 foreach (SsmlXmlAttribute attribute in extraAttributesVoice)

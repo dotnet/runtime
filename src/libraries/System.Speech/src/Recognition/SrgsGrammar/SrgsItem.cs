@@ -319,7 +319,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Private Types
 
-        // Used by the debbugger display attribute
+        // Used by the debugger display attribute
         internal class SrgsItemDebugDisplay
         {
             public SrgsItemDebugDisplay(SrgsItem item)
@@ -331,7 +331,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _elements = item._elements;
             }
 
-            public object Weigth
+            public object Weight
             {
                 get
                 {

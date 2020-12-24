@@ -8,7 +8,7 @@ namespace System.Speech.Internal.SapiInterop
 {
     // Internal helper class that wraps a SAPI event structure.
     // A new instance is created by calling SpeechEvent.TryCreateSpeechEvent
-    // Disposing this class will dispose all unmanmanaged memory.
+    // Disposing this class will dispose all unmanaged memory.
     internal class SpeechEvent : IDisposable
     {
         #region Constructors
@@ -77,7 +77,7 @@ namespace System.Speech.Internal.SapiInterop
                     _sizeMemoryPressure = 0;
                 }
 
-                // Mark the object as beeing freed
+                // Mark the object as being freed
                 _lParam = 0;
             }
             GC.SuppressFinalize(this);

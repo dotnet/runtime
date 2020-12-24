@@ -441,7 +441,7 @@ namespace System.Speech.Internal.Synthesis
         #region Private Types
 
         /// <summary>
-        /// This object must keet a reference to the waveHeader object
+        /// This object must keep a reference to the waveHeader object
         /// so that the pinned buffer containing the data is not
         /// released before it is finished being played
         /// </summary>

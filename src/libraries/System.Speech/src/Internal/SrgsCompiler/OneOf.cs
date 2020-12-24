@@ -38,7 +38,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Process the '/one-of' element.
-        /// Connects all the arsc into an exit enf point.
+        /// Connects all the arcs into an exit end point.
         ///
         /// Verify OneOf contains at least one child 'item'.
         /// </summary>
@@ -53,7 +53,7 @@ namespace System.Speech.Internal.SrgsCompiler
             _startArc = TrimStart(_startArc, _backend);
             _endArc = TrimEnd(_endArc, _backend);
 
-            // Connect the one-of to the parrent
+            // Connect the one-of to the parent
             base.PostParse((ParseElementCollection)parentElement);
         }
 
@@ -72,7 +72,7 @@ namespace System.Speech.Internal.SrgsCompiler
             State endStartState = end.Start;
             State startEndState = start.End;
 
-            // Connect the previous arc with the 'start' set the intertion point
+            // Connect the previous arc with the 'start' set the insertion point
             if (start.IsEpsilonTransition & start.IsPropertylessTransition && startEndState != null && startEndState.InArcs.IsEmpty)
             {
                 System.Diagnostics.Debug.Assert(start.End == startEndState);

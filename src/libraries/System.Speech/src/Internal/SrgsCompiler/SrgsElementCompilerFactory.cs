@@ -204,7 +204,7 @@ namespace System.Speech.Internal.SrgsCompiler
         ///     Build /D/L/P; form from the escaped token and SAPIPron.
         ///
         /// SAPIPron may be a semi-colon delimited list of pronunciations.
-        /// In this case, a transition for each of the pronuncitions will be added.
+        /// In this case, a transition for each of the pronunciations will be added.
         ///
         /// AddTransition(NormalizedToken, Parent.EndState, NewState)
         /// Parent.EndState = NewState
@@ -250,7 +250,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                     for (int iCurPron = 0, iDeliminator = 0; iCurPron < pronunciation.Length; iCurPron = iDeliminator + 1)
                     {
-                        // Find semi-colon deliminator and replace with null
+                        // Find semi-colon delimiter and replace with null
                         iDeliminator = pronunciation.IndexOf(';', iCurPron);
                         if (iDeliminator == -1)
                         {

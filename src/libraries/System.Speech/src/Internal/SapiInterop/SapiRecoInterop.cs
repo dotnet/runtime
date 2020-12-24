@@ -181,7 +181,7 @@ namespace System.Speech.Internal.SapiInterop
     #region Structure
 
     /// Note:   This structure doesn't exist in SAPI.idl but is related to SPPHRASEALT.
-    ///         We use it to map memory containted in the serialized result (instead of reading sequentially)
+    ///         We use it to map memory contained in the serialized result (instead of reading sequentially)
     [StructLayout(LayoutKind.Sequential)]
     internal class SPSERIALIZEDPHRASEALT
     {
@@ -257,7 +257,7 @@ namespace System.Speech.Internal.SapiInterop
     {
         internal SPINTERFERENCE eInterference;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 255)]
-        internal short[] szRequestTypeOfUI; // Can't really be marsalled as a string directly
+        internal short[] szRequestTypeOfUI; // Can't really be marshaled as a string directly
         internal uint dwReserved1;
         internal uint dwReserved2;
     }
@@ -461,7 +461,7 @@ namespace System.Speech.Internal.SapiInterop
                     RecognizedWordUnit word = words[i];
                     elements[i] = new SPPHRASEELEMENT
                     {
-                        // diplay + confidence
+                        // display + confidence
                         bDisplayAttributes = RecognizedWordUnit.DisplayAttributesToSapiAttributes(word.DisplayAttributes == DisplayAttributes.None ? DisplayAttributes.OneTrailingSpace : word.DisplayAttributes),
                         SREngineConfidence = word.Confidence,
 

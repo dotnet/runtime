@@ -38,7 +38,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        #region Intenal Method
+        #region Internal Method
         void IElement.PostParse(IElement parentElement)
         {
         }

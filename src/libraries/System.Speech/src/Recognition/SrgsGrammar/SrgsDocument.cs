@@ -12,7 +12,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 {
     /// <summary>
     /// This class allows a _grammar to be specified in SRGS form.
-    /// APITODO: needs programmatic access to SRGS dom; PACOG
+    /// APITODO: needs programmatic access to SRGS DOM; PACOG
     /// APITODO: needs rule activation/deactivation methods
     /// </summary>
     [Serializable]

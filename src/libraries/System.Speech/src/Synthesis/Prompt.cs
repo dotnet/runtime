@@ -130,7 +130,7 @@ namespace System.Speech.Synthesis
         internal SynthesisMediaType _media;
 
         /// <summary>
-        /// Is this prompt played asynchrounously
+        /// Is this prompt played asynchronously
         /// </summary>
         internal bool _syncSpeak;
 

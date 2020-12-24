@@ -26,7 +26,7 @@ namespace System.Speech.Internal.GrammarBuilding
         #region Internal Properties
 
         /// <summary>
-        /// Used by the GrammarBuilder optimizer to count the number of children and decendant for
+        /// Used by the GrammarBuilder optimizer to count the number of children and descendant for
         /// an element
         /// </summary>
         internal virtual int Count

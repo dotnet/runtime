@@ -184,7 +184,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// File operation are basically synchonous
+        /// File operation are basically synchronous
         /// </summary>
         internal override void WaitUntilDone()
         {

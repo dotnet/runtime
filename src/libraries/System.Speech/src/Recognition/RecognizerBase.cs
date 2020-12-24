@@ -291,7 +291,7 @@ ISpGrammarResourceLoader
                 }
             }
 
-            return null; // The grammar has aready been unloaded
+            return null; // The grammar has already been unloaded
         }
 
         void IRecognizerInternal.SetDictationContext(Grammar grammar, string precedingText, string subsequentText)
@@ -529,7 +529,7 @@ ISpGrammarResourceLoader
 
                 _isRecognizing = true;
 
-                // The call to RecognizeAsync may happen before the event for the start strem arrives so remove the assert.
+                // The call to RecognizeAsync may happen before the event for the start stream arrives so remove the assert.
                 //Debug.Assert (_detectingInitialSilenceTimeout == false);
                 Debug.Assert(_detectingBabbleTimeout == false);
                 Debug.Assert(_initialSilenceTimeoutReached == false);
@@ -677,7 +677,7 @@ ISpGrammarResourceLoader
                 if (_isRecognizing)
                 {
                     doCancel = true;
-                    _isRecognizeCancelled = true; // Stil set the flag as this is a kind of cancel.
+                    _isRecognizeCancelled = true; // Still set the flag as this is a kind of cancel.
                 }
             }
 
@@ -917,7 +917,7 @@ ISpGrammarResourceLoader
         // In general operations are not locked on the RecognizerBase - there's no single lock that makes everything thread safe.
         // This is the normal .NET design pattern.
         //
-        // However, because there is processing of sapi events, going on on different threads that the app does not control,
+        // However, because there is processing of sapi events, going on different threads that the app does not control,
         // we need to protect certain members.
         //
         // This is generally done with "lock (SapiRecognizer)" - the choice of SapiRecognizer is arbitrary  - any object could have been used.
@@ -1348,7 +1348,7 @@ ISpGrammarResourceLoader
                         CloseCachedInputStream();
 
                         // Release SAPI recognizer/recoContext interfaces.
-                        // We do not need to release additional references copy oto the same RCW.
+                        // We do not need to release additional references copy onto the same RCW.
                         if (_sapiContext != null)
                         {
                             _sapiContext.Dispose();
@@ -1517,7 +1517,7 @@ ISpGrammarResourceLoader
                 // Save the SAPI grammar id for that grammar
                 grammar.SapiGrammarId = grammarId;
 
-                // Find the grammar this ruleref belongs to and add it to the approprite grammar
+                // Find the grammar this ruleref belongs to and add it to the appropriate grammar
                 Grammar parent = _topLevel.Find(parentGrammarId);
                 if (parent == null)
                 {
@@ -1528,7 +1528,7 @@ ISpGrammarResourceLoader
                     parent.AddRuleRef(grammar, grammarId);
                 }
 
-                // Must reture and IStream to enable SAPI to retreive the data
+                // Must return and IStream to enable SAPI to retrieve the data
                 MemoryStream stream = new(grammar.CfgData);
                 SpStreamWrapper spStream = new(stream);
                 pStream = spStream;
@@ -2066,7 +2066,7 @@ ISpGrammarResourceLoader
                 }
             }
 
-            // If either an exception or the cancellation has occured then we need to throw the RecognizeCompleted right away.
+            // If either an exception or the cancellation has occurred then we need to throw the RecognizeCompleted right away.
             // Otherwise it will be thrown later when SAPI sends the EndStream event.
             if (exception != null || cancelled)
             {
@@ -2255,7 +2255,7 @@ ISpGrammarResourceLoader
                     // Similarly don't ever fire both timeouts.
                     if (_detectingBabbleTimeout && !_initialSilenceTimeoutReached)
                     {
-                        // Otherwise se tthe flag and cancel the recognition.
+                        // Otherwise set the flag and cancel the recognition.
                         _babbleTimeoutReached = true;
                         SapiRecognizer.SetRecoState(SPRECOSTATE.SPRST_INACTIVE_WITH_PURGE);
                     }
@@ -2401,7 +2401,7 @@ ISpGrammarResourceLoader
             // Set a flag so we will fire recognition completed event when we receive SR_END_STREAM.
             //
             // In the inproc case, we will not be able to do simultaneous recognition, so this is
-            // the recongition we are waiting for.
+            // the recognition we are waiting for.
             // In the shared case, we can do emulation during recognition, but we only wait for the
             // emulate result.
             //
@@ -2495,7 +2495,7 @@ ISpGrammarResourceLoader
                 //
                 // followed by a recognition/false recognition event. But it is not the case at this point as we
                 // actually receive multiple SR_END_STREAM events for a single emulation, and the first SR_END_STREAM
-                // is not preceeded by a recognition event. Until we found the problem in SAPI, this is only a workaround
+                // is not proceeded by a recognition event. Until we found the problem in SAPI, this is only a workaround
                 //
 
                 // Fire the EmulateRecognizeCompleted event
@@ -2511,13 +2511,13 @@ ISpGrammarResourceLoader
 
         private void ProcessInterferenceEvent(uint interference)
         {
-            // Don't actually read the value here becuase we get it in a call to GetStatus later.
+            // Don't actually read the value here because we get it in a call to GetStatus later.
             FireSignalProblemOccurredEvent((AudioSignalProblem)interference);
         }
 
         private void ProcessAudioLevelEvent(int audioLevel)
         {
-            // Don't actually read the value here becuase we get it in a call to GetStatus later.
+            // Don't actually read the value here because we get it in a call to GetStatus later.
             FireAudioLevelUpdatedEvent(audioLevel);
         }
 
@@ -2531,7 +2531,7 @@ ISpGrammarResourceLoader
             SapiRecognizer.SetRecoState(SPRECOSTATE.SPRST_INACTIVE_WITH_PURGE);
 
             // Note we don't directly raise a SpeechRecognitionRejected event in this scenario.
-            // However SAPI should always raise a FALSE_RECOGNITION after cancelling.
+            // However SAPI should always raise a FALSE_RECOGNITION after canceling.
         }
 
         private RecognitionResult CreateRecognitionResult(SpeechEvent speechEvent)
@@ -2547,7 +2547,7 @@ ISpGrammarResourceLoader
 
             try
             {
-                // Convert the unmanaged blob to managed and delete the unmaanged memory
+                // Convert the unmanaged blob to managed and delete the unmanaged memory
                 uint sizeOfSerializedBlob = (uint)Marshal.ReadInt32(coMemSerializeBlob);
                 serializedBlob = new byte[sizeOfSerializedBlob];
                 Marshal.Copy(coMemSerializeBlob, serializedBlob, 0, (int)sizeOfSerializedBlob);
@@ -2625,7 +2625,7 @@ ISpGrammarResourceLoader
         }
 
         // Convert a TimeSpan such as initialSilenceTimeout to a byte offset using the
-        // curretn audio format. This should only needed if not using SAPI 5.3.
+        // current audio format. This should only needed if not using SAPI 5.3.
         private ulong TimeSpanToStreamPosition(TimeSpan time)
         {
             return (ulong)(time.Ticks * AudioFormat.AverageBytesPerSecond) / TimeSpan.TicksPerSecond;
@@ -3189,7 +3189,7 @@ ISpGrammarResourceLoader
             _event.WaitOne();
         }
 
-        private ManualResetEvent _event = new(true); // In signalled state so initially do not block
+        private ManualResetEvent _event = new(true); // In signaled state so initially do not block
         private uint _operationCount;
         private object _thisObjectLock = new();
     }

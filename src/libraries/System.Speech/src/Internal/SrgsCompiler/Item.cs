@@ -20,7 +20,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #endregion
 
-        #region Intenal Method
+        #region Internal Method
 
         /// <summary>
         ///  Process the '/item' element.
@@ -57,7 +57,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Hard case if repeat count is not one
                 if (_minRepeat != 1 || _maxRepeat != 1)
                 {
-                    // Dupplicate the states/transitions graph as many times as repeat count
+                    // Duplicate the states/transitions graph as many times as repeat count
 
                     //Add a state before the start to be able to duplicate the graph
                     _startArc = InsertState(_startArc, _repeatProbability, Position.Before);
@@ -93,7 +93,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                             if (_maxRepeat == int.MaxValue)
                             {
-                                // If we are beyond _minRepeat, add epsilon transition frorm startState with (1-_repeatProbability).
+                                // If we are beyond _minRepeat, add epsilon transition from startState with (1-_repeatProbability).
                                 if (cnt == _minRepeat - 1)
                                 {
                                     // Create a new state and attach the last Arc to add
@@ -105,7 +105,7 @@ namespace System.Speech.Internal.SrgsCompiler
                             }
                             else if (cnt <= _maxRepeat - _minRepeat)
                             {
-                                // If we are beyond _minRepeat, add epsilon transition frorm startState with (1-_repeatProbability).
+                                // If we are beyond _minRepeat, add epsilon transition from startState with (1-_repeatProbability).
                                 AddEpsilonTransition(startState, newStartState, 1 - _repeatProbability);
                             }
 
@@ -137,9 +137,9 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Private Methods
 
-        private void AddEpsilonTransition(State start, State end, float weigth)
+        private void AddEpsilonTransition(State start, State end, float weight)
         {
-            Arc epsilon = _backend.EpsilonTransition(weigth);
+            Arc epsilon = _backend.EpsilonTransition(weight);
             epsilon.Start = start;
             epsilon.End = end;
         }

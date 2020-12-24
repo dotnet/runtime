@@ -122,7 +122,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     OneOf oneOf = new(parent._rule, backend);
                     // Add the garbage transition
                     oneOf.AddArc(backend.RuleTransition(CfgGrammar.SPRULETRANS_WILDCARD, parent._rule, 0.5f));
-                    // Add a parallele epsilon path
+                    // Add a parallel epsilon path
                     oneOf.AddArc(backend.EpsilonTransition(0.5f));
                     ((IOneOf)oneOf).PostParse(parent);
                     break;
@@ -192,7 +192,7 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Private Enums
         // Special rule references allow grammars based on CFGs to have powerful
         // additional features, such as transitions into dictation (both recognized
-        // or not recognized) and word seqeuences from SAPI 5.0.
+        // or not recognized) and word sequences from SAPI 5.0.
         private enum SpecialRuleRefType
         {
             // Defines a rule that is automatically matched that is, matched without

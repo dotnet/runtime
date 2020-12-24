@@ -129,7 +129,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Methods
 
-        #region Convertors between Linear and ULaw
+        #region Converters between Linear and ULaw
 
         /// <summary>
         /// This routine converts from 16 bit linear to ULaw by direct access to the conversion table.
@@ -241,7 +241,7 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        #region Convertors between Linear and ALaw
+        #region Converters between Linear and ALaw
 
         /// <summary>
         /// This routine converts from 16 bit linear to ALaw by direct access to the conversion table.
@@ -351,7 +351,7 @@ namespace System.Speech.Internal.Synthesis
         #region PCM to PCM
 
         /// <summary>
-        /// Empty linear conversion (does nothing, for table consistensy).
+        /// Empty linear conversion (does nothing, for table consistency).
         /// </summary>
         /// <param name="data">Array of audio data in linear format.</param>
         /// <param name="size">Size of the data in the array.</param>
@@ -370,7 +370,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// Empty linear conversion (does nothing, for table consistensy).
+        /// Empty linear conversion (does nothing, for table consistency).
         /// </summary>
         /// <param name="data">Array of audio data in linear format.</param>
         /// <param name="size">Size of the data in the array.</param>
@@ -389,7 +389,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// Empty linear conversion (does nothing, for table consistensy).
+        /// Empty linear conversion (does nothing, for table consistency).
         /// </summary>
         /// <param name="data">Array of audio data in linear format.</param>
         /// <param name="size">Size of the data in the array.</param>
@@ -407,7 +407,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// Empty linear conversion (does nothing, for table consistensy).
+        /// Empty linear conversion (does nothing, for table consistency).
         /// </summary>
         /// <param name="data">Array of audio data in linear format.</param>
         /// <param name="size">Size of the data in the array.</param>
@@ -428,9 +428,9 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Members
 
-        #region Converion tables for direct conversions
+        #region Conversion tables for direct conversions
 
-        // Cached table for aLaw and uLaw convertion (16K * 2 bytes each)
+        // Cached table for aLaw and uLaw conversion (16K * 2 bytes each)
         private static byte[] s_uLawCompTableCached;
         private static byte[] s_aLawCompTableCached;
 
@@ -480,7 +480,7 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        #region Conversion tables for 'byte' to 'short' converion
+        #region Conversion tables for 'byte' to 'short' conversion
 
         /// <summary>
         /// Table to converts ULaw values to Linear

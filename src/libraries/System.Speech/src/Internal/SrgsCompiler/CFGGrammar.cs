@@ -66,7 +66,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
             // Initializes a CfgSerializedHeader from a Stream.
             // If the data does not represent a cfg then UnsuportedFormatException is thrown.
-            // This isn't a conclusive validty check, but is enough to determine if it's a CFG or not.
+            // This isn't a conclusive validity check, but is enough to determine if it's a CFG or not.
             // For a complete check CheckValidCfgFormat is used.
             internal CfgSerializedHeader(Stream stream)
             {

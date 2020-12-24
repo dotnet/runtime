@@ -470,7 +470,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region internal Fields
 
-#pragma warning disable 56524 // Arclist does not hold on any resouces
+#pragma warning disable 56524 // Arclist does not hold on any resources
 
         // Collection of transitions leaving this state
         private ArcList _outArcs = new();
@@ -478,7 +478,7 @@ namespace System.Speech.Internal.SrgsCompiler
         // Collection of transitions entering this state
         private ArcList _inArcs = new();
 
-#pragma warning restore 56524 // Arclist does not hold on any resouces
+#pragma warning restore 56524 // Arclist does not hold on any resources
 
         // Index of the first arc in the state. Also used as the state handle in SR engine interfaces.
         private int _iSerialize;
@@ -490,7 +490,7 @@ namespace System.Speech.Internal.SrgsCompiler
         private State _next;
         private State _prev;
 
-        // Flags used for recurive validation methods
+        // Flags used for recursive validation methods
         internal enum RecurFlag : uint
         {
             RF_CHECKED_EPSILON = (1 << 0),

@@ -74,7 +74,7 @@ namespace System.Speech.Internal
         #region Private Methods
 
         /// <summary>
-        /// Dowload data from the web.
+        /// Download data from the web.
         /// Set the redirectUri as the location of the file could be redirected in ASP pages.
         /// </summary>
         private static Stream DownloadData(Uri uri, out Uri redirectedUri)

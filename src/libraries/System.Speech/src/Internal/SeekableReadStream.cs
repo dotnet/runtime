@@ -103,7 +103,7 @@ namespace System.Speech.Internal
                         else
                         {
                             // We're moving beyond current position.
-                            // Thus Read the new data data and buffer it.
+                            // Thus Read the new data and buffer it.
 
                             // Read until at new position:
                             long bytesToReadLong = value - _buffer.Count;

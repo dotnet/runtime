@@ -17,7 +17,7 @@ namespace System.Speech.Internal.ObjectTokens
             Helpers.ThrowIfEmptyOrNull(category, nameof(category));
 
             ObjectToken token = null;
-            // Try first to get the prefered token for the current user
+            // Try first to get the preferred token for the current user
             token = DefaultToken(@"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\" + category, _defaultTokenIdValueName);
 
             // IF failed try to get it for the local machine
@@ -132,7 +132,7 @@ namespace System.Speech.Internal.ObjectTokens
         }
 
         /// <summary>
-        /// Try to get the prefered token for a category
+        /// Try to get the preferred token for a category
         /// </summary>
         private static ObjectToken GetPreference(string category, string defaultLocation)
         {

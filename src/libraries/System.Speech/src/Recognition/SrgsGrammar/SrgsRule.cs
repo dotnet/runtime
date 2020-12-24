@@ -333,7 +333,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                     break;
 
                 default:
-                    // unknow method!!!
+                    // unknown method!!!
                     System.Diagnostics.Debug.Assert(false);
                     break;
             }
@@ -422,7 +422,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Private Types
 
-        // Used by the debbugger display attribute
+        // Used by the debugger display attribute
         internal class SrgsRuleDebugDisplay
         {
             public SrgsRuleDebugDisplay(SrgsRule rule)

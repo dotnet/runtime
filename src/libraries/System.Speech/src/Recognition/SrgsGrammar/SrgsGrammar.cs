@@ -131,7 +131,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 writer.WriteElementString("tag", tag);
             }
 
-            //Write the the references to the referenced assemblies and the various scripts
+            //Write the references to the referenced assemblies and the various scripts
             WriteGrammarElements(writer);
 
             writer.WriteEndElement();
@@ -177,7 +177,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 _tagFormat = SrgsTagFormat.W3cV1;
             }
 
-            // Force the tag format to Sapi fprperties if .NET semantics are used.
+            // Force the tag format to Sapi properties if .NET semantics are used.
             if (_fContainsCode)
             {
                 if (_tagFormat == SrgsTagFormat.Default)
@@ -584,11 +584,11 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         /// <summary>
-        /// Write the the references to the referenced assemblies and the various scripts
+        /// Write the references to the referenced assemblies and the various scripts
         /// </summary>
         private void WriteGrammarElements(XmlWriter writer)
         {
-            // Writeall the <assmblyReference> entries
+            // Write all the <assmblyReference> entries
             foreach (string sAssembly in _assemblyReferences)
             {
                 writer.WriteStartElement("sapi", "assemblyReference", XmlParser.sapiNamespace);
@@ -596,7 +596,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 writer.WriteEndElement();
             }
 
-            // Writeall the <assmblyReference> entries
+            // Write all the <assmblyReference> entries
             foreach (string sNamespace in _usings)
             {
                 if (!string.IsNullOrEmpty(sNamespace))

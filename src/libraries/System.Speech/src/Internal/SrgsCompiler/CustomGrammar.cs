@@ -30,7 +30,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Add the scripts defined in 'cg' to the set of scripts defined in 'cgCombined'.
-        /// Build the union of teh codebehind files and assembly references
+        /// Build the union of t codebehind files and assembly references
         /// </summary>
         internal void Combine(CustomGrammar cg, string innerCode)
         {
@@ -152,7 +152,7 @@ namespace System.Speech.Internal.SrgsCompiler
         // if set generates #line statements
         internal bool _fDebugScript;
 
-        // List of assemby references to import
+        // List of assembly references to import
         internal Collection<string> _assemblyReferences = new();
 
         // List of namespaces to import

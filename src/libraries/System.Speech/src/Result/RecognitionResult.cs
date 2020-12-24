@@ -73,7 +73,7 @@ namespace System.Speech.Recognition
 
             if (!appDomainTransition)
             {
-                // build all the properies
+                // build all the properties
                 foreach (RecognizedPhrase phrase in Alternates)
                 {
                     try
@@ -126,7 +126,7 @@ namespace System.Speech.Recognition
                 }
 
                 // Otherwise, this could also fail for various reasons, e.g. we have changed the recognizer under
-                // the hood. In any case, we dont want this function to fail.
+                // the hood. In any case, we don't want this function to fail.
                 return false;
             }
 
@@ -324,7 +324,7 @@ namespace System.Speech.Recognition
                 if (recoResult != null)
                 {
                     ExtractDictationAlternates(recoResult, maxAlternates);
-                    // Since we took ownership of this unmanaged object we can discard information that dont need.
+                    // Since we took ownership of this unmanaged object we can discard information that don't need.
                     recoResult.Discard(SapiConstants.SPDF_ALL);
                 }
             }
@@ -333,7 +333,7 @@ namespace System.Speech.Recognition
                 gc.Free();
             }
 
-            // save the sapi blobs spliting it in the relevant bits
+            // save the sapi blobs splitting it in the relevant bits
 
             // audio
             _sapiAudioBlob = new byte[(int)_header.ulRetainedDataSize];
@@ -406,7 +406,7 @@ namespace System.Speech.Recognition
 
         private void ExtractDictationAlternates(ISpRecoResult recoResult, int maxAlternates)
         {
-            // Get the alternates for dication
+            // Get the alternates for dictation
             // alternates for dictation are not part of the recognition results and must be pulled out
             // from the recognition result bits.
 
@@ -531,7 +531,7 @@ namespace System.Speech.Recognition
         [field: NonSerialized]
         private AlphabetConverter _alphabetConverter;
 
-        // sapi blobss
+        // sapi blobs
         private byte[] _sapiAudioBlob;
         private byte[] _sapiAlternatesBlob;
 

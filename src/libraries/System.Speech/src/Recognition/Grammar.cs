@@ -233,7 +233,7 @@ namespace System.Speech.Recognition
         // Priority of this Grammar/Rule.
         // If different grammars have paths which match the same words,
         // then the result will be returned for the grammar with the highest priority.
-        // Defualt value zero {lowest value}.
+        // Default value zero {lowest value}.
         public int Priority
         {
             get { return _priority; }
@@ -610,7 +610,7 @@ namespace System.Speech.Recognition
 
         // Called to initialize the grammar from the passed in data.
         // In SpeechFX this is called at construction time.
-        // In MSS this is {currently} calledf when GetCfg is called.
+        // In MSS this is {currently} called when GetCfg is called.
         // The cfg data is stored in the _cfgData field, which is not currently reset to null ever.
         // After calling this method the passed in Stream / SrgsDocument are set to null.
         private void LoadAndCompileCfgData(bool isImportedGrammar, bool stgInit)
@@ -685,7 +685,7 @@ namespace System.Speech.Recognition
 
             stream.Position = 0;
 
-            // Udpate the rule name
+            // Update the rule name
             _ruleName = CheckRuleName(stream, _ruleName, isImportedGrammar, stgInit, out _sapi53Only, out _semanticTag);
 
             // Create an app domain for the grammar code if any
@@ -699,7 +699,7 @@ namespace System.Speech.Recognition
         /// Look for a grammar by rule name in a loaded assembly.
         ///
         /// The search goes over the base type for the grammar "rule name" and all of its derived language
-        /// dependant classes.
+        /// dependent classes.
         /// The matching algorithm pick a class that match the culture.
         /// </summary>
         private static Grammar LoadGrammarFromAssembly(Assembly assembly, string ruleName, string onInitParameters)
@@ -784,7 +784,7 @@ namespace System.Speech.Recognition
                 {
                     NameValuePair pair = pairs[i];
 
-                    // annonymous
+                    // anonymous
                     if (pair._name == null)
                     {
                         values[i] = pair._value;
@@ -944,7 +944,7 @@ namespace System.Speech.Recognition
             }
             stream.Position = 0;
 
-            // Udpate the rule name
+            // Update the rule name
             _ruleName = CheckRuleName(stream, GetType().Name, false, stgInit, out _sapi53Only, out _semanticTag);
 
             _isStg = true;

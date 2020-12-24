@@ -158,7 +158,7 @@ namespace System.Speech.Internal
                     for (lastPhone = posPhone; pmCompressed._phones[lastPhone] != 0; lastPhone++)
                     {
                         // All phoneme code points are assumed to be of length == 1
-                        // if the lenght is greater, then a marker of -1 is set for each additional code points
+                        // if the length is greater, then a marker of -1 is set for each additional code points
                         if (pmCompressed._phones[lastPhone] == unchecked((byte)-1))
                         {
                             multi_phones++;
@@ -245,7 +245,7 @@ namespace System.Speech.Internal
 
         /// <summary>
         /// Compressed version for the phone map so that the size for the pronunciation table is small in the dll.
-        /// A single large arrays of bytes (ascii) is used to store the 'pron' string. Each string is zero terminated.
+        /// A single large arrays of bytes (ASCII) is used to store the 'pron' string. Each string is zero terminated.
         /// A single large array of char is used to store the code point for the 'pron' string. Each binary array for the pron by default
         /// has a length of 1 character. If the length is greater than 1, then the 'pron' string is appended with -1 values, one per extra code
         /// point.
@@ -268,7 +268,7 @@ namespace System.Speech.Internal
             // Number of phonemes
             internal int _count;
 
-            // Array of zero terminated ascii strings
+            // Array of zero terminated ASCII strings
             internal byte[] _phones;
 
             // Array of code points for the 'pron'. By default each code point for a 'pron' is 1 char long, unless the 'pron' string is prepended with -1

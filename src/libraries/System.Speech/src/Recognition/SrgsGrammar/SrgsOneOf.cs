@@ -65,7 +65,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region public Properties
 
-        // ISSUE: Do we need more construcors? Take a look at RuleElementCollection.AddOneOf methods. [Bug# 37115]
+        // ISSUE: Do we need more constructors? Take a look at RuleElementCollection.AddOneOf methods. [Bug# 37115]
         public Collection<SrgsItem> Items
         {
             get
@@ -129,7 +129,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Private Types
 
-        // Used by the debbugger display attribute
+        // Used by the debugger display attribute
         internal class OneOfDebugDisplay
         {
             public OneOfDebugDisplay(SrgsOneOf oneOf)

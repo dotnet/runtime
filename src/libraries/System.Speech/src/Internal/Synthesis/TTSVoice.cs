@@ -56,7 +56,7 @@ namespace System.Speech.Internal.Synthesis
                 }
             }
 
-            // Addd the lexicons that are defined in this voice but are not in the list
+            // Add the lexicons that are defined in this voice but are not in the list
             foreach (LexiconEntry entry in lexicons)
             {
                 if (!_lexicons.Contains(entry))

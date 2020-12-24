@@ -46,7 +46,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        // Prefast cannot figure out that paramater checking is done
+        // Prefast cannot figure out that parameter checking is done
 #pragma warning disable 56526
         // Value of semantic property contained inside the <tag> element.
         public object Value

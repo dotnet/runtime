@@ -31,7 +31,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         /// <summary>
-        /// Compiles an Srgs documentto a file
+        /// Compiles an Srgs document to a file
         /// </summary>
         public static void Compile(SrgsDocument srgsGrammar, Stream outputStream)
         {
@@ -87,7 +87,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
 
         /// <summary>
-        /// Compiles an Srgs documentto a file
+        /// Compiles an Srgs document to a file
         /// </summary>
         public static void CompileClassLibrary(SrgsDocument srgsGrammar, string outputPath, string[] referencedAssemblies, string keyFile)
         {

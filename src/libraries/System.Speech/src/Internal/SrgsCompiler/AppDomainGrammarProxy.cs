@@ -198,7 +198,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     NameValuePair pair = pairs[i];
 
-                    // annonymous
+                    // anonymous
                     if (pair._name == null)
                     {
                         values[i] = pair._value;
@@ -297,11 +297,11 @@ namespace System.Speech.Internal.SrgsCompiler
             return pairs;
         }
 
-#pragma warning disable 56524 // Arclist does not hold on any resouces
+#pragma warning disable 56524 // Arclist does not hold on any resources
 
         private System.Speech.Recognition.Grammar _grammar;
 
-#pragma warning restore 56524 // Arclist does not hold on any resouces
+#pragma warning restore 56524 // Arclist does not hold on any resources
 
         private Assembly _assembly;
         private string _rule;

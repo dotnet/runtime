@@ -1127,7 +1127,7 @@ namespace System.Speech.Recognition
             /// <summary>
             /// Find the rule enclosing a property.
             /// </summary>
-            /// <param name="firstElement">First word mathcing the property</param>
+            /// <param name="firstElement">First word matching the property</param>
             /// <param name="count">Count of words</param>
             internal RuleNode Find(uint firstElement, uint count)
             {

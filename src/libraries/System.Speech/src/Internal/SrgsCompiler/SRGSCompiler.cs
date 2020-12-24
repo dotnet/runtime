@@ -22,7 +22,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// <param name="filename">filename to compile to</param>
         /// <param name="stream">stream to compile to</param>
         /// <param name="fOutputCfg">Compile for CFG or DLL</param>
-        /// <param name="originalUri">in xmlReader.Count == 1, name of the originel file</param>
+        /// <param name="originalUri">in xmlReader.Count == 1, name of the original file</param>
         /// <param name="referencedAssemblies">List of referenced assemblies</param>
         /// <param name="keyFile">Strong name</param>
         internal static void CompileStream(XmlReader[] xmlReaders, string filename, Stream stream, bool fOutputCfg, Uri originalUri, string[] referencedAssemblies, string keyFile)

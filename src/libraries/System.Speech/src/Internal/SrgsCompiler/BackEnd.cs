@@ -69,7 +69,7 @@ namespace System.Speech.Internal.SrgsCompiler
             float[] pWeights;
             int cArcs;
 
-            // Add the top level semantic interpreatation tag
+            // Add the top level semantic interpretation tag
             // This should be set as the first symbol in the symbol string blog since it must hold on a 16 bits value.
             int semanticInterpretationGlobals = 0;
             if (_globalTags.Count > 0)
@@ -190,7 +190,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         /// <summary>
         /// Description:
-        /// Combine the current data in a grammar with one comming from a CFG
+        /// Combine the current data in a grammar with one coming from a CFG
         /// </summary>
         internal static Backend CombineGrammar(string ruleName, Backend org, Backend extra)
         {
@@ -840,7 +840,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     CfgArc arc = header.arcs[k];
 
-                    // Reset the Transition index based on the compbined stringblobs
+                    // Reset the Transition index based on the combined string blobs
                     if (arc.RuleRef)
                     {
                         // for a ruleref offset the rule index
@@ -938,7 +938,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         apArcTable[tag._cfgTag.StartArcIndex].AddStartTag(tag);
                         apArcTable[tag._cfgTag.EndArcIndex].AddEndTag(tag);
 
-                        // If we have ms-properties than _nameOffset != overwise it is w3c tags.
+                        // If we have ms-properties than _nameOffset != otherwise it is w3c tags.
                         if (semTag._nameOffset > 0)
                         {
                             tag._cfgTag._nameOffset = _symbols.OffsetFromId(_symbols.Find(_symbols.FromOffset(semTag._nameOffset)));

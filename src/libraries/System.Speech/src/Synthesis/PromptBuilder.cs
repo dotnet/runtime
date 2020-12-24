@@ -189,7 +189,7 @@ namespace System.Speech.Synthesis
 
             if (style.Rate != PromptRate.NotSet || style.Volume != PromptVolume.NotSet)
             {
-                // two elements add a second strart style
+                // two elements add a second start style
                 if (ssmlState != 0)
                 {
                     _elements.Add(new Element(ElementType.StartStyle));

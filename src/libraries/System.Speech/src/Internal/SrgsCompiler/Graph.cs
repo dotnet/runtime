@@ -79,7 +79,7 @@ namespace System.Speech.Internal.SrgsCompiler
         }
 
         /// <summary>
-        /// Deletet a state
+        /// Delete a state
         /// </summary>
         internal void DeleteState(State state)
         {
@@ -154,7 +154,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// - SourceState == !null, RuleInitialState, !DestState,   ...
         /// - DestState   ==  null, RuleInitialState, !SourceState, ...
         /// - SourceState.OutputArc.IsEmpty
-        /// - !(SourceState == RuleInitialState AND DestState == nul)
+        /// - !(SourceState == RuleInitialState AND DestState == null)
         ///
         /// Algorithm:
         /// - For each input transition into SourceState
@@ -910,7 +910,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     refArc.ClearTags();
                     if (arcsToDelete == null)
                     {
-                        // delay the creation of the collection as this operation in unfrequent.
+                        // delay the creation of the collection as this operation in infrequent.
                         arcsToDelete = new Collection<Arc>();
                     }
                     arcsToDelete.Add(refArc);
@@ -957,7 +957,7 @@ namespace System.Speech.Internal.SrgsCompiler
         #region Private Types
 
 #if DEBUG
-        // Used by the debbugger display attribute
+        // Used by the debugger display attribute
         internal class GraphDebugDisplay
         {
             public GraphDebugDisplay(Graph states)

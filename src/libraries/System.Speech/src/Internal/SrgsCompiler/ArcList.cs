@@ -62,7 +62,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        // Used by the debbugger display attribute
+        // Used by the debugger display attribute
         private class ArcListDebugDisplay
         {
             public ArcListDebugDisplay(ArcList item)

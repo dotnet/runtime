@@ -21,7 +21,7 @@ namespace System.Speech.Internal.SrgsParser
 
         #region Internal Methods
 
-        // Initializes the object from a stream containg SRGS in XML
+        // Initializes the object from a stream containing SRGS in XML
         public void Parse()
         {
             try
@@ -83,7 +83,7 @@ namespace System.Speech.Internal.SrgsParser
 
             // if add the content to the generic _scrip
             _parser.AddScript(grammar, source.Script, null, -1);
-            // Finish all initialisation - should check for the Root and the all
+            // Finish all initialization - should check for the Root and the all
             // rules are defined
             grammar.PostParse(null);
         }
@@ -269,7 +269,7 @@ namespace System.Speech.Internal.SrgsParser
         {
             IPropertyTag tag = _parser.CreatePropertyTag(parent);
 
-            // Inialize the tag
+            // Initialize the tag
             tag.NameValue(parent, srgsTag.Name, srgsTag.Value);
 
             // Since the tag are always pushed at the end of the element list, they can be committed right away

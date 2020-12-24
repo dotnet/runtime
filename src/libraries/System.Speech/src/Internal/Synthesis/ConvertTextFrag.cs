@@ -261,7 +261,7 @@ namespace System.Speech.Internal.Synthesis
             // For percentage changes, we will require that -10 maps to one third the default rate,
             // and +10 to three times the default, on a log scale.
             // But for absolute or relative (not percent) we can't support this without a defined base-line rate
-            // We could get away with 180 for this in english, but very variable across languages.
+            // We could get away with 180 for this in English, but very variable across languages.
 
             int sapiRate = 0;
             if (rate.SsmlAttributeId != ProsodyNumber.AbsoluteNumber)

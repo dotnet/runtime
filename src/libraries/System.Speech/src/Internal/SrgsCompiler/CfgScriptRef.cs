@@ -11,7 +11,7 @@ namespace System.Speech.Internal.SrgsCompiler
     {
         #region Internal Fields
 
-        // should be private but the order is absolutly key for marshalling
+        // should be private but the order is absolutely key for marshalling
         internal int _idRule;
 
         internal int _idMethod;

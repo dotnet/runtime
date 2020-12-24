@@ -40,7 +40,7 @@ namespace System.Speech.Internal.Synthesis
                 // Always add the culture info as the voice element cannot not be empty (namespaces declaration don't count)
                 _writer.WriteAttributeString("xml", "lang", null, culture != null ? culture.Name : _culture.Name);
 
-                // write all the additionnal namespace
+                // write all the additional namespace
                 foreach (SsmlXmlAttribute ns in extraNamespace)
                 {
                     _writer.WriteAttributeString("xmlns", ns._name, ns._ns, ns._value);
@@ -229,7 +229,7 @@ namespace System.Speech.Internal.Synthesis
                 _writer.WriteAttributeString("variant", (variant).ToString(CultureInfo.InvariantCulture));
             }
 
-            // write all the additionnal namespace
+            // write all the additional namespace
             if (extraNamespace != null)
             {
                 foreach (SsmlXmlAttribute ns in extraNamespace)
@@ -270,7 +270,7 @@ namespace System.Speech.Internal.Synthesis
 
         public void StartProcessUnknownAttributes(object voice, ref FragmentState fragmentState, string sElement, List<SsmlXmlAttribute> extraAttributes)
         {
-            // write all the additionnal namespace
+            // write all the additional namespace
             foreach (SsmlXmlAttribute attribute in extraAttributes)
             {
                 _writer.WriteAttributeString(attribute._prefix, attribute._name, attribute._ns, attribute._value);

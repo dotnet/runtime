@@ -446,7 +446,7 @@ Possible constructors are: '{2}'.</value>
     <value>confidence must be between 0.0 and 1.0, inclusively.</value>
   </data>
   <data name="InvalidMinRepeat" xml:space="preserve">
-    <value>'{0}' minRepeat not valid; must must be greater than or equal to zero.</value>
+    <value>'{0}' minRepeat not valid; must be greater than or equal to zero.</value>
   </data>
   <data name="InvalidMaxRepeat" xml:space="preserve">
     <value>'{0}' maxRepeat not valid; must be greater than or equal to zero.</value>
@@ -515,7 +515,7 @@ Possible constructors are: '{2}'.</value>
     <value>Unknown 'import namespace' attribute.</value>
   </data>
   <data name="NoUriForSpecialRuleRef" xml:space="preserve">
-    <value>Special 'ruleref' cannot have a 'uri'attribute.</value>
+    <value>Special 'ruleref' cannot have a 'uri' attribute.</value>
   </data>
   <data name="NoAliasForSpecialRuleRef" xml:space="preserve">
     <value>Special 'ruleref' cannot have 'semantic-key' or 'params' attributes.</value>
@@ -974,7 +974,7 @@ Possible constructors are: '{2}'.</value>
     <value>The client is currently synced with the lexicon.</value>
   </data>
   <data name="SapiErrorLexVeryOutOfSync" xml:space="preserve">
-    <value>The client is excessively out of sync with the lexicon. Mismatches may not be incrementally synched.</value>
+    <value>The client is excessively out of sync with the lexicon. Mismatches may not be incrementally synced.</value>
   </data>
   <data name="SapiErrorUndefinedForwardRuleRef" xml:space="preserve">
     <value>A rule reference in a grammar was made to a named rule that was never defined.</value>
@@ -1223,7 +1223,7 @@ Possible constructors are: '{2}'.</value>
     <value>The security manager cannot be changed while a grammar is loaded.</value>
   </data>
   <data name="SapiErrorCompleteButExtendable" xml:space="preserve">
-    <value>Parse is valid but could be extendable (internal use only)</value>
+    <value>Parse is valid but could be extensible (internal use only)</value>
   </data>
   <data name="SapiErrorFailedToDeleteFile" xml:space="preserve">
     <value>Tried and failed to delete an existing file.</value>

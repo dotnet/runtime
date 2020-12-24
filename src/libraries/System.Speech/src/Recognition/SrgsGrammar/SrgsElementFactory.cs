@@ -48,7 +48,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 string sPron = pronunciation;
                 for (int iCurPron = 0, iDeliminator = 0; iCurPron < sPron.Length; iCurPron = iDeliminator + 1)
                 {
-                    // Find semi-colon deliminator and replace with null
+                    // Find semi-colon delimiter and replace with null
                     iDeliminator = pronunciation.IndexOfAny(s_pronSeparator, iCurPron);
                     if (iDeliminator == -1)
                     {

@@ -7,7 +7,7 @@ using System.Speech.Recognition.SrgsGrammar;
 using System.Text;
 using System.Xml;
 
-#pragma warning disable 56524 // The _reader and  and _xmlReader are not created in this module and should not be disposed
+#pragma warning disable 56524 // The _reader and _xmlReader are not created in this module and should not be disposed
 
 // Remove all the check for null or empty warnings
 
@@ -56,7 +56,7 @@ namespace System.Speech.Internal.SrgsParser
 
         #region Internal Methods
 
-        // Initializes the object from a stream containg SRGS in XML
+        // Initializes the object from a stream containing SRGS in XML
         public void Parse()
         {
             try
@@ -221,7 +221,7 @@ namespace System.Speech.Internal.SrgsParser
 
         #region Internal Methods
 
-        // Inmplementation of the internal interface ISrgsParser
+        // Implementation of the internal interface ISrgsParser
         public IElementFactory ElementFactory
         {
             set
@@ -489,7 +489,7 @@ namespace System.Speech.Internal.SrgsParser
             {
                 _parser.AddScript(grammar, script._name, script._value);
             }
-            // Finish all initialisation - should check for the Root and the all
+            // Finish all initialization - should check for the Root and the all
             // rules are defined
             grammar.PostParse(null);
         }
@@ -807,7 +807,7 @@ namespace System.Speech.Internal.SrgsParser
             float repeatProbability = 0.5f;
             int minRepeat = 1;
             int maxRepeat = 1;
-            float weigth = 1f;
+            float weight = 1f;
 
             while (reader.MoveToNextAttribute())
             {
@@ -828,7 +828,7 @@ namespace System.Speech.Internal.SrgsParser
                                 break;
 
                             case "weight":
-                                weigth = Convert.ToSingle(reader.Value, CultureInfo.InvariantCulture);
+                                weight = Convert.ToSingle(reader.Value, CultureInfo.InvariantCulture);
                                 break;
 
                             default:
@@ -847,7 +847,7 @@ namespace System.Speech.Internal.SrgsParser
                 }
             }
 
-            IItem item = _parser.CreateItem(parent, rule, minRepeat, maxRepeat, repeatProbability, weigth);
+            IItem item = _parser.CreateItem(parent, rule, minRepeat, maxRepeat, repeatProbability, weight);
 
             // Process child elements.
             ProcessChildNodes(reader, item, rule, "item");
@@ -1140,7 +1140,7 @@ namespace System.Speech.Internal.SrgsParser
         /// Parse the Meta Element
         ///
         /// Attributes:
-        ///     name and http-equiv: one or the other but not bothsd
+        ///     name and http-equiv: one or the other but not both
         ///     content: required
         /// </summary>
         private static void ParseMeta(XmlReader reader)

@@ -73,7 +73,7 @@ namespace System.Speech.Internal.Synthesis
         internal abstract void InjectEvent(TTSEvent ttsEvent);
 
         /// <summary>
-        /// File operation are synchonous no wait
+        /// File operation are synchronous no wait
         /// </summary>
         internal abstract void WaitUntilDone();
 

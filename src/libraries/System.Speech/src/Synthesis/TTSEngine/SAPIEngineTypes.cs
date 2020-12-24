@@ -26,7 +26,7 @@ namespace System.Speech.Synthesis.TtsEngine
         public int ulTextSrcOffset;
 
         // must be the last element, it is passed to the TTS engine that
-        // does not see thess fields
+        // does not see these fields
         public GCHandle gcText;
         public GCHandle gcNext;
         public GCHandle gcPhoneme;

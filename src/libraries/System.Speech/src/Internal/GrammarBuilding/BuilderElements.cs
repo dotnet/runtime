@@ -96,7 +96,7 @@ namespace System.Speech.Internal.GrammarBuilding
                             }
                             else
                             {
-                                // Create a rule to store the common elemts
+                                // Create a rule to store the common elements
                                 if (newRule == null)
                                 {
                                     newRule = new RuleElement(current, "_");

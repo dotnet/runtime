@@ -12,7 +12,7 @@ namespace System.Speech.Internal.SapiInterop
         public SPEVENTLPARAMTYPE elParamType;
         public uint ulStreamNum;
         public ulong ullAudioStreamOffset;
-        public IntPtr wParam;   // Always just a numeric type - contains no unmanged resources so does not need special clean-up.
+        public IntPtr wParam;   // Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         public IntPtr lParam;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
     }
 
@@ -23,7 +23,7 @@ namespace System.Speech.Internal.SapiInterop
         public SPEVENTLPARAMTYPE elParamType;
         public uint ulStreamNum;
         public ulong ullAudioStreamOffset;
-        public IntPtr wParam;   // Always just a numeric type - contains no unmanged resources so does not need special clean-up.
+        public IntPtr wParam;   // Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         public IntPtr lParam;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
         public ulong ullAudioTimeOffset;
     }
@@ -57,7 +57,7 @@ namespace System.Speech.Internal.SapiInterop
         SPEI_HYPOTHESIS = 39,
         SPEI_SR_BOOKMARK = 40,
         SPEI_PROPERTY_NUM_CHANGE = 41,  // LPARAM points to a string, WPARAM is the attrib value
-        SPEI_PROPERTY_STRING_CHANGE = 42,  // LPARAM pointer to buffer.  Two concatinated null terminated strings.
+        SPEI_PROPERTY_STRING_CHANGE = 42,  // LPARAM pointer to buffer.  Two concatenated null terminated strings.
         SPEI_FALSE_RECOGNITION = 43,  // apparent speech with no valid recognition
         SPEI_INTERFERENCE = 44,  // LPARAM is any combination of SPINTERFERENCE flags
         SPEI_REQUEST_UI = 45,  // LPARAM is string.

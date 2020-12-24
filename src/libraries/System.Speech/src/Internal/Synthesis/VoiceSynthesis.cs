@@ -125,7 +125,7 @@ namespace System.Speech.Internal.Synthesis
                     _asyncWorkerUI.ConsumeQueue();
                 }
 
-                // Throw if an exception occured
+                // Throw if an exception occurred
                 if (prompt.Exception != null)
                 {
                     ExceptionDispatchInfo.Throw(prompt.Exception);
@@ -193,7 +193,7 @@ namespace System.Speech.Internal.Synthesis
         {
             newLength = length;
 
-            // Find the pos '>' from the start position and so sustitution from this point on
+            // Find the pos '>' from the start position and so substitution from this point on
             int startInXml = text.LastIndexOf('>', start);
 
             System.Diagnostics.Debug.Assert(startInXml >= 0);
@@ -571,7 +571,7 @@ namespace System.Speech.Internal.Synthesis
 
         #endregion
 
-        #region Internal Propperties
+        #region Internal Properties
         internal Prompt Prompt
         {
             get
@@ -850,7 +850,7 @@ namespace System.Speech.Internal.Synthesis
 
         /// <summary>
         /// This method renders the current speak info structure. It may be
-        /// made up of one or more speech segements, each intended for a different
+        /// made up of one or more speech segments, each intended for a different
         /// voice/engine.
         /// </summary>
         private void SpeakText(SpeakInfo speakInfo, Prompt prompt, List<LexiconEntry> lexicons)
@@ -1071,7 +1071,7 @@ namespace System.Speech.Internal.Synthesis
                     {
                         ExecuteOnBackgroundThread(Action.GetVoice, voiceInfo);
 
-                        // Voice is null if exception occured
+                        // Voice is null if exception occurred
                         voice = _pendingException == null ? _pendingVoice : null;
                     }
                     else
@@ -1234,8 +1234,8 @@ namespace System.Speech.Internal.Synthesis
 
                     if (voice == null)
                     {
-                        // The voice associated with this token cannot be instanciated.
-                        // Remove it from the list of posssible voices
+                        // The voice associated with this token cannot be instantiated.
+                        // Remove it from the list of possible voices
                         tokens.Remove(sysVoice);
                         sysVoice.SetEnabledFlag(false, switchContext);
                         if (sysVoice == viDefault)
@@ -1335,7 +1335,7 @@ namespace System.Speech.Internal.Synthesis
                         matchValue |= 0x4;
                     }
 
-                    // Male / Female has priority ove age
+                    // Male / Female has priority over age
                     if (gender == VoiceGender.NotSet || voiceInfo.Gender == gender)
                     {
                         matchValue |= 0x2;
@@ -1456,7 +1456,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         /// <summary>
-        /// Returns the default voice for the systn
+        /// Returns the default voice for the synth
         /// </summary>
         private TTSVoice GetVoice(bool switchContext)
         {
@@ -1658,7 +1658,7 @@ namespace System.Speech.Internal.Synthesis
         }
         private void QueuePrompt(Prompt prompt)
         {
-            // Call Sapi Spesk with the appropriate flags based on mediaType
+            // Call Sapi Speak with the appropriate flags based on mediaType
             switch (prompt._media)
             {
                 case SynthesisMediaType.Text:

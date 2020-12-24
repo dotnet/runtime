@@ -39,7 +39,7 @@ namespace System.Speech.Synthesis
         {
             _registryKeyPath = token._sKeyId;
 
-            // Retriece the token name
+            // Retrieve the token name
             _id = token.Name;
 
             // Retrieve default display name

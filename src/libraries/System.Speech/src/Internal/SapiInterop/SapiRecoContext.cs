@@ -9,7 +9,7 @@ namespace System.Speech.Internal.SapiInterop
     {
         #region Constructors
 
-        // This constuctor must be called in the context of the backgroung proxy if any
+        // This constructor must be called in the context of the background proxy if any
         internal SapiRecoContext(ISpRecoContext recoContext, SapiProxy proxy)
         {
             _recoContext = recoContext;

@@ -188,7 +188,7 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        // Used by the debbugger display attribute
+        // Used by the debugger display attribute
         private string _keyName;
         private float _confidence;
         private object _value;
@@ -197,7 +197,7 @@ namespace System.Speech.Recognition
 
         #region Private Types
 
-        // Used by the debbugger display attribute
+        // Used by the debugger display attribute
         internal class SemanticValueDebugDisplay
         {
             public SemanticValueDebugDisplay(SemanticValue value)

@@ -192,7 +192,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         /// <summary>
         /// Reads the specified string value to the registry. If valueName is
-        /// NULL then the default value of the registy key is read.
+        /// NULL then the default value of the registry key is read.
         /// </summary>
         [PreserveSig]
         public int GetStringValue(
@@ -307,7 +307,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         /// <summary>
         /// Reads the specified string value to the registry. If valueName is
-        /// NULL then the default value of the registy key is read.
+        /// NULL then the default value of the registry key is read.
         /// </summary>
         internal bool TryGetString(string valueName, out string value)
         {

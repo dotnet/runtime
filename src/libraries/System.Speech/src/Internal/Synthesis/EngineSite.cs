@@ -9,7 +9,7 @@ using System.Speech.Synthesis;
 using System.Speech.Synthesis.TtsEngine;
 using System.Text;
 
-// Exceptions cannot get throught the COM code.
+// Exceptions cannot get through the COM code.
 // The engine site saves the last exception before sending it back to the client.
 #pragma warning disable 6500
 
@@ -168,7 +168,7 @@ namespace System.Speech.Internal.Synthesis
                 Uri baseUriUnused;
                 using (Stream stream = _resourceLoader.LoadFile(uri, out mediaTypeUnused, out baseUriUnused, out localPath))
                 {
-                    // Read the file in memory for SES and release the original file immediatly
+                    // Read the file in memory for SES and release the original file immediately
                     // This scheme is really bad if the files being read are big but I would assume
                     // That it should not be the case.
                     int cLen = (int)stream.Length;

@@ -90,7 +90,7 @@ namespace System.Speech.Recognition
                 throw new ArgumentOutOfRangeException(nameof(duration));
             }
 
-            // Get the position and length in bytes offset and btyes length.
+            // Get the position and length in bytes offset and bytes length.
             int startPosition = (int)((_audioFormat.BitsPerSample * _audioFormat.SamplesPerSecond * audioPosition.Ticks) / (TimeSpan.TicksPerSecond * 8));
             int length = (int)((_audioFormat.BitsPerSample * _audioFormat.SamplesPerSecond * duration.Ticks) / (TimeSpan.TicksPerSecond * 8));
             if (startPosition + length > _rawAudioData.Length)

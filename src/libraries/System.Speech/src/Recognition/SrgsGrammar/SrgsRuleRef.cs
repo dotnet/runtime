@@ -238,7 +238,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Private Method
 
         /// <summary>
-        /// Call by constructors. No check is made on the paramaters except for the the Uri
+        /// Call by constructors. No check is made on the parameters except for the Uri
         /// </summary>
         private void UriInit(Uri uri, string rule, string semanticKey, string initParameters)
         {
@@ -263,7 +263,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Private Enums
         // Special rule references allow grammars based on CFGs to have powerful
         // additional features, such as transitions into dictation (both recognized
-        // or not recognized) and word seqeuences from SAPI 5.0.
+        // or not recognized) and word sequences from SAPI 5.0.
         private enum SpecialRuleRefType
         {
             // Defines a rule that is automatically matched that is, matched without
