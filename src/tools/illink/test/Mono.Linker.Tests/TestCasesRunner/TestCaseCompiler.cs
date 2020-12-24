@@ -63,10 +63,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// expectations assemblies because this would undermine our ability to inspect them for expected results during ResultChecking.  The UnityLinker UnresolvedHandling tests depend on this
 			// behavior of skipping the after test compile
 			if (outputDirectory != _sandbox.ExpectationsDirectory) {
+				CompileAfterTestCaseAssemblies (outputDirectory, originalCommonReferences, originalDefines, removeFromLinkerInputAssemblies);
+
 				foreach (var assemblyToRemove in removeFromLinkerInputAssemblies)
 					assemblyToRemove.DeleteIfExists ();
-
-				CompileAfterTestCaseAssemblies (outputDirectory, originalCommonReferences, originalDefines);
 			}
 
 			return testAssembly;
@@ -125,7 +125,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private void CompileAfterTestCaseAssemblies (NPath outputDirectory, NPath[] references, string[] defines)
+		private void CompileAfterTestCaseAssemblies (NPath outputDirectory, NPath[] references, string[] defines, IList<NPath> removeFromLinkerInputAssemblies)
 		{
 			foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesAfter ()) {
 				var options = CreateOptionsForSupportingAssembly (
@@ -135,7 +135,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					references,
 					defines,
 					CollectSetupAfterResourcesFiles (setupCompileInfo));
-				CompileAssembly (options);
+				var output = CompileAssembly (options);
+
+				if (setupCompileInfo.RemoveFromLinkerInput)
+					removeFromLinkerInputAssemblies.Add (output);
 			}
 		}
 
