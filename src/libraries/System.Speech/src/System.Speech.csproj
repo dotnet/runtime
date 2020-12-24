@@ -7,12 +7,13 @@
     <!-- CA2249: Consider using String.Contains instead of String.IndexOf.  We compile for netcoreapp2.0 where this doesn't exist.-->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <NoWarn>$(NoWarn);CS0649;CA2249;SA1129</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- On older TFM's we needed to disable obsoletion warnings about Marshalling VARIANTs -->
     <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">$(NoWarn);IDE0079</NoWarn>
     <!-- On newer TFM's we needed to disable obsoletion warning about WebRequest -->
     <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.0-windows'">$(NoWarn);IDE0079</NoWarn>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
-
   </PropertyGroup>
   <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
