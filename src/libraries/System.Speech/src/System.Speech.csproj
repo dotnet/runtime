@@ -225,9 +225,10 @@
       <LogicalName>upstable_jpn.upsmap</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Net.WebClient" />
     <Reference Include="System.Collections" />
