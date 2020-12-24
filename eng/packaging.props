@@ -42,7 +42,6 @@
   <Import Condition="Exists('$(PkgDir)baseline\baseline.props') and '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
 
   <PropertyGroup Condition="'$(IsPackable)' == 'true'">
-    <IncludePackageVersionFile>true</IncludePackageVersionFile>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
   </PropertyGroup>
 
