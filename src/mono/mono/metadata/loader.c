@@ -1835,7 +1835,7 @@ mono_method_signature_checked_slow (MonoMethod *m, MonoError *error)
 		return m->signature;
 	}
 
-	g_assert (mono_metadata_token_table (m->token) == MONO_TABLE_METHOD);
+	g_assertf (mono_metadata_token_table (m->token) == MONO_TABLE_METHOD, "%s", m->name);
 	idx = mono_metadata_token_index (m->token);
 
 	sig = mono_metadata_blob_heap (img, sig_offset = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
