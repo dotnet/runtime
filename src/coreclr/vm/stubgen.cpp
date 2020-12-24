@@ -2336,27 +2336,24 @@ static BOOL SigHasVoidReturnType(const Signature &signature)
     return (ELEMENT_TYPE_VOID == retType);
 }
 
-namespace
+static PTR_MethodTable GetModOptTypeForCallConv(CorUnmanagedCallingConvention callConv)
 {
-    PTR_MethodTable GetModOptTypeForCallConv(CorUnmanagedCallingConvention callConv)
+    switch(callConv)
     {
-        switch(callConv)
-        {
-            case IMAGE_CEE_UNMANAGED_CALLCONV_C:
-                return CoreLibBinder::GetClass(CLASS__CALLCONV_CDECL);
-                break;
-            case IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL:
-                return CoreLibBinder::GetClass(CLASS__CALLCONV_STDCALL);
-                break;
-            case IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL:
-                return CoreLibBinder::GetClass(CLASS__CALLCONV_THISCALL);
-                break;
-            case IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL:
-                return CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL);
-                break;
-            default:
-                return NULL;
-        }
+        case IMAGE_CEE_UNMANAGED_CALLCONV_C:
+            return CoreLibBinder::GetClass(CLASS__CALLCONV_CDECL);
+            break;
+        case IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL:
+            return CoreLibBinder::GetClass(CLASS__CALLCONV_STDCALL);
+            break;
+        case IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL:
+            return CoreLibBinder::GetClass(CLASS__CALLCONV_THISCALL);
+            break;
+        case IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL:
+            return CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL);
+            break;
+        default:
+            return NULL;
     }
 }
 
@@ -2465,10 +2462,10 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
         {
             switch((CorUnmanagedCallingConvention)uNativeCallingConv)
             {
-                case IMAGE_CEE_CS_CALLCONV_C:
-                case IMAGE_CEE_CS_CALLCONV_STDCALL:
-                case IMAGE_CEE_CS_CALLCONV_THISCALL:
-                case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+                case IMAGE_CEE_UNMANAGED_CALLCONV_C:
+                case IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL:
+                case IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL:
+                case IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL:
                     m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(GetModOptTypeForCallConv((CorUnmanagedCallingConvention)uNativeCallingConv)));
                     break;
                 default:

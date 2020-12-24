@@ -5248,14 +5248,7 @@ namespace
         _Out_ LPCSTR *namespaceOut,
         _Out_ LPCSTR *nameOut)
     {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            FORBID_FAULT;
-            MODE_ANY;
-        }
-        CONTRACTL_END
+        STANDARD_VM_CONTRACT;
 
         IMDInternalImport *pInternalImport = pModule->GetMDImport();
         if (TypeFromToken(token) == mdtTypeDef)
@@ -5284,15 +5277,7 @@ namespace
         _Out_ LPCSTR *namespaceOut,
         _Out_ LPCSTR *nameOut)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END
-
-        GCX_PREEMP();
+        STANDARD_VM_CONTRACT;
 
         TypeHandle type;
         MethodDesc* pMD;
@@ -5313,13 +5298,7 @@ namespace
         _Out_ LPCSTR *namespaceOut,
         _Out_ LPCSTR *nameOut)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END
+        STANDARD_VM_CONTRACT;
 
         if (IsDynamicScope(pModule))
         {
@@ -5329,7 +5308,6 @@ namespace
         {
             return GetNameOfTypeRefOrDef(GetModule(pModule), token, namespaceOut, nameOut);
         }
-
     }
 }
 
@@ -5349,9 +5327,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(callConvOut != NULL);
         PRECONDITION(errorResID != NULL);
     }

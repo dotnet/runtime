@@ -2583,13 +2583,7 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     DllImportInit(pMD, pLibName, pEntryPointName);
 
@@ -2600,10 +2594,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMD));
     }
     CONTRACTL_END;
@@ -2701,9 +2692,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pModule));
     }
@@ -2721,9 +2710,7 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMD));
 
@@ -3003,13 +2990,7 @@ namespace
         _Out_ CorPinvokeMap *pPinvokeMapOut,
         _Out_ UINT *errorResID)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END
+        STANDARD_VM_CONTRACT;
 
         CorUnmanagedCallingConvention callConvMaybe;
         bool suppressGCTransition;
