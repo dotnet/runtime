@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true)]
 	public class SetupCompileAfterAttribute : BaseMetadataAttribute
 	{
-		public SetupCompileAfterAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, object[] resources = null, string additionalArguments = null, string compilerToUse = null)
+		public SetupCompileAfterAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, object[] resources = null, string additionalArguments = null, string compilerToUse = null, bool addAsReference = true, bool removeFromLinkerInput = false)
 		{
 			if (sourceFiles == null)
 				throw new ArgumentNullException (nameof (sourceFiles));

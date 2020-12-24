@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
 	[RemovedAssembly ("Forwarder.dll")]
+	[RemovedAssemblyReference ("test", "Forwarder")]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]
 	[KeptMemberInAssembly ("Library.dll", typeof (LibraryUsingForwarder), "GetValueFromOtherAssembly()")]
 	class UsedForwarderIsRemovedWhenLink

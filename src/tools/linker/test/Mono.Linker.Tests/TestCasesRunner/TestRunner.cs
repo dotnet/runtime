@@ -82,6 +82,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				throw;
 			}
+
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}
 
