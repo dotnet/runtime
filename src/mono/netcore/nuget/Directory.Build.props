@@ -13,10 +13,6 @@
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
-    <IncludePackageVersionFile>true</IncludePackageVersionFile>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <PackageIndex Include="$(PackageIndexFile)" />
   </ItemGroup>
