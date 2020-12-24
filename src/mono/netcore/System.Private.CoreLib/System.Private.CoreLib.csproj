@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <!-- Generate Mono corelib version file -->
   <Import Project="GenerateMonoCoreLibVersionFile.targets" />
 
@@ -280,9 +280,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Browser.Mono.cs" />
       <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.UnixOrWindows.Mono.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />

@@ -5480,8 +5480,6 @@ void InitJITHelpers2()
     SetJitHelperFunction(CORINFO_HELP_INIT_PINVOKE_FRAME, (void *)GenerateInitPInvokeFrameHelper()->GetEntryPoint());
 #endif // TARGET_X86 || TARGET_ARM
 
-    ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(GetThread), ECall::InternalGetCurrentThread);
-
     InitJitHelperLogging();
 
     g_pJitGenericHandleCacheCrst.Init(CrstJitGenericHandleCache, CRST_UNSAFE_COOPGC);
