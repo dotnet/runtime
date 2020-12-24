@@ -1603,8 +1603,6 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    Assert.Equal(string.Empty, process.MainWindowTitle);
-
                     for (int attempt = 0; attempt < 50; ++attempt)
                     {
                         process.Refresh();
