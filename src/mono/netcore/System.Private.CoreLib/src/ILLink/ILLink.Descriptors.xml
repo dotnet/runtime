@@ -569,13 +569,8 @@
 			<method signature="System.Void .ctor(System.Object)" />
 		</type>
 
-		<!-- marshal.c: emit_marshal_custom (DISABLE_JIT is not defined for the AOT compiler, only the ARM runtimes) -->
-		<type fullname="System.Runtime.InteropServices.ICustomMarshaler" />
-
 		<!-- domain.c: mono_defaults.marshal_class -->
 		<type fullname="System.Runtime.InteropServices.Marshal" preserve="fields" >
-			<!-- marshal-ilgen.c: emit_marshal_custom_get_instance -->
-			<method name="GetCustomMarshalerInstance" />
 			<!-- marshal.c (mono_marshal_get_struct_to_ptr) -->
 			<method name="StructureToPtr" />
 		</type>
