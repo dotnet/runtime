@@ -4324,11 +4324,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 // Looking for
                 // 
-                //   bool x = MemoryExtensions.StartsWith<char>(arg0, String.op_Implicit("CNS_STR"));
+                //   bool x = MemoryExtensions.StartsWith<char>(arg0, String.op_Implicit("cstr"));
                 //
                 // In order to optimize into
                 //
-                //   bool x = arg0.Length >= 4 && *(arg0._pointer) == ToHexConst("CNS_STR");
+                //   bool x = arg0.Length >= 4 && *(arg0._pointer) == ToHexConst("cstr");
                 //
                 // TODO-CQ: Do the same for StartsWith + OrdinalIgnoreCase/InvariantIngoreCase
 
@@ -4344,7 +4344,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         break;
                     }
 
-                    if (strToSpanCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
+                    if (!strToSpanCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
                     {
                         // For now we only support constant strings
                         break;
@@ -4372,9 +4372,24 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         break;
                     }
 
-                    if (strLen != 4)
+                    var_types cmpType;
+
+                    if (strLen == 1)
                     {
-                        // TODO-CQ: Support 1-3 and emit SIMD for larger strings
+                        cmpType = TYP_BYTE;
+                    }
+                    else if (strLen == 2)
+                    {
+                        cmpType = TYP_INT;
+                    }
+                    else if (strLen == 4)
+                    {
+                        cmpType = TYP_LONG;
+                    }
+                    else
+                    {
+                        // TODO-CQ: Support other size and emit SIMD for larger strings
+                        break;
                     }
 
                     UINT64 strAsUlong = 0;
@@ -4421,7 +4436,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     spanRef = impCloneExpr(spanRef, &spanRefClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("spanRef"));
 
                     GenTree*      spanData     = gtNewFieldRef(TYP_BYREF, pointerHnd, spanRefClone, pointerOffset);
-                    GenTree*      indirCmp     = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(TYP_LONG, spanData), gtNewIconNode(strAsUlong, TYP_LONG));
+                    GenTree*      indirCmp     = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(cmpType, spanData), gtNewIconNode(strAsUlong, cmpType));
                     GenTree*      spanLenField = gtNewFieldRef(TYP_INT, lengthHnd, spanRef, lengthOffset);
                     GenTreeColon* colon        = new(this, GT_COLON) GenTreeColon(TYP_INT, indirCmp, gtNewIconNode(0));
                     GenTreeQmark* qmark        = gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_GE, TYP_INT, spanLenField, gtNewIconNode(strLen)), colon);
