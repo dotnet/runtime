@@ -31,10 +31,6 @@
     <None Include="$(PackageThirdPartyNoticesFile)"
           PackagePath="$([System.IO.Path]::GetFileName('$(PackageThirdPartyNoticesFile)'))"
           Pack="true" />
-    <None Include="$(PackageVersionFile)"
-          PackagePath="$([System.IO.Path]::GetFileName('$(PackageVersionFile)'))"
-          Pack="true"
-          Condition="'$(IncludePackageVersionFile)' == 'true'" />
   </ItemGroup>
 
   <PropertyGroup>
