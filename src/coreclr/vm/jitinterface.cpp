@@ -9777,11 +9777,8 @@ namespace
 {
     CorInfoCallConvExtension getUnmanagedCallConvForSig(CORINFO_MODULE_HANDLE mod, PCCOR_SIGNATURE pSig, DWORD cbSig, bool* pSuppressGCTransition)
     {
-        CONTRACTL {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
-        } CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
+
         SigParser parser(pSig, cbSig);
         ULONG rawCallConv;
         if (FAILED(parser.GetCallingConv(&rawCallConv)))
@@ -9829,11 +9826,7 @@ namespace
 
     CorInfoCallConvExtension getUnmanagedCallConvForMethod(MethodDesc* pMD, bool* pSuppressGCTransition)
     {
-        CONTRACTL {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
-        } CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
 
         ULONG methodCallConv;
         PCCOR_SIGNATURE pSig;
