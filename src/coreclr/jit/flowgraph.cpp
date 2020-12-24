@@ -178,6 +178,8 @@ void Compiler::fgInit()
 
     fgHasSwitch   = false;
     fgBlockCounts = nullptr;
+
+    fgPredListSortVector = nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -1322,7 +1324,7 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
 
     for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
-        if (blockPred == pred->flBlock)
+        if (blockPred == pred->getBlock())
         {
             return pred;
         }
@@ -1361,7 +1363,7 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, 
     for (predPrevAddr = &block->bbPreds, pred = *predPrevAddr; pred != nullptr;
          predPrevAddr = &pred->flNext, pred = *predPrevAddr)
     {
-        if (blockPred == pred->flBlock)
+        if (blockPred == pred->getBlock())
         {
             *ptrToPred = predPrevAddr;
             return pred;
@@ -1402,7 +1404,7 @@ flowList* Compiler::fgSpliceOutPred(BasicBlock* block, BasicBlock* blockPred)
     flowList* oldEdge = nullptr;
 
     // Is this the first block in the pred list?
-    if (blockPred == block->bbPreds->flBlock)
+    if (blockPred == block->bbPreds->getBlock())
     {
         oldEdge        = block->bbPreds;
         block->bbPreds = block->bbPreds->flNext;
@@ -1410,7 +1412,7 @@ flowList* Compiler::fgSpliceOutPred(BasicBlock* block, BasicBlock* blockPred)
     else
     {
         flowList* pred;
-        for (pred = block->bbPreds; (pred->flNext != nullptr) && (blockPred != pred->flNext->flBlock);
+        for (pred = block->bbPreds; (pred->flNext != nullptr) && (blockPred != pred->flNext->getBlock());
              pred = pred->flNext)
         {
             // empty
@@ -1499,9 +1501,9 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
         {
             listp = &flowLast->flNext;
 
-            assert(flowLast->flBlock->bbNum <= blockPred->bbNum);
+            assert(flowLast->getBlock()->bbNum <= blockPred->bbNum);
 
-            if (flowLast->flBlock == blockPred)
+            if (flowLast->getBlock() == blockPred)
             {
                 flow = flowLast;
             }
@@ -1511,12 +1513,12 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     {
         // References are added randomly, so we have to search.
         //
-        while ((*listp != nullptr) && ((*listp)->flBlock->bbNum < blockPred->bbNum))
+        while ((*listp != nullptr) && ((*listp)->getBlock()->bbNum < blockPred->bbNum))
         {
             listp = &(*listp)->flNext;
         }
 
-        if ((*listp != nullptr) && ((*listp)->flBlock == blockPred))
+        if ((*listp != nullptr) && ((*listp)->getBlock() == blockPred))
         {
             flow = *listp;
         }
@@ -1530,7 +1532,6 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     }
     else
     {
-        flow = new (this, CMK_FlowList) flowList();
 
 #if MEASURE_BLOCK_SIZE
         genFlowNodeCnt += 1;
@@ -1540,12 +1541,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
         // Any changes to the flow graph invalidate the dominator sets.
         fgModified = true;
 
-        // Insert the new edge in the list in the correct ordered location.
-        flow->flNext = *listp;
-        *listp       = flow;
-
-        flow->flBlock    = blockPred;
+        // Create new edge in the list in the correct ordered location.
+        //
+        flow             = new (this, CMK_FlowList) flowList(blockPred, *listp);
         flow->flDupCount = 1;
+        *listp           = flow;
 
         if (initializingPreds)
         {
@@ -1588,6 +1588,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
             flow->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
         }
     }
+
+    // Pred list should (still) be ordered.
+    //
+    assert(block->checkPredListOrder());
+
     return flow;
 }
 
@@ -1771,7 +1776,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
                 while (bNext->countOfInEdges() > 0)
                 {
-                    fgRemoveRefPred(bNext, bNext->bbPreds->flBlock);
+                    fgRemoveRefPred(bNext, bNext->bbPreds->getBlock());
                 }
             }
 
@@ -2064,19 +2069,28 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
     }
 }
 
-/*****************************************************************************
- * Updates the predecessor list for 'block' by replacing 'oldPred' with 'newPred'.
- * Note that a block can only appear once in the preds list (for normal preds, not
- * cheap preds): if a predecessor has multiple ways to get to this block, then
- * flDupCount will be >1, but the block will still appear exactly once. Thus, this
- * function assumes that all branches from the predecessor (practically, that all
- * switch cases that target this block) are changed to branch from the new predecessor,
- * with the same dup count.
- *
- * Note that the block bbRefs is not changed, since 'block' has the same number of
- * references as before, just from a different predecessor block.
- */
-
+//------------------------------------------------------------------------
+// fgReplacePred: update the predecessor list, swapping one pred for another
+//
+// Arguments:
+//   block - block with the pred list we want to update
+//   oldPred - pred currently appearing in block's pred list
+//   newPred - pred that will take oldPred's place.
+//
+// Notes:
+//
+// A block can only appear once in the preds list (for normal preds, not
+// cheap preds): if a predecessor has multiple ways to get to this block, then
+// flDupCount will be >1, but the block will still appear exactly once. Thus, this
+// function assumes that all branches from the predecessor (practically, that all
+// switch cases that target this block) are changed to branch from the new predecessor,
+// with the same dup count.
+//
+// Note that the block bbRefs is not changed, since 'block' has the same number of
+// references as before, just from a different predecessor block.
+//
+// Also note this may cause sorting of the pred list.
+//
 void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred)
 {
     noway_assert(block != nullptr);
@@ -2084,15 +2098,23 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
     noway_assert(newPred != nullptr);
     assert(!fgCheapPredsValid);
 
-    flowList* pred;
+    bool modified = false;
 
-    for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
-        if (oldPred == pred->flBlock)
+        if (oldPred == pred->getBlock())
         {
-            pred->flBlock = newPred;
+            pred->setBlock(newPred);
+            modified = true;
             break;
         }
+    }
+
+    // We may now need to reorder the pred list.
+    //
+    if (modified)
+    {
+        block->ensurePredListOrder(this);
     }
 }
 
@@ -2125,7 +2147,7 @@ bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
 
         for (flowList* pred = b2->bbPreds; pred != nullptr; pred = pred->flNext)
         {
-            if (!fgDominate(b1, pred->flBlock))
+            if (!fgDominate(b1, pred->getBlock()))
             {
                 return false;
             }
@@ -2198,7 +2220,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 
         for (flowList* pred = b2->bbPreds; pred != nullptr; pred = pred->flNext)
         {
-            if (fgReachable(b1, pred->flBlock))
+            if (fgReachable(b1, pred->getBlock()))
             {
                 return true;
             }
@@ -2310,7 +2332,7 @@ void Compiler::fgComputeReachabilitySets()
 
             for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
             {
-                BasicBlock* predBlock = pred->flBlock;
+                BasicBlock* predBlock = pred->getBlock();
 
                 /* Union the predecessor's reachability set into newReach */
                 BlockSetOps::UnionD(this, newReach, predBlock->bbReach);
@@ -2512,7 +2534,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
         unsigned blockNum = block->bbNum;
         for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
         {
-            BasicBlock* predBlock = pred->flBlock;
+            BasicBlock* predBlock = pred->getBlock();
             if (blockNum <= predBlock->bbNum)
             {
                 if (predBlock->bbJumpKind == BBJ_CALLFINALLY)
@@ -2884,7 +2906,7 @@ void Compiler::fgComputeDoms()
     // (with bbRoot as the only basic block in it) set as flRoot.
     // Later on, we clear their predecessors and let them to be nullptr again.
     // Since we number basic blocks starting at one, the imaginary entry block is conveniently numbered as zero.
-    flowList   flRoot;
+
     BasicBlock bbRoot;
 
     bbRoot.bbPreds        = nullptr;
@@ -2892,8 +2914,8 @@ void Compiler::fgComputeDoms()
     bbRoot.bbIDom         = &bbRoot;
     bbRoot.bbPostOrderNum = 0;
     bbRoot.bbFlags        = 0;
-    flRoot.flNext         = nullptr;
-    flRoot.flBlock        = &bbRoot;
+
+    flowList flRoot(&bbRoot, nullptr);
 
     fgBBInvPostOrder[0] = &bbRoot;
 
@@ -2964,7 +2986,7 @@ void Compiler::fgComputeDoms()
             // Pick up the first processed predecesor of the current block.
             for (first = block->bbPreds; first != nullptr; first = first->flNext)
             {
-                if (BlockSetOps::IsMember(this, processedBlks, first->flBlock->bbNum))
+                if (BlockSetOps::IsMember(this, processedBlks, first->getBlock()->bbNum))
                 {
                     break;
                 }
@@ -2973,21 +2995,21 @@ void Compiler::fgComputeDoms()
 
             // We assume the first processed predecessor will be the
             // immediate dominator and then compute the forward flow analysis.
-            newidom = first->flBlock;
+            newidom = first->getBlock();
             for (flowList* p = block->bbPreds; p != nullptr; p = p->flNext)
             {
-                if (p->flBlock == first->flBlock)
+                if (p->getBlock() == first->getBlock())
                 {
                     continue;
                 }
-                if (p->flBlock->bbIDom != nullptr)
+                if (p->getBlock()->bbIDom != nullptr)
                 {
                     // fgIntersectDom is basically the set intersection between
                     // the dominance sets of the new IDom and the current predecessor
                     // Since the nodes are ordered in DFS inverse post order and
                     // IDom induces a tree, fgIntersectDom actually computes
                     // the lowest common ancestor in the dominator tree.
-                    newidom = fgIntersectDom(p->flBlock, newidom);
+                    newidom = fgIntersectDom(p->getBlock(), newidom);
                 }
             }
 
@@ -10524,7 +10546,7 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     // (if they are valid)
     for (flowList* pred = bNext->bbPreds; pred; pred = pred->flNext)
     {
-        if (pred->flBlock->bbJumpKind == BBJ_SWITCH)
+        if (pred->getBlock()->bbJumpKind == BBJ_SWITCH)
         {
             return false;
         }
@@ -10583,11 +10605,11 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         block->bbFlags |= BBF_JMP_TARGET;
         for (flowList* pred = bNext->bbPreds; pred; pred = pred->flNext)
         {
-            fgReplaceJumpTarget(pred->flBlock, block, bNext);
+            fgReplaceJumpTarget(pred->getBlock(), block, bNext);
 
-            if (pred->flBlock != block)
+            if (pred->getBlock() != block)
             {
-                fgAddRefPred(block, pred->flBlock);
+                fgAddRefPred(block, pred->getBlock());
             }
         }
         bNext->bbPreds = nullptr;
@@ -10595,7 +10617,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     else
     {
         noway_assert(bNext->bbPreds->flNext == nullptr);
-        noway_assert(bNext->bbPreds->flBlock == block);
+        noway_assert(bNext->bbPreds->getBlock() == block);
     }
 
     /* Start compacting - move all the statements in the second block to the first block */
@@ -10845,22 +10867,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     ehUpdateForDeletedBlock(bNext);
 
-    /* If we're collapsing a block created after the dominators are
-       computed, rename the block and reuse dominator information from
-       the other block */
-    if (fgDomsComputed && block->bbNum > fgDomBBcount)
-    {
-        BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-        BlockSetOps::ClearD(this, bNext->bbReach);
-
-        block->bbIDom = bNext->bbIDom;
-        bNext->bbIDom = nullptr;
-
-        // In this case, there's no need to update the preorder and postorder numbering
-        // since we're changing the bbNum, this makes the basic block all set.
-        block->bbNum = bNext->bbNum;
-    }
-
     /* Set the jump targets */
 
     switch (bNext->bbJumpKind)
@@ -10937,6 +10943,45 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         default:
             noway_assert(!"Unexpected bbJumpKind");
             break;
+    }
+
+    // If we're collapsing a block created after the dominators are
+    // computed, copy block number the block and reuse dominator
+    // information from bNext to block.
+    //
+    // Note we have to do this renumbering after the full set of pred list
+    // updates above, since those updates rely on stable bbNums; if we renumber
+    // before the updates, we can create pred lists with duplicate m_block->bbNum
+    // values (though different m_blocks).
+    //
+    if (fgDomsComputed && (block->bbNum > fgDomBBcount))
+    {
+        BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
+        BlockSetOps::ClearD(this, bNext->bbReach);
+
+        block->bbIDom = bNext->bbIDom;
+        bNext->bbIDom = nullptr;
+
+        // In this case, there's no need to update the preorder and postorder numbering
+        // since we're changing the bbNum, this makes the basic block all set.
+        //
+        JITDUMP("Renumbering BB%02u to be BB%02u to preserve dominator information\n", block->bbNum, bNext->bbNum);
+
+        block->bbNum = bNext->bbNum;
+
+        // Because we may have reordered pred lists when we swapped in
+        // block for bNext above, we now need to re-reorder pred lists
+        // to reflect the bbNum update.
+        //
+        // This process of reordering and re-reordering could likely be avoided
+        // via a different update strategy. But because it's probably rare,
+        // and we avoid most of the work if pred lists are already in order,
+        // we'll just ensure everything is properly ordered.
+        //
+        for (BasicBlock* checkBlock = fgFirstBB; checkBlock != nullptr; checkBlock = checkBlock->bbNext)
+        {
+            checkBlock->ensurePredListOrder(this);
+        }
     }
 
     fgUpdateLoopsAfterCompacting(block, bNext);
@@ -11568,7 +11613,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
         {
-            BasicBlock* predBlock = pred->flBlock;
+            BasicBlock* predBlock = pred->getBlock();
 
             /* Are we changing a loop backedge into a forward jump? */
 
@@ -11837,15 +11882,22 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     return jmpBlk;
 }
 
-/*****************************************************************************
- Walk the flow graph, reassign block numbers to keep them in ascending order.
- Returns 'true' if any renumbering was actually done, OR if we change the
- maximum number of assigned basic blocks (this can happen if we do inlining,
- create a new, high-numbered block, then that block goes away. We go to
- renumber the blocks, none of them actually change number, but we shrink the
- maximum assigned block number. This affects the block set epoch).
-*/
-
+//------------------------------------------------------------------------
+// fgRenumberBlocks: update block bbNums to reflect bbNext order
+//
+// Returns:
+//    true if blocks were renumbered or maxBBNum was updated.
+//
+// Notes:
+//   Walk the flow graph, reassign block numbers to keep them in ascending order.
+//   Return 'true' if any renumbering was actually done, OR if we change the
+//   maximum number of assigned basic blocks (this can happen if we do inlining,
+//   create a new, high-numbered block, then that block goes away. We go to
+//   renumber the blocks, none of them actually change number, but we shrink the
+//   maximum assigned block number. This affects the block set epoch).
+//
+//   As a consequence of renumbering, block pred lists may need to be reordered.
+//
 bool Compiler::fgRenumberBlocks()
 {
     // If we renumber the blocks the dominator information will be out-of-date
@@ -11906,6 +11958,16 @@ bool Compiler::fgRenumberBlocks()
                     newMaxBBNum = true;
                 }
             }
+        }
+    }
+
+    // If we renumbered, then we may need to reorder some pred lists.
+    //
+    if (renumbered && fgComputePredsDone)
+    {
+        for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+        {
+            block->ensurePredListOrder(this);
         }
     }
 
@@ -12134,19 +12196,19 @@ bool Compiler::fgExpandRarelyRunBlocks()
                                 if (bPrevPrev == nullptr)
                                 {
                                     // Initially we select the first block in the bbPreds list
-                                    bPrevPrev = pred->flBlock;
+                                    bPrevPrev = pred->getBlock();
                                     continue;
                                 }
 
-                                // Walk the flow graph lexically forward from pred->flBlock
+                                // Walk the flow graph lexically forward from pred->getBlock()
                                 // if we find (block == bPrevPrev) then
-                                // pred->flBlock is an earlier predecessor.
-                                for (tmpbb = pred->flBlock; tmpbb != nullptr; tmpbb = tmpbb->bbNext)
+                                // pred->getBlock() is an earlier predecessor.
+                                for (tmpbb = pred->getBlock(); tmpbb != nullptr; tmpbb = tmpbb->bbNext)
                                 {
                                     if (tmpbb == bPrevPrev)
                                     {
                                         /* We found an ealier predecessor */
-                                        bPrevPrev = pred->flBlock;
+                                        bPrevPrev = pred->getBlock();
                                         break;
                                     }
                                     else if (tmpbb == bPrev)
@@ -12202,7 +12264,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
             for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
             {
                 /* Find the fall through predecessor, if any */
-                if (!pred->flBlock->isRunRarely())
+                if (!pred->getBlock()->isRunRarely())
                 {
                     rare = false;
                     break;
@@ -12737,9 +12799,9 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
 
     for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
     {
-        if (pred->flBlock->bbJumpKind == BBJ_ALWAYS && pred->flBlock->bbJumpDest == block)
+        if (pred->getBlock()->bbJumpKind == BBJ_ALWAYS && pred->getBlock()->bbJumpDest == block)
         {
-            BasicBlock* pPrev = pred->flBlock->bbPrev;
+            BasicBlock* pPrev = pred->getBlock()->bbPrev;
             if (pPrev != NULL)
             {
                 if (pPrev->bbJumpKind == BBJ_CALLFINALLY)
@@ -12892,7 +12954,7 @@ bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
 
     for (pred = block->bbPreds; pred; pred = pred->flNext)
     {
-        BasicBlock* predBlock = pred->flBlock;
+        BasicBlock* predBlock = pred->getBlock();
 
         if (fgIsIntraHandlerPred(predBlock, block))
         {
@@ -12942,7 +13004,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
     {
-        BasicBlock* predBlock = pred->flBlock;
+        BasicBlock* predBlock = pred->getBlock();
         if (!fgIsIntraHandlerPred(predBlock, block))
         {
             // It's a jump from outside the handler; add it to the newHead preds list and remove
@@ -13435,7 +13497,7 @@ void Compiler::fgPrintEdgeWeights()
             printf("    Edge weights into " FMT_BB " :", bDst->bbNum);
             for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
             {
-                bSrc = edge->flBlock;
+                bSrc = edge->getBlock();
                 // This is the control flow edge (bSrc -> bDst)
 
                 printf(FMT_BB " ", bSrc->bbNum);
@@ -13578,7 +13640,7 @@ BasicBlock::weight_t Compiler::fgComputeMissingBlockWeights()
                 if (bDst->countOfInEdges() == 1)
                 {
                     // Only one block flows into bDst
-                    bSrc = bDst->bbPreds->flBlock;
+                    bSrc = bDst->bbPreds->getBlock();
 
                     // Does this block flow into only one other block
                     if (bSrc->bbJumpKind == BBJ_NONE)
@@ -13620,7 +13682,7 @@ BasicBlock::weight_t Compiler::fgComputeMissingBlockWeights()
                     // Does only one block flow into bOnlyNext
                     if (bOnlyNext->countOfInEdges() == 1)
                     {
-                        noway_assert(bOnlyNext->bbPreds->flBlock == bDst);
+                        noway_assert(bOnlyNext->bbPreds->getBlock() == bDst);
 
                         // We know the exact weight of bDst
                         newWeight = bOnlyNext->bbWeight;
@@ -13772,7 +13834,7 @@ void Compiler::fgComputeEdgeWeights()
         {
             bool assignOK = true;
 
-            bSrc = edge->flBlock;
+            bSrc = edge->getBlock();
             // We are processing the control flow edge (bSrc -> bDst)
 
             numEdges++;
@@ -13850,7 +13912,7 @@ void Compiler::fgComputeEdgeWeights()
                 bool assignOK = true;
 
                 // We are processing the control flow edge (bSrc -> bDst)
-                bSrc = edge->flBlock;
+                bSrc = edge->getBlock();
 
                 slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
                 if (bSrc->bbJumpKind == BBJ_COND)
@@ -13939,7 +14001,7 @@ void Compiler::fgComputeEdgeWeights()
                 for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
                 {
                     // We are processing the control flow edge (bSrc -> bDst)
-                    bSrc = edge->flBlock;
+                    bSrc = edge->getBlock();
 
                     maxEdgeWeightSum += edge->edgeWeightMax();
                     minEdgeWeightSum += edge->edgeWeightMin();
@@ -13953,7 +14015,7 @@ void Compiler::fgComputeEdgeWeights()
                     bool assignOK = true;
 
                     // We are processing the control flow edge (bSrc -> bDst)
-                    bSrc = edge->flBlock;
+                    bSrc = edge->getBlock();
                     slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
 
                     // otherMaxEdgesWeightSum is the sum of all of the other edges flEdgeWeightMax values
@@ -14064,7 +14126,7 @@ EARLY_EXIT:;
         {
             for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
             {
-                bSrc = edge->flBlock;
+                bSrc = edge->getBlock();
                 // This is the control flow edge (bSrc -> bDst)
 
                 if (edge->edgeWeightMin() != edge->edgeWeightMax())
@@ -14364,9 +14426,9 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                     bool okToMerge = true; // assume it's ok
                     for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
                     {
-                        if (pred->flBlock->bbJumpKind == BBJ_EHCATCHRET)
+                        if (pred->getBlock()->bbJumpKind == BBJ_EHCATCHRET)
                         {
-                            assert(pred->flBlock->bbJumpDest == block);
+                            assert(pred->getBlock()->bbJumpDest == block);
                             okToMerge = false; // we can't get rid of the empty block
                             break;
                         }
@@ -15734,7 +15796,7 @@ void Compiler::fgReorderBlocks()
                             // Examine all of the other edges into bDest
                             for (flowList* edge = bDest->bbPreds; edge != nullptr; edge = edge->flNext)
                             {
-                                BasicBlock* bTemp = edge->flBlock;
+                                BasicBlock* bTemp = edge->getBlock();
 
                                 if ((bTemp != bPrev) && (bTemp->bbWeight >= bPrev->bbWeight))
                                 {
@@ -20363,7 +20425,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
             flowList* edge;
             for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
             {
-                BasicBlock* bSource = edge->flBlock;
+                BasicBlock* bSource = edge->getBlock();
                 double      sourceWeightDivisor;
                 if (bSource->bbWeight == BB_ZERO_WEIGHT)
                 {
@@ -21210,7 +21272,7 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
     {
         blockRefs += pred->flDupCount;
 
-        BasicBlock* blockPred = pred->flBlock;
+        BasicBlock* blockPred = pred->getBlock();
 
         // Make sure this pred is part of the BB list.
         assert(blockPred->bbTraversalStamp == curTraversalStamp);
@@ -21229,6 +21291,11 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
 
         assert(CheckJump(blockPred, block));
     }
+
+    // Make sure preds are in increasting BBnum order
+    //
+    assert(block->checkPredListOrder());
+
     return blockRefs;
 }
 
@@ -26624,7 +26691,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
         // the canonical block instead.
         for (flowList* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
         {
-            BasicBlock* const predBlock = predEdge->flBlock;
+            BasicBlock* const predBlock = predEdge->getBlock();
             nextPredEdge                = predEdge->flNext;
 
             switch (predBlock->bbJumpKind)
@@ -26971,7 +27038,7 @@ void Compiler::fgDebugCheckProfileData()
 
                     for (flowList* edge = succBlock->bbPreds; edge != nullptr; edge = edge->flNext)
                     {
-                        if (edge->flBlock == block)
+                        if (edge->getBlock() == block)
                         {
                             succEdge = edge;
                             break;

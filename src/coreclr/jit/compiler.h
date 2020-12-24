@@ -4647,6 +4647,8 @@ public:
     bool     fgPrintInlinedMethods;
 #endif
 
+    jitstd::vector<flowList*>* fgPredListSortVector;
+
     //-------------------------------------------------------------------------
 
     void fgInit();
