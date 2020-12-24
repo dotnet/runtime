@@ -6,7 +6,9 @@ parameters:
   container: ''
   helixQueues: ''
   runtimeVariant: ''
+  crossBuild: false
   crossrootfsDir: ''
+  dependOnEvaluatePaths: false
   stagedBuild: false
   variables: {}
   pool: ''
@@ -35,11 +37,13 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'test/crossgen-comparison/'
     pool: ${{ parameters.pool }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
     name: ${{ format('test_crossgen2_comparison_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     displayName: ${{ format('Test crossgen2-comparison build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:
@@ -61,7 +65,7 @@ jobs:
       value: $(artifactsDirectory)$(dir)tests$(dir)coreclr$(dir)$(targetFlavor)$(dir)Tests$(dir)CrossCompileRoot
     - name: crossgencompare_build_artifact
       value: crossgen_comparison_build_$(osGroup)$(osSubgroup)_$(archType)
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: target_crossgen2_os
         value: windows
     - ${{ if eq(parameters.osGroup, 'Linux') }}:
@@ -76,7 +80,7 @@ jobs:
       - name: crossgen2location
         value: $(productDirectory)$(dir)$(targetFlavor)$(dir)x64$(dir)crossgen2$(dir)crossgen2.dll
     - name: librariesProductDllDir
-      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net5.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
+      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net6.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
 
     - ${{ parameters.variables }}
 
@@ -116,7 +120,7 @@ jobs:
       displayName: Populate Core_Root
 
     # Create work item directory and populate with assemblies
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |
           mkdir -p $(workItemDirectory)
           mkdir -p $(workItemDirectory)/log
@@ -124,7 +128,8 @@ jobs:
           cp $(librariesProductDllDir)/* $(workItemDirectory)/dlls
           cp $(productDirectory)/$(targetFlavor)/IL/System.Private.CoreLib.dll $(workItemDirectory)/dlls
         displayName: Create directories
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        failOnStderr: true
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: |
           md $(workItemDirectory)\log
           md $(workItemDirectory)\dlls
@@ -133,6 +138,7 @@ jobs:
           echo copy $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll $(workItemDirectory)\dlls
           copy $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll $(workItemDirectory)\dlls
         displayName: Create directories
+        failOnStderr: true
 
     # Create baseline output on the host (x64) machine
     - task: PythonScript@0
@@ -140,7 +146,7 @@ jobs:
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/crossgen2_comparison.py
-        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        ${{ if ne(parameters.osGroup, 'windows') }}:
           pythonInterpreter: /usr/bin/python3
           arguments:
             crossgen_framework
@@ -150,7 +156,7 @@ jobs:
             --result_dir  $(workItemDirectory)/log
             --target_os   $(target_crossgen2_os)
             --target_arch $(archType)
-        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        ${{ if eq(parameters.osGroup, 'windows') }}:
           arguments:
             crossgen_framework
             --crossgen    $(crossgen2location)

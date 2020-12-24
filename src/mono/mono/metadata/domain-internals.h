@@ -33,8 +33,13 @@
 #define MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE "System"
 #define MONO_APPDOMAIN_SETUP_CLASS_NAME "AppDomainSetup"
 #else
-#define MONO_APPDOMAIN_CLASS_NAME_SPACE "Mono"
-#define MONO_APPDOMAIN_CLASS_NAME "MonoDomain"
+/* We don't care anymore about the managed appdomain representation
+ * so we just use a sentinel System.Object in the parts of the code that still care
+ */
+/*
+#define MONO_APPDOMAIN_CLASS_NAME_SPACE "System"
+#define MONO_APPDOMAIN_CLASS_NAME "Object"
+*/
 #define MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE "Mono"
 #define MONO_APPDOMAIN_SETUP_CLASS_NAME "MonoDomainSetup"
 #endif

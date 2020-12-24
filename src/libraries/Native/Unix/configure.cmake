@@ -7,6 +7,11 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 
+# CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
+if(POLICY CMP0075)
+    cmake_policy(SET CMP0075 NEW)
+endif()
+
 if (CLR_CMAKE_TARGET_ANDROID)
     set(PAL_UNIX_NAME \"ANDROID\")
 elseif (CLR_CMAKE_TARGET_BROWSER)
@@ -120,6 +125,11 @@ check_symbol_exists(
     F_DUPFD_CLOEXEC
     fcntl.h
     HAVE_F_DUPFD_CLOEXEC)
+
+check_symbol_exists(
+    F_FULLFSYNC
+    fcntl.h
+    HAVE_F_FULLFSYNC)
 
 check_symbol_exists(
     getifaddrs
@@ -563,9 +573,9 @@ else()
 endif()
 
 check_symbol_exists(
-    mach_absolute_time
-    mach/mach_time.h
-    HAVE_MACH_ABSOLUTE_TIME)
+    clock_gettime_nsec_np
+    time.h
+    HAVE_CLOCK_GETTIME_NSEC_NP)
 
 check_symbol_exists(
     futimes
@@ -684,7 +694,7 @@ check_c_source_compiles(
     HAVE_MKSTEMP)
 
 if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP)
-    message(FATAL_ERROR "Cannot find mkstemp nor mkstemp on this platform.")
+    message(FATAL_ERROR "Cannot find mkstemps nor mkstemp on this platform.")
 endif()
 
 check_c_source_compiles(
@@ -831,6 +841,10 @@ check_include_files(
     linux/can.h
     HAVE_LINUX_CAN_H)
 
+check_include_files(
+    IOKit/serial/ioss.h
+    HAVE_IOSS_H)
+
 check_symbol_exists(
     getpeereid
     unistd.h
@@ -929,6 +943,7 @@ else ()
         HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
 endif ()
 
+check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 
 if (HAVE_CRT_EXTERNS_H)

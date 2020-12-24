@@ -63,8 +63,8 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
     ```shell
     # Windows
-    robocopy /e <runtime-repo path>\artifacts\bin\coreclr\Windows_NT.<arch>.Release <app root>\bin\Release\net5.0\<rid>\publish > NUL
-    copy /y <runtime-repo path>\artifacts\bin\coreclr\Windows_NT.<arch>.Debug\clrjit.dll <app root>\bin\Release\net5.0\<rid>\publish > NUL
+    robocopy /e <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Release <app root>\bin\Release\net5.0\<rid>\publish > NUL
+    copy /y <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Debug\clrjit.dll <app root>\bin\Release\net5.0\<rid>\publish > NUL
 
     # Unix
     cp -rT <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Release <app root>/bin/Release/net5.0/<rid>/publish
@@ -98,7 +98,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
 ## Setting configuration variables
 
-The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/src/inc/clrconfigvalues.h) and [jit/jitconfigvalues.h](/src/coreclr/src/jit/jitconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
+The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/inc/clrconfigvalues.h) and [jit/jitconfigvalues.h](/src/coreclr/jit/jitconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
 
 These can be set in one of three ways:
 

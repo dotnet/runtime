@@ -199,6 +199,7 @@ in the IL:
     instructions, as some nodes (e.g. constants) may not require a
     register, and other nodes (e.g. those representing addressing modes)
     may become part of the parent instruction at code generation time.
+    Other nodes may cause multiple instructions to be generated.
 
 It is the job of the `Lowering` phase to transform the IR such that:
 
@@ -308,6 +309,7 @@ After LSRA, the graph has the following properties:
         must issue the appropriate move.
 
     -   However, if such a node is constrained to a set of registers,
+        as in the case of x86 instructions which require a byte-addressable register,
         and its current location does not satisfy that requirement, LSRA
         must insert a `GT_COPY` node between the node and its parent.
         The `_gtRegNum` on the `GT_COPY` node must satisfy the register
@@ -317,11 +319,8 @@ After LSRA, the graph has the following properties:
     These must satisfy the constraints specified by the associated `RefPosition`s.
 
 -   A tree node is marked `GTF_SPILL` if the tree node must be spilled by
-    the code generator after it has been evaluated.
-
-    -   Note that a write-thru variable def is always written to the stack, and the `GTF_SPILLED`
-        flag (not otherwise used for pure defs) to indicate that it also remains live
-        in the assigned register.
+    the code generator after it has been evaluated. The value will no longer be
+    live in the register, except in some cases involving EH-write-thru vars, see below.
 
 -   A tree node is marked `GTF_SPILLED` if it is a lclVar that must be
     reloaded prior to use.
@@ -338,6 +337,17 @@ After LSRA, the graph has the following properties:
         on the tree node (which is the one used when the node is evaluated), LSRA must
         insert a `GT_RELOAD` node to specify the register to which it
         should be reloaded.
+
+-   If a node has both `GTF_SPILL` and `GTF_SPILLED`, the tree node is reloaded prior to using
+    it (`GTF_SPILLED`) and spilled after it is evaluated (`GTF_SPILL`).
+
+    -   For normal variables, we can only have both `GTF_SPILL` and `GTF_SPILLED` on uses, 
+        since a def never needs to reload an old value. However, for EH-write-thru variable
+        defs, this combination of flags has a special meaning. A def of an EH-write-thru variable is
+        always written to the stack. However, if it is also marked `GTF_SPILLED` it remains live in the
+        register, in addition to being written to the stack. This is somewhat counter-intuitive since
+        normally the reloading (`GTF_SPILLED`) takes place *prior* to evaluation of the node.
+
 
 -   Note that `GT_COPY` and `GT_RELOAD` nodes are inserted immediately after the
     instruction that must be copied or reloaded. However, the reload or copy
@@ -387,7 +397,7 @@ well as supporting components) in more depth.
 -   `LinearScan::identifyCandidates`
 
     -   This mostly duplicates what is done in
-        `Compiler::lvaMarkLocalVars(). There are differences in what
+        `Compiler::lvaMarkLocalVars()`. There are differences in what
         constitutes a register candidate vs. what is tracked, but we
         should probably handle them in `Compiler::lvaMarkLocalVars()`
         when it is called after `Lowering`.
@@ -445,7 +455,7 @@ node, which builds `RefPositions` according to the liveness model described abov
 
 -   First, we create `RefPosition`s to define any internal registers that are required.
     As we create new `Interval`s for these, we add the definition `RefPosition` to an array,
-    `InternalDefs`. This allows us to create the corresponding uses of these internal
+    `internalDefs`. This allows us to create the corresponding uses of these internal
     registers later.
 
 -   Then we create `RefPosition`s for each use in the instruction.
@@ -471,10 +481,10 @@ node, which builds `RefPositions` according to the liveness model described abov
 
          When we have an instruction that will overwrite one of its sources, such as RMW
          operands common on x86 and x64,
-         we need to ensure that the other source isn't given the same register as the
-         target. For this, we annotate the use `RefPosition` with `delayRegFree`.
+         we need to ensure that the other source(s) isn't/aren't given the same register as the
+         target. For this, we annotate those use `RefPosition`s with `delayRegFree`.
 
--   Next we create the uses of the internal registers, using the `InternalDefs` array.
+-   Next we create the uses of the internal registers, using the `internalDefs` array.
     This is cleared before the next instruction is handled.
 
 -   Next, any registers in the kill set for the instruction are killed. This is performed
@@ -487,6 +497,52 @@ node, which builds `RefPositions` according to the liveness model described abov
 
     -   For a `STORE_LCL_VAR` of a write-thru `lclVar`, the `RefPosition` is marked `writeThru`.
 
+    -   There is some special handling for `GT_PUTARG_REG` nodes whose source is a non-last-use lclVar.
+        At build time, we mark such intervals as `isSpecialPutArg`.
+        At allocation time, if the lclVar is already in the argument register, but it has another use
+        prior to the call, we don't want to reassign that register to the tree temp interval, since that
+        would require us to spill the lclVar and reload it for the next use.
+        Instead, we retain the assignment of the register to the lclVar, and mark that `RegRecord` as
+        `isBusyUntilNextKill` so that it isn't reused if the lclVar goes dead before the call.
+        (Otherwise, if the lclVar is in a different register, or if its next use is after
+        the call, we clear the `isSpecialPutArg` flag on the interval.) Here is
+        a case from `Microsoft.Win32.OAVariantLib:ChangeType(System.Variant,System.Type,short,System.Globalization.CultureInfo):System.Variant` in System.Private.CoreLib.dll (I've edited the
+        dump to make it easier to see the structure):
+```
+N037  t16 =    ┌──▌  LCL_VAR   ref    V04 arg3
+N039 t127 = ┌──▌  PUTARG_REG ref    REG rcx
+N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3    (last use)     
+N043 t129 = │              ┌──▌  LEA(b+0)  byref 
+N045 t130 = │           ┌──▌  IND       long  
+N047 t131 = │        ┌──▌  LEA(b+72) long  
+N049 t132 = │     ┌──▌  IND       long  
+N051 t133 = │  ┌──▌  LEA(b+40) long  
+N053 t134 = ├──▌  IND       long   REG NA
+N055  t17 = ▌  CALLV ind int    System.Globalization.CultureInfo.get_LCID $242
+```
+The `PUTARG_REG` at location 39 uses V04, and wants it in `RCX`. Because it is not a last use,
+the tree temp interval `I14` is marked `isSpecialPutArg` when it is built. At allocation time, we
+allocate V04 to `RCX` so we leave the `isSpecialPutArg` flag and mark rcx as `isBusyUntilNextKill`
+(this shows as "Busy" in the dump after the last use of V04 has been encountered).
+This allows the use of V04 by the indirection at location 45
+to use the value in `RCX`, and since that register is busy, we don't incorrectly free it even
+though it is a last use of V04.
+```
+────────────────────────────────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+Loc RP#  Name Type  Action Reg  │rax │rcx │rdx │rbx │rbp │rsi │rdi │r8  │r9  │
+────────────────────────────────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+ 39.#15  V4   Use    Keep  rcx  │C12i│V4 a│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 40.#16  rcx  Fixd   Keep  rcx  │C12i│V4 a│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 40.#17  I14  Def    PtArg rcx  │C12i│V4 a│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 45.#18  V4   Use *  Keep  rcx  │C12i│V4 a│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 46.#19  I15  Def    Alloc rax  │I15a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 49.#20  I15  Use *  Keep  rax  │I15a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 50.#21  I16  Def    Alloc rax  │I16a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 55.#22  rcx  Fixd   Keep  rcx  │I16a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 55.#23  I14  Use *  PtArg rcx  │I16a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 55.#24  I16  Use *  Keep  rax  │I16a│Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+ 56.#25  rax  Kill   Keep  rax  │    │Busy│    │V1 a│V3 a│V0 a│V2 a│    │    │
+```
 -   A `RefTypeBB` `RefPosition` marks the beginning of a block, at which the incoming live
     variables are set to their locations at the end of the selected predecessor.
 
@@ -495,8 +551,8 @@ node, which builds `RefPositions` according to the liveness model described abov
 
         -   This is generally not required, as the block will
             normally have a predecessor block that has already
-            been allocated. This facility is exercised by the 0x200
-            (`LSRA_BLOCK_BOUNDARY_LAYOUT`) setting of `COMPlus_JitStressRegs`.
+            been allocated. This facility is exercised by the 0x100
+            (`LSRA_BLOCK_BOUNDARY_LAYOUT`) or 0x200 (`LSRA_BLOCK_BOUNDARY_ROTATE`) settings of `COMPlus_JitStressRegs`.
 
 -   At the end of a block, for any exposed uses that do not have downstream
     `RefPosition`s (e.g. variables that are live across the backedge, so there is no
@@ -515,7 +571,8 @@ During this phase, preferences are set:
         (at a previous definition) been assigned a register, and we want to try to use that
         register again, as well as the case where it has yet to be assigned a register.
 
-        This area has room for improvement, (see [Improving Preferencing](#improving-preferencing)).
+        This area has room for improvement, (see [Improving Preferencing](#improving-preferencing)
+        for specific issues related to this.).
 
     - Register preferences are set:
 
@@ -552,14 +609,18 @@ LinearScanAllocation(List<RefPosition> refPositions)
             freeRegisters();
             currentLoc = refPosition.Location;
         }
-        if (refPosition is BasicBlockBoundary) ProcessBlockBoundaryAlloc()
+        if (refPosition is BasicBlockBoundary)
+        {
+            ProcessBlockBoundaryAlloc();
+            continue;
+        }
         Interval currentInterval = refPosition.Interval;
         if (currentInterval->hasValidAssignment())
         {
             refPosition->setReg(currentInterval->physReg);
         }
-        // find a register for currentInterval
-        // AllocateBlockedReg will take into account whether it must have
+        // Find a register for currentInterval.
+        // AllocateBusyReg() will take into account whether it must have
         // a register in this position, and may otherwise choose not to
         // allocate if existing intervals have higher priority.
         if (!TryAllocateFreeReg(refPosition))
@@ -619,7 +680,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
             potentially being spilled, is reg-optional
 
     -   Both `tryAllocateFreeReg()` and `allocateBusyReg()` currently fully evaluate the "goodness"
-        of each  register.
+        of each  register, except in certain cases.
 
     -   It will always spill an `Interval` either at its most recent
         use, or at the entry to the current block.
@@ -630,7 +691,30 @@ LinearScanAllocation(List<RefPosition> refPositions)
 
 -   Resolution
 
-    -   Perform resolution at block boundaries, adding moves as needed.
+    Since register allocation is performed over a linearized list of nodes, there
+    is no guarantee that register assignments on off-path edges will be consistent.
+    The resolution phase is responsible for performing moves, as needed to match up
+    the register assignments across edges.
+
+    -    All of the critical edges are handled first.These are the most problematic, as there
+         is no single location at which the moves can be added. This is done in a pass over all
+         `BasicBlock`s with an outgoing critical edge, handling all critical edges from that block.
+         The approach taken is:
+           - First, eliminate any variables that always get the same register, or which
+             are never live on an edge.
+           - Then, eliminate any variables that are in the same register at the end of this
+             block, and at all target blocks.
+           - Next, for the remaining variables, classify them as either:
+             - In different registers at one or more targets. These require that the edge
+               be split so that we can insert the move on the edge (this is the `diffResolutionSet`).
+             - In the same register at each target (this is the `sameResolutionSet`).
+               For these, we can insert a move at the end of this block, as long as they
+               don't write to any of the registers read by the `diffResolutionSet` as those
+               must remain live into the split block.
+
+    -   The actual resolution, for all edge types, is done by `resolveEdge()`.
+        Based on the `ResolveType`, it either inserts the move at the top or bottom
+        of the block. 
         The algorithm for resolution can be found in [[2]](#[2]), though note
         that there is a typo: in the last 'if' statement, it should be
         "if b != loc(pred(b))" instead of "if b = loc(pred(b))":
@@ -652,7 +736,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
         -   When `COMPlus_EnableEHWriteThru == 0`, any variable that's
             live in to an exception region is always referenced on the stack.
 
-        -   See [Enable EHWriteThru by default](#enable-EHWriteThru-by-default).
+        -   See [Enable EHWriteThru by default](#enable-ehwritethru-by-default).
 
 -   Code generation (genGenerateCode)
 
@@ -878,7 +962,7 @@ The following dumps and debugging modes are provided:
 LSRA Stress Modes
 -----------------
 
-The implementation uses the `COMPLUS_JitStressRegs` environment variable.
+The implementation uses the `COMPlus_JitStressRegs` environment variable.
 The following are the stress modes associated with this variable. For
 the most part they can be combined, though in some cases the values are
 exclusive:
@@ -1024,10 +1108,25 @@ though running actual benchmarks on each configuration could be quite costly.
 In order to enable this capability without impacting throughput, it is likely that the configurability
 would be added as an alternate path in the register allocator, leaving the default path as-is.
 
+### Support for Multi-register Instructions
+
+There are a couple of distinct opportunities here:
+
+-   On Arm64, there are intrinsics that require the register allocator to allocate
+    continuous registers. This could be considered a generalization of the support for
+    doubles on Arm32, though some refactoring is probably required to ensure that
+    it doesn't hurt throughput for single-register allocation. This is Issue [\#39457](https://github.com/dotnet/runtime/issues/39457).
+
+-   Other intrinsics, as well as long multiply on X86 and Arm32, require allocating
+    multiple register targets, but do not require that they are contiguous. Now
+    that we have support for multi-reg structs, this should be relatively straightforward.
+
 ### Pre-allocating high frequency lclVars
 
 This is captured as Issue [\#8019](https://github.com/dotnet/runtime/issues/8019)
 Consider pre-allocating high-frequency lclVars.
+A fix for this might also address [\#13466](https://github.com/dotnet/runtime/issues/13466).
+
 
 The idea here is to ensure that high frequency lclVars aren't forced to use less-than-optimal
 registers (or worse, spilled), by allocating them ahead of the linear scan.
@@ -1075,7 +1174,30 @@ set would ensure that the variable locations match. This would eliminate not jus
 but all the extra branches currently inserted for resolution. It remains to be seen whether this would
 outweigh the impact of cases where more resolution moves would be required.
 
-I have an old experimental branch where I started working on this: https://github.com/CarolEidt/coreclr/tree/NoEdgeSplitting (not yet ported to the runtime repo).
+I have an old experimental branch where I started working on this:
+https://github.com/CarolEidt/runtime/tree/NoEdgeSplitting. It was ported from the coreclr to
+the runtime repo, but not validated in any significant way.
+Initial experience showed that this resulted in more regressions than improvements.
+
+A less aggressive approach would be to make minor modifications to reduce the
+need for split edges:
+
+* When selecting a predecessor for the fall-through block for a loop backedge,
+  instead of using the actual predecessor, use the non-backedge predecessor of
+  the loop head. This will mean that both successors of the loop will use the same
+  mapping, reducing the need to split the edge.
+
+* When a `RefTypeExpUse` is encountered, if it is at a loop backedge, the variable
+  is in a register, and the loop head has the variable on the stack, spill it.
+  Spilling preemptively will enable the spill to be performed at an actual reference,
+  rather than at the block boundary.
+
+This approach has been implemented experimentally in https://github.com/CarolEidt/runtime/tree/AvoidSplittingBackedge.
+Running crossgen diffs across frameworks and benchmarks for X64 Windows shows
+a delta of -2392 (-0.007%) with 317 methods improved and 66 regressed.
+Further analysis of the regressions is needed.
+
+Issues [\#8552](https://github.com/dotnet/runtime/issues/8552) and [\#40264](https://github.com/dotnet/runtime/issues/40264) may be related.
 
 ### Enable EHWriteThru by default
 
@@ -1090,12 +1212,22 @@ term "EH Var" means a `lclVar` marked `lvLiveInOutOfHndlr`):
 
     1. For determining whether an EH var should be a candidate for register allocation,
        e.g. if the defs outweight the uses.
+       
+       - An initial investigation might only consider an EH var as a register candidate if it has a single use. One complication is that we sometimes generate better code for a non-register-candidate local than one that is always spilled (we don't support `RegOptional` defs).
+       Thus, it would be better to identify *before* building intervals whether we should consider it a candidate, but the problem with that is that we don't necessarily know at that
+       time whether there is a single def. A possible approach:
+    
+            - Add an `isSingleDef` flag to `Interval`.
+            - When allocating a use of a `writeThru` interval:
+                - If it's marked `isSingleDef`, allocate as usual.
+                - Otherwise, if it's `RegOptional`, don't allocate.
+                - Otherwise, allocate a register but spill it immediately.
 
     2. For determining when a definition of an EH var should be only stored to the stack,
        rather than also remaining live in the register.
 
--   If the weight of the defs exceeds the weight of the blocks with successors in exception
-    regions, consider spilling the `lclVar` to the stack only at those boundaries.
+        -   If the weight of the defs exceeds the weight of the blocks with successors in exception
+        regions, consider spilling the `lclVar` to the stack only at those boundaries.
 
 The original issue to enable EH WriteThru is [#6212](https://github.com/dotnet/runtime/issues/6212).
 It remains open pending the resolution of the performance regressions.
@@ -1138,7 +1270,8 @@ This involves supporting the possibility
 of a def being reg-optional, as well as its use, so that it need
 never occupy a register.
 
-I have an old experimental branch: https://github.com/CarolEidt/coreclr/tree/RegOptDef where I started working on this.
+I have an old experimental branch: https://github.com/CarolEidt/coreclr/tree/RegOptDef
+where I started working on this, and it is in the process of being ported to the runtime repo.
 
 #### Don't Pre-determine Reg-Optional Operand
 
@@ -1156,11 +1289,17 @@ Issue [\#9896](https://github.com/dotnet/runtime/issues/9896).
 
 ### Improving Preferencing
 
--   Issue [#12945](https://github.com/dotnet/runtime/issues/12945)
-    involves preferencing for HW intrinsics.
+-   Issues [#36454](https://github.com/dotnet/runtime/issues/36454), 
+    [#11260](https://github.com/dotnet/runtime/issues/11260) and
+    [#12945](https://github.com/dotnet/runtime/issues/12945)
+    involve preferencing for HW intrinsics.
 
 -   Issue [#11959](https://github.com/dotnet/runtime/issues/11959) also has a pointer
     to some methods that could benefit from improved preferencing.
+
+-   Issue [#13090](https://github.com/dotnet/runtime/issues/13090) involves a case where anti-preferencing might be useful.
+
+-   Issue [#10296](https://github.com/dotnet/runtime/issues/10296) may also be related to preferencing, if it is still an issue. 
 
 ### Leveraging SSA form
 
@@ -1192,6 +1331,9 @@ Def/use conflicts arise when the producing and conusming nodes each have registe
 and they conflict. The current mechanism, in which the register assignment of one of the
 `RefPosition`s is changed, can lead to problems because there's then
 no associated `RefTypeFixedReg` for that reference. This is Issue [\#10196](https://github.com/dotnet/runtime/issues/10196).
+
+A related issue is Issue [\#7966](https://github.com/dotnet/runtime/issues/7966), which captures an issue with propagating a fixed-register use to its definition, if the value is
+defined by a node with delay-free operands.
 
 ## Throughput Enhancements
 

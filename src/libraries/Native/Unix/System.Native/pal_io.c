@@ -40,6 +40,15 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
 #endif
 
 #if HAVE_STAT64
@@ -632,8 +641,16 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 
 int32_t SystemNative_FSync(intptr_t fd)
 {
+    int fileDescriptor = ToFileDescriptor(fd);
+
     int32_t result;
-    while ((result = fsync(ToFileDescriptor(fd))) < 0 && errno == EINTR);
+    while ((result = 
+#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
+    fcntl(fileDescriptor, F_FULLFSYNC)
+#else
+    fsync(fileDescriptor)
+#endif
+    < 0) && errno == EINTR);
     return result;
 }
 
@@ -1148,14 +1165,17 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
-    if (ret != 0)
+    // If we copied to a filesystem (eg EXFAT) that does not preserve POSIX ownership, all files appear
+    // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and 
+    // attempting to copy metadata to it will fail with EPERM. We have copied successfully, we just can't
+    // copy metadata. The best thing we can do is skip copying the metadata.
+    if (ret != 0 && errno != EPERM)
     {
         return -1;
     }
-
     // Then copy permissions.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
-    if (ret != 0)
+    if (ret != 0 && errno != EPERM) // See EPERM comment above
     {
         return -1;
     }
@@ -1287,4 +1307,34 @@ int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 #else
     return false;
 #endif
+}
+
+int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
+{
+#ifdef __sun
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
+
+    intptr_t fd;
+    while ((fd = open(statusFilename, O_RDONLY)) < 0 && errno == EINTR);
+    if (fd < 0)
+    {
+        return 0;
+    }
+
+    psinfo_t status;
+    int result = Common_Read(fd, &status, sizeof(psinfo_t));
+    close(fd);
+    if (result >= 0)
+    {
+        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
+        return 1;
+    }
+
+    return 0;
+#else
+    (void)pid, (void)processStatus;
+    errno = ENOTSUP;
+    return -1;
+#endif // __sun
 }

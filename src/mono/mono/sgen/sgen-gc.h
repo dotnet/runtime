@@ -645,6 +645,8 @@ typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
 void sgen_major_collector_iterate_block_ranges (sgen_cardtable_block_callback callback);
 
+void sgen_iterate_all_block_ranges (sgen_cardtable_block_callback callback, gboolean is_parallel);
+
 typedef enum {
 	ITERATE_OBJECTS_SWEEP = 1,
 	ITERATE_OBJECTS_NON_PINNED = 2,
@@ -701,6 +703,7 @@ struct _SgenMajorCollector {
 	void (*scan_card_table) (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count, int block_count);
 	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*iterate_block_ranges) (sgen_cardtable_block_callback callback);
+	void (*iterate_block_ranges_in_parallel) (sgen_cardtable_block_callback callback, int job_index, int job_split_count, int block_count);
 	void (*update_cardtable_mod_union) (void);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
@@ -748,7 +751,7 @@ typedef struct _SgenRememberedSet {
 	void (*record_pointer) (gpointer ptr);
 	void (*wbarrier_range_copy) (gpointer dest, gconstpointer src, int count);
 
-	void (*start_scan_remsets) (void);
+	void (*start_scan_remsets) (gboolean is_parallel);
 
 	void (*clear_cards) (void);
 
@@ -959,6 +962,7 @@ gboolean sgen_ptr_is_in_los (char *ptr, char **start);
 void sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data);
 void sgen_los_iterate_objects_free (IterateObjectResultCallbackFunc cb, void *user_data);
 void sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
+void sgen_los_iterate_live_block_range_jobs (sgen_cardtable_block_callback callback, int job_index, int job_split_count);
 void sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count);
 void sgen_los_update_cardtable_mod_union (void);
 void sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards);
@@ -1126,8 +1130,10 @@ typedef enum {
 } SgenAllocatorType;
 
 void sgen_clear_tlabs (void);
-void sgen_update_allocation_count (void);
-guint64 sgen_get_total_allocated_bytes (MonoBoolean precise);
+void sgen_update_allocation_count (void)
+	MONO_PERMIT (need (sgen_world_stopped));
+guint64 sgen_get_total_allocated_bytes (MonoBoolean precise)
+	MONO_PERMIT (need (sgen_lock_gc, sgen_stop_world));
 
 GCObject* sgen_alloc_obj (GCVTable vtable, size_t size)
 	MONO_PERMIT (need (sgen_lock_gc, sgen_stop_world));

@@ -15,7 +15,7 @@ RUNTIME_PATH=''
 RSP_FILE=''
 
 while [[ $# > 0 ]]; do
-  opt="$(echo "${1}" | awk '{print tolower($0)}')"
+  opt="$(echo "${1}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     --help|-h)
       usage
@@ -128,7 +128,7 @@ function copy_core_file_to_temp_location {
 
 # ========================= BEGIN Core File Setup ============================
 if [ "$(uname -s)" == "Darwin" ]; then
-  # On OS X, we will enable core dump generation only if there are no core 
+  # On OS X, we will enable core dump generation only if there are no core
   # files already in /cores/ at this point. This is being done to prevent
   # inadvertently flooding the CI machines with dumps.
   if [[ ! -d "/cores" || ! "$(ls -A /cores)" ]]; then
@@ -151,7 +151,7 @@ fi
 # ========================= END Core File Setup ==============================
 
 # ========================= BEGIN Test Execution =============================
-echo ----- start $(date) ===============  To repro directly: ===================================================== 
+echo ----- start $(date) ===============  To repro directly: =====================================================
 echo pushd $EXECUTION_DIR
 [[RunCommandsEcho]]
 echo popd
@@ -179,7 +179,7 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
   fi
   echo Looking around for any Linux dump..
   # Depending on distro/configuration, the core files may either be named "core"
-  # or "core.<PID>" by default. We read /proc/sys/kernel/core_uses_pid to 
+  # or "core.<PID>" by default. We read /proc/sys/kernel/core_uses_pid to
   # determine which it is.
   core_name_uses_pid=0
   if [ -e /proc/sys/kernel/core_uses_pid ] && [ "1" == $(cat /proc/sys/kernel/core_uses_pid) ]; then
@@ -204,4 +204,10 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
 fi
 popd >/dev/null
 # ======================== END Core File Inspection ==========================
-exit $test_exitcode
+# The helix work item should not exit with non-zero if tests ran and produced results
+# The special console runner for runtime returns 1 when tests fail
+if [ "$test_exitcode" == "1" ]; then
+  exit 0
+else
+  exit $test_exitcode
+fi

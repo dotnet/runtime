@@ -271,7 +271,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 Debug.Assert(key != null);
 
-                TValue res;
+                TValue? res;
                 if (TryGetValue(key, out res))
                 {
                     return res;

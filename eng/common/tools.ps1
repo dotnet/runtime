@@ -57,14 +57,10 @@ set-strictmode -version 2.0
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# If specified, provides an alternate path for getting .NET Core SDKs and Runtimes. This script will still try public sources first.
+# If specifies, provides an alternate path for getting .NET Core SDKs and Runtimes. This script will still try public sources first.
 [string]$runtimeSourceFeed = if (Test-Path variable:runtimeSourceFeed) { $runtimeSourceFeed } else { $null }
 # Base-64 encoded SAS token that has permission to storage container described by $runtimeSourceFeed
 [string]$runtimeSourceFeedKey = if (Test-Path variable:runtimeSourceFeedKey) { $runtimeSourceFeedKey } else { $null }
-
-# If false, use copy of dotnet-install from /eng/common/dotnet-install-scripts (for custom behaviors).
-# otherwise will fetch from public location.
-[bool]$useDefaultDotnetInstall = if (Test-Path variable:useDefaultDotnetInstall) { $useDefaultDotnetInstall } else { $false }
 
 function Create-Directory ([string[]] $path) {
     New-Item -Path $path -Force -ItemType 'Directory' | Out-Null
@@ -197,46 +193,37 @@ function InitializeDotNetCli([bool]$install, [bool]$createSdkLocationFile) {
 function GetDotNetInstallScript([string] $dotnetRoot) {
   $installScript = Join-Path $dotnetRoot 'dotnet-install.ps1'
   if (!(Test-Path $installScript)) {
-    create-directory $dotnetroot
+    Create-Directory $dotnetRoot
+    $ProgressPreference = 'SilentlyContinue' # Don't display the console progress UI - it's a huge perf hit
 
-    if ($useDefaultDotnetInstall)
-    {
-      $progresspreference = 'silentlycontinue' # don't display the console progress ui - it's a huge perf hit
+    $maxRetries = 5
+    $retries = 1
 
-      $maxretries = 5
-      $retries = 1
+    $uri = "https://dot.net/$dotnetInstallScriptVersion/dotnet-install.ps1"
 
-      $uri = "https://dot.net/$dotnetinstallscriptversion/dotnet-install.ps1"
-
-      while($true) {
-        try {
-          write-host "get $uri"
-          invoke-webrequest $uri -outfile $installscript
-          break
-        }
-        catch {
-          write-host "failed to download '$uri'"
-          write-error $_.exception.message -erroraction continue
-        }
-
-        if (++$retries -le $maxretries) {
-          $delayinseconds = [math]::pow(2, $retries) - 1 # exponential backoff
-          write-host "retrying. waiting for $delayinseconds seconds before next attempt ($retries of $maxretries)."
-          start-sleep -seconds $delayinseconds
-        }
-        else {
-          throw "unable to download file in $maxretries attempts."
-        }
+    while($true) {
+      try {
+        Write-Host "GET $uri"
+        Invoke-WebRequest $uri -OutFile $installScript
+        break
       }
-    }
-    else
-    {
-      # Use a special version of the script from eng/common that understands the existence of a "productVersion.txt" in a dotnet path.
-      # See https://github.com/dotnet/arcade/issues/6047 for details
-      $engCommonCopy = Resolve-Path (Join-Path $PSScriptRoot 'dotnet-install-scripts\dotnet-install.ps1')
-      Copy-Item $engCommonCopy -Destination $installScript -Force
+      catch {
+        Write-Host "Failed to download '$uri'"
+        Write-Error $_.Exception.Message -ErrorAction Continue
+      }
+
+      if (++$retries -le $maxRetries) {
+        $delayInSeconds = [math]::Pow(2, $retries) - 1 # Exponential backoff
+        Write-Host "Retrying. Waiting for $delayInSeconds seconds before next attempt ($retries of $maxRetries)."
+        Start-Sleep -Seconds $delayInSeconds
+      }
+      else {
+        throw "Unable to download file in $maxRetries attempts."
+      }
+
     }
   }
+
   return $installScript
 }
 
@@ -452,11 +439,26 @@ function LocateVisualStudio([object]$vsRequirements = $null){
   if (!(Test-Path $vsWhereExe)) {
     Create-Directory $vsWhereDir
     Write-Host 'Downloading vswhere'
-    try {
-      Invoke-WebRequest "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/vswhere/$vswhereVersion/vswhere.exe" -OutFile $vswhereExe
-    }
-    catch {
-      Write-PipelineTelemetryError -Category 'InitializeToolset' -Message $_
+    $maxRetries = 5
+    $retries = 1
+
+    while($true) {
+      try {
+        Invoke-WebRequest "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/vswhere/$vswhereVersion/vswhere.exe" -OutFile $vswhereExe
+        break
+      }
+      catch{
+        Write-PipelineTelemetryError -Category 'InitializeToolset' -Message $_
+      }
+
+      if (++$retries -le $maxRetries) {
+        $delayInSeconds = [math]::Pow(2, $retries) - 1 # Exponential backoff
+        Write-Host "Retrying. Waiting for $delayInSeconds seconds before next attempt ($retries of $maxRetries)."
+        Start-Sleep -Seconds $delayInSeconds
+      }
+      else {
+        Write-PipelineTelemetryError -Category 'InitializeToolset' -Message "Unable to download file in $maxRetries attempts."
+      }
     }
   }
 
@@ -690,14 +692,23 @@ function MSBuild-Core() {
   $exitCode = Exec-Process $buildTool.Path $cmdArgs
 
   if ($exitCode -ne 0) {
-    Write-PipelineTelemetryError -Category 'Build' -Message 'Build failed.'
+    # We should not Write-PipelineTaskError here because that message shows up in the build summary
+    # The build already logged an error, that's the reason it failed. Producing an error here only adds noise.
+    Write-Host "Build failed with exit code $exitCode. Check errors above." -ForegroundColor Red
 
     $buildLog = GetMSBuildBinaryLogCommandLineArgument $args
-    if ($buildLog -ne $null) {
+    if ($null -ne $buildLog) {
       Write-Host "See log: $buildLog" -ForegroundColor DarkGray
     }
 
-    ExitWithExitCode $exitCode
+    if ($ci) {
+      Write-PipelineSetResult -Result "Failed" -Message "msbuild execution failed."
+      # Exiting with an exit code causes the azure pipelines task to log yet another "noise" error
+      # The above Write-PipelineSetResult will cause the task to be marked as failure without adding yet another error
+      ExitWithExitCode 0
+    } else {
+      ExitWithExitCode $exitCode
+    }
   }
 }
 

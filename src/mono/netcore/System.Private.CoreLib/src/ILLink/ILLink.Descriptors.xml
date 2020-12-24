@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <linker>
 	<assembly fullname="System.Private.CoreLib">
-		<!-- domain.c: mono_defaults.appdomain_class -->
-		<type fullname="Mono.MonoDomain">
-			<field name="_mono_app_domain"/>
-		</type>
-
 		<!-- appdomain.c: mono_runtime_init -->
 		<type fullname="Mono.MonoDomainSetup" preserve="fields" >
 			<!-- appdomain.c mono_object_new_checked in mono_domain_create_appdomain_checked -->
@@ -68,26 +63,6 @@
 		<type fullname="System.Security.VerificationException" >
 			<!-- mini.c:mini_method_verify -->
 			<method signature="System.Void .ctor()" />
-		</type>
-
-		<!-- domain.c: mono_defaults.array_class -->
-		<type fullname="System.Array">
-			<!-- InternalArray__%s_%s is used in aot-compiler.c -->
-			<method name="InternalArray__ICollection_get_Count" />
-			<method name="InternalArray__ICollection_get_IsReadOnly" />
-			<method name="InternalArray__IEnumerable_GetEnumerator" />
-			<method name="InternalArray__ICollection_Clear" />
-			<method name="InternalArray__ICollection_Add" />
-			<method name="InternalArray__ICollection_Remove" />
-			<method name="InternalArray__ICollection_Contains" />
-			<method name="InternalArray__ICollection_CopyTo" />
-			<method name="InternalArray__Insert" />
-			<method name="InternalArray__RemoveAt" />
-			<method name="InternalArray__IndexOf" />
-			<method name="InternalArray__get_Item" />
-			<method name="InternalArray__set_Item" />
-			<method name="InternalArray__IReadOnlyList_get_Item" />
-			<method name="InternalArray__IReadOnlyCollection_get_Count" />
 		</type>
 
 		<!-- mono/metadata/exception.c mono/metadata/marshal.c ... -->
@@ -479,15 +454,6 @@
 		<!-- domain.c: mono_defaults.void_class -->
 		<type fullname="System.Void" preserve="nothing" />
 
-		<!-- class.c: generic_array_methods -->
-		<type fullname="System.Collections.Generic.ICollection`1" />
-		<type fullname="System.Collections.Generic.IEnumerable`1" />
-		<type fullname="System.Collections.Generic.IReadOnlyList`1" />
-		<type fullname="System.Collections.Generic.IReadOnlyCollection`1" />
-
-		<!-- domain.c: mono_defaults.generic_ilist_class -->
-		<type fullname="System.Collections.Generic.IList`1" />
-
 		<!-- aot-compiler.c: add_generic_instances and add_generic_class_with_depth -->
 		<type fullname="System.Collections.Generic.GenericEqualityComparer`1">
 			<method name=".ctor" />
@@ -603,13 +569,8 @@
 			<method signature="System.Void .ctor(System.Object)" />
 		</type>
 
-		<!-- marshal.c: emit_marshal_custom (DISABLE_JIT is not defined for the AOT compiler, only the ARM runtimes) -->
-		<type fullname="System.Runtime.InteropServices.ICustomMarshaler" />
-
 		<!-- domain.c: mono_defaults.marshal_class -->
 		<type fullname="System.Runtime.InteropServices.Marshal" preserve="fields" >
-			<!-- marshal-ilgen.c: emit_marshal_custom_get_instance -->
-			<method name="GetCustomMarshalerInstance" />
 			<!-- marshal.c (mono_marshal_get_struct_to_ptr) -->
 			<method name="StructureToPtr" />
 		</type>
@@ -688,14 +649,13 @@
 			<field name="FirstChanceException"/>
 		</type>
 
+		<!-- mono_method_has_unmanaged_callers_only_attribute () -->
+		<!-- aot-compiler.c -->
+		<type fullname="System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"/>
+
 		<type fullname="Mono.NullByRefReturnException">
 			<!-- marshal-ilgen.c:emit_invoke_call -->
 			<method signature="System.Void .ctor()" />
-		</type>
-
-		<!-- Used by binary formatter tests -->
-		<type fullname="System.Threading.ThreadStartException">
-			<method name=".ctor" />
 		</type>
 	</assembly>
 </linker>

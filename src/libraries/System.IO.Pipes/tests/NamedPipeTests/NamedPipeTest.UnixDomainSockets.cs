@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    public class NamedPipeTest_UnixDomainSockets : NamedPipeTestBase
+    public class NamedPipeTest_UnixDomainSockets
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]

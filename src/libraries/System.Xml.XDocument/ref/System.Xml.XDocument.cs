@@ -22,7 +22,7 @@ namespace System.Xml.Linq
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> Descendants<T>(this System.Collections.Generic.IEnumerable<T?> source, System.Xml.Linq.XName? name) where T : System.Xml.Linq.XContainer { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> Elements<T>(this System.Collections.Generic.IEnumerable<T?> source) where T : System.Xml.Linq.XContainer { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> Elements<T>(this System.Collections.Generic.IEnumerable<T?> source, System.Xml.Linq.XName? name) where T : System.Xml.Linq.XContainer { throw null; }
-        public static System.Collections.Generic.IEnumerable<T> InDocumentOrder<T>(this System.Collections.Generic.IEnumerable<T> source) where T : System.Xml.Linq.XNode { throw null; }
+        public static System.Collections.Generic.IEnumerable<T> InDocumentOrder<T>(this System.Collections.Generic.IEnumerable<T> source) where T : System.Xml.Linq.XNode? { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XNode> Nodes<T>(this System.Collections.Generic.IEnumerable<T?> source) where T : System.Xml.Linq.XContainer { throw null; }
         public static void Remove(this System.Collections.Generic.IEnumerable<System.Xml.Linq.XAttribute?> source) { }
         public static void Remove<T>(this System.Collections.Generic.IEnumerable<T?> source) where T : System.Xml.Linq.XNode { }
@@ -150,9 +150,9 @@ namespace System.Xml.Linq
         public System.Xml.Linq.XNode? FirstNode { get { throw null; } }
         public System.Xml.Linq.XNode? LastNode { get { throw null; } }
         public void Add(object? content) { }
-        public void Add(params object[] content) { }
+        public void Add(params object?[] content) { }
         public void AddFirst(object? content) { }
-        public void AddFirst(params object[] content) { }
+        public void AddFirst(params object?[] content) { }
         public System.Xml.XmlWriter CreateWriter() { throw null; }
         public System.Collections.Generic.IEnumerable<System.Xml.Linq.XNode> DescendantNodes() { throw null; }
         public System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> Descendants() { throw null; }
@@ -163,7 +163,7 @@ namespace System.Xml.Linq
         public System.Collections.Generic.IEnumerable<System.Xml.Linq.XNode> Nodes() { throw null; }
         public void RemoveNodes() { }
         public void ReplaceNodes(object? content) { }
-        public void ReplaceNodes(params object[] content) { }
+        public void ReplaceNodes(params object?[] content) { }
     }
     public partial class XDeclaration
     {
@@ -177,8 +177,8 @@ namespace System.Xml.Linq
     public partial class XDocument : System.Xml.Linq.XContainer
     {
         public XDocument() { }
-        public XDocument(params object[] content) { }
-        public XDocument(System.Xml.Linq.XDeclaration? declaration, params object[] content) { }
+        public XDocument(params object?[] content) { }
+        public XDocument(System.Xml.Linq.XDeclaration? declaration, params object?[] content) { }
         public XDocument(System.Xml.Linq.XDocument other) { }
         public System.Xml.Linq.XDeclaration? Declaration { get { throw null; } set { } }
         public System.Xml.Linq.XDocumentType? DocumentType { get { throw null; } }
@@ -212,9 +212,9 @@ namespace System.Xml.Linq
     }
     public partial class XDocumentType : System.Xml.Linq.XNode
     {
-        public XDocumentType(string name, string? publicId, string? systemId, string internalSubset) { }
+        public XDocumentType(string name, string? publicId, string? systemId, string? internalSubset) { }
         public XDocumentType(System.Xml.Linq.XDocumentType other) { }
-        public string InternalSubset { get { throw null; } set { } }
+        public string? InternalSubset { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public string? PublicId { get { throw null; } set { } }
@@ -229,7 +229,7 @@ namespace System.Xml.Linq
         public XElement(System.Xml.Linq.XElement other) { }
         public XElement(System.Xml.Linq.XName name) { }
         public XElement(System.Xml.Linq.XName name, object? content) { }
-        public XElement(System.Xml.Linq.XName name, params object[] content) { }
+        public XElement(System.Xml.Linq.XName name, params object?[] content) { }
         public XElement(System.Xml.Linq.XStreamingElement other) { }
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> EmptySequence { get { throw null; } }
         public System.Xml.Linq.XAttribute? FirstAttribute { get { throw null; } }
@@ -330,9 +330,9 @@ namespace System.Xml.Linq
         public void RemoveAll() { }
         public void RemoveAttributes() { }
         public void ReplaceAll(object? content) { }
-        public void ReplaceAll(params object[] content) { }
+        public void ReplaceAll(params object?[] content) { }
         public void ReplaceAttributes(object? content) { }
-        public void ReplaceAttributes(params object[] content) { }
+        public void ReplaceAttributes(params object?[] content) { }
         public void Save(System.IO.Stream stream) { }
         public void Save(System.IO.Stream stream, System.Xml.Linq.SaveOptions options) { }
         public void Save(System.IO.TextWriter textWriter) { }
@@ -398,9 +398,9 @@ namespace System.Xml.Linq
         public System.Xml.Linq.XNode? NextNode { get { throw null; } }
         public System.Xml.Linq.XNode? PreviousNode { get { throw null; } }
         public void AddAfterSelf(object? content) { }
-        public void AddAfterSelf(params object[] content) { }
+        public void AddAfterSelf(params object?[] content) { }
         public void AddBeforeSelf(object? content) { }
-        public void AddBeforeSelf(params object[] content) { }
+        public void AddBeforeSelf(params object?[] content) { }
         public System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> Ancestors() { throw null; }
         public System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> Ancestors(System.Xml.Linq.XName? name) { throw null; }
         public static int CompareDocumentOrder(System.Xml.Linq.XNode? n1, System.Xml.Linq.XNode? n2) { throw null; }
@@ -419,13 +419,13 @@ namespace System.Xml.Linq
         public static System.Threading.Tasks.Task<System.Xml.Linq.XNode> ReadFromAsync(System.Xml.XmlReader reader, System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Remove() { }
         public void ReplaceWith(object? content) { }
-        public void ReplaceWith(params object[] content) { }
+        public void ReplaceWith(params object?[] content) { }
         public override string ToString() { throw null; }
         public string ToString(System.Xml.Linq.SaveOptions options) { throw null; }
         public abstract void WriteTo(System.Xml.XmlWriter writer);
         public abstract System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken);
     }
-    public sealed partial class XNodeDocumentOrderComparer : System.Collections.Generic.IComparer<System.Xml.Linq.XNode>, System.Collections.IComparer
+    public sealed partial class XNodeDocumentOrderComparer : System.Collections.Generic.IComparer<System.Xml.Linq.XNode?>, System.Collections.IComparer
     {
         public XNodeDocumentOrderComparer() { }
         public int Compare(System.Xml.Linq.XNode? x, System.Xml.Linq.XNode? y) { throw null; }
@@ -488,11 +488,11 @@ namespace System.Xml.Linq
     public partial class XStreamingElement
     {
         public XStreamingElement(System.Xml.Linq.XName name) { }
-        public XStreamingElement(System.Xml.Linq.XName name, object content) { }
-        public XStreamingElement(System.Xml.Linq.XName name, params object[] content) { }
+        public XStreamingElement(System.Xml.Linq.XName name, object? content) { }
+        public XStreamingElement(System.Xml.Linq.XName name, params object?[] content) { }
         public System.Xml.Linq.XName Name { get { throw null; } set { } }
         public void Add(object? content) { }
-        public void Add(params object[] content) { }
+        public void Add(params object?[] content) { }
         public void Save(System.IO.Stream stream) { }
         public void Save(System.IO.Stream stream, System.Xml.Linq.SaveOptions options) { }
         public void Save(System.IO.TextWriter textWriter) { }

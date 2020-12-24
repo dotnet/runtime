@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetSockets_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemNetSockets_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <PropertyGroup>
     <!-- SYSTEM_NET_SOCKETS_DLL is required to allow source-level code sharing for types defined within the
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_SOCKETS_DLL</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <!-- All configurations -->
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveMessageFromResult.cs" />
@@ -45,14 +45,10 @@
     <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\DisconnectOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\MultipleConnectAsync.cs" />
     <Compile Include="System\Net\Sockets\OverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.cs" />
-    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
-             Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
@@ -66,8 +62,6 @@
              Link="Common\System\Net\ContextAwareResult.cs" />
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
              Link="Common\System\Net\LazyAsyncResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\ByteOrder.cs"
-             Link="Common\System\Net\ByteOrder.cs" />
     <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs"
              Link="Common\System\Net\IPEndPointStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
@@ -100,7 +94,6 @@
     <!-- Windows: CoreCLR -->
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Windows.cs" />
-    <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\OverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\DynamicWinsockMethods.cs" />
     <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.Windows.cs" />
@@ -176,6 +169,8 @@
              Link="Common\Interop\Windows\WinSock\Interop.WSASocketW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSASocketW.SafeCloseSocket.cs"
              Link="Common\Interop\Windows\WinSock\Interop.WSASocketW.SafeCloseSocket.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAStartup.cs"
+             Link="Common\Interop\Windows\WinSock\Interop.WSAStartup.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs"
              Link="Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\SafeNativeOverlapped.cs"
@@ -196,7 +191,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\DisconnectOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\OverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.Unix.cs" />

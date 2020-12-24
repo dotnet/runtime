@@ -1344,7 +1344,7 @@ namespace System.Xml
                 }
             }
 
-            public override string? BaseURI
+            public override string BaseURI
             {
                 get
                 {
@@ -1586,8 +1586,7 @@ namespace System.Xml
             {
                 get
                 {
-                    // TODO-NULLABLE - unnecessary namespaceUri! - https://github.com/dotnet/roslyn/issues/47221
-                    return _reader[name, namespaceUri!];
+                    return _reader[name, namespaceUri];
                 }
             }
 

@@ -24,12 +24,6 @@ namespace System.Net.Sockets
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo() =>
             Interop.Sys.PlatformSupportsDualModeIPv4PacketInfo() != 0;
-
-        public static void Initialize()
-        {
-            // nop.  No initialization required.
-        }
-
         public static SocketError GetSocketErrorForErrorCode(Interop.Error errorCode)
         {
             return SocketErrorPal.GetSocketErrorForNativeError(errorCode);
@@ -1776,38 +1770,6 @@ namespace System.Net.Sockets
             return GetSocketErrorForErrorCode(err);
         }
 
-        public static SocketError ConnectAsync(Socket socket, SafeSocketHandle handle, byte[] socketAddress, int socketAddressLen, ConnectOverlappedAsyncResult asyncResult)
-        {
-            SocketError socketError = handle.AsyncContext.ConnectAsync(socketAddress, socketAddressLen, asyncResult.CompletionCallback);
-            if (socketError == SocketError.Success)
-            {
-                asyncResult.CompletionCallback(SocketError.Success);
-            }
-            return socketError;
-        }
-
-        public static SocketError SendAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
-        {
-            int bytesSent;
-            SocketError socketError = handle.AsyncContext.SendAsync(buffer, offset, count, socketFlags, out bytesSent, asyncResult.CompletionCallback, CancellationToken.None);
-            if (socketError == SocketError.Success)
-            {
-                asyncResult.CompletionCallback(bytesSent, null, 0, SocketFlags.None, SocketError.Success);
-            }
-            return socketError;
-        }
-
-        public static SocketError SendAsync(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
-        {
-            int bytesSent;
-            SocketError socketError = handle.AsyncContext.SendAsync(buffers, socketFlags, out bytesSent, asyncResult.CompletionCallback);
-            if (socketError == SocketError.Success)
-            {
-                asyncResult.CompletionCallback(bytesSent, null, 0, SocketFlags.None, SocketError.Success);
-            }
-            return socketError;
-        }
-
         public static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, Action<long, SocketError> callback) =>
             SendFileAsync(handle, fileStream, 0, fileStream.Length, callback);
 
@@ -1905,30 +1867,6 @@ namespace System.Net.Sockets
             if (socketError == SocketError.Success)
             {
                 asyncResult.CompletionCallback(bytesSent, socketAddress.Buffer, socketAddressLen, SocketFlags.None, SocketError.Success);
-            }
-            return socketError;
-        }
-
-        public static SocketError ReceiveAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
-        {
-            int bytesReceived;
-            SocketFlags receivedFlags;
-            SocketError socketError = handle.AsyncContext.ReceiveAsync(new Memory<byte>(buffer, offset, count), socketFlags, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback, CancellationToken.None);
-            if (socketError == SocketError.Success)
-            {
-                asyncResult.CompletionCallback(bytesReceived, null, 0, receivedFlags, SocketError.Success);
-            }
-            return socketError;
-        }
-
-        public static SocketError ReceiveAsync(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
-        {
-            int bytesReceived;
-            SocketFlags receivedFlags;
-            SocketError socketError = handle.AsyncContext.ReceiveAsync(buffers, socketFlags, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback);
-            if (socketError == SocketError.Success)
-            {
-                asyncResult.CompletionCallback(bytesReceived, null, 0, receivedFlags, SocketError.Success);
             }
             return socketError;
         }

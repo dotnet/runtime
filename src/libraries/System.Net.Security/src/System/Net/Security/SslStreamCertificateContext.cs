@@ -33,7 +33,7 @@ namespace System.Net.Security
                 chain.ChainPolicy.DisableCertificateDownloads = offline;
                 bool chainStatus = chain.Build(target);
 
-                if (!chainStatus && NetEventSource.IsEnabled)
+                if (!chainStatus && NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
                 }

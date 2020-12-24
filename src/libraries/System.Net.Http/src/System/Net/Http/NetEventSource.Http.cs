@@ -25,7 +25,7 @@ namespace System.Net
         }
 
         [Event(UriBaseAddressId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
-        private unsafe void UriBaseAddress(string? uriBaseAddress, string objName, int objHash) =>
+        private void UriBaseAddress(string? uriBaseAddress, string objName, int objHash) =>
             WriteEvent(UriBaseAddressId, uriBaseAddress, objName, objHash);
 
         [NonEvent]

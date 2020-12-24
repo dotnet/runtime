@@ -16,17 +16,14 @@ superpmi.py lives in the dotnet/runtime GitHub repo, src\coreclr\scripts directo
 From the usage message:
 
 ```
-usage: superpmi.py [-h]
-                   {collect,replay,asmdiffs,upload,download,list-collections}
-                   ...
+usage: superpmi.py [-h] {collect,replay,asmdiffs,upload,download,list-collections,merge-mch} ...
 
-Script to run SuperPMI replay, ASM diffs, and collections. The script also
-manages the Azure store of pre-created SuperPMI collection files. Help for
-each individual command can be shown by asking for help on the individual
-command, for example `superpmi.py collect --help`.
+Script to run SuperPMI replay, ASM diffs, and collections. The script also manages the Azure
+store of pre-created SuperPMI collection files. Help for each individual command can be shown
+by asking for help on the individual command, for example `superpmi.py collect --help`.
 
 positional arguments:
-  {collect,replay,asmdiffs,upload,download,list-collections}
+  {collect,replay,asmdiffs,upload,download,list-collections,merge-mch}
                         Command to invoke
 
 optional arguments:
@@ -58,7 +55,7 @@ If you want to use a specific MCH file collection, use the `-mch_files` argument
 one or more MCH files on your machine:
 
 ```
-python f:\gh\runtime\src\coreclr\scripts\superpmi.py replay -mch_files f:\spmi\collections\tests.pmi.Windows_NT.x64.Release.mch
+python f:\gh\runtime\src\coreclr\scripts\superpmi.py replay -mch_files f:\spmi\collections\tests.pmi.windows.x64.Release.mch
 ```
 
 The `-mch_files` argument takes a list of one or more directories or files to use. For
@@ -73,11 +70,16 @@ python f:\gh\runtime\src\coreclr\scripts\superpmi.py replay -filter tests
 
 ## ASM diffs
 
-To generate ASM diffs, use the `asmdiffs` command. In this case, you must specify
-the path to a baseline JIT compiler using the `-base_jit_path` argument, e.g.:
+To generate ASM diffs, use the `asmdiffs` command. This requires a "diff" and "baseline"
+JIT. By default, the "diff" JIT is determined automatically as for the "replay" command,
+described above. Also by default, the baseline JIT is determined based on comparing the
+state of your branch with the `master` branch, and downloading an appropriate baseline JIT from the JIT
+rolling build system. Alternatively, you can specify the path to a baseline JIT
+compiler using the `-base_jit_path` argument.
 
+Example:
 ```
-python f:\gh\runtime\src\coreclr\scripts\superpmi.py asmdiffs -base_jit_path f:\jits\baseline_clrjit.dll
+python f:\gh\runtime\src\coreclr\scripts\superpmi.py asmdiffs
 ```
 
 ASM diffs requires the coredistools library. The script attempts to find
@@ -99,9 +101,9 @@ using the `list-collections --all` command. Finally, you can see which Azure sto
 collections have been locally cached on your machine in the default cache location
 by using `list-collections --local`.
 
-(Note that when collections are downloaded, they are cached locally. If there are
+Note that when collections are downloaded, they are cached locally. If there are
 any cached collections, then no download attempt is made. To force re-download,
-use the `--force_download` argument to the `replay`, `asmdiffs`, or `download` command.)
+use the `--force_download` argument to the `replay`, `asmdiffs`, or `download` command.
 
 ### Creating a collection
 
@@ -109,21 +111,30 @@ Example commands to create a collection (on Linux, by running the tests):
 
 ```
 # First, build the product, possibly the tests, and create a Core_Root directory.
-/Users/jashoo/runtime/src/coreclr/scripts/superpmi.py collect bash "/Users/jashoo/runtime/src/coreclr/tests/runtest.sh x64 checked"
+/Users/jashoo/runtime/src/coreclr/scripts/superpmi.py collect bash "/Users/jashoo/runtime/src/tests/runtest.sh x64 checked"
 ```
 
 The above command collects over all of the managed code called by the
 child process. Note that this allows many different invocations of any
 managed code.
 
-You can also collect using PMI instead of running code. Do with with the `--pmi` and `-pmi_assemblies`
+You can also collect using PMI instead of running code. Do with with the `--pmi` and `-assemblies`
 arguments. E.g.:
 
 ```
-python f:\gh\runtime\src\coreclr\scripts\superpmi.py collect --pmi -pmi_assemblies f:\assembly_store -output_mch_path f:\collections\my_collection.mch
+python f:\gh\runtime\src\coreclr\scripts\superpmi.py collect --pmi -assemblies f:\assembly_store -output_mch_path f:\collections\my_collection.mch
 ```
 
-Note that collection generates gigabytes of data. Most of this data will
+You can alternatively collect by running `crossgen` on a set of assemblies, e.g.:
+
+```
+python f:\gh\runtime\src\coreclr\scripts\superpmi.py collect --crossgen -assemblies f:\assembly_store -output_mch_path f:\collections\my_collection.mch
+```
+
+You can specify both `--pmi` and `--crossgen` to do both types of collections across the
+same set of specified assemblies, with the results being accumulated into a single collection.
+
+Note that the collection process generates gigabytes of data. Most of this data will
 be removed when the collection is finished. It is recommended to set the TEMP variable
 to a location with adequate space, and preferably on a fast SSD to improve performance,
 before running `collect` to avoid running out of disk space.

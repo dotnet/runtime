@@ -1,9 +1,10 @@
 ﻿<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
-    <ServiceModelVersion>4.7.0</ServiceModelVersion>
+    <ServiceModelVersion>4.8.0</ServiceModelVersion>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
+    <PackageDescription>This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET Core as well as .NET Standard.</PackageDescription>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <PrereleaseLibraryPackage>

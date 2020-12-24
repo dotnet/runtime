@@ -167,7 +167,7 @@ namespace System
         {
             if (type.IsPointer || type.IsByRef || type == typeof(void))
                 throw new ArgumentException(
-                    Environment.GetResourceString("Argument_NeverValidGenericArgument", type.ToString()));
+                    SR.Format(SR.Argument_NeverValidGenericArgument, type));
         }
 
         internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParamters)
@@ -185,7 +185,7 @@ namespace System
 
             if (genericArguments.Length != genericParamters.Length)
                 throw new ArgumentException(
-                    Environment.GetResourceString("Argument_NotEnoughGenArguments", genericArguments.Length, genericParamters.Length));
+                    SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParamters.Length));
         }
 
         private static void SplitName(string? fullname, out string? name, out string? ns)
@@ -422,20 +422,20 @@ namespace System
             RuntimeMethodInfo method, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             // Optimization: Pre-Calculate the method binding flags to avoid casting.
-            return FilterApplyMethodBase(method, method.BindingFlags, bindingFlags, callConv, argumentTypes);
+            return FilterApplyMethodBase(method, bindingFlags, callConv, argumentTypes);
         }
 
         private static bool FilterApplyConstructorInfo(
             RuntimeConstructorInfo constructor, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             // Optimization: Pre-Calculate the method binding flags to avoid casting.
-            return FilterApplyMethodBase(constructor, constructor.BindingFlags, bindingFlags, callConv, argumentTypes);
+            return FilterApplyMethodBase(constructor, bindingFlags, callConv, argumentTypes);
         }
 
         // Used by GetMethodCandidates/GetConstructorCandidates, InvokeMember, and CreateInstanceImpl to perform the necessary filtering.
         // Should only be called by FilterApplyMethodInfo and FilterApplyConstructorInfo.
         private static bool FilterApplyMethodBase(
-            MethodBase methodBase, BindingFlags methodFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
+            MethodBase methodBase, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             Debug.Assert(methodBase != null);
 
@@ -670,7 +670,7 @@ namespace System
             MemberListType listType;
             FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
 
-            RuntimeEventInfo[] cache = GetEvents_internal(name, bindingAttr, listType, this);
+            RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             bindingAttr ^= BindingFlags.DeclaredOnly;
 
             ListBuilder<EventInfo> candidates = new ListBuilder<EventInfo>(cache.Length);
@@ -700,8 +700,7 @@ namespace System
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeFieldInfo fieldInfo = cache[i];
-                if ((bindingAttr & fieldInfo.BindingFlags) == fieldInfo.BindingFlags &&
-                    (!prefixLookup || FilterApplyPrefixLookup(fieldInfo, name, ignoreCase)))
+                if ((!prefixLookup || FilterApplyPrefixLookup(fieldInfo, name, ignoreCase)))
                 {
                     candidates.Add(fieldInfo);
                 }
@@ -835,7 +834,7 @@ namespace System
                     {
                         MethodInfo methodInfo = candidates[j];
                         if (!System.DefaultBinder.CompareMethodSig(methodInfo, firstCandidate))
-                            throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
@@ -906,7 +905,7 @@ namespace System
                 {
                     if (returnType is null)
                         // if we are here we have no args or property type to select over and we have more than one property with that name
-                        throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
                 }
             }
 
@@ -928,7 +927,7 @@ namespace System
             MemberListType listType;
             FilterHelper(bindingAttr, ref name!, out ignoreCase, out listType);
 
-            RuntimeEventInfo[] cache = GetEvents_internal(name, bindingAttr, listType, this);
+            RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             EventInfo? match = null;
 
             bindingAttr ^= BindingFlags.DeclaredOnly;
@@ -939,7 +938,7 @@ namespace System
                 if ((bindingAttr & eventInfo.BindingFlags) == eventInfo.BindingFlags)
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
                     match = eventInfo;
                 }
@@ -966,12 +965,11 @@ namespace System
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeFieldInfo fieldInfo = cache[i];
-                if ((bindingAttr & fieldInfo.BindingFlags) == fieldInfo.BindingFlags)
                 {
                     if (match != null)
                     {
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
-                            throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
                         if ((match.DeclaringType!.IsInterface == true) && (fieldInfo.DeclaringType!.IsInterface == true))
                             multipleStaticFieldMatches = true;
@@ -983,7 +981,7 @@ namespace System
             }
 
             if (multipleStaticFieldMatches && match!.DeclaringType!.IsInterface)
-                throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
             return match;
         }
@@ -1032,7 +1030,7 @@ namespace System
                 if (FilterApplyType(iface, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
                     match = iface;
                 }
@@ -1061,7 +1059,7 @@ namespace System
                 if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
                     match = nestedType;
                 }
@@ -1188,7 +1186,7 @@ namespace System
             get
             {
                 if (!IsGenericParameter)
-                    throw new InvalidOperationException(Environment.GetResourceString("Arg_NotGenericParameter"));
+                    throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
                 return GetGenericParameterAttributes();
             }
@@ -1208,7 +1206,7 @@ namespace System
             Type[] types = GetGenericArgumentsInternal(false);
 
             if (types == null)
-                types = Array.Empty<Type>();
+                types = Type.EmptyTypes;
 
             return types;
         }
@@ -1221,11 +1219,10 @@ namespace System
             RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
 
             if (!IsGenericTypeDefinition)
-                throw new InvalidOperationException(
-                    Environment.GetResourceString("Arg_NotGenericTypeDefinition", this));
+                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
             if (GetGenericArguments().Length != instantiation.Length)
-                throw new ArgumentException(Environment.GetResourceString("Argument_GenericArgsCount"), nameof(instantiation));
+                throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
 
             for (int i = 0; i < instantiation.Length; i++)
             {
@@ -1265,7 +1262,8 @@ namespace System
             get
             {
                 if (!IsGenericParameter)
-                    throw new InvalidOperationException(Environment.GetResourceString("Arg_NotGenericParameter"));
+                    throw new InvalidOperationException(SR.Arg_NotGenericParameter);
+
                 return GetGenericParameterPosition();
             }
         }
@@ -1288,12 +1286,12 @@ namespace System
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
         {
             if (IsGenericParameter)
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_GenericParameter"));
+                throw new InvalidOperationException(SR.Arg_GenericParameter);
 
             #region Preconditions
             if ((bindingFlags & InvocationMask) == 0)
                 // "Must specify binding flags describing the invoke operation required."
-                throw new ArgumentException(Environment.GetResourceString("Arg_NoAccessSpec"), nameof(bindingFlags));
+                throw new ArgumentException(SR.Arg_NoAccessSpec, nameof(bindingFlags));
 
             // Provide a default binding mask if none is provided
             if ((bindingFlags & MemberBindingMask) == 0)
@@ -1311,13 +1309,13 @@ namespace System
                 {
                     if (namedParams.Length > providedArgs.Length)
                         // "Named parameter array can not be bigger than argument array."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamTooBig"), nameof(namedParams));
+                        throw new ArgumentException(SR.Arg_NamedParamTooBig, nameof(namedParams));
                 }
                 else
                 {
                     if (namedParams.Length != 0)
                         // "Named parameter array can not be bigger than argument array."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamTooBig"), nameof(namedParams));
+                        throw new ArgumentException(SR.Arg_NamedParamTooBig, nameof(namedParams));
                 }
             }
             #endregion
@@ -1325,7 +1323,7 @@ namespace System
             #region Check that any named paramters are not null
             if (namedParams != null && Array.IndexOf<string?>(namedParams, null) != -1)
                 // "Named parameter value must not be null."
-                throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamNull"), nameof(namedParams));
+                throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
             #endregion
 
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
@@ -1341,7 +1339,7 @@ namespace System
             {
                 if ((bindingFlags & BindingFlags.CreateInstance) != 0 && (bindingFlags & BinderNonCreateInstance) != 0)
                     // "Can not specify both CreateInstance and another access type."
-                    throw new ArgumentException(Environment.GetResourceString("Arg_CreatInstAccess"), nameof(bindingFlags));
+                    throw new ArgumentException(SR.Arg_CreatInstAccess, nameof(bindingFlags));
 
                 return Activator.CreateInstance(this, bindingFlags, binder, providedArgs, culture);
             }
@@ -1372,11 +1370,11 @@ namespace System
                 {
                     if (IsSetField)
                         // "Can not specify both Get and Set on a field."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetGet"), nameof(bindingFlags));
+                        throw new ArgumentException(SR.Arg_FldSetGet, nameof(bindingFlags));
 
                     if ((bindingFlags & BindingFlags.SetProperty) != 0)
                         // "Can not specify both GetField and SetProperty."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldGetPropSet"), nameof(bindingFlags));
+                        throw new ArgumentException(SR.Arg_FldGetPropSet, nameof(bindingFlags));
                 }
                 else
                 {
@@ -1387,11 +1385,11 @@ namespace System
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
                         // "Can not specify both SetField and GetProperty."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetPropGet"), nameof(bindingFlags));
+                        throw new ArgumentException(SR.Arg_FldSetPropGet, nameof(bindingFlags));
 
                     if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
                         // "Can not specify Set on a Field and Invoke on a method."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetInvoke"), nameof(bindingFlags));
+                        throw new ArgumentException(SR.Arg_FldSetInvoke, nameof(bindingFlags));
                 }
                 #endregion
 
@@ -1440,7 +1438,7 @@ namespace System
                                 }
                                 catch (InvalidCastException)
                                 {
-                                    throw new ArgumentException(Environment.GetResourceString("Arg_IndexMustBeInt"));
+                                    throw new ArgumentException(SR.Arg_IndexMustBeInt);
                                 }
                             }
 
@@ -1465,7 +1463,7 @@ namespace System
                     {
                         #region Get the field value
                         if (argCnt != 0)
-                            throw new ArgumentException(Environment.GetResourceString("Arg_FldGetArgErr"), nameof(bindingFlags));
+                            throw new ArgumentException(SR.Arg_FldGetArgErr, nameof(bindingFlags));
 
                         return selFld.GetValue(target);
                         #endregion
@@ -1474,7 +1472,7 @@ namespace System
                     {
                         #region Set the field Value
                         if (argCnt != 1)
-                            throw new ArgumentException(Environment.GetResourceString("Arg_FldSetArgErr"), nameof(bindingFlags));
+                            throw new ArgumentException(SR.Arg_FldSetArgErr, nameof(bindingFlags));
 
                         selFld.SetValue(target, providedArgs![0], bindingFlags, binder, culture);
 
@@ -1525,7 +1523,7 @@ namespace System
                     Debug.Assert(!IsSetField);
 
                     if (isSetProperty)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_PropSetGet"), nameof(bindingFlags));
+                        throw new ArgumentException(SR.Arg_PropSetGet, nameof(bindingFlags));
                 }
                 else
                 {
@@ -1534,7 +1532,7 @@ namespace System
                     Debug.Assert(!IsGetField);
 
                     if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_PropSetInvoke"), nameof(bindingFlags));
+                        throw new ArgumentException(SR.Arg_PropSetInvoke, nameof(bindingFlags));
                 }
                 #endregion
             }
@@ -1686,16 +1684,15 @@ namespace System
         private void CreateInstanceCheckThis()
         {
             if (ContainsGenericParameters)
-                throw new ArgumentException(
-                    Environment.GetResourceString("Acc_CreateGenericEx", this));
+                throw new ArgumentException(SR.Format(SR.Acc_CreateGenericEx, this));
 
-            Type elementType = this.GetRootElementType();
+            Type elementType = GetRootElementType();
 
             if (ReferenceEquals(elementType, typeof(ArgIterator)))
-                throw new NotSupportedException(Environment.GetResourceString("Acc_CreateArgIterator"));
+                throw new NotSupportedException(SR.Acc_CreateArgIterator);
 
             if (ReferenceEquals(elementType, typeof(void)))
-                throw new NotSupportedException(Environment.GetResourceString("Acc_CreateVoid"));
+                throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
@@ -1728,7 +1725,7 @@ namespace System
                     if (argCnt == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                         && (IsValueType))
                     {
-                        server = CreateInstanceDefaultCtor(publicOnly, false, true, wrapExceptions);
+                        server = CreateInstanceDefaultCtor(publicOnly, wrapExceptions);
                     }
                     else
                     {
@@ -1758,7 +1755,7 @@ namespace System
 
                         if (cons == null)
                         {
-                            throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
+                            throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                         }
 
                         MethodBase? invokeMethod;
@@ -1772,7 +1769,7 @@ namespace System
 
                         if (invokeMethod == null)
                         {
-                            throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
+                            throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                         }
 
                         if (invokeMethod.GetParametersNoCopy().Length == 0)
@@ -1782,8 +1779,7 @@ namespace System
 
                                 Debug.Assert((invokeMethod.CallingConvention & CallingConventions.VarArgs) ==
                                                  CallingConventions.VarArgs);
-                                throw new NotSupportedException(string.Format(CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("NotSupported_CallToVarArg")));
+                                throw new NotSupportedException(SR.NotSupported_CallToVarArg);
                             }
 
                             // fast path??
@@ -1811,31 +1807,34 @@ namespace System
         }
 
         // Helper to invoke the default (parameterless) ctor.
-        // fillCache is set in the SL2/3 compat mode or when called from Marshal.PtrToStructure.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions)
         {
             if (IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            return CreateInstanceSlow(publicOnly, wrapExceptions, skipCheckThis, fillCache);
+            CreateInstanceCheckThis();
+
+            return CreateInstanceMono(!publicOnly, wrapExceptions);
+        }
+
+        // Specialized version of the above for Activator.CreateInstance<T>()
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
+        internal object? CreateInstanceOfT()
+        {
+            return CreateInstanceMono(false, true);
         }
 
         #endregion
 
-        private TypeCache cache;
+        private TypeCache? cache;
 
-        internal TypeCache Cache
-        {
-            get
-            {
-                if (cache == null)
-                    LazyInitializer.EnsureInitialized(ref cache, () => new TypeCache());
-
-                return cache;
-            }
-        }
+        internal TypeCache Cache =>
+            Volatile.Read(ref cache) ??
+            Interlocked.CompareExchange(ref cache, new TypeCache(), null) ??
+            cache;
 
         internal sealed class TypeCache
         {
@@ -1866,7 +1865,7 @@ namespace System
             ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(
                 null,
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, CallingConventions.Any,
-                Array.Empty<Type>(), false);
+                Type.EmptyTypes, false);
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
@@ -1931,39 +1930,24 @@ namespace System
             return m_serializationCtor;
         }
 
-        internal object? CreateInstanceSlow(bool publicOnly, bool wrapExceptions, bool skipCheckThis, bool fillCache)
-        {
-            //bool bNeedSecurityCheck = true;
-            //bool bCanBeCached = false;
-            //bool bSecurityCheckOff = false;
-
-            if (!skipCheckThis)
-                CreateInstanceCheckThis();
-
-            //if (!fillCache)
-            //  bSecurityCheckOff = true;
-
-            return CreateInstanceMono(!publicOnly, wrapExceptions);
-        }
-
         private object? CreateInstanceMono(bool nonPublic, bool wrapExceptions)
         {
             RuntimeConstructorInfo? ctor = GetDefaultConstructor();
             if (!nonPublic && ctor != null && !ctor.IsPublic)
             {
-                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, FullName));
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
 
             if (ctor == null)
             {
                 Type elementType = this.GetRootElementType();
                 if (ReferenceEquals(elementType, typeof(TypedReference)) || ReferenceEquals(elementType, typeof(RuntimeArgumentHandle)))
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_ContainsStackPtr"));
+                    throw new NotSupportedException("NotSupported_ContainsStackPtr");
 
                 if (IsValueType)
                     return CreateInstanceInternal(this);
 
-                throw new MissingMethodException("Default constructor not found for type " + FullName);
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
 
             // TODO: .net does more checks in unmanaged land in RuntimeTypeHandle::CreateInstance
@@ -1983,12 +1967,12 @@ namespace System
                 return res;
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
-                throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Arg_ObjObjEx"), value!.GetType(), this));
+                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
 
             if (binder != null && binder != DefaultBinder)
                 return binder.ChangeType(value!, this, culture);
 
-            throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Arg_ObjObjEx"), value!.GetType(), this));
+            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value!.GetType(), this));
         }
 
         private object? TryConvertToType(object? value, ref bool failed)
@@ -2268,18 +2252,21 @@ namespace System
         public override Type[] GetGenericParameterConstraints()
         {
             if (!IsGenericParameter)
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_NotGenericParameter"));
+                throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
             var paramInfo = new Mono.RuntimeGenericParamInfoHandle(RuntimeTypeHandle.GetGenericParameterInfo(this));
             Type[] constraints = paramInfo.Constraints;
 
-            return constraints ?? Array.Empty<Type>();
+            return constraints ?? Type.EmptyTypes;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(Type genericType, RuntimeType genericArgument)
+        internal static object CreateInstanceForAnotherGenericParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type genericType, RuntimeType genericArgument)
         {
             var gt = (RuntimeType)MakeGenericType(genericType, new Type[] { genericArgument });
-            RuntimeConstructorInfo ctor = gt.GetDefaultConstructor()!;
+            RuntimeConstructorInfo? ctor = gt.GetDefaultConstructor();
+            if (ctor is null)
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt));
+
             return ctor.InternalInvoke(null, null, wrapExceptions: true)!;
         }
 
@@ -2348,7 +2335,7 @@ namespace System
         public override InterfaceMapping GetInterfaceMap(Type ifaceType)
         {
             if (IsGenericParameter)
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_GenericParameter"));
+                throw new InvalidOperationException(SR.Arg_GenericParameter);
 
             if (ifaceType is null)
                 throw new ArgumentNullException(nameof(ifaceType));
@@ -2356,7 +2343,7 @@ namespace System
             RuntimeType? ifaceRtType = ifaceType as RuntimeType;
 
             if (ifaceRtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), nameof(ifaceType));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
 
             InterfaceMapping res;
             if (!ifaceType.IsInterface)
@@ -2440,7 +2427,7 @@ namespace System
             }
         }
 
-        private RuntimeEventInfo[] GetEvents_internal(string? name, BindingFlags bindingAttr, MemberListType listType, RuntimeType reflectedType)
+        private RuntimeEventInfo[] GetEvents_internal(string? name, MemberListType listType, RuntimeType reflectedType)
         {
             var refh = new RuntimeTypeHandle(reflectedType);
             using (var namePtr = new Mono.SafeStringMarshal(name))
@@ -2513,7 +2500,7 @@ namespace System
             get
             {
                 // See https://github.com/mono/mono/issues/18180 and
-                // https://github.com/dotnet/runtime/blob/f23e2796ab5f6fea71c9fdacac024822280253db/src/coreclr/src/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1468-L1472
+                // https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1505-L1509
                 if (ContainsGenericParameters && !GetRootElementType().IsGenericTypeDefinition)
                     return null;
 

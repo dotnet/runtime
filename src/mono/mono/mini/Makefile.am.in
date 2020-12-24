@@ -29,10 +29,6 @@ endif
 
 glib_libs = $(monodir)/mono/eglib/libeglib.la
 
-if ENABLE_PERFTRACING
-eventpipe_libs = $(monodir)/mono/eventpipe/libeventpipe.la
-endif
-
 boehm_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
@@ -43,7 +39,6 @@ sgen_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
 	$(monodir)/mono/sgen/libmonosgen.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(eventpipe_libs) \
 	$(glib_libs)
 
 if ENABLE_LLVM
@@ -226,16 +221,18 @@ AM_CPPFLAGS = $(LIBGC_CPPFLAGS)
 mono_sgen_SOURCES =
 mono_sgen_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
 
+BUILD_DATE = $(shell SOURCE_DATE_EPOCH="$${SOURCE_DATE_EPOCH:-$$(date +%s)}" ;date -u -d "@$$SOURCE_DATE_EPOCH" 2>/dev/null || date -u -r "$$SOURCE_DATE_EPOCH" 2>/dev/null || date -u)
+
 # We build this after libmono was built so it contains the date when the final
 # link was done
 if SUPPORT_BOEHM
 buildver-boehm.h: libmini.la $(monodir)/mono/metadata/libmonoruntime.la
-	@echo "const char *build_date = \"`date`\";" > buildver-boehm.h
+	@echo "const char *build_date = \"$(BUILD_DATE)\";" > buildver-boehm.h
 libmain_a-main.$(OBJEXT): buildver-boehm.h
 endif
 
 buildver-sgen.h: libmini.la $(monodir)/mono/metadata/libmonoruntimesgen.la $(monodir)/mono/sgen/libmonosgen.la
-	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
+	@echo "const char *build_date = \"$(BUILD_DATE)\";" > buildver-sgen.h
 
 libmain_a-main-sgen.$(OBJEXT): buildver-sgen.h
 

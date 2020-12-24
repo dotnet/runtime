@@ -10,7 +10,6 @@ internal partial class Interop
     {
         // https://msdn.microsoft.com/en-us/library/windows/desktop/ms680600(v=vs.85).aspx
         [DllImport(Libraries.NtDll, ExactSpelling = true)]
-        public static extern unsafe uint RtlNtStatusToDosError(
-            int Status);
+        public static extern uint RtlNtStatusToDosError(int Status);
     }
 }

@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 {
@@ -18,101 +17,91 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         private const string SqlServerPrefix = "SQLCONNSTR_";
         private const string CustomPrefix = "CUSTOMCONNSTR_";
 
-        private const string ConnStrKeyFormat = "ConnectionStrings:{0}";
-        private const string ProviderKeyFormat = "ConnectionStrings:{0}_ProviderName";
-
         private readonly string _prefix;
 
         /// <summary>
         /// Initializes a new instance.
         /// </summary>
-        public EnvironmentVariablesConfigurationProvider() : this(string.Empty)
-        { }
+        public EnvironmentVariablesConfigurationProvider() =>
+            _prefix = string.Empty;
 
         /// <summary>
         /// Initializes a new instance with the specified prefix.
         /// </summary>
         /// <param name="prefix">A prefix used to filter the environment variables.</param>
-        public EnvironmentVariablesConfigurationProvider(string prefix)
-        {
+        public EnvironmentVariablesConfigurationProvider(string prefix) =>
             _prefix = prefix ?? string.Empty;
-        }
 
         /// <summary>
         /// Loads the environment variables.
         /// </summary>
-        public override void Load()
-        {
+        public override void Load() =>
             Load(Environment.GetEnvironmentVariables());
-        }
 
         internal void Load(IDictionary envVariables)
         {
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            IEnumerable<DictionaryEntry> filteredEnvVariables = envVariables
-                .Cast<DictionaryEntry>()
-                .SelectMany(AzureEnvToAppEnv)
-                .Where(entry => ((string)entry.Key).StartsWith(_prefix, StringComparison.OrdinalIgnoreCase));
-
-            foreach (DictionaryEntry envVariable in filteredEnvVariables)
+            foreach (DictionaryEntry entry in envVariables)
             {
-                string key = ((string)envVariable.Key).Substring(_prefix.Length);
-                data[key] = (string)envVariable.Value;
+                string key = (string)entry.Key;
+                string provider = null;
+                string prefix;
+
+                if (key.StartsWith(MySqlServerPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    prefix = MySqlServerPrefix;
+                    provider = "MySql.Data.MySqlClient";
+                }
+                else if (key.StartsWith(SqlAzureServerPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    prefix = SqlAzureServerPrefix;
+                    provider = "System.Data.SqlClient";
+                }
+                else if (key.StartsWith(SqlServerPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    prefix = SqlServerPrefix;
+                    provider = "System.Data.SqlClient";
+                }
+                else if (key.StartsWith(CustomPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    prefix = CustomPrefix;
+                }
+                else if (key.StartsWith(_prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    // This prevents the prefix from being normalized.
+                    // We can also do a fast path branch, I guess? No point in reallocating if the prefix is empty.
+                    key = NormalizeKey(key.Substring(_prefix.Length));
+                    data[key] = entry.Value as string;
+
+                    continue;
+                }
+                else
+                {
+                    continue;
+                }
+
+                // Add the key-value pair for connection string, and optionally provider name
+                key = NormalizeKey(key.Substring(prefix.Length));
+                AddIfPrefixed(data, $"ConnectionStrings:{key}", (string)entry.Value);
+                if (provider != null)
+                {
+                    AddIfPrefixed(data, $"ConnectionStrings:{key}_ProviderName", provider);
+                }
             }
 
             Data = data;
         }
 
-        private static string NormalizeKey(string key)
+        private void AddIfPrefixed(Dictionary<string, string> data, string key, string value)
         {
-            return key.Replace("__", ConfigurationPath.KeyDelimiter);
+            if (key.StartsWith(_prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                key = key.Substring(_prefix.Length);
+                data[key] = value;
+            }
         }
 
-        private static IEnumerable<DictionaryEntry> AzureEnvToAppEnv(DictionaryEntry entry)
-        {
-            string key = (string)entry.Key;
-            string prefix = string.Empty;
-            string provider = string.Empty;
-
-            if (key.StartsWith(MySqlServerPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                prefix = MySqlServerPrefix;
-                provider = "MySql.Data.MySqlClient";
-            }
-            else if (key.StartsWith(SqlAzureServerPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                prefix = SqlAzureServerPrefix;
-                provider = "System.Data.SqlClient";
-            }
-            else if (key.StartsWith(SqlServerPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                prefix = SqlServerPrefix;
-                provider = "System.Data.SqlClient";
-            }
-            else if (key.StartsWith(CustomPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                prefix = CustomPrefix;
-            }
-            else
-            {
-                entry.Key = NormalizeKey(key);
-                yield return entry;
-                yield break;
-            }
-
-            // Return the key-value pair for connection string
-            yield return new DictionaryEntry(
-                string.Format(ConnStrKeyFormat, NormalizeKey(key.Substring(prefix.Length))),
-                entry.Value);
-
-            if (!string.IsNullOrEmpty(provider))
-            {
-                // Return the key-value pair for provider name
-                yield return new DictionaryEntry(
-                    string.Format(ProviderKeyFormat, NormalizeKey(key.Substring(prefix.Length))),
-                    provider);
-            }
-        }
+        private static string NormalizeKey(string key) => key.Replace("__", ConfigurationPath.KeyDelimiter);
     }
 }

@@ -16,7 +16,7 @@ function usage {
     echo '    --emulatorPath=/opt/linux-arm-emulator'
     echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
-    echo '    --testRootDir=~/Downloads/Windows_NT.x64.Release'
+    echo '    --testRootDir=~/Downloads/windows.x64.Release'
     echo '    --mscorlibDir=~/clr/bin/bin/coreclr/Linux.armel.Release'
     echo '    --coreFxNativeBinDir=~/cfx/bin/Linux.armel.Release'
     echo '    --coreFxBinDir="~/cfx/bin/Linux.AnyCPU.Release;~/cfx/bin/Unix.AnyCPU.Release;~/cfx/bin/AnyOS.AnyCPU.Release"'
@@ -191,7 +191,7 @@ function mount_emulator {
             sudo umount -l $__ARMRootfsMountPath
         fi
         mount_with_checking "" "$__ARMEmulPath/platform/rootfs-t30.ext4" "$__ARMRootfsMountPath"
-        
+
         cd $__ARMRootfsMountPath
         sudo tar -cf "$__ARMEmulRootfs/arm-emulator-rootfs.tar" *
         cd -
@@ -346,7 +346,7 @@ function copy_to_emulator {
                 __coreFxBinDirBase="$__coreFxBinDirBase;$__ARMEmulCorefx/$currDirBase"
             fi
         done
-    done <<< "$__coreFxBinDir" 
+    done <<< "$__coreFxBinDir"
 }
 
 #Runs tests in an emulated mode
@@ -439,7 +439,7 @@ do
         __ARMRootfsMountPath=${arg#*=}
         ;;
     --buildConfig=*)
-        __buildConfig="$(echo ${arg#*=} | awk '{print tolower($0)}')"
+        __buildConfig="$(echo ${arg#*=} | tr "[:upper:]" "[:lower:]")"
         if [[ "$__buildConfig" != "debug" && "$__buildConfig" != "release" && "$__buildConfig" != "checked" ]]; then
             exit_with_error "--buildConfig can be Debug, Checked or Release" true
         fi
@@ -511,7 +511,7 @@ if [ "$__ciMode" == "emulator" ]; then
     __skipTests=1
 fi
 
-__coreFxBinDir="./bin/CoreFxBinDir" # TODO-cleanup: Just for testing.... 
+__coreFxBinDir="./bin/CoreFxBinDir" # TODO-cleanup: Just for testing....
 #Check if the optional arguments are present in the case that testing is to be done
 if [ $__skipTests == 0 ]; then
     exit_if_empty "$__testRootDir" "Testing requested, but --testRootDir not provided" true

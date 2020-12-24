@@ -2,11 +2,10 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Base64EncodingTest.cs" />
     <Compile Include="ByteEncodingTest.cs" />
     <Compile Include="EightBitStreamTest.cs" />
@@ -19,7 +18,7 @@
     <Compile Include="MessageTests\MessageHeaderBehaviorTest.cs" />
     <Compile Include="MessageTests\ReplyToListTest.cs" />
     <Compile Include="QuotedPrintableStreamTest.cs" />
-    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" />
+    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" Condition="'$(TargetsBrowser)' != 'true'" />
     <Compile Include="SmtpDateTimeTest.cs" />
     <Compile Include="WriteStateInfoTest.cs" />
   </ItemGroup>
@@ -36,16 +35,8 @@
              Link="ProductionCode\MailAddress.cs" />
     <Compile Include="..\..\src\System\Net\Mail\NetEventSource.Mail.cs"
              Link="ProductionCode\NetEventSource.Mail.cs" />
-    <Compile Include="..\..\src\System\Net\Mail\SmtpConnection.Auth.cs"
-             Link="ProductionCode\SmtpConnection.Auth.cs" />
     <Compile Include="..\..\src\System\Net\Mail\ISmtpAuthenticationModule.cs"
              Link="ProductionCode\ISmtpAuthenticationModule.cs" />
-    <Compile Include="..\..\src\System\Net\Mail\SmtpLoginAuthenticationModule.cs"
-             Link="ProductionCode\SmtpLoginAuthenticationModule.cs" />
-    <Compile Include="..\..\src\System\Net\Mail\SmtpNegotiateAuthenticationModule.cs"
-             Link="ProductionCode\SmtpNegotiateAuthenticationModule.cs" />
-    <Compile Include="..\..\src\System\Net\Mail\SmtpNtlmAuthenticationModule.cs"
-             Link="ProductionCode\SmtpNtlmAuthenticationModule.cs" />
     <Compile Include="..\..\src\System\Net\Mail\MailAddressCollection.cs"
              Link="ProductionCode\MailAddressCollection.cs" />
     <Compile Include="..\..\src\System\Net\Mail\MailPriority.cs"
@@ -106,15 +97,12 @@
              Link="ProductionCode\MailHeaderInfo.cs" />
     <Compile Include="..\..\src\System\Net\BufferBuilder.cs"
              Link="ProductionCode\BufferBuilder.cs" />
-
     <Compile Include="$(CommonPath)System\Net\TlsStream.cs"
              Link="Common\System\Net\TlsStream.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
              Link="Common\System\Net\LazyAsyncResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
-             Link="Common\System\Net\ContextAwareResult.cs" />
     <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs"
              Link="Common\System\Net\Mail\MailBnfHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
@@ -151,12 +139,8 @@
              Link="Common\System\Net\ContextFlagsPal.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
              Link="Common\System\Net\NegotiationInfoClass.cs" />
-    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
-             Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs"
              Link="Common\System\Net\SecurityStatusPal.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
-             Link="Common\System\Net\Security\SSPIHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
              Link="Common\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
@@ -272,6 +256,27 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
              Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
   </ItemGroup>
+
+  <!-- Non Browser specific files - internal and security -->
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <Compile Include="..\..\src\System\Net\Mail\SmtpLoginAuthenticationModule.cs"
+             Link="ProductionCode\SmtpLoginAuthenticationModule.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\SmtpNegotiateAuthenticationModule.cs"
+             Link="ProductionCode\SmtpNegotiateAuthenticationModule.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\SmtpNtlmAuthenticationModule.cs"
+             Link="ProductionCode\SmtpNtlmAuthenticationModule.cs" />
+    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
+             Link="Common\System\Net\NTAuthentication.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
+             Link="Common\System\Net\Security\SSPIHandleCache.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"
+             Link="Common\System\Net\Security\SafeCredentialReference.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
+             Link="Common\System\Net\ContextAwareResult.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\SmtpConnection.Auth.cs"
+             Link="ProductionCode\SmtpConnection.Auth.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
     <DefaultReferenceExclusion Include="System.Net.Mail" />

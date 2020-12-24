@@ -910,7 +910,7 @@ namespace System.Net.Http
                 ArraySegment<byte> buffer;
                 if (TryGetBuffer(out buffer))
                 {
-                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    ValidateCopyToArguments(destination, bufferSize);
 
                     long pos = Position;
                     long length = Length;

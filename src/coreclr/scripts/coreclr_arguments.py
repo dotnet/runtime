@@ -65,7 +65,7 @@ class CoreclrArguments:
 
         self.valid_arches = ["x64", "x86", "arm", "arm64", "wasm"]
         self.valid_build_types = ["Debug", "Checked", "Release"]
-        self.valid_host_os = ["Windows_NT", "OSX", "Linux", "illumos", "Solaris", "Browser"]
+        self.valid_host_os = ["windows", "OSX", "Linux", "illumos", "Solaris", "Browser", "Android"]
 
         self.__initialize__(args)
 
@@ -175,7 +175,7 @@ class CoreclrArguments:
     def provide_default_host_os():
         """ Return a string representing the current host operating system.
 
-            Returns one of: Linux, OSX, Windows_NT, illumos, Solaris
+            Returns one of: Linux, OSX, windows, illumos, Solaris
         """
 
         if sys.platform == "linux" or sys.platform == "linux2":
@@ -183,7 +183,7 @@ class CoreclrArguments:
         elif sys.platform == "darwin":
             return "OSX"
         elif sys.platform == "win32":
-            return "Windows_NT"
+            return "windows"
         elif sys.platform.startswith("sunos"):
             is_illumos = ('illumos' in subprocess.Popen(["uname", "-o"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode('utf-8'))
             return 'illumos' if is_illumos else 'Solaris'

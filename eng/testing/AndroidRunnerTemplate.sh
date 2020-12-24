@@ -1,10 +1,15 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
+
+# NOTE: this script is only used locally, on CI we use the Helix SDK from arcade
 
 EXECUTION_DIR=$(dirname $0)
-TEST_NAME=$1
+ASSEMBLY_NAME=$1
 TARGET_ARCH=$2
+TARGET_OS=$3
+TEST_NAME=$4
+XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
-APK=$EXECUTION_DIR/bin/$TEST_NAME.apk
+cd $EXECUTION_DIR
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
 LOCKDIR=/tmp/androidtests.lock
@@ -18,14 +23,22 @@ while true; do
     fi
 done
 
-XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+    # Allow overriding the path to the XHarness CLI DLL,
+    # we need to call it directly via dotnet exec
+    HARNESS_RUNNER="dotnet exec $XHARNESS_CLI_PATH"
+else
+	HARNESS_RUNNER="dotnet xharness"
+fi
 
-dotnet xharness android test --instrumentation="net.dot.MonoRunner" \
-    --package-name="net.dot.$TEST_NAME" \
-    --app=$APK --output-directory=$XHARNESS_OUT -v
+$HARNESS_RUNNER android test                \
+    --instrumentation="net.dot.MonoRunner"  \
+    --package-name="net.dot.$ASSEMBLY_NAME" \
+    --app="$EXECUTION_DIR/bin/$TEST_NAME.apk" \
+    --output-directory="$XHARNESS_OUT"
 
 _exitCode=$?
 
-echo "Xharness artifacts: $XHARNESS_OUT"
+echo "XHarness artifacts: $XHARNESS_OUT"
 
 exit $_exitCode

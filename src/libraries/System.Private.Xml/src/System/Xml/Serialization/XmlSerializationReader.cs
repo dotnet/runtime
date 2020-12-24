@@ -171,7 +171,7 @@ namespace System.Xml.Serialization
                 if (_d == null)
                 {
                     _d = new XmlDocument(_r.NameTable);
-                    _d.SetBaseURI(_r.BaseURI!); // TODO-NULLABLE: string.Empty should be passed in case of null URI
+                    _d.SetBaseURI(_r.BaseURI);
                 }
                 return _d;
             }

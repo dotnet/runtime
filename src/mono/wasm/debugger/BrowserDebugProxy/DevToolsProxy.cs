@@ -195,9 +195,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             Log("protocol", $"browser: {msg}");
 
             if (res["id"] == null)
-                pending_ops.Add(OnEvent(new SessionId(res["sessionId"]?.Value<string>()), res["method"].Value<string>(), res["params"] as JObject, token));
+                pending_ops.Add(OnEvent(res.ToObject<SessionId>(), res["method"].Value<string>(), res["params"] as JObject, token));
             else
-                OnResponse(new MessageId(res["sessionId"]?.Value<string>(), res["id"].Value<int>()), Result.FromJson(res));
+                OnResponse(res.ToObject<MessageId>(), Result.FromJson(res));
         }
 
         private void ProcessIdeMessage(string msg, CancellationToken token)
@@ -206,8 +206,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!string.IsNullOrEmpty(msg))
             {
                 var res = JObject.Parse(msg);
+                var id = res.ToObject<MessageId>();
                 pending_ops.Add(OnCommand(
-                    new MessageId(res["sessionId"]?.Value<string>(), res["id"].Value<int>()),
+                    id,
                     res["method"].Value<string>(),
                     res["params"] as JObject, token));
             }

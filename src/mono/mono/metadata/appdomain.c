@@ -74,6 +74,11 @@
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
+
+#ifdef ENABLE_PERFTRACING
+#include <eventpipe/ds-server.h>
+#endif
+
 #ifdef HOST_WIN32
 #include <direct.h>
 #endif
@@ -158,7 +163,16 @@ static GENERATE_GET_CLASS_WITH_CACHE (assembly, "System.Reflection", "Assembly")
 static GENERATE_GET_CLASS_WITH_CACHE (app_context, "System", "AppContext");
 #endif
 
+#ifndef ENABLE_NETCORE
 GENERATE_GET_CLASS_WITH_CACHE (appdomain, MONO_APPDOMAIN_CLASS_NAME_SPACE, MONO_APPDOMAIN_CLASS_NAME);
+#else
+MonoClass*
+mono_class_get_appdomain_class (void)
+{
+	return mono_defaults.object_class;
+}
+#endif
+
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_setup, MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE, MONO_APPDOMAIN_SETUP_CLASS_NAME);
 
 static MonoDomain *
@@ -339,12 +353,19 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 		ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_pinned_handle (domain, klass, error));
 		goto_if_nok (error, exit);
 
+#ifndef ENABLE_NETCORE
 		MONO_HANDLE_SETVAL (ad, data, MonoDomain*, domain);
+#endif
 		domain->domain = MONO_HANDLE_RAW (ad);
 		domain->setup = MONO_HANDLE_RAW (setup);
 	}
 
-	mono_thread_attach (domain);
+	mono_thread_internal_attach (domain);
+
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
+	ds_server_init ();
+	ds_server_pause_for_diagnostics_monitor ();
+#endif
 
 	mono_type_initialization_init ();
 
@@ -749,7 +770,9 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 
 	MonoAppDomainHandle ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_handle (data, adclass, error));
 	goto_if_nok (error, leave);
+#ifndef ENABLE_NETCORE
 	MONO_HANDLE_SETVAL (ad, data, MonoDomain*, data);
+#endif
 	data->domain = MONO_HANDLE_RAW (ad);
 	data->friendly_name = g_strdup (friendly_name);
 
@@ -2318,6 +2341,7 @@ mono_domain_from_appdomain (MonoAppDomain *appdomain_raw)
 MonoDomain *
 mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain)
 {
+#ifndef ENABLE_NETCORE
 	HANDLE_FUNCTION_ENTER ();
 	MonoDomain *dom = NULL;
 	if (MONO_HANDLE_IS_NULL (appdomain))
@@ -2333,6 +2357,9 @@ mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain)
 
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (dom);
+#else
+	return mono_get_root_domain ();
+#endif
 }
 
 
@@ -2779,33 +2806,20 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 {
 	MonoAssembly *ass;
 	MonoReflectionAssemblyHandle refass = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
-	MonoDomain *domain = MONO_HANDLE_GETVAL(ad, data);
-	guint32 raw_assembly_len = mono_array_handle_length (raw_assembly);
-
-	/* Copy the data ourselves to unpin the raw assembly byte array as soon as possible */
-	guint8 *assembly_data = (guint8*) g_try_malloc (raw_assembly_len);
-	if (!assembly_data) {
-		mono_error_set_out_of_memory (error, "Could not allocate %ud bytes to copy raw assembly data", raw_assembly_len);
-		return refass;
-	}
-	MonoGCHandle gchandle;
-	mono_byte *raw_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_assembly, gchar, 0, &gchandle);
-	memcpy (assembly_data, raw_data, raw_assembly_len);
-	mono_gchandle_free_internal (gchandle); /* unpin */
-	MONO_HANDLE_ASSIGN (raw_assembly, NULL_HANDLE); /* don't reference the data anymore */
-	
+	MonoDomain *domain = MONO_HANDLE_GETVAL (ad, data);
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 
-	mono_byte *raw_symbol_data = NULL;
-	guint32 symbol_len = 0;
-	MonoGCHandle symbol_gchandle = 0;
+	guint8 *raw_assembly_ptr = (guint8 *)mono_array_handle_addr (raw_assembly, sizeof (guint8), 0);
+	guint32 raw_assembly_len = mono_array_handle_length (raw_assembly);
+
+	guint8 *raw_symbols_ptr = NULL;
+	guint32 raw_symbols_len = 0;
 	if (!MONO_HANDLE_IS_NULL (raw_symbol_store)) {
-		symbol_len = mono_array_handle_length (raw_symbol_store);
-		raw_symbol_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_symbol_store, mono_byte, 0, &symbol_gchandle);
+		raw_symbols_ptr = (guint8 *)mono_array_handle_addr (raw_symbol_store, sizeof (guint8), 0);
+		raw_symbols_len = mono_array_handle_length (raw_symbol_store);
 	}
 
-	ass = mono_alc_load_raw_bytes (alc, assembly_data, raw_assembly_len, raw_symbol_data, symbol_len, refonly, error);
-	mono_gchandle_free_internal (symbol_gchandle);
+	ass = mono_alc_load_raw_bytes (alc, raw_assembly_ptr, raw_assembly_len, raw_symbols_ptr, raw_symbols_len, refonly, error);
 	goto_if_nok (error, leave);
 
 	refass = mono_assembly_get_object_handle (domain, ass, error);
@@ -2822,7 +2836,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 {
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status;
-	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, FALSE, NULL, refonly, FALSE, NULL, NULL);
+	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, TRUE, NULL, refonly, FALSE, NULL, NULL);
 
 	if (!image) {
 		mono_error_set_bad_image_by_name (error, "In memory assembly", "0x%p", assembly_data);

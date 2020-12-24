@@ -288,7 +288,9 @@ TYPED_HANDLE_DECL (MonoMarshalByRefObject);
 /* This is a copy of System.AppDomain */
 struct _MonoAppDomain {
 	MonoMarshalByRefObject mbr;
+#ifndef ENABLE_NETCORE
 	MonoDomain *data;
+#endif
 };
 
 /* Safely access System.AppDomain from native code */
@@ -2420,5 +2422,11 @@ mono_gc_wbarrier_value_copy_internal (void* dest, const void* src, int count, Mo
 
 void
 mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
+
+char *
+mono_runtime_get_managed_cmd_line (void);
+
+char *
+mono_runtime_get_cmd_line (int argc, char **argv);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

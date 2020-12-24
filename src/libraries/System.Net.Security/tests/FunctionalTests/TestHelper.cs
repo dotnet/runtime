@@ -49,7 +49,7 @@ namespace System.Net.Security.Tests
                 return GetConnectedTcpStreams();
             }
 
-            return GetConnectedVirtualStreams();
+            return ConnectedStreams.CreateBidirectional(initialBufferSize: 4096, maxBufferSize: int.MaxValue);
         }
 
         internal static (NetworkStream ClientStream, NetworkStream ServerStream) GetConnectedTcpStreams()
@@ -69,13 +69,6 @@ namespace System.Net.Security.Tests
                 return (new NetworkStream(clientSocket, ownsSocket: true), new NetworkStream(serverSocket, ownsSocket: true));
             }
 
-        }
-
-        internal static (VirtualNetworkStream ClientStream, VirtualNetworkStream ServerStream) GetConnectedVirtualStreams()
-        {
-            VirtualNetwork vn = new VirtualNetwork();
-
-            return (new VirtualNetworkStream(vn, isServer: false), new VirtualNetworkStream(vn, isServer: true));
         }
 
         internal static void CleanupCertificates(string testName)

@@ -1,0 +1,21 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>Internal package for sharing embedded Mono runtime and iOS App Builder.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoTasksDir)AppleAppBuilder\AppleAppBuilder.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_iOSSampleFiles Include="$(AppleAppBuilderTasksAssemblyPath)" />
+    <_iOSSampleFiles Include="$(RepoTasksDir)AppleAppBuilder\Templates\runtime.m" />
+    <_iOSSampleFiles Include="$(RepoTasksDir)AppleAppBuilder\Templates\runtime.h" />
+
+    <PackageFile Include="@(_iOSSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

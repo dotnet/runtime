@@ -1,15 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <UsingTask TaskName="CopyNupkgAndChangeVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-
   <Target Name="PrepareTestAssets"
           DependsOnTargets="
-            GetNETCoreAppInternalPackageVersion;
             GetNETCoreAppRuntimePackVersion;
             CleanTestAssets;
             GenerateTestRestoreSourcesNuGetConfig;
             CopyPotentiallyInternalPackagesForTestRestore;
-            PrepareStabilizedLegacyPackages;
             RestoreTestAssetProjects" />
 
   <Target Name="CleanTestAssets"
@@ -113,24 +108,6 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(PackageCacheNupkgFile)" DestinationFolder="$(InternalNupkgCacheDir)" />
-  </Target>
-
-  <Target Name="PrepareStabilizedLegacyPackages"
-          Condition="'$(NETCoreAppInternalPackageVersion)' != '$(NETCoreAppRuntimePackVersion)'">
-    <ItemGroup>
-      <NonShippingPackageToStabilizeFile Include="
-        $(ArtifactsNonShippingPackagesDir)Microsoft.*.nupkg;
-        $(ArtifactsNonShippingPackagesDir)runtime.*.nupkg;" />
-    </ItemGroup>
-
-    <!-- Workaround for NonShipping packages being unable to have stable versions, see https://github.com/dotnet/core-setup/issues/8112 -->
-    <Message Importance="High" Text="Generating stabilized legacy NETCoreApp packages..." />
-
-    <CopyNupkgAndChangeVersion
-      SourceFile="%(NonShippingPackageToStabilizeFile.Identity)"
-      TargetFile="$(TestStabilizedLegacyPackagesDir)@(NonShippingPackageToStabilizeFile -> '%(Filename)%(Extension)')"
-      OriginalVersion="$(NETCoreAppInternalPackageVersion)"
-      TargetVersion="$(NETCoreAppRuntimePackVersion)" />
   </Target>
 
   <Target Name="RestoreTestAssetProjects">

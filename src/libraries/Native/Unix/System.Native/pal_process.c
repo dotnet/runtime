@@ -38,6 +38,8 @@
 #include <sys/sysctl.h>
 #endif
 
+#include <getexepath.h>
+
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
 c_static_assert(PAL_LOG_ALERT == LOG_ALERT);
@@ -560,6 +562,10 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
+#if !defined(RLIMIT_RSS) || !(defined(RLIMIT_MEMLOCK) || defined(RLIMIT_VMEM)) || !defined(RLIMIT_NPROC)
+        default:
+            break;
+#endif
     }
 
     assert_msg(false, "Unknown RLIMIT value", (int)value);
@@ -834,6 +840,14 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 
     return sched_setaffinity(pid, sizeof(cpu_set_t), &set);
 }
+#else
+int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+}
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
@@ -866,58 +880,17 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 
     return result;
 }
+#else
+int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+}
 #endif
 
-// Returns the full path to the executable for the current process, resolving symbolic links.
-// The caller is responsible for releasing the buffer. Returns null on error.
 char* SystemNative_GetProcessPath()
 {
-#if defined(__APPLE__)
-    uint32_t path_length = 0;
-    if (_NSGetExecutablePath(NULL, &path_length) != -1)
-    {
-        errno = EINVAL;
-        return NULL;
-    }
-
-    char path_buf[path_length];
-    if (_NSGetExecutablePath(path_buf, &path_length) != 0)
-    {
-        errno = EINVAL;
-        return NULL;
-    }
-
-    return realpath(path_buf, NULL);
-#elif defined(__FreeBSD__)
-    static const int name[] =
-    {
-        CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1
-    };
-
-    char path[PATH_MAX];
-    size_t len;
-
-    len = sizeof(path);
-    if (sysctl(name, 4, path, &len, NULL, 0) != 0)
-    {
-        return NULL;
-    }
-
-    return strdup(path);
-#elif defined(__sun)
-    const char* path = getexecname();
-    if (path == NULL)
-        return NULL;
-    return realpath(path, NULL);
-#else
-
-#ifdef __linux__
-    const char* symlinkEntrypointExecutable = "/proc/self/exe";
-#else
-    const char* symlinkEntrypointExecutable = "/proc/curproc/exe";
-#endif
-
-    // Resolve the symlink to the executable from /proc
-    return realpath(symlinkEntrypointExecutable, NULL);
-#endif
+    return getexepath();
 }

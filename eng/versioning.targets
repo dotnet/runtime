@@ -23,19 +23,28 @@
   </ItemGroup>
 
   <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
-  <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true'">
+  <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false'">
     <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
         <_Parameter1>windows</_Parameter1>
     </AssemblyAttribute>
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
+      <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
+  </PropertyGroup>
+  
+  <!-- Enables browser warnings for cross platform or Brwoser targeted builds -->
+  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
+    <SupportedPlatform Include="browser"/>
   </ItemGroup>
 
   <ItemGroup>
     <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
   </ItemGroup>
 
-  <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild">
+  <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild" Condition="'@(_unsupportedOSPlatforms)' != '' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false'">
     <ItemGroup>
-      <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform" Condition="'@(_unsupportedOSPlatforms)' != ''">
+      <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
     </ItemGroup>
@@ -155,4 +164,13 @@
       WriteOnlyWhenDifferent="true" />
 
   </Target>
+
+  <!-- Removes assembly level attributes for Browser. -->
+  <Target Name="RemoveSupportedPlatformAssemblyAttributeForBrowser" AfterTargets="GetAssemblyAttributes" Condition="'$(TargetFrameworkSuffix)' == 'Browser' or '$(IsTestProject)' == 'true'">
+    <ItemGroup>
+      <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute" />
+      <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />
+    </ItemGroup>
+  </Target>
+
 </Project>

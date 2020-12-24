@@ -168,11 +168,11 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeToken TypeToken
+        internal int TypeToken
         {
             get
             {
-                return _tb.TypeToken;
+                return _tb.MetadataToken;
             }
         }
 
@@ -471,7 +471,8 @@ namespace System.Reflection.Emit
 
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
-            return base.IsAssignableFrom(typeInfo);
+            if (typeInfo == null) return false;
+            return IsAssignableFrom(typeInfo.AsType());
         }
 
         public override bool IsTypeDefinition => true;

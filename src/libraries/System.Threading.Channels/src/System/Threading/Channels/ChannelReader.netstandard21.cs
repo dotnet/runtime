@@ -19,7 +19,7 @@ namespace System.Threading.Channels
         {
             while (await WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                while (TryRead(out T item))
+                while (TryRead(out T? item))
                 {
                     yield return item;
                 }

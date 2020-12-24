@@ -35,11 +35,22 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(dictionary));
             }
 
-            _set = new TreeSet<KeyValuePair<TKey, TValue>>(new KeyValuePairComparer(comparer));
+            var keyValuePairComparer = new KeyValuePairComparer(comparer);
 
-            foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+            if (dictionary is SortedDictionary<TKey, TValue> sortedDictionary &&
+                sortedDictionary._set.Comparer is KeyValuePairComparer kv &&
+                kv.keyComparer.Equals(keyValuePairComparer.keyComparer))
             {
-                _set.Add(pair);
+                _set = new TreeSet<KeyValuePair<TKey, TValue>>(sortedDictionary._set, keyValuePairComparer);
+            }
+            else
+            {
+                _set = new TreeSet<KeyValuePair<TKey, TValue>>(keyValuePairComparer);
+
+                foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+                {
+                    _set.Add(pair);
+                }
             }
         }
 
@@ -326,7 +337,7 @@ namespace System.Collections.Generic
             {
                 if (IsCompatibleKey(key))
                 {
-                    TValue value;
+                    TValue? value;
                     if (TryGetValue((TKey)key, out value))
                     {
                         return value;
@@ -960,6 +971,8 @@ namespace System.Collections.Generic
         { }
 
         public TreeSet(IComparer<T>? comparer) : base(comparer) { }
+
+        internal TreeSet(TreeSet<T> set, IComparer<T>? comparer) : base(set, comparer) { }
 
         private TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
 

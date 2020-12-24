@@ -6,6 +6,7 @@ parameters:
   name: ''
   helixType: '(unspecified)'
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   strategy: ''
   pool: ''
@@ -14,6 +15,7 @@ parameters:
   condition: ''
   continueOnError: false
   dependsOn: ''
+  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -30,7 +32,8 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - checkout
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+        - evaluate_paths
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -58,8 +61,8 @@ jobs:
       agentOs: FreeBSD
     ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
       agentOs: MacOS
-    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      agentOs: Windows_NT
+    ${{ if eq(parameters.osGroup, 'windows') }}:
+      agentOs: windows
 
     # Setting this results in the arcade job template including a step
     # that gathers asset manifests and publishes them to pipeline
@@ -93,6 +96,8 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    - checkout: self
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ parameters.steps }}
