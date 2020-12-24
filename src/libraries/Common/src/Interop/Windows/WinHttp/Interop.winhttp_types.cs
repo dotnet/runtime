@@ -69,6 +69,7 @@ internal partial class Interop
         public const uint WINHTTP_QUERY_STATUS_TEXT = 20;
         public const uint WINHTTP_QUERY_RAW_HEADERS = 21;
         public const uint WINHTTP_QUERY_RAW_HEADERS_CRLF = 22;
+        public const uint WINHTTP_QUERY_FLAG_TRAILERS = 0x02000000;
         public const uint WINHTTP_QUERY_CONTENT_ENCODING = 29;
         public const uint WINHTTP_QUERY_SET_COOKIE = 43;
         public const uint WINHTTP_QUERY_CUSTOM = 65535;
