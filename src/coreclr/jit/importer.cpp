@@ -4345,9 +4345,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         break;
                     }
 
-                    bool     startsWith = ni == NI_System_MemoryExtensions_StartsWith;
-                    GenTree* newNode = impUnrollSpanComparisonAgainstConst(arg0, strToSpanCall->gtCallArgs->GetNode(),
-                                                                           false, startsWith);
+                    if (!strToSpanCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
+                    {
+                        break;
+                    }
+
+                    GenTreeStrCon* strCon     = strToSpanCall->gtCallArgs->GetNode()->AsStrCon();
+                    bool           startsWith = (ni == NI_System_MemoryExtensions_StartsWith);
+                    GenTree*       newNode    = impUnrollSpanComparisonWithStrCon(arg0, strCon, false, startsWith);
                     if (newNode != nullptr)
                     {
                         retNode = newNode;
@@ -4615,20 +4620,12 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     return nullptr;
 }
 
-GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span,
-                                                       GenTree* constSpan,
-                                                       bool     ignoreCase,
-                                                       bool     startsWith)
+GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
+                                                     GenTreeStrCon* cnsStr,
+                                                     bool           ignoreCase,
+                                                     bool           startsWith)
 {
 #ifdef TARGET_64BIT
-    if (!constSpan->OperIs(GT_CNS_STR))
-    {
-        // For now we only support constant strings
-        return nullptr;
-    }
-
-    GenTreeStrCon* cnsStr = constSpan->AsStrCon();
-
     // Grab the actual string literal from VM
     int       strLen = -1;
     LPCWSTR   str    = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &strLen);
