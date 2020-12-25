@@ -43,6 +43,7 @@ namespace System
         /// <param name="other">The value to compare with the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
         /// </summary>
+        [Intrinsic]
         public static bool Equals(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);
@@ -66,6 +67,7 @@ namespace System
             }
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsOrdinal(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
         {
@@ -76,6 +78,7 @@ namespace System
             return span.SequenceEqual(value);
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsOrdinalIgnoreCase(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
         {
@@ -331,6 +334,7 @@ namespace System
         /// <param name="span">The source span.</param>
         /// <param name="value">The sequence to compare to the beginning of the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
+        [Intrinsic]
         public static bool StartsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);

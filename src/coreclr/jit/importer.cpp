@@ -4318,9 +4318,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_MemoryExtensions_Equals:
+            case NI_System_MemoryExtensions_EqualsOrdinal:
+            case NI_System_MemoryExtensions_EqualsOrdinalIgnoreCase:
             case NI_System_MemoryExtensions_SequenceEqual:
             case NI_System_MemoryExtensions_StartsWith:
             {
+                assert((sig->numArgs == 2) || (sig->numArgs == 3));
+
                 // We're looking for:
                 //
                 //   bool x1 = arg0.StartsWith(String.op_Implicit("cstr"));
@@ -4331,11 +4336,49 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 //   bool x1 = arg0.Length >= 4 && *(arg0._pointer) == ToHexConst("cstr");
                 //   bool x2 = arg0.Length == 4 && *(arg0._pointer) == ToHexConst("cstr");
                 //
-                // TODO: Do the same for OrdinalIgnoreCase/InvariantIngoreCase
-                //
-                GenTree* arg0 = impStackTop(1).val;
-                GenTree* arg1 = impStackTop(0).val;
-                if (arg1->OperIs(GT_RET_EXPR) && (sig->numArgs == 2))
+                GenTree* arg0       = impStackTop(sig->numArgs - 1).val;
+                GenTree* arg1       = impStackTop(sig->numArgs - 2).val;
+                bool     ignoreCase = (ni == NI_System_MemoryExtensions_EqualsOrdinalIgnoreCase);
+
+                if ((sig->numArgs == 3) && impStackTop(0).val->IsCnsIntOrI())
+                {
+                    assert((ni == NI_System_MemoryExtensions_Equals) ||
+                           (ni == NI_System_MemoryExtensions_StartsWith));
+
+                    // See StringComparison.cs
+                    const int CurrentCulture = 0;
+                    const int CurrentCultureIgnoreCase = 1;
+                    const int InvariantCulture = 2;
+                    const int InvariantCultureIgnoreCase = 3;
+                    const int Ordinal = 4;
+                    const int OrdinalIgnoreCase = 5;
+
+                    int mode = (int)impStackTop(0).val->AsIntCon()->IconValue();
+                    if ((mode == InvariantCulture) || (mode == Ordinal))
+                    {
+                        ignoreCase = false;
+                    }
+                    else if ((mode == InvariantCultureIgnoreCase) || (mode == OrdinalIgnoreCase))
+                    {
+                        ignoreCase = true;
+                    }
+                    else
+                    {
+                        assert((mode == CurrentCulture) || (mode == CurrentCultureIgnoreCase));
+                        return nullptr;
+                    }
+                }
+                else if (sig->numArgs == 3)
+                {
+                    // Comparison mode is not a constant.
+                    return nullptr;
+                }
+                else
+                {
+                    assert(sig->numArgs == 2);
+                }
+
+                if (arg1->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* strToSpanCall = arg1->AsRetExpr()->gtInlineCandidate->AsCall();
                     if (!(strToSpanCall->gtFlags & CORINFO_FLG_JIT_INTRINSIC) ||
@@ -4352,13 +4395,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     GenTreeStrCon* strCon     = strToSpanCall->gtCallArgs->GetNode()->AsStrCon();
                     bool           startsWith = (ni == NI_System_MemoryExtensions_StartsWith);
-                    GenTree*       newNode    = impUnrollSpanComparisonWithStrCon(arg0, strCon, false, startsWith);
+                    GenTree*       newNode    = impUnrollSpanComparisonWithStrCon(arg0, strCon, ignoreCase, startsWith);
                     if (newNode != nullptr)
                     {
                         retNode = newNode;
                         strToSpanCall->ReplaceWith(gtNewNothingNode(), this);
-                        impPopStack();
-                        impPopStack();
+                        for (unsigned i = 0; i < sig->numArgs; i++)
+                        {
+                            impPopStack();
+                        }
                         break;
                     }
                 }
@@ -4635,6 +4680,7 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
     {
         if (startsWith)
         {
+            // Any span starts with "", return true
             return gtNewIconNode(1);
         }
         else
@@ -4643,7 +4689,7 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
             return nullptr;
         }
     }
-    if (strLen == 1)
+    else if (strLen == 1)
     {
         cmpType = TYP_SHORT;
     }
@@ -4690,8 +4736,11 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
     {
         if (!canBeLowercased)
         {
-            // For this case we can't just do "x | 0x0020002000200020UL"
-            // TODO: Still can be implemented, see UInt64OrdinalIgnoreCaseAscii
+            // TODO: Implement logic from UInt64OrdinalIgnoreCaseAscii
+            //
+            // bool x = (((IND ^ strAsUlong)<<2) &
+            //   (((strAsUlong+0x0005000500050005ul)|0x00A000A000A000A0ul)+0x001A001A001A001Aul)|0xFF7FFF7FFF7FFF7Ful)==0;
+            //
             return nullptr;
         }
         strAsUlong |= 0x0020002000200020UL;
@@ -4739,7 +4788,10 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
         spanDataIndir = gtNewOperNode(GT_OR, cmpType, spanDataIndir, gtNewIconNode(0x0020002000200020UL, cmpType));
     }
 
-    // TODO: for length == 3 (not supported yet) we need to do two indir cmp ops
+    // TODO: for length == 3 (not supported yet) we need to do two indir cmp ops:
+    //
+    //   bool x = (*(Int64*)span._pointer ^ 0xXXX) | (*((Int32*)span._pointer + 2) ^ 0xYYY) != 0
+    //
     GenTree*      indirCmp     = gtNewOperNode(GT_EQ, TYP_INT, spanDataIndir, constStrAsIntCon);
     GenTree*      spanLenField = gtNewFieldRef(TYP_INT, lengthHnd, spanRef, lengthOffset);
     GenTreeColon* colon        = new (this, GT_COLON) GenTreeColon(TYP_INT, indirCmp, gtNewIconNode(0));
@@ -5025,6 +5077,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "SequenceEqual") == 0)
             {
                 result = NI_System_MemoryExtensions_SequenceEqual;
+            }
+            else if (strcmp(methodName, "Equals") == 0)
+            {
+                result = NI_System_MemoryExtensions_Equals;
+            }
+            else if (strcmp(methodName, "EqualsOrdinal") == 0)
+            {
+                result = NI_System_MemoryExtensions_EqualsOrdinal;
+            }
+            else if (strcmp(methodName, "EqualsOrdinalIgnoreCase") == 0)
+            {
+                result = NI_System_MemoryExtensions_EqualsOrdinalIgnoreCase;
             }
         }
         else if (strcmp(className, "String") == 0)
