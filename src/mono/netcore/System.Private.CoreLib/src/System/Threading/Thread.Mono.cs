@@ -504,9 +504,6 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Thread CreateInternal();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool JoinInternal(Thread thread, int millisecondsTimeout);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
