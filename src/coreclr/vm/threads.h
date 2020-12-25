@@ -1032,7 +1032,6 @@ class Thread
 #endif // FEATURE_HIJACK
 
     friend void         InitThreadManager();
-    friend void         ThreadBaseObject::SetDelegate(OBJECTREF delegate);
 
     friend void CallFinalizerOnThreadObject(Object *obj);
 
@@ -4364,29 +4363,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_fCompletionPortDrained;
-    }
-
-    // --------------------------------
-    //  Store the maxReservedStackSize
-    //  This is passed in from managed code in the thread constructor
-    // ---------------------------------
-private:
-    SIZE_T m_RequestedStackSize;
-
-public:
-
-    // Get the MaxStackSize
-    SIZE_T RequestedThreadStackSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_RequestedStackSize);
-    }
-
-    // Set the MaxStackSize
-    void RequestedThreadStackSize(SIZE_T requestedStackSize)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_RequestedStackSize = requestedStackSize;
     }
 
     static BOOL CheckThreadStackSize(SIZE_T *SizeToCommitOrReserve,
