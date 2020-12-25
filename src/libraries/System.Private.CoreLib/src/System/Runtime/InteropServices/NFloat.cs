@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 #pragma warning disable SA1121 // We use our own aliases since they differ per platform
 #if TARGET_32BIT
 using NativeType = System.Single;
@@ -21,7 +23,7 @@ namespace System.Runtime.InteropServices
         }
         public NFloat(double value)
         {
-            _value = (NativeType)value;
+            _value = checked((NativeType)value);
         }
 
         public double Value => _value;
