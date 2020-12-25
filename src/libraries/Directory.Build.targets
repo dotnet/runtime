@@ -1,5 +1,6 @@
 <Project InitialTargets="UpdateProjectReferencesWithAttributes">
-
+  <!-- resources.targets need to be imported before the Arcade SDK. -->
+  <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
@@ -36,18 +37,6 @@
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</TestStrongNameKeyId>
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
     <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
-  </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)resources.targets" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-
-  <PropertyGroup>
-    <ArtifactsPackagesDir>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'packages', '$(Configuration)'))</ArtifactsPackagesDir>
-    <ArtifactsShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'Shipping'))</ArtifactsShippingPackagesDir>
-    <ArtifactsNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'NonShipping'))</ArtifactsNonShippingPackagesDir>
-
-    <PackageOutputPath Condition="'$(IsShippingPackage)' == 'true'">$(ArtifactsShippingPackagesDir)</PackageOutputPath>
-    <PackageOutputPath Condition="'$(IsShippingPackage)' != 'true'">$(ArtifactsNonShippingPackagesDir)</PackageOutputPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
@@ -286,5 +275,4 @@
       </ItemGroup>
     </When>
   </Choose>
-
 </Project>

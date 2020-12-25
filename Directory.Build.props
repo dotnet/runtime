@@ -1,4 +1,4 @@
-<Project TreatAsLocalProperty="RepoRoot">
+<Project>
 
   <PropertyGroup>
     <!--
@@ -8,24 +8,8 @@
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
   </PropertyGroup>
 
-  <!--
-    Import the arcade sdk with these requirements.
-    After:
-      Configuration setup
-    Before:
-      DebugType needs to be not be set to embedded at least for facades
-      OutputPath setup
-  -->
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
-
-  <!-- Set these properties early enough for libraries as they import the Arcade SDK not early enough.  -->
-  <PropertyGroup Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true'">
-    <RepoRoot>$([MSBuild]::EnsureTrailingSlash('$(MSBuildThisFileDirectory)'))</RepoRoot>
-    <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
-    <ArtifactsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</ArtifactsDir>
-    <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin'))</ArtifactsBinDir>
-    <ArtifactsObjDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'obj'))</ArtifactsObjDir>
-  </PropertyGroup>
+  <!-- Import the Arcade SDK -->
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <!-- Configuration properties which are needed in both the (isolated) restore and build phases. -->
   <Import Project="$(RepositoryEngineeringDir)Configurations.props" />

@@ -1,14 +1,11 @@
 <Project TreatAsLocalProperty="TargetOS">
   <PropertyGroup>
-    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
     <SkipInferTargetOSName>true</SkipInferTargetOSName>
+    <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
   </PropertyGroup>
+
   <Import Project="..\..\Directory.Build.props" />
   <Import Project="NetCoreAppLibrary.props" />
-
-  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
-  </PropertyGroup>
 
   <PropertyGroup>
     <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
@@ -23,12 +20,11 @@
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
-    <!-- Initialize BuildSettings from the individual properties. -->
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <BuildTargetFramework Condition="'$(BuildTargetFramework)' == '' and '$(TargetFramework)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFramework)', '(-[^;]+)', ''))</BuildTargetFramework>
     <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
     <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net45;net451;net452;net46;net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
+    <!-- Initialize BuildSettings from the individual properties. -->
     <BuildSettings>$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
     <BuildSettings Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
   </PropertyGroup>
@@ -63,11 +59,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
-    <Platform>AnyCPU</Platform>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <RunApiCompatForSrc>$(IsSourceProject)</RunApiCompatForSrc>
     <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
     <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
@@ -85,33 +76,14 @@
     <BinPlaceTestSharedFramework Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceTestSharedFramework>
   </PropertyGroup>
 
-  <!--
-    Import the arcade sdk with these requirements.
-    After:
-      Configuration setup
-
-    Before:
-      DebugType needs to be not be set to embedded at least for facades
-      OutputPath setup
-  -->
-  <PropertyGroup>
-    <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
-  </PropertyGroup>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
 
   <PropertyGroup>
     <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
-    <!-- Assembly bin directory where implementation and ref output are placed -->
-    <AssemblyBinDirOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(MSBuildProjectName)'))</AssemblyBinDirOutputPath>
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
-    <BaseIntermediateOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'ref'))</BaseIntermediateOutputPath>
-    <BaseOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(AssemblyBinDirOutputPath)', 'ref'))</BaseOutputPath>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssembly)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' != 'true'" />
 
   <PropertyGroup>
@@ -124,27 +96,12 @@
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
   </PropertyGroup>
 
-  <!-- Set up Default symbol and optimization for Configuration -->
-  <Choose>
-    <When Condition="'$(Configuration)' == 'Debug'">
-      <PropertyGroup>
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-        <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
-        <DefineConstants>$(DefineConstants),TRACE,DEBUG</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(Configuration)' == 'Release'">
-      <PropertyGroup>
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-        <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-        <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
-      </PropertyGroup>
-    </When>
-  </Choose>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+  </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
   <PropertyGroup>
-    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
@@ -202,9 +159,6 @@
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>
     <CommonTestPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'tests'))</CommonTestPath>
   </PropertyGroup>
-
-  <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
-  <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssembly)' == 'true'" />
 
   <PropertyGroup>
     <DisableProjectRestore Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">true</DisableProjectRestore>
