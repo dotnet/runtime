@@ -31,14 +31,6 @@
                                                   ('$(IsReferenceAssembly)' == 'true' or '$(IsSourceProject)' == 'true')">true</DisableImplicitAssemblyReferences>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- Override strong name key to default to Open for test projects,
-         Tests which wish to control this should set TestStrongNameKeyId. -->
-    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</TestStrongNameKeyId>
-    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
-    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
-  </PropertyGroup>
-
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
 
   <!-- Libraries-specific binplacing properties -->
