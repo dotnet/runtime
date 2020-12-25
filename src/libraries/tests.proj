@@ -169,18 +169,23 @@
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false"
                       Condition="'$(TestTrimming)' == 'true'" />
-    <ProjectReference Include="$(MonoProjectRoot)netcore\sample\Android\AndroidSampleApp.csproj"
-                      BuildInParallel="false"
-                      Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Android'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')">
     <ProjectReference Include="$(MonoProjectRoot)netcore\sample\iOS\Program.csproj"
-                      BuildInParallel="false"
-                      Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')" />
+                      BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\**\*.Test.csproj"
-                      BuildInParallel="false"
-                      Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')" />
+                      BuildInParallel="false" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Android'">
+    <ProjectReference Include="$(MonoProjectRoot)netcore\sample\Android\AndroidSampleApp.csproj"
+                      BuildInParallel="false" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'">
     <ProjectReference Include="$(MonoProjectRoot)netcore\sample\wasm\**\WasmSample.csproj"
-                      BuildInParallel="false"
-                      Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'" />
+                      BuildInParallel="false" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
