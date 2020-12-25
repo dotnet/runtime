@@ -27,12 +27,11 @@
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
-      <ApkDir>$(OutputPath)apk\</ApkDir>
+      <ApkDir>$(PublishDir)apk\</ApkDir>
     </PropertyGroup>
 
     <RemoveDir Directories="$(ApkDir)" />
 
-    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
     <PropertyGroup>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
@@ -40,16 +39,17 @@
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
     </PropertyGroup>
 
+    <!-- TODO: delete once we switch to Android Crypto -->
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
-        SourceDir="$(OutputPath)"
+        SourceDir="$(PublishDir)"
         ProjectName="HelloAndroid"
         ForceInterpreter="$(MonoForceInterpreter)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
