@@ -4318,23 +4318,21 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-// TODO-CQ: Enable for 32bit
-#ifdef TARGET_64BIT
             case NI_System_MemoryExtensions_StartsWith:
             {
-                // Looking for
+                // We're looking for
                 // 
                 //   bool x = MemoryExtensions.StartsWith<char>(arg0, String.op_Implicit("cstr"));
                 //
-                // In order to optimize into
+                // In order to optimize it into
                 //
                 //   bool x = arg0.Length >= 4 && *(arg0._pointer) == ToHexConst("cstr");
                 //
-                // TODO-CQ: Do the same for StartsWith + OrdinalIgnoreCase/InvariantIngoreCase
-
+                // TODO: Do the same for StartsWith + OrdinalIgnoreCase/InvariantIngoreCase
+                // and SequenceEquals/SequenceEquals with OrdinalIgnoreCase/InvariantIngoreCase.
                 GenTree* arg0 = impStackTop(1).val;
                 GenTree* arg1 = impStackTop(0).val;
-                if (arg1->OperIs(GT_RET_EXPR))
+                if (arg1->OperIs(GT_RET_EXPR) && (sig->numArgs == 2))
                 {
                     GenTreeCall* strToSpanCall = arg1->AsRetExpr()->gtInlineCandidate->AsCall();
                     if (!(strToSpanCall->gtFlags & CORINFO_FLG_JIT_INTRINSIC) ||
@@ -4344,117 +4342,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         break;
                     }
 
-                    if (!strToSpanCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
+                    GenTree* newNode = impUnrollSpanComparisonAgainstConst(arg0, strToSpanCall->gtCallArgs->GetNode(), false, true);
+                    if (newNode != nullptr)
                     {
-                        // For now we only support constant strings
-                        break;
-                    }
-
-                    GenTreeStrCon* cnsStr = strToSpanCall->gtCallArgs->GetNode()->AsStrCon();
-
-                    // Grab the actual string literal from VM
-                    int strLen = -1;
-                    LPCWSTR str = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &strLen);
-
-                    if (strLen == 0)
-                    {
-                        // return true for `span.StartsWith("")`
-                        retNode = gtNewIconNode(1);
+                        retNode = newNode;
                         strToSpanCall->ReplaceWith(gtNewNothingNode(), this);
                         impPopStack();
                         impPopStack();
                         break;
                     }
-
-                    if ((str == nullptr) || (strLen < 1))
-                    {
-                        // getStringLiteral couldn't manage to get the literal (e.g. in dynamic context)
-                        break;
-                    }
-
-                    var_types cmpType;
-
-                    if (strLen == 1)
-                    {
-                        cmpType = TYP_BYTE;
-                    }
-                    else if (strLen == 2)
-                    {
-                        cmpType = TYP_INT;
-                    }
-                    else if (strLen == 4)
-                    {
-                        cmpType = TYP_LONG;
-                    }
-                    else
-                    {
-                        // TODO-CQ: Support other size and emit SIMD for larger strings
-                        break;
-                    }
-
-                    UINT64 strAsUlong = 0;
-                    for (int i = 0; i < strLen; i++)
-                    {
-                        UINT64 strChar = str[i];
-                        if (strChar > '\x007f')
-                        {
-                            // str is not ASCII - bail out.
-                            break;
-                        }
-                        strAsUlong |= (strChar << 16UL * i);
-                    }
-
-                    // We're going to emit the following tree:
-                    //
-                    //  \--*  QMARK     int   
-                    //     +--*  GE        int   
-                    //     |  +--*  FIELD     int    Span<char>._length
-                    //     |  \--*  CNS_INT   int    %strLen%
-                    //     \--*  COLON     int   
-                    //        +--*  CNS_INT   int    0 (false)
-                    //        \--*  EQ        int   
-                    //           +--*  IND       long  
-                    //           |  \--*  FIELD     byref  Span<char>._pointer
-                    //           \--*  CNS_INT   long   %strAsUlong%
-                    //
-
-                    CORINFO_CLASS_HANDLE arg0cls       = gtGetStructHandle(arg0);
-                    CORINFO_FIELD_HANDLE pointerHnd    = info.compCompHnd->getFieldInClass(arg0cls, 0);
-                    CORINFO_FIELD_HANDLE lengthHnd     = info.compCompHnd->getFieldInClass(arg0cls, 1);
-                    const unsigned       pointerOffset = info.compCompHnd->getFieldOffset(pointerHnd);
-                    const unsigned       lengthOffset  = info.compCompHnd->getFieldOffset(lengthHnd);
-
-                    GenTree* spanRef = arg0;
-                    if (arg0->TypeIs(TYP_STRUCT))
-                    {
-                        spanRef = gtNewOperNode(GT_ADDR, TYP_BYREF, arg0);
-                    }
-                    assert(spanRef->TypeIs(TYP_BYREF));
-
-                    // We're going to use spanRef twice so need to clone it
-                    GenTree* spanRefClone = nullptr;
-                    spanRef = impCloneExpr(spanRef, &spanRefClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("spanRef"));
-
-                    GenTree*      spanData     = gtNewFieldRef(TYP_BYREF, pointerHnd, spanRefClone, pointerOffset);
-                    GenTree*      indirCmp     = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(cmpType, spanData), gtNewIconNode(strAsUlong, cmpType));
-                    GenTree*      spanLenField = gtNewFieldRef(TYP_INT, lengthHnd, spanRef, lengthOffset);
-                    GenTreeColon* colon        = new(this, GT_COLON) GenTreeColon(TYP_INT, indirCmp, gtNewIconNode(0));
-                    GenTreeQmark* qmark        = gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_GE, TYP_INT, spanLenField, gtNewIconNode(strLen)), colon);
-
-                    // Spill qmark into a temp.
-                    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling STARTSWITH root qmark"));
-                    impAssignTempGen(tmp, qmark, (unsigned)CHECK_SPILL_NONE);
-                    retNode = gtNewLclvNode(tmp, TYP_INT);
-
-                    // We don't need strToSpanCall anymore, replace with No-op
-                    strToSpanCall->ReplaceWith(gtNewNothingNode(), this);
-                    impPopStack();
-                    impPopStack();
-                    break;
                 }
                 break;
             }
-#endif
 
             case NI_System_Threading_Thread_get_ManagedThreadId:
             {
@@ -4709,6 +4608,120 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     }
 
     return nullptr;
+}
+
+GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span, GenTree* constSpan, bool ignoreCase, bool startsWith)
+{
+#ifdef TARGET_64BIT
+    // TODO: Implement ignoreCase support.
+    assert(!ignoreCase);
+
+    if (!constSpan->OperIs(GT_CNS_STR))
+    {
+        // For now we only support constant strings
+        return nullptr;
+    }
+
+    GenTreeStrCon* cnsStr = constSpan->AsStrCon();
+
+    // Grab the actual string literal from VM
+    int       strLen = -1;
+    LPCWSTR   str    = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, &strLen);
+    var_types cmpType;
+
+    if (strLen == 0)
+    {
+        if (startsWith)
+        {
+            return gtNewIconNode(1);
+        }
+        else
+        {
+            // TODO: Emit `span.Length == 0`
+            return nullptr;
+        }
+    }
+    if (strLen == 1)
+    {
+        cmpType = TYP_BYTE;
+    }
+    else if (strLen == 2)
+    {
+        cmpType = TYP_INT;
+    }
+    else if (strLen == 4)
+    {
+        cmpType = TYP_LONG;
+    }
+    else
+    {
+        // TODO: Support other sizes and emit SIMD for larger strings
+        return nullptr;
+    }
+
+    if (str == nullptr)
+    {
+        // getStringLiteral couldn't manage to get the literal (e.g. in dynamic context)
+        return nullptr;
+    }
+
+    UINT64 strAsUlong = 0;
+    for (int i = 0; i < strLen; i++)
+    {
+        UINT64 strChar = str[i];
+        if (strChar > '\x007f')
+        {
+            // str is not ASCII - bail out.
+            return nullptr;
+        }
+        strAsUlong |= (strChar << 16UL * i);
+    }
+
+    // We're going to emit the following tree:
+    //
+    //  \--*  QMARK     int
+    //     +--*  GE        int                                 // or GE_EQ if it's not "startsWith" mode
+    //     |  +--*  FIELD     int    Span<char>._length
+    //     |  \--*  CNS_INT   int    %strLen%
+    //     \--*  COLON     int
+    //        +--*  CNS_INT   int    0 (false)
+    //        \--*  EQ        int
+    //           +--*  IND       long
+    //           |  \--*  FIELD     byref  Span<char>._pointer
+    //           \--*  CNS_INT   long   %strAsUlong%
+    //
+
+    CORINFO_CLASS_HANDLE spanCls       = gtGetStructHandle(span);
+    CORINFO_FIELD_HANDLE pointerHnd    = info.compCompHnd->getFieldInClass(spanCls, 0);
+    CORINFO_FIELD_HANDLE lengthHnd     = info.compCompHnd->getFieldInClass(spanCls, 1);
+    const unsigned       pointerOffset = info.compCompHnd->getFieldOffset(pointerHnd);
+    const unsigned       lengthOffset  = info.compCompHnd->getFieldOffset(lengthHnd);
+
+    GenTree* spanRef = span;
+    if (span->TypeIs(TYP_STRUCT))
+    {
+        spanRef = gtNewOperNode(GT_ADDR, TYP_BYREF, span);
+    }
+    assert(spanRef->TypeIs(TYP_BYREF));
+
+    // We're going to use spanRef twice so need to clone it
+    GenTree* spanRefClone = nullptr;
+    spanRef = impCloneExpr(spanRef, &spanRefClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("spanRef"));
+
+    GenTree*      spanData     = gtNewFieldRef(TYP_BYREF, pointerHnd, spanRefClone, pointerOffset);
+    GenTree*      indirCmp     = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(cmpType, spanData), gtNewIconNode(strAsUlong, cmpType));
+    GenTree*      spanLenField = gtNewFieldRef(TYP_INT, lengthHnd, spanRef, lengthOffset);
+    GenTreeColon* colon        = new(this, GT_COLON) GenTreeColon(TYP_INT, indirCmp, gtNewIconNode(0));
+    GenTreeQmark* qmark        = gtNewQmarkNode(TYP_INT, gtNewOperNode(startsWith ? GT_GE : GT_EQ, TYP_INT, spanLenField, gtNewIconNode(strLen)), colon);
+
+    // Spill qmark into a temp.
+    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling STARTSWITH root qmark"));
+    impAssignTempGen(tmp, qmark, (unsigned)CHECK_SPILL_NONE);
+    return gtNewLclvNode(tmp, TYP_INT);
+#else // TARGET_64BIT
+    // TODO: Enable for 32 bit
+    return nullptr;
+#endif
 }
 
 GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
