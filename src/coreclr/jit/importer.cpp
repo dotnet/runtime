@@ -4322,7 +4322,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_MemoryExtensions_StartsWith:
             {
                 // We're looking for:
-                // 
+                //
                 //   bool x1 = arg0.StartsWith(String.op_Implicit("cstr"));
                 //   bool x2 = arg0.SequenceEqual(arg0, String.op_Implicit("cstr"));
                 //
@@ -4345,8 +4345,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         break;
                     }
 
-                    bool     startsWith = ni == NI_System_MemoryExtensions_SequenceEqual;
-                    GenTree* newNode    = impUnrollSpanComparisonAgainstConst(arg0, strToSpanCall->gtCallArgs->GetNode(), false, startsWith);
+                    bool     startsWith = ni == NI_System_MemoryExtensions_StartsWith;
+                    GenTree* newNode = impUnrollSpanComparisonAgainstConst(arg0, strToSpanCall->gtCallArgs->GetNode(),
+                                                                           false, startsWith);
                     if (newNode != nullptr)
                     {
                         retNode = newNode;
@@ -4614,12 +4615,12 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     return nullptr;
 }
 
-GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span, GenTree* constSpan, bool ignoreCase, bool startsWith)
+GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span,
+                                                       GenTree* constSpan,
+                                                       bool     ignoreCase,
+                                                       bool     startsWith)
 {
 #ifdef TARGET_64BIT
-    // TODO: Implement ignoreCase support.
-    assert(!ignoreCase);
-
     if (!constSpan->OperIs(GT_CNS_STR))
     {
         // For now we only support constant strings
@@ -4647,7 +4648,7 @@ GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span, GenTree* c
     }
     if (strLen == 1)
     {
-        cmpType = TYP_BYTE;
+        cmpType = TYP_SHORT;
     }
     else if (strLen == 2)
     {
@@ -4669,7 +4670,9 @@ GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span, GenTree* c
         return nullptr;
     }
 
-    UINT64 strAsUlong = 0;
+    bool   canBeLowercased = false;
+    UINT64 strAsUlong      = 0;
+
     for (int i = 0; i < strLen; i++)
     {
         UINT64 strChar = str[i];
@@ -4678,13 +4681,28 @@ GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span, GenTree* c
             // str is not ASCII - bail out.
             return nullptr;
         }
+        if ((strChar < 'A') || (strChar > 'z'))
+        {
+            canBeLowercased = true;
+        }
         strAsUlong |= (strChar << 16UL * i);
+    }
+
+    if (ignoreCase)
+    {
+        if (!canBeLowercased)
+        {
+            // For this case we can't just do "x | 0x0020002000200020UL"
+            // TODO: Still can be implemented, see UInt64OrdinalIgnoreCaseAscii
+            return nullptr;
+        }
+        strAsUlong |= 0x0020002000200020UL;
     }
 
     // We're going to emit the following tree:
     //
     //  \--*  QMARK     int
-    //     +--*  GE        int                                 // or GE_EQ if it's not "startsWith" mode
+    //     +--*  GE/EQ     int
     //     |  +--*  FIELD     int    Span<char>._length
     //     |  \--*  CNS_INT   int    %strLen%
     //     \--*  COLON     int
@@ -4710,20 +4728,34 @@ GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span, GenTree* c
 
     // We're going to use spanRef twice so need to clone it
     GenTree* spanRefClone = nullptr;
-    spanRef = impCloneExpr(spanRef, &spanRefClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("spanRef"));
+    spanRef =
+        impCloneExpr(spanRef, &spanRefClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("spanRef"));
 
-    GenTree*      spanData     = gtNewFieldRef(TYP_BYREF, pointerHnd, spanRefClone, pointerOffset);
-    GenTree*      indirCmp     = gtNewOperNode(GT_EQ, TYP_INT, gtNewIndir(cmpType, spanData), gtNewIconNode(strAsUlong, cmpType));
+    GenTree*       spanData         = gtNewFieldRef(TYP_BYREF, pointerHnd, spanRefClone, pointerOffset);
+    GenTree     *  spanDataIndir    = gtNewIndir(cmpType, spanData);
+    GenTreeIntCon* constStrAsIntCon = gtNewIconNode(strAsUlong, cmpType);
+
+    if (ignoreCase)
+    {
+        // Set "is lower" bits in all chars
+        spanDataIndir = gtNewOperNode(GT_OR, cmpType, spanDataIndir, gtNewIconNode(0x0020002000200020UL, cmpType));
+    }
+
+    // TODO: for length == 3 (not supported yet) we need to do two indir cmp ops
+    GenTree*      indirCmp     = gtNewOperNode(GT_EQ, TYP_INT, spanDataIndir, constStrAsIntCon);
     GenTree*      spanLenField = gtNewFieldRef(TYP_INT, lengthHnd, spanRef, lengthOffset);
-    GenTreeColon* colon        = new(this, GT_COLON) GenTreeColon(TYP_INT, indirCmp, gtNewIconNode(0));
-    GenTreeQmark* qmark        = gtNewQmarkNode(TYP_INT, gtNewOperNode(startsWith ? GT_GE : GT_EQ, TYP_INT, spanLenField, gtNewIconNode(strLen)), colon);
+    GenTreeColon* colon        = new (this, GT_COLON) GenTreeColon(TYP_INT, indirCmp, gtNewIconNode(0));
+
+    GenTreeQmark* qmark =
+        gtNewQmarkNode(TYP_INT, gtNewOperNode(startsWith ? GT_GE : GT_EQ, TYP_INT, spanLenField, gtNewIconNode(strLen)),
+                       colon);
 
     // Spill qmark into a temp.
     unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling STARTSWITH root qmark"));
     impAssignTempGen(tmp, qmark, (unsigned)CHECK_SPILL_NONE);
     return gtNewLclvNode(tmp, TYP_INT);
 #else // TARGET_64BIT
-    // TODO: Enable for 32 bit
+    // TODO: Enable for 32 at least for length [0..2]
     return nullptr;
 #endif
 }
