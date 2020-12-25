@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
 
         public CLong(int value)
         {
-            _value = value;
+            _value = (NativeType)value;
         }
         public CLong(nint value)
         {

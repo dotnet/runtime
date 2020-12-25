@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
 
         public CULong(uint value)
         {
-            _value = value;
+            _value = (NativeType)value;
         }
         public CULong(nuint value)
         {
