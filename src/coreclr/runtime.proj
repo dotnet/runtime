@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <!-- NoTargets SDK needs a TFM set. So we used the latest .NETCoreApp supported one. -->
-    <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
 
   <Target Name="BuildRuntime"
