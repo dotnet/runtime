@@ -4379,13 +4379,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (arg1->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* strToSpanCall = arg1->AsRetExpr()->gtInlineCandidate->AsCall();
-                    if (!(strToSpanCall->gtFlags & CORINFO_FLG_JIT_INTRINSIC) ||
-                        (lookupNamedIntrinsic(strToSpanCall->gtCallMethHnd) != NI_System_String_op_Implicit))
+                    if (!(strToSpanCall->gtFlags & CORINFO_FLG_JIT_INTRINSIC))
                     {
-                        // strToSpanCall must be `ReadOnlySpan<char> String.op_Implicit(String)`
+                        // strToSpanCall must be either:
+                        //  ReadOnlySpan<char> String.op_Implicit(String) or
+                        //  ReadOnlySpan<char> MemoryExtensions.AsSpan(String)
                         break;
                     }
 
+                    NamedIntrinsic strToSpanNi = lookupNamedIntrinsic(strToSpanCall->gtCallMethHnd);
+                    if ((strToSpanNi != NI_System_String_op_Implicit) &&
+                        (strToSpanNi != NI_System_MemoryExtensions_AsSpan))
+                    {
+                        break;
+                    }
                     if (!strToSpanCall->gtCallArgs->GetNode()->OperIs(GT_CNS_STR))
                     {
                         break;
@@ -5079,6 +5086,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "Equals") == 0)
             {
                 result = NI_System_MemoryExtensions_Equals;
+            }
+            else if (strcmp(methodName, "AsSpan") == 0)
+            {
+                result = NI_System_MemoryExtensions_AsSpan;
             }
         }
         else if (strcmp(className, "String") == 0)

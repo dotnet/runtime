@@ -87,6 +87,7 @@ namespace System
         /// </summary>
         /// <param name="text">The target string.</param>
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<char> AsSpan(this string? text)
         {
