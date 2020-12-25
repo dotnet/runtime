@@ -1648,12 +1648,19 @@ mono_domain_fire_assembly_load_event (MonoDomain *domain, MonoAssembly *assembly
 #ifdef ENABLE_NETCORE
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyLoad", -1, 0, error);
+		static gboolean inited;
+		if (!inited) {
+			ERROR_DECL (local_error);
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyLoad", -1, 0, local_error);
+			mono_error_cleanup (local_error);
+			inited = TRUE;
+		}
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
-	goto_if_nok (error, exit);
+	if (!method)
+		goto exit;
 
 	MonoReflectionAssemblyHandle assembly_handle;
 	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
