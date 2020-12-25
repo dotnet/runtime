@@ -21,8 +21,8 @@
     <!-- SDK sets product to assembly but we want it to be our product name -->
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->
-    <InformationalVersion>$(ProductVersion)</InformationalVersion>
-    <InformationalVersion Condition="'$(VersionSuffix)' != ''">$(InformationalVersion)-$(VersionSuffix)</InformationalVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' == ''">$(ProductVersion)</InformationalVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' != ''">$(ProductVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
 
   <!-- Packaging -->
