@@ -2,6 +2,11 @@
   <PropertyGroup>
     <SkipInferTargetOSName>true</SkipInferTargetOSName>
     <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
+
+    <!-- Set OutDirName to change BaseOutputPath and BaseIntermediateOutputPath to include the ref subfolder. -->
+    <_sepChar>$([System.IO.Path]::DirectorySeparatorChar)</_sepChar>
+    <IsReferenceAssembly Condition="$(MSBuildProjectFullPath.Contains('$(_sepChar)ref$(_sepChar)'))">true</IsReferenceAssembly>
+    <OutDirName Condition="'$(IsReferenceAssembly)' == 'true'">$(MSBuildProjectName)$(_sepChar)ref</OutDirName>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
@@ -10,7 +15,6 @@
   <PropertyGroup>
     <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
-    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly>
     <RuntimeGraph>$(LibrariesProjectRoot)OSGroups.json</RuntimeGraph>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <!-- Remove once is fixed: https://github.com/dotnet/roslyn/issues/42344 -->

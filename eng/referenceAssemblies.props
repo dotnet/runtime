@@ -7,9 +7,6 @@
 
     <!-- Reference assemblies are special and don't initialize fields or have empty finalizers, etc. -->
     <RunAnalyzers>false</RunAnalyzers>
-
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', 'ref'))</BaseIntermediateOutputPath>
-    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(BaseOutputPath)', 'ref'))</BaseOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
