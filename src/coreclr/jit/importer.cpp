@@ -4319,8 +4319,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             }
 
             case NI_System_MemoryExtensions_Equals:
-            case NI_System_MemoryExtensions_EqualsOrdinal:
-            case NI_System_MemoryExtensions_EqualsOrdinalIgnoreCase:
             case NI_System_MemoryExtensions_SequenceEqual:
             case NI_System_MemoryExtensions_StartsWith:
             {
@@ -4338,7 +4336,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 //
                 GenTree* arg0       = impStackTop(sig->numArgs - 1).val;
                 GenTree* arg1       = impStackTop(sig->numArgs - 2).val;
-                bool     ignoreCase = (ni == NI_System_MemoryExtensions_EqualsOrdinalIgnoreCase);
+                bool     ignoreCase = false;
 
                 if ((sig->numArgs == 3) && impStackTop(0).val->IsCnsIntOrI())
                 {
@@ -5081,14 +5079,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "Equals") == 0)
             {
                 result = NI_System_MemoryExtensions_Equals;
-            }
-            else if (strcmp(methodName, "EqualsOrdinal") == 0)
-            {
-                result = NI_System_MemoryExtensions_EqualsOrdinal;
-            }
-            else if (strcmp(methodName, "EqualsOrdinalIgnoreCase") == 0)
-            {
-                result = NI_System_MemoryExtensions_EqualsOrdinalIgnoreCase;
             }
         }
         else if (strcmp(className, "String") == 0)
