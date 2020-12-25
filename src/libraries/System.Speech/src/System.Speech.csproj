@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp2.0-windows;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp2.1-windows;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- CS0649: uninitialized interop type fields -->
-    <!-- CA2249: Consider using String.Contains instead of String.IndexOf.  We compile for netcoreapp2.0 where this doesn't exist.-->
+    <!-- CA2249: Consider using String.Contains instead of String.IndexOf.  We compile for netcoreapp2.1 where this doesn't exist.-->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <NoWarn>$(NoWarn);CS0649;CA2249;SA1129</NoWarn>
   </PropertyGroup>
@@ -13,7 +13,7 @@
     <!-- On older TFM's we needed to disable obsoletion warnings about Marshalling VARIANTs -->
     <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">$(NoWarn);IDE0079</NoWarn>
     <!-- On newer TFM's we needed to disable obsoletion warning about WebRequest -->
-    <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.0-windows'">$(NoWarn);IDE0079</NoWarn>
+    <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.1-windows'">$(NoWarn);IDE0079</NoWarn>
   </PropertyGroup>
   <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
