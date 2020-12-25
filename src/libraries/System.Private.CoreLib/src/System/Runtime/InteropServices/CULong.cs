@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 #if TARGET_WINDOWS
 using NativeType = System.UInt32;
 #else
-using NativeType = System.IntPtr;
+using NativeType = System.UIntPtr;
 #endif
 
 namespace System.Runtime.InteropServices
