@@ -10,6 +10,7 @@ using NativeType = System.Double;
 
 namespace System.Runtime.InteropServices
 {
+    [Intrinsic]
     public readonly struct NFloat : IEquatable<NFloat>
     {
         private readonly NativeType _value;

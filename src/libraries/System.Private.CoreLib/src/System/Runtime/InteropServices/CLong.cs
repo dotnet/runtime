@@ -11,6 +11,7 @@ using NativeType = System.IntPtr;
 namespace System.Runtime.InteropServices
 {
     [CLSCompliant(false)]
+    [Intrinsic]
     public readonly struct CLong : IEquatable<CLong>
     {
         private readonly NativeType _value;
