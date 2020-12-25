@@ -1,4 +1,12 @@
 <Project InitialTargets="UpdateProjectReferencesWithAttributes">
+  <PropertyGroup>
+    <!-- Override strong name key to default to Open for test projects,
+         Tests which wish to control this should set TestStrongNameKeyId. -->
+    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</TestStrongNameKeyId>
+    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
+    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
+  </PropertyGroup>
+
   <!-- resources.targets need to be imported before the Arcade SDK. -->
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="..\..\Directory.Build.targets" />

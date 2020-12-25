@@ -3,7 +3,7 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <ProjectGuid>{6B002B34-089C-4BC4-91DD-57D350DEA91C}</ProjectGuid>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <TestStrongNameKeyId>Microsoft</TestStrongNameKeyId>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.TestStructs.il" />
