@@ -4344,13 +4344,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                            (ni == NI_System_MemoryExtensions_StartsWith));
 
                     // See StringComparison.cs
-                    const int CurrentCulture = 0;
-                    const int CurrentCultureIgnoreCase = 1;
-                    const int InvariantCulture = 2;
+                    const int CurrentCulture             = 0;
+                    const int CurrentCultureIgnoreCase   = 1;
+                    const int InvariantCulture           = 2;
                     const int InvariantCultureIgnoreCase = 3;
-                    const int Ordinal = 4;
-                    const int OrdinalIgnoreCase = 5;
+                    const int Ordinal                    = 4;
+                    const int OrdinalIgnoreCase          = 5;
 
+                    // Fetch mode from the last argument.
                     int mode = (int)impStackTop(0).val->AsIntCon()->IconValue();
                     if ((mode == InvariantCulture) || (mode == Ordinal))
                     {
