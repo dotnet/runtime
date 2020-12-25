@@ -4670,7 +4670,7 @@ GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span,
         return nullptr;
     }
 
-    bool   canBeLowercased = false;
+    bool   canBeLowercased = true;
     UINT64 strAsUlong      = 0;
 
     for (int i = 0; i < strLen; i++)
@@ -4683,7 +4683,8 @@ GenTree* Compiler::impUnrollSpanComparisonAgainstConst(GenTree* span,
         }
         if ((strChar < 'A') || (strChar > 'z'))
         {
-            canBeLowercased = true;
+            // e.g. ('-' | 0x20) == ('\r' | 0x20) which is not correct.
+            canBeLowercased = false;
         }
         strAsUlong |= (strChar << 16UL * i);
     }
