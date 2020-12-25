@@ -991,6 +991,7 @@ namespace System
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>
         {
@@ -1038,6 +1039,7 @@ namespace System
         /// <summary>
         /// Determines whether the specified sequence appears at the start of the span.
         /// </summary>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
@@ -1058,8 +1060,8 @@ namespace System
         /// <summary>
         /// Determines whether the specified sequence appears at the start of the span.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             int valueLength = value.Length;

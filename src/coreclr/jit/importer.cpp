@@ -4318,18 +4318,21 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_MemoryExtensions_SequenceEqual:
             case NI_System_MemoryExtensions_StartsWith:
             {
-                // We're looking for
+                // We're looking for:
                 // 
-                //   bool x = MemoryExtensions.StartsWith<char>(arg0, String.op_Implicit("cstr"));
+                //   bool x1 = arg0.StartsWith(String.op_Implicit("cstr"));
+                //   bool x2 = arg0.SequenceEqual(arg0, String.op_Implicit("cstr"));
                 //
-                // In order to optimize it into
+                // In order to optimize it into:
                 //
-                //   bool x = arg0.Length >= 4 && *(arg0._pointer) == ToHexConst("cstr");
+                //   bool x1 = arg0.Length >= 4 && *(arg0._pointer) == ToHexConst("cstr");
+                //   bool x2 = arg0.Length == 4 && *(arg0._pointer) == ToHexConst("cstr");
                 //
-                // TODO: Do the same for StartsWith + OrdinalIgnoreCase/InvariantIngoreCase
-                // and SequenceEquals/SequenceEquals with OrdinalIgnoreCase/InvariantIngoreCase.
+                // TODO: Do the same for OrdinalIgnoreCase/InvariantIngoreCase
+                //
                 GenTree* arg0 = impStackTop(1).val;
                 GenTree* arg1 = impStackTop(0).val;
                 if (arg1->OperIs(GT_RET_EXPR) && (sig->numArgs == 2))
@@ -4342,7 +4345,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         break;
                     }
 
-                    GenTree* newNode = impUnrollSpanComparisonAgainstConst(arg0, strToSpanCall->gtCallArgs->GetNode(), false, true);
+                    bool     startsWith = ni == NI_System_MemoryExtensions_SequenceEqual;
+                    GenTree* newNode    = impUnrollSpanComparisonAgainstConst(arg0, strToSpanCall->gtCallArgs->GetNode(), false, startsWith);
                     if (newNode != nullptr)
                     {
                         retNode = newNode;
@@ -4987,6 +4991,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "StartsWith") == 0)
             {
                 result = NI_System_MemoryExtensions_StartsWith;
+            }
+            else if (strcmp(methodName, "SequenceEqual") == 0)
+            {
+                result = NI_System_MemoryExtensions_SequenceEqual;
             }
         }
         else if (strcmp(className, "String") == 0)

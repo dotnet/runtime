@@ -45,6 +45,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_IsAssignableTo,
     NI_System_Array_Clone,
     NI_System_MemoryExtensions_StartsWith,
+    NI_System_MemoryExtensions_SequenceEqual,
     NI_System_String_op_Implicit,
 
     // These are used by HWIntrinsics but are defined more generally
