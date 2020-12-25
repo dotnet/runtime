@@ -3888,10 +3888,7 @@ protected:
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
-    GenTree* impUnrollSpanComparisonWithStrCon(GenTree*       span,
-                                               GenTreeStrCon* cnsStr,
-                                               bool           ignoreCase,
-                                               bool           startsWith);
+    GenTree* impUnrollSpanComparisonWithStrCon(GenTree* span, GenTreeStrCon* cnsStr, bool ignoreCase, bool startsWith);
 
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,

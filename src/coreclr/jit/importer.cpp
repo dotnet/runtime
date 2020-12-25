@@ -4730,7 +4730,7 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
         impCloneExpr(spanRef, &spanRefClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("spanRef"));
 
     GenTree*       spanData         = gtNewFieldRef(TYP_BYREF, pointerHnd, spanRefClone, pointerOffset);
-    GenTree     *  spanDataIndir    = gtNewIndir(cmpType, spanData);
+    GenTree*       spanDataIndir    = gtNewIndir(cmpType, spanData);
     GenTreeIntCon* constStrAsIntCon = gtNewIconNode(strAsUlong, cmpType);
 
     if (ignoreCase)
