@@ -57,19 +57,6 @@
     <UpdatePackageIndex
       PackageIndexFile="$(PackageIndexFile)"
       StablePackages="@(_StablePackages)" />
-
-  </Target>
-
-  <!-- Generate a version text file we include in our packages -->
-  <Target Name="GenerateVersionFileForPackages"
-          BeforeTargets="Build;Pack"
-          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
-    <Error Condition="'$(SourceRevisionId)' == ''" Text="SourceRevisionId is not set, which means the SourceLink targets are not included in the build. Those are needed to produce a correct sha for our build outputs." />
-
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(VersionFileForPackages)))" />
-    <WriteLinesToFile File="$(VersionFileForPackages)"
-                      Lines="$(SourceRevisionId)"
-                      Overwrite="true" />
   </Target>
 
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"

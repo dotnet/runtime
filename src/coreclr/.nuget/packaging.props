@@ -1,14 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project>
-
   <PropertyGroup>
-    <PackageLicenseFile>$(CoreclrDir)/LICENSE.TXT</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(CoreclrDir)/THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-
-    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
-
-    <ProjectUrl>https://dot.net</ProjectUrl>
-
     <!-- Defined in Packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
@@ -16,30 +7,19 @@
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
 
-    <PackageIndexFile>$(MSBuildThisFileDirectory)/packageIndex.json</PackageIndexFile>
+    <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile>
 
     <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
     <SkipIndexCheck>true</SkipIndexCheck>
 
-    <VersionTxtFile Condition="'$(VersionTxtFile)' == ''">$(ArtifactsObjDir)version.txt</VersionTxtFile>
+    <!-- Central place to set the versions of all nuget packages produced in the repo -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
+    <!-- Set the boolean below to true to generate packages with stabilized versions -->
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
-    <!-- Add required legal files to packages -->
-    <File Condition="Exists('$(PackageLicenseFile)')"
-          Include="$(PackageLicenseFile)" >
-      <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
-          Include="$(PackageThirdPartyNoticesFile)" >
-      <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-    <PackageIndex Include="$(PackageIndexFile)" />
-
-    <!-- Add version file to packages -->
-    <File Include="$(VersionTxtFile)"
-          Condition="Exists('$(VersionTxtFile)')">
-          <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
+  <ItemGroup>
+    <PackageIndex Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" Include="$(PackageIndexFile)" />
   </ItemGroup>
 </Project>
