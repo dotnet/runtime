@@ -210,10 +210,12 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Android'">
-      <XHarnessApkToTest Include="@($(TestArchiveTestsRoot)**/*.apk)">
+      <_apks Include="$(TestArchiveTestsRoot)**/*.apk" />
+      <XHarnessApkToTest Include="@(_apks)">
         <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
       </XHarnessApkToTest>
-      <XHarnessApkToTest Include="@($(TestArchiveRoot)runonly/**/*.apk)">
+      <_runonlyApks Include="$(TestArchiveRoot)runonly/**/*.apk" />
+      <XHarnessApkToTest Include="@(_runonlyApks)">
         <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
         <!-- The android sample returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
