@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    public class GeneratedCodeTests
+    public class LoggerMessageGeneratedCodeTests
     {
         [Fact]
         public void BasicTests()

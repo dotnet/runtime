@@ -14,102 +14,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
-    public partial class LoggingGenerator
+    public partial class LoggerMessageGenerator
     {
         internal class Parser
         {
-            private const string DiagnosticCategory = "LoggingGenerator";
-
-#pragma warning disable RS2008 // Enable analyzer release tracking
-
-            private static readonly DiagnosticDescriptor ErrorInvalidMethodName = new(
-                id: "LG0000",
-                title: Resources.ErrorInvalidMethodNameTitle,
-                messageFormat: Resources.ErrorInvalidMethodNameMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorInvalidMessage = new(
-                id: "LG0001",
-                title: Resources.ErrorInvalidMessageTitle,
-                messageFormat: Resources.ErrorInvalidMessageMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorInvalidParameterName = new(
-                id: "LG0002",
-                title: Resources.ErrorInvalidParameterNameTitle,
-                messageFormat: Resources.ErrorInvalidParameterNameMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorNestedType = new(
-                id: "LG0003",
-                title: Resources.ErrorNestedTypeTitle,
-                messageFormat: Resources.ErrorNestedTypeMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorMissingRequiredType = new(
-                id: "LG0004",
-                title: Resources.ErrorMissingRequiredTypeTitle,
-                messageFormat: Resources.ErrorMissingRequiredTypeMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorEventIdReuse = new(
-                id: "LG0005",
-                title: Resources.ErrorEventIdReuseTitle,
-                messageFormat: Resources.ErrorEventIdReuseMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorInvalidMethodReturnType = new(
-                id: "LG0006",
-                title: Resources.ErrorInvalidMethodReturnTypeTitle,
-                messageFormat: Resources.ErrorInvalidMethodReturnTypeMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorFirstArgMustBeILogger = new(
-                id: "LG0007",
-                title: Resources.ErrorFirstArgMustBeILoggerTitle,
-                messageFormat: Resources.ErrorFirstArgMustBeILoggerMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorNotStaticMethod = new(
-                id: "LG0008",
-                title: Resources.ErrorNotStaticMethodTitle,
-                messageFormat: Resources.ErrorNotStaticMethodMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorNotPartialMethod = new(
-                id: "LG0009",
-                title: Resources.ErrorNotPartialMethodTitle,
-                messageFormat: Resources.ErrorNotPartialMethodMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static readonly DiagnosticDescriptor ErrorMethodIsGeneric = new(
-                id: "LG0010",
-                title: Resources.ErrorMethodIsGenericTitle,
-                messageFormat: Resources.ErrorMethodIsGenericMessage,
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
             private readonly Action<Diagnostic> _reportDiagnostic;
@@ -131,21 +39,21 @@ namespace Microsoft.Extensions.Logging.Generators
                 var exSymbol = _compilation.GetTypeByMetadataName("System.Exception");
                 if (exSymbol == null)
                 {
-                    Diag(ErrorMissingRequiredType, null, "System.Exception");
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.Exception");
                     return results;
                 }
 
                 var loggerMessageAttribute = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerMessageAttribute");
                 if (loggerMessageAttribute is null)
                 {
-                    Diag(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.LoggerMessageAttribute");
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.LoggerMessageAttribute");
                     return results;
                 }
 
                 var loggerSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
                 if (loggerSymbol == null)
                 {
-                    Diag(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.ILogger");
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.ILogger");
                     return results;
                 }
 
@@ -229,20 +137,20 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         // can't have logging method names that start with __ since that can lead to conflicting symbol names
                                         // because the generated symbols start with __
-                                        Diag(ErrorInvalidMethodName, method.Identifier.GetLocation());
+                                        Diag(DiagDescriptors.ErrorInvalidMethodName, method.Identifier.GetLocation());
                                     }
 
                                     if (sm.GetTypeInfo(method.ReturnType!).Type!.SpecialType != SpecialType.System_Void)
                                     {
                                         // logging methods must return void
-                                        Diag(ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
+                                        Diag(DiagDescriptors.ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
                                         keep = false;
                                     }
 
                                     if (method.Arity > 0)
                                     {
                                         // we don't currently support generic methods
-                                        Diag(ErrorMethodIsGeneric, method.Identifier.GetLocation());
+                                        Diag(DiagDescriptors.ErrorMethodIsGeneric, method.Identifier.GetLocation());
                                         keep = false;
                                     }
 
@@ -264,20 +172,20 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     if (!isStatic)
                                     {
-                                        Diag(ErrorNotStaticMethod, method.GetLocation());
+                                        Diag(DiagDescriptors.ErrorNotStaticMethod, method.GetLocation());
                                         keep = false;
                                     }
 
                                     if (!isPartial)
                                     {
-                                        Diag(ErrorNotPartialMethod, method.GetLocation());
+                                        Diag(DiagDescriptors.ErrorNotPartialMethod, method.GetLocation());
                                         keep = false;
                                     }
 
                                     // ensure there are no duplicate ids.
                                     if (ids.Contains(lm.EventId))
                                     {
-                                        Diag(ErrorEventIdReuse, args[0].GetLocation(), lm.EventId);
+                                        Diag(DiagDescriptors.ErrorEventIdReuse, args[0].GetLocation(), lm.EventId);
                                     }
                                     else
                                     {
@@ -286,7 +194,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     if (string.IsNullOrWhiteSpace(lm.Message))
                                     {
-                                        Diag(ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString());
+                                        Diag(DiagDescriptors.ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString());
                                     }
 
                                     foreach (var p in method.ParameterList.Parameters)
@@ -329,7 +237,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             if (!IsBaseOrIdentity(pSymbol, loggerSymbol))
                                             {
-                                                Diag(ErrorFirstArgMustBeILogger, p.Identifier.GetLocation());
+                                                Diag(DiagDescriptors.ErrorFirstArgMustBeILogger, p.Identifier.GetLocation());
                                                 keep = false;
                                             }
 
@@ -350,7 +258,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             // can't have logging method parameter names that start with  __ since that can lead to conflicting symbol names
                                             // because all generated symbols start with __
-                                            Diag(ErrorInvalidParameterName, p.Identifier.GetLocation());
+                                            Diag(DiagDescriptors.ErrorInvalidParameterName, p.Identifier.GetLocation());
                                         }
                                     }
 
@@ -363,7 +271,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             if (classDef.Parent is not CompilationUnitSyntax)
                                             {
                                                 // since this generator doesn't know how to generate a nested type...
-                                                Diag(ErrorNestedType, classDef.Identifier.GetLocation());
+                                                Diag(DiagDescriptors.ErrorNestedType, classDef.Identifier.GetLocation());
                                                 keep = false;
                                             }
                                         }

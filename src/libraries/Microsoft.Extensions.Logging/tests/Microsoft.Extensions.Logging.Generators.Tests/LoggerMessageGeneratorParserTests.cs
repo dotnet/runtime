@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    public class GeneratorParserTests
+    public class LoggerMessageGeneratorParserTests
     {
         [Fact]
         public void InvalidMethodName()
@@ -431,7 +431,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(d);    // should fail quietly on broken code
         }
 
-        private static (IReadOnlyList<LoggingGenerator.LoggerClass>, IReadOnlyList<Diagnostic>) TryParser(
+        private static (IReadOnlyList<LoggerMessageGenerator.LoggerClass>, IReadOnlyList<Diagnostic>) TryParser(
             string code,
             bool wrap = true,
             bool inNamespace = true,
@@ -478,7 +478,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             }
 
             var results = new List<Diagnostic>();
-            var p = new Microsoft.Extensions.Logging.Generators.LoggingGenerator.Parser(compilation, (d) => {
+            var p = new Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator.Parser(compilation, (d) => {
                 results.Add(d);
             }, cancellationToken);
 

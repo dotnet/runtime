@@ -46,15 +46,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 foreach (var d in sm!.GetDiagnostics())
                 {
                     bool ignore = false;
-                    if (ignorables != null)
+                    foreach (var ig in ignorables)
                     {
-                        foreach (var ig in ignorables)
+                        if (d.Id == ig)
                         {
-                            if (d.Id == ig)
-                            {
-                                ignore = true;
-                                break;
-                            }
+                            ignore = true;
+                            break;
                         }
                     }
 

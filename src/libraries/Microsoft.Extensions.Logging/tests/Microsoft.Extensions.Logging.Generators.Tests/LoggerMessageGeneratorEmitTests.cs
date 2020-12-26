@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    public class GeneratorEmitTests
+    public class LoggerMessageGeneratorEmitTests
     {
         [Fact]
         public async Task TestEmitter()
@@ -27,8 +27,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             for (int i = 0; i < 2; i++)
             {
-                var p = new Microsoft.Extensions.Logging.Generators.LoggingGenerator.Parser(comp, d => { }, CancellationToken.None);
-                var e = new Microsoft.Extensions.Logging.Generators.LoggingGenerator.Emitter(i == 0);
+                var p = new Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator.Parser(comp, d => { }, CancellationToken.None);
+                var e = new Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator.Emitter(i == 0);
 
                 var allNodes = comp.SyntaxTrees.SelectMany(s => s.GetRoot().DescendantNodes());
                 var allClasses = allNodes.Where(d => d.IsKind(SyntaxKind.ClassDeclaration)).OfType<ClassDeclarationSyntax>();

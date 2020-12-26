@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace Microsoft.Extensions.Logging.Generators
 {
     [Generator]
-    public partial class LoggingGenerator : ISourceGenerator
+    public partial class LoggerMessageGenerator : ISourceGenerator
     {
         /// <inheritdoc />
         public void Initialize(GeneratorInitializationContext context)
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging.Generators
             var logClasses = p.GetLogClasses(receiver.ClassDeclarations);
             var result = e.Emit(logClasses, context.CancellationToken);
 
-            context.AddSource(nameof(LoggingGenerator), SourceText.From(result, Encoding.UTF8));
+            context.AddSource(nameof(LoggerMessageGenerator), SourceText.From(result, Encoding.UTF8));
         }
 
         private sealed class SyntaxReceiver : ISyntaxReceiver
