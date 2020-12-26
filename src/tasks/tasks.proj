@@ -5,7 +5,7 @@
                       Condition="'$(TargetOS)' != 'Android'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)AppleAppBuilder\AppleAppBuilder.csproj"
                       Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" />
-    <ProjectReference Remove="$(MSBuildThisFileDirectoryWasmAppBuilder\WasmAppBuilder.csproj"
+    <ProjectReference Remove="$(MSBuildThisFileDirectory)WasmAppBuilder\WasmAppBuilder.csproj"
                       Condition="'$(TargetOS)' != 'Browser'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)WasmBuildTasks\WasmBuildTasks.csproj"
                       Condition="'$(TargetOS)' != 'Browser'" />

@@ -1,4 +1,7 @@
 <Project>
+  <PropertyGroup>
+    <InferPlatformFromTargetArchitecture>true</InferPlatformFromTargetArchitecture>
+  </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
 
@@ -25,12 +28,6 @@
   <!-- Platform detection -->
   <PropertyGroup>
     <RunningOnUnix Condition="'$(OS)'!='Windows_NT'">true</RunningOnUnix>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetArchitecture  Condition="'$(TargetArchitecture)' == '' AND '$(BuildArchitecture)' == 'arm64'">$(BuildArchitecture)</TargetArchitecture>
-    <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
-    <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DisableSourceLink)' == 'true'">

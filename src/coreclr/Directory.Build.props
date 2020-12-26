@@ -1,14 +1,12 @@
 <Project>
   <PropertyGroup>
-    <!-- TODO: Clean-up to avoid the normalization. -->
+    <InferPlatformFromTargetArchitecture>true</InferPlatformFromTargetArchitecture>
+
+    <!-- TODO: Clean-up casing and remove __BuildType to remove this block. -->
     <Configuration Condition="'$(Configuration)' == ''">$(__BuildType)</Configuration>
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Configuration Condition="'$(Configuration)' == 'debug'">Debug</Configuration>
     <Configuration Condition="'$(Configuration)' == 'release'">Release</Configuration>
     <Configuration Condition="'$(Configuration)' == 'checked'">Checked</Configuration>
-
-    <!-- Set default Platform which is used by Arcade. -->
-    <Platform>$([MSBuild]::ValueOrDefault('$(TargetArchitecture)', '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)'))</Platform>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
@@ -21,16 +19,7 @@
     <RuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</RuntimeBinDir>
 
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)'!='true'">false</SignAssembly>
+    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)' != 'true'">false</SignAssembly>
     <CL_MPCount>$(NumberOfCores)</CL_MPCount>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
-
-    <!-- Set the boolean below to true to generate packages with stabilized versions -->
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
-    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 </Project>

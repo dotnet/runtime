@@ -2,11 +2,16 @@
   <!--
     This file is imported by the test projects from the artifacts dir or the src/tests dir. It
     provides basic info needed for restore and build with the vanilla SDK.
-    Since this file doesn't include the Arcade SDK, we need to find the root eng folder
-    in a different manner than using the $(RepositoryEngineeringDir) variable.
+    Since this file doesn't include the Arcade SDK, we need to find the root folder
+    in a different manner than using the $(RepoRoot) variable.
   -->
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),global.json))\eng\Configurations.props" />
+  <PropertyGroup>
+    <SkipImportArcadeSdk>true</SkipImportArcadeSdk>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),global.json))\eng\Versions.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),global.json))\Directory.Build.props" />
 
   <PropertyGroup>
     <!--
