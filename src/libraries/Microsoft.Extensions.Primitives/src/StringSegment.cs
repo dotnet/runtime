@@ -149,8 +149,8 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
         public bool Equals(StringSegment other, StringComparison comparisonType)
-            => (Buffer == null && other.Buffer == null)
-            || (Buffer != null && this.AsSpan().CompareTo(other.AsSpan(), comparisonType) == 0);
+            => (!HasValue && !other.HasValue)
+            || (HasValue && this.AsSpan().CompareTo(other.AsSpan(), comparisonType) == 0);
 
         // This handles StringSegment.Equals(string, StringSegment, StringComparison) and StringSegment.Equals(StringSegment, string, StringComparison)
         // via the implicit type converter
