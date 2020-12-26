@@ -576,6 +576,22 @@ inline unsigned genTypeSize(T type)
     return genTypeSizes[TypeGet(type)];
 }
 
+//------------------------------------------------------------------------------
+// genTrimUnsignedValue: Trim size_t value to the size of the given type.
+//
+// Arguments:
+//    type  - the type to fit the value into.
+//    value - the value.
+//
+// Return Value:
+//    The value trimmed to the size of the given type.
+
+inline size_t genTrimUnsignedValue(var_types type, size_t value)
+{
+    assert(genTypeSize(type) <= sizeof(size_t));
+    return (((size_t)-1) >> ((sizeof(size_t) - genTypeSize(type)) * 8)) & value;
+}
+
 /*****************************************************************************
  *
  *  Return the "stack slot count" of the given type.

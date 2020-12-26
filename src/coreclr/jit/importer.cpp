@@ -4340,8 +4340,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if ((sig->numArgs == 3) && impStackTop(0).val->IsCnsIntOrI())
                 {
-                    assert((ni == NI_System_MemoryExtensions_Equals) ||
-                           (ni == NI_System_MemoryExtensions_StartsWith));
+                    assert((ni == NI_System_MemoryExtensions_Equals) || (ni == NI_System_MemoryExtensions_StartsWith));
 
                     // See StringComparison.cs
                     const int CurrentCulture             = 0;
@@ -4353,17 +4352,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     // Fetch mode from the last argument.
                     int mode = (int)impStackTop(0).val->AsIntCon()->IconValue();
-                    if ((mode == InvariantCulture) || (mode == Ordinal))
-                    {
-                        ignoreCase = false;
-                    }
-                    else if ((mode == InvariantCultureIgnoreCase) || (mode == OrdinalIgnoreCase))
+
+                    if (mode == OrdinalIgnoreCase)
                     {
                         ignoreCase = true;
                     }
+                    else if (mode == Ordinal)
+                    {
+                        ignoreCase = false;
+                    }
                     else
                     {
-                        assert((mode == CurrentCulture) || (mode == CurrentCultureIgnoreCase));
+                        // This mode is not supported.
+                        assert(mode <= OrdinalIgnoreCase);
                         return nullptr;
                     }
                 }
@@ -4371,10 +4372,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     // Comparison mode is not a constant.
                     return nullptr;
-                }
-                else
-                {
-                    assert(sig->numArgs == 2);
                 }
 
                 if (arg1->OperIs(GT_RET_EXPR))
@@ -4719,7 +4716,7 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
         return nullptr;
     }
 
-    bool   canBeLowercased = true;
+    bool   allAreLetters   = true;
     UINT64 strAsUlong      = 0;
 
     for (int i = 0; i < strLen; i++)
@@ -4730,17 +4727,18 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
             // str is not ASCII - bail out.
             return nullptr;
         }
-        if ((strChar < 'A') || (strChar > 'z'))
+
+        bool isLetter = ((strChar >= 'A') && (strChar <= 'Z')) || ((strChar >= 'a') && (strChar <= 'z'));
+        if (!isLetter)
         {
-            // e.g. ('-' | 0x20) == ('\r' | 0x20) which is not correct.
-            canBeLowercased = false;
+            allAreLetters = false;
         }
         strAsUlong |= (strChar << 16UL * i);
     }
 
     if (ignoreCase)
     {
-        if (!canBeLowercased)
+        if (!allAreLetters)
         {
             // TODO: Implement logic from UInt64OrdinalIgnoreCaseAscii
             //
@@ -4749,7 +4747,7 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
             //
             return nullptr;
         }
-        strAsUlong |= 0x0020002000200020UL;
+        strAsUlong |= 0x0020002000200020ULL;
     }
 
     // We're going to emit the following tree:
@@ -4786,12 +4784,14 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
 
     GenTree*       spanData         = gtNewFieldRef(TYP_BYREF, pointerHnd, spanRefClone, pointerOffset);
     GenTree*       spanDataIndir    = gtNewIndir(cmpType, spanData);
-    GenTreeIntCon* constStrAsIntCon = gtNewIconNode(strAsUlong, cmpType);
+    GenTreeIntCon* constStrAsIntCon = gtNewIconNode(genTrimUnsignedValue(cmpType, strAsUlong), cmpType);
 
     if (ignoreCase)
     {
+        ssize_t lowerBitMask = genTrimUnsignedValue(cmpType, 0x0020002000200020ULL);
+        
         // Set "is lower" bits in all chars
-        spanDataIndir = gtNewOperNode(GT_OR, cmpType, spanDataIndir, gtNewIconNode(0x0020002000200020UL, cmpType));
+        spanDataIndir = gtNewOperNode(GT_OR, cmpType, spanDataIndir, gtNewIconNode(lowerBitMask, cmpType));
     }
 
     // TODO: for length == 3 (not supported yet) we need to do two indir cmp ops:
