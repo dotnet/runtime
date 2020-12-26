@@ -4343,12 +4343,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     assert((ni == NI_System_MemoryExtensions_Equals) || (ni == NI_System_MemoryExtensions_StartsWith));
 
                     // See StringComparison.cs
-                    const int CurrentCulture             = 0;
-                    const int CurrentCultureIgnoreCase   = 1;
-                    const int InvariantCulture           = 2;
-                    const int InvariantCultureIgnoreCase = 3;
-                    const int Ordinal                    = 4;
-                    const int OrdinalIgnoreCase          = 5;
+                    const int Ordinal           = 4;
+                    const int OrdinalIgnoreCase = 5;
 
                     // Fetch mode from the last argument.
                     int mode = (int)impStackTop(0).val->AsIntCon()->IconValue();
@@ -4716,13 +4712,13 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
         return nullptr;
     }
 
-    bool   allAreLetters   = true;
-    UINT64 strAsUlong      = 0;
+    bool   allAreLetters = true;
+    UINT64 strAsUlong    = 0;
 
     for (int i = 0; i < strLen; i++)
     {
         UINT64 strChar = str[i];
-        if (strChar > '\x007f')
+        if (strChar > 127)
         {
             // str is not ASCII - bail out.
             return nullptr;
@@ -4789,7 +4785,7 @@ GenTree* Compiler::impUnrollSpanComparisonWithStrCon(GenTree*       span,
     if (ignoreCase)
     {
         ssize_t lowerBitMask = genTrimUnsignedValue(cmpType, 0x0020002000200020ULL);
-        
+
         // Set "is lower" bits in all chars
         spanDataIndir = gtNewOperNode(GT_OR, cmpType, spanDataIndir, gtNewIconNode(lowerBitMask, cmpType));
     }
