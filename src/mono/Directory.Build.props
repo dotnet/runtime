@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <!-- Set default Platform -->
-    <Platform>$(TargetArchitecture)</Platform>
+    <!-- Set default Platform which is used by Arcade. -->
+    <Platform>$([MSBuild]::ValueOrDefault('$(TargetArchitecture)', '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)'))</Platform>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />

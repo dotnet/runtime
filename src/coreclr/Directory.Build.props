@@ -1,16 +1,14 @@
 <Project>
   <PropertyGroup>
-    <!-- TODO: Cleanup use of __BuildArch and __BuildType in the CI scripts -->
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(__BuildArch)</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
-
+    <!-- TODO: Clean-up to avoid the normalization. -->
     <Configuration Condition="'$(Configuration)' == ''">$(__BuildType)</Configuration>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Configuration Condition="'$(Configuration)' == 'debug'">Debug</Configuration>
     <Configuration Condition="'$(Configuration)' == 'release'">Release</Configuration>
     <Configuration Condition="'$(Configuration)' == 'checked'">Checked</Configuration>
 
-    <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>
+    <!-- Set default Platform which is used by Arcade. -->
+    <Platform>$([MSBuild]::ValueOrDefault('$(TargetArchitecture)', '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)'))</Platform>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
