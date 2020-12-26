@@ -448,3 +448,30 @@
 	{
 	}
 }
+
+.class public auto ansi beforefieldinit ChildClassDoesNotImplementDefaultInterfaceMethod_ValidType_Valid
+	extends [System.Runtime]System.Object
+	implements [InterfaceDefinition]IDefaultImplInterface
+{
+	.method public hidebysig specialname rtspecialname 
+		instance void .ctor () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ldarg.0
+		IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+		IL_0006: nop
+		IL_0007: ret
+	}
+}
+
+.class interface public auto ansi abstract IDefaultImplInterface
+{
+    .method public hidebysig newslot virtual 
+		instance void DefaultImplementation () cil managed 
+	{
+		.maxstack 8
+
+		IL_0000: ret
+	}
+}
