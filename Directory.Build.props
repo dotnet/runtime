@@ -5,6 +5,20 @@
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
   </PropertyGroup>
 
+  <PropertyGroup Label="CalculateTargetOS">
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">windows</TargetOS>
+    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
+    <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
+    <LibrariesTargetOS Condition="'$(LibrariesTargetOS)' == ''">$(TargetOS)</LibrariesTargetOS>
+    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
+  </PropertyGroup>
+
   <!-- Platform property is required by RepoLayout.props in Arcade SDK. -->
   <PropertyGroup Label="CalculateArch">
     <_hostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</_hostArch>
@@ -77,17 +91,8 @@
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateOS">
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">windows</TargetOS>
-    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
-    <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
-    <LibrariesTargetOS Condition="'$(LibrariesTargetOS)' == ''">$(TargetOS)</LibrariesTargetOS>
-    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
+    <!-- Default to portable build if not explicitly set -->
+    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
 
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_parseDistroRid>
@@ -188,8 +193,6 @@
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
-    <!-- Default to portable build if not explicitly set -->
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
 
   <ImportGroup Condition="'$(SkipImportArcadeSdk)' != 'true'">
