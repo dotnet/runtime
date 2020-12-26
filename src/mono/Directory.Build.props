@@ -2,8 +2,6 @@
   <PropertyGroup>
     <!-- Set default Platform -->
     <Platform>$(TargetArchitecture)</Platform>
-    <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(HostArch)</TargetArchitecture>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />

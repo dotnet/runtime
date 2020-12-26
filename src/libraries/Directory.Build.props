@@ -100,10 +100,6 @@
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-  </PropertyGroup>
-
   <!-- Disable some standard properties for building our projects -->
   <PropertyGroup>
     <!-- We can't generate an apphost without restoring the targeting pack. -->

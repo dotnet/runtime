@@ -41,14 +41,10 @@
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
     <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
   </PropertyGroup>
 

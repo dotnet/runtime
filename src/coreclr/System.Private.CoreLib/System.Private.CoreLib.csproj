@@ -8,8 +8,6 @@
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
-    <DebugSymbols>true</DebugSymbols>
-
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(RuntimeBinDir)/IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
