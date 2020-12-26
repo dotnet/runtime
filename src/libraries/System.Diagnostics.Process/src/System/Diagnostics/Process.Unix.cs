@@ -530,7 +530,7 @@ namespace System.Diagnostics
                     }
 
                     string directoryForException = cwd?.Length > 0 ? cwd : Directory.GetCurrentDirectory();
-                    string msg = SR.Format(SR.FailedToStartFileDirectory, filename, directoryForException, GetErrorMessage(errorCode));
+                    string msg = SR.Format(SR.FailedToStartFileDirectory, filename, directoryForException, GetErrorMessage(errno));
                     throw new Win32Exception(errno, msg);
                 }
             }
