@@ -76,28 +76,12 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Gets the value of this segment as a <see cref="string"/>.
         /// </summary>
-        public string Value
-        {
-            get
-            {
-                if (HasValue)
-                {
-                    return Buffer.Substring(Offset, Length);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
+        public string Value => HasValue ? Buffer.Substring(Offset, Length) : null;
 
         /// <summary>
         /// Gets whether this <see cref="StringSegment"/> contains a valid value.
         /// </summary>
-        public bool HasValue
-        {
-            get { return Buffer != null; }
-        }
+        public bool HasValue => Buffer != null;
 
         /// <summary>
         /// Gets the <see cref="char"/> at a specified position in the current <see cref="StringSegment"/>.
@@ -145,27 +129,11 @@ namespace Microsoft.Extensions.Primitives
         /// and positive if <paramref name="a"/> is greater than <paramref name="b"/>.
         /// </returns>
         public static int Compare(StringSegment a, StringSegment b, StringComparison comparisonType)
-        {
-            int minLength = Math.Min(a.Length, b.Length);
-            int diff = string.Compare(a.Buffer, a.Offset, b.Buffer, b.Offset, minLength, comparisonType);
-            if (diff == 0)
-            {
-                diff = a.Length - b.Length;
-            }
-
-            return diff;
-        }
+            => a.AsSpan().CompareTo(b.AsSpan(), comparisonType);
 
         /// <inheritdoc />
         public override bool Equals(object obj)
-        {
-            if (obj is null)
-            {
-                return false;
-            }
-
-            return obj is StringSegment segment && Equals(segment);
-        }
+            => obj is StringSegment segment && Equals(segment);
 
         /// <summary>
         /// Indicates whether the current object is equal to another object of the same type.
@@ -181,14 +149,8 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
         public bool Equals(StringSegment other, StringComparison comparisonType)
-        {
-            if (Length != other.Length)
-            {
-                return false;
-            }
-
-            return string.Compare(Buffer, Offset, other.Buffer, other.Offset, other.Length, comparisonType) == 0;
-        }
+            => (Buffer == null && other.Buffer == null)
+            || (Buffer != null && this.AsSpan().CompareTo(other.AsSpan(), comparisonType) == 0);
 
         // This handles StringSegment.Equals(string, StringSegment, StringComparison) and StringSegment.Equals(StringSegment, string, StringComparison)
         // via the implicit type converter
@@ -232,13 +194,7 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            int textLength = text.Length;
-            if (!HasValue || Length != textLength)
-            {
-                return false;
-            }
-
-            return string.Compare(Buffer, Offset, text, 0, textLength, comparisonType) == 0;
+            return HasValue && this.AsSpan().CompareTo(text.AsSpan(), comparisonType) == 0;
         }
 
         /// <inheritdoc />
@@ -310,15 +266,7 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            bool result = false;
-            int textLength = text.Length;
-
-            if (HasValue && Length >= textLength)
-            {
-                result = string.Compare(Buffer, Offset, text, 0, textLength, comparisonType) == 0;
-            }
-
-            return result;
+            return HasValue && this.AsSpan().StartsWith(text.AsSpan(), comparisonType);
         }
 
         /// <summary>
@@ -338,16 +286,7 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            bool result = false;
-            int textLength = text.Length;
-            int comparisonLength = Offset + Length - textLength;
-
-            if (HasValue && comparisonLength > 0)
-            {
-                result = string.Compare(Buffer, comparisonLength, text, 0, textLength, comparisonType) == 0;
-            }
-
-            return result;
+            return HasValue && this.AsSpan().EndsWith(text.AsSpan(), comparisonType);
         }
 
         /// <summary>

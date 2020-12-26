@@ -271,6 +271,19 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(result);
         }
 
+        [Fact]
+        public void StringSegment_EndsWith_Slash()
+        {
+            // Arrange
+            var segment = new StringSegment("/");
+
+            // Act
+            var result = segment.EndsWith("/", StringComparison.Ordinal);
+
+            // Assert
+            Assert.True(result);
+        }
+
         public static TheoryData<string, StringComparison, bool> StartsWithData
         {
             get
@@ -362,6 +375,33 @@ namespace Microsoft.Extensions.Primitives
 
             Assert.False(segment1.Equals(null as object));
         }
+
+        [Fact]
+        public void StringSegment_Equals_InvariantCultureIgnoreCase()
+        {
+            // Arrange
+            var segment = new StringSegment("xaex", 1, 2);
+
+            // Act
+            var result = segment.Equals("\u00C6", StringComparison.InvariantCultureIgnoreCase);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void StringSegment_Equals_InvariantCultureIgnoreCase_StringSegment()
+        {
+            // Arrange
+            var segment = new StringSegment("xaex", 1, 2);
+
+            // Act
+            var result = segment.Equals(new StringSegment("\u00C6"), StringComparison.InvariantCultureIgnoreCase);
+
+            //Assert
+            Assert.True(result);
+        }
+
 
         [Fact]
         public void StringSegment_StaticEquals_Valid()
