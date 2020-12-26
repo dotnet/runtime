@@ -707,6 +707,7 @@ TESTS_CS_SRC=		\
 	bug-58782-capture-and-throw.cs \
 	recursive-struct-arrays.cs \
 	struct-explicit-layout.cs \
+	struct-static.cs \
 	bug-59281.cs	\
 	init_array_with_lazy_type.cs \
 	weak-fields.cs \
@@ -1332,6 +1333,7 @@ PROFILE_DISABLED_TESTS += \
 	resolve_method_bug.2.exe \
 	resolve_field_bug.2.exe \
 	resolve_type_bug.2.exe \
+	struct-static.exe \
 	bug-81691.exe \
 	bug-327438.2.exe \
 	newobj-abstract.exe \
@@ -1634,6 +1636,7 @@ PROFILE_DISABLED_TESTS += \
 	bug-80307.exe
 
 PROFILE_DISABLED_TESTS += \
+	struct-static.exe \
 	transparentproxy.exe
 
 # Tests depending on assembly load order. Under Full AOT using WinAOT

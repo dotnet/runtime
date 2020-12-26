@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <!-- These are wrapper project files for packaging.-->
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <!-- Avoid trying to binplace non existent documentation file.-->
+    <EnableBinPlacing>false</EnableBinPlacing>
+  </PropertyGroup>
+</Project>

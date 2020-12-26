@@ -1,7 +1,5 @@
 trigger: none
 
-pr: none
-
 schedules:
 - cron: "0 4 * * 1,3,5"
   displayName: Mon, Wed, Fri at 8:00 PM (UTC-8:00)
@@ -17,10 +15,6 @@ schedules:
   always: true
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

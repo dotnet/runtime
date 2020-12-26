@@ -8,18 +8,18 @@
       <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">false</UseCrossgen2>
 
       <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
-      <RootBinDir>$(RepoRoot)\artifacts</RootBinDir>
-      <LogsDir>$(RootBinDir)\log</LogsDir>
-      <BinDir>$(RootBinDir)\bin\coreclr\$(OSPlatformConfig)</BinDir>
-      <IntermediatesDir>$(RootBinDir)\obj\coreclr\$(OSPlatformConfig)</IntermediatesDir>
-      <CrossGenCoreLibLog>$(LogsDir)\CrossgenCoreLib_$(TargetOS)__$(TargetArchitecture)__$(Configuration).log</CrossGenCoreLibLog>
+      <RootBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</RootBinDir>
+      <LogsDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'log'))</LogsDir>
+      <BinDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'bin', 'coreclr', $(OSPlatformConfig)))</BinDir>
+      <IntermediatesDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'obj', 'coreclr', $(OSPlatformConfig)))</IntermediatesDir>
+      <CrossGenCoreLibLog>$([MSBuild]::NormalizePath('$(LogsDir)', 'CrossgenCoreLib_$(TargetOS)__$(TargetArchitecture)__$(Configuration).log'))</CrossGenCoreLibLog>
       <ExeExtension Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExtension>
-      <DotNetCli>$(RepoRoot)/dotnet.sh</DotNetCli>
-      <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$(RepoRoot)\dotnet.cmd</DotNetCli>
+      <DotNetCli>$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.sh'))</DotNetCli>
+      <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.cmd'))</DotNetCli>
 
       <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
-      <CoreLibInputPath>$(BinDir)\IL\$(CoreLibAssemblyName).dll</CoreLibInputPath>
-      <CoreLibOutputPath>$(BinDir)\$(CoreLibAssemblyName).dll</CoreLibOutputPath>
+      <CoreLibInputPath>$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '$(CoreLibAssemblyName).dll'))</CoreLibInputPath>
+      <CoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dll'))</CoreLibOutputPath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -41,10 +41,10 @@
       <BuildPerfMap>false</BuildPerfMap>
       <BuildPerfMap Condition="$(BuildDll) and '$(TargetOS)' == 'Linux'">true</BuildPerfMap>
 
-      <CrossGen1Cmd>$(BinDir)\$(CrossDir)\crossgen$(ExeExtension)</CrossGen1Cmd>
+      <CrossGen1Cmd>$([MSBuild]::NormalizePath('$(BinDir)', '$(CrossDir)', 'crossgen$(ExeExtension)'))</CrossGen1Cmd>
       <CrossGen1Cmd>$(CrossGen1Cmd) /nologo</CrossGen1Cmd>
       <CrossGen1Cmd>$(CrossGen1Cmd) <!-- IbcTuning --></CrossGen1Cmd>
-      <CrossGen1Cmd>$(CrossGen1Cmd) /Platform_Assemblies_Paths "$(BinDir)\IL"</CrossGen1Cmd>
+      <CrossGen1Cmd>$(CrossGen1Cmd) /Platform_Assemblies_Paths "$([MSBuild]::NormalizePath('$(BinDir)', 'IL'))"</CrossGen1Cmd>
     </PropertyGroup>
 
     <MakeDir
@@ -54,9 +54,9 @@
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
     <PropertyGroup>
-      <CrossGenDllCmd>$(DotNetCli) $(BinDir)\$(CrossDir)\crossgen2\crossgen2.dll</CrossGenDllCmd>
+      <CrossGenDllCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', '$(CrossDir)', 'crossgen2', 'crossgen2.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) -r:$(BinDir)\IL\*.dll</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) $(CoreLibInputPath)</CrossGenDllCmd>
@@ -75,16 +75,16 @@
     </PropertyGroup>
     
     <PropertyGroup Condition="$(BuildPdb)">
-      <CrossGenPdbCmd>$(DotNetCli) $(BinDir)\r2rdump\r2rdump.dll</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', 'r2rdump', 'r2rdump.dll'))</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) --create-pdb</CrossGenPdbCmd>
-      <CrossGenPdbCmd>$(CrossGenPdbCmd) --pdb-path:$(BinDir)\PDB</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(CrossGenPdbCmd) --pdb-path:$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) --in:$(CoreLibOutputPath)</CrossGenPdbCmd>
     </PropertyGroup>
     
     <PropertyGroup Condition="$(BuildPdb) and '$(UseCrossgen2)' != 'true'">
-      <VsSetupCmd>call $(RepoRoot)\src\coreclr\setup_vs_tools.cmd &amp;&amp;</VsSetupCmd>
+      <VsSetupCmd>call $([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'coreclr', 'setup_vs_tools.cmd')) &amp;&amp;</VsSetupCmd>
 
-      <CrossGenPdbCmd>$(VsSetupCmd) $(CrossGen1Cmd) /CreatePdb "$(BinDir)\PDB"</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(VsSetupCmd) $(CrossGen1Cmd) /CreatePdb "$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))"</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
     </PropertyGroup>
     

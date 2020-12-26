@@ -358,8 +358,6 @@ mono_print_method_from_ip (void *ip)
  */
 gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 {
-	MonoMethod *cmethod;
-
 	if (!caller || caller->is_trampoline || !callee || callee->is_trampoline)
 		return FALSE;
 
@@ -370,13 +368,16 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 	if (caller->domain_neutral && !callee->domain_neutral)
 		return FALSE;
 
+#ifndef ENABLE_NETCORE
+	MonoMethod *cmethod;
+
 	cmethod = jinfo_get_method (caller);
 	if ((cmethod->klass == mono_defaults.appdomain_class) &&
 		(strstr (cmethod->name, "InvokeInDomain"))) {
 		 /* The InvokeInDomain methods change the current appdomain */
 		return FALSE;
 	}
-
+#endif
 	return TRUE;
 }
 
@@ -1456,8 +1457,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = (gpointer)&mono_polling_required;
 		break;
 	case MONO_PATCH_INFO_SWITCH: {
+#ifndef MONO_ARCH_NO_CODEMAN
 		gpointer *jump_table;
 		int i;
+
 		if (method && method->dynamic) {
 			jump_table = (void **)mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
@@ -1476,6 +1479,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		mono_codeman_disable_write ();
 
 		target = jump_table;
+#else
+		g_assert_not_reached ();
+		target = NULL;
+#endif
 		break;
 	}
 	case MONO_PATCH_INFO_METHODCONST:
@@ -2381,24 +2388,38 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 		MonoMethodPInvoke* piinfo = (MonoMethodPInvoke *) method;
 
 		if (!piinfo->addr) {
-			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-				piinfo->addr = mono_lookup_internal_call (method);
-			else if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
+			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+				guint32 flags = MONO_ICALL_FLAGS_NONE;
+				gpointer icall_addr;
+				icall_addr = (gpointer)mono_lookup_internal_call_full_with_flags (method, TRUE, (guint32 *)&flags);
+				if (flags & MONO_ICALL_FLAGS_NO_WRAPPER) {
+					piinfo->icflags = MONO_ICALL_FLAGS_NO_WRAPPER;
+					mono_memory_write_barrier ();
+				}
+				piinfo->addr = icall_addr;
+			} else if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE) {
 #ifdef HOST_WIN32
 				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono in modules loaded from byte arrays. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
 #else
 				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono on this platform. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
 #endif
-			else {
+			} else {
 				ERROR_DECL (ignored_error);
 				mono_lookup_pinvoke_call_internal (method, ignored_error);
 				mono_error_cleanup (ignored_error);
 			}
 		}
 
-		MonoMethod *nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
-		gpointer compiled_method = mono_jit_compile_method_jit_only (nm, error);
-		return_val_if_nok (error, NULL);
+		mono_memory_read_barrier ();
+
+		gpointer compiled_method = NULL;
+		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && (piinfo->icflags & MONO_ICALL_FLAGS_NO_WRAPPER)) {
+			compiled_method = piinfo->addr;
+		} else {
+			MonoMethod *nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
+			compiled_method = mono_jit_compile_method_jit_only (nm, error);
+			return_val_if_nok (error, NULL);
+		}
 
 		code = mono_get_addr_from_ftnptr (compiled_method);
 		jinfo = mono_jit_info_table_find (target_domain, code);
@@ -5110,6 +5131,9 @@ mono_disable_optimizations (guint32 opts)
 void
 mono_set_optimizations (guint32 opts)
 {
+	if (opts & MONO_OPT_AGGRESSIVE_INLINING)
+		opts |= MONO_OPT_INLINE;
+
 	default_opt = opts;
 	default_opt_set = TRUE;
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED

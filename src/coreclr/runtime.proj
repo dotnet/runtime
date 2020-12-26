@@ -17,6 +17,7 @@
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and
                                    ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and
                                    '$(Configuration)' == 'Release' and
+                                   '$(ClrRuntimeSubset)' == 'true' and
                                    '$(NoPgoOptimize)' != 'true'"
                                    Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />

@@ -1,15 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <PropertyGroup>
+    <PackageDescription>Internal package for sharing Android App Builder.</PackageDescription>
+  </PropertyGroup>
+
   <ItemGroup>
-    <ProjectReference Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AndroidAppBuilder\AndroidAppBuilder.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)AndroidAppBuilder\AndroidAppBuilder.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <_AndroidSampleFiles Include="$(ArtifactsDir)bin\AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\AndroidAppBuilder.dll" />
-
-    <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\$(NetCoreAppCurrent)\" />
+    <_AndroidSampleFiles Include="$(AndroidAppBuilderTasksAssemblyPath)" />
+    <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

@@ -1,5 +1,5 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "..\..\coreclr\src\System.Private.CoreLib\System.Private.CoreLib.csproj", "{B1053D24-237E-4E55-9413-20B34ED79F23}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "..\..\coreclr\System.Private.CoreLib\System.Private.CoreLib.csproj", "{B1053D24-237E-4E55-9413-20B34ED79F23}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{05696F45-ACF1-4C02-B8D9-E8C1F5E28717}"
 EndProject

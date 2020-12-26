@@ -47,16 +47,16 @@
 
     <!-- System.Private.CoreLib -->
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
-    <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'src', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
+    <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'Mono'">$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'netcore', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AppleAppBuilderDir>
-    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</AndroidAppBuilderDir>
-    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</WasmAppBuilderDir>
-    <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</WasmBuildTasksDir>
-    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppCurrent)'))</MonoAOTCompilerDir>
+  <PropertyGroup>
+    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
+    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</AndroidAppBuilderDir>
+    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmAppBuilderDir>
+    <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
 
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
@@ -77,6 +77,10 @@
     <LicenseUrl>https://github.com/dotnet/runtime/blob/master/LICENSE.TXT</LicenseUrl>
     <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>$(CopyrightNetFoundation)</Copyright>
+    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
 
     <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
     <!-- Keep it in sync with PRERELEASE in eng/native/configureplatform.cmake -->
@@ -93,6 +97,9 @@
 
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+
+    <!-- Set IsPackable true for all pkgproj as Arcade unconditionally overrides the value. -->
+    <IsPackable Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">true</IsPackable>
   </PropertyGroup>
 
   <!-- Language configuration -->

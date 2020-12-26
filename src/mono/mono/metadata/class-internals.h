@@ -112,7 +112,10 @@ struct _MonoMethodPInvoke {
 	MonoMethod method;
 	gpointer addr;
 	/* add marshal info */
-	guint16 piflags;  /* pinvoke flags */
+	union {
+		guint16 piflags;  /* pinvoke flags */
+		guint16 icflags;  /* icall flags */
+	};
 	guint32 implmap_idx;  /* index into IMPLMAP */
 };
 
@@ -1094,7 +1097,7 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
 
 #endif
 
-GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain)
+MonoClass* mono_class_get_appdomain_class (void);
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_setup)
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)

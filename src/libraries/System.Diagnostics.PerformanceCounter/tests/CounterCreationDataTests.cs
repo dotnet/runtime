@@ -11,7 +11,7 @@ namespace System.Diagnostics.Tests
 {
     public static class CounterCreationDataTests
     {
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationData_CreateCounterCreationData_SimpleSimpleHelpRawBase()
         {
             CounterCreationData ccd = new CounterCreationData("Simple", "Simple Help", PerformanceCounterType.RawBase);
@@ -21,7 +21,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(PerformanceCounterType.RawBase, ccd.CounterType);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationData_SetCounterType_Invalud()
         {
             CounterCreationData ccd = new CounterCreationData("Simple", "Simple Help", PerformanceCounterType.RawBase);

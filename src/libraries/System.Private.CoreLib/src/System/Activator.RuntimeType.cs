@@ -91,10 +91,10 @@ namespace System
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
-            if (type.UnderlyingSystemType is RuntimeType rt)
-                return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, skipCheckThis: false, fillCache: true, wrapExceptions: wrapExceptions);
+            if (type.UnderlyingSystemType is not RuntimeType rt)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
-            throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, wrapExceptions: wrapExceptions);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
@@ -148,7 +148,7 @@ namespace System
         [System.Runtime.CompilerServices.Intrinsic]
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
         {
-            return (T)((RuntimeType)typeof(T)).CreateInstanceDefaultCtor(publicOnly: true, skipCheckThis: true, fillCache: true, wrapExceptions: true)!;
+            return (T)((RuntimeType)typeof(T)).CreateInstanceOfT()!;
         }
 
         private static T CreateDefaultInstance<T>() where T : struct => default;

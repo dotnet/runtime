@@ -1,8 +1,6 @@
 #ifndef __DIAGNOSTICS_RT_H__
 #define __DIAGNOSTICS_RT_H__
 
-#include <config.h>
-
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt.h"
 #include "ds-rt-config.h"
@@ -126,7 +124,9 @@ static
 void
 ds_rt_server_log_pause_message (void);
 
+#ifndef EP_NO_RT_DEPENDENCY
 #include DS_RT_H
+#endif
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_RT_H__ */

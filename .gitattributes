@@ -67,8 +67,8 @@
 *.h linguist-language=C
 
 # CLR specific
-src/coreclr/src/pal/tests/palsuite/paltestlist.txt text eol=lf
-src/coreclr/src/pal/tests/palsuite/paltestlist_to_be_reviewed.txt text eol=lf
+src/coreclr/pal/tests/palsuite/paltestlist.txt text eol=lf
+src/coreclr/pal/tests/palsuite/paltestlist_to_be_reviewed.txt text eol=lf
 src/tests/JIT/Performance/CodeQuality/BenchmarksGame/regex-redux/regexdna-input25.txt text eol=lf
 src/tests/JIT/Performance/CodeQuality/BenchmarksGame/regex-redux/regexdna-input25000.txt text eol=lf
 src/tests/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/revcomp-input25.txt text eol=lf
