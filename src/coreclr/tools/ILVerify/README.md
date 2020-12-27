@@ -52,13 +52,17 @@ As the test project is marked with priority=1, simply building the test projects
 src/tests/build.(cmd/sh) release -priority=1
 ```
 
-It is important that one does not attempt to build the test project using `dotnet build` or `dotnet test`, as this will invalidate the state of the build and requires a full rebuild of both (see: https://github.com/dotnet/runtime/issues/43967)
+It is important that one does not attempt to build the test project using `dotnet build` or `dotnet test`, as this will invalidate the state of the build and requires a full rebuild of both (see this [issue](https://github.com/dotnet/runtime/issues/43967)). In case one does break their build, one must clean the build artifacts and rebuild in order to build the tests correctly. The following git command can be used to clean the repository from untracked changes, such as the build artifacts.
+
+```sh
+git clean -xdf
+```
 
 
 To incrementally build the ILVerify tests in isolation, the following can be run:
 
 ```sh
-./dotnet.(cmd/sh) msbuild ./src/tests/ilverify/ILVerification.Tests.csproj /p:Configuration=Release
+dotnet.(cmd/sh) msbuild ./src/tests/ilverify/ILVerification.Tests.csproj /p:Configuration=Release
 ```
 
 In order to run the tests one can run:
