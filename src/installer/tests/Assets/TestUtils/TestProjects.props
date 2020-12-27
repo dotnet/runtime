@@ -8,11 +8,14 @@
 
   <PropertyGroup>
     <SkipImportArcadeSdk>true</SkipImportArcadeSdk>
-    <!-- <RunAnalyzers>false</RunAnalyzers> -->
+    <RepoRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),global.json))\</RepoRoot>
+    <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
+    <ArtifactsDir Condition="'$(ArtifactsDir)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</ArtifactsDir>
+    <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin'))</ArtifactsBinDir>
   </PropertyGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),global.json))\eng\Versions.props" />
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory),global.json))\Directory.Build.props" />
+  <Import Project="$(RepositoryEngineeringDir)Versions.props" />
+  <Import Project="$(RepoRoot)Directory.Build.props" />
 
   <PropertyGroup>
     <!--
