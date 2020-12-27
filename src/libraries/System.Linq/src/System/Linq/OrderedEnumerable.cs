@@ -16,6 +16,8 @@ namespace System.Linq
 
         private int[] SortedMap(Buffer<TElement> buffer) => GetEnumerableSorter().Sort(buffer._items, buffer._count);
 
+        private void SortElements(Buffer<TElement> buffer) => GetEnumerableSorter().SortElements(buffer._items, buffer._count);
+
         private int[] SortedMap(Buffer<TElement> buffer, int minIdx, int maxIdx) =>
             GetEnumerableSorter().Sort(buffer._items, buffer._count, minIdx, maxIdx);
 
@@ -24,10 +26,21 @@ namespace System.Linq
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             if (buffer._count > 0)
             {
-                int[] map = SortedMap(buffer);
-                for (int i = 0; i < buffer._count; i++)
+                if (CanInPlaceSort())
                 {
-                    yield return buffer._items[map[i]];
+                    SortElements(buffer);
+                    for (int i = 0; i < buffer._count; i++)
+                    {
+                        yield return buffer._items[i];
+                    }
+                }
+                else
+                {
+                    int[] map = SortedMap(buffer);
+                    for (int i = 0; i < buffer._count; i++)
+                    {
+                        yield return buffer._items[map[i]];
+                    }
                 }
             }
         }
@@ -71,6 +84,8 @@ namespace System.Linq
 
         IOrderedEnumerable<TElement> IOrderedEnumerable<TElement>.CreateOrderedEnumerable<TKey>(Func<TElement, TKey> keySelector, IComparer<TKey>? comparer, bool descending) =>
             new OrderedEnumerable<TElement, TKey>(_source, keySelector, comparer, @descending, this);
+
+        protected abstract bool CanInPlaceSort();
 
         public TElement? TryGetLast(Func<TElement, bool> predicate, out bool found)
         {
@@ -157,6 +172,16 @@ namespace System.Linq
                 ? new CachingComparer<TElement, TKey>(_keySelector, _comparer, _descending)
                 : new CachingComparerWithChild<TElement, TKey>(_keySelector, _comparer, _descending, childComparer);
             return _parent != null ? _parent.GetComparer(cmp) : cmp;
+        }
+
+        protected override bool CanInPlaceSort()
+        {
+            if (_parent != null)
+            {
+                return false;
+            }
+            Type elementType = typeof(TElement);
+            return elementType.IsValueType || (elementType.IsClass && !elementType.IsArray);
         }
     }
 
@@ -262,6 +287,12 @@ namespace System.Linq
             return map;
         }
 
+        internal void SortElements(TElement[] elements, int count)
+        {
+            ComputeKeys(elements, count);
+            QuickSortElements(elements, 0, count - 1);
+        }
+
         internal int[] Sort(TElement[] elements, int count, int minIdx, int maxIdx)
         {
             int[] map = ComputeMap(elements, count);
@@ -278,6 +309,8 @@ namespace System.Linq
         }
 
         protected abstract void QuickSort(int[] map, int left, int right);
+
+        protected abstract void QuickSortElements(TElement[] map, int left, int right);
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
         // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.
@@ -342,6 +375,9 @@ namespace System.Linq
 
         protected override void QuickSort(int[] keys, int lo, int hi) =>
             new Span<int>(keys, lo, hi - lo + 1).Sort(CompareAnyKeys);
+
+        protected override void QuickSortElements(TElement[] element, int lo, int hi) =>
+            new Span<TKey>(_keys, lo, hi - lo + 1).Sort(new Span<TElement>(element, lo, hi-lo +1), _comparer);
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
         // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.

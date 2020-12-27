@@ -18,7 +18,11 @@ namespace System.Linq
             {
                 return buffer._items;
             }
-
+            if (CanInPlaceSort())
+            {
+                SortElements(buffer);
+                return buffer._items;
+            }
             TElement[] array = new TElement[count];
             int[] map = SortedMap(buffer);
             for (int i = 0; i != array.Length; i++)
@@ -33,16 +37,21 @@ namespace System.Linq
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             int count = buffer._count;
-            List<TElement> list = new List<TElement>(count);
-            if (count > 0)
+            if (count == 0)
             {
-                int[] map = SortedMap(buffer);
-                for (int i = 0; i != count; i++)
-                {
-                    list.Add(buffer._items[map[i]]);
-                }
+                return new List<TElement>(count);
             }
-
+            if (CanInPlaceSort())
+            {
+                SortElements(buffer);
+                return new List<TElement>(buffer._items);
+            }
+            List<TElement> list = new List<TElement>(count);
+            int[] map = SortedMap(buffer);
+            for (int i = 0; i != count; i++)
+            {
+                list.Add(buffer._items[map[i]]);
+            }
             return list;
         }
 
