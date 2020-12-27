@@ -1660,15 +1660,7 @@ typedef enum {
 // Keep in sync with System.Runtime.Loader.AssemblyLoadContext
 typedef struct {
 	MonoObject object;
-	MonoObject *unload_lock;
-	MonoEvent *resolving_unmaned_dll;
-	MonoEvent *resolving;
-	MonoEvent *unloading;
-	MonoString *name;
 	MonoAssemblyLoadContext *native_assembly_load_context;
-	gint64 id;
-	gint32 internal_state;
-	MonoBoolean is_collectible;
 } MonoManagedAssemblyLoadContext;
 
 TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);

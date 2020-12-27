@@ -11,7 +11,6 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Loader
 {
-    [StructLayout(LayoutKind.Sequential)]
     public partial class AssemblyLoadContext
     {
         internal IntPtr NativeALC
@@ -22,6 +21,7 @@ namespace System.Runtime.Loader
             }
         }
 
+        [DynamicDependency(nameof(_nativeAssemblyLoadContext))]
         private static IntPtr InitializeAssemblyLoadContext(IntPtr thisHandlePtr, bool representsTPALoadContext, bool isCollectible)
         {
             return InternalInitializeNativeALC(thisHandlePtr, representsTPALoadContext, isCollectible);
