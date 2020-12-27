@@ -29,7 +29,7 @@
   </PropertyGroup>
 
   <!-- Import the Arcade SDK -->
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdk)' != 'true'" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
