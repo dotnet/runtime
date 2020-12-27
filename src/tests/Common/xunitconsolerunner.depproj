@@ -4,6 +4,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
+    <PackageReference Include="MicrosoftDotNetXUnitConsoleRunnerPackage" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
   </ItemGroup>
 </Project>
