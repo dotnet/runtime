@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\commonConsole.props" />
+  <Import Project="..\..\common.props" />
 
   <PropertyGroup>
     <RunAOTCompilation>true</RunAOTCompilation>
