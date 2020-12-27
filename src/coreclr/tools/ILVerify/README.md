@@ -65,7 +65,7 @@ To incrementally build the ILVerify tests in isolation, the following can be run
 dotnet.(cmd/sh) msbuild ./src/tests/ilverify/ILVerification.Tests.csproj /p:Configuration=Release
 ```
 
-In order to run the tests one can executed:
+In order to run the tests one can execute:
 
 ```sh
 artifacts/tests/coreclr/(Windows/Linux).x64.Release/ilverify/ILVerification.Tests.(cmd/sh) -coreroot=artifacts/tests/coreclr/(Windows/Linux).x64.Release/Tests/Core_Root
