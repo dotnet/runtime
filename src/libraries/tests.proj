@@ -188,6 +188,8 @@
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'">
     <ProjectReference Include="$(MonoProjectRoot)netcore\sample\wasm\**\WasmSample.csproj"
                       BuildInParallel="false" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\wasm\**\*.Test.csproj"
+                      BuildInParallel="false" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
