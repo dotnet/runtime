@@ -29,6 +29,7 @@
     <Compile Remove="TypeForwarding\Dependencies\TypeForwardersRewriteForwarders.cs" />
     <Compile Remove="TypeForwarding\Dependencies\TypeForwardedIsUpdatedForMissingTypeFwd.cs" />
     <Compile Remove="TypeForwarding\Dependencies\AssemblyReferenceIsRemovedWhenUnused_Library.cs" />
+    <Compile Remove="TypeForwarding\Dependencies\TypeForwardersModifiersLib*.cs" />
     <Compile Remove="CommandLine\Dependencies\CustomStepDummy.cs" />
     <Compile Remove="CommandLine\Dependencies\CustomStepUser.cs" />
     <Compile Remove="Logging\Dependencies\LogStep.cs" />

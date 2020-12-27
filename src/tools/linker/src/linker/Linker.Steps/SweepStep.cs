@@ -851,6 +851,10 @@ namespace Mono.Linker.Steps
 					if (fpt.HasParameters)
 						UpdateTypeScope (fpt.Parameters);
 					return;
+				case IModifierType imt:
+					UpdateScopeOfTypeReference (imt.ModifierType);
+					UpdateScopeOfTypeReference (imt.ElementType);
+					return;
 				case TypeSpecification ts:
 					UpdateScopeOfTypeReference (ts.ElementType);
 					return;
