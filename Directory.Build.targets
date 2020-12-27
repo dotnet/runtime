@@ -7,8 +7,10 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
-  <ImportGroup Condition="'$(SkipImportArcadeSdk)' != 'true'">
-    <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdk)' != 'true'" />
+
+  <!-- RepositoryEngineeringDir isn't set when Installer tests import this file. -->
+  <ImportGroup Condition="'$(RepositoryEngineeringDir)' != ''">
     <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
     <Import Project="$(RepositoryEngineeringDir)python.targets" />
   </ImportGroup>

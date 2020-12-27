@@ -192,7 +192,8 @@
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
 
-  <ImportGroup Condition="'$(SkipImportArcadeSdk)' != 'true'">
+  <!-- RepositoryEngineeringDir isn't set when Installer tests import this file. -->
+  <ImportGroup Condition="'$(RepositoryEngineeringDir)' != ''">
     <Import Project="$(RepositoryEngineeringDir)native\naming.props" />
     <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
     <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />
