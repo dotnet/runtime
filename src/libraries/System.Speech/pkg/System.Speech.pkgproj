@@ -11,6 +11,9 @@
     <File Include="$(PlaceHolderFile)">
       <TargetPath>runtimes/win/lib/net45</TargetPath>
     </File>
+    <PackageFile Include=".\build\System.Speech.targets">
+      <TargetPath>build\</TargetPath>
+    </PackageFile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
