@@ -196,6 +196,17 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(hasValue);
         }
 
+        [Fact]
+        public void StringSegment_NullBuffer_SearchingReturnMinusOne()
+        {
+            const char item = 'c';
+            var segment = new StringSegment();
+
+            Assert.Equal(-1, segment.IndexOf(item));
+            Assert.Equal(-1, segment.IndexOfAny(new[]{item}));
+            Assert.Equal(-1, segment.LastIndexOf(item));
+        }
+
         [Theory]
         [InlineData("a", 0, 1, 0, 'a')]
         [InlineData("abc", 1, 1, 0, 'b')]
