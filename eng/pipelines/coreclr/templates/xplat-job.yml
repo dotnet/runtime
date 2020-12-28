@@ -6,6 +6,7 @@ parameters:
   name: ''
   helixType: '(unspecified)'
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   stagedBuild: false
   strategy: ''
@@ -15,6 +16,7 @@ parameters:
   condition: ''
   continueOnError: false
   dependsOn: ''
+  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -31,8 +33,8 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - ${{ if ne(parameters.stagedBuild, true) }}:
-        - checkout
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+        - evaluate_paths
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -60,8 +62,8 @@ jobs:
       agentOs: FreeBSD
     ${{ if eq(parameters.osGroup, 'OSX') }}:
       agentOs: MacOS
-    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      agentOs: Windows_NT
+    ${{ if eq(parameters.osGroup, 'windows') }}:
+      agentOs: windows
 
     # Setting this results in the arcade job template including a step
     # that gathers asset manifests and publishes them to pipeline
@@ -93,10 +95,7 @@ jobs:
 
     - name: crossArg
       value: ''
-    - ${{ if ne(parameters.crossrootfsDir, '') }}:
-      - name: crossArg
-        value: '-cross'
-    - ${{ if and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64')) }}:
+    - ${{ if eq(parameters.crossBuild, true) }}:
       - name: crossArg
         value: '-cross'
 
@@ -104,6 +103,8 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    - checkout: self
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ parameters.steps }}

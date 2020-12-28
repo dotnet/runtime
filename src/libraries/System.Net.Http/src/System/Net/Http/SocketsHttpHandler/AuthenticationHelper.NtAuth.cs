@@ -110,7 +110,7 @@ namespace System.Net.Http
                             }
                             else
                             {
-                                IPHostEntry result = await Dns.GetHostEntryAsync(authUri.IdnHost).ConfigureAwait(false);
+                                IPHostEntry result = await Dns.GetHostEntryAsync(authUri.IdnHost, cancellationToken).ConfigureAwait(false);
                                 hostName = result.HostName;
                             }
 

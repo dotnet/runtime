@@ -1869,13 +1869,6 @@ cache_generic_delegate_wrapper (GHashTable *cache, MonoMethod *orig_method, Mono
 	return res;
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_delegate_begin_invoke_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
-{
-}
-#endif
-
 /**
  * mono_marshal_get_delegate_begin_invoke:
  */
@@ -2056,13 +2049,6 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 #endif
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_delegate_end_invoke_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
-{
-}
-#endif
-
 /**
  * mono_marshal_get_delegate_end_invoke:
  */
@@ -2168,33 +2154,6 @@ free_signature_pointer_pair (SignaturePointerPair *pair)
 {
 	g_free (pair);
 }
-
-#ifndef ENABLE_ILGEN
-static void
-mb_skip_visibility_noilgen (MonoMethodBuilder *mb)
-{
-}
-
-static void
-mb_set_dynamic_noilgen (MonoMethodBuilder *mb)
-{
-}
-
-static void
-mb_emit_exception_noilgen (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg)
-{
-}
-
-static void
-mb_emit_exception_for_error_noilgen (MonoMethodBuilder *mb, const MonoError *error)
-{
-}
-
-static void
-emit_delegate_invoke_internal_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class, MonoGenericContext *ctx, MonoGenericContainer *container)
-{
-}
-#endif
 
 MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method)
@@ -2808,20 +2767,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
 	return mono_marshal_get_runtime_invoke_full (method, virtual_, need_direct_wrapper);
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_runtime_invoke_body_noilgen (MonoMethodBuilder *mb, const char **param_names, MonoImage *image, MonoMethod *method,
-						  MonoMethodSignature *sig, MonoMethodSignature *callsig,
-						  gboolean virtual_, gboolean need_direct_wrapper)
-{
-}
-
-static void
-emit_runtime_invoke_dynamic_noilgen (MonoMethodBuilder *mb)
-{
-}
-#endif
-
 /*
  * mono_marshal_get_runtime_invoke_dynamic:
  *
@@ -2977,18 +2922,6 @@ mono_marshal_get_runtime_invoke_for_sig (MonoMethodSignature *sig)
 	return res;
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoJitICallInfo *callinfo, MonoMethodSignature *csig2, gboolean check_exceptions)
-{
-}
-
-static void
-emit_return_noilgen (MonoMethodBuilder *mb)
-{
-}
-#endif
-
 /**
  * mono_marshal_get_icall_wrapper:
  * Generates IL code for the JIT icall wrapper. The generated method
@@ -3140,102 +3073,6 @@ mono_marshal_get_llvm_func_wrapper (MonoLLVMFuncWrapperSubtype subtype)
 	return res;
 }
 
-#ifndef ENABLE_ILGEN
-static int
-emit_marshal_custom_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-					 MonoMarshalSpec *spec, 
-					 int conv_arg, MonoType **conv_arg_type, 
-					 MarshalAction action)
-{
-	MonoType *int_type = mono_get_int_type ();
-	if (action == MARSHAL_ACTION_CONV_IN && t->type == MONO_TYPE_VALUETYPE)
-		*conv_arg_type = int_type;
-	return conv_arg;
-}
-
-static int
-emit_marshal_asany_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-					MonoMarshalSpec *spec, 
-					int conv_arg, MonoType **conv_arg_type, 
-					MarshalAction action)
-{
-	return conv_arg;
-}
-
-static int
-emit_marshal_vtype_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-					MonoMarshalSpec *spec, 
-					int conv_arg, MonoType **conv_arg_type, 
-					MarshalAction action)
-{
-	return conv_arg;
-}
-
-static int
-emit_marshal_string_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-					 MonoMarshalSpec *spec, 
-					 int conv_arg, MonoType **conv_arg_type, 
-					 MarshalAction action)
-{
-	MonoType *int_type = mono_get_int_type ();
-	switch (action) {
-	case MARSHAL_ACTION_CONV_IN:
-		*conv_arg_type = int_type;
-		break;
-	case MARSHAL_ACTION_MANAGED_CONV_IN:
-		*conv_arg_type = int_type;
-		break;
-	}
-	return conv_arg;
-}
-
-
-static int
-emit_marshal_safehandle_noilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
-			 MonoMarshalSpec *spec, int conv_arg, 
-			 MonoType **conv_arg_type, MarshalAction action)
-{
-	MonoType *int_type = mono_get_int_type ();
-	if (action == MARSHAL_ACTION_CONV_IN)
-		*conv_arg_type = int_type;
-	return conv_arg;
-}
-
-
-static int
-emit_marshal_handleref_noilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
-			MonoMarshalSpec *spec, int conv_arg, 
-			MonoType **conv_arg_type, MarshalAction action)
-{
-	MonoType *int_type = mono_get_int_type ();
-	if (action == MARSHAL_ACTION_CONV_IN)
-		*conv_arg_type = int_type;
-	return conv_arg;
-}
-
-
-static int
-emit_marshal_object_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		     MonoMarshalSpec *spec, 
-		     int conv_arg, MonoType **conv_arg_type, 
-		     MarshalAction action)
-{
-	MonoType *int_type = mono_get_int_type ();
-	if (action == MARSHAL_ACTION_CONV_IN)
-		*conv_arg_type = int_type;
-	return conv_arg;
-}
-
-static int
-emit_marshal_variant_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		     MonoMarshalSpec *spec, 
-		     int conv_arg, MonoType **conv_arg_type, 
-		     MarshalAction action)
-{
-	g_assert_not_reached ();
-}
-#endif
-
 gboolean
 mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
 {
@@ -3253,27 +3090,6 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
 #endif
 	}
 }
-
-#ifndef ENABLE_ILGEN
-static int
-emit_marshal_array_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-					MonoMarshalSpec *spec, 
-					int conv_arg, MonoType **conv_arg_type, 
-					MarshalAction action)
-{
-	MonoType *int_type = mono_get_int_type ();
-	MonoType *object_type = mono_get_object_type ();
-	switch (action) {
-	case MARSHAL_ACTION_CONV_IN:
-		*conv_arg_type = object_type;
-		break;
-	case MARSHAL_ACTION_MANAGED_CONV_IN:
-		*conv_arg_type = int_type;
-		break;
-	}
-	return conv_arg;
-}
-#endif
 
 MonoType*
 mono_marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/)
@@ -3320,60 +3136,6 @@ mono_marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, 
 	}
 	return conv_arg_class;
 }
-
-#ifndef ENABLE_ILGEN
-static int
-emit_marshal_boolean_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		      MonoMarshalSpec *spec, 
-		      int conv_arg, MonoType **conv_arg_type, 
-		      MarshalAction action)
-{
-	MonoType *int_type = mono_get_int_type ();
-	switch (action) {
-	case MARSHAL_ACTION_CONV_IN:
-		if (t->byref)
-			*conv_arg_type = int_type;
-		else
-			*conv_arg_type = mono_marshal_boolean_conv_in_get_local_type (spec, NULL);
-		break;
-
-	case MARSHAL_ACTION_MANAGED_CONV_IN: {
-		MonoClass* conv_arg_class = mono_marshal_boolean_managed_conv_in_get_conv_arg_class (spec, NULL);
-		if (t->byref)
-			*conv_arg_type = m_class_get_this_arg (conv_arg_class);
-		else
-			*conv_arg_type = m_class_get_byval_arg (conv_arg_class);
-		break;
-	}
-
-	}
-	return conv_arg;
-}
-
-static int
-emit_marshal_ptr_noilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
-		  MonoMarshalSpec *spec, int conv_arg, 
-		  MonoType **conv_arg_type, MarshalAction action)
-{
-	return conv_arg;
-}
-
-static int
-emit_marshal_char_noilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
-		   MonoMarshalSpec *spec, int conv_arg, 
-		   MonoType **conv_arg_type, MarshalAction action)
-{
-	return conv_arg;
-}
-
-static int
-emit_marshal_scalar_noilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
-		     MonoMarshalSpec *spec, int conv_arg, 
-		     MonoType **conv_arg_type, MarshalAction action)
-{
-	return conv_arg;
-}
-#endif
 
 int
 mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t, 
@@ -3453,18 +3215,6 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return conv_arg;
 	}
 }
-
-#ifndef ENABLE_ILGEN
-static void
-emit_create_string_hack_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res)
-{
-}
-
-static void
-emit_native_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *pinfo)
-{
-}
-#endif
 
 static void 
 mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *csig, gboolean set_default)
@@ -3922,45 +3672,6 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle);
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle)
-{
-	MonoMethodSignature *sig, *csig;
-	int i;
-	MonoType *int_type = mono_get_int_type ();
-
-	sig = m->sig;
-	csig = m->csig;
-
-	/* we first do all conversions */
-	for (i = 0; i < sig->param_count; i ++) {
-		MonoType *t = sig->params [i];
-
-		switch (t->type) {
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_VALUETYPE:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_BOOLEAN:
-			mono_emit_marshal (m, i, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
-		}
-	}
-
-	if (!sig->ret->byref) {
-		switch (sig->ret->type) {
-		case MONO_TYPE_STRING:
-			csig->ret = int_type;
-			break;
-		default:
-			break;
-		}
-	}
-}
-#endif
-
 static gboolean
 type_is_blittable (MonoType *type)
 {
@@ -4199,13 +3910,6 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	return res;
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_vtfixup_ftnptr_noilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type)
-{
-}
-#endif
-
 gpointer
 mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 {
@@ -4281,13 +3985,6 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 	return compiled_ptr;
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_castclass_noilgen (MonoMethodBuilder *mb)
-{
-}
-#endif
-
 /**
  * mono_marshal_get_castclass_with_cache:
  * This does the equivalent of \c mono_object_castclass_with_cache.
@@ -4351,13 +4048,6 @@ mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *ca
 	return isinst;
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_isinst_noilgen (MonoMethodBuilder *mb)
-{
-}
-#endif
-
 /**
  * mono_marshal_get_isinst_with_cache:
  * This does the equivalent of \c mono_marshal_isinst_with_cache.
@@ -4402,13 +4092,6 @@ mono_marshal_get_isinst_with_cache (void)
 
 	return cached;
 }
-
-#ifndef ENABLE_ILGEN
-static void
-emit_struct_to_ptr_noilgen (MonoMethodBuilder *mb, MonoClass *klass)
-{
-}
-#endif
 
 /**
  * mono_marshal_get_struct_to_ptr:
@@ -4458,13 +4141,6 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 	mono_marshal_unlock ();
 	return res;
 }
-
-#ifndef ENABLE_ILGEN
-static void
-emit_ptr_to_struct_noilgen (MonoMethodBuilder *mb, MonoClass *klass)
-{
-}
-#endif
 
 /**
  * mono_marshal_get_ptr_to_struct:
@@ -4559,19 +4235,6 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 	}
 	return res;
 }
-
-#ifndef ENABLE_ILGEN
-static void
-emit_synchronized_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method)
-{
-	if (m_class_is_valuetype (method->klass) && !(method->flags & MONO_METHOD_ATTR_STATIC)) {
-		/* FIXME Is this really the best way to signal an error here?  Isn't this called much later after class setup? -AK */
-		mono_class_set_type_load_failure (method->klass, "");
-		return;
-	}
-
-}
-#endif
 
 /**
  * mono_marshal_get_synchronized_wrapper:
@@ -4669,13 +4332,6 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	return res;	
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_unbox_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method)
-{
-}
-#endif
-
 /**
  * mono_marshal_get_unbox_wrapper:
  * The returned method calls \p method unboxing the \c this argument.
@@ -4760,13 +4416,6 @@ record_slot_vstore (MonoObject *array, size_t index, MonoObject *value)
 	char *name = mono_type_get_full_name (m_class_element_class (mono_object_class (array)));
 	printf ("slow vstore of %s\n", name);
 	g_free (name);
-}
-#endif
-
-#ifndef ENABLE_ILGEN
-static void
-emit_virtual_stelemref_noilgen (MonoMethodBuilder *mb, const char **param_names, MonoStelemrefKind kind)
-{
 }
 #endif
 
@@ -4866,13 +4515,6 @@ mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers)
 	return res;
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_stelemref_noilgen (MonoMethodBuilder *mb)
-{
-}
-#endif
-
 /**
  * mono_marshal_get_stelemref:
  */
@@ -4910,13 +4552,6 @@ mono_marshal_get_stelemref (void)
 
 	return ret;
 }
-
-#ifndef ENABLE_ILGEN
-static void
-mb_emit_byte_noilgen (MonoMethodBuilder *mb, guint8 op)
-{
-}
-#endif
 
 /*
  * mono_marshal_get_gsharedvt_in_wrapper:
@@ -4983,13 +4618,6 @@ mono_marshal_get_gsharedvt_out_wrapper (void)
 
 	return ret;
 }
-
-#ifndef ENABLE_ILGEN
-static void
-emit_array_address_noilgen (MonoMethodBuilder *mb, int rank, int elem_size)
-{
-}
-#endif
 
 typedef struct {
 	int rank;
@@ -5088,13 +4716,6 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	mono_marshal_unlock ();
 	return ret;
 }
-
-#ifndef ENABLE_ILGEN
-static void
-emit_array_accessor_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig, MonoGenericContext *ctx)
-{
-}
-#endif
 
 /*
  * mono_marshal_get_array_accessor_wrapper:
@@ -6522,13 +6143,6 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 	}
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_generic_array_helper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
-{
-}
-#endif
-
 /*
  * mono_marshal_get_generic_array_helper:
  *
@@ -6629,13 +6243,6 @@ mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, gu
 	*byte_offset = i;
 	*bitmask = buf [i];
 }
-
-#ifndef ENABLE_ILGEN
-static void
-emit_thunk_invoke_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
-{
-}
-#endif
 
 MonoMethod *
 mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
@@ -6781,13 +6388,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	get_marshal_cb ()->emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, aot, check_exceptions, func_param, skip_gc_trans);
 }
 
-#ifndef ENABLE_ILGEN
-static void
-emit_native_wrapper_noilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans)
-{
-}
-#endif
-
 static MonoMarshalCallbacks marshal_cb;
 static gboolean cb_inited = FALSE;
 
@@ -6800,58 +6400,6 @@ mono_install_marshal_callbacks (MonoMarshalCallbacks *cb)
 	cb_inited = TRUE;
 }
 
-#ifndef ENABLE_ILGEN
-static void
-install_noilgen (void)
-{
-	MonoMarshalCallbacks cb;
-	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
-	cb.emit_marshal_array = emit_marshal_array_noilgen;
-	cb.emit_marshal_boolean = emit_marshal_boolean_noilgen;
-	cb.emit_marshal_ptr = emit_marshal_ptr_noilgen;
-	cb.emit_marshal_char = emit_marshal_char_noilgen;
-	cb.emit_marshal_scalar = emit_marshal_scalar_noilgen;
-	cb.emit_marshal_custom = emit_marshal_custom_noilgen;
-	cb.emit_marshal_asany = emit_marshal_asany_noilgen;
-	cb.emit_marshal_vtype = emit_marshal_vtype_noilgen;
-	cb.emit_marshal_string = emit_marshal_string_noilgen;
-	cb.emit_marshal_safehandle = emit_marshal_safehandle_noilgen;
-	cb.emit_marshal_handleref = emit_marshal_handleref_noilgen;
-	cb.emit_marshal_object = emit_marshal_object_noilgen;
-	cb.emit_marshal_variant = emit_marshal_variant_noilgen;
-	cb.emit_castclass = emit_castclass_noilgen;
-	cb.emit_struct_to_ptr = emit_struct_to_ptr_noilgen;
-	cb.emit_ptr_to_struct = emit_ptr_to_struct_noilgen;
-	cb.emit_isinst = emit_isinst_noilgen;
-	cb.emit_virtual_stelemref = emit_virtual_stelemref_noilgen;
-	cb.emit_stelemref = emit_stelemref_noilgen;
-	cb.emit_array_address = emit_array_address_noilgen;
-	cb.emit_native_wrapper = emit_native_wrapper_noilgen;
-	cb.emit_managed_wrapper = emit_managed_wrapper_noilgen;
-	cb.emit_runtime_invoke_body = emit_runtime_invoke_body_noilgen;
-	cb.emit_runtime_invoke_dynamic = emit_runtime_invoke_dynamic_noilgen;
-	cb.emit_delegate_begin_invoke = emit_delegate_begin_invoke_noilgen;
-	cb.emit_delegate_end_invoke = emit_delegate_end_invoke_noilgen;
-	cb.emit_delegate_invoke_internal = emit_delegate_invoke_internal_noilgen;
-	cb.emit_synchronized_wrapper = emit_synchronized_wrapper_noilgen;
-	cb.emit_unbox_wrapper = emit_unbox_wrapper_noilgen;
-	cb.emit_array_accessor_wrapper = emit_array_accessor_wrapper_noilgen;
-	cb.emit_generic_array_helper = emit_generic_array_helper_noilgen;
-	cb.emit_thunk_invoke_wrapper = emit_thunk_invoke_wrapper_noilgen;
-	cb.emit_create_string_hack = emit_create_string_hack_noilgen;
-	cb.emit_native_icall_wrapper = emit_native_icall_wrapper_noilgen;
-	cb.emit_icall_wrapper = emit_icall_wrapper_noilgen;
-	cb.emit_return = emit_return_noilgen;
-	cb.emit_vtfixup_ftnptr = emit_vtfixup_ftnptr_noilgen;
-	cb.mb_skip_visibility = mb_skip_visibility_noilgen;
-	cb.mb_set_dynamic = mb_set_dynamic_noilgen;
-	cb.mb_emit_exception = mb_emit_exception_noilgen;
-	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_noilgen;
-	cb.mb_emit_byte = mb_emit_byte_noilgen;
-	mono_install_marshal_callbacks (&cb);
-}
-#endif
-
 static MonoMarshalCallbacks *
 get_marshal_cb (void)
 {
@@ -6859,7 +6407,7 @@ get_marshal_cb (void)
 #ifdef ENABLE_ILGEN
 		mono_marshal_ilgen_init ();
 #else
-		install_noilgen ();
+		mono_marshal_noilgen_init ();
 #endif
 	}
 	return &marshal_cb;

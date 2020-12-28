@@ -1,5 +1,9 @@
-#include "mono/eventpipe/ep.h"
-#include "eglib/test/test.h"
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include "ep-tests-debug.h"
+#endif
+
+#include <eventpipe/ep.h>
+#include <eglib/test/test.h>
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"
@@ -49,7 +53,7 @@ test_provider_callback_data_queue (void)
 		provider_callback,
 		NULL,
 		1,
-		EP_EVENT_LEVEL_LOG_ALWAYS,
+		EP_EVENT_LEVEL_LOGALWAYS,
 		true);
 
 	for (uint32_t i = 0; i < 1000; ++i)

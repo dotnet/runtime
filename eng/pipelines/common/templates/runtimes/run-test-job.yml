@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
@@ -20,7 +21,9 @@ parameters:
   pool: ''
   runtimeFlavor: 'coreclr'
   runtimeFlavorDisplayName: 'CoreCLR'
+  shouldContinueOnError: false
   dependsOn: []
+  dependOnEvaluatePaths: false
 
 ### Test run job
 
@@ -36,6 +39,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
@@ -43,6 +47,7 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -97,6 +102,8 @@ jobs:
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2_Composite
 
     # Set job timeouts
     #
@@ -219,7 +226,6 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
-
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -244,7 +250,7 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipstressdependencies copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
       displayName: Copy native test components to test output folder
 
 
@@ -259,6 +265,20 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
 
+    # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
+    - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
+      - ${{ if eq(parameters.archType, 'arm64') }}:
+        - script: ./build.sh
+                  -subset mono
+                  -c $(buildConfigUpper)
+                  -arch $(archType)
+                  /p:BuildMonoAotCrossCompiler=true
+                  /p:BuildMonoAotCrossCompilerOnly=true
+                  /p:MonoLibClang="/usr/lib/llvm-9/lib/libclang-9.so.1"
+                  /p:MonoAOTEnableLLVM=true
+                  /p:MonoAOTLLVMUseCxx11Abi=true
+          displayName: "Build Mono LLVM AOT cross compiler"
+
 
     # Overwrite coreclr runtime binaries with mono ones
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
@@ -270,8 +290,14 @@ jobs:
         displayName: "Patch dotnet with mono"
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
-      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig)
-        displayName: "LLVM AOT compile CoreCLR tests"
+      - ${{ if eq(parameters.archType, 'x64') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType)
+          displayName: "LLVM AOT compile CoreCLR tests"
+      - ${{ if eq(parameters.archType, 'arm64') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) cross
+          displayName: "LLVM AOT cross-compile CoreCLR tests"
+          env:
+            __MonoToolPrefix: aarch64-linux-gnu-
 
     # Send tests to Helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
@@ -282,6 +308,7 @@ jobs:
         osGroup: ${{ parameters.osGroup }}
         osSubgroup: ${{ parameters.osSubgroup}}
         runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
@@ -448,6 +475,8 @@ jobs:
           - jitehwritethru
           - jitobjectstackallocation
           - jitpgo
+          - jitpgo_inline
+          - jitpgo_classes
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip

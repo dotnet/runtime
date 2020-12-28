@@ -151,7 +151,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="delay">The time span to wait before canceling this <see cref="CancellationTokenSource"/></param>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// The exception that is thrown when <paramref name="delay"/> is less than -1 or greater than int.MaxValue.
+        /// The <paramref name="delay"/> is less than -1 or greater than the maximum allowed timer duration.
         /// </exception>
         /// <remarks>
         /// <para>
@@ -168,12 +168,12 @@ namespace System.Threading
         public CancellationTokenSource(TimeSpan delay)
         {
             long totalMilliseconds = (long)delay.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
                 throw new ArgumentOutOfRangeException(nameof(delay));
             }
 
-            InitializeWithTimer((int)totalMilliseconds);
+            InitializeWithTimer((uint)totalMilliseconds);
         }
 
         /// <summary>
@@ -202,14 +202,14 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(millisecondsDelay));
             }
 
-            InitializeWithTimer(millisecondsDelay);
+            InitializeWithTimer((uint)millisecondsDelay);
         }
 
         /// <summary>
         /// Common initialization logic when constructing a CTS with a delay parameter.
         /// A zero delay will result in immediate cancellation.
         /// </summary>
-        private void InitializeWithTimer(int millisecondsDelay)
+        private void InitializeWithTimer(uint millisecondsDelay)
         {
             if (millisecondsDelay == 0)
             {
@@ -218,7 +218,7 @@ namespace System.Threading
             else
             {
                 _state = NotCanceledState;
-                _timer = new TimerQueueTimer(s_timerCallback, this, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
 
                 // The timer roots this CTS instance while it's scheduled.  That is by design, so
                 // that code like:
@@ -286,8 +286,7 @@ namespace System.Threading
         /// cref="CancellationTokenSource"/> has been disposed.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// The exception thrown when <paramref name="delay"/> is less than -1 or
-        /// greater than int.MaxValue.
+        /// The <paramref name="delay"/> is less than -1 or greater than maximum allowed timer duration.
         /// </exception>
         /// <remarks>
         /// <para>
@@ -303,12 +302,12 @@ namespace System.Threading
         public void CancelAfter(TimeSpan delay)
         {
             long totalMilliseconds = (long)delay.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
-                throw new ArgumentOutOfRangeException(nameof(delay));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay);
             }
 
-            CancelAfter((int)totalMilliseconds);
+            CancelAfter((uint)totalMilliseconds);
         }
 
         /// <summary>
@@ -337,12 +336,17 @@ namespace System.Threading
         /// </remarks>
         public void CancelAfter(int millisecondsDelay)
         {
-            ThrowIfDisposed();
-
             if (millisecondsDelay < -1)
             {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsDelay));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay);
             }
+
+            CancelAfter((uint)millisecondsDelay);
+        }
+
+        private void CancelAfter(uint millisecondsDelay)
+        {
+            ThrowIfDisposed();
 
             if (IsCancellationRequested)
             {
@@ -379,7 +383,7 @@ namespace System.Threading
             // the following in a try/catch block.
             try
             {
-                timer.Change((uint)millisecondsDelay, Timeout.UnsignedInfinite);
+                timer.Change(millisecondsDelay, Timeout.UnsignedInfinite);
             }
             catch (ObjectDisposedException)
             {
@@ -822,10 +826,9 @@ namespace System.Threading
             // this work with a callback mechanism will add additional cost to other more common cases.
             return new ValueTask(Task.Factory.StartNew(static s =>
             {
-                Debug.Assert(s is Tuple<CancellationTokenSource, long>);
-                var state = (Tuple<CancellationTokenSource, long>)s;
+                var state = (TupleSlim<CancellationTokenSource, long>)s!;
                 state.Item1.WaitForCallbackToComplete(state.Item2);
-            }, Tuple.Create(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default));
+            }, new TupleSlim<CancellationTokenSource, long>(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default));
         }
 
         private sealed class Linked1CancellationTokenSource : CancellationTokenSource

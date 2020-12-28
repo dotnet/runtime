@@ -27,6 +27,9 @@
 #include <linux/sockios.h>
 #include <arpa/inet.h>
 #endif
+#if HAVE_NET_IFMEDIA_H
+#include <net/if_media.h>
+#endif
 
 #if defined(AF_PACKET)
 #include <sys/ioctl.h>
@@ -199,6 +202,26 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                 lla.NumAddressBytes = sadl->sdl_alen;
                 lla.HardwareType = MapHardwareType(sadl->sdl_type);
 
+#if HAVE_NET_IFMEDIA_H
+                if (lla.HardwareType == NetworkInterfaceType_Ethernet)
+                {
+                    // WI-FI and Ethernet have same address type so we can try to distinguish more
+                    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+                    if (fd >= 0)
+                    {
+                        struct ifmediareq ifmr;
+                        memset(&ifmr, 0, sizeof(ifmr));
+                        strncpy(ifmr.ifm_name, actualName, sizeof(ifmr.ifm_name));
+
+                        if ((ioctl(fd, SIOCGIFMEDIA, (caddr_t)&ifmr) == 0) && (IFM_TYPE(ifmr.ifm_current) == IFM_IEEE80211))
+                        {
+                            lla.HardwareType = NetworkInterfaceType_Wireless80211;
+                        }
+
+                        close(fd);
+                    }
+                }
+#endif
                 memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), (uint8_t*)LLADDR(sadl), sadl->sdl_alen);
                 onLinkLayerFound(current->ifa_name, &lla);
             }
@@ -302,8 +325,9 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                 nii->SupportsMulticast = 1;
             }
 
-            // Get administrative state as best guess for now.
-            nii->OperationalState = (ifaddrsEntry->ifa_flags & IFF_UP) ? OperationalStatus_Up : OperationalStatus_Down;
+            // OperationalState returns whether the interface can transmit data packets.
+            // The administrator must have enabled the interface (IFF_UP), and the cable must be plugged in (IFF_RUNNING).
+            nii->OperationalState = ((ifaddrsEntry->ifa_flags & (IFF_UP|IFF_RUNNING)) == (IFF_UP|IFF_RUNNING)) ? OperationalStatus_Up : OperationalStatus_Down;
         }
 
         if (ifaddrsEntry->ifa_addr == NULL)
@@ -540,5 +564,13 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
 
     free(buffer);
     return 0;
+}
+#else
+int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
+{
+    (void)interfaceIndex;
+    (void)onGatewayFound;
+    errno = ENOTSUP;
+    return -1;
 }
 #endif // HAVE_RT_MSGHDR

@@ -25,7 +25,7 @@
            and on 32-bit builds:
            IL2012: Could not find field 'Padding' in type 'System.Runtime.CompilerServices.RawArrayData'
       -->
-      <LinkerNoWarn Condition="'$(TargetOS)' != 'Windows_NT'">$(LinkerNoWarn);IL2008</LinkerNoWarn>
+      <LinkerNoWarn Condition="'$(TargetOS)' != 'windows'">$(LinkerNoWarn);IL2008</LinkerNoWarn>
       <LinkerNoWarn Condition="'$(Platform)' != 'x64' AND '$(Platform)' != 'arm64'">$(LinkerNoWarn);IL2012</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
     </PropertyGroup>
@@ -71,8 +71,6 @@
 
       <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
       <_SuppressionsXmls Include="$(CoreLibSharedILLinkSuppressionsFilesPrefix).xml" />
-      <_SuppressionsXmls Condition="'$(TargetOS)' != 'Windows_NT'" Include="$(CoreLibSharedILLinkSuppressionsFilesPrefix).NonWindows.xml" />
-      <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).xml" />
 
       <!-- netstandard2.1-only System.ComponentModel.Annotations XML file is not bin-placed during -allConfigurations builds
            due to the linker not being run on the assembly (eng\illink.targets). Manually include it. -->

@@ -299,12 +299,8 @@ namespace System.Net.Mail
             if (ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))
             {
 #if DEBUG
-                if (context != null && !context.IdentityRequested)
-                {
-                    NetEventSource.Fail(this, "Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)");
-                }
+                Debug.Assert(context == null || context.IdentityRequested, "Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)");
 #endif
-
                 try
                 {
                     ExecutionContext? x = context == null ? null : context.ContextCopy;

@@ -348,14 +348,7 @@ namespace System.IO
         /// <returns>Number of bytes actually read.</returns>
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
 
             return ReadCore(new Span<byte>(buffer, offset, count));
         }
@@ -399,31 +392,29 @@ namespace System.IO
 
             unsafe
             {
-                fixed (byte* pBuffer = &MemoryMarshal.GetReference(buffer))
+                if (_buffer != null)
                 {
-                    if (_buffer != null)
-                    {
-                        byte* pointer = null;
+                    byte* pointer = null;
 
-                        try
-                        {
-                            _buffer.AcquirePointer(ref pointer);
-                            Buffer.Memcpy(pBuffer, pointer + pos + _offset, nInt);
-                        }
-                        finally
-                        {
-                            if (pointer != null)
-                            {
-                                _buffer.ReleasePointer();
-                            }
-                        }
-                    }
-                    else
+                    try
                     {
-                        Buffer.Memcpy(pBuffer, _mem + pos, nInt);
+                        _buffer.AcquirePointer(ref pointer);
+                        Buffer.Memmove(ref MemoryMarshal.GetReference(buffer), ref *(pointer + pos + _offset), (nuint)nInt);
+                    }
+                    finally
+                    {
+                        if (pointer != null)
+                        {
+                            _buffer.ReleasePointer();
+                        }
                     }
                 }
+                else
+                {
+                    Buffer.Memmove(ref MemoryMarshal.GetReference(buffer), ref *(_mem + pos), (nuint)nInt);
+                }
             }
+
             Interlocked.Exchange(ref _position, pos + n);
             return nInt;
         }
@@ -438,14 +429,7 @@ namespace System.IO
         /// <returns>Task that can be used to access the number of bytes actually read.</returns>
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
 
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<int>(cancellationToken);
@@ -626,14 +610,7 @@ namespace System.IO
         /// <param name="count">Number of bytes to write.</param>
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
 
             WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
         }
@@ -688,34 +665,31 @@ namespace System.IO
                 }
             }
 
-            fixed (byte* pBuffer = &MemoryMarshal.GetReference(buffer))
+            if (_buffer != null)
             {
-                if (_buffer != null)
+                long bytesLeft = _capacity - pos;
+                if (bytesLeft < buffer.Length)
                 {
-                    long bytesLeft = _capacity - pos;
-                    if (bytesLeft < buffer.Length)
-                    {
-                        throw new ArgumentException(SR.Arg_BufferTooSmall);
-                    }
+                    throw new ArgumentException(SR.Arg_BufferTooSmall);
+                }
 
-                    byte* pointer = null;
-                    try
-                    {
-                        _buffer.AcquirePointer(ref pointer);
-                        Buffer.Memcpy(pointer + pos + _offset, pBuffer, buffer.Length);
-                    }
-                    finally
-                    {
-                        if (pointer != null)
-                        {
-                            _buffer.ReleasePointer();
-                        }
-                    }
-                }
-                else
+                byte* pointer = null;
+                try
                 {
-                    Buffer.Memcpy(_mem + pos, pBuffer, buffer.Length);
+                    _buffer.AcquirePointer(ref pointer);
+                    Buffer.Memmove(ref *(pointer + pos + _offset), ref MemoryMarshal.GetReference(buffer), (nuint)buffer.Length);
                 }
+                finally
+                {
+                    if (pointer != null)
+                    {
+                        _buffer.ReleasePointer();
+                    }
+                }
+            }
+            else
+            {
+                Buffer.Memmove(ref *(_mem + pos), ref MemoryMarshal.GetReference(buffer), (nuint)buffer.Length);
             }
 
             Interlocked.Exchange(ref _position, n);
@@ -732,14 +706,7 @@ namespace System.IO
         /// <returns>Task that can be awaited </returns>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
 
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);

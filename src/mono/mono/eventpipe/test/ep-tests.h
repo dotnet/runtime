@@ -1,7 +1,7 @@
 #ifndef _EVENTPIPE_TESTS_H
 #define _EVENTPIPE_TESTS_H
 
-#include "eglib/test/test.h"
+#include <eglib/test/test.h>
 
 DEFINE_TEST_GROUP_INIT_H(ep_setup_tests_init);
 DEFINE_TEST_GROUP_INIT_H(ep_rt_tests_init);

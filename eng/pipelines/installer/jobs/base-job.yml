@@ -4,13 +4,16 @@ parameters:
   archType: ''
   osSubgroup: ''
   platform: ''
+  crossBuild: false
   crossrootfsDir: ''
   timeoutInMinutes: 120
   condition: true
+  shouldContinueOnError: false
   container: ''
   buildSteps: []
   dependsOn: []
   dependsOnGlobalBuild: false
+  dependOnEvaluatePaths: false
   globalBuildSuffix: ''
   variables: []
   name: ''
@@ -20,19 +23,13 @@ parameters:
 
   packageDistroList:
   - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
-    imageRid: ubuntu.14.04
-    rids: []
+    packageType: deb
+    packagingArgs: /p:BuildDebPackage=true
   - image: mcr.microsoft.com/dotnet-buildtools/prereqs:rhel-7-rpmpkg-c982313-20174116044113
-    imageRid: rhel.7
-    rids:
-    - centos.7
-    - fedora.27
-    - opensuse.42
-    - oraclelinux.7
-    - sles.12
+    packageType: rpm
+    packagingArgs: /p:BuildRpmPackage=true
 
   isOfficialBuild: false
-  useOfficialAllConfigurations: false
   buildFullPlatformManifest: false
 
   liveRuntimeBuildConfig: ''
@@ -67,8 +64,7 @@ jobs:
       not(in(parameters.archType, 'x64', 'x86')),
       eq(parameters.runtimeFlavor, 'mono'),
       eq(parameters.isOfficialBuild, true),
-      ne(parameters.crossrootfsDir, ''),
-      and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64'))) }}
+      eq(parameters.crossBuild, true)) }}
 
   - name: BuildAction
     value: -test
@@ -98,7 +94,7 @@ jobs:
   ### Platform-specific variable setup
   ###
 
-  - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
 
     - name: CommonMSBuildArgs
       value: >-
@@ -117,7 +113,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        build.cmd -subset installer -ci
+        build.cmd -subset host+packs -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
@@ -132,7 +128,7 @@ jobs:
         /p:SkipTests=$(SkipTests)
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         /p:TargetArchitecture=${{ parameters.archType }}
-        /p:CrossBuild=${{ eq(parameters.archType, 'arm64') }}
+        /p:CrossBuild=${{ parameters.crossBuild }}
         $(llvmParameter)
 
     - name: BaseJobBuildCommand
@@ -155,7 +151,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(Build.SourcesDirectory)/build.sh -subset packs -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
         -os ${{ parameters.osGroup }}
@@ -191,7 +187,7 @@ jobs:
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: BuildScript
-        value: ./eng/install-nuget-credprovider-then-build.sh --subset installer
+        value: ./eng/install-nuget-credprovider-then-build.sh --subset host+packs
       - name: MSBuildScript
         value: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
@@ -217,9 +213,9 @@ jobs:
 
     - name: BuildArguments
       value: >-
-        -subset installer -ci
+        -subset host+packs -ci
         $(BuildAction)
-        /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+        /p:CrossBuild=${{ parameters.crossBuild }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
         $(LiveOverridePathArgs)
@@ -233,23 +229,15 @@ jobs:
         $(OutputRidArg)
         /bl:msbuild.publish.binlog
 
-    # Tell the build to package up the bits from the portable build.
-    - name: PackagePortableBitsArgs
-      value: >-
-        /p:PortableBuild=false
-        /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/
-        /p:InstallerSourceOSPlatformConfig=linux-x64.$(_BuildConfig)
-
     - name: DockerRunMSBuild
       value: >-
         docker run
         -v $(Build.SourcesDirectory):/root/runtime
-        -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/
         -w=/root/runtime
         $(PreserveNuGetAuthDockerArgs)
 
     - name: installersSubsetArg
-      value: --subset Installers
+      value: --subset packs.installers
 
     - name: BaseJobBuildCommand
       value: |
@@ -265,25 +253,15 @@ jobs:
     value: >-
       $(RuntimeArtifactsArgs)
       $(LibrariesConfigurationArg)
-      $(LibrariesAllConfigurationsOverridePathArg)
-      $(AllArtifactsArgs)
 
   - name: RuntimeArtifactsArgs
     value: ''
   - name: LibrariesConfigurationArg
     value: ''
-  - name: LibrariesAllConfigurationsOverridePathArg
-    value: ''
-  - name: AllArtifactsArgs
-    value: ''
 
   - name: RuntimeDownloadPath
     value: ''
   - name: LibrariesDownloadPath
-    value: ''
-  - name: LibrariesDownloadPathAllConfigurations
-    value: ''
-  - name: AllArtifactsDownloadPath
     value: ''
 
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
@@ -316,60 +294,24 @@ jobs:
     - name: LibrariesConfigurationArg
       value: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
 
-  # Download allconfigurations bits to a separate location. It overlaps with the live libraries
-  # download and causes conflict when unzipping to the same location.
-  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-    - name: LibrariesDownloadPathAllConfigurations
-      value: 'artifacts/transport/librariesallconfigurations'
-    - name: LibrariesAllConfigurationsOverridePathArg
-      value: /p:LibrariesAllConfigurationsOverridePath=${{ parameters.buildCommandSourcesDirectory }}$(LibrariesDownloadPathAllConfigurations)
-    - name: LibrariesArtifactNameAllConfigurations
-      value: libraries_bin_official_allconfigurations
-
-  # Download all upstream platforms and incorporate in the platform manifest.
-  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
-    - name: AllArtifactsDownloadPath
-      value: 'artifacts/transport/AllArtifacts'
-    - name: AllArtifactsArgs
-      value: >-
-        /p:AllArtifactsDownloadPath=${{ parameters.buildCommandSourcesDirectory }}$(AllArtifactsDownloadPath)
-        /p:BuildFullPlatformManifest=true
-
   dependsOn:
-  - checkout
+  - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+    - evaluate_paths
   - ${{ parameters.dependsOn }}
-  - ${{ if eq(parameters.dependsOnGlobalBuild, false) }}:
-    - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
-            parameters.runtimeFlavor,
-            parameters.runtimeVariant,
-            parameters.osGroup,
-            parameters.osSubgroup,
-            parameters.archType,
-            parameters.liveRuntimeBuildConfig) }}
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - libraries_build_${{ format('{0}{1}_{2}_{3}',
-          parameters.osGroup,
-          parameters.osSubgroup,
-          parameters.archType,
-          parameters.liveLibrariesBuildConfig) }}
-    - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-      - libraries_build_allconfigurations_Windows_NT_x64_Release
-    - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
-      - ${{ each platform in parameters.platforms }}:
-        - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
-        - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
-
-  - ${{ if eq(parameters.dependsOnGlobalBuild, true) }}:
-    - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        - ${{ format('build_{0}{1}_{2}_{3}_{4}',
-            parameters.osGroup,
-            parameters.osSubgroup,
-            parameters.archType,
-            parameters.liveRuntimeBuildConfig,
-            parameters.globalBuildSuffix) }}
-    - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-      - build_Windows_NT_x64_${{ parameters.liveLibrariesBuildConfig }}_AllConfigurations
+  - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
+        parameters.runtimeFlavor,
+        parameters.runtimeVariant,
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveRuntimeBuildConfig) }}
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - libraries_build_${{ format('{0}{1}_{2}_{3}',
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveLibrariesBuildConfig) }}
 
   steps:
 
@@ -391,7 +333,7 @@ jobs:
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
     - task: NuGetAuthenticate@0
 
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
       # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
       - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
@@ -406,37 +348,9 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
-
-  # Download and extract artifacts for earlier subsets.
-  - task: DownloadBuildArtifacts@0
-    displayName: 'Download artifacts for all platforms'
-    inputs:
-      buildType: current
-      downloadType: specific
-      downloadPath: '$(Build.SourcesDirectory)/__download__/AllPlatforms/'
-      allowPartiallySucceededBuilds: true
-      itemPattern: |
-        $(runtimeFlavorName)Product_*/**
-        libraries_bin_*/**
-        !*Logs*
-
-  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
-    - ${{ each platform in parameters.platforms }}:
-      - task: ExtractFiles@1
-        displayName: 'Unzip $(runtimeFlavorName) artifacts: ${{ platform }}'
-        inputs:
-          archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/**/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}.*
-          destinationFolder: $(AllArtifactsDownloadPath)/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}/
-          cleanUnpackFolder: false
-      - task: ExtractFiles@1
-        displayName: 'Unzip Libraries artifacts: ${{ platform }}'
-        inputs:
-          archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/**/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}.*
-          destinationFolder: $(AllArtifactsDownloadPath)/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}/
-          cleanUnpackFolder: false
+  - checkout: self
+    clean: true
+    fetchDepth: $(checkoutFetchDepth)
 
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -455,16 +369,6 @@ jobs:
         displayName: 'Libraries artifacts'
         cleanUnpackFolder: false
 
-  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(Build.SourcesDirectory)/$(LibrariesDownloadPathAllConfigurations)
-        # Always use '.zip' because AllConfigurations is built on Windows but used everywhere.
-        artifactFileName: '$(LibrariesArtifactNameAllConfigurations).zip'
-        artifactName: '$(LibrariesArtifactNameAllConfigurations)'
-        displayName: 'Libraries artifacts (AllConfigurations)'
-        cleanUnpackFolder: false
-
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
     - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
       displayName: Install Build Dependencies
@@ -478,11 +382,13 @@ jobs:
   - ${{ if ne(parameters.osGroup, 'OSX') }}:
     - script: $(BaseJobBuildCommand)
       displayName: Build
+      continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
   # Build corehost, sign and add entitlements to MacOS binaries
   - ${{ if eq(parameters.osGroup, 'OSX') }}:
-    - script: $(BaseJobBuildCommand) -subset corehost
+    - script: $(BaseJobBuildCommand) -subset host.native
       displayName: Build CoreHost
+      continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
@@ -495,8 +401,9 @@ jobs:
             path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
             entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
-    - script: $(BaseJobBuildCommand) -subset installer.nocorehost
+    - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+packs
       displayName: Build and Package
+      continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
     - script: |
@@ -506,33 +413,17 @@ jobs:
 
   # Only in glibc leg, we produce RPMs and Debs
   - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:
-    - task: CopyFiles@2
-      displayName: 'Copy built Portable linux-x64 binaries to staging directory'
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/linux-x64.$(_BuildConfig)/sharedFrameworkPublish'
-        TargetFolder: '$(Build.StagingDirectory)/sharedFrameworkPublish'
-
     - ${{ each packageBuild in parameters.packageDistroList }}:
       # This leg's RID matches the build image. Build its distro-dependent packages, as well as
       # the distro-independent installers. (There's no particular reason to build the distro-
       # independent installers on this leg, but we need to do it somewhere.)
       - template: steps/build-linux-package.yml
         parameters:
-          distroRid: ${{ packageBuild.imageRid }}
+          packageType: ${{ packageBuild.packageType }}
           image: ${{ packageBuild.image }}
           packageStepDescription: Runtime Deps, Runtime, Framework Packs installers
           subsetArg: $(installersSubsetArg)
-
-      - ${{ each rid in packageBuild.rids }}:
-        # Build distro-dependent packages.
-        - template: steps/build-linux-package.yml
-          parameters:
-            distroRid: ${{ rid }}
-            image: ${{ packageBuild.image }}
-            outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.archType }}
-            packageStepDescription: Runtime Deps installers
-            packagingArgs: /p:BuildDistroIndependentInstallers=false
-            subsetArg: $(installersSubsetArg)
+          packagingArgs: ${{ packageBuild.packagingArgs }}
 
   - ${{ if ne(parameters.container, '') }}:
     # Files may be owned by root because builds don't set user ID. Later build steps run 'find' in
@@ -549,7 +440,7 @@ jobs:
       continueOnError: true
       condition: succeededOrFailed()
 
-  - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.isOfficialBuild, true)) }}:
+  - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.isOfficialBuild, true)) }}:
     - task: NuGetCommand@2
       displayName: Push Visual Studio NuPkgs
       inputs:
@@ -560,7 +451,8 @@ jobs:
       condition: and(
         succeeded(),
         eq(variables['_BuildConfig'], 'Release'),
-        ne(variables['DisableVSPublish'], 'true'))
+        ne(variables['DisableVSPublish'], 'true'),
+        ne(variables['PostBuildSign'], 'true'))
 
   - template: steps/upload-job-artifacts.yml
     parameters:
@@ -570,7 +462,7 @@ jobs:
       skipTests: $(SkipTests)
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
 
-  - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
     - script: set -x && df -h
       displayName: Check remaining storage space
       condition: always()

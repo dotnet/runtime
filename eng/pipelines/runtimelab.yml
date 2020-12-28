@@ -52,10 +52,6 @@ variables:
 stages:
 - stage: Build
   jobs:
-  #
-  # Checkout repository
-  #
-  - template: /eng/pipelines/common/checkout-job.yml
 
   #
   # Build with Debug config and Checked runtimeConfiguration
@@ -67,11 +63,11 @@ stages:
         buildConfig: Checked
         platforms:
         - Linux_x64
-        - Windows_NT_x64
+        - windows_x64
         jobParameters:
           timeoutInMinutes: 100
           testGroup: innerloop
-          buildArgs: -s clr+libs+installer -c debug -runtimeConfiguration Checked
+          buildArgs: -s clr+libs+host+packs -c debug -runtimeConfiguration Checked
           extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
           extraStepsParameters:
             uploadRuntimeTests: true
@@ -85,16 +81,16 @@ stages:
       buildConfig: Release
       platforms:
       - Linux_x64
-      - Windows_NT_x64
+      - windows_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         testGroup: innerloop
         extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
         extraStepsParameters:
           uploadLibrariesTests: ${{ eq(variables.isOfficialBuild, false) }}
-          uploadUnsignedArtifacts: false
+          uploadIntermediateArtifacts: false
         ${{ if eq(variables.isOfficialBuild, false) }}:
-          buildArgs: -s clr+libs+libs.tests+installer -c $(_BuildConfig) /p:ArchiveTests=true
+          buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true
         ${{ if eq(variables.isOfficialBuild, true) }}:
           buildArgs: -s clr+libs -c $(_BuildConfig)
 
@@ -106,7 +102,7 @@ stages:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: Release
       platforms:
-      - Windows_NT_x64
+      - windows_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         testGroup: innerloop
@@ -115,7 +111,7 @@ stages:
         ${{ if eq(variables.isOfficialBuild, true) }}:
           extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
           extraStepsParameters:
-            uploadUnsignedArtifacts: true
+            uploadIntermediateArtifacts: true
             isOfficialBuild: true
             librariesBinArtifactName: libraries_bin_official_allconfigurations
 
@@ -131,7 +127,7 @@ stages:
           dependsOnGlobalBuild: true
         platforms:
         - Linux_x64
-        - Windows_NT_x64
+        - windows_x64
 
   - ${{ if ne(variables.isOfficialBuild, true) }}:
     #
@@ -172,7 +168,7 @@ stages:
         jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
         buildConfig: Checked
         platforms:
-        - Windows_NT_x64
+        - windows_x64
         helixQueueGroup: pr
         helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
         jobParameters:
@@ -180,8 +176,8 @@ stages:
           liveLibrariesBuildConfig: Release
           dependsOn:
           - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
-          - build_Windows_NT_x64_Checked_
-          - build_Windows_NT_x64_Release_
+          - build_windows_x64_Checked_
+          - build_windows_x64_Release_
 
     #
     # Libraries Release Test Execution against a release coreclr runtime
@@ -208,7 +204,7 @@ stages:
         jobTemplate: /eng/pipelines/libraries/run-test-job.yml
         buildConfig: Release
         platforms:
-        - Windows_NT_x64
+        - windows_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
           isFullMatrix: false
@@ -218,7 +214,7 @@ stages:
           dependsOnTestBuildConfiguration: Release
           dependsOnTestArchitecture: x64
           dependsOn:
-          - build_Windows_NT_x64_Release_
+          - build_windows_x64_Release_
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

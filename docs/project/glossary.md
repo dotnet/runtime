@@ -14,15 +14,17 @@ terminology.
 | AOT | Ahead-of-time compiler. Converts the MSIL bytecode to native machine code for a specific target CPU architecture. |
 | BBT | Microsoft internal early version of C/C++ PGO. See https://www.microsoft.com/windows/cse/bit_projects.mspx. |
 | BOTR | Book Of The Runtime. |
+| BCL | Base Class Library. A set of `System.*` (and to a limited extent `Microsoft.*`) libraries that make up the lower layer of the .NET library stack. |
 | CLR | Common Language Runtime. |
 | COMPlus | An early name for the .NET platform, back when it was envisioned as a successor to the COM platform (hence, "COM+"). Used in various places in the CLR infrastructure, most prominently as a common prefix for the names of internal configuration settings. Note that this is different from the product that eventually ended up being named [COM+](https://msdn.microsoft.com/en-us/library/windows/desktop/ms685978.aspx). |
 | COR | [Common Object Runtime](http://www.danielmoth.com/Blog/mscorlibdll.aspx). The name of .NET before it was named .NET. |
+| CoreFX | Core Framework. Original project name for open source and cross-platform version of [.NET runtime libraries](https://github.com/dotnet/runtime/tree/master/src/libraries) |
 | DAC | Data Access Component. An abstraction layer over the internal structures in the runtime. |
 | EE | Execution Engine. |
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/garbage-collection.md). |
 | IPC | Inter-Process Communication. |
 | JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
-| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
+| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/master/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
 | MDA | Managed Debugging Assistant - see [details](https://docs.microsoft.com/en-us/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#9418](https://github.com/dotnet/runtime/issues/9418)) |
 | NGen | Native Image Generator. |
@@ -35,7 +37,7 @@ terminology.
 | R2R | Ready-to-Run. A flavor of native images - command line switch of [crossgen](../workflow/building/coreclr/crossgen.md). |
 | Redhawk | Codename for experimental minimal managed code runtime that evolved into [CoreRT](https://github.com/dotnet/corert/). |
 | SOS | [Son of Strike](https://docs.microsoft.com/en-us/archive/blogs/jasonz/sos-debugging-of-the-clr-part-1). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation. |
-| SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/ToolBox/superpmi/readme.txt). |
+| SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/master/src/coreclr/ToolBox/superpmi/readme.txt). |
 | SVR | The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available. |
 | TPA | Trusted Platform Assemblies used to be a special set of assemblies that comprised the platform assemblies, when it was originally designed. As of today, it is simply the set of assemblies known to constitute the application. |
 | URT | Universal Runtime. Ancient name for what ended up being .NET, is used in the WinError facility name FACILITY_URT. |
@@ -71,29 +73,6 @@ In this document, the following terms are used:
   different implementations. For instance, our vector library relies on the JIT
   to use the highest available SIMD instruction set.
 
-* **AOT**. Ahead of time compiler. Similar to JIT, this compiler also translates
-  IL to machine code. In contrast to JIT compilation, AOT compilation happens
-  before the application is executed and is usually performed on a different
-  machine. AOT tool chains don't trade runtime for compile time and thus can
-  spend more time optimizing. Since the context of AOT is the entire
-  application, the AOT compiler can also perform cross module linking and whole
-  program analysis, which means that all references are followed and a single
-  executable is produced.
-
-* **NGEN**. Native (image) generation. You can think of this technology as a
-  persistent JIT compiler. It usually compiles code on the machine where the
-  code will be executed, but compilation typically occurs at install time.
-
-* **CoreFX**. Core framework. Conceptually a set of `System.*` (and to a limited
-  extent `Microsoft.*`) libraries that make up the lower layer of the .NET
-  library stack. It's what most people would think of as the Base Class Library
-  (BCL). The BCL is a general purpose, lower level set of functionality that
-  higher-level frameworks, such as WCF and ASP.NET, build on. The source code of
-  the .NET Core library stack is contained in the [CoreFX repo][corefx].
-  However, the majority of the .NET Core APIs are also available in the .NET
-  Framework, so you can think of CoreFX as a fork of the .NET Framework library
-  stack.
-
 * **CLI**. Command Line Interface --or-- Common Language Infastructure.
   * Command Line Interface: A tool that has no graphical interface and is
     intended to be used completely from a console/terminal. Also is commonly
@@ -103,114 +82,30 @@ In this document, the following terms are used:
     [ECMA-355][ECMA-355].
 
 * **CLR**. Common Language Runtime: The runtime/environment that .NET code
-  executes in. Is also commonly used to refer to the Microsoft Windows only
-  implementation
+  executes in. It is also commonly used to refer to the Microsoft .NET Framework
+  Windows-only implementation.
 
-## Runtimes
+## .NET Runtimes
 
-### Common Language Runtime
+### .NET Core / .NET 
 
-**Also referred to as**: CLR, VM, runtime
+.NET Core has been the name for the open source, cross-platform stack that 
+ASP.NET Core and UWP applications are built on. For more details, 
+read [Introducing .NET Core][introducing-net-core].
 
-The CLR is a virtual machine, i.e. it includes the facilities to generate and
-compile code on-the-fly using a JIT compiler. The existing Microsoft CLR
-implementation is Windows only.
-
-### Core Common Language Runtime
-
-**Also referred to as**: CoreCLR, VM, runtime
-
-It's built from the same code base as the CLR. Originally, CoreCLR was the
-runtime of Silverlight and was designed to run on multiple platforms,
-specifically Windows and OS X. CoreCLR is now part of .NET Core and represents a
-simplified version of the CLR. It's still a [cross platform][core-build-status]
-runtime. CoreCLR is also a virtual machine with a JIT.
-
-### Core Runtime
-
-**Also referred to as**: CoreRT
-
-In contrast to the CLR/CoreCLR, CoreRT is not a virtual machine, i.e. it doesn't
-include the facilities to generate and run code on-the-fly because it doesn't
-include a JIT. It does, however, include the GC and the ability for runtime type
-identification (RTTI) as well as reflection. However, its type system is
-designed so that metadata for reflection can be omitted. This enables having an
-AOT tool chain that can link away superfluous metadata and (more importantly)
-identify code that the application doesn't use.
-
-## Platforms
+.NET Core has become future of the platform, and we refer to it just as .NET today. 
+For more details, read [Introducing .NET 5][introducing-net-5].
 
 ### .NET Framework
 
-**Also referred to as**: Desktop, full framework, in-box framework, ~~CLR~~
+**Also referred to as**: Desktop, full framework
 
-This refers to the .NET Framework that first shipped in 2002 and has been
-updated on a regular basis since then. It's the main framework folks target
-today and allows you to build a wide variety of applications, such as WinForms,
-WPF, ASP.NET, and command line tools.
+.NET Framework was the very first .NET runtime. It first shipped in 2002, and it has been
+updated on a regular basis since then.
 
 The .NET Framework was designed to run on Windows only. Some versions of the
 .NET Framework come pre-installed with Windows, some require to be installed.
 However, in both cases the .NET Framework is a system-wide component.
-Applications do not include .NET Framework DLLs when deploying; the correct .NET
-version must be on the machine.
-
-### .NET Core
-
-**Also referred to as**: UWP, ~~Store~~
-
-Originally, .NET Core was the identifier we used to describe the .NET APIs
-Windows 8 store applications could use. When we designed the API set, we wanted
-to create a foundation for .NET where portability is a first class concern for
-the layering and componentization. For more details, read [this blog
-post][introducing-net-core].
-
-Today, .NET Core is no longer just for store applications. .NET Core is the name
-for the open source, cross-platform stack that ASP.NET Core and UWP applications
-are built on. The stack includes a set of framework libraries (CoreFX), a JIT
-based runtime (CoreCLR), an AOT based runtime (CoreRT), and a set of tooling
-(such as the dotnet CLI).
-
-That's why referring to .NET Core as 'Store' is no longer correct. But you can
-think of today's .NET Core as an evolution of the original APIs available for
-store applications. Many of the original design goals are still relevant,
-especially around layering and portability.
-
-### Universal Windows Platform (UWP)
-
-**Also referred to as**: Store, WinRT, Metro
-
-The Universal Windows Platform (UWP) is the platform that is used for building
-modern, touch-enabled Windows applications as well as headless devices for
-Internet of Things (IoT). It's designed to unify the different types of devices
-that you may want to target, including PCs, tablets, phablets, phones, and even
-the Xbox.
-
-UWP provides many services, such as a centralized app store, an execution
-environment (AppContainer), and a set of Windows APIs to use instead of Win32
-(WinRT). UWP has no dependency on .NET; apps can be written in C++, C#, VB.NET,
-and JavaScript. When using C# and VB.NET the .NET APIs are provided by .NET
-Core.
-
-**Also referred to as**: ahead-of-time (AOT), IL compiler (ILC)
-
-.NET Native is a compiler tool chain that will produce native code ahead-of-time
-(AOT), as opposed to just-in-time (JIT). The compilation can happen on the
-developer machine as well as on the store side, which allows blending AOT with
-the benefits of servicing.
-
-You can think of .NET Native as an evolution of NGEN (Native Image Generator):
-NGEN basically simply runs the JIT up front, the code quality and behavior is
-identical to the JITed version. Another downside of NGEN is that it happens on
-the user's machine, rather than the developer's machine. NGEN is also at the
-module level, i.e. for each MSIL assembly there is a corresponding NGEN'ed
-assembly that contains the native code. .NET Native on the other hand is a C++
-like compiler and linker. It will remove unused code, spend more time optimizing
-it, and produce a single, merged module that represents the closure of the
-application.
-
-UWP was the first application model that was supported by .NET Native. We now
-also support building native console applications for Windows, OS X and Linux.
 
 ### Rotor
 
@@ -232,34 +127,61 @@ officially updated since .NET Framework 2.0.
 
 ### Mono
 
-Mono is an open source alternative to the .NET Framework. Mono started around
+[Mono][mono] is an open source alternative to the .NET Framework. Mono started around
 the same time the .NET Framework was first released. Since Microsoft didn't
-release Rotor as open source, Mono was forced to start from scratch and is thus
+release Rotor as open source, Mono was forced to start from scratch and was thus
 a complete re-implementation of the .NET Framework with no shared code.
 
-When .NET Core was released under the MIT license, Microsoft also released large
-chunks of the .NET Framework under the MIT license as well, which can be found
-[here][referencesource]. This enabled the Mono community to use the same code
-the .NET Framework uses in order to close gaps and avoid behavioral differences.
+Today, the [Mono VM](https://github.com/dotnet/runtime/tree/master/src/mono) is part
+of the unified .NET platform. It is optimized for mobile (e.g. Xamarin) and browser (e.g. Blazor) scenarios.
 
-Mono is primarily used to run .NET applications on Linux and macOS (though to
-get into the Mac App Store you need Xamarin, see below). There are ports of Mono
-to other platforms, see [Mono's Supported Platforms][mono-supported-platforms]
+"C# powered by Mono" has been scripting engine of choice for a number of game engines.
+Unity - the world's most popular game engine - is scripted by C#, powered by a customized Mono runtime.
 
-Mono has implementations (though not necessarily complete) of WinForms, ASP.NET,
-and System.Drawing.
+### CoreCLR
 
-### Xamarin
+Originally, CoreCLR was the runtime of Silverlight and was designed to run on multiple
+platforms, specifically Windows and OS X.
 
-Xamarin is a commercial offering for building mobile applications targeting
-Android, iOS and Mac OS X Store. It's based on Mono, and on iOS and Android
-surfaces a different API profile, called the mobile profile. The subsetting was
-necessary to reduce the footprint, both by shipping smaller versions of the
-system libraries as well as making them more linker friendly. While Mono runs on
-macOS without Xamarin, their linker is required make the app package for the
-Mac App Store.  Xamarin ships a full static compiler on iOS, as the platform
-does not support dynamic code generation.
+Today, the [CoreCLR runtime](https://github.com/dotnet/runtime/tree/master/src/coreclr) 
+is part of unified .NET platform. It is optimized for cloud (e.g. ASP.NET) and
+desktop (e.g. WinForms, WPF) scenarios.
 
+## Ahead-Of-Time Compilation (AOT)
+
+Most flavors of .NET runtime come with at least partial AOT compilation. A variety of AOT technologies 
+with unique characteristics were developed for .NET runtimes over the years.
+
+### ReadyToRun
+
+**Also referred to as**: R2R
+
+[ReadyToRun](.../design/coreclr/botr/readytorun-overview.md)
+is a file format used by the CoreCLR runtime to store AOT compiled code. `crossgen` is the AOT compiler that
+produces binaries in the ReadyToRun file format.
+
+### NGen
+
+[NGen](https://docs.microsoft.com/en-us/dotnet/framework/tools/ngen-exe-native-image-generator)
+is AOT technology included in .NET Framework. It usually compiles code at install time on the machine where
+the code will be executed.
+
+### Full AOT
+
+[Full AOT](https://docs.microsoft.com/en-us/xamarin/ios/internals/architecture) is used
+by Mono runtime in environments that prohibit fallback to JIT.
+
+### Hybrid AOT
+
+[Hybrid AOT](https://docs.microsoft.com/en-us/xamarin/mac/internals/aot#hybrid-aot) is used
+by Mono runtime in environments that allow fallback to JIT or need IL interpreter.
+
+### Native AOT
+
+[Native AOT](https://github.com/dotnet/designs/blob/main/accepted/2020/form-factors.md#native-aot-form-factors) is
+a .NET runtime form factor with key performance characteristics (startup time, binary size and steady state throughput and predictability)
+competitive with statically compiled languages. A .NET runtime flavor based on CoreCLR with these characteristics is being developed as
+experimental project in [dotnet/runtimelab](https://github.com/dotnet/runtimelab/tree/feature/NativeAOT) repo.
 
 ## Frameworks
 
@@ -346,8 +268,8 @@ and enabling support for running WPF on .NET Core (Windows Only).
 
 
 [introducing-net-core]: https://devblogs.microsoft.com/dotnet/introducing-net-core/
-[core-build-status]: https://github.com/dotnet/coreclr#build-status
-[corefx]: http://github.com/dotnet/corefx
+[introducing-net-5]: https://devblogs.microsoft.com/dotnet/introducing-net-5/
+[mono]: http://github.com/mono/mono
 [referencesource]: https://github.com/microsoft/referencesource
 [mono-supported-platforms]: http://www.mono-project.com/docs/about-mono/supported-platforms/
 [mono-winforms]: http://www.mono-project.com/docs/gui/winforms/

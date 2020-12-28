@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting.Internal;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting
 {
@@ -214,8 +216,15 @@ namespace Microsoft.Extensions.Hosting
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
             services.AddSingleton<IHostLifetime, ConsoleLifetime>();
-            services.AddSingleton<IHost, Internal.Host>();
-            services.AddOptions();
+            services.AddSingleton<IHost>(_ =>
+            {
+                return new Internal.Host(_appServices,
+                    _appServices.GetRequiredService<IHostApplicationLifetime>(),
+                    _appServices.GetRequiredService<ILogger<Internal.Host>>(),
+                    _appServices.GetRequiredService<IHostLifetime>(),
+                    _appServices.GetRequiredService<IOptions<HostOptions>>());
+            });
+            services.AddOptions().Configure<HostOptions>(options => { options.Initialize(_hostConfiguration); });
             services.AddLogging();
 
             foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)

@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -120,29 +122,35 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [OuterLoop("Connects to external server")]
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Not supported on BSD like OSes.
-        public async Task ConnectGetsCanceledByDispose()
+        [Theory]
+        [InlineData("1.1.1.1", false)]
+        [InlineData("1.1.1.1", true)]
+        [InlineData("[::ffff:1.1.1.1]", false)]
+        [InlineData("[::ffff:1.1.1.1]", true)]
+        public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns)
         {
+            IPAddress address = IPAddress.Parse(addressString);
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                var client = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                if (address.IsIPv4MappedToIPv6) client.DualMode = true;
 
-                Task connectTask = ConnectAsync(client, new IPEndPoint(IPAddress.Parse("1.1.1.1"), 23));
+                Task connectTask = ConnectAsync(client, useDns ?
+                    new DnsEndPoint("one.one.one.one", 23) :
+                    new IPEndPoint(address, 23));
 
                 // Wait a little so the operation is started.
-                await Task.Delay(msDelay);
+                await Task.Delay(Math.Min(msDelay, 1000));
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => client.Dispose());
 
-                var cts = new CancellationTokenSource();
-                Task timeoutTask = Task.Delay(30000, cts.Token);
-                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, connectTask, timeoutTask));
-                cts.Cancel();
-
+                await Task.WhenAny(disposeTask, connectTask).TimeoutAfter(30000);
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -170,13 +178,13 @@ namespace System.Net.Sockets.Tests
                 }
                 else if (UsesSync)
                 {
-                    Assert.Equal(SocketError.NotSocket, localSocketError);
+                    Assert.True(disposedException || localSocketError == SocketError.NotSocket, $"{disposedException} {localSocketError}");
                 }
                 else
                 {
                     Assert.Equal(SocketError.OperationAborted, localSocketError);
                 }
-            }, maxAttempts: 10);
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
     }
 

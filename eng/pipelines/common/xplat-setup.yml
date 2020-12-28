@@ -17,6 +17,12 @@ jobs:
       runtimeFlavorDisplayName: 'CoreCLR'
     ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
       runtimeFlavorDisplayName: 'Mono'
+    
+    shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
+
+    # keep in sync with /eng/pipelines/common/variables.yml
+    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging')) }}
+
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
@@ -27,10 +33,8 @@ jobs:
       - name: runCodesignValidationInjection
         value: false
 
-      # Workaround for azure devops flakiness when dowloading artifacts
-      # https://github.com/dotnet/runtime/issues/32805
-      - name: System.DisableZipDownload
-        value: true
+      - name: checkoutFetchDepth
+        value: 20
 
       - name: buildConfigUpper
         ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
@@ -43,7 +47,7 @@ jobs:
       - name: _BuildConfig
         value: $(buildConfigUpper)
 
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: archiveExtension
           value: '.zip'
         - name: archiveType
@@ -59,7 +63,7 @@ jobs:
         - name: setScriptToEchoAndFailOnNonZero
           value: ''
 
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: archiveExtension
           value: '.tar.gz'
         - name: archiveType
@@ -105,12 +109,12 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
@@ -118,16 +122,13 @@ jobs:
         ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
           vmImage: 'macOS-10.15'
 
-        ${{ if eq(parameters.osGroup, 'Browser') }}:
-          vmImage: 'ubuntu-latest'
-
         # Official Build Windows Pool
-        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019
 
         # Public Windows Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(eq(parameters.osGroup, 'windows'), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCorePublic-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019.Open
 

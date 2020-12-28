@@ -3,6 +3,7 @@ parameters:
   osGroup: ''
   archType: ''
   osSubgroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   framework: 'net6.0'
   isOfficialAllConfigurations: false
@@ -14,6 +15,7 @@ parameters:
   container: ''
   steps: []
   dependsOn: []
+  dependOnEvaluatePaths: false
   variables: {}
   name: ''
   displayName: ''
@@ -43,6 +45,7 @@ jobs:
         - _msbuildCommonParameters: ''
         # rename this variable, due to collision with build-native.proj
         - _runtimeOSArg: ''
+        - _osArg: ''
         - _finalFrameworkArg: ''
         - _testModeArg: ''
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
@@ -56,12 +59,8 @@ jobs:
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
 
-        - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
-          - _crossBuildPropertyArg: /p:CrossBuild=${{ or(ne(parameters.crossrootfsDir, ''), and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64'))) }}
-
-        - ${{ if eq(parameters.osGroup, 'OSX') }}:
-          # OSX is currently building on x64, anything else is a cross build
-          - _crossBuildPropertyArg: /p:CrossBuild=${{ ne(parameters.archType, 'x64') }}
+        - ${{ if eq(parameters.crossBuild, true) }}:
+          - _crossBuildPropertyArg: /p:CrossBuild=true
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
           - _runtimeOSArg: /p:RuntimeOS=linux-musl
@@ -71,7 +70,7 @@ jobs:
 
         # force a value for OS when cross-building
         - ${{ if in(parameters.osGroup, 'Browser', 'iOS', 'tvOS', 'Android', 'FreeBSD') }}:
-          - _runtimeOSArg: -os ${{ parameters.osGroup }}
+          - _osArg: -os ${{ parameters.osGroup }}
 
         - ${{ if ne(parameters.framework, '') }}:
           - _finalFrameworkArg: -framework ${{ parameters.framework }}
@@ -105,21 +104,22 @@ jobs:
             - _testRunNamePrefixSuffix: ${{ parameters.testDisplayName }}
 
         # Windows variables
-        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
           - _runtimeOSArg: /p:RuntimeOS=win10
 
         # Non-Windows variables
-        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_osArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
         # we need to override this value to support build-coreclr-and-libraries-job.yml
         - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
-      - checkout
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+        - evaluate_paths
       - ${{ parameters.dependsOn }}
       workspace:
         clean: all
@@ -128,7 +128,9 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
       steps:
-      - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+      - checkout: self
+        clean: true
+        fetchDepth: $(checkoutFetchDepth)
 
       - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml

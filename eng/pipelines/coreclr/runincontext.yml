@@ -9,10 +9,6 @@ schedules:
   always: true
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -20,8 +16,8 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - windows_x64
+    - windows_x86
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
@@ -42,8 +38,8 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - windows_x64
+    - windows_x86
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

@@ -13,8 +13,7 @@ namespace System.Threading
     [UnsupportedOSPlatform("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
-        internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
-            int millisecondsTimeout, bool repeating)
+        internal RegisteredWaitHandle()
         {
         }
 
@@ -26,11 +25,16 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
+        // Time-sensitive work items are those that may need to run ahead of normal work items at least periodically. For a
+        // runtime that does not support time-sensitive work items on the managed side, the thread pool yields the thread to the
+        // runtime periodically (by exiting the dispatch loop) so that the runtime may use that thread for processing
+        // any time-sensitive work. For a runtime that supports time-sensitive work items on the managed side, the thread pool
+        // does not yield the thread and instead processes time-sensitive work items queued by specific APIs periodically.
+        internal const bool SupportsTimeSensitiveWorkItems = false; // the timer currently doesn't queue time-sensitive work
+
         internal const bool EnableWorkerTracking = false;
 
         private static bool _callbackQueued;
-
-        internal static void InitializeForThreadPoolThread() { }
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -76,44 +80,32 @@ namespace System.Threading
             QueueCallback();
         }
 
-        internal static bool KeepDispatching(int startTickCount)
-        {
-            return true;
-        }
-
         internal static void NotifyWorkItemProgress()
         {
         }
 
-        internal static bool NotifyWorkItemComplete()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
         {
             return true;
         }
 
+        internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
+
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle waitObject,
-             WaitOrTimerCallback callBack,
+             WaitHandle? waitObject,
+             WaitOrTimerCallback? callBack,
              object? state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            if (waitObject == null)
-                throw new ArgumentNullException(nameof(waitObject));
-
-            if (callBack == null)
-                throw new ArgumentNullException(nameof(callBack));
-
             throw new PlatformNotSupportedException();
         }
 
         [DynamicDependency("Callback")]
-        [DynamicDependency("PumpThreadPool")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void QueueCallback();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void PumpThreadPool(); // NOTE: this method is called via reflection by test code
 
         private static void Callback()
         {

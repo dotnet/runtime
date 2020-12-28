@@ -127,7 +127,7 @@
     <value>Must pass loopback address and port 0</value>
   </data>
   <data name="net_quic_notsupported" xml:space="preserve">
-    <value>QUIC is not supported on this platform. See http://aka.ms/dotnetquic</value>
+    <value>QUIC is not supported on this platform. See https://aka.ms/dotnetquic</value>
   </data>
   <data name="net_quic_operationaborted" xml:space="preserve">
     <value>Operation aborted.</value>
@@ -141,6 +141,9 @@
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
   </data>
+  <data name="SystemNetQuic_PlatformNotSupported" xml:space="preserve">
+    <value>System.Net.Quic is not supported on this platform.</value>
+  </data>
   <data name="net_quic_unsupported_address_family" xml:space="preserve">
     <value>Unsupported address family of '{0}' for remote endpoint.</value>
   </data>
@@ -148,3 +151,4 @@
     <value>Writing is not allowed on stream.</value>
   </data>
 </root>
+

@@ -1,18 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
+<Project>
   <PropertyGroup>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <AssemblyFileVersion>$(VersionPrefix)</AssemblyFileVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
-    <PackageLicenseFile>LICENSE.TXT</PackageLicenseFile>
-    <PackageProjectUrl>https://dot.net</PackageProjectUrl>
-    <Authors>Microsoft</Authors>
-    <NugetLicenseFile>$(RepoRoot)$(PackageLicenseFile)</NugetLicenseFile>
-    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Managed API isn't completely documented yet. TODO: https://github.com/dotnet/core-setup/issues/5108 -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
@@ -21,20 +15,6 @@
   <PropertyGroup>
     <!-- Historically, the key for the managed projects is the AspNetCore key Arcade carries. -->
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
-    <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
   </PropertyGroup>
-
-  <!-- Add required legal files to packages -->
-  <ItemGroup>
-    <Content Condition="Exists('$(NugetLicenseFile)')"
-             Include="$(NugetLicenseFile)">
-      <PackagePath />
-    </Content>
-    <Content Condition="Exists('$(PackageThirdPartyNoticesFile)')"
-             Include="$(PackageThirdPartyNoticesFile)">
-      <PackagePath />
-    </Content>
-  </ItemGroup>
-
 </Project>

@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tracing
 #pragma warning restore CA1823
 #endif //FEATURE_EVENTSOURCE_XPLAT
 
-        private static bool IsSupported { get; } = InitializeIsSupported();
+        internal static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
@@ -1481,12 +1481,12 @@ namespace System.Diagnostics.Tracing
 #endif
 #if FEATURE_MANAGED_ETW
                 // Register the provider with ETW
-                var etwProvider = new OverideEventProvider(this, EventProviderType.ETW);
+                var etwProvider = new OverrideEventProvider(this, EventProviderType.ETW);
                 etwProvider.Register(this);
 #endif
 #if FEATURE_PERFTRACING
                 // Register the provider with EventPipe
-                var eventPipeProvider = new OverideEventProvider(this, EventProviderType.EventPipe);
+                var eventPipeProvider = new OverrideEventProvider(this, EventProviderType.EventPipe);
                 lock (EventListener.EventListenersLock)
                 {
                     eventPipeProvider.Register(this);
@@ -1508,17 +1508,13 @@ namespace System.Diagnostics.Tracing
                 if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
 #endif
                 {
-                    int setInformationResult;
-                    System.Runtime.InteropServices.GCHandle metadataHandle =
-                        System.Runtime.InteropServices.GCHandle.Alloc(this.providerMetadata, System.Runtime.InteropServices.GCHandleType.Pinned);
-                    IntPtr providerMetadata = metadataHandle.AddrOfPinnedObject();
-
-                    setInformationResult = m_etwProvider.SetInformation(
-                        Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                        providerMetadata,
-                        (uint)this.providerMetadata.Length);
-
-                    metadataHandle.Free();
+                    fixed (byte* providerMetadata = this.providerMetadata)
+                    {
+                        m_etwProvider.SetInformation(
+                            Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
+                            providerMetadata,
+                            (uint)this.providerMetadata.Length);
+                    }
                 }
 #endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
@@ -1562,167 +1558,6 @@ namespace System.Diagnostics.Tracing
                 return attrib.Name;
 
             return eventSourceType.Name;
-        }
-
-        /// <summary>
-        /// Implements the SHA1 hashing algorithm. Note that this
-        /// implementation is for hashing public information. Do not
-        /// use this code to hash private data, as this implementation does
-        /// not take any steps to avoid information disclosure.
-        /// </summary>
-        private struct Sha1ForNonSecretPurposes
-        {
-            private long length; // Total message length in bits
-            private uint[] w; // Workspace
-            private int pos; // Length of current chunk in bytes
-
-            /// <summary>
-            /// Call Start() to initialize the hash object.
-            /// </summary>
-            public void Start()
-            {
-                this.w ??= new uint[85];
-
-                this.length = 0;
-                this.pos = 0;
-                this.w[80] = 0x67452301;
-                this.w[81] = 0xEFCDAB89;
-                this.w[82] = 0x98BADCFE;
-                this.w[83] = 0x10325476;
-                this.w[84] = 0xC3D2E1F0;
-            }
-
-            /// <summary>
-            /// Adds an input byte to the hash.
-            /// </summary>
-            /// <param name="input">Data to include in the hash.</param>
-            public void Append(byte input)
-            {
-                this.w[this.pos / 4] = (this.w[this.pos / 4] << 8) | input;
-                if (64 == ++this.pos)
-                {
-                    this.Drain();
-                }
-            }
-
-            /// <summary>
-            /// Adds input bytes to the hash.
-            /// </summary>
-            /// <param name="input">
-            /// Data to include in the hash. Must not be null.
-            /// </param>
-#if ES_BUILD_STANDALONE
-            public void Append(byte[] input)
-#else
-            public void Append(ReadOnlySpan<byte> input)
-#endif
-            {
-                foreach (byte b in input)
-                {
-                    this.Append(b);
-                }
-            }
-
-            /// <summary>
-            /// Retrieves the hash value.
-            /// Note that after calling this function, the hash object should
-            /// be considered uninitialized. Subsequent calls to Append or
-            /// Finish will produce useless results. Call Start() to
-            /// reinitialize.
-            /// </summary>
-            /// <param name="output">
-            /// Buffer to receive the hash value. Must not be null.
-            /// Up to 20 bytes of hash will be written to the output buffer.
-            /// If the buffer is smaller than 20 bytes, the remaining hash
-            /// bytes will be lost. If the buffer is larger than 20 bytes, the
-            /// rest of the buffer is left unmodified.
-            /// </param>
-            public void Finish(byte[] output)
-            {
-                long l = this.length + 8 * this.pos;
-                this.Append(0x80);
-                while (this.pos != 56)
-                {
-                    this.Append(0x00);
-                }
-
-                unchecked
-                {
-                    this.Append((byte)(l >> 56));
-                    this.Append((byte)(l >> 48));
-                    this.Append((byte)(l >> 40));
-                    this.Append((byte)(l >> 32));
-                    this.Append((byte)(l >> 24));
-                    this.Append((byte)(l >> 16));
-                    this.Append((byte)(l >> 8));
-                    this.Append((byte)l);
-
-                    int end = output.Length < 20 ? output.Length : 20;
-                    for (int i = 0; i != end; i++)
-                    {
-                        uint temp = this.w[80 + i / 4];
-                        output[i] = (byte)(temp >> 24);
-                        this.w[80 + i / 4] = temp << 8;
-                    }
-                }
-            }
-
-            /// <summary>
-            /// Called when this.pos reaches 64.
-            /// </summary>
-            private void Drain()
-            {
-                for (int i = 16; i != 80; i++)
-                {
-                    this.w[i] = BitOperations.RotateLeft(this.w[i - 3] ^ this.w[i - 8] ^ this.w[i - 14] ^ this.w[i - 16], 1);
-                }
-
-                unchecked
-                {
-                    uint a = this.w[80];
-                    uint b = this.w[81];
-                    uint c = this.w[82];
-                    uint d = this.w[83];
-                    uint e = this.w[84];
-
-                    for (int i = 0; i != 20; i++)
-                    {
-                        const uint k = 0x5A827999;
-                        uint f = (b & c) | ((~b) & d);
-                        uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
-                    }
-
-                    for (int i = 20; i != 40; i++)
-                    {
-                        uint f = b ^ c ^ d;
-                        const uint k = 0x6ED9EBA1;
-                        uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
-                    }
-
-                    for (int i = 40; i != 60; i++)
-                    {
-                        uint f = (b & c) | (b & d) | (c & d);
-                        const uint k = 0x8F1BBCDC;
-                        uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
-                    }
-
-                    for (int i = 60; i != 80; i++)
-                    {
-                        uint f = b ^ c ^ d;
-                        const uint k = 0xCA62C1D6;
-                        uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
-                    }
-
-                    this.w[80] += a;
-                    this.w[81] += b;
-                    this.w[82] += c;
-                    this.w[83] += d;
-                    this.w[84] += e;
-                }
-
-                this.length += 512; // 64 bytes == 512 bits
-                this.pos = 0;
-            }
         }
 
         private static Guid GenerateGuidFromName(string name)
@@ -2241,6 +2076,11 @@ namespace System.Diagnostics.Tracing
                     {
                         if (m_writeEventStringEventHandle == IntPtr.Zero)
                         {
+                            if (m_createEventLock is null)
+                            {
+                                Interlocked.CompareExchange(ref m_createEventLock, new object(), null);
+                            }
+
                             lock (m_createEventLock)
                             {
                                 if (m_writeEventStringEventHandle == IntPtr.Zero)
@@ -2277,8 +2117,8 @@ namespace System.Diagnostics.Tracing
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventId = 0;
             eventCallbackArgs.Message = msg;
-            eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(new List<object?>() { msg });
-            eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new List<string> { "message" });
+            eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(new object[] { msg });
+            eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new string[] { "message" });
             eventCallbackArgs.EventName = eventName;
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
@@ -2443,9 +2283,9 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// This class lets us hook the 'OnEventCommand' from the eventSource.
         /// </summary>
-        private class OverideEventProvider : EventProvider
+        private class OverrideEventProvider : EventProvider
         {
-            public OverideEventProvider(EventSource eventSource, EventProviderType providerType)
+            public OverrideEventProvider(EventSource eventSource, EventProviderType providerType)
                 : base(providerType)
             {
                 this.m_eventSource = eventSource;
@@ -3277,10 +3117,15 @@ namespace System.Diagnostics.Tracing
                                 }
                             }
 #endif
-                            string eventKey = "event_" + eventName;
-                            string? msg = manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false);
-                            // overwrite inline message with the localized message
-                            if (msg != null) eventAttribute.Message = msg;
+                            if (manifest.HasResources)
+                            {
+                                string eventKey = "event_" + eventName;
+                                if (manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false) is string msg)
+                                {
+                                    // overwrite inline message with the localized message
+                                    eventAttribute.Message = msg;
+                                }
+                            }
 
                             AddEventDescriptor(ref eventData, eventName, eventAttribute, args, hasRelatedActivityID);
                         }
@@ -3564,6 +3409,13 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="method">The method to probe.</param>
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                   Justification = "The method calls MethodBase.GetMethodBody. Trimming application can change IL of various methods" +
+                                   "which can lead to change of behavior. This method only uses this to validate usage of event source APIs." +
+                                   "In the worst case it will not be able to determine the value it's looking for and will not perform" +
+                                   "any validation.")]
+#endif
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
             // Currently searches for the following pattern
@@ -3761,12 +3613,12 @@ namespace System.Diagnostics.Tracing
         // Dispatching state
         internal volatile EventDispatcher? m_Dispatchers;    // Linked list of code:EventDispatchers we write the data to (we also do ETW specially)
 #if FEATURE_MANAGED_ETW
-        private volatile OverideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
+        private volatile OverrideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
 #endif
 #if FEATURE_PERFTRACING
-        private object m_createEventLock = new object();
+        private object? m_createEventLock;
         private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
-        private volatile OverideEventProvider m_eventPipeProvider = null!;
+        private volatile OverrideEventProvider m_eventPipeProvider = null!;
 #endif
         private bool m_completelyInited;                // The EventSource constructor has returned without exception.
         private Exception? m_constructionException;      // If there was an exception construction, this is it
@@ -4109,18 +3961,17 @@ namespace System.Diagnostics.Tracing
         {
             lock (EventListenersLock)
             {
-                s_EventSources ??= new List<WeakReference<EventSource>>(2);
+                Debug.Assert(s_EventSources != null);
 
+#if ES_BUILD_STANDALONE
+                // netcoreapp build calls DisposeOnShutdown directly from AppContext.OnProcessExit
                 if (!s_EventSourceShutdownRegistered)
                 {
                     s_EventSourceShutdownRegistered = true;
-#if ES_BUILD_STANDALONE
                     AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
                     AppDomain.CurrentDomain.DomainUnload += DisposeOnShutdown;
-#else
-                    AppContext.ProcessExit += DisposeOnShutdown;
-#endif
                 }
+#endif
 
                 // Periodically search the list for existing entries to reuse, this avoids
                 // unbounded memory use if we keep recycling eventSources (an unlikely thing).
@@ -4177,8 +4028,14 @@ namespace System.Diagnostics.Tracing
         // such callbacks on process shutdown or appdomain so that unmanaged code will never
         // do this.  This is what this callback is for.
         // See bug 724140 for more
+#if ES_BUILD_STANDALONE
         private static void DisposeOnShutdown(object? sender, EventArgs e)
+#else
+        internal static void DisposeOnShutdown()
+#endif
         {
+            Debug.Assert(EventSource.IsSupported);
+
             lock (EventListenersLock)
             {
                 Debug.Assert(s_EventSources != null);
@@ -4413,11 +4270,13 @@ namespace System.Diagnostics.Tracing
         private static bool s_ConnectingEventSourcesAndListener;
 #endif
 
+#if ES_BUILD_STANDALONE
         /// <summary>
         /// Used to register AD/Process shutdown callbacks.
         /// </summary>
         private static bool s_EventSourceShutdownRegistered;
-        #endregion
+#endif
+#endregion
     }
 
     /// <summary>
@@ -4582,11 +4441,13 @@ namespace System.Diagnostics.Tracing
                 // do the lazy init if you know it is contract based (EventID >= 0)
                 if (EventId >= 0 && m_payloadNames == null)
                 {
-                    var names = new List<string>();
                     Debug.Assert(m_eventSource.m_eventData != null);
-                    foreach (ParameterInfo parameter in m_eventSource.m_eventData[EventId].Parameters)
+                    ParameterInfo[] parameters = m_eventSource.m_eventData[EventId].Parameters;
+
+                    string[] names = new string[parameters.Length];
+                    for (int i = 0; i < parameters.Length; i++)
                     {
-                        names.Add(parameter.Name!);
+                        names[i] = parameters[i].Name!;
                     }
 
                     m_payloadNames = new ReadOnlyCollection<string>(names);
@@ -5349,11 +5210,11 @@ namespace System.Diagnostics.Tracing
             numParams = 0;
             byteArrArgIndices = null;
 
-            events.Append("  <event").
-                 Append(" value=\"").Append(eventAttribute.EventId).Append('"').
-                 Append(" version=\"").Append(eventAttribute.Version).Append('"').
-                 Append(" level=\"").Append(GetLevelName(eventAttribute.Level)).Append('"').
-                 Append(" symbol=\"").Append(eventName).Append('"');
+            events.Append("  <event value=\"").Append(eventAttribute.EventId).
+                 Append("\" version=\"").Append(eventAttribute.Version).
+                 Append("\" level=\"");
+            AppendLevelName(events, eventAttribute.Level);
+            events.Append("\" symbol=\"").Append(eventName).Append('"');
 
             // at this point we add to the manifest's stringTab a message that is as-of-yet
             // "untranslated to manifest convention", b/c we don't have the number or position
@@ -5361,11 +5222,22 @@ namespace System.Diagnostics.Tracing
             WriteMessageAttrib(events, "event", eventName, eventAttribute.Message);
 
             if (eventAttribute.Keywords != 0)
-                events.Append(" keywords=\"").Append(GetKeywords((ulong)eventAttribute.Keywords, eventName)).Append('"');
+            {
+                events.Append(" keywords=\"");
+                AppendKeywords(events, (ulong)eventAttribute.Keywords, eventName);
+                events.Append('"');
+            }
+
             if (eventAttribute.Opcode != 0)
+            {
                 events.Append(" opcode=\"").Append(GetOpcodeName(eventAttribute.Opcode, eventName)).Append('"');
+            }
+
             if (eventAttribute.Task != 0)
+            {
                 events.Append(" task=\"").Append(GetTaskName(eventAttribute.Task, eventName)).Append('"');
+            }
+
 #if FEATURE_MANAGED_ETW_CHANNELS
             if (eventAttribute.Channel != 0)
             {
@@ -5425,10 +5297,11 @@ namespace System.Diagnostics.Tracing
 
             // at this point we have all the information we need to translate the C# Message
             // to the manifest string we'll put in the stringTab
-            if (stringTab.TryGetValue("event_" + eventName, out string? msg))
+            string prefixedEventName = "event_" + eventName;
+            if (stringTab.TryGetValue(prefixedEventName, out string? msg))
             {
                 msg = TranslateToManifestConvention(msg, eventName);
-                stringTab["event_" + eventName] = msg;
+                stringTab[prefixedEventName] = msg;
             }
 
             eventName = null;
@@ -5482,6 +5355,8 @@ namespace System.Diagnostics.Tracing
 
         public IList<string> Errors => errors;
 
+        public bool HasResources => resources != null;
+
         /// <summary>
         /// When validating an event source it adds the error to the error collection.
         /// When not validating it throws an exception if runtimeCritical is "true".
@@ -5499,6 +5374,10 @@ namespace System.Diagnostics.Tracing
 
         private string CreateManifestString()
         {
+#if !ES_BUILD_STANDALONE
+            Span<char> ulongHexScratch = stackalloc char[16]; // long enough for ulong.MaxValue formatted as hex
+#endif
+
 #if FEATURE_MANAGED_ETW_CHANNELS
             // Write out the channels
             if (channelTab != null)
@@ -5513,7 +5392,6 @@ namespace System.Diagnostics.Tracing
                     ChannelInfo channelInfo = kvpair.Value;
 
                     string? channelType = null;
-                    const string ElementName = "channel";
                     bool enabled = false;
                     string? fullName = null;
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
@@ -5540,24 +5418,20 @@ namespace System.Diagnostics.Tracing
 
                     fullName ??= providerName + "/" + channelInfo.Name;
 
-                    sb.Append("  <").Append(ElementName);
-                    sb.Append(" chid=\"").Append(channelInfo.Name).Append('"');
-                    sb.Append(" name=\"").Append(fullName).Append('"');
-                    if (ElementName == "channel")   // not applicable to importChannels.
-                    {
-                        Debug.Assert(channelInfo.Name != null);
-                        WriteMessageAttrib(sb, "channel", channelInfo.Name, null);
-                        sb.Append(" value=\"").Append(channel).Append('"');
-                        if (channelType != null)
-                            sb.Append(" type=\"").Append(channelType).Append('"');
-                        sb.Append(" enabled=\"").Append(enabled ? "true" : "false").Append('"');
+                    sb.Append("  <channel chid=\"").Append(channelInfo.Name).Append("\" name=\"").Append(fullName).Append('"');
+
+                    Debug.Assert(channelInfo.Name != null);
+                    WriteMessageAttrib(sb, "channel", channelInfo.Name, null);
+                    sb.Append(" value=\"").Append(channel).Append('"');
+                    if (channelType != null)
+                        sb.Append(" type=\"").Append(channelType).Append('"');
+                    sb.Append(" enabled=\"").Append(enabled ? "true" : "false").Append('"');
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                        if (access != null)
-                            sb.Append(" access=\"").Append(access).Append("\"");
-                        if (isolation != null)
-                            sb.Append(" isolation=\"").Append(isolation).Append("\"");
+                    if (access != null)
+                        sb.Append(" access=\"").Append(access).Append("\"");
+                    if (isolation != null)
+                        sb.Append(" isolation=\"").Append(isolation).Append("\"");
 #endif
-                    }
                     sb.AppendLine("/>");
                 }
                 sb.AppendLine(" </channels>");
@@ -5608,7 +5482,14 @@ namespace System.Diagnostics.Tracing
                             // TODO: Warn people about the dropping of values.
                             if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
                                 continue;
-                            sb.Append("   <map value=\"0x").Append(hexValue.ToString("x", CultureInfo.InvariantCulture)).Append('"');
+
+#if ES_BUILD_STANDALONE
+                            string hexValueFormatted = hexValue.ToString("x", CultureInfo.InvariantCulture);
+#else
+                            hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
+                            Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
+#endif
+                            sb.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
                             sb.AppendLine("/>");
                             anyValuesWritten = true;
@@ -5650,7 +5531,13 @@ namespace System.Diagnostics.Tracing
                 {
                     sb.Append("  <keyword");
                     WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
-                    sb.Append(" mask=\"0x").Append(keyword.ToString("x", CultureInfo.InvariantCulture)).AppendLine("\"/>");
+#if ES_BUILD_STANDALONE
+                    string keywordFormatted = keyword.ToString("x", CultureInfo.InvariantCulture);
+#else
+                    keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
+                    Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
+#endif
+                    sb.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
                 }
                 sb.AppendLine(" </keywords>");
             }
@@ -5679,27 +5566,21 @@ namespace System.Diagnostics.Tracing
             // Output the localization information.
             sb.AppendLine("<localization>");
 
-            List<CultureInfo> cultures = (resources != null && (flags & EventManifestOptions.AllCultures) != 0) ?
-                GetSupportedCultures() :
-                new List<CultureInfo>() { CultureInfo.CurrentUICulture };
-
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
             Array.Sort<string>(sortedStrings, 0, sortedStrings.Length);
 
-            foreach (CultureInfo ci in cultures)
+            CultureInfo ci = CultureInfo.CurrentUICulture;
+            sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
+            sb.AppendLine("  <stringTable>");
+            foreach (string stringKey in sortedStrings)
             {
-                sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
-                sb.AppendLine("  <stringTable>");
-
-                foreach (string stringKey in sortedStrings)
-                {
-                    string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
-                    sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
-                }
-                sb.AppendLine("  </stringTable>");
-                sb.AppendLine(" </resources>");
+                string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
+                sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
             }
+            sb.AppendLine("  </stringTable>");
+            sb.AppendLine(" </resources>");
+
             sb.AppendLine("</localization>");
             sb.AppendLine("</instrumentationManifest>");
             return sb.ToString();
@@ -5713,18 +5594,21 @@ namespace System.Diagnostics.Tracing
         }
         private void WriteMessageAttrib(StringBuilder stringBuilder, string elementName, string name, string? value)
         {
-            string key = elementName + "_" + name;
+            string? key = null;
+
             // See if the user wants things localized.
             if (resources != null)
             {
                 // resource fallback: strings in the neutral culture will take precedence over inline strings
-                string? localizedString = resources.GetString(key, CultureInfo.InvariantCulture);
-                if (localizedString != null)
+                key = elementName + "_" + name;
+                if (resources.GetString(key, CultureInfo.InvariantCulture) is string localizedString)
                     value = localizedString;
             }
+
             if (value == null)
                 return;
 
+            key ??= elementName + "_" + name;
             stringBuilder.Append(" message=\"$(string.").Append(key).Append(")\"");
 
             if (stringTab.TryGetValue(key, out string? prevValue) && !prevValue.Equals(value))
@@ -5757,24 +5641,23 @@ namespace System.Diagnostics.Tracing
             return value;
         }
 
-        /// <summary>
-        /// There's no API to enumerate all languages an assembly is localized into, so instead
-        /// we enumerate through all the "known" cultures and attempt to load a corresponding satellite
-        /// assembly
-        /// </summary>
-        /// <returns></returns>
-        private static List<CultureInfo> GetSupportedCultures()
+        private static void AppendLevelName(StringBuilder sb, EventLevel level)
         {
-            var cultures = new List<CultureInfo>();
+            if ((int)level < 16)
+            {
+                sb.Append("win:");
+            }
 
-            if (!cultures.Contains(CultureInfo.CurrentUICulture))
-                cultures.Insert(0, CultureInfo.CurrentUICulture);
-            return cultures;
-        }
-
-        private static string GetLevelName(EventLevel level)
-        {
-            return (((int)level >= 16) ? "" : "win:") + level.ToString();
+            sb.Append(level switch // avoid boxing that comes from level.ToString()
+            {
+                EventLevel.LogAlways => nameof(EventLevel.LogAlways),
+                EventLevel.Critical => nameof(EventLevel.Critical),
+                EventLevel.Error => nameof(EventLevel.Error),
+                EventLevel.Warning => nameof(EventLevel.Warning),
+                EventLevel.Informational => nameof(EventLevel.Informational),
+                EventLevel.Verbose => nameof(EventLevel.Verbose),
+                _ => ((int)level).ToString()
+            });
         }
 
 #if FEATURE_MANAGED_ETW_CHANNELS
@@ -5855,7 +5738,7 @@ namespace System.Diagnostics.Tracing
             return ret;
         }
 
-        private string GetKeywords(ulong keywords, string eventName)
+        private void AppendKeywords(StringBuilder sb, ulong keywords, string eventName)
         {
 #if FEATURE_MANAGED_ETW_CHANNELS
             // ignore keywords associate with channels
@@ -5863,7 +5746,7 @@ namespace System.Diagnostics.Tracing
             keywords &= ~ValidPredefinedChannelKeywords;
 #endif
 
-            string ret = "";
+            bool appended = false;
             for (ulong bit = 1; bit != 0; bit <<= 1)
             {
                 if ((keywords & bit) != 0)
@@ -5881,12 +5764,19 @@ namespace System.Diagnostics.Tracing
                         ManifestError(SR.Format(SR.EventSource_UndefinedKeyword, "0x" + bit.ToString("x", CultureInfo.CurrentCulture), eventName), true);
                         keyword = string.Empty;
                     }
-                    if (ret.Length != 0 && keyword.Length != 0)
-                        ret += " ";
-                    ret += keyword;
+
+                    if (keyword.Length != 0)
+                    {
+                        if (appended)
+                        {
+                            sb.Append(' ');
+                        }
+
+                        sb.Append(keyword);
+                        appended = true;
+                    }
                 }
             }
-            return ret;
         }
 
         private string GetTypeName(Type type)

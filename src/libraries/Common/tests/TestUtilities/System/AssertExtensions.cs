@@ -378,6 +378,58 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Validates that the actual collection contains same items as expected collection. If the test fails, this will display:
+        /// 1. Count if two collection count are different;
+        /// 2. Missed expected collection item when found
+        /// </summary>
+        /// <param name="expected">The collection that <paramref name="actual"/> should contain same items as</param>
+        /// <param name="actual"></param>
+        /// <param name="comparer">The comparer used to compare the items in two collections</param>
+        public static void CollectionEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T> comparer)
+        {
+            var actualItemCountMapping = new Dictionary<T, ItemCount>(comparer);
+            int actualCount = 0;
+            foreach (T actualItem in actual)
+            {
+                if (actualItemCountMapping.TryGetValue(actualItem, out ItemCount countInfo))
+                {
+                    countInfo.Original++;
+                    countInfo.Remain++;
+                }
+                else
+                {
+                    actualItemCountMapping[actualItem] = new ItemCount(1, 1);
+                }
+                
+                actualCount++;
+            }
+
+            var expectedArray = expected.ToArray();
+            var expectedCount = expectedArray.Length;
+
+            if (expectedCount != actualCount)
+            {
+                throw new XunitException($"Expected count: {expectedCount}{Environment.NewLine}Actual count: {actualCount}");
+            }
+
+            for (var i = 0; i < expectedCount; i++)
+            {
+                T currentExpectedItem = expectedArray[i];
+                if (!actualItemCountMapping.TryGetValue(currentExpectedItem, out ItemCount countInfo))
+                {
+                    throw new XunitException($"Expected: {currentExpectedItem} but not found");
+                }
+
+                if (countInfo.Remain == 0)
+                {
+                    throw new XunitException($"Collections are not equal.{Environment.NewLine}Totally {countInfo.Original} {currentExpectedItem} in actual collection but expect more {currentExpectedItem}");
+                }
+
+                countInfo.Remain--;
+            }
+        }
+		
         public static void AtLeastOneEquals<T>(T expected1, T expected2, T value)
         {
             EqualityComparer<T> comparer = EqualityComparer<T>.Default;
@@ -454,6 +506,18 @@ namespace System
             E exception = AssertThrows<E, T>(span, action);
             Assert.Equal(expectedParamName, exception.ParamName);
             return exception;
+        }
+		
+        private class ItemCount
+        {
+            public int Original { get; set; }
+            public int Remain { get; set; }
+
+            public ItemCount(int original, int remain)
+            {
+                Original = original;
+                Remain = remain;
+            }
         }
     }
 }

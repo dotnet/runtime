@@ -44,6 +44,4 @@
     <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Private'))">true</SuppressFinalPackageVersion>
   </PropertyGroup>
 
-  <Import Project="$(RepoRoot)eng\native\naming.props" />
-
 </Project>

@@ -208,7 +208,11 @@ elseif (CLR_CMAKE_HOST_ARCH_I386)
   set(ARCH_HOST_NAME x86)
   add_definitions(-DHOST_X86)
 elseif (CLR_CMAKE_HOST_ARCH_ARM)
-  set(ARCH_HOST_NAME arm)
+  if (ARM_SOFTFP)
+    set(ARCH_HOST_NAME armel)
+  else ()
+    set(ARCH_HOST_NAME arm)
+  endif ()
   add_definitions(-DHOST_ARM)
 elseif (CLR_CMAKE_HOST_ARCH_ARM64)
   set(ARCH_HOST_NAME arm64)
@@ -323,6 +327,11 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-Wno-unused-value)
   add_compile_options(-Wno-unused-function)
   add_compile_options(-Wno-tautological-compare)
+
+  check_cxx_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+  if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+    add_compile_options(-Wimplicit-fallthrough)
+  endif()
 
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
@@ -442,27 +451,47 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (MSVC)
   # Compile options for targeting windows
 
-  add_compile_options(/TP) # compile all files as C++
-  add_compile_options(/nologo) # Suppress Startup Banner
-  add_compile_options(/W3) # set warning level to 3
-  add_compile_options(/WX) # treat warnings as errors
-  add_compile_options(/Oi) # enable intrinsics
-  add_compile_options(/Oy-) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
-  add_compile_options(/Gm-) # disable minimal rebuild
-  add_compile_options(/Zp8) # pack structs on 8-byte boundary
-  add_compile_options(/Gy) # separate functions for linker
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-") # disable C++ RTTI
-  add_compile_options(/FC) # use full pathnames in diagnostics
-  add_compile_options(/MP) # Build with Multiple Processes (number of processes equal to the number of processors)
-  add_compile_options(/Zm200) # Specify Precompiled Header Memory Allocation Limit of 150MB
-  add_compile_options(/Zc:strictStrings) # Disable string-literal to char* or wchar_t* conversion
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/nologo>) # Suppress Startup Banner
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W3>) # set warning level to 3
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oy->) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gm->) # disable minimal rebuild
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zp8>) # pack structs on 8-byte boundary
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gy>) # separate functions for linker
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GS>) # Explicitly enable the buffer security checks
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/fp:precise>) # Enable precise floating point
 
-  add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
+  # disable C++ RTTI
+  # /GR is added by default by CMake, so remove it manually.
+  string(REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>) # use full pathnames in diagnostics
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/MP>) # Build with Multiple Processes (number of processes equal to the number of processors)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zm200>) # Specify Precompiled Header Memory Allocation Limit of 150MB
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:strictStrings>) # Disable string-literal to char* or wchar_t* conversion
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:wchar_t>) # wchar_t is a built-in type.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:inline>) # All inline functions must have their definition available in the current translation unit.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:forScope>) # Enforce standards-compliant for scope.
+
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4960>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4961>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4603>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4627>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4838>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4456>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4457>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4458>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4459>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4091>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4640>)
 
   # Disable Warnings:
   # 4291: Delete not defined for new, c++ exception may cause leak.
   # 5105: Windows SDK headers use 'defined' operator in some macros
-  add_compile_options(/wd4291 /wd5105)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4291>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd5105>)
 
   # Treat Warnings as Errors:
   # 4007: 'main' : must be __cdecl.
@@ -471,7 +500,12 @@ if (MSVC)
   # 4551: Function call missing argument list.
   # 4700: Local used w/o being initialized.
   # 4806: Unsafe operation involving type 'bool'.
-  add_compile_options(/we4007 /we4013 /we4102 /we4551 /we4700 /we4806)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4007>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4013>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4102>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4551>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4700>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4806>)
 
   # Set Warning Level 3:
   # 4092: Sizeof returns 'unsigned long'.
@@ -482,26 +516,32 @@ if (MSVC)
   # 4212: Function declaration used ellipsis.
   # 4530: C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
   # 35038: data member 'member1' will be initialized after data member 'member2'.
-  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530 /w35038)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34092>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34121>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34125>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34130>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34132>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34212>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34530>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w35038>)
 
   # Set Warning Level 4:
   # 4177: Pragma data_seg s/b at global scope.
-  add_compile_options(/w44177)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w44177>)
 
-  add_compile_options(/Zi) # enable debugging information
-  add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
-  add_compile_options(/source-charset:utf-8) # Force MSVC to compile source as UTF-8.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/ZH:SHA_256>) # use SHA256 for generating hashes of compiler processed source files.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
 
   if (CLR_CMAKE_HOST_ARCH_I386)
-    add_compile_options(/Gz)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
 
-  add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
-  add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<CONFIG:Checked>>:/O1>)
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>>:/GL>)
 
   if (CLR_CMAKE_HOST_ARCH_AMD64)
-  # The generator expression in the following command means that the /homeparams option is added only for debug builds
-  add_compile_options($<$<CONFIG:Debug>:/homeparams>) # Force parameters passed in registers to be written to the stack
+    # The generator expression in the following command means that the /homeparams option is added only for debug builds for C and C++ source files
+    add_compile_options($<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:C,CXX>>:/homeparams>) # Force parameters passed in registers to be written to the stack
   endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   # enable control-flow-guard support for native components for non-Arm64 builds
@@ -515,9 +555,7 @@ if (MSVC)
   # For Release builds, we shall dynamically link into uCRT [ucrtbase.dll] (which is pushed down as a Windows Update on downlevel OS) but
   # wont do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not
   # production-time scenarios.
-
-  add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:/MT>)
-  add_compile_options($<$<AND:$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>,$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>>:/MTd>)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<AND:$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>,$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>>:Debug>)
 
   add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/ZH:SHA_256>)
 
@@ -526,6 +564,8 @@ if (MSVC)
     add_definitions(-DDISABLE_CONTRACTS)
   endif (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
 
+  # Don't display the output header when building RC files.
+  add_compile_options($<$<COMPILE_LANGUAGE:RC>:/nologo>)
 endif (MSVC)
 
 if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
@@ -545,20 +585,13 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
 endif(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
-if (CMAKE_BUILD_TOOL STREQUAL nmake)
+if (CMAKE_GENERATOR MATCHES "(Makefile|Ninja)")
   set(CMAKE_RC_CREATE_SHARED_LIBRARY "${CMAKE_CXX_CREATE_SHARED_LIBRARY}")
-endif(CMAKE_BUILD_TOOL STREQUAL nmake)
+endif()
 
 # Ensure other tools are present
 if (CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_HOST_ARCH_ARM)
-
-      # Confirm that Windows SDK is present
-      if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
-              message(FATAL_ERROR "Windows SDK is required for the Arm32 build.")
-      else()
-              message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
-      endif()
 
       # Explicitly specify the assembler to be used for Arm32 compile
       file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm\\armasm.exe" CMAKE_ASM_COMPILER)
@@ -569,14 +602,13 @@ if (CLR_CMAKE_HOST_WIN32)
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
-    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
+      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
+      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
+      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
+      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
+      set(CMAKE_ASM_COMPILE_OBJECT "<CMAKE_ASM_COMPILER> -g <INCLUDES> <FLAGS> -o <OBJECT> <SOURCE>")
 
-      # Confirm that Windows SDK is present
-      if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
-              message(FATAL_ERROR "Windows SDK is required for the ARM64 build.")
-      else()
-              message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
-      endif()
+    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
 
       # Explicitly specify the assembler to be used for Arm64 compile
       file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
@@ -587,8 +619,17 @@ if (CLR_CMAKE_HOST_WIN32)
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
+      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
+      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
+      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
+      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
+      set(CMAKE_ASM_COMPILE_OBJECT "<CMAKE_ASM_COMPILER> -g <INCLUDES> <FLAGS> -o <OBJECT> <SOURCE>")
     else()
       enable_language(ASM_MASM)
+      set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
+      set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
+      set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
+      set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
     endif()
 
     # Ensure that MC is present
@@ -600,23 +641,4 @@ if (CLR_CMAKE_HOST_WIN32)
 else (CLR_CMAKE_HOST_WIN32)
     enable_language(ASM)
 
-    # Ensure that awk is present
-    find_program(AWK awk)
-    if (AWK STREQUAL "AWK-NOTFOUND")
-        message(FATAL_ERROR "AWK not found")
-    endif()
-
-    # detect linker
-    set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
-    execute_process(COMMAND ${ldVersion}
-        ERROR_QUIET
-        OUTPUT_VARIABLE ldVersionOutput)
-
-    if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold")
-        set(LD_GNU 1)
-    elseif("${ldVersionOutput}" MATCHES "Solaris Link")
-        set(LD_SOLARIS 1)
-    else(CLR_CMAKE_HOST_OSX)
-        set(LD_OSX 1)
-    endif()
 endif(CLR_CMAKE_HOST_WIN32)

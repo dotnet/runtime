@@ -42,7 +42,7 @@ a "Shared" comment it signifies that our tests are built on OSX in ~15 minutes i
 
 *Special Jobs*
 
-`Formatting Linux x64` and `Formatting Windows x64` are special jobs which run clang-tidy of `src/coreclr/src/jit/*`. If there is a failure, there is a patch file that is created that can be applied to fix the source formatting.
+`Formatting Linux x64` and `Formatting Windows x64` are special jobs which run clang-tidy of `src/coreclr/jit/*`. If there is a failure, there is a patch file that is created that can be applied to fix the source formatting.
 
 | OS      | Architecture | Build Type | Product Build | Build Tests | Run coreclr Tests | Test Count | R2R   |
 | --      | ------------ | ---------- | ------------- | ----------- | ----------------- | ---------- | ----- |

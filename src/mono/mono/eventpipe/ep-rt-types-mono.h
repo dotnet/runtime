@@ -5,7 +5,7 @@
 #include <config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
+#include <eventpipe/ep-rt-config.h>
 #include <glib.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/os-event.h>
@@ -19,6 +19,9 @@
 #undef EP_ASSERT
 #define EP_ASSERT(expr) g_assert_checked(expr)
 //#define EP_ASSERT(expr) g_assert(expr)
+
+#undef EP_UNREACHABLE
+#define EP_UNREACHABLE(msg) g_assert_not_reached()
 
 #undef EP_LIKELY
 #define EP_LIKELY(expr) G_LIKELY(expr)
@@ -89,6 +92,9 @@ typedef struct _rt_mono_array_iterator_internal_t ep_rt_thread_session_state_arr
 typedef struct _rt_mono_list_internal_t ep_rt_sequence_point_list_t;
 typedef struct _rt_mono_list_iterator_internal_t ep_rt_sequence_point_list_iterator_t;
 
+typedef struct _rt_mono_list_internal_t ep_rt_thread_list_t;
+typedef struct _rt_mono_list_iterator_internal_t ep_rt_thread_list_iterator_t;
+
 typedef struct _rt_mono_queue_internal_t ep_rt_provider_callback_data_queue_t;
 
 typedef struct _rt_mono_table_internal_t ep_rt_metadata_labels_hash_map_t;
@@ -115,7 +121,12 @@ typedef struct _rt_mono_array_iterator_internal_t ep_rt_session_id_array_iterato
 typedef struct _rt_mono_array_internal_t ep_rt_provider_config_array_t;
 typedef struct _rt_mono_array_iterator_internal_t ep_rt_provider_config_array_iterator_t;
 
-typedef MonoThreadHandle ep_rt_thread_handle_t;
+typedef struct _rt_mono_array_internal_t ep_rt_env_array_utf16_t;
+typedef struct _rt_mono_array_iterator_internal_t ep_rt_env_array_utf16_iterator_t;
+
+typedef THREAD_INFO_TYPE * ep_rt_thread_handle_t;
+
+typedef EventPipeThread * ep_rt_thread_activity_id_handle_t;
 
 typedef gpointer ep_rt_file_handle_t;
 
@@ -125,6 +136,8 @@ typedef struct _rt_mono_event_internal_t ep_rt_wait_event_handle_t;
 
 typedef struct _rt_mono_lock_internal_t ep_rt_lock_handle_t;
 typedef ep_rt_lock_handle_t ep_rt_spin_lock_handle_t;
+
+typedef MonoNativeThreadId ep_rt_thread_id_t;
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_TYPES_MONO_H__ */

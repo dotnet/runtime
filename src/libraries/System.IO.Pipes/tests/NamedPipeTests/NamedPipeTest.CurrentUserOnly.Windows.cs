@@ -121,7 +121,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Negative tests for PipeOptions.CurrentUserOnly in Windows.
     /// </summary>
-    public class NamedPipeTest_CurrentUserOnly_Windows : NamedPipeTestBase, IClassFixture<TestAccountImpersonator>
+    public class NamedPipeTest_CurrentUserOnly_Windows : IClassFixture<TestAccountImpersonator>
     {
         public static bool IsAdminOnSupportedWindowsVersions => PlatformDetection.IsWindowsAndElevated
             && !PlatformDetection.IsWindows7
@@ -144,7 +144,7 @@ namespace System.IO.Pipes.Tests
         public void Connection_UnderDifferentUsers_BehavesAsExpected(
             PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
         {
-            string name = GetUniquePipeName();
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (var cts = new CancellationTokenSource())
             using (var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, serverPipeOptions | PipeOptions.Asynchronous))
             {
@@ -169,7 +169,7 @@ namespace System.IO.Pipes.Tests
         [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
         public void Allow_Connection_UnderDifferentUsers_ForClientReading()
         {
-            string name = GetUniquePipeName();
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(
                 name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             {
