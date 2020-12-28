@@ -15,7 +15,6 @@
   <PropertyGroup>
     <!-- Historically, the key for the managed projects is the AspNetCore key Arcade carries. -->
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
-    <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
   </PropertyGroup>
 </Project>
