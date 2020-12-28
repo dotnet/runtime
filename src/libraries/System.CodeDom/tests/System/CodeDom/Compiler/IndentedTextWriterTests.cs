@@ -1,21 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.CodeDom.Tests.System.CodeDom.Compiler
+namespace System.CodeDom.Compiler.Tests
 {
     public class IndentedTextWriterTests
     {
+        //  A StringWriter that remembers the name of the most recently-called write method.
         private sealed class IndicatingTextWriter : StringWriter
         {
             public string LastCalledMethod { get; private set; }
@@ -394,6 +389,7 @@ namespace System.CodeDom.Tests.System.CodeDom.Compiler
         private const string TabString = "   ";
         private const string NewLine = "\n";
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteAsync_MemberData))]
         public async Task WriteAsync_WithoutIndents_CallsInnerWriteAsync(Func<IndentedTextWriter, Task> callWriteAsync, string expected)
@@ -408,6 +404,7 @@ namespace System.CodeDom.Tests.System.CodeDom.Compiler
             Assert.Equal(expected, indicator.GetStringBuilder().ToString());
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteAsync_MemberData))]
         public async Task WriteAsync_WithIndents_WritesTabsAfterWriteLineAsync(Func<IndentedTextWriter, Task> callWriteAsync, string expected)
@@ -417,14 +414,15 @@ namespace System.CodeDom.Tests.System.CodeDom.Compiler
             itw.NewLine = NewLine;
             itw.Indent = 1;
 
-            string prefix = $"prefix{NewLine}";
+            string prefix = $"prefix";
             await itw.WriteLineAsync(prefix);
             await callWriteAsync(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteAsync), indicator.LastCalledMethod);
-            Assert.Equal($"{prefix}{TabString}{expected}", indicator.GetStringBuilder().ToString());
+            Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteAsync_MemberData))]
         public async Task WriteAsync_WithIndents_OmitsTabsAfterWriteAsync(Func<IndentedTextWriter, Task> callWriteAsync, string expected)
@@ -442,36 +440,39 @@ namespace System.CodeDom.Tests.System.CodeDom.Compiler
             Assert.Equal($"{prefix}{expected}", indicator.GetStringBuilder().ToString());
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteLineAsync_MemberData))]
-        public async Task WriteLineAsync_WithoutIndents_CallsInnerWriteLineAsync(Func<IndentedTextWriter, Task> callWriteLine, string expected)
+        public async Task WriteLineAsync_WithoutIndents_CallsInnerWriteLineAsync(Func<IndentedTextWriter, Task> callWriteLineAsync, string expected)
         {
             var indicator = new IndicatingTextWriter();
             var itw = new IndentedTextWriter(indicator, TabString);
             itw.NewLine = NewLine;
-            await callWriteLine(itw);
+            await callWriteLineAsync(itw);
 
             Assert.Equal(nameof(TextWriter.WriteLineAsync), indicator.LastCalledMethod);
             Assert.Equal(expected, indicator.GetStringBuilder().ToString());
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteLineAsync_MemberData))]
-        public async Task WriteLineAsync_WithIndents_FirstLine_IsNotIndented(Func<IndentedTextWriter, Task> callWriteLine, string expected)
+        public async Task WriteLineAsync_WithIndents_FirstLine_IsNotIndented(Func<IndentedTextWriter, Task> callWriteLineAsync, string expected)
         {
             var indicator = new IndicatingTextWriter();
             var itw = new IndentedTextWriter(indicator, TabString);
             itw.NewLine = NewLine;
             itw.Indent = 1;
-            await callWriteLine(itw);
+            await callWriteLineAsync(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteLineAsync), indicator.LastCalledMethod);
             Assert.Equal($"{expected}", indicator.GetStringBuilder().ToString());
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteLineAsync_MemberData))]
-        public async Task WriteLineAsync_WithIndents_SubsequentLines_AreIndented(Func<IndentedTextWriter, Task> callWriteLine, string expected)
+        public async Task WriteLineAsync_WithIndents_SubsequentLines_AreIndented(Func<IndentedTextWriter, Task> callWriteLineAsync, string expected)
         {
             var indicator = new IndicatingTextWriter();
             var itw = new IndentedTextWriter(indicator, TabString);
@@ -480,7 +481,7 @@ namespace System.CodeDom.Tests.System.CodeDom.Compiler
 
             const string prefix = "prefix";
             await itw.WriteLineAsync(prefix);
-            await callWriteLine(itw);
+            await callWriteLineAsync(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteLineAsync), indicator.LastCalledMethod);
             Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
@@ -576,6 +577,29 @@ namespace System.CodeDom.Tests.System.CodeDom.Compiler
 
             Assert.Equal(nameof(IndentedTextWriter.WriteLine), indicator.LastCalledMethod);
             Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Fact]
+        public async Task FlushAsync_CallsUnderlyingFlushAsync()
+        {
+            var indicator = new IndicatingTextWriter();
+            var itw = new IndentedTextWriter(indicator);
+
+            await itw.FlushAsync();
+
+            Assert.Equal(nameof(IndentedTextWriter.FlushAsync), indicator.LastCalledMethod);
+        }
+
+        [Fact]
+        public void Flush_CallsUnderlyingFlush()
+        {
+            var indicator = new IndicatingTextWriter();
+            var itw = new IndentedTextWriter(indicator);
+
+            itw.Flush();
+
+            Assert.Equal(nameof(IndentedTextWriter.Flush), indicator.LastCalledMethod);
         }
     }
 }

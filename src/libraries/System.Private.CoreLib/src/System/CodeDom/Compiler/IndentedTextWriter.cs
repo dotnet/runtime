@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.CodeDom.Compiler
 {
@@ -49,7 +51,11 @@ namespace System.CodeDom.Compiler
 
         public override void Close() => _writer.Close();
 
+        public override ValueTask DisposeAsync() => _writer.DisposeAsync();
+
         public override void Flush() => _writer.Flush();
+
+        public override Task FlushAsync() => _writer.FlushAsync();
 
         protected virtual void OutputTabs()
         {
@@ -58,6 +64,18 @@ namespace System.CodeDom.Compiler
                 for (int i = 0; i < _indentLevel; i++)
                 {
                     _writer.Write(_tabString);
+                }
+                _tabsPending = false;
+            }
+        }
+
+        protected virtual async Task OutputTabsAsync()
+        {
+            if (_tabsPending)
+            {
+                for (int i = 0; i < _indentLevel; i++)
+                {
+                    await _writer.WriteAsync(_tabString).ConfigureAwait(false);
                 }
                 _tabsPending = false;
             }
@@ -141,10 +159,42 @@ namespace System.CodeDom.Compiler
             _writer.Write(format, arg);
         }
 
+        public override async Task WriteAsync(char value)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteAsync(value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteAsync(char[] buffer, int index, int count)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteAsync(buffer, index, count).ConfigureAwait(false);
+        }
+
+        public override async Task WriteAsync(string? value)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteAsync(value).ConfigureAwait(false);
+        }
+
+        public override async Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+        }
+
+        public override async Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteAsync(value, cancellationToken).ConfigureAwait(false);
+        }
+
         public void WriteLineNoTabs(string? s)
         {
             _writer.WriteLine(s);
         }
+
+        public Task WriteLineNoTabsAsync(string? value) => _writer.WriteLineAsync(value);
 
         public override void WriteLine(string? s)
         {
@@ -249,6 +299,48 @@ namespace System.CodeDom.Compiler
         {
             OutputTabs();
             _writer.WriteLine(value);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync()
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteLineAsync().ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(char value)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteLineAsync(value).ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(char[] buffer, int index, int count)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteLineAsync(buffer, index, count).ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(string? value)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteLineAsync(value).ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteLineAsync(buffer, cancellationToken).ConfigureAwait(false);
+            _tabsPending = true;
+        }
+
+        public override async Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default)
+        {
+            await OutputTabsAsync().ConfigureAwait(false);
+            await _writer.WriteLineAsync(value, cancellationToken).ConfigureAwait(false);
             _tabsPending = true;
         }
     }
