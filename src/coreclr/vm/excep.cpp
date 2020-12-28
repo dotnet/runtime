@@ -2715,7 +2715,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     if (param.pThread->IsRudeAbortInitiated())
     {
         // Nobody should be able to swallow rude thread abort.
-        param.throwable = CLRException::GetPreallocatedRudeThreadAbortException();
+        param.throwable = CLRException::GetBestThreadAbortException();
     }
 
 #if 0
@@ -6333,7 +6333,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
     }
     else if (bAsynchronousThreadStop && pThread->IsAbortRequested() && pThread->IsRudeAbort())
     {
-        result = CLRException::GetPreallocatedRudeThreadAbortException();
+        result = CLRException::GetBestThreadAbortException();
     }
     else
     {
@@ -9173,11 +9173,7 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
 
     gc.oThrowable = oThrowable;
 
-    fIsTAE = (IsExceptionOfType(kThreadAbortException,&(gc.oThrowable)) || // regular TAE
-            ((g_pPreallocatedThreadAbortException != NULL) &&
-            (gc.oThrowable == CLRException::GetPreallocatedThreadAbortException())) ||
-            ((g_pPreallocatedRudeThreadAbortException != NULL) &&
-            (gc.oThrowable == CLRException::GetPreallocatedRudeThreadAbortException())));
+    fIsTAE = IsExceptionOfType(kThreadAbortException, &gc.oThrowable);
 
     GCPROTECT_END();
 

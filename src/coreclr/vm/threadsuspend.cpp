@@ -1261,7 +1261,7 @@ Thread::UserAbort(ThreadAbortRequester requester,
 
         if (IsRudeAbort())
         {
-            exceptObj = CLRException::GetPreallocatedRudeThreadAbortException();
+            exceptObj = CLRException::GetBestThreadAbortException();
         }
         else
         {
@@ -2387,7 +2387,7 @@ void Thread::HandleThreadAbort ()
 
         if (IsRudeAbort())
         {
-            exceptObj = CLRException::GetPreallocatedRudeThreadAbortException();
+            exceptObj = CLRException::GetBestThreadAbortException();
         }
         else
         {
