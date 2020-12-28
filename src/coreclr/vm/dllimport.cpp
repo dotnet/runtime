@@ -1598,7 +1598,7 @@ void NDirectStubLinker::SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL f
     {
         // The JIT has to use a different calling convention for unmanaged vararg targets on 64-bit and ARM:
         // any float values must be duplicated in the corresponding general-purpose registers.
-        uNativeCallingConv = CORINFO_CALLCONV_NATIVEVARARG;
+        uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_NATIVEVARARG;
     }
     else
 #endif // !TARGET_X86
@@ -1606,17 +1606,17 @@ void NDirectStubLinker::SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL f
         switch (unmngCallConv)
         {
             case pmCallConvCdecl:
-                uNativeCallingConv = CORINFO_CALLCONV_C;
+                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_C;
                 break;
             case pmCallConvStdcall:
-                uNativeCallingConv = CORINFO_CALLCONV_STDCALL;
+                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_STDCALL;
                 break;
             case pmCallConvThiscall:
-                uNativeCallingConv = CORINFO_CALLCONV_THISCALL;
+                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_THISCALL;
                 break;
             default:
                 _ASSERTE(!"Invalid calling convention.");
-                uNativeCallingConv = CORINFO_CALLCONV_STDCALL;
+                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_STDCALL;
                 break;
         }
     }
@@ -2980,7 +2980,7 @@ namespace
         HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe, errorResID);
         if (hr != S_OK)
             return hr;
-        
+
         if (!TryConvertCallConvValueToPInvokeCallConv(callConvMaybe, pPinvokeMapOut))
             return S_FALSE;
 
@@ -3228,18 +3228,7 @@ BOOL NDirect::MarshalingRequired(
                         return TRUE;
                 }
 #endif
-
-                // return value is fine as long as it can be normalized to an integer
-                if (i == 0)
-                {
-                    CorElementType normalizedType = hndArgType.GetInternalCorElementType();
-                    if (normalizedType == ELEMENT_TYPE_VALUETYPE)
-                    {
-                        // it is a structure even after normalization
-                        return TRUE;
-                    }
-                }
-                else
+                if (i > 0)
                 {
                     dwStackSize += StackElemSize(hndArgType.GetSize());
                 }
@@ -3675,35 +3664,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
             if (pMD->IsDynamicMethod())
                 pMD->AsDynamicMethodDesc()->SetUnbreakable(true);
         }
-    }
-
-    if (marshalType == MarshalInfo::MARSHAL_TYPE_DATE ||
-        marshalType == MarshalInfo::MARSHAL_TYPE_CURRENCY ||
-        marshalType == MarshalInfo::MARSHAL_TYPE_ARRAYWITHOFFSET ||
-        marshalType == MarshalInfo::MARSHAL_TYPE_HANDLEREF ||
-        marshalType == MarshalInfo::MARSHAL_TYPE_ARGITERATOR
-#ifdef FEATURE_COMINTEROP
-        || marshalType == MarshalInfo::MARSHAL_TYPE_OLECOLOR
-#endif // FEATURE_COMINTEROP
-        )
-    {
-        // These are special non-blittable types returned by-ref in managed,
-        // but marshaled as primitive values returned by-value in unmanaged.
-    }
-    else
-    {
-        // This is an ordinary value type - see if it is returned by-ref.
-        TypeHandle retType = msig.GetRetTypeHandleThrowing();
-        if (retType.IsValueType() && !retType.IsEnum() && IsUnmanagedValueTypeReturnedByRef(retType.MakeNativeValueType().GetSize()))
-        {
-            nativeStackSize += sizeof(LPVOID);
-        }
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-        else if (fThisCall && !retType.IsEnum())
-        {
-            nativeStackSize += sizeof(LPVOID);
-        }
-#endif
     }
 
     if (SF_IsHRESULTSwapping(dwStubFlags))
@@ -4240,27 +4200,6 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
         pNMD->ndirect.m_pszLibName.SetValueMaybeNull(szLibName);
         pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(szEntryPointName);
     }
-
-#ifdef TARGET_X86
-    if (ndirectflags & NDirectMethodDesc::kStdCall)
-    {
-        // Compute the kStdCallWithRetBuf flag which is needed at link time for entry point mangling.
-        MetaSig msig(pNMD);
-        ArgIterator argit(&msig);
-        if (argit.HasRetBuffArg())
-        {
-            MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
-            // The System.DateTime type itself technically doesn't have a native representation,
-            // so we have to special-case it here.
-            // If a type doesn't have a native representation, we won't set this flag.
-            // We'll throw an exception later when setting up the marshalling.
-            if (pRetMT != CoreLibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
-            {
-                ndirectflags |= NDirectMethodDesc::kStdCallWithRetBuf;
-            }
-        }
-    }
-#endif // TARGET_X86
 
     // Call this exactly ONCE per thread. Do not publish incomplete prestub flags
     // or you will introduce a race condition.
@@ -6218,27 +6157,6 @@ namespace
             }
         }
 #endif // FEATURE_CORESYSTEM && !TARGET_UNIX
-
-#if defined(TARGET_LINUX)
-        if (g_coreclr_embedded)
-        {
-            // this matches exactly the names in  Interop.Libraries.cs 
-            static const LPCWSTR toRedirect[] = {
-                W("libSystem.Native"),
-                W("libSystem.Net.Security.Native"),
-                W("libSystem.Security.Cryptography.Native.OpenSsl")
-            };
-
-            int count = lengthof(toRedirect);
-            for (int i = 0; i < count; ++i)
-            {
-                if (wcscmp(wszLibName, toRedirect[i]) == 0)
-                {
-                    return PAL_LoadLibraryDirect(NULL);
-                }
-            }
-        }
-#endif
 
         if (g_hostpolicy_embedded)
         {

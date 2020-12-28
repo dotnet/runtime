@@ -375,6 +375,7 @@ function_name() to call the system's implementation
 #undef strrchr
 #undef strpbrk
 #undef strtoul
+#undef strtoull
 #undef strtod
 #undef strspn
 #undef strtok

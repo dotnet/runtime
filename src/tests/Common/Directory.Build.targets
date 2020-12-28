@@ -144,6 +144,10 @@
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\runtime-test.js"
           TargetDir="runtime-test/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\wasm\build\WasmApp.targets"
+          TargetDir="build/"/>
     </ItemGroup>
 
     <ItemGroup>

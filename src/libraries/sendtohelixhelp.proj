@@ -158,6 +158,17 @@
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
   </ItemGroup>
 
+  <ItemDefinitionGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
+    <XHarnessAppBundleToTest>
+      <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
+      <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
+      <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
+      <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
+      <TestTimeout>$(_workItemTimeout)</TestTimeout>
+      <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+    </XHarnessAppBundleToTest>
+  </ItemDefinitionGroup>
+
   <!--
     Create all the Helix data to start a set of jobs. Create a set of work items, one for each libraries
     test assembly. All will have the same command line. Note that this target is listed in the
@@ -178,24 +189,9 @@
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
       <!-- Create work items for test apps -->
-      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
-        <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
-
-        <TestTimeout>$(_workItemTimeout)</TestTimeout>
-        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
-      </XHarnessAppBundleToTest>
-
+      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))" />
       <!-- Create work items for run-only apps -->
       <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
-        <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
-
-        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
@@ -251,6 +247,26 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'">
+      <!-- Create a work item for run-only WASM console app  -->
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/console/*.zip" />
+      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <!-- No RunTests script generated for the sample project so we just use the direct command -->
+        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- --run WasmSample.dll</Command>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'">
+      <!-- Create a work item for run-only WASM browser app  -->
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/browser/*.zip" />
+      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <!-- No RunTests script generated for the sample project so we just use the direct command -->
+        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --browser=Chrome  --html-file=index.html --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- WasmSample.dll --testing</Command>
       </HelixWorkItem>
     </ItemGroup>
 

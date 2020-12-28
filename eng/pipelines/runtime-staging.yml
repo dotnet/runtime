@@ -50,9 +50,10 @@ variables:
 
 jobs:
 #
-# Checkout repository and evaluate paths
+# Evaluate paths
 #
-- template: /eng/pipelines/common/checkout-and-evaluate-paths.yml
+- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
 # Build the whole product using Mono and run libraries tests
@@ -69,9 +70,9 @@ jobs:
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_libraries.containsChange'] ]
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_mono.containsChange'] ]
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -79,9 +80,9 @@ jobs:
       timeoutInMinutes: 120
       condition: >-
         or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -124,11 +125,26 @@ jobs:
       timeoutInMinutes: 240
       condition: >-
         or(
-          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+# Run disabled installer tests on Linux x64
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    platforms:
+    - Linux_x64
+    jobParameters:
+      nameSuffix: Installer_Tests
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      buildArgs: -s clr+libs+host+packs -restore -build -test -c $(_BuildConfig) -lc Debug /p:PortableBuild=true /p:RunOnStaging=true
+      useContinueOnErrorDuringBuild: true
+      enablePublisTestResults: true
+      testResultsFormat: xunit

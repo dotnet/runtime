@@ -23,6 +23,7 @@ parameters:
   runtimeFlavorDisplayName: 'CoreCLR'
   shouldContinueOnError: false
   dependsOn: []
+  dependOnEvaluatePaths: false
 
 ### Test run job
 
@@ -46,6 +47,7 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:

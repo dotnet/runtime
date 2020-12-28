@@ -2963,8 +2963,6 @@ public:
 
 #if defined(TARGET_X86)
         // Size of outgoing arguments (on stack). Note that in order to get the @n stdcall name decoration,
-        // it may be necessary to subtract 4 as the hidden large structure pointer parameter does not count.
-        // See code:kStdCallWithRetBuf
         WORD        m_cbStackArgumentSize;
 #endif // defined(TARGET_X86)
 
@@ -3014,9 +3012,6 @@ public:
         kIsQCall                        = 0x1000,
 
         kDefaultDllImportSearchPathsStatus = 0x2000, // either method has custom attribute or not.
-
-        kStdCallWithRetBuf              = 0x8000,   // Call returns large structure, only valid if kStdCall is also set
-
     };
 
     // Resolve the import to the NDirect target and set it on the NDirectMethodDesc.
@@ -3159,13 +3154,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (ndirect.m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
-    }
-
-    BOOL IsStdCallWithRetBuf() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (ndirect.m_wFlags & kStdCallWithRetBuf) != 0;
     }
 
     PTR_NDirectWriteableData GetWriteableData() const

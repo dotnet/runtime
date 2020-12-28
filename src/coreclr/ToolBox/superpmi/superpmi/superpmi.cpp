@@ -35,24 +35,12 @@ SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture;
 
 void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
 {
+    // Set the default
+
 #ifdef TARGET_AMD64
-    if ((targetArchitecture != nullptr) && (0 == _stricmp(targetArchitecture, "arm64")))
-    {
-        SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
-    }
-    else
-    {
-        SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
-    }
+    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
 #elif defined(TARGET_X86)
-    if ((targetArchitecture != nullptr) && (0 == _stricmp(targetArchitecture, "arm")))
-    {
-        SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
-    }
-    else
-    {
-        SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
-    }
+    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
 #elif defined(TARGET_ARM)
     SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
@@ -60,6 +48,32 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
 #else
 #error Unsupported architecture
 #endif
+
+    // Allow overriding the default.
+
+    if (targetArchitecture != nullptr)
+    {
+        if ((0 == _stricmp(targetArchitecture, "x64")) || (0 == _stricmp(targetArchitecture, "amd64")))
+        {
+            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
+        }
+        else if (0 == _stricmp(targetArchitecture, "x86"))
+        {
+            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
+        }
+        else if ((0 == _stricmp(targetArchitecture, "arm")) || (0 == _stricmp(targetArchitecture, "arm32")))
+        {
+            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
+        }
+        else if (0 == _stricmp(targetArchitecture, "arm64"))
+        {
+            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
+        }
+        else
+        {
+            LogError("Illegal target architecture '%s'", targetArchitecture);
+        }
+    }
 }
 
 // This function uses PAL_TRY, so it can't be in the a function that requires object unwinding. Extracting it out here

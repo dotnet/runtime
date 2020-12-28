@@ -7714,11 +7714,11 @@ void ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(UINT
 #endif // !FEATURE_REDHAWK
 
 #ifdef FEATURE_PERFTRACING
-#include "eventpipe.h"
+#include "eventpipeadapter.h"
 bool EventPipeHelper::Enabled()
 {
     LIMITED_METHOD_CONTRACT;
-    return EventPipe::Enabled();
+    return EventPipeAdapter::Enabled();
 }
 
 bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)

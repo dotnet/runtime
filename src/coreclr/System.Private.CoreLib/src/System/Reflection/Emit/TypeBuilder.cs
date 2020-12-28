@@ -62,6 +62,8 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Static Methods
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (!(type is TypeBuilder) && !(type is TypeBuilderInstantiation))
@@ -94,6 +96,9 @@ namespace System.Reflection.Emit
 
             return MethodOnTypeBuilderInstantiation.GetMethod(method, (type as TypeBuilderInstantiation)!);
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             if (!(type is TypeBuilder) && !(type is TypeBuilderInstantiation))
@@ -114,6 +119,9 @@ namespace System.Reflection.Emit
 
             return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, (type as TypeBuilderInstantiation)!);
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
             if (!(type is TypeBuilder) && !(type is TypeBuilderInstantiation))
@@ -1265,6 +1273,8 @@ namespace System.Reflection.Emit
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private MethodBuilder DefineMethodNoLock(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
@@ -1344,6 +1354,8 @@ namespace System.Reflection.Emit
             return method;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private MethodBuilder DefinePInvokeMethodHelper(
             string name, string dllName, string importName, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
@@ -1459,6 +1471,8 @@ namespace System.Reflection.Emit
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private ConstructorBuilder DefineTypeInitializerNoLock()
         {
             ThrowIfCreated();
@@ -1485,6 +1499,10 @@ namespace System.Reflection.Emit
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is only called on a TypeBuilderInstantiation which is not subject to trimming")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "GetConstructor is only called on a TypeBuilderInstantiation which is not subject to trimming")]
         private ConstructorBuilder DefineDefaultConstructorNoLock(MethodAttributes attributes)
         {
             ConstructorBuilder constBuilder;
@@ -1558,6 +1576,8 @@ namespace System.Reflection.Emit
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private ConstructorBuilder DefineConstructorNoLock(MethodAttributes attributes, CallingConventions callingConvention,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {

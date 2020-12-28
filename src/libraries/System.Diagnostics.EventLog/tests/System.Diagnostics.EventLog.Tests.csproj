@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;net461</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EventInstanceTests.cs" />
@@ -19,10 +20,26 @@
     <Compile Include="System\Diagnostics\Reader\EventLogReaderTests.cs" />
     <Compile Include="System\Diagnostics\Reader\EventLogRecordTests.cs" />
     <Compile Include="System\Diagnostics\Reader\EventLogSessionTests.cs" />
-    <Compile Include="System\Diagnostics\Reader\EventLogWatcherTests.cs" /> 
+    <Compile Include="System\Diagnostics\Reader\EventLogWatcherTests.cs" />
     <Compile Include="System\Diagnostics\Reader\ProviderMetadataTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <Compile Include="EventLogMessagesTests.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ProjectReference Include="..\src\System.Diagnostics.EventLog.csproj" />
+    <ProjectReference Include="..\src\Messages\System.Diagnostics.EventLog.Messages.csproj" />
   </ItemGroup>
 </Project>

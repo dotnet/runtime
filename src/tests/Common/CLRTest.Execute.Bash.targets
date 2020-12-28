@@ -264,7 +264,7 @@ fi
       <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
 
-      <BashCLRTestPreCommands Condition="'$(TargetArchitecture)' == 'wasm'">
+      <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
    <![CDATA[
 # Build wasm app containing the test dll
 __Command=""
@@ -274,7 +274,7 @@ else
   __Command+=" dotnet"
 fi
 
-$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd` || exit $?
 
    ]]>
       </BashCLRTestPreCommands>
