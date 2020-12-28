@@ -1,8 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <InferPlatformFromTargetArchitecture>true</InferPlatformFromTargetArchitecture>
-  </PropertyGroup>
-
   <Import Project="..\..\Directory.Build.props" />
 
   <!--
@@ -27,7 +23,9 @@
 
   <!-- Platform detection -->
   <PropertyGroup>
-    <RunningOnUnix Condition="'$(OS)'!='Windows_NT'">true</RunningOnUnix>
+    <RunningOnUnix Condition="'$(OS)' != 'Windows_NT'">true</RunningOnUnix>
+    <!-- Don't set platform too early as test app paths are currently hardcoded. -->
+    <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DisableSourceLink)' == 'true'">
