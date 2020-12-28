@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -308,9 +309,9 @@ namespace System.CodeDom.Compiler.Tests
                 yield return CreateParameters(x => x.Write(true), true.ToString());
                 yield return CreateParameters(x => x.Write('c'), "c");
                 yield return CreateParameters(x => x.Write("Hello World".ToCharArray()), "Hello World");
-                yield return CreateParameters(x => x.Write(1.234m), (1.234m).ToString());
-                yield return CreateParameters(x => x.Write(12345.0), (12345.0).ToString());
-                yield return CreateParameters(x => x.Write(12345.0f), (12345.0f).ToString());
+                yield return CreateParameters(x => x.Write(1.234m), (1.234m).ToString(CultureInfo.InvariantCulture));
+                yield return CreateParameters(x => x.Write(12345.0), (12345.0).ToString(CultureInfo.InvariantCulture));
+                yield return CreateParameters(x => x.Write(12345.0f), (12345.0f).ToString(CultureInfo.InvariantCulture));
                 yield return CreateParameters(x => x.Write(12345), (12345).ToString());
                 yield return CreateParameters(x => x.Write(1234567890L), (1234567890L).ToString());
                 yield return CreateParameters(x => x.Write(new object()), new object().ToString());
@@ -338,9 +339,9 @@ namespace System.CodeDom.Compiler.Tests
                 yield return CreateParameters(x => x.WriteLine(true), $"{true}{NewLine}");
                 yield return CreateParameters(x => x.WriteLine('c'), $"c{NewLine}");
                 yield return CreateParameters(x => x.WriteLine("Hello World".ToCharArray()), $"Hello World{NewLine}");
-                yield return CreateParameters(x => x.WriteLine(3.14159m), $"{3.14159m}{NewLine}");
-                yield return CreateParameters(x => x.WriteLine(12345.0), $"{12345.0}{NewLine}");
-                yield return CreateParameters(x => x.WriteLine(12345.0f), $"{12345.0f}{NewLine}");
+                yield return CreateParameters(x => x.WriteLine(3.14159m), $"{(3.14159m).ToString(CultureInfo.InvariantCulture)}{NewLine}");
+                yield return CreateParameters(x => x.WriteLine(12345.0), $"{(12345.0).ToString(CultureInfo.InvariantCulture)}{NewLine}");
+                yield return CreateParameters(x => x.WriteLine(12345.0f), $"{(12345.0f).ToString(CultureInfo.InvariantCulture)}{NewLine}");
                 yield return CreateParameters(x => x.WriteLine(12345), $"{12345}{NewLine}");
                 yield return CreateParameters(x => x.WriteLine(0xDEADBEEFBADF00DL), $"{0xDEADBEEFBADF00DL}{NewLine}");
                 yield return CreateParameters(x => x.WriteLine(new object()), $"{new object()}{NewLine}");
