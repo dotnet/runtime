@@ -248,6 +248,19 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
+function(install_adhoc_codesign  targetName targetPath)
+  if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    find_program(CODESIGN codesign)
+    if (CODESIGN STREQUAL "CODESIGN-NOTFOUND")
+      message(FATAL_ERROR "codesign not found")
+    endif()
+
+    set(codesign_target ${targetPath}/lib${targetName}.dylib)
+
+    install(CODE "execute_process(COMMAND ${CODESIGN} -f -s - ${codesign_target})")
+  endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+endfunction()
+
 function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
