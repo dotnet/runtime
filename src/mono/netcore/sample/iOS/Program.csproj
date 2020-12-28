@@ -2,17 +2,18 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetOS>iOS</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)\runtimes\ios-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <RuntimeIdentifier>ios-$(TargetArchitecture)</RuntimeIdentifier>
+    <!--<EnableTargetingPackDownload>false</EnableTargetingPackDownload>-->
+    <TargetFramework>net6.0-ios</TargetFramework>
+    <RuntimeIdentifier>ios-x64</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <!--
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <RuntimePack>
@@ -21,8 +22,7 @@
     </ItemGroup>
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
-
-  <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
+  -->
   <UsingTask TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
@@ -49,14 +49,14 @@
 
     <MonoAOTCompiler
         Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\mono-aot-cross"
+        CompilerBinaryPath="$(RuntimePackPath)native\cross\mono-aot-cross"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         UseLLVM="$(UseLLVM)"
-        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross">
+        LLVMPath="$(RuntimePackPath)native\cross">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
@@ -64,7 +64,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="HelloiOS"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
+        MonoRuntimeHeaders="$(RuntimePackPath)native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="Program.dll"
         GenerateXcodeProject="True"

@@ -1,0 +1,17 @@
+{
+    "version": 6,
+    "workloads": {
+      "microsoft-net-runtime-aot-task": {
+        "description": "Mono AOT Compiler Task",
+        "packs": [
+          "Microsoft.NET.Runtime.MonoAOTCompiler.Task"
+        ]
+      }
+    },
+    "packs": {
+      "Microsoft.NET.Runtime.MonoAOTCompiler.Task": {
+        "kind": "sdk",
+        "version": "1.0"
+      }
+    }
+  }
