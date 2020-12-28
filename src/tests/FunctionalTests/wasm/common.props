@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <OutputPath>bin</OutputPath>
+    <OutputPath>$(AssemblyBinDirOutputPath)</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>

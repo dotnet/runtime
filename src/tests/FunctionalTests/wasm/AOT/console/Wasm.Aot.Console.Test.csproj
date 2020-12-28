@@ -20,7 +20,7 @@
   <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(AppDir)</WasmAppDir>
-      <WasmAOTDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmAOTDir>
+      <WasmAOTDir>$(PublishDir)</WasmAOTDir>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmMainAssemblyPath>$(WasmAotDir)$(TestName).dll</WasmMainAssemblyPath>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>

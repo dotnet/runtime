@@ -19,9 +19,8 @@
   <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
         <WasmAppDir>$(AppDir)</WasmAppDir>
-        <WasmAOTDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmAOTDir>
         <WasmMainJSPath>runtime.js</WasmMainJSPath>
-        <WasmMainAssemblyPath>$(WasmAotDir)Wasm.Interpreter.Browser.Test.dll</WasmMainAssemblyPath>
+        <WasmMainAssemblyPath>$(PublishDir)Wasm.Interpreter.Browser.Test.dll</WasmMainAssemblyPath>
     </PropertyGroup>
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
