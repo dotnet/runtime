@@ -617,14 +617,12 @@ namespace Microsoft.Extensions.Primitives
         /// <returns></returns>
         public static bool IsNullOrEmpty(StringSegment value)
         {
-            bool res = false;
-
             if (!value.HasValue || value.Length == 0)
             {
-                res = true;
+                return true;
             }
 
-            return res;
+            return false;
         }
 
         /// <summary>
