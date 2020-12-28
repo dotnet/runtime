@@ -147,9 +147,6 @@
   <data name="UnableCastNullToType" xml:space="preserve">
     <value>Unable to cast null to type {0}.</value>
   </data>
-  <data name="UnableCastObjectToDateTime" xml:space="preserve">
-    <value>Unable to cast object of type {0} to type DateTime.</value>
-  </data>
   <data name="UnableCastObjectToType" xml:space="preserve">
     <value>Unable to cast object of type {0} to type {1}.</value>
   </data>
