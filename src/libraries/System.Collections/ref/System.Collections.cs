@@ -383,8 +383,8 @@ namespace System.Collections.Generic
     {
         public PriorityQueue() { }
         public PriorityQueue(System.Collections.Generic.IComparer<TPriority>? comparer) { }
-        public PriorityQueue(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> values) { }
-        public PriorityQueue(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> values, System.Collections.Generic.IComparer<TPriority>? comparer) { }
+        public PriorityQueue(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> items) { }
+        public PriorityQueue(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> items, System.Collections.Generic.IComparer<TPriority>? comparer) { }
         public PriorityQueue(int initialCapacity) { }
         public PriorityQueue(int initialCapacity, System.Collections.Generic.IComparer<TPriority>? comparer) { }
         public System.Collections.Generic.IComparer<TPriority> Comparer { get { throw null; } }
@@ -394,8 +394,8 @@ namespace System.Collections.Generic
         public TElement Dequeue() { throw null; }
         public void Enqueue(TElement element, TPriority priority) { }
         public TElement EnqueueDequeue(TElement element, TPriority priority) { throw null; }
-        public void EnqueueRange(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> values) { }
-        public void EnqueueRange(System.Collections.Generic.IEnumerable<TElement> values, TPriority priority) { }
+        public void EnqueueRange(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> items) { }
+        public void EnqueueRange(System.Collections.Generic.IEnumerable<TElement> elements, TPriority priority) { }
         public void EnsureCapacity(int capacity) { }
         public TElement Peek() { throw null; }
         public void TrimExcess() { }
@@ -403,7 +403,7 @@ namespace System.Collections.Generic
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
         public partial class UnorderedItemsCollection : System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)>, System.Collections.Generic.IReadOnlyCollection<(TElement element, TPriority priority)>, System.Collections.ICollection, System.Collections.IEnumerable
         {
-            public UnorderedItemsCollection() { }
+            public UnorderedItemsCollection(IReadOnlyCollection<(TElement element, TPriority priority)> items) { }
             public int Count { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
