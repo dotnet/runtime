@@ -1199,10 +1199,7 @@ void Thread::SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
 HRESULT
-Thread::UserAbort(ThreadAbortRequester requester,
-                  EEPolicy::ThreadAbortTypes abortType,
-                  DWORD timeout
-                 )
+Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 {
     CONTRACTL
     {
@@ -1215,19 +1212,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
 
     BOOL fHoldingThreadStoreLock = ThreadStore::HoldingThreadStore();
 
-    // Debugger func-eval aborts (both rude + normal) don't have any escalation policy. They are invoked
-    // by the debugger and the debugger handles the consequences.
-    // Furthermore, in interop-debugging, threads will be hard-suspened in preemptive mode while we try to abort them.
-    // So any abort strategy that relies on a timeout and the target thread slipping is dangerous. Escalation policy would let a
-    // host circumvent the timeout and thus we may wait forever for the target thread to slip. We'd deadlock here. Since the escalation
-    // policy doesn't let the host break this deadlock (and certianly doesn't let the debugger break the deadlock), it's unsafe
-    // to have an escalation policy for func-eval aborts at all.
-    BOOL fEscalation = (requester != TAR_FuncEval);
-    if (fEscalation)
-    {
-        timeout = INFINITE;
-    }
-
     AbortControlHolder AbortController(this);
 
     // Swap in timeout
@@ -1239,7 +1223,7 @@ Thread::UserAbort(ThreadAbortRequester requester,
         SetAbortEndTime(newEndTime, abortType == EEPolicy::TA_Rude);
     }
 
-    MarkThreadForAbort(requester, abortType);
+    MarkThreadForAbort(abortType);
 
     Thread *pCurThread = GetThread();
 
@@ -1299,12 +1283,9 @@ LRetry:
 
             if (now_time >= abortEndTime)
             {
-                if (!fEscalation)
-                {
-                    // timeout, but no action on timeout.
-                    // Debugger can call this function to abort func-eval with a timeout
-                    return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
-                }
+                // timeout, but no action on timeout.
+                // Debugger can call this function to abort func-eval with a timeout
+                return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
             }
         }
 
@@ -1380,7 +1361,7 @@ LRetry:
             (m_State & TS_Unstarted) == 0)
         {
             // The thread is going to die or is already dead.
-            UnmarkThreadForAbort(Thread::TAR_ALL);
+            UnmarkThreadForAbort();
 #ifdef _DEBUG
             m_dwAbortPoint = 3;
 #endif
@@ -1416,7 +1397,7 @@ LRetry:
         //
         if (m_State & (TS_Dead | TS_Detached | TS_TaskReset))
         {
-            UnmarkThreadForAbort(Thread::TAR_ALL);
+            UnmarkThreadForAbort();
 
 #ifdef _DEBUG
             m_dwAbortPoint = 5;
@@ -1688,17 +1669,6 @@ LPrepareRetry:
             {
                 ClrSleepEx(100, FALSE);
             }
-
-        }
-
-        if (IsAbortRequested() && fEscalation)
-        {
-            if (IsRudeAbort())
-            {
-                MarkThreadForAbort(requester, EEPolicy::TA_Rude);
-                SetRudeAbortEndTimeFromEEPolicy();
-                goto LRetry;
-            }
         }
 
         return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
@@ -1746,7 +1716,7 @@ void Thread::UnlockAbortRequest(Thread *pThread)
     FastInterlockExchange(&pThread->m_AbortRequestLock, 0);
 }
 
-void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::ThreadAbortTypes abortType)
+void Thread::MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType)
 {
     CONTRACTL
     {
@@ -1766,16 +1736,13 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
 
     DWORD abortInfo = 0;
 
-    if (requester & TAR_FuncEval)
+    if (abortType == EEPolicy::TA_Safe)
     {
-        if (abortType == EEPolicy::TA_Safe)
-        {
-            abortInfo |= TAI_FuncEvalAbort;
-        }
-        else if (abortType == EEPolicy::TA_Rude)
-        {
-            abortInfo |= TAI_FuncEvalRudeAbort;
-        }
+        abortInfo |= TAI_FuncEvalAbort;
+    }
+    else if (abortType == EEPolicy::TA_Rude)
+    {
+        abortInfo |= TAI_FuncEvalRudeAbort;
     }
 
     if (abortInfo == 0)
@@ -1810,7 +1777,7 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
         // The thread is asked for abort the first time
         SetAbortRequestBit();
     }
-    STRESS_LOG4(LF_APPDOMAIN, LL_ALWAYS, "Mark Thread %p Thread Id = %x for abort from requester %d (type %d)\n", this, GetThreadId(), requester, abortType);
+    STRESS_LOG4(LF_APPDOMAIN, LL_ALWAYS, "Mark Thread %p Thread Id = %x for abort (type %d)\n", this, GetThreadId(), abortType);
 }
 
 void Thread::SetAbortRequestBit()
@@ -1863,7 +1830,7 @@ void Thread::RemoveAbortRequestBit()
 }
 
 // Make sure that when AbortRequest bit is cleared, we also dec TrapReturningThreads count.
-void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
+void Thread::UnmarkThreadForAbort()
 {
     CONTRACTL
     {
@@ -1877,11 +1844,8 @@ void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
 
     AbortRequestLockHolder lh(this);
 
-    if (requester & TAR_FuncEval)
-    {
-        m_AbortInfo &= ~(TAI_FuncEvalAbort   |
-                         TAI_FuncEvalRudeAbort);
-    }
+    m_AbortInfo &= ~(TAI_FuncEvalAbort |
+                     TAI_FuncEvalRudeAbort);
 
     //
     // Decide which type of abort to do based on the new bit field.
@@ -1918,10 +1882,10 @@ void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
         ResetUserInterrupted();
     }
 
-    STRESS_LOG3(LF_APPDOMAIN, LL_ALWAYS, "Unmark Thread %p Thread Id = %x for abort from requester %d\n", this, GetThreadId(), requester);
+    STRESS_LOG3(LF_APPDOMAIN, LL_ALWAYS, "Unmark Thread %p Thread Id = %x for abort \n", this, GetThreadId());
 }
 
-void Thread::InternalResetAbort(ThreadAbortRequester requester, BOOL fResetRudeAbort)
+void Thread::ResetAbort()
 {
     CONTRACTL {
         NOTHROW;
@@ -1932,8 +1896,7 @@ void Thread::InternalResetAbort(ThreadAbortRequester requester, BOOL fResetRudeA
     _ASSERTE(this == GetThread());
     _ASSERTE(!IsDead());
 
-    // managed code can not reset Rude thread abort
-    UnmarkThreadForAbort(requester, fResetRudeAbort);
+    UnmarkThreadForAbort();
 }
 
 

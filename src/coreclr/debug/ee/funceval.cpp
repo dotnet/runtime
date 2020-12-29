@@ -3119,7 +3119,7 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
         //
         // Reset the abort request.
         //
-        pDE->m_thread->UserResetAbort(Thread::TAR_FuncEval);
+        pDE->m_thread->ResetAbort();
 
         //
         // This is the abort we sent down.
@@ -3897,7 +3897,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
         // before the abort could take place, we want to make sure we do not throw an abort exception
         // in this case.
         //
-        pDE->m_thread->UserResetAbort(Thread::TAR_FuncEval);
+        pDE->m_thread->ResetAbort();
     }
 
     // Codepitching can hijack our frame's return address. That means that we'll need to update PC in our saved context

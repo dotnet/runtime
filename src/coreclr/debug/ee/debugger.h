@@ -3416,15 +3416,11 @@ public:
     bool                               m_aborted;           // Was this eval aborted
     bool                               m_completed;          // Is the eval complete - successfully or by aborting
     bool                               m_evalDuringException;
-    Thread::ThreadAbortRequester       m_requester;         // For aborts, what kind?
     VMPTR_OBJECTHANDLE                 m_vmObjectHandle;
     TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
     DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException);
-
-    // This constructor is only used when setting up an eval to re-abort a thread.
-    DebuggerEval(T_CONTEXT * pContext, Thread * pThread, Thread::ThreadAbortRequester requester);
 
     bool Init()
     {

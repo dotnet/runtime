@@ -2510,12 +2510,6 @@ public:
 
     void           UserSleep(INT32 time);
 
-    enum ThreadAbortRequester
-    {
-        TAR_FuncEval =    0x00000004,   // Request by Func-Eval
-        TAR_ALL = 0xFFFFFFFF,
-    };
-
 private:
 
     //
@@ -2585,25 +2579,12 @@ public:
 
 
 public:
-    HRESULT        UserAbort(ThreadAbortRequester requester,
-                             EEPolicy::ThreadAbortTypes abortType,
-                             DWORD timeout
-                            );
+    HRESULT UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout);
 
     BOOL    HandleJITCaseForAbort();
-
-    void           UserResetAbort(ThreadAbortRequester requester)
-    {
-        InternalResetAbort(requester, FALSE);
-    }
-    void           EEResetAbort(ThreadAbortRequester requester)
-    {
-        InternalResetAbort(requester, TRUE);
-    }
+    void    ResetAbort();
 
 private:
-    void           InternalResetAbort(ThreadAbortRequester requester, BOOL fResetRudeAbort);
-
     void SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort);
 
 public:
@@ -2728,8 +2709,8 @@ private:
     void RemoveAbortRequestBit();
 
 public:
-    void MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::ThreadAbortTypes abortType);
-    void UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce = TRUE);
+    void MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType);
+    void UnmarkThreadForAbort();
 
     static ULONGLONG GetNextSelfAbortEndTime()
     {

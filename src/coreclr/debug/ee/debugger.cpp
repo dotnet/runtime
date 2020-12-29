@@ -1417,7 +1417,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_completed = false;
     m_evalDuringException = fInException;
     m_retValueBoxing = Debugger::NoValueTypeBoxing;
-    m_requester = (Thread::ThreadAbortRequester)0;
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
 
     // Copy the thread's context.
