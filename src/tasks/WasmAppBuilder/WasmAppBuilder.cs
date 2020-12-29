@@ -21,8 +21,6 @@ public class WasmAppBuilder : Task
     [Required]
     public string? MicrosoftNetCoreAppRuntimePackDir { get; set; }
     [Required]
-    public string? MainAssembly { get; set; }
-    [Required]
     public string? MainJS { get; set; }
     [Required]
     public string[]? Assemblies { get; set; }
@@ -98,8 +96,6 @@ public class WasmAppBuilder : Task
 
     public override bool Execute ()
     {
-        if (!File.Exists(MainAssembly))
-            throw new ArgumentException($"File MainAssembly='{MainAssembly}' doesn't exist.");
         if (!File.Exists(MainJS))
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
@@ -120,12 +116,6 @@ public class WasmAppBuilder : Task
 
             if (asm.EndsWith("System.Private.CoreLib.dll"))
                 runtimeSourceDir = Path.GetDirectoryName(asm);
-        }
-
-        if (MainAssembly != null)
-        {
-            if (!_assemblies.Contains(MainAssembly))
-                _assemblies.Add(MainAssembly);
         }
 
         var config = new WasmAppConfig ();
