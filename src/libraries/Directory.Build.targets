@@ -128,7 +128,7 @@
   </ItemGroup>
 
   <!-- TODO: Remove when all required nuget pack features are part of the consumed SDK. -->
-  <ItemGroup Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.csproj'">
+  <ItemGroup Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'">
     <PackageReference Include="NuGet.Build.Tasks.Pack" Version="$(NuGetBuildTasksPackVersion)" />
   </ItemGroup>
 
