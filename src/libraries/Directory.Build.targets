@@ -127,8 +127,9 @@
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(IsPackable)' == 'true'">
-    <PackageReference Include="nuget.build.tasks.pack" Version="$(NuGetBuildTasksPackVersionVersion)" />
+  <!-- TODO: Remove when all required nuget pack features are part of the consumed SDK. -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.csproj'">
+    <PackageReference Include="NuGet.Build.Tasks.Pack" Version="$(NuGetBuildTasksPackVersion)" />
   </ItemGroup>
 
   <Target Name="SetGenApiProperties"
