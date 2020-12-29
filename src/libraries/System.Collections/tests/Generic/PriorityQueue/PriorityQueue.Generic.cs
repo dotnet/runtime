@@ -7,7 +7,18 @@ namespace System.Collections.Tests
     {
         protected override (string, string) CreateT(int seed)
         {
-            throw new NotImplementedException();
+            var element = this.CreateString(seed);
+            var priority = this.CreateString(seed);
+            return (element, priority);
+        }
+
+        protected string CreateString(int seed)
+        {
+            int stringLength = seed % 10 + 5;
+            Random rand = new Random(seed);
+            byte[] bytes = new byte[stringLength];
+            rand.NextBytes(bytes);
+            return Convert.ToBase64String(bytes);
         }
     }
 
@@ -15,7 +26,11 @@ namespace System.Collections.Tests
     {
         protected override (int, int) CreateT(int seed)
         {
-            throw new NotImplementedException();
+            var element = this.CreateInt(seed);
+            var priority = this.CreateInt(seed);
+            return (element, priority);
         }
+
+        protected int CreateInt(int seed) => new Random(seed).Next();
     }
 }
