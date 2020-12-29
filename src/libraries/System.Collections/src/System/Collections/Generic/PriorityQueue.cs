@@ -348,6 +348,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Puts a node at the specified index.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PutAt((TElement element, TPriority priority) node, int index)
         {
             this.nodes[index] = node;
@@ -466,9 +467,9 @@ namespace System.Collections.Generic
         /// </summary>
         public UnorderedItemsCollection UnorderedItems { get; }
 
-        public partial class UnorderedItemsCollection : IReadOnlyCollection<(TElement Element, TPriority Priority)>, ICollection
+        public partial class UnorderedItemsCollection : IReadOnlyCollection<(TElement element, TPriority priority)>, ICollection
         {
-            private readonly IReadOnlyCollection<(TElement Element, TPriority Priority)> items;
+            private readonly IReadOnlyCollection<(TElement element, TPriority priority)> items;
 
             public UnorderedItemsCollection(IReadOnlyCollection<(TElement element, TPriority priority)> items)
             {
@@ -481,16 +482,16 @@ namespace System.Collections.Generic
 
             public void CopyTo(Array array, int index) => throw new NotImplementedException();
 
-            public struct Enumerator : IEnumerator<(TElement TElement, TPriority Priority)>, IEnumerator
+            public struct Enumerator : IEnumerator<(TElement element, TPriority priority)>, IEnumerator
             {
-                private readonly IEnumerator<(TElement TElement, TPriority Priority)> enumerator;
+                private readonly IEnumerator<(TElement element, TPriority priority)> enumerator;
 
-                internal Enumerator(System.Collections.Generic.IEnumerator<(TElement TElement, TPriority Priority)> enumerator)
+                internal Enumerator(System.Collections.Generic.IEnumerator<(TElement element, TPriority priority)> enumerator)
                 {
                     this.enumerator = enumerator;
                 }
 
-                (TElement TElement, TPriority Priority) IEnumerator<(TElement TElement, TPriority Priority)>.Current
+                (TElement element, TPriority priority) IEnumerator<(TElement element, TPriority priority)>.Current
                     => this.enumerator.Current;
 
                 object IEnumerator.Current => this.enumerator.Current;
@@ -503,7 +504,7 @@ namespace System.Collections.Generic
             public Enumerator GetEnumerator()
                 => new Enumerator(this.items.GetEnumerator());
 
-            IEnumerator<(TElement Element, TPriority Priority)> IEnumerable<(TElement Element, TPriority Priority)>.GetEnumerator()
+            IEnumerator<(TElement element, TPriority priority)> IEnumerable<(TElement element, TPriority priority)>.GetEnumerator()
                 => new Enumerator(this.items.GetEnumerator());
 
             IEnumerator IEnumerable.GetEnumerator()
