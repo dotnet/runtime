@@ -1964,7 +1964,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 }
 
 //------------------------------------------------------------------------
-// ins_Store: Get the machine dependent instruction for performing a store to dstType on the stack from a srcReg.
+// ins_StoreFromSrc: Get the machine dependent instruction for performing a store to dstType on the stack from a srcReg.
 //
 // Arguments:
 //   srcReg  - the source register for the store
@@ -1975,9 +1975,9 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 //   the instruction to use
 //
 // Notes:
-//   The fuctiuon currently does not expect float srcReg with integral dstType and will assert on such cases.
+//   The function currently does not expect float srcReg with integral dstType and will assert on such cases.
 //
-instruction CodeGenInterface::ins_Store(regNumber srcReg, var_types dstType, bool aligned /*=false*/)
+instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstType, bool aligned /*=false*/)
 {
     bool dstIsFloatType = isFloatRegType(dstType);
     bool srcIsFloatReg  = genIsValidFloatReg(srcReg);

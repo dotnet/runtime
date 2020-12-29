@@ -11857,7 +11857,8 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {
                     // A byte field passed in a long register should be written on the stack as a byte.
-                    GetEmitter()->emitIns_S_R(ins_Store(reg, destType), emitTypeSize(destType), reg, fieldLclNum, 0);
+                    instruction storeIns = ins_StoreFromSrc(reg, destType);
+                    GetEmitter()->emitIns_S_R(storeIns, emitTypeSize(destType), reg, fieldLclNum, 0);
                 }
             }
             fieldVarDsc->SetRegNum(varReg);
@@ -11879,7 +11880,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             }
             else
             {
-                assert((varDsc->TypeGet() == TYP_LONG));
+                assert(varDsc->TypeGet() == TYP_LONG);
                 assert(offset <= genTypeSize(TYP_LONG));
             }
 #endif // !TARGET_64BIT
