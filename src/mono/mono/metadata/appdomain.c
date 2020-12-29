@@ -142,12 +142,15 @@ add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
 
 #endif
 
+#ifndef ENABLE_NETCORE
+
 static MonoAppDomainHandle
 mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHandle setup, MonoError *error);
 
 static MonoDomain *
 mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_file, MonoError *error);
 
+#endif
 
 static void
 mono_context_set_default_context (MonoDomain *domain);
@@ -596,6 +599,8 @@ mono_runtime_quit_internal (void)
 		quit_function (mono_get_root_domain (), NULL);
 }
 
+#ifndef ENABLE_NETCORE
+
 /**
  * mono_domain_create_appdomain:
  * \param friendly_name The friendly name of the appdomain to create
@@ -650,6 +655,8 @@ mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_f
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
+
+#endif
 
 /**
  * mono_domain_set_config:
@@ -913,13 +920,21 @@ mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, M
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		method = mono_class_get_method_from_name_checked (alc_class, "OnTypeResolve", -1, 0, error);
+		static gboolean inited;
+		// avoid repeatedly calling mono_class_get_method_from_name_checked
+		if (!inited) {
+			ERROR_DECL (local_error);
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			method = mono_class_get_method_from_name_checked (alc_class, "OnTypeResolve", -1, 0, local_error);
+			mono_error_cleanup (local_error);
+			inited = TRUE;
+		}
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
-	goto_if_nok (error, return_null);
+	if (!method)
+		goto return_null;
 
 	g_assert (domain);
 	g_assert (MONO_HANDLE_BOOL (name));
@@ -1489,14 +1504,21 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
 		ERROR_DECL (local_error);
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyResolve", -1, 0, local_error);
-		mono_error_assert_ok (local_error);
+		static gboolean inited;
+		if (!inited) {
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyResolve", -1, 0, local_error);
+			inited = TRUE;
+		}
+		mono_error_cleanup (local_error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
-	g_assert (method);
+	if (!method) {
+		ret = NULL;
+		goto leave;
+	}
 
 	MonoReflectionAssemblyHandle requesting_handle;
 	if (requesting) {
@@ -1626,12 +1648,19 @@ mono_domain_fire_assembly_load_event (MonoDomain *domain, MonoAssembly *assembly
 #ifdef ENABLE_NETCORE
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyLoad", -1, 0, error);
+		static gboolean inited;
+		if (!inited) {
+			ERROR_DECL (local_error);
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyLoad", -1, 0, local_error);
+			mono_error_cleanup (local_error);
+			inited = TRUE;
+		}
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
-	goto_if_nok (error, exit);
+	if (!method)
+		goto exit;
 
 	MonoReflectionAssemblyHandle assembly_handle;
 	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
@@ -3524,4 +3553,3 @@ mono_runtime_install_appctx_properties (void)
 }
 
 #endif
-

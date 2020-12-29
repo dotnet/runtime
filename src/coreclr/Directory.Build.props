@@ -1,23 +1,25 @@
 <Project>
-
   <PropertyGroup>
-    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
+    <InferPlatformFromTargetArchitecture>true</InferPlatformFromTargetArchitecture>
+
+    <!-- TODO: Clean-up casing and remove __BuildType to remove this block. -->
+    <Configuration Condition="'$(Configuration)' == ''">$(__BuildType)</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'debug'">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'release'">Release</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'checked'">Checked</Configuration>
   </PropertyGroup>
+
   <Import Project="..\..\Directory.Build.props" />
 
-  <!-- Ensure our properties are set before Arcade defines defaults -->
-  <Import Project="dir.common.props" />
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-
   <PropertyGroup>
-    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)'!='true'">false</SignAssembly>
-  </PropertyGroup>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'coreclr', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(PlatformName)' == 'AnyCPU'">$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(PlatformName)' != 'AnyCPU'">$(BaseIntermediateOutputPath)$(PlatformName)\$(Configuration)\</IntermediateOutputPath>
+    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
+    <RuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</RuntimeBinDir>
 
-  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)' != 'true'">false</SignAssembly>
     <CL_MPCount>$(NumberOfCores)</CL_MPCount>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- Enables Strict mode for Roslyn compiler -->
-    <Features>strict;nullablePublicOnly</Features>
   </PropertyGroup>
 </Project>

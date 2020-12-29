@@ -1,10 +1,5 @@
 <Project InitialTargets="SetupFilesToSign">
 
-  <!-- If this file was pulled in via prepare-artifacts.proj (a non-SDK project, these files are already
-       imported. -->
-  <Import Project="$(RepositoryEngineeringDir)Configurations.props" Condition="'$(PrepareArtifacts)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" Condition="'$(PrepareArtifacts)' != 'true'" />
-
   <PropertyGroup>
     <!--
       Windows arm/arm64 jobs don't have MSIs to sign. Keep it simple: allow not finding any matches
@@ -45,10 +40,10 @@
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
   <ItemGroup Condition="'$(PrepareArtifacts)' == 'true' and '$(PostBuildSign)' == 'true'">
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.msi" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.exe" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.nupkg" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.zip" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.msi" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.exe" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.nupkg" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.zip" />
 
     <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
     <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" />
@@ -61,8 +56,8 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(SignDiagnostics)' == 'true'">
-      <ItemsToSign Include="$(DiagnosticsFilesRoot)/**/mscordaccore*.dll" />
-      <ItemsToSign Include="$(DiagnosticsFilesRoot)/**/mscordbi.dll" />
+      <ItemsToSign Include="$(DiagnosticsFilesRoot)\**\mscordaccore*.dll" />
+      <ItemsToSign Include="$(DiagnosticsFilesRoot)\**\mscordbi.dll" />
       <!--
         The DAC should be signed with the SHA2 cert (both long and short name).
         We already add the short-name DAC above, so add the long-name DAC here.

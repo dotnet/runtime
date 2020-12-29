@@ -263,6 +263,7 @@ typedef enum {
 	MONO_CLASS_GPARAM, /* generic parameter */
 	MONO_CLASS_ARRAY, /* vector or array, bounded or not */
 	MONO_CLASS_POINTER, /* pointer or function pointer*/
+	MONO_CLASS_GC_FILLER = 0xAC /* not a real class kind - used for sgen nursery filler arrays */
 } MonoTypeKind;
 
 typedef struct _MonoClassDef MonoClassDef;
@@ -1003,7 +1004,9 @@ typedef struct {
 	MonoClass *iremotingtypeinfo_class;
 #endif
 	MonoClass *mono_method_message_class;
+#ifndef ENABLE_NETCORE
 	MonoClass *appdomain_class;
+#endif
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
 	MonoClass *stack_frame_class;
