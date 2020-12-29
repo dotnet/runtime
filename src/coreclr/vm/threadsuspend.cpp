@@ -1055,11 +1055,7 @@ BOOL Thread::ReadyForAsyncException()
 
     StackWalkFramesEx(&rd, TAStackCrawlCallBack, &TAContext, QUICKUNWIND, pStartFrame);
 
-    if (!TAContext.fHasManagedCodeOnStack && IsAbortInitiated() && GetThread() == this)
-    {
-        EEResetAbort(TAR_Thread);
-        return FALSE;
-    }
+    _ASSERTE(TAContext.fHasManagedCodeOnStack || !IsAbortInitiated() || (GetThread() != this));
 
     if (TAContext.fWithinCer)
     {
@@ -1376,8 +1372,7 @@ LRetry:
 #ifdef _DEBUG
             m_dwAbortPoint = 2;
 #endif
-            if(requester == Thread::TAR_Thread)
-                SetAborted();
+
             return S_OK;
         }
 
@@ -1389,8 +1384,7 @@ LRetry:
 #ifdef _DEBUG
             m_dwAbortPoint = 3;
 #endif
-            if(requester == Thread::TAR_Thread)
-                SetAborted();
+
             return S_OK;
         }
 
@@ -1414,8 +1408,7 @@ LRetry:
 #ifdef _DEBUG
             m_dwAbortPoint = 4;
 #endif
-            if(requester == Thread::TAR_Thread)
-                SetAborted();
+
             return S_OK;
         }
 
@@ -1424,8 +1417,7 @@ LRetry:
         if (m_State & (TS_Dead | TS_Detached | TS_TaskReset))
         {
             UnmarkThreadForAbort(Thread::TAR_ALL);
-            if(requester == Thread::TAR_Thread)
-                SetAborted();
+
 #ifdef _DEBUG
             m_dwAbortPoint = 5;
 #endif
@@ -1493,8 +1485,7 @@ LRetry:
 #ifndef DISABLE_THREADSUSPEND
             ResumeThread();
 #endif
-            if(requester == Thread::TAR_Thread)
-                SetAborted();
+
 #ifdef _DEBUG
             m_dwAbortPoint = 63;
 #endif
@@ -1560,8 +1551,6 @@ LRetry:
             m_dwAbortPoint = 8;
 #endif
 
-            if(requester == Thread::TAR_Thread)
-                SetAborted();
             return S_OK;
         }
 #endif // TARGET_X86
@@ -1715,8 +1704,6 @@ LPrepareRetry:
         return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
     }
 
-    if(requester == Thread::TAR_Thread)
-        SetAborted();
     return S_OK;
 }
 #ifdef _PREFAST_
@@ -1778,18 +1765,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
 #endif
 
     DWORD abortInfo = 0;
-
-    if (requester & TAR_Thread)
-    {
-        if (abortType == EEPolicy::TA_Safe)
-        {
-            abortInfo |= TAI_ThreadAbort;
-        }
-        else if (abortType == EEPolicy::TA_Rude)
-        {
-            abortInfo |= TAI_ThreadRudeAbort;
-        }
-    }
 
     if (requester & TAR_FuncEval)
     {
@@ -1901,18 +1876,6 @@ void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
     GCX_COOP();
 
     AbortRequestLockHolder lh(this);
-
-    //
-    // Unmark the bits that are being turned off
-    //
-    if (requester & TAR_Thread)
-    {
-        if ((m_AbortInfo != TAI_ThreadRudeAbort) || fForce)
-        {
-            m_AbortInfo &= ~(TAI_ThreadAbort   |
-                             TAI_ThreadRudeAbort );
-        }
-    }
 
     if (requester & TAR_FuncEval)
     {
@@ -2322,37 +2285,12 @@ Exit: ;
     END_PRESERVE_LAST_ERROR;
 }
 
-void Thread::HandleThreadAbortTimeout()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsFuncEvalAbort())
-    {
-        // There can't be escalation for FuncEvalAbort timeout.
-        // The debugger should retain control of the policy.  For example, if a RudeAbort times out, it's
-        // probably because the debugger had some other thread frozen.  When the thread is thawed, things might
-        // be fine, so we don't want to escelate the FuncEvalRudeAbort (which will be swalled by FuncEvalHijackWorker)
-        // into a user RudeThreadAbort (which will at least rip the entire thread).
-        return;
-    }
-
-    if (IsRudeAbort())
-    {
-        MarkThreadForAbort(TAR_Thread, EEPolicy::TA_Rude);
-    }
-}
-
 void Thread::HandleThreadAbort ()
 {
     BEGIN_PRESERVE_LAST_ERROR;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-
-    if (IsAbortRequested() && GetAbortEndTime() < CLRGetTickCount64())
-    {
-        HandleThreadAbortTimeout();
-    }
 
     // @TODO: we should consider treating this function as an FCALL or HCALL and use FCThrow instead of COMPlusThrow
 

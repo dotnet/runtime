@@ -11311,16 +11311,12 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
     }
     CONTRACTL_END;
 
-    BOOL fResetThreadAbortState = FALSE;
-
     if (pThread->IsAbortRequested())
     {
 #ifndef FEATURE_EH_FUNCLETS
         if (GetNextCOMPlusSEHRecord(static_cast<EXCEPTION_REGISTRATION_RECORD *>(pEstablisherFrame)) == EXCEPTION_CHAIN_END)
         {
-            // Topmost handler and abort requested.
-            fResetThreadAbortState = TRUE;
-            LOG((LF_EH, LL_INFO100, "ResetThreadAbortState: Topmost handler resets abort as no more managed code beyond %p.\n", pEstablisherFrame));
+            _ASSERTE(!"Topmost handler and abort requested.");
         }
 #else // !FEATURE_EH_FUNCLETS
         // Get the active exception tracker
@@ -11372,17 +11368,9 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 
         if (!dataCallback.fDoWeHaveMoreManagedCodeOnStack)
         {
-            // There is no more managed code on the stack, so reset the thread abort state.
-            fResetThreadAbortState = TRUE;
-            LOG((LF_EH, LL_INFO100, "ResetThreadAbortState: Resetting thread abort state since there is no more managed code beyond stack frames:\n"));
-            LOG((LF_EH, LL_INFO100, "sf.SP = %p   ", dataCallback.sfSeedCrawlFrame.SP));
+            _ASSERTE(!"There is no more managed code on the stack, and thread abort is requested.");
         }
 #endif // !FEATURE_EH_FUNCLETS
-    }
-
-    if (fResetThreadAbortState)
-    {
-        pThread->EEResetAbort(Thread::TAR_Thread);
     }
 }
 #endif // !DACCESS_COMPILE

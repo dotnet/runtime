@@ -2526,11 +2526,8 @@ public:
 
     void           UserSleep(INT32 time);
 
-    // AD unload uses ThreadAbort support.  We need to distinguish pure ThreadAbort and AD unload
-    // cases.
     enum ThreadAbortRequester
     {
-        TAR_Thread =      0x00000001,   // Request by Thread
         TAR_FuncEval =    0x00000004,   // Request by Func-Eval
         TAR_ALL = 0xFFFFFFFF,
     };
