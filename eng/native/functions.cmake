@@ -248,19 +248,6 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-function(install_adhoc_codesign  targetName targetPath)
-  if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    find_program(CODESIGN codesign)
-    if (CODESIGN STREQUAL "CODESIGN-NOTFOUND")
-      message(FATAL_ERROR "codesign not found")
-    endif()
-
-    set(codesign_target ${targetPath}/lib${targetName}.dylib)
-
-    install(CODE "execute_process(COMMAND ${CODESIGN} -f -s - ${codesign_target})")
-  endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-endfunction()
-
 function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
@@ -328,6 +315,12 @@ function(install_with_stripped_symbols targetName kind destination)
       strip_symbols(${targetName} symbol_file)
       install_symbols(${symbol_file} ${destination})
     endif()
+
+    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
+      # We want to avoid the kind=TARGET install behaviors which corrupt code signatures on osx-arm64
+      set(kind PROGRAMS)
+    endif()
+
     if ("${kind}" STREQUAL "TARGETS")
       set(install_source ${targetName})
     elseif("${kind}" STREQUAL "PROGRAMS")

@@ -64,10 +64,4 @@ else()
     _install (FILES $<TARGET_PDB_FILE:superpmi-shim-simple> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
-_install (TARGETS superpmi-shim-simple DESTINATION .)
-
-# The cmake install generated above creates a cmake_install.cmake file
-# which runs install_name_tool on osx and therefore modifies the library
-# this corrupts the signature
-# Repair the signature on osx
-install_adhoc_codesign(superpmi-shim-simple "${CMAKE_INSTALL_PREFIX}")
+_install (PROGRAMS $<TARGET_FILE:superpmi-shim-simple> DESTINATION .)
