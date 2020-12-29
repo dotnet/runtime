@@ -127,6 +127,10 @@
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageReference Include="nuget.build.tasks.pack" Version="$(NuGetBuildTasksPackVersionVersion)" />
+  </ItemGroup>
+
   <Target Name="SetGenApiProperties"
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>
