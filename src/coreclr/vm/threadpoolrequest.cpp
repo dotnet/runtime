@@ -530,7 +530,7 @@ void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNo
         {
             if (pThread->IsAbortRequested())
             {
-                pThread->EEResetAbort(Thread::TAR_ALL);
+                pThread->ResetAbort();
             }
             pThread->InternalReset();
         }

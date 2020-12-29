@@ -1109,17 +1109,6 @@ BOOL Thread::IsRudeAbort()
     return (IsAbortRequested() && (m_AbortType == EEPolicy::TA_Rude));
 }
 
-BOOL Thread::IsFuncEvalAbort()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return (IsAbortRequested() && (m_AbortInfo & TAI_AnyFuncEvalAbort));
-}
-
 //
 // If the OS is down in kernel mode when we do a GetThreadContext,any
 // updates we make to the context will not take effect if we try to do
@@ -1270,7 +1259,6 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     DWORD dwSwitchCount = 0;
 #endif // !defined(DISABLE_THREADSUSPEND)
 
-LRetry:
     for (;;)
     {
         // Lock the thread store
@@ -1734,33 +1722,6 @@ void Thread::MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType)
     }
 #endif
 
-    DWORD abortInfo = 0;
-
-    if (abortType == EEPolicy::TA_Safe)
-    {
-        abortInfo |= TAI_FuncEvalAbort;
-    }
-    else if (abortType == EEPolicy::TA_Rude)
-    {
-        abortInfo |= TAI_FuncEvalRudeAbort;
-    }
-
-    if (abortInfo == 0)
-    {
-        ASSERT(!"Invalid abort information");
-        return;
-    }
-
-    if (abortInfo == (m_AbortInfo & abortInfo))
-    {
-        //
-        // We are already doing this kind of abort.
-        //
-        return;
-    }
-
-    m_AbortInfo |= abortInfo;
-
     if (m_AbortType >= (DWORD)abortType)
     {
         // another thread is aborting at a higher level
@@ -1777,7 +1738,7 @@ void Thread::MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType)
         // The thread is asked for abort the first time
         SetAbortRequestBit();
     }
-    STRESS_LOG4(LF_APPDOMAIN, LL_ALWAYS, "Mark Thread %p Thread Id = %x for abort (type %d)\n", this, GetThreadId(), abortType);
+    STRESS_LOG3(LF_APPDOMAIN, LL_ALWAYS, "Mark Thread %p Thread Id = %x for abort (type %d)\n", this, GetThreadId(), abortType);
 }
 
 void Thread::SetAbortRequestBit()
@@ -1844,33 +1805,7 @@ void Thread::UnmarkThreadForAbort()
 
     AbortRequestLockHolder lh(this);
 
-    m_AbortInfo &= ~(TAI_FuncEvalAbort |
-                     TAI_FuncEvalRudeAbort);
-
-    //
-    // Decide which type of abort to do based on the new bit field.
-    //
-    if (m_AbortInfo & TAI_AnyRudeAbort)
-    {
-        m_AbortType = EEPolicy::TA_Rude;
-    }
-    else if (m_AbortInfo & TAI_AnySafeAbort)
-    {
-        m_AbortType = EEPolicy::TA_Safe;
-    }
-    else
-    {
-        m_AbortType = EEPolicy::TA_None;
-    }
-
-    //
-    // If still aborting, do nothing
-    //
-    if (m_AbortType != EEPolicy::TA_None)
-    {
-        return;
-    }
-
+    m_AbortType = EEPolicy::TA_None;
     m_AbortEndTime = MAXULONGLONG;
     m_RudeAbortEndTime = MAXULONGLONG;
 
@@ -1882,7 +1817,7 @@ void Thread::UnmarkThreadForAbort()
         ResetUserInterrupted();
     }
 
-    STRESS_LOG3(LF_APPDOMAIN, LL_ALWAYS, "Unmark Thread %p Thread Id = %x for abort \n", this, GetThreadId());
+    STRESS_LOG2(LF_APPDOMAIN, LL_ALWAYS, "Unmark Thread %p Thread Id = %x for abort \n", this, GetThreadId());
 }
 
 void Thread::ResetAbort()

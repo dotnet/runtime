@@ -2784,7 +2784,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
             if (pParam->pThread->GetFrame() == FRAME_TOP)
             {
                 // There is no more managed code on stack.
-                pParam->pThread->EEResetAbort(Thread::TAR_ALL);
+                pParam->pThread->ResetAbort();
             }
         }
 

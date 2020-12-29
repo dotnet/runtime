@@ -795,7 +795,7 @@ void QueueUserWorkItemHelp(LPTHREAD_START_ROUTINE Function, PVOID Context)
     Thread *pThread = GetThread();
     if (pThread) {
         if (pThread->IsAbortRequested())
-            pThread->EEResetAbort(Thread::TAR_ALL);
+            pThread->ResetAbort();
         pThread->InternalReset();
     }
 }
@@ -2148,7 +2148,7 @@ Work:
         if (pThread)
         {
             if (pThread->IsAbortRequested())
-                pThread->EEResetAbort(Thread::TAR_ALL);
+                pThread->ResetAbort();
             pThread->InternalReset();
         }
     }
@@ -3747,7 +3747,7 @@ Top:
                 }
                 if (pThread) {
                     if (pThread->IsAbortRequested())
-                        pThread->EEResetAbort(Thread::TAR_ALL);
+                        pThread->ResetAbort();
                     pThread->InternalReset();
                 }
             }

@@ -2512,32 +2512,7 @@ public:
 
 private:
 
-    //
-    // Bit mask for tracking which aborts came in and why.
-    //
-    enum ThreadAbortInfo
-    {
-        TAI_ThreadAbort       = 0x00000001,
-        TAI_ThreadRudeAbort   = 0x00000004,
-        TAI_FuncEvalAbort     = 0x00000040,
-        TAI_FuncEvalRudeAbort = 0x00000100,
-    };
-
-    static const DWORD TAI_AnySafeAbort = (TAI_ThreadAbort   |
-                                           TAI_FuncEvalAbort
-                                          );
-
-    static const DWORD TAI_AnyRudeAbort = (TAI_ThreadRudeAbort   |
-                                           TAI_FuncEvalRudeAbort
-                                          );
-
-    static const DWORD TAI_AnyFuncEvalAbort = (TAI_FuncEvalAbort   |
-                                           TAI_FuncEvalRudeAbort
-                                          );
-
-
     // Specifies type of thread abort.
-    DWORD  m_AbortInfo;
     DWORD  m_AbortType;
     ULONGLONG  m_AbortEndTime;
     ULONGLONG  m_RudeAbortEndTime;
@@ -2618,7 +2593,6 @@ public:
     }
 
     BOOL           IsRudeAbort();
-    BOOL           IsFuncEvalAbort();
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HIJACK)
     BOOL           IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck);

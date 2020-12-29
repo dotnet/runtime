@@ -319,7 +319,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         // We may mark the finalizer thread for abort.  If so the abort request is for previous finalizer method, not for next one.
         if (GetFinalizerThread()->IsAbortRequested())
         {
-            GetFinalizerThread()->EEResetAbort(Thread::TAR_ALL);
+            GetFinalizerThread()->ResetAbort();
         }
 
         FinalizeAllObjects();
@@ -327,7 +327,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         // We may still have the finalizer thread for abort.  If so the abort request is for previous finalizer method, not for next one.
         if (GetFinalizerThread()->IsAbortRequested())
         {
-            GetFinalizerThread()->EEResetAbort(Thread::TAR_ALL);
+            GetFinalizerThread()->ResetAbort();
         }
 
         // Anyone waiting to drain the Q can now wake up.  Note that there is a

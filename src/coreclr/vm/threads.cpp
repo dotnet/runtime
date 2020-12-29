@@ -1484,7 +1484,6 @@ Thread::Thread()
    }
 
     m_AbortType = EEPolicy::TA_None;
-    m_AbortInfo = 0;
     m_AbortEndTime = MAXULONGLONG;
     m_RudeAbortEndTime = MAXULONGLONG;
     m_AbortController = 0;
