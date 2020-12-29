@@ -7513,9 +7513,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             ExceptionTracker::PopTrackers(pArgs->pFrame);
     #endif // FEATURE_EH_FUNCLETS
 
-            // Fortunately, ThreadAbortExceptions are always
-            if (pArgs->pThread->IsAbortRequested())
-                pArgs->pThread->EEResetAbort(Thread::TAR_Thread);
+            _ASSERTE(!pArgs->pThread->IsAbortRequested());
         }
         PAL_ENDTRY;
 

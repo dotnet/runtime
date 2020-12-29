@@ -2517,7 +2517,6 @@ public:
     void UnloadAssembly(DomainAssembly * pDomainAssembly);
 
     HRESULT FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo, BYTE **argDataArea, DebuggerEval **debuggerEvalKey);
-    HRESULT FuncEvalSetupReAbort(Thread *pThread, Thread::ThreadAbortRequester requester);
     HRESULT FuncEvalAbort(DebuggerEval *debuggerEvalKey);
     HRESULT FuncEvalRudeAbort(DebuggerEval *debuggerEvalKey);
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);

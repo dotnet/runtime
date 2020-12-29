@@ -3798,7 +3798,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
         RecordFuncEvalException( pDE, ppException);
     }
     // Note: we need to catch all exceptioins here because they all get reported as the result of
-    // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
+    // the funceval.
     EX_END_CATCH(SwallowAllExceptions);
 
     GCPROTECT_END();
@@ -3871,24 +3871,6 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
             g_pEEInterface->SetThreadFilterContext(pDE->m_thread, NULL);
         }
 
-    }
-
-    //
-    // Special handling for a re-abort eval. We don't setup a EX_TRY or try to lookup a function to call. All we do
-    // is have this thread abort itself.
-    //
-    if (pDE->m_evalType == DB_IPCE_FET_RE_ABORT)
-    {
-        //
-        // Push our FuncEvalFrame. The return address is equal to the IP in the saved context in the DebuggerEval. The
-        // m_Datum becomes the ptr to the DebuggerEval. The frame address also serves as the address of the catch-handler-found.
-        //
-        FrameWithCookie<FuncEvalFrame> FEFrame(pDE, GetIP(&pDE->m_context), false);
-        FEFrame.Push();
-
-        pDE->m_thread->UserAbort(pDE->m_requester, EEPolicy::TA_Safe, INFINITE);
-        _ASSERTE(!"Should not return from UserAbort here!");
-        return NULL;
     }
 
     //
