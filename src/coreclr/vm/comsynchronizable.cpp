@@ -659,10 +659,7 @@ FCIMPL1(INT32, ThreadNative::GetThreadState, ThreadBaseObject* pThisUNSAFE)
     // Don't report a StopRequested if the thread has actually stopped.
     if (state & Thread::TS_Dead)
     {
-        if (state & Thread::TS_Aborted)
-            res |= ThreadAborted;
-        else
-            res |= ThreadStopped;
+        res |= ThreadStopped;
     }
     else
     {

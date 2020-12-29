@@ -1141,7 +1141,7 @@ public:
 
         TS_SuspendUnstarted       = 0x00400000,    // latch a user suspension on an unstarted thread
 
-        TS_Aborted                = 0x00800000,    // is the thread aborted?
+        // unused                 = 0x00800000,    
         TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread?
 
         TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
@@ -1468,22 +1468,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (m_State & TS_Dead);
-    }
-
-    DWORD IsAborted()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_State & TS_Aborted);
-    }
-
-    void SetAborted()
-    {
-        FastInterlockOr((ULONG *) &m_State, TS_Aborted);
-    }
-
-    void ClearAborted()
-    {
-        FastInterlockAnd((ULONG *) &m_State, ~TS_Aborted);
     }
 
     DWORD DoWeOwn()
