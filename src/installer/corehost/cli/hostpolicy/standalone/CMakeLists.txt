@@ -32,5 +32,5 @@ if(CLR_CMAKE_HOST_UNIX)
     set_property(TARGET hostpolicy APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_UNIX)
 
-install_with_stripped_symbols(hostpolicy TARGETS corehost)
+install_with_stripped_symbols(hostpolicy PROGRAMS corehost)
 target_link_libraries(hostpolicy libhostcommon)

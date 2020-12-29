@@ -36,7 +36,7 @@ endif(WIN32)
 install(FILES ../coreclr_delegates.h DESTINATION corehost)
 install(FILES ../hostfxr.h DESTINATION corehost)
 install(FILES nethost.h DESTINATION corehost)
-install_with_stripped_symbols(nethost TARGETS corehost)
+install_with_stripped_symbols(nethost PROGRAMS corehost)
 
 # Only Windows creates a symbols file for static libs.
 if (WIN32)

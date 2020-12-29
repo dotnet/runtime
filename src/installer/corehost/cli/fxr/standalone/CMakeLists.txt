@@ -37,5 +37,5 @@ if(CLR_CMAKE_HOST_UNIX)
     set_property(TARGET hostfxr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_UNIX)
 
-install_with_stripped_symbols(hostfxr TARGETS corehost)
+install_with_stripped_symbols(hostfxr PROGRAMS corehost)
 target_link_libraries(hostfxr libhostcommon)

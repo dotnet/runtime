@@ -11,4 +11,4 @@ set(SOURCES
 
 include(../testlib.cmake)
 
-install_with_stripped_symbols(mockhostfxr_2_2 TARGETS corehost_test)
+install_with_stripped_symbols(mockhostfxr_2_2 PROGRAMS corehost_test)
