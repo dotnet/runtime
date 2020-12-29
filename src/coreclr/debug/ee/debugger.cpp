@@ -1416,7 +1416,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_aborted = false;
     m_completed = false;
     m_evalDuringException = fInException;
-    m_rethrowAbortException = false;
     m_retValueBoxing = Debugger::NoValueTypeBoxing;
     m_requester = (Thread::ThreadAbortRequester)0;
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
@@ -7892,15 +7891,6 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
         _ASSERTE(ret == NULL);
     }
 
-    // If we need to re-throw a ThreadAbortException, go ahead and do it now.
-    if (GetThread()->m_StateNC & Thread::TSNC_DebuggerReAbort)
-    {
-        // Now clear the bit else we'll see it again when we process the Exception notification
-        // from this upcoming UserAbort exception.
-        pThread->ResetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-        pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Safe, INFINITE);
-    }
-
 #endif
 
 }
@@ -10306,13 +10296,6 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     _ASSERTE(pDE->m_completed);
     _ASSERTE((g_pEEInterface->GetThread() && !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC);
     _ASSERTE(ThreadHoldsLock());
-
-    // If we need to rethrow a ThreadAbortException then set the thread's state so we remember that.
-    if (pDE->m_rethrowAbortException)
-    {
-        pThread->SetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-    }
-
 
     //
     // Get the domain that the result is valid in. The RS will cache this in the ICorDebugValue

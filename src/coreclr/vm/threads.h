@@ -1185,7 +1185,7 @@ public:
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
         TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger
-        TSNC_DebuggerReAbort            = 0x00000002, // thread needs to re-abort itself when resumed by the debugger
+        // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
         TSNC_WaitUntilGCFinished        = 0x00000010, // The current thread is waiting for GC.  If host returns

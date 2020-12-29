@@ -3416,7 +3416,6 @@ public:
     bool                               m_aborted;           // Was this eval aborted
     bool                               m_completed;          // Is the eval complete - successfully or by aborting
     bool                               m_evalDuringException;
-    bool                               m_rethrowAbortException;
     Thread::ThreadAbortRequester       m_requester;         // For aborts, what kind?
     VMPTR_OBJECTHANDLE                 m_vmObjectHandle;
     TypeHandle                         m_ownerTypeHandle;
@@ -3480,7 +3479,6 @@ public:
 #ifdef _DEBUG
         // Set flags to strategic values in case we access deleted memory.
         m_completed = false;
-        m_rethrowAbortException = true;
 #endif
     }
 };

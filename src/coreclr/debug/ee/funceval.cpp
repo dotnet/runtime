@@ -3115,44 +3115,21 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
     //
     if (IsExceptionOfType(kThreadAbortException, &ppException))
     {
-        if (pDE->m_aborting != DebuggerEval::FE_ABORT_NONE)
-        {
-            //
-            // Reset the abort request.
-            //
-            pDE->m_thread->UserResetAbort(Thread::TAR_FuncEval);
+        _ASSERTE(pDE->m_aborting != DebuggerEval::FE_ABORT_NONE);
+        //
+        // Reset the abort request.
+        //
+        pDE->m_thread->UserResetAbort(Thread::TAR_FuncEval);
 
-            //
-            // This is the abort we sent down.
-            //
-            memset(pDE->m_result, 0, sizeof(pDE->m_result));
-            pDE->m_resultType = TypeHandle();
-            pDE->m_aborted = true;
-            pDE->m_retValueBoxing = Debugger::NoValueTypeBoxing;
+        //
+        // This is the abort we sent down.
+        //
+        memset(pDE->m_result, 0, sizeof(pDE->m_result));
+        pDE->m_resultType = TypeHandle();
+        pDE->m_aborted = true;
+        pDE->m_retValueBoxing = Debugger::NoValueTypeBoxing;
 
-            LOG((LF_CORDB, LL_EVERYTHING, "D::FEHW - funceval abort exception.\n"));
-        }
-        else
-        {
-            //
-            // This must have come from somewhere else, remember that we need to
-            // rethrow this.
-            //
-            pDE->m_rethrowAbortException = true;
-
-            //
-            // The result is the exception object.
-            //
-            pDE->m_result[0] = ObjToArgSlot(ppException);
-
-            pDE->m_resultType = ppException->GetTypeHandle();
-            OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
-            pDE->m_result[0] = (ARG_SLOT)PTR_TO_CORDB_ADDRESS(oh);
-            pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
-            pDE->m_retValueBoxing = Debugger::NoValueTypeBoxing;
-
-            LOG((LF_CORDB, LL_EVERYTHING, "D::FEHW - Non-FE abort thread abort..\n"));
-        }
+        LOG((LF_CORDB, LL_EVERYTHING, "D::FEHW - funceval abort exception.\n"));
     }
     else
     {
@@ -3911,28 +3888,16 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
     if (pDE->m_thread->IsAbortRequested())
     {
-        //
-        // Check if an unmanaged thread tried to also abort this thread while we
-        // were doing the func-eval, then that kind we want to rethrow. The check
-        // versus m_aborted is for the case where the FE was aborted, we caught that,
-        // then cleared the FEAbort request, but there is still an outstanding abort
-        // - then it must be a user abort.
-        //
-        if ((pDE->m_aborting == DebuggerEval::FE_ABORT_NONE) || pDE->m_aborted)
-        {
-            pDE->m_rethrowAbortException = true;
-        }
+        // noone else shoud be requesting aborts,
+        // so this must be our request that did not have a chance to run.
+        _ASSERTE((pDE->m_aborting != DebuggerEval::FE_ABORT_NONE) && !pDE->m_aborted);
 
         //
         // Reset the abort request if a func-eval abort was submitted, but the func-eval completed
         // before the abort could take place, we want to make sure we do not throw an abort exception
         // in this case.
         //
-        if (pDE->m_aborting != DebuggerEval::FE_ABORT_NONE)
-        {
-            pDE->m_thread->UserResetAbort(Thread::TAR_FuncEval);
-        }
-
+        pDE->m_thread->UserResetAbort(Thread::TAR_FuncEval);
     }
 
     // Codepitching can hijack our frame's return address. That means that we'll need to update PC in our saved context
