@@ -10,9 +10,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Generators.Tests
+namespace Microsoft.Extensions.Logging.Generators.Test
 {
-    static class RoslynTestUtils
+    internal static class RoslynTestUtils
     {
         public static Project CreateTestProject()
         {
@@ -20,7 +20,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             return new AdhocWorkspace()
                         .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                         .AddProject("Test", "test.dll", "C#")
+#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
                             .WithMetadataReferences(new[] { MetadataReference.CreateFromFile(Assembly.GetAssembly(typeof(System.Exception))!.Location) })
+#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
                             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
 #pragma warning restore CA2000 // Dispose objects before losing scope
         }
@@ -68,6 +70,19 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public const string LoggingBoilerplate = @"
             namespace Microsoft.Extensions.Logging
             {
+                [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
+                public sealed class LoggerMessageAttribute : System.Attribute
+                {
+                    public LoggerMessageAttribute(int eventId, Microsoft.Extensions.Logging.LogLevel level, string message) => (EventId, Level, Message) = (eventId, level, message);
+                    public int EventId { get; }
+                    public string? EventName { get; set; }
+                    public Microsoft.Extensions.Logging.LogLevel Level { get; }
+                    public string Message { get; }
+                }
+            }
+
+            namespace Microsoft.Extensions.Logging
+            {
                 using System;
 
                 public enum LogLevel
@@ -79,16 +94,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     Error,
                     Critical,
                     None,
-                }
-
-                [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
-                public sealed class LoggerMessageAttribute : System.Attribute
-                {
-                    public LoggerMessageAttribute(int eventId, LogLevel level, string message) => (EventId, Level, Message) = (eventId, level, message);
-                    public int EventId { get; set; }
-                    public string? EventName { get; set; }
-                    public LogLevel Level { get; set; }
-                    public string Message { get; set; }
                 }
 
                 public interface ILogger
@@ -166,6 +171,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             {
                 throw new ArgumentOutOfRangeException(nameof(spanNum));
             }
+
             start += 6;
 
             int end = text.IndexOf($"/*-{spanNum}*/", StringComparison.Ordinal);
@@ -173,6 +179,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             {
                 throw new ArgumentOutOfRangeException(nameof(spanNum));
             }
+
             end -= 1;
 
             return new TextSpan(start, end - start);

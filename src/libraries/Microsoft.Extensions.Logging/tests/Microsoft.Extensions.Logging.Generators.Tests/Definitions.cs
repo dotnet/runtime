@@ -1,20 +1,27 @@
 // © Microsoft Corporation. All rights reserved.
 
-using Microsoft.Extensions.Logging;
 using System;
+using Microsoft.Extensions.Logging;
 
-// NOTE: This source file serves two purposes.
+// NOTE: This source file serves two purposes:
 //
 // #1. It is used to trigger the source generator during compilation of the test suite itself. The resulting generated code
-//     is then tested by GeneratedCodeTests.cs. This ensures the generated code works reliably.
+//     is then tested by LoggerMessageGeneratedCodeTests.cs. This ensures the generated code works reliably.
 //
-// #2. It is loaded as a file from GeneratorEmitTests.cs, and then fed manually to the parser and then the generator. This is used
-//     strictly to calculate code coverage attained by the #1 case above.
+// #2. It is loaded as a file from LoggerMessageGeneratorEmitterTests.cs, and then fed manually to the parser and then the generator.
+//     This is used strictly to calculate code coverage attained by the #1 case above.
 
 #pragma warning disable CA1801 // Review unused parameters
+#pragma warning disable S1118 // Utility classes should not have public constructors
+#pragma warning disable S3903 // Types should be defined in named namespaces
+#pragma warning disable SA1202 // Elements should be ordered by access
+#pragma warning disable SA1204 // Static elements should appear before instance elements
+#pragma warning disable SA1207 // Protected should come before internal
+#pragma warning disable SA1402 // File may only contain a single type
+#pragma warning disable SA1403 // File may only contain a single namespace
 
 // Used to test use outside of a namespace
-partial class NoNamespace
+internal static partial class NoNamespace
 {
     [LoggerMessage(0, LogLevel.Critical, "Could not open socket to `{hostName}`")]
     public static partial void CouldNotOpenSocket(ILogger logger, string hostName);
@@ -23,7 +30,7 @@ partial class NoNamespace
 namespace Level1
 {
     // used to test use inside a one-level namespace
-    partial class OneLevelNamespace
+    internal static partial class OneLevelNamespace
     {
         [LoggerMessage(0, LogLevel.Critical, "Could not open socket to `{hostName}`")]
         public static partial void CouldNotOpenSocket(ILogger logger, string hostName);
@@ -35,7 +42,7 @@ namespace Level1
     namespace Level2
     {
         // used to test use inside a two-level namespace
-        partial class TwoLevelNamespace
+        internal static partial class TwoLevelNamespace
         {
             [LoggerMessage(0, LogLevel.Critical, "Could not open socket to `{hostName}`")]
             public static partial void CouldNotOpenSocket(ILogger logger, string hostName);
@@ -43,11 +50,25 @@ namespace Level1
     }
 }
 
-namespace Microsoft.Extensions.Logging.Generators.Tests
+namespace Microsoft.Extensions.Logging.Generators.Test
 {
     // test particular method signature variations are generated correctly
-    partial class SignatureTests<T> where T : class
+    internal partial class SignatureTests<T>
+        where T : class
     {
+        public static void Combo(ILogger logger, ILogger<int> logger2)
+        {
+            M1(logger);
+            M2(logger);
+            M3(logger);
+            M4(logger2);
+            M5(logger, new[] { "A" });
+            M6(logger);
+            M8(logger);
+            M9(logger);
+            M10(logger, null);
+        }
+
         // normal public method
         [LoggerMessage(0, LogLevel.Critical, "Message1")]
         public static partial void M1(ILogger logger);
@@ -87,23 +108,10 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         // nullable parameter
         [LoggerMessage(9, LogLevel.Critical, "Message10")]
         internal static partial void M10(ILogger logger, string? optional);
-
-        public static void Combo(ILogger logger, ILogger<int> logger2)
-        {
-            M1(logger);
-            M2(logger);
-            M3(logger);
-            M4(logger2);
-            M5(logger, new string[] { "A" });
-            M6(logger);
-            M8(logger);
-            M9(logger);
-            M10(logger, null);
-        }
     }
 
     // test particular method signature variations are generated correctly
-    static partial class SignatureTests
+    internal static partial class SignatureTests
     {
         // extension method
         [LoggerMessage(10, LogLevel.Critical, "Message11")]
@@ -115,7 +123,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
     }
 
-    partial class ArgTestExtensions
+    internal static partial class ArgTestExtensions
     {
         [LoggerMessage(0, LogLevel.Error, "M1")]
         public static partial void Method1(ILogger logger);
@@ -139,16 +147,20 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public static partial void Method7(ILogger logger, int p1, InvalidOperationException p2);
 
         [LoggerMessage(7, LogLevel.Error, "M8")]
+#pragma warning disable S107 // Methods should not have too many parameters
         public static partial void Method8(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
+#pragma warning restore S107 // Methods should not have too many parameters
 
         [LoggerMessage(8, LogLevel.Error, "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}")]
+#pragma warning disable S107 // Methods should not have too many parameters
         public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
+#pragma warning restore S107 // Methods should not have too many parameters
 
         [LoggerMessage(9, LogLevel.Error, "M10")]
         public static partial void Method10(ILogger logger, int p1);
     }
 
-    partial class ReadOnlyListExtensions
+    internal static partial class ReadOnlyListExtensions
     {
         [LoggerMessage(0, LogLevel.Error, "M0")]
         public static partial void M0(ILogger logger);
@@ -172,10 +184,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public static partial void M6(ILogger logger, int p0, int p1, int p2, int p3, int p4, int p5);
 
         [LoggerMessage(7, LogLevel.Error, "M7")]
+#pragma warning disable S107 // Methods should not have too many parameters
         public static partial void M7(ILogger logger, int p0, int p1, int p2, int p3, int p4, int p5, int p6);
+#pragma warning restore S107 // Methods should not have too many parameters
     }
 
-    partial class LevelTestExtensions
+    internal static partial class LevelTestExtensions
     {
         [LoggerMessage(0, LogLevel.Trace, "M0")]
         public static partial void M0(ILogger logger);
@@ -202,7 +216,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public static partial void M7(ILogger logger);
     }
 
-    partial class EventNameTestExtensions
+    internal static partial class EventNameTestExtensions
     {
         [LoggerMessage(0, LogLevel.Trace, "M0", EventName = "CustomEventName")]
         public static partial void M0(ILogger logger);

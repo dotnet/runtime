@@ -9,9 +9,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-[assembly: System.Resources.NeutralResourcesLanguage("en-us")]
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Microsoft.Extensions.Logging.Generators.Tests")]
-
 namespace Microsoft.Extensions.Logging.Generators
 {
     public partial class LoggerMessageGenerator
@@ -34,19 +31,25 @@ namespace Microsoft.Extensions.Logging.Generators
             /// </summary>
             public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
+                const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
+                const int LoggerMessageAttrEventIdArg = 0;
+                const int LoggerMessageAttrLevelArg = 1;
+                const int LoggerMessageAttrMessageArg = 2;
+                const int LoggerMessageAttrEventNameArg = 3;
+
                 var results = new List<LoggerClass>();
 
-                var exSymbol = _compilation.GetTypeByMetadataName("System.Exception");
-                if (exSymbol == null)
+                var exceptionSymbol = _compilation.GetTypeByMetadataName("System.Exception");
+                if (exceptionSymbol == null)
                 {
                     Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.Exception");
                     return results;
                 }
 
-                var loggerMessageAttribute = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerMessageAttribute");
+                var loggerMessageAttribute = _compilation.GetTypeByMetadataName(LoggerMessageAttribute);
                 if (loggerMessageAttribute is null)
                 {
-                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.LoggerMessageAttribute");
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, LoggerMessageAttribute);
                     return results;
                 }
 
@@ -94,8 +97,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                         sm = _compilation.GetSemanticModel(classDef.SyntaxTree);
                                     }
 
-                                    var maSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
-                                    if (maSymbol == null || !loggerMessageAttribute.Equals(maSymbol.ContainingType, SymbolEqualityComparer.Default))
+                                    var mattrSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
+                                    if (mattrSymbol == null || !loggerMessageAttribute.Equals(mattrSymbol.ContainingType, SymbolEqualityComparer.Default))
                                     {
                                         // badly formed attribute definition, or not the right attribute
                                         continue;
@@ -103,212 +106,191 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     var args = ma.ArgumentList!.Arguments;
 
-                                    var eventId = sm.GetConstantValue(args[0].Expression, _cancellationToken).ToString();
-                                    var level = (int)sm.GetConstantValue(args[1].Expression, _cancellationToken).Value!;
-                                    var message = sm.GetConstantValue(args[2].Expression, _cancellationToken).ToString();
+                                    var eventId = sm.GetConstantValue(args[LoggerMessageAttrEventIdArg].Expression, _cancellationToken).ToString();
+                                    var level = (int)sm.GetConstantValue(args[LoggerMessageAttrLevelArg].Expression, _cancellationToken).Value!;
+                                    var message = sm.GetConstantValue(args[LoggerMessageAttrMessageArg].Expression, _cancellationToken).ToString();
 
                                     string eventName = string.Empty;
-                                    if (args.Count > 3)
+                                    if (args.Count > LoggerMessageAttrEventNameArg)
                                     {
-                                        eventName = sm.GetConstantValue(args[3].Expression, _cancellationToken).ToString();
+                                        eventName = sm.GetConstantValue(args[LoggerMessageAttrEventNameArg].Expression, _cancellationToken).ToString();
                                     }
 
-                                    var methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken) as IMethodSymbol;
-                                    if (methodSymbol == null)
+                                    var methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
+                                    if (methodSymbol != null)
                                     {
-                                        // semantic problem, just bail quietly
-                                        continue;
-                                    }
-
-                                    var lm = new LoggerMethod
-                                    {
-                                        Name = method.Identifier.ToString(),
-                                        Level = level,
-                                        Message = message,
-                                        EventId = eventId,
-                                        EventName = eventName,
-                                        MessageHasTemplates = HasTemplates(message),
-                                        IsExtensionMethod = methodSymbol.IsExtensionMethod,
-                                        Modifiers = method.Modifiers.ToString(),
-                                    };
-
-                                    bool keep = true;   // whether or not we want to keep the method definition or if it's got errors making it worth discarding instead
-                                    if (lm.Name.StartsWith("__", StringComparison.Ordinal))
-                                    {
-                                        // can't have logging method names that start with __ since that can lead to conflicting symbol names
-                                        // because the generated symbols start with __
-                                        Diag(DiagDescriptors.ErrorInvalidMethodName, method.Identifier.GetLocation());
-                                    }
-
-                                    if (sm.GetTypeInfo(method.ReturnType!).Type!.SpecialType != SpecialType.System_Void)
-                                    {
-                                        // logging methods must return void
-                                        Diag(DiagDescriptors.ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
-                                        keep = false;
-                                    }
-
-                                    if (method.Arity > 0)
-                                    {
-                                        // we don't currently support generic methods
-                                        Diag(DiagDescriptors.ErrorMethodIsGeneric, method.Identifier.GetLocation());
-                                        keep = false;
-                                    }
-
-                                    bool isStatic = false;
-                                    bool isPartial = false;
-                                    foreach (var mod in method.Modifiers)
-                                    {
-                                        switch (mod.Text)
+                                        var lm = new LoggerMethod
                                         {
-                                            case "partial":
-                                                isPartial = true;
-                                                break;
-
-                                            case "static":
-                                                isStatic = true;
-                                                break;
-                                        }
-                                    }
-
-                                    if (!isStatic)
-                                    {
-                                        Diag(DiagDescriptors.ErrorNotStaticMethod, method.GetLocation());
-                                        keep = false;
-                                    }
-
-                                    if (!isPartial)
-                                    {
-                                        Diag(DiagDescriptors.ErrorNotPartialMethod, method.GetLocation());
-                                        keep = false;
-                                    }
-
-                                    // ensure there are no duplicate ids.
-                                    if (ids.Contains(lm.EventId))
-                                    {
-                                        Diag(DiagDescriptors.ErrorEventIdReuse, args[0].GetLocation(), lm.EventId);
-                                    }
-                                    else
-                                    {
-                                        ids.Add(lm.EventId);
-                                    }
-
-                                    if (string.IsNullOrWhiteSpace(lm.Message))
-                                    {
-                                        Diag(DiagDescriptors.ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString());
-                                    }
-
-                                    foreach (var p in method.ParameterList.Parameters)
-                                    {
-                                        var declaredType = sm.GetDeclaredSymbol(p);
-                                        if (declaredType == null)
-                                        {
-                                            // semantic problem, just bail quietly
-                                            keep = false;
-                                            break;
-                                        }
-
-                                        if (p.Type == null)
-                                        {
-                                            // semantic problem, just bail quietly
-                                            keep = false;
-                                            break;
-                                        }
-
-                                        var paramName = p.Identifier.ToString();
-                                        if (string.IsNullOrWhiteSpace(paramName))
-                                        {
-                                            // semantic problem, just bail quietly
-                                            keep = false;
-                                            break;
-                                        }
-
-                                        var pSymbol = sm.GetTypeInfo(p.Type).Type;
-                                        if (pSymbol == null || (pSymbol is IErrorTypeSymbol))
-                                        {
-                                            // semantic problem, just bail quietly
-                                            keep = false;
-                                            break;
-                                        }
-
-                                        var typeName = declaredType.ToDisplayString();
-
-                                        // skip the ILogger parameter
-                                        if (p == method.ParameterList.Parameters[0])
-                                        {
-                                            if (!IsBaseOrIdentity(pSymbol, loggerSymbol))
-                                            {
-                                                Diag(DiagDescriptors.ErrorFirstArgMustBeILogger, p.Identifier.GetLocation());
-                                                keep = false;
-                                            }
-
-                                            lm.LoggerType = typeName;
-                                            continue;
-                                        }
-
-                                        var lp = new LoggerParameter
-                                        {
-                                            Name = paramName,
-                                            Type = typeName,
-                                            IsExceptionType = IsBaseOrIdentity(pSymbol, exSymbol),
+                                            Name = method.Identifier.ToString(),
+                                            Level = level,
+                                            Message = message,
+                                            EventId = eventId,
+                                            EventName = eventName,
+                                            MessageHasTemplates = HasTemplates(message),
+                                            IsExtensionMethod = methodSymbol.IsExtensionMethod,
+                                            Modifiers = method.Modifiers.ToString(),
                                         };
 
-                                        lm.Parameters.Add(lp);
-
-                                        if (lp.Name.StartsWith("__", StringComparison.Ordinal))
+                                        bool keep = true;   // whether or not we want to keep the method definition or if it's got errors making it worth discarding instead
+                                        if (lm.Name.StartsWith("_", StringComparison.Ordinal))
                                         {
-                                            // can't have logging method parameter names that start with  __ since that can lead to conflicting symbol names
-                                            // because all generated symbols start with __
-                                            Diag(DiagDescriptors.ErrorInvalidParameterName, p.Identifier.GetLocation());
+                                            // can't have logging method names that start with _ since that can lead to conflicting symbol names
+                                            // because the generated symbols start with _
+                                            Diag(DiagDescriptors.ErrorInvalidMethodName, method.Identifier.GetLocation());
                                         }
-                                    }
 
-                                    if (lc == null)
-                                    {
-                                        // determine the namespace the class is declared in, if any
-                                        var ns = classDef.Parent as NamespaceDeclarationSyntax;
-                                        if (ns == null)
+                                        if (sm.GetTypeInfo(method.ReturnType!).Type!.SpecialType != SpecialType.System_Void)
                                         {
-                                            if (classDef.Parent is not CompilationUnitSyntax)
+                                            // logging methods must return void
+                                            Diag(DiagDescriptors.ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
+                                            keep = false;
+                                        }
+
+                                        if (method.Arity > 0)
+                                        {
+                                            // we don't currently support generic methods
+                                            Diag(DiagDescriptors.ErrorMethodIsGeneric, method.Identifier.GetLocation());
+                                            keep = false;
+                                        }
+
+                                        bool isStatic = false;
+                                        bool isPartial = false;
+                                        foreach (var mod in method.Modifiers)
+                                        {
+                                            switch (mod.Text)
                                             {
-                                                // since this generator doesn't know how to generate a nested type...
-                                                Diag(DiagDescriptors.ErrorNestedType, classDef.Identifier.GetLocation());
-                                                keep = false;
+                                                case "partial":
+                                                    isPartial = true;
+                                                    break;
+
+                                                case "static":
+                                                    isStatic = true;
+                                                    break;
                                             }
+                                        }
+
+                                        if (!isStatic)
+                                        {
+                                            Diag(DiagDescriptors.ErrorNotStaticMethod, method.GetLocation());
+                                            keep = false;
+                                        }
+
+                                        if (!isPartial)
+                                        {
+                                            Diag(DiagDescriptors.ErrorNotPartialMethod, method.GetLocation());
+                                            keep = false;
+                                        }
+
+                                        // ensure there are no duplicate ids.
+                                        if (ids.Contains(lm.EventId))
+                                        {
+                                            Diag(DiagDescriptors.ErrorEventIdReuse, args[0].GetLocation(), lm.EventId);
                                         }
                                         else
                                         {
-                                            nspace = ns.Name.ToString();
-                                            for (; ; )
+                                            _ = ids.Add(lm.EventId);
+                                        }
+
+                                        if (string.IsNullOrWhiteSpace(lm.Message))
+                                        {
+                                            Diag(DiagDescriptors.ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString());
+                                        }
+
+                                        foreach (var p in method.ParameterList.Parameters)
+                                        {
+                                            var paramName = p.Identifier.ToString();
+                                            if (string.IsNullOrWhiteSpace(paramName))
                                             {
-                                                ns = ns.Parent as NamespaceDeclarationSyntax;
-                                                if (ns == null)
+                                                // semantic problem, just bail quietly
+                                                keep = false;
+                                                break;
+                                            }
+
+                                            var paramSymbol = sm.GetTypeInfo(p.Type!).Type;
+                                            if (paramSymbol is IErrorTypeSymbol)
+                                            {
+                                                // semantic problem, just bail quietly
+                                                keep = false;
+                                                break;
+                                            }
+
+                                            var declaredType = sm.GetDeclaredSymbol(p);
+                                            var typeName = declaredType!.ToDisplayString();
+
+                                            // skip the ILogger parameter
+                                            if (p == method.ParameterList.Parameters[0])
+                                            {
+                                                if (!IsBaseOrIdentity(paramSymbol!, loggerSymbol))
                                                 {
-                                                    break;
+                                                    Diag(DiagDescriptors.ErrorFirstArgMustBeILogger, p.Identifier.GetLocation());
+                                                    keep = false;
                                                 }
 
-                                                nspace = $"{ns.Name}.{nspace}";
+                                                lm.LoggerType = typeName;
+                                                lm.LoggerName = paramName;
+                                                continue;
                                             }
-                                        }
-                                    }
 
-                                    if (keep)
-                                    {
-                                        if (lc == null)
-                                        {
-                                            lc = new LoggerClass
+                                            var lp = new LoggerParameter
                                             {
-                                                Namespace = nspace,
-                                                Name = classDef.Identifier.ToString(),
-                                                Constraints = classDef.ConstraintClauses.ToString(),
+                                                Name = paramName,
+                                                Type = typeName,
+                                                IsExceptionType = IsBaseOrIdentity(paramSymbol!, exceptionSymbol),
                                             };
 
-                                            if (classDef.TypeParameterList != null)
+                                            lm.Parameters.Add(lp);
+
+                                            if (lp.Name.StartsWith("_", StringComparison.Ordinal))
                                             {
-                                                lc.Name += classDef.TypeParameterList.ToString();
+                                                // can't have logging method parameter names that start with _ since that can lead to conflicting symbol names
+                                                // because all generated symbols start with _
+                                                Diag(DiagDescriptors.ErrorInvalidParameterName, p.Identifier.GetLocation());
                                             }
                                         }
 
-                                        lc.Methods.Add(lm);
+                                        if (lc == null)
+                                        {
+                                            // determine the namespace the class is declared in, if any
+                                            var ns = classDef.Parent as NamespaceDeclarationSyntax;
+                                            if (ns == null)
+                                            {
+                                                if (classDef.Parent is not CompilationUnitSyntax)
+                                                {
+                                                    // since this generator doesn't know how to generate a nested type...
+                                                    Diag(DiagDescriptors.ErrorNestedType, classDef.Identifier.GetLocation());
+                                                    keep = false;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                nspace = ns.Name.ToString();
+                                                while (true)
+                                                {
+                                                    ns = ns.Parent as NamespaceDeclarationSyntax;
+                                                    if (ns == null)
+                                                    {
+                                                        break;
+                                                    }
+
+                                                    nspace = $"{ns.Name}.{nspace}";
+                                                }
+                                            }
+                                        }
+
+                                        if (keep)
+                                        {
+                                            if (lc == null)
+                                            {
+                                                lc = new LoggerClass
+                                                {
+                                                    Namespace = nspace,
+                                                    Name = classDef.Identifier.ToString() + classDef.TypeParameterList ?? string.Empty,
+                                                    Constraints = classDef.ConstraintClauses.ToString(),
+                                                };
+                                            }
+
+                                            lc.Methods.Add(lm);
+                                        }
                                     }
                                 }
                             }
@@ -324,19 +306,8 @@ namespace Microsoft.Extensions.Logging.Generators
                 return results;
             }
 
-            private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
-            {
-                _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
-            }
-
-            private bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest)
-            {
-                var conversion = _compilation.ClassifyConversion(source, dest);
-                return conversion.IsIdentity || (conversion.IsReference && conversion.IsImplicit);
-            }
-
             /// <summary>
-            /// Does the string contain templates?
+            /// Checks if a string contain templates.
             /// </summary>
             private static bool HasTemplates(string message)
             {
@@ -346,7 +317,22 @@ namespace Microsoft.Extensions.Logging.Generators
                     return false;
                 }
 
+#pragma warning disable S2692 // "IndexOf" checks should not be for positive numbers
                 return message.IndexOf('}', start) > 0;
+#pragma warning restore S2692 // "IndexOf" checks should not be for positive numbers
+            }
+
+#pragma warning disable SA1011 // Closing square brackets should be spaced correctly
+            private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
+#pragma warning restore SA1011 // Closing square brackets should be spaced correctly
+            {
+                _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
+            }
+
+            private bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest)
+            {
+                var conversion = _compilation.ClassifyConversion(source, dest);
+                return conversion.IsIdentity || (conversion.IsReference && conversion.IsImplicit);
             }
         }
 
@@ -360,7 +346,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string Namespace = string.Empty;
             public string Name = string.Empty;
             public string Constraints = string.Empty;
-            public List<LoggerMethod> Methods = new();
+            public List<LoggerMethod> Methods = new ();
         }
 
         /// <summary>
@@ -377,7 +363,8 @@ namespace Microsoft.Extensions.Logging.Generators
             public bool IsExtensionMethod;
             public string Modifiers = string.Empty;
             public string LoggerType = string.Empty;
-            public List<LoggerParameter> Parameters = new();
+            public string LoggerName = string.Empty;
+            public List<LoggerParameter> Parameters = new ();
         }
 
         /// <summary>

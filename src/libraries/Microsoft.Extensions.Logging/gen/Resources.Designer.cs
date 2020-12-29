@@ -115,7 +115,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Logging method names cannot start with __.
+        ///   Looks up a localized string similar to Logging method names cannot start with _.
         /// </summary>
         internal static string ErrorInvalidMethodNameMessage {
             get {
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Logging method names cannot start with __.
+        ///   Looks up a localized string similar to Logging method names cannot start with _.
         /// </summary>
         internal static string ErrorInvalidMethodNameTitle {
             get {
@@ -151,7 +151,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Logging method parameter names cannot start with __.
+        ///   Looks up a localized string similar to Logging method parameter names cannot start with _.
         /// </summary>
         internal static string ErrorInvalidParameterNameMessage {
             get {
@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Logging method parameter names cannot start with __.
+        ///   Looks up a localized string similar to Logging method parameter names cannot start with _.
         /// </summary>
         internal static string ErrorInvalidParameterNameTitle {
             get {

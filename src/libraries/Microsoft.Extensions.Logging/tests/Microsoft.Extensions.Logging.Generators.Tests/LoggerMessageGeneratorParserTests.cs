@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Generators.Tests
+namespace Microsoft.Extensions.Logging.Generators.Test
 {
     public class LoggerMessageGeneratorParserTests
     {
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(lc);
             Assert.Single(d);
             Assert.Equal("LG0004", d[0].Id);
-            
+
             (lc, d) = TryParser(@"
                 partial class C
                 {
@@ -378,7 +378,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     [System.Obsolete(""Foo"")]
                     static partial void M1(ILogger logger);
                 }
-            ");
+            ", checkDiags: false);
 
             Assert.Empty(lc);
             Assert.Empty(d);
@@ -442,19 +442,19 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             var text = code;
             if (wrap)
             {
-                var nsStart = "namespace Test {";
-                var nsEnd = "}";
+                var nspaceStart = "namespace Test {";
+                var nspaceEnd = "}";
                 if (!inNamespace)
                 {
-                    nsStart = "";
-                    nsEnd = "";
+                    nspaceStart = "";
+                    nspaceEnd = "";
                 }
 
                 text = $@"
-                    {nsStart}
+                    {nspaceStart}
                     using Microsoft.Extensions.Logging;
                     {code}
-                    {nsEnd}
+                    {nspaceEnd}
                     {RoslynTestUtils.LoggingBoilerplate}
                 ";
             }
@@ -462,7 +462,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             var refs = Array.Empty<PortableExecutableReference>();
             if (includeReferences)
             {
-                refs = new[] { MetadataReference.CreateFromFile(Assembly.GetAssembly(typeof(System.Exception))!.Location) };
+#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
+                refs = new[]
+                {
+                    MetadataReference.CreateFromFile(Assembly.GetAssembly(typeof(System.Exception))!.Location),
+                };
+#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
             }
 
             var compilation = CSharpCompilation.Create(
@@ -478,9 +483,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             }
 
             var results = new List<Diagnostic>();
-            var p = new Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator.Parser(compilation, (d) => {
-                results.Add(d);
-            }, cancellationToken);
+            var p = new Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator.Parser(
+                compilation,
+                (d) =>
+                {
+                    results.Add(d);
+                },
+                cancellationToken);
 
             var allNodes = compilation.SyntaxTrees.SelectMany(s => s.GetRoot().DescendantNodes());
             var allClasses = allNodes.Where(d => d.IsKind(SyntaxKind.ClassDeclaration)).OfType<ClassDeclarationSyntax>();

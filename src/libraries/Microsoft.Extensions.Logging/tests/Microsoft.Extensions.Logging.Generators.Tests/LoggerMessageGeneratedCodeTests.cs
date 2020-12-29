@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Generators.Tests
+namespace Microsoft.Extensions.Logging.Generators.Test
 {
     public class LoggerMessageGeneratedCodeTests
     {
@@ -34,7 +34,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Null(logger.LastException);
             Assert.Equal("Could not open socket to `microsoft.com`", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
-
         }
 
         [Fact]
@@ -147,31 +146,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             logger.Reset();
             ReadOnlyListExtensions.M7(logger, 0, 1, 2, 3, 4, 5, 6);
             TestCollection(7, logger);
-        }
 
-        private static void TestCollection(int expected, MockLogger logger)
-        {
-            var rol = (logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>)!;
-            Assert.NotNull(rol);
-
-            Assert.Equal(expected, rol.Count);
-            for (int i = 0; i < expected; i++)
-            {
-                var kvp = new KeyValuePair<string, object?>($"p{i}", i);
-                Assert.Equal(kvp, rol[i]);
-            }
-
-            int count = 0;
-            foreach (var actual in rol)
-            {
-                var kvp = new KeyValuePair<string, object?>($"p{count}", count);
-                Assert.Equal(kvp, actual);
-                count++;
-            }
-
-            Assert.Equal(expected, count);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[expected]);
+            // TestCollection is doing all the testing for us
+            Assert.True(true);
         }
 
         [Fact]
@@ -248,6 +225,33 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
             Assert.Equal("CustomEventName", logger.LastEventId.Name);
+        }
+
+        private static void TestCollection(int expected, MockLogger logger)
+        {
+#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
+            var rol = (logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>)!;
+#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
+            Assert.NotNull(rol);
+
+            Assert.Equal(expected, rol.Count);
+            for (int i = 0; i < expected; i++)
+            {
+                var kvp = new KeyValuePair<string, object?>($"p{i}", i);
+                Assert.Equal(kvp, rol[i]);
+            }
+
+            int count = 0;
+            foreach (var actual in rol)
+            {
+                var kvp = new KeyValuePair<string, object?>($"p{count}", count);
+                Assert.Equal(kvp, actual);
+                count++;
+            }
+
+            Assert.Equal(expected, count);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[expected]);
         }
     }
 }

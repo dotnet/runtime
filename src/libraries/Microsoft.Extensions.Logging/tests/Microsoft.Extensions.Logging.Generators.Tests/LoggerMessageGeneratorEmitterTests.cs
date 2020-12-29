@@ -1,5 +1,6 @@
 // © Microsoft Corporation. All rights reserved.
 
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -9,9 +10,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Generators.Tests
+namespace Microsoft.Extensions.Logging.Generators.Test
 {
-    public class LoggerMessageGeneratorEmitTests
+    public class LoggerMessageGeneratorEmitterTests
     {
         [Fact]
         public async Task TestEmitter()
@@ -23,8 +24,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 .WithDocument("Definitions.cs", testSourceCode);
 
             await proj.CommitChanges("CS8795").ConfigureAwait(false);
+#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
             var comp = (await proj.GetCompilationAsync().ConfigureAwait(false))!;
+#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
 
+            // This tests exists strictly to calculate the code coverage
+            // attained by processing Definitions.cs. The functionality of the
+            // resulting code is tested via LoggerMessageGeneratedCodeTests.cs
             for (int i = 0; i < 2; i++)
             {
                 var p = new Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator.Parser(comp, d => { }, CancellationToken.None);
@@ -37,8 +43,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 var generatedSource = e.Emit(lc, CancellationToken.None);
                 Assert.True(!string.IsNullOrEmpty(generatedSource));
 
-                generatedSource = e.Emit(lc, new CancellationToken(true));
-                Assert.True(string.IsNullOrEmpty(generatedSource));
+                Assert.Throws<OperationCanceledException>(() => _ = e.Emit(lc, new CancellationToken(true)));
             }
         }
     }

@@ -118,10 +118,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ErrorInvalidMethodNameTitle" xml:space="preserve">
-    <value>Logging method names cannot start with __</value>
+    <value>Logging method names cannot start with _</value>
   </data>
   <data name="ErrorInvalidMethodNameMessage" xml:space="preserve">
-    <value>Logging method names cannot start with __</value>
+    <value>Logging method names cannot start with _</value>
   </data>
   <data name="ErrorInvalidMessageTitle" xml:space="preserve">
     <value>Missing message for logging method</value>
@@ -130,10 +130,10 @@
     <value>Missing message for logging method {0}</value>
   </data>
   <data name="ErrorInvalidParameterNameTitle" xml:space="preserve">
-    <value>Logging method parameter names cannot start with __</value>
+    <value>Logging method parameter names cannot start with _</value>
   </data>
   <data name="ErrorInvalidParameterNameMessage" xml:space="preserve">
-    <value>Logging method parameter names cannot start with __</value>
+    <value>Logging method parameter names cannot start with _</value>
   </data>
   <data name="ErrorNestedTypeTitle" xml:space="preserve">
     <value>Logging class cannot be in nested types</value>

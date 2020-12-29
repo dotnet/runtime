@@ -1,13 +1,14 @@
 // © Microsoft Corporation. All rights reserved.
 
 using System;
+using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Extensions.Logging.Generators.Tests
+namespace Microsoft.Extensions.Logging.Generators.Test
 {
     /// <summary>
     /// A logger which captures the last log state logged to it.
     /// </summary>
-    class MockLogger : ILogger
+    internal class MockLogger : ILogger
     {
         public LogLevel LastLogLevel { get; private set; }
         public EventId LastEventId { get; private set; }
@@ -20,10 +21,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         /// <summary>
         /// Dummy disposable type, for use with BeginScope
         /// </summary>
-        class Disposable : IDisposable
+        private class Disposable : IDisposable
         {
             public void Dispose()
             {
+                // nothing
             }
         }
 
@@ -55,7 +57,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public void Reset()
         {
             LastLogLevel = (LogLevel)(-1);
-            LastEventId = new EventId();
+            LastEventId = default;
             LastState = null;
             LastException = null;
             LastFormattedString = null;
