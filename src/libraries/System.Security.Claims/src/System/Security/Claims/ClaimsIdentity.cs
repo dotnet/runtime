@@ -705,7 +705,7 @@ namespace System.Security.Claims
                     {​​​​
                         return true;
                     }​​​​
-                    else if (claim.Value.Trim().StartsWith("[" && claim.Value.Trim().EndsWith("]")))
+                    else if (claim.Value.Trim().StartsWith("[") && claim.Value.Trim().EndsWith("]"))
                     {
                         try
                         {
