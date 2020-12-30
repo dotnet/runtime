@@ -158,7 +158,7 @@
 
   </Target>
 
-  <Target Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
+  <Target Condition="'$(EnableAggressiveTrimming)' == 'true'"
           Name="ConfigureTrimming"
           BeforeTargets="PrepareForILLink">
     <ItemGroup>
@@ -172,7 +172,9 @@
       <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' == '$(AssemblyName).dll')" >
         <TrimMode>copy</TrimMode>
       </ManagedAssemblyToLink>
-      <TrimmerRootAssembly Include="WasmTestRunner"/>
+      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'Android'" Include="AndroidTestRunner"/>
+      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'Browser'" Include="WasmTestRunner"/>
+      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'iOS'" Include="AppleTestRunner"/>
       <TrimmerRootAssembly Include="$(AssemblyName)"/>
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
     </ItemGroup>
