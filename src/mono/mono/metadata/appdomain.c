@@ -174,12 +174,6 @@ mono_class_get_appdomain_class (void)
 {
 	return mono_defaults.object_class;
 }
-
-MonoClass*
-mono_class_get_appdomain_setup_class (void)
-{
-	return mono_defaults.object_class;
-}
 #endif
 
 

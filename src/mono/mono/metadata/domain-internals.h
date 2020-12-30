@@ -52,10 +52,10 @@ G_BEGIN_DECLS
  */ 
 extern gboolean mono_dont_free_domains;
 
+#ifndef ENABLE_NETCORE
 /* This is a copy of System.AppDomainSetup */
 typedef struct {
 	MonoObject object;
-#ifndef ENABLE_NETCORE
 	MonoString *application_base;
 	MonoString *application_name;
 	MonoString *cache_path;
@@ -78,8 +78,8 @@ typedef struct {
 	MonoBoolean disallow_appbase_probe;
 	MonoArray *configuration_bytes;
 	MonoArray *serialized_non_primitives;
-#endif
 } MonoAppDomainSetup;
+#endif
 
 typedef struct _MonoJitInfoTable MonoJitInfoTable;
 typedef struct _MonoJitInfoTableChunk MonoJitInfoTableChunk;

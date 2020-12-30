@@ -296,8 +296,10 @@ struct _MonoAppDomain {
 /* Safely access System.AppDomain from native code */
 TYPED_HANDLE_DECL (MonoAppDomain);
 
+#ifndef ENABLE_NETCORE
 /* Safely access System.AppDomainSetup from native code.  (struct is in domain-internals.h) */
 TYPED_HANDLE_DECL (MonoAppDomainSetup);
+#endif
 
 typedef struct _MonoStringBuilder MonoStringBuilder;
 TYPED_HANDLE_DECL (MonoStringBuilder);
