@@ -259,7 +259,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 AddressFamily.Unspecified => 0,
                 AddressFamily.InterNetwork => 2,
                 AddressFamily.InterNetworkV6 => 23,
-                _ => throw new Exception($"Unsupported address family of '{_remoteEndPoint.AddressFamily}' for remote endpoint.")
+                _ => throw new Exception(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
             QuicExceptionHelpers.ThrowIfFailed(
