@@ -167,15 +167,21 @@ static GENERATE_GET_CLASS_WITH_CACHE (app_context, "System", "AppContext");
 
 #ifndef ENABLE_NETCORE
 GENERATE_GET_CLASS_WITH_CACHE (appdomain, MONO_APPDOMAIN_CLASS_NAME_SPACE, MONO_APPDOMAIN_CLASS_NAME);
+GENERATE_GET_CLASS_WITH_CACHE (appdomain_setup, MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE, MONO_APPDOMAIN_SETUP_CLASS_NAME);
 #else
 MonoClass*
 mono_class_get_appdomain_class (void)
 {
 	return mono_defaults.object_class;
 }
+
+MonoClass*
+mono_class_get_appdomain_setup_class (void)
+{
+	return mono_defaults.object_class;
+}
 #endif
 
-GENERATE_GET_CLASS_WITH_CACHE (appdomain_setup, MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE, MONO_APPDOMAIN_SETUP_CLASS_NAME);
 
 static MonoDomain *
 mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain);
@@ -1772,6 +1778,7 @@ mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assemb
 	return FALSE;
 }
 
+#ifndef ENABLE_NETCORE
 /*
  * LOCKING: Acquires the domain assemblies lock.
  */
@@ -1794,7 +1801,6 @@ set_domain_search_path (MonoDomain *domain)
 	 */
 	mono_domain_assemblies_lock (domain);
 
-#ifndef ENABLE_NETCORE
 	if (!MONO_BOOL (domain->setup))
 		goto exit;
 
@@ -1813,7 +1819,6 @@ set_domain_search_path (MonoDomain *domain)
 			goto exit;
 		}
 	}
-#endif
 	
 	if (domain->private_bin_path) {
 		if (search_path == NULL)
@@ -1924,6 +1929,7 @@ exit:
 	mono_domain_assemblies_unlock (domain);
 	HANDLE_FUNCTION_RETURN ();
 }
+#endif
 
 #ifdef DISABLE_SHADOW_COPY
 gboolean

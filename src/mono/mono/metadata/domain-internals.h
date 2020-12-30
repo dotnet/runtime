@@ -40,8 +40,6 @@
 #define MONO_APPDOMAIN_CLASS_NAME_SPACE "System"
 #define MONO_APPDOMAIN_CLASS_NAME "Object"
 */
-#define MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE "Mono"
-#define MONO_APPDOMAIN_SETUP_CLASS_NAME "MonoDomainSetup"
 #endif
 
 G_BEGIN_DECLS
@@ -57,6 +55,7 @@ extern gboolean mono_dont_free_domains;
 /* This is a copy of System.AppDomainSetup */
 typedef struct {
 	MonoObject object;
+#ifndef ENABLE_NETCORE
 	MonoString *application_base;
 	MonoString *application_name;
 	MonoString *cache_path;
@@ -79,6 +78,7 @@ typedef struct {
 	MonoBoolean disallow_appbase_probe;
 	MonoArray *configuration_bytes;
 	MonoArray *serialized_non_primitives;
+#endif
 } MonoAppDomainSetup;
 
 typedef struct _MonoJitInfoTable MonoJitInfoTable;

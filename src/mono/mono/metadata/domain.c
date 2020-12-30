@@ -1024,11 +1024,11 @@ void
 mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 {
 	if (!mono_runtime_get_no_exec () && !domain->entry_assembly && assembly) {
-		gchar *str;
-		ERROR_DECL (error);
 
 		domain->entry_assembly = assembly;
 #ifndef ENABLE_NETCORE
+		gchar *str;
+		ERROR_DECL (error);
 		/* Domains created from another domain already have application_base and configuration_file set */
 		if (domain->setup->application_base == NULL) {
 			MonoString *basedir = mono_string_new_checked (domain, assembly->basedir, error);
