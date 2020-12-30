@@ -3375,10 +3375,4 @@
             <Issue>https://github.com/dotnet/runtime/issues/45568 (workitem PayloadGroup0)</Issue>
         </ExcludeList>
     </ItemGroup>
-
-    <ItemGroup Condition=" $(TargetOS) == 'iOS' " >
-        <ExcludeList Include = "$(XunitTestBinBase)/FunctionalTests/**">
-            <Issue>These functional tests use the library test infrastructure.</Issue>
-        </ExcludeList>
-    </ItemGroup>
 </Project>
