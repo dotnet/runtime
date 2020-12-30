@@ -62,7 +62,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             _connected = true;
 
             SetCallbackHandler();
-            SetIdleTimeout(TimeSpan.FromSeconds(120));
         }
 
         // constructor for outbound connections
