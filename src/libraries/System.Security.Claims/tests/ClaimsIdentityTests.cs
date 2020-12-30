@@ -506,6 +506,24 @@ namespace System.Security.Claims
             Assert.False(id.HasClaim("claim_type", "Xclaim_value"));
         }
 
+        [Fact]
+        public void HasClaim_TypeArrayValue()
+        {
+            var id = new ClaimsIdentity(
+            new[] {
+                new Claim ("claim_type", "claim_value"),
+                new Claim ("multi_value_type", "[\"claim_value1\",\"claim_value2\"]")
+            }, "test_authority");
+
+            Assert.True(id.HasClaim("multi_value_type", "claim_value1"));
+            Assert.True(id.HasClaim("multi_value_type", "claim_value2"));
+            Assert.True(id.HasClaim("multi_Value_tyPe", "claim_value1"));
+            Assert.True(id.HasClaim("mUlti_vaLue_type", "claim_value2"));
+            Assert.False(id.HasClaim("multi_value_type", "cLaIm_VaLuE1"));
+            Assert.False(id.HasClaim("Xmulti_value_type", "claim_value1"));
+            Assert.False(id.HasClaim("multi_value_type", "Xclaim_value1"));
+        }
+
         [Serializable]
         private sealed class CustomClaimsIdentity : ClaimsIdentity, ISerializable
         {
