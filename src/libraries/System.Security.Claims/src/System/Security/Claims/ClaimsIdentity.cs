@@ -718,11 +718,11 @@ namespace System.Security.Claims
                                     return true;
                                 }
                             }
-                        }​​​
+                        }
                         catch (JsonException)
                         {
                             return false;
-                        }​
+                        }
                     }
                 }
             }
