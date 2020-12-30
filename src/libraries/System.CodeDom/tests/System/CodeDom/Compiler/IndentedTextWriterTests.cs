@@ -467,7 +467,7 @@ namespace System.CodeDom.Compiler.Tests
             await callWriteLineAsync(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteLineAsync), indicator.LastCalledMethod);
-            Assert.Equal($"{expected}", indicator.GetStringBuilder().ToString());
+            Assert.Equal(expected, indicator.GetStringBuilder().ToString());
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -486,6 +486,25 @@ namespace System.CodeDom.Compiler.Tests
 
             Assert.Equal(nameof(IndentedTextWriter.WriteLineAsync), indicator.LastCalledMethod);
             Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Fact]
+        public async Task ParameterlessWriteLineAsync_IndentsLinesAfterIndentIsSet()
+        {
+            var sw = new StringWriter();
+            var itw = new IndentedTextWriter(sw, TabString);
+            itw.NewLine = NewLine;
+            await itw.WriteLineAsync("Wibble");
+            await itw.WriteAsync("Wobble");
+            itw.Indent++;
+            await itw.WriteLineAsync();
+            await itw.WriteLineAsync("Wooble");
+            await itw.WriteLineAsync("Qwux");
+
+            string expected = $"Wibble{NewLine}Wobble{NewLine}{TabString}Wooble{NewLine}{TabString}Qwux{NewLine}";
+
+            Assert.Equal(expected, sw.GetStringBuilder().ToString());
         }
 
         [Theory]
