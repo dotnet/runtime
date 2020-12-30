@@ -512,8 +512,8 @@ namespace System.Security.Claims
             var id = new ClaimsIdentity(
             new[] {
                 new Claim ("claim_type", "claim_value"),
+                new Claim ("multi_value_type", "[\"claim_value1\",\"claim_value2\"]"),
                 new Claim ("claim_type_with_symbol", "[claim_value]"),
-                new Claim ("multi_value_type", "[\"claim_value1\",\"claim_value2\"]")
             }, "test_authority");
 
             Assert.True(id.HasClaim("claim_type_with_symbol", "[claim_value]"));

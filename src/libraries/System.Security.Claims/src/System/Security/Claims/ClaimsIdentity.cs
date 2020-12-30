@@ -726,7 +726,6 @@ namespace System.Security.Claims
                             }
                             catch (JsonException)
                             {
-                                return false;
                             }
                         }
                     }
