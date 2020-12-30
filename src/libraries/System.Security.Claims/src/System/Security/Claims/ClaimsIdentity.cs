@@ -701,27 +701,33 @@ namespace System.Security.Claims
             {
                 if (claim != null && string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (string.Equals(claim.Value, value, StringComparison.Ordinal))
+                    if (claim.Value != null)
                     {
-                        return true;
-                    }
-                    else if (claim.Value.Trim().StartsWith("[") && claim.Value.Trim().EndsWith("]"))
-                    {
-                        try
+                        if (string.Equals(claim.Value, value, StringComparison.Ordinal))
                         {
-                            string[] claimValues = JsonSerializer.Deserialize<string[]>(claim.Value.ToString());
-
-                            foreach (string claimValue in claimValues)
+                            return true;
+                        }
+                        else if (claim.Value.Trim().StartsWith("[") && claim.Value.Trim().EndsWith("]"))
+                        {
+                            try
                             {
-                                if (string.Equals(claimValue, value, StringComparison.Ordinal))
+                                string[]? claimValues = JsonSerializer.Deserialize<string[]>(claim.Value.ToString());
+
+                                if (claimValues != null)
                                 {
-                                    return true;
+                                    foreach (string claimValue in claimValues)
+                                    {
+                                        if (string.Equals(claimValue, value, StringComparison.Ordinal))
+                                        {
+                                            return true;
+                                        }
+                                    }
                                 }
                             }
-                        }
-                        catch (JsonException)
-                        {
-                            return false;
+                            catch (JsonException)
+                            {
+                                return false;
+                            }
                         }
                     }
                 }

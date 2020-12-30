@@ -18,5 +18,6 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Text.Json" />
   </ItemGroup>
 </Project>
