@@ -653,9 +653,11 @@ mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_f
 	MONO_HANDLE_SET (setup, configuration_file, config_file);
 #endif
 
-	MonoAppDomainHandle ad = MONO_HANDLE_CAST (MonoAppDomain, NULL_HANDLE);
+	MonoAppDomainHandle ad;
 #ifndef ENABLE_NETCORE
 	ad = mono_domain_create_appdomain_internal (friendly_name, setup, error);
+#else
+	ad = MONO_HANDLE_CAST (MonoAppDomain, NULL_HANDLE);
 #endif
 	goto_if_nok (error, leave);
 
