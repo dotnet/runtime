@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <OutputPath>$(AssemblyBinDirOutputPath)</OutputPath>
+    <OutputPath>$(RepoRoot)artifacts\bin\$(TestName)</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
@@ -9,7 +9,7 @@
     <TargetOS>Browser</TargetOS>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</AppDir> 
+    <AppDir>$(OutputPath)\$(Configuration)\AppBundle\</AppDir> 
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>

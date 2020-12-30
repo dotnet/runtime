@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <Import Project="..\..\common.props" />
-
   <PropertyGroup>
     <RunAOTCompilation>false</RunAOTCompilation>
+    <TestName>Wasm.Interpreter.Console.Test</TestName>
+    <WasmModeSpecificPath>\interpreter\console\</WasmModeSpecificPath>
   </PropertyGroup>
+
+  <Import Project="..\..\common.props" />
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
@@ -20,7 +21,7 @@
     <PropertyGroup>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
-      <WasmMainAssemblyPath>$(PublishDir)Wasm.Interpreter.Console.Test.dll</WasmMainAssemblyPath>
+      <WasmMainAssemblyPath>$(PublishDir)$(TestName).dll</WasmMainAssemblyPath>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
     <ItemGroup>
@@ -32,19 +33,7 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
 
-  <Target Name="CopySampleAppToHelixTestDir" AfterTargets="Build" DependsOnTargets="Publish" >
-    <PropertyGroup>
-      <!-- Helix properties -->
-      <!-- AnyCPU as Platform-->
-      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
-      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
-      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/interpreter/console/</HelixArchiveRunOnlyAppsDir>
-      <ZippedApp>$(OutputPath)/Wasm.Interpreter.Console.Test.zip</ZippedApp>
-    </PropertyGroup>
-    <ZipDirectory SourceDirectory="$(AppDir)" DestinationFile="$(ZippedApp)" />
-    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
-  </Target>
+  <Import Project="..\..\common.targets" />
 
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>

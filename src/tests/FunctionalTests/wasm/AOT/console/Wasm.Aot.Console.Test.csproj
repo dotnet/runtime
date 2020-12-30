@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <Import Project="..\..\common.props" />
-
   <PropertyGroup>
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestName>Wasm.Aot.Console.Test</TestName>
+    <WasmModeSpecificPath>\aot\console\</WasmModeSpecificPath>
   </PropertyGroup>
+
+  <Import Project="..\..\common.props" />
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
@@ -34,22 +34,7 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
 
-  <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
-          AfterTargets="Build"
-          DependsOnTargets="Publish" >
-    <PropertyGroup>
-      <!-- Helix properties -->
-      <!-- AnyCPU as Platform-->
-      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
-      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
-      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/aot/console/</HelixArchiveRunOnlyAppsDir>
-      <ZippedApp>$(OutputPath)/$(TestName).zip</ZippedApp>
-    </PropertyGroup>
-    <ZipDirectory SourceDirectory="$(AppDir)" DestinationFile="$(ZippedApp)" />
-    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
-  </Target>
+  <Import Project="..\..\common.targets" />
 
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>
