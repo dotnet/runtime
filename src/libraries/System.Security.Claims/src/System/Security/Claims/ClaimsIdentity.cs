@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
+using System.Text.Json;
 
 namespace System.Security.Claims
 {
