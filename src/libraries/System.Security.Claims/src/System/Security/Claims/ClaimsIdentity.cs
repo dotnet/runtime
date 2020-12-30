@@ -699,7 +699,7 @@ namespace System.Security.Claims
 
             foreach (Claim claim in Claims)
             {
-                if (claim != null && string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
                 {
                     if (claim.Value != null)
                     {
