@@ -512,13 +512,18 @@ namespace System.Security.Claims
             var id = new ClaimsIdentity(
             new[] {
                 new Claim ("claim_type", "claim_value"),
+                new Claim ("claim_type_with_symbol", "[claim_value]"),
                 new Claim ("multi_value_type", "[\"claim_value1\",\"claim_value2\"]")
             }, "test_authority");
 
+            Assert.True(id.HasClaim("claim_type_with_symbol", "[claim_value]"));
+            Assert.True(id.HasClaim("Claim_type_with_symbOl", "[claim_value]"));
             Assert.True(id.HasClaim("multi_value_type", "claim_value1"));
             Assert.True(id.HasClaim("multi_value_type", "claim_value2"));
             Assert.True(id.HasClaim("multi_Value_tyPe", "claim_value1"));
             Assert.True(id.HasClaim("mUlti_vaLue_type", "claim_value2"));
+            Assert.False(id.HasClaim("claim_type_with_symbol", "claim_value1"));
+            Assert.False(id.HasClaim("claim_type_with_symbol", "[clAim_vaLue]"));
             Assert.False(id.HasClaim("multi_value_type", "cLaIm_VaLuE1"));
             Assert.False(id.HasClaim("Xmulti_value_type", "claim_value1"));
             Assert.False(id.HasClaim("multi_value_type", "Xclaim_value1"));
