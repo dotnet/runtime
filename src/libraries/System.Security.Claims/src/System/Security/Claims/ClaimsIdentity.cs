@@ -698,13 +698,13 @@ namespace System.Security.Claims
             }
 
             foreach (Claim claim in Claims)
-            {​​​​
+            {
                 if (claim != null && string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
                 {
                     if (string.Equals(claim.Value, value, StringComparison.Ordinal))
-                    {​​​​
+                    {
                         return true;
-                    }​​​​
+                    }
                     else if (claim.Value.Trim().StartsWith("[") && claim.Value.Trim().EndsWith("]"))
                     {
                         try
@@ -712,19 +712,19 @@ namespace System.Security.Claims
                             string[] claimValues = JsonSerializer.Deserialize<string[]>(claim.Value.ToString());
 
                             foreach (string claimValue in claimValues)
-                            {​​​​
+                            {
                                 if (string.Equals(claimValue, value, StringComparison.Ordinal))
-                                {​​​​
+                                {
                                     return true;
-                                }​​​​
-                            }​​​​
+                                }
+                            }
                         }​​​
                         catch (JsonException)
                         {
                             return false;
                         }​
-                    }​​​​
-                }​​​​
+                    }
+                }
             }
             return false;
         }
