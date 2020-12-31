@@ -7065,6 +7065,53 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				addr = mono_emit_jit_icall (cfg, mono_get_native_calli_wrapper, args);
 			}
 
+			if (fsig->pinvoke && method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE) {
+				gboolean skip_gc_trans = FALSE; /* TODO: unmanaged[SuppressGCTransition] call conv */
+				if (!skip_gc_trans) {
+					/* Call the wrapper that will do the GC transition instead */
+					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
+					/* box the indirect function ptr */
+					/* FIXME: it would be nice if the wrapper didn't require a boxed argument */
+
+					MONO_INST_NEW (cfg, ins, OP_BOX);
+					ins->type = STACK_OBJ;
+					ins->klass = mono_defaults.int_class;
+					ins->sreg1 = addr->dreg;
+					ins->dreg = alloc_dreg (cfg, STACK_PTR);
+					MONO_ADD_INS (cfg->cbb, ins);
+
+					fsig = mono_method_signature_internal (wrapper);
+
+					n = fsig->param_count - 1; /* wrapper has extra fnptr param */
+
+					CHECK_STACK (n);
+
+					/* move the args to allow room for 'this' in the first position */
+					while (n--) {
+						--sp;
+						sp [1] = sp [0];
+					}
+
+					sp[0] = ins; /* n+1 args, first arg is the boxed address of the indirect method to call */
+
+					g_assert (!fsig->hasthis && !fsig->pinvoke);
+
+					gboolean inline_wrapper = cfg->opt & MONO_OPT_INLINE || cfg->compile_aot;
+					if (inline_wrapper) {
+						int costs = inline_method (cfg, wrapper, fsig, sp, ip, cfg->real_offset, TRUE);
+						CHECK_CFG_EXCEPTION;
+						g_assert (costs > 0);
+						cfg->real_offset += 5; /* FIXME: why? */
+						inline_costs += costs;
+						/* FIXME: calli_end expects ins to be the result of the call. */
+						ins = sp[0]; /*FIXME: is that the right instruction?*/
+					} else {
+						ins = mono_emit_method_call (cfg, wrapper, /*args*/sp, NULL);
+					}
+					goto calli_end; /* FIXME? yes? */
+				}
+			}
+
 			n = fsig->param_count + fsig->hasthis;
 
 			CHECK_STACK (n);
