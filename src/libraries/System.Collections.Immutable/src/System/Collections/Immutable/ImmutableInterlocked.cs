@@ -347,6 +347,10 @@ namespace System.Collections.Immutable
                 if (priorCollection.TryGetValue(key, out oldValue!))
                 {
                     newValue = updateValueFactory(key, oldValue);
+                    if (priorCollection.ValueComparer.Equals(oldValue, newValue))
+                    {
+                        return oldValue;
+                    }
                 }
                 else
                 {
@@ -390,6 +394,10 @@ namespace System.Collections.Immutable
                 if (priorCollection.TryGetValue(key, out oldValue!))
                 {
                     newValue = updateValueFactory(key, oldValue);
+                    if (priorCollection.ValueComparer.Equals(oldValue, newValue))
+                    {
+                        return oldValue;
+                    }
                 }
                 else
                 {
