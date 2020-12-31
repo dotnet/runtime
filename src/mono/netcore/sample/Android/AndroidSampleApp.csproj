@@ -4,15 +4,13 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <!-- <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier> -->
+    <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
-    <AndroidAppBuilderTasksAssemblyPath>/Users/steve/net5/desktop-runtime/artifacts/bin/AndroidAppBuilder/publish/AndroidAppBuilder.dll</AndroidAppBuilderTasksAssemblyPath>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <!--
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <RuntimePack>
@@ -21,7 +19,7 @@
     </ItemGroup>
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
-  -->
+
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
 
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">

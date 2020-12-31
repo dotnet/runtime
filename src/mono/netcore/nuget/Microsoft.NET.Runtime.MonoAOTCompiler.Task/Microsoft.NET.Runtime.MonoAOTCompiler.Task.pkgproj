@@ -7,7 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_AOTCompilerTaskFile Include="$(ArtifactsDir)bin\MonoAOTCompiler\$(Configuration)\$(NetCoreAppToolCurrent)\MonoAOTCompiler.dll" />
+    <_AOTCompilerTaskFile Include="$(MonoAOTCompilerTasksAssemblyPath)" />
     <_SDKPropsFile Include="Sdk\Sdk.props" />
 
     <PackageFile Include="@(_AOTCompilerTaskFile)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
