@@ -2384,6 +2384,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                                             false, // not volatile
                                             true); // copyBlock
             loAsg->gtFlags |= ((simdTree->gtFlags | dstAddrLo->gtFlags) & GTF_ALL_EFFECT);
+            loAsg->lclReadWriteMap.Merge(simdTree, dstAddrLo);
 
             // Widen the upper half and assign it to dstAddrHi.
             simdTree        = gtNewSIMDNode(simdType, dupOp1, nullptr, SIMDIntrinsicWidenHi, baseType, size);
@@ -2393,6 +2394,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                                             false, // not volatile
                                             true); // copyBlock
             hiAsg->gtFlags |= ((simdTree->gtFlags | dstAddrHi->gtFlags) & GTF_ALL_EFFECT);
+            hiAsg->lclReadWriteMap.Merge(simdTree, dstAddrHi);
 
             retVal = gtNewOperNode(GT_COMMA, simdType, loAsg, hiAsg);
         }
@@ -2433,6 +2435,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                                 false, // not volatile
                                 true); // copyBlock
         retVal->gtFlags |= ((simdTree->gtFlags | copyBlkDst->gtFlags) & GTF_ALL_EFFECT);
+        retVal->lclReadWriteMap.Merge(simdTree, copyBlkDst);
     }
 
     return retVal;

@@ -9266,6 +9266,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 
         if (tree->gtFlags & GTF_ASG)
         {
+            assert(tree->lclReadWriteMap.HasWrite());
             chars += printf("[ASG]");
         }
         if (tree->gtFlags & GTF_CALL)

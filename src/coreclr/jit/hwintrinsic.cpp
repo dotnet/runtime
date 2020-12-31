@@ -1147,6 +1147,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // A MemoryStore operation is an assignment
                 retNode->gtFlags |= GTF_ASG;
+                retNode->lclReadWriteMap.AddGlobalWrite();
             }
 
             // This operation contains an implicit indirection

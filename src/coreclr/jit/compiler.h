@@ -5438,7 +5438,10 @@ public:
 
     void fgDebugCheckFlags(GenTree* tree);
     void fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags);
-    void fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsigned chkFlags);
+    void fgDebugCheckFlagsHelper(GenTree*                 tree,
+                                 unsigned                 treeFlags,
+                                 unsigned                 chkFlags,
+                                 GenTree::LclReadWriteMap chkLclReadWriteMap);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfileData();
 #endif

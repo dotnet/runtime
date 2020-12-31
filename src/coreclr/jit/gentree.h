@@ -649,6 +649,108 @@ public:
 
     unsigned gtFlags; // see GTF_xxxx below
 
+    struct LclReadWriteMap
+    {
+    private:
+        unsigned reads;
+        unsigned writes;
+
+        const static unsigned MOD = sizeof(reads) * 8 - 1;
+
+        static void AddLcl(unsigned* map, unsigned lclNum)
+        {
+            *map |= 1 << (lclNum % MOD);
+        }
+
+        static void AddGlobal(unsigned* map)
+        {
+            *map |= 1 << MOD;
+        }
+
+        static void AddMap(unsigned* map, unsigned otherMap)
+        {
+            *map |= otherMap;
+        }
+
+    public:
+        LclReadWriteMap()
+        {
+            Clear();
+        }
+
+        void AddLclRead(unsigned lclNum)
+        {
+            AddLcl(&reads, lclNum);
+        }
+
+        void AddLclWrite(unsigned lclNum)
+        {
+            AddLcl(&writes, lclNum);
+        }
+
+        void AddGlobalRead()
+        {
+            AddGlobal(&reads);
+        }
+
+        void AddGlobalWrite()
+        {
+            AddGlobal(&writes);
+        }
+
+        void Merge(const GenTree* tree)
+        {
+            AddMap(&reads, tree->lclReadWriteMap.reads);
+            AddMap(&writes, tree->lclReadWriteMap.writes);
+        }
+
+        template <typename... T>
+        void Merge(const GenTree* tree, T... rest)
+        {
+            Merge(tree);
+            Merge(rest...);
+        }
+
+        void Merge(LclReadWriteMap other)
+        {
+            AddMap(&reads, other.reads);
+            AddMap(&writes, other.writes);
+        }
+
+        void Clear()
+        {
+            reads  = 0;
+            writes = 0;
+        }
+
+        bool HasConflict(LclReadWriteMap other) const
+        {
+            if ((writes | other.writes) != 0)
+            {
+                // WW conflict.
+                return true;
+            }
+            if ((reads | other.writes) != 0)
+            {
+                // RW conflict.
+                return true;
+            }
+            if ((writes | other.reads) != 0)
+            {
+                // WR conflict.
+                return true;
+            }
+            return false;
+        }
+
+        bool HasWrite() const
+        {
+            return writes != 0;
+        }
+    };
+
+    LclReadWriteMap lclReadWriteMap;
+
 #if defined(DEBUG)
     unsigned gtDebugFlags; // see GTF_DEBUG_xxx below
 #endif                     // defined(DEBUG)
@@ -2828,6 +2930,7 @@ protected:
         if (op1 != nullptr)
         { // Propagate effects flags from child.
             gtFlags |= op1->gtFlags & GTF_ALL_EFFECT;
+            lclReadWriteMap.Merge(op1);
         }
     }
 
@@ -2856,6 +2959,7 @@ struct GenTreeOp : public GenTreeUnOp
         if (op2 != nullptr)
         {
             gtFlags |= op2->gtFlags & GTF_ALL_EFFECT;
+            lclReadWriteMap.Merge(op2);
         }
     }
 
@@ -3570,9 +3674,11 @@ struct GenTreeArgList : public GenTreeOp
         assert(OperIsAnyList(oper));
         assert((arg != nullptr) && arg->IsValidCallArgument());
         gtFlags |= arg->gtFlags & GTF_ALL_EFFECT;
+        lclReadWriteMap.Merge(arg);
         if (rest != nullptr)
         {
             gtFlags |= rest->gtFlags & GTF_ALL_EFFECT;
+            lclReadWriteMap.Merge(rest);
         }
     }
 };
@@ -4606,11 +4712,15 @@ struct GenTreeCmpXchg : public GenTree
         // There's no reason to do a compare-exchange on a local location, so we'll assume that all of these
         // have global effects.
         gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+        lclReadWriteMap.AddGlobalWrite();
 
         // Merge in flags from operands
         gtFlags |= gtOpLocation->gtFlags & GTF_ALL_EFFECT;
         gtFlags |= gtOpValue->gtFlags & GTF_ALL_EFFECT;
         gtFlags |= gtOpComparand->gtFlags & GTF_ALL_EFFECT;
+        lclReadWriteMap.Merge(gtOpLocation);
+        lclReadWriteMap.Merge(gtOpValue);
+        lclReadWriteMap.Merge(gtOpComparand);
     }
 #if DEBUGGABLE_GENTREE
     GenTreeCmpXchg() : GenTree()
@@ -4926,6 +5036,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+            lclReadWriteMap.AddGlobalWrite();
         }
     }
 
@@ -4937,6 +5048,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+            lclReadWriteMap.AddGlobalWrite();
         }
     }
 
@@ -5112,6 +5224,9 @@ struct GenTreeBoundsChk : public GenTree
         gtFlags |= (index->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= (arrLen->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= GTF_EXCEPT;
+
+        lclReadWriteMap.Merge(index);
+        lclReadWriteMap.Merge(arrLen);
     }
 #if DEBUGGABLE_GENTREE
     GenTreeBoundsChk() : GenTree()
@@ -5157,10 +5272,12 @@ struct GenTreeArrElem : public GenTree
         : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize), gtArrElemType(elemType)
     {
         gtFlags |= (arr->gtFlags & GTF_ALL_EFFECT);
+        lclReadWriteMap.Merge(arr);
         for (unsigned char i = 0; i < rank; i++)
         {
             gtArrInds[i] = inds[i];
             gtFlags |= (inds[i]->gtFlags & GTF_ALL_EFFECT);
+            lclReadWriteMap.Merge(inds[i]);
         }
         gtFlags |= GTF_EXCEPT;
     }
@@ -5225,7 +5342,9 @@ struct GenTreeArrIndex : public GenTreeOp
         , gtArrRank(arrRank)
         , gtArrElemType(elemType)
     {
-        gtFlags |= GTF_EXCEPT;
+        gtFlags |= GTF_EXCEPT | arrObj->gtFlags | indexExpr->gtFlags;
+        lclReadWriteMap.Merge(arrObj);
+        lclReadWriteMap.Merge(indexExpr);
     }
 #if DEBUGGABLE_GENTREE
 protected:
@@ -5294,7 +5413,10 @@ struct GenTreeArrOffs : public GenTree
         , gtArrElemType(elemType)
     {
         assert(index->gtFlags & GTF_EXCEPT);
-        gtFlags |= GTF_EXCEPT;
+        gtFlags |= GTF_EXCEPT | offset->gtFlags | index->gtFlags | arrObj->gtFlags;
+        lclReadWriteMap.Merge(offset);
+        lclReadWriteMap.Merge(index);
+        lclReadWriteMap.Merge(arrObj);
     }
 #if DEBUGGABLE_GENTREE
     GenTreeArrOffs() : GenTree()
@@ -5519,6 +5641,7 @@ public:
         assert(OperIsBlk(oper));
         assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
+        lclReadWriteMap.Merge(addr);
     }
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
@@ -5533,6 +5656,8 @@ public:
         assert((layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= (data->gtFlags & GTF_ALL_EFFECT);
+        lclReadWriteMap.Merge(addr);
+        lclReadWriteMap.Merge(data);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -5596,6 +5721,7 @@ public:
         // Conservatively the 'addr' could be null or point into the global heap.
         gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
         gtFlags |= (dynamicSize->gtFlags & GTF_ALL_EFFECT);
+        lclReadWriteMap.Merge(dynamicSize);
     }
 
 #if DEBUGGABLE_GENTREE

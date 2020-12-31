@@ -3465,6 +3465,13 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 {
     /* No good if the expression contains side effects or if it was marked as DONT CSE */
 
+    // TODO-asgTracking: uncomment this, right now it will fail because CALL does not propogate ASG from arg setup nodes.
+    //if (tree->lclReadWriteMap.HasWrite())
+    //{
+    //    assert((tree->gtFlags & GTF_ASG) != 0);
+    //    return false;
+    //}
+
     if (tree->gtFlags & (GTF_ASG | GTF_DONT_CSE))
     {
         return false;

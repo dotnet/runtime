@@ -470,6 +470,8 @@ void Compiler::optAddCopies()
 
             tree->gtFlags |= (newAsgn->gtFlags & GTF_ALL_EFFECT);
             tree->gtFlags |= (copyAsgn->gtFlags & GTF_ALL_EFFECT);
+            tree->lclReadWriteMap.Merge(newAsgn);
+            tree->lclReadWriteMap.Merge(copyAsgn);
         }
 
 #ifdef DEBUG

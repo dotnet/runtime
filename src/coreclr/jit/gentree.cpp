@@ -791,6 +791,7 @@ void GenTreeFieldList::AddField(Compiler* compiler, GenTree* node, unsigned offs
 {
     m_uses.AddUse(new (compiler, CMK_ASTNode) Use(node, offset, type));
     gtFlags |= node->gtFlags & GTF_ALL_EFFECT;
+    lclReadWriteMap.Merge(node);
 }
 
 void GenTreeFieldList::AddFieldLIR(Compiler* compiler, GenTree* node, unsigned offset, var_types type)
@@ -802,6 +803,7 @@ void GenTreeFieldList::InsertField(Compiler* compiler, Use* insertAfter, GenTree
 {
     m_uses.InsertUse(insertAfter, new (compiler, CMK_ASTNode) Use(node, offset, type));
     gtFlags |= node->gtFlags & GTF_ALL_EFFECT;
+    lclReadWriteMap.Merge(node);
 }
 
 void GenTreeFieldList::InsertFieldLIR(
@@ -4173,6 +4175,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // In case op2 assigns to a local var that is used in op1Val, we have to evaluate op1Val first.
                     if (op2->gtFlags & GTF_ASG)
                     {
+                        assert(op2->lclReadWriteMap.HasWrite());
                         break;
                     }
 
@@ -6223,7 +6226,9 @@ GenTree* Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType, u
 
 GenTreeCall* Compiler::gtNewIndCallNode(GenTree* addr, var_types type, GenTreeCall::Use* args, IL_OFFSETX ilOffset)
 {
-    return gtNewCallNode(CT_INDIRECT, (CORINFO_METHOD_HANDLE)addr, type, args, ilOffset);
+    GenTreeCall* call = gtNewCallNode(CT_INDIRECT, (CORINFO_METHOD_HANDLE)addr, type, args, ilOffset);
+    call->gtFlags |= GTF_EXCEPT | (addr->gtFlags & GTF_GLOB_EFFECT);
+    return call;
 }
 
 GenTreeCall* Compiler::gtNewCallNode(
@@ -6235,6 +6240,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
     {
         node->gtFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
+        node->lclReadWriteMap.Merge(use.GetNode());
     }
     node->gtCallType    = callType;
     node->gtCallMethHnd = callHnd;
@@ -6600,7 +6606,7 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 {
     /* Mark the target as being assigned */
 
-    if ((dst->gtOper == GT_LCL_VAR) || (dst->OperGet() == GT_LCL_FLD))
+    if (dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         dst->gtFlags |= GTF_VAR_DEF;
         if (dst->IsPartialLclFld(this))
@@ -6618,6 +6624,16 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
     /* Mark the expression as containing an assignment */
 
     asg->gtFlags |= GTF_ASG;
+    if (dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        unsigned lclNum = dst->AsLclVarCommon()->GetLclNum();
+        asg->lclReadWriteMap.AddLclWrite(lclNum);
+    }
+    else
+    {
+        // TODO-asgTracking: what do we assign here?
+        asg->lclReadWriteMap.AddGlobalWrite();
+    }
 
     return asg;
 }
@@ -7061,11 +7077,10 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
         }
     }
 
-    // Propagate all effect flags from children
-    result->gtFlags |= dst->gtFlags & GTF_ALL_EFFECT;
-    result->gtFlags |= result->AsOp()->gtOp2->gtFlags & GTF_ALL_EFFECT;
-
-    result->gtFlags |= (dst->gtFlags & GTF_EXCEPT) | (srcOrFillVal->gtFlags & GTF_EXCEPT);
+    // Check that  the flags from the children were propogated.
+    assert((result->gtFlags & dst->gtFlags & GTF_ALL_EFFECT) == (dst->gtFlags & GTF_ALL_EFFECT));
+    assert((result->gtFlags & srcOrFillVal->gtFlags & GTF_ALL_EFFECT) == (srcOrFillVal->gtFlags & GTF_ALL_EFFECT));
+    // result->lclReadWriteMap.Merge(dst, srcOrFillVal);
 
     if (isVolatile)
     {
@@ -7846,14 +7861,16 @@ GenTree* Compiler::gtCloneExpr(
         addFlags &= ~GTF_NODE_MASK;
 #endif
 
-        // Effects flags propagate upwards.
+        // Check that the effects flags were propagate upwards.
         if (copy->AsOp()->gtOp1 != nullptr)
         {
-            copy->gtFlags |= (copy->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
+            unsigned op1Flags = copy->AsOp()->gtGetOp1()->gtFlags;
+            assert(((copy->gtFlags & op1Flags) & GTF_ALL_EFFECT) == (op1Flags & GTF_ALL_EFFECT));
         }
         if (copy->gtGetOp2IfPresent() != nullptr)
         {
-            copy->gtFlags |= (copy->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
+            unsigned op2Flags = copy->AsOp()->gtGetOp2()->gtFlags;
+            assert(((copy->gtFlags & op2Flags) & GTF_ALL_EFFECT) == (op2Flags & GTF_ALL_EFFECT));
         }
 
         goto DONE;
@@ -8012,10 +8029,18 @@ DONE:
         }
 
         copy->gtFlags |= addFlags;
+        if ((addFlags & GTF_ASG) != 0)
+        {
+            assert((tree->gtFlags& GTF_ASG) != 0);
+            copy->lclReadWriteMap.Merge(tree);
+        }
+
+        
 
         // Update side effect flags since they may be different from the source side effect flags.
         // For example, we may have replaced some locals with constants and made indirections non-throwing.
         gtUpdateNodeSideEffects(copy);
+        copy->gtFlags &= (addFlags | tree->gtFlags);
     }
 
     /* GTF_COLON_COND should be propagated from 'tree' to 'copy' */
@@ -8182,6 +8207,7 @@ GenTreeCall* Compiler::gtCloneCandidateCall(GenTreeCall* call)
     // There is some common post-processing in gtCloneExpr that we reproduce
     // here, for the fields that make sense for candidate calls.
     result->gtFlags |= call->gtFlags;
+    result->lclReadWriteMap.Merge(call);
 
 #if defined(DEBUG)
     result->gtDebugFlags |= (call->gtDebugFlags & ~GTF_DEBUG_NODE_MASK);
@@ -8370,10 +8396,13 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
 
     if (tree->OperRequiresAsgFlag())
     {
+        // TODO-asgTracking: find and set only one that is required here.
+        assert(tree->lclReadWriteMap.HasWrite());
         tree->gtFlags |= GTF_ASG;
     }
     else
     {
+        tree->lclReadWriteMap.Clear();
         tree->gtFlags &= ~GTF_ASG;
     }
 
@@ -8408,6 +8437,7 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
         if (child != nullptr)
         {
             tree->gtFlags |= (child->gtFlags & GTF_ALL_EFFECT);
+            tree->lclReadWriteMap.Merge(child);
         }
     }
 }
@@ -8448,6 +8478,7 @@ Compiler::fgWalkResult Compiler::fgUpdateSideEffectsPost(GenTree** pTree, fgWalk
     if (parent != nullptr)
     {
         parent->gtFlags |= (tree->gtFlags & GTF_ALL_EFFECT);
+        parent->lclReadWriteMap.Merge(tree);
     }
     return WALK_CONTINUE;
 }
@@ -12514,6 +12545,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
                     // Change the GT_COLON into a GT_COMMA node with the side-effects
                     op2->ChangeOper(GT_COMMA);
                     op2->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
+                    op2->lclReadWriteMap.Merge(sideEffList);
                     op2->AsOp()->gtOp1 = sideEffList;
                     return op2;
                 }
@@ -15729,6 +15761,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, unsigned flags)
 {
     if (flags & GTF_ASG)
     {
+        // TODO-asgTracking: check this issue.
         // TODO-Cleanup: This only checks for GT_ASG but according to OperRequiresAsgFlag there
         // are many more opers that are considered to have an assignment side effect: atomic ops
         // (GT_CMPXCHG & co.), GT_MEMORYBARRIER (not classified as an atomic op) and HW intrinsic
@@ -15860,10 +15893,6 @@ GenTree* Compiler::gtBuildCommaList(GenTree* list, GenTree* expr)
     {
         // Create a GT_COMMA that appends 'expr' in front of the remaining set of expressions in (*list)
         GenTree* result = gtNewOperNode(GT_COMMA, TYP_VOID, expr, list);
-
-        // Set the flags in the comma node
-        result->gtFlags |= (list->gtFlags & GTF_ALL_EFFECT);
-        result->gtFlags |= (expr->gtFlags & GTF_ALL_EFFECT);
 
         // 'list' and 'expr' should have valuenumbers defined for both or for neither one (unless we are remorphing,
         // in which case a prior transform involving either node may have discarded or otherwise invalidated the value

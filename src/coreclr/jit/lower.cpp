@@ -549,6 +549,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
     GenTree* gtDefaultCaseJump = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtDefaultCaseCond);
     gtDefaultCaseJump->gtFlags = node->gtFlags;
+    gtDefaultCaseJump->lclReadWriteMap.Merge(node);
 
     LIR::Range condRange = LIR::SeqTree(comp, gtDefaultCaseJump);
     switchBBRange.InsertAtEnd(std::move(condRange));
@@ -2056,6 +2057,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
                 GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
                     GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, loc, value, comp->typGetBlkLayout(callerArgDsc->lvExactSize));
                 storeBlk->gtFlags |= GTF_ASG;
+                storeBlk->lclReadWriteMap.AddGlobalWrite();
                 BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeBlk));
                 LowerNode(storeBlk);
             }
@@ -3209,6 +3211,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // Only the GTF_LATE_ARG flag (if present) is preserved.
             objStore->gtFlags &= GTF_LATE_ARG;
             objStore->gtFlags |= GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+            objStore->lclReadWriteMap.AddGlobalWrite();
 #ifndef JIT32_GCENCODER
             objStore->gtBlkOpGcUnsafe = false;
 #endif
@@ -5734,7 +5737,6 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
         // Next comes the GT_ARR_INDEX node.
         GenTreeArrIndex* arrMDIdx = new (comp, GT_ARR_INDEX)
             GenTreeArrIndex(TYP_INT, idxArrObjNode, indexNode, dim, rank, arrElem->gtArrElemType);
-        arrMDIdx->gtFlags |= ((idxArrObjNode->gtFlags | indexNode->gtFlags) & GTF_ALL_EFFECT);
         BlockRange().InsertBefore(insertionPoint, arrMDIdx);
 
         GenTree* offsArrObjNode = comp->gtClone(arrObjNode);
@@ -5742,7 +5744,6 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
         GenTreeArrOffs* arrOffs = new (comp, GT_ARR_OFFSET)
             GenTreeArrOffs(TYP_I_IMPL, prevArrOffs, arrMDIdx, offsArrObjNode, dim, rank, arrElem->gtArrElemType);
-        arrOffs->gtFlags |= ((prevArrOffs->gtFlags | arrMDIdx->gtFlags | offsArrObjNode->gtFlags) & GTF_ALL_EFFECT);
         BlockRange().InsertBefore(insertionPoint, arrOffs);
 
         prevArrOffs = arrOffs;

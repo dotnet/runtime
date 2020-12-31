@@ -41,6 +41,11 @@ void copyFlags(GenTree* dst, GenTree* src, unsigned mask)
 {
     dst->gtFlags &= ~mask;
     dst->gtFlags |= (src->gtFlags & mask);
+    if ((mask & GTF_ASG) != 0)
+    {
+        dst->lclReadWriteMap.Clear();
+        dst->lclReadWriteMap.Merge(src);
+    }
 }
 
 // RewriteIndir: Rewrite an indirection and clear the flags that should not be set after rationalize.
@@ -239,6 +244,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     for (int i = 1; i < parents.Height(); i++)
     {
         parents.Top(i)->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+        parents.Top(i)->lclReadWriteMap.Merge(call);
     }
 
     // Since "tree" is replaced with "call", pop "tree" node (i.e the current node)
@@ -845,6 +851,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         {
             // Clear the GTF_ASG flag for all nodes but stores
             node->gtFlags &= ~GTF_ASG;
+            node->lclReadWriteMap.Clear();
         }
 
         if (!node->IsCall())

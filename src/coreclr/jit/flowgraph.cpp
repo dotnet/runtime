@@ -7968,11 +7968,12 @@ GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
 
                 if (fgCastNeeded(op2, varDsc->TypeGet()))
                 {
-                    op2                 = gtNewCastNode(TYP_INT, op2, false, varDsc->TypeGet());
-                    tree->AsOp()->gtOp2 = op2;
+                    GenTreeCast* cast   = gtNewCastNode(TYP_INT, op2, false, varDsc->TypeGet());
+                    tree->AsOp()->gtOp2 = cast;
 
+                    // TODO-asgTracking: that does not look right, we probably should delete.
                     // Propagate GTF_COLON_COND
-                    op2->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
+                    cast->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
                 }
             }
         }
@@ -21728,6 +21729,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
     unsigned         treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
     unsigned         chkFlags  = 0;
 
+    GenTree::LclReadWriteMap checkLclReadWriteMap;
+
     if (tree->OperMayThrow(this))
     {
         chkFlags |= GTF_EXCEPT;
@@ -21754,6 +21757,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
             case GT_MEMORYBARRIER:
                 chkFlags |= GTF_GLOB_REF | GTF_ASG;
+                checkLclReadWriteMap.AddGlobalWrite();
                 break;
 
             case GT_LCL_VAR:
@@ -21832,7 +21836,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                         fgDebugCheckFlags(tree->AsOp()->gtOp1);
                         chkFlags |= (tree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
                         chkFlags |= (tree->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
-                        fgDebugCheckFlagsHelper(tree, (tree->gtFlags & GTF_ALL_EFFECT), chkFlags);
+                        fgDebugCheckFlagsHelper(tree, (tree->gtFlags & GTF_ALL_EFFECT), chkFlags, checkLclReadWriteMap);
                     }
 
                     return;
@@ -21977,6 +21981,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         {
             chkFlags |= GTF_ASG;
         }
+        checkLclReadWriteMap.Merge(tree);
 
         if (oper == GT_ADDR && (op1->OperIsLocal() || op1->gtOper == GT_CLS_VAR ||
                                 (op1->gtOper == GT_IND && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
@@ -22006,6 +22011,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0)
                     {
+                        assert(call->gtCallThisArg->GetNode()->lclReadWriteMap.HasWrite());
                         treeFlags |= GTF_ASG;
                     }
                 }
@@ -22018,6 +22024,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
                     {
+                        assert(use.GetNode()->lclReadWriteMap.HasWrite());
                         treeFlags |= GTF_ASG;
                     }
                 }
@@ -22030,6 +22037,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
                     {
+                        assert(use.GetNode()->lclReadWriteMap.HasWrite());
                         treeFlags |= GTF_ASG;
                     }
                 }
@@ -22122,6 +22130,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             case GT_CMPXCHG:
 
                 chkFlags |= (GTF_GLOB_REF | GTF_ASG);
+                checkLclReadWriteMap.AddGlobalWrite();
                 GenTreeCmpXchg* cmpXchg;
                 cmpXchg = tree->AsCmpXchg();
                 fgDebugCheckFlags(cmpXchg->gtOpLocation);
@@ -22159,7 +22168,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         }
     }
 
-    fgDebugCheckFlagsHelper(tree, treeFlags, chkFlags);
+    fgDebugCheckFlagsHelper(tree, treeFlags, chkFlags, checkLclReadWriteMap);
 }
 
 //------------------------------------------------------------------------------
@@ -22195,7 +22204,10 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned
 // Note:
 //    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
 
-void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsigned chkFlags)
+void Compiler::fgDebugCheckFlagsHelper(GenTree*                 tree,
+                                       unsigned                 treeFlags,
+                                       unsigned                 chkFlags,
+                                       GenTree::LclReadWriteMap chkLclReadWriteMap)
 {
     if (chkFlags & ~treeFlags)
     {

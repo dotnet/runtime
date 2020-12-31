@@ -113,6 +113,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
     {
         tree->gtFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
+        tree->lclReadWriteMap.Merge(use.GetNode());
     }
 
     /* Perform the morphing */
@@ -523,6 +524,7 @@ OPTIMIZECAST:
 
     /* Reset the assignment flag */
     tree->gtFlags &= ~GTF_ASG;
+    tree->lclReadWriteMap.Clear();
 
     /* unless we have an overflow cast, reset the except flag */
     if (!tree->gtOverflow())
@@ -532,6 +534,7 @@ OPTIMIZECAST:
 
     /* Just in case new side effects were introduced */
     tree->gtFlags |= (oper->gtFlags & GTF_ALL_EFFECT);
+    tree->lclReadWriteMap.Merge(oper);
 
     if (!gtIsActiveCSE_Candidate(tree) && !gtIsActiveCSE_Candidate(oper))
     {
@@ -1306,6 +1309,7 @@ void fgArgInfo::ArgsComplete()
 
         if (argx->gtFlags & GTF_ASG)
         {
+            assert(argx->lclReadWriteMap.HasWrite());
             // If this is not the only argument, or it's a copyblk, or it already evaluates the expression to
             // a tmp, then we need a temp in the late arg list.
             if ((argCount > 1) || argx->OperIsCopyBlkOp()
@@ -2626,7 +2630,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             GenTree* tmp = fgInsertCommaFormTemp(&arg);
             call->gtCallThisArg->SetNode(arg);
+            // TODO-asgTracking: check this.
             call->gtFlags |= GTF_ASG;
+            call->lclReadWriteMap.AddGlobalWrite();
             arg = tmp;
         }
         noway_assert(arg != nullptr);
@@ -3627,7 +3633,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     GenTreeCall::Use* args;
     GenTree*          argx;
 
-    unsigned flagsSummary = 0;
+    unsigned                 flagsSummary = 0;
+    GenTree::LclReadWriteMap lclReadWriteMapSummary;
 
     unsigned argIndex = 0;
 
@@ -3647,6 +3654,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         {
             use.SetNode(fgMorphTree(use.GetNode()));
             flagsSummary |= use.GetNode()->gtFlags;
+            lclReadWriteMapSummary.Merge(use.GetNode());
         }
 
         assert(call->fgArgInfo != nullptr);
@@ -3668,6 +3676,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         // This is a register argument - possibly update it in the table.
         call->fgArgInfo->UpdateRegArg(thisArgEntry, argx, reMorphing);
         flagsSummary |= argx->gtFlags;
+        lclReadWriteMapSummary.Merge(argx);
         assert(argIndex == 0);
         argIndex++;
         DEBUG_ARG_SLOTS_ONLY(argSlots++;)
@@ -3705,6 +3714,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // as it may have been changed by the call to fgMorphTree.
             call->fgArgInfo->UpdateRegArg(argEntry, argx, reMorphing);
             flagsSummary |= argx->gtFlags;
+            lclReadWriteMapSummary.Merge(argx);
             continue;
         }
         DEBUG_ARG_SLOTS_ASSERT(size != 0);
@@ -4113,6 +4123,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #endif // TARGET_X86
 
         flagsSummary |= args->GetNode()->gtFlags;
+        lclReadWriteMapSummary.Merge(args->GetNode());
 
     } // end foreach argument loop
 
@@ -4128,6 +4139,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         call->gtCallAddr = fgMorphTree(call->gtCallAddr);
         // Const CSE may create an assignment node here
         flagsSummary |= call->gtCallAddr->gtFlags;
+        lclReadWriteMapSummary.Merge(call->gtCallAddr);
     }
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -4172,6 +4184,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     // Clear the ASG and EXCEPT (if possible) flags on the call node
     call->gtFlags &= ~GTF_ASG;
+    call->lclReadWriteMap.Clear();
     if (!call->OperMayThrow(this))
     {
         call->gtFlags &= ~GTF_EXCEPT;
@@ -4179,6 +4192,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     // Union in the side effect flags from the call's operands
     call->gtFlags |= flagsSummary & GTF_ALL_EFFECT;
+    call->lclReadWriteMap.Merge(lclReadWriteMapSummary);
 
     // If we are remorphing or don't have any register arguments or other arguments that need
     // temps, then we don't need to call SortArgs() and EvalArgsToTemps().
@@ -4227,7 +4241,6 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 {
     bool       foundStructArg = false;
     unsigned   initialFlags   = call->gtFlags;
-    unsigned   flagsSummary   = 0;
     fgArgInfo* allArgInfo     = call->fgArgInfo;
 
 #ifdef TARGET_X86
@@ -4329,9 +4342,6 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 
     // We should only call this method when we actually have one or more multireg struct args
     assert(foundStructArg);
-
-    // Update the flags
-    call->gtFlags |= (flagsSummary & GTF_ALL_EFFECT);
 }
 
 //-----------------------------------------------------------------------------
@@ -5533,6 +5543,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             new (this, GT_INDEX_ADDR) GenTreeIndexAddr(array, index, elemTyp, elemStructType, elemSize,
                                                        static_cast<unsigned>(lenOffs), static_cast<unsigned>(elemOffs));
         indexAddr->gtFlags |= (array->gtFlags | index->gtFlags) & GTF_ALL_EFFECT;
+        indexAddr->lclReadWriteMap.Merge(array);
+        indexAddr->lclReadWriteMap.Merge(index);
 
         // Mark the indirection node as needing a range check if necessary.
         // Note this will always be true unless JitSkipArrayBoundCheck() is used
@@ -5590,7 +5602,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         // perhaps a decision that should be left to CSE but FX diffs show that it is slightly better to
         // do this here.
 
-        if ((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) ||
+        if ((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || arrRef->lclReadWriteMap.HasWrite() ||
             gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY) || arrRef->OperIs(GT_FIELD, GT_LCL_FLD))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
@@ -5604,8 +5616,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             noway_assert(arrRef2 != nullptr);
         }
 
-        if ((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || gtComplexityExceeds(&index, MAX_ARR_COMPLEXITY) ||
-            index->OperIs(GT_FIELD, GT_LCL_FLD))
+        if ((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || index->lclReadWriteMap.HasWrite() ||
+            gtComplexityExceeds(&index, MAX_ARR_COMPLEXITY) || index->OperIs(GT_FIELD, GT_LCL_FLD))
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
             indexDefn            = gtNewTempAssign(indexTmpNum, index);
@@ -9190,7 +9202,9 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             GenTree* const nullCheckedArr = impCheckForNullPointer(arr);
             GenTree* const arrIndexNode   = gtNewIndexRef(TYP_REF, nullCheckedArr, index);
             GenTree* const arrStore       = gtNewAssignNode(arrIndexNode, value);
-            arrStore->gtFlags |= GTF_ASG;
+
+            assert((arrStore->gtFlags & GTF_ASG) != 0);
+            assert(arrStore->lclReadWriteMap.HasWrite());
 
             GenTree* result = fgMorphTree(arrStore);
             if (argSetup != nullptr)
@@ -9883,6 +9897,8 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         dest->gtFlags |= GTF_DONT_CSE;
         asg->gtFlags &= ~GTF_EXCEPT;
         asg->gtFlags |= ((dest->gtFlags | src->gtFlags) & GTF_ALL_EFFECT);
+        asg->lclReadWriteMap.Merge(dest);
+        asg->lclReadWriteMap.Merge(src);
         // Un-set GTF_REVERSE_OPS, and it will be set later if appropriate.
         asg->gtFlags &= ~GTF_REVERSE_OPS;
 
@@ -10010,6 +10026,7 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
             dest                = fgMorphBlockOperand(dest, dest->TypeGet(), blockSize, true /*isBlkReqd*/);
             tree->AsOp()->gtOp1 = dest;
             tree->gtFlags |= (dest->gtFlags & GTF_ALL_EFFECT);
+            tree->lclReadWriteMap.Merge(dest);
         }
     }
 
@@ -10140,6 +10157,7 @@ GenTree* Compiler::fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenT
         GenTree*   dest        = gtNewLclvNode(fieldLclNum, fieldDesc->TypeGet());
         // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
         dest->gtFlags |= (destLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG));
+        assert((destLclNode->gtFlags & GTF_ASG) == 0);
 
         GenTree* src;
 
@@ -10523,6 +10541,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             {
                 // This may be a lclVar that was determined to be address-exposed.
                 effectiveVal->gtFlags |= (lclNode->gtFlags & GTF_ALL_EFFECT);
+                effectiveVal->lclReadWriteMap.Merge(lclNode);
             }
         }
         if (needsIndirection)
@@ -11072,6 +11091,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             dest               = fgMorphBlockOperand(dest, asgType, blockWidth, isBlkReqd);
             asg->AsOp()->gtOp1 = dest;
             asg->gtFlags |= (dest->gtFlags & GTF_ALL_EFFECT);
+            asg->lclReadWriteMap.Merge(dest);
 
             // Eliminate the "OBJ or BLK" node on the src.
             src                = fgMorphBlockOperand(src, asgType, blockWidth, false /*!isBlkReqd*/);
@@ -11249,11 +11269,13 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 {
                     noway_assert(destAddr->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
                     dstFld->gtFlags |= destAddr->AsOp()->gtOp1->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG);
+                    assert((destAddr->AsOp()->gtOp1->gtFlags & GTF_ASG) == 0);
                 }
                 else
                 {
                     noway_assert(lclVarTree != nullptr);
                     dstFld->gtFlags |= lclVarTree->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG);
+                    assert((lclVarTree->gtFlags & GTF_ASG) == 0);
                 }
                 // Don't CSE the lhs of an assignment.
                 dstFld->gtFlags |= GTF_DONT_CSE;
@@ -11335,6 +11357,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
                 noway_assert(srcLclVarTree != nullptr);
                 srcFld->gtFlags |= srcLclVarTree->gtFlags & ~GTF_NODE_MASK;
+                assert((srcLclVarTree->gtFlags & GTF_ASG) == 0);
             }
             else
             {
@@ -11962,8 +11985,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     // Propagate side effect flags up the tree
                     op1->gtFlags &= ~GTF_ALL_EFFECT;
                     op1->gtFlags |= (op1->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
+                    op1->lclReadWriteMap.Merge(op1->AsOp()->gtOp1);
                     op2->gtFlags &= ~GTF_ALL_EFFECT;
                     op2->gtFlags |= (op2->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
+                    op2->lclReadWriteMap.Merge(op2->AsOp()->gtOp1);
 
                     // If the GT_MUL can be altogether folded away, we should do that.
 
@@ -11992,6 +12017,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         op1->AsOp()->gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op1->AsCast()->CastOp());
                         op1->gtFlags &= ~GTF_ALL_EFFECT;
                         op1->gtFlags |= (op1->AsCast()->CastOp()->gtFlags & GTF_ALL_EFFECT);
+                        op1->lclReadWriteMap.Merge(op1->AsCast()->CastOp());
                     }
 
                     if (op2->AsCast()->CastOp()->OperGet() != GT_NOP)
@@ -11999,6 +12025,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         op2->AsOp()->gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op2->AsCast()->CastOp());
                         op2->gtFlags &= ~GTF_ALL_EFFECT;
                         op2->gtFlags |= (op2->AsCast()->CastOp()->gtFlags & GTF_ALL_EFFECT);
+                        op2->lclReadWriteMap.Merge(op2->AsCast()->CastOp());
                     }
 
                     op1->gtFlags |= GTF_DONT_CSE;
@@ -12006,6 +12033,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                     tree->gtFlags &= ~GTF_ALL_EFFECT;
                     tree->gtFlags |= ((op1->gtFlags | op2->gtFlags) & GTF_ALL_EFFECT);
+                    tree->lclReadWriteMap.Merge(op1);
+                    tree->lclReadWriteMap.Merge(op2);
 
                     goto DONE_MORPHING_CHILDREN;
                 }
@@ -12172,6 +12201,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     tree->gtFlags &= ~GTF_ALL_EFFECT;
 
                     tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT); // Only update with op1 as op2 is a constant
+                    tree->lclReadWriteMap.Merge(op1);
 
                     // If op1 is a constant, then do constant folding of the division operator
                     if (op1->gtOper == GT_CNS_NATIVELONG)
@@ -12335,6 +12365,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 // Propagate side effect flags
                 tree->gtFlags &= ~GTF_ALL_EFFECT;
                 tree->gtFlags |= (tree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
+                tree->lclReadWriteMap.Clear();
+                tree->lclReadWriteMap.Merge(tree->AsOp()->gtOp1);
 
                 return tree;
             }
@@ -12603,6 +12635,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
         /* Propagate the new flags */
         tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
+        tree->lclReadWriteMap.Merge(op1);
 
         // &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does
         // Similarly for clsVar
@@ -12675,6 +12708,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         /* Propagate the side effect flags from op2 */
 
         tree->gtFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
+        tree->lclReadWriteMap.Merge(op2);
 
 #if LOCAL_ASSERTION_PROP
         // If we are exiting the "else" part of a Qmark-Colon we must
@@ -12777,6 +12811,8 @@ DONE_MORPHING_CHILDREN:
     if (tree->OperRequiresAsgFlag())
     {
         tree->gtFlags |= GTF_ASG;
+        // TODO-asgTracking: set only what is neccessary.
+        tree->lclReadWriteMap.AddGlobalWrite();
     }
     else
     {
@@ -12784,6 +12820,7 @@ DONE_MORPHING_CHILDREN:
             ((op2 == nullptr) || ((op2->gtFlags & GTF_ASG) == 0)))
         {
             tree->gtFlags &= ~GTF_ASG;
+            tree->lclReadWriteMap.Clear();
         }
     }
 
@@ -13066,11 +13103,15 @@ DONE_MORPHING_CHILDREN:
                     comma->gtFlags &= ~GTF_ALL_EFFECT;
                     comma->gtFlags |= (comma->AsOp()->gtOp1->gtFlags) & GTF_ALL_EFFECT;
                     comma->gtFlags |= (comma->AsOp()->gtOp2->gtFlags) & GTF_ALL_EFFECT;
+                    comma->lclReadWriteMap.Clear();
+                    comma->lclReadWriteMap.Merge(comma->AsOp()->gtOp1);
+                    comma->lclReadWriteMap.Merge(comma->AsOp()->gtOp2);
 
                     noway_assert((relop->gtFlags & GTF_RELOP_JMP_USED) == 0);
                     noway_assert((relop->gtFlags & GTF_REVERSE_OPS) == 0);
                     relop->gtFlags |=
                         tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE | GTF_ALL_EFFECT);
+                    relop->lclReadWriteMap.Merge(tree);
 
                     return relop;
                 }
@@ -13659,6 +13700,7 @@ DONE_MORPHING_CHILDREN:
 
                         op1->AsOp()->gtOp2 = op2->AsOp()->gtOp1;
                         op1->gtFlags |= (op1->AsOp()->gtOp2->gtFlags & GTF_ALL_EFFECT);
+                        op1->lclReadWriteMap.Merge(op1->AsOp()->gtOp2);
                         DEBUG_DESTROY_NODE(op2);
                         op2 = tree->AsOp()->gtOp2;
                     }
@@ -14256,25 +14298,32 @@ DONE_MORPHING_CHILDREN:
                 // TBD: this transformation is currently necessary for correctness -- it might
                 // be good to analyze the failures that result if we don't do this, and fix them
                 // in other ways.  Ideally, this should be optional.
-                GenTree* commaNode = op1;
-                unsigned treeFlags = tree->gtFlags;
-                commaNode->gtType  = typ;
-                commaNode->gtFlags = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is
-                                                                     // dangerous, clear the GTF_REVERSE_OPS at
-                                                                     // least.
+                GenTreeOp* commaNode = op1->AsOp();
+                unsigned   treeFlags = tree->gtFlags;
+                commaNode->gtType    = typ;
+                commaNode->gtFlags   = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is
+                                                                       // dangerous, clear the GTF_REVERSE_OPS at
+                                                                       // least.
 #ifdef DEBUG
                 commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
-                while (commaNode->AsOp()->gtOp2->gtOper == GT_COMMA)
+
+                while (commaNode->gtGetOp2()->OperIs(GT_COMMA))
                 {
-                    commaNode         = commaNode->AsOp()->gtOp2;
+                    commaNode = commaNode->gtGetOp2()->AsOp();
+
+                    const GenTree* commaOp1 = commaNode->gtGetOp1();
+                    const GenTree* commaOp2 = commaNode->gtGetOp2();
+
                     commaNode->gtType = typ;
-                    commaNode->gtFlags =
-                        (treeFlags & ~GTF_REVERSE_OPS & ~GTF_ASG & ~GTF_CALL); // Bashing the GT_COMMA flags here is
-                    // dangerous, clear the GTF_REVERSE_OPS, GT_ASG, and GT_CALL at
-                    // least.
-                    commaNode->gtFlags |= ((commaNode->AsOp()->gtOp1->gtFlags | commaNode->AsOp()->gtOp2->gtFlags) &
-                                           (GTF_ASG | GTF_CALL));
+
+                    // Bashing the GT_COMMA flags here is dangerous,
+                    // clear the GTF_REVERSE_OPS, GT_ASG, and GT_CALL at least.
+                    commaNode->gtFlags = (treeFlags & ~GTF_REVERSE_OPS & ~GTF_ASG & ~GTF_CALL);
+                    commaNode->lclReadWriteMap.Clear();
+                    commaNode->gtFlags |= ((commaOp1->gtFlags | commaOp2->gtFlags) & (GTF_ASG | GTF_CALL));
+                    commaNode->lclReadWriteMap.Merge(commaOp1);
+                    commaNode->lclReadWriteMap.Merge(commaOp2);
 #ifdef DEBUG
                     commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -14293,6 +14342,8 @@ DONE_MORPHING_CHILDREN:
                 // This is very conservative
                 op1->gtFlags |= treeFlags & ~GTF_ALL_EFFECT & ~GTF_IND_NONFAULTING;
                 op1->gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
+                op1->lclReadWriteMap.Clear();
+                op1->lclReadWriteMap.Merge(addr);
 
                 if (wasArrIndex)
                 {
@@ -14303,6 +14354,7 @@ DONE_MORPHING_CHILDREN:
 #endif
                 commaNode->AsOp()->gtOp2 = op1;
                 commaNode->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
+                commaNode->lclReadWriteMap.Merge(op1);
                 return tree;
             }
 
@@ -14405,6 +14457,7 @@ DONE_MORPHING_CHILDREN:
                     commaOp2->gtFlags |= GTF_IND_NONFAULTING;
                     commaOp2->gtFlags &= ~GTF_EXCEPT;
                     commaOp2->gtFlags |= (commaOp2->AsOp()->gtOp1->gtFlags & GTF_EXCEPT);
+                    commaOp2->lclReadWriteMap.Merge(commaOp2->AsOp()->gtOp1);
                 }
 
                 op1 = gtNewOperNode(GT_ADDR, TYP_BYREF, commaOp2);
@@ -14426,7 +14479,6 @@ DONE_MORPHING_CHILDREN:
                 {
                     GenTree* comma = commas.Pop();
                     comma->gtType  = op1->gtType;
-                    comma->gtFlags |= op1->gtFlags;
 #ifdef DEBUG
                     comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -14566,6 +14618,7 @@ DONE_MORPHING_CHILDREN:
                 if (((throwNode->gtFlags & GTF_ASG) == 0) && ((op2 == nullptr) || ((op2->gtFlags & GTF_ASG) == 0)))
                 {
                     tree->gtFlags &= ~GTF_ASG;
+                    tree->lclReadWriteMap.Clear();
                 }
 
                 return tree;
@@ -14872,6 +14925,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 
                 op1->AsOp()->gtOp2 = op2;
                 op1->gtFlags |= op2->gtFlags & GTF_ALL_EFFECT;
+                op1->lclReadWriteMap.Merge(op2);
 
                 op2 = tree->gtOp2;
             }
@@ -14913,6 +14967,9 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 
             if (op2->gtFlags & GTF_ASG)
             {
+                // TODO-asgTracking: what do we really want to check here?
+                assert(op2->lclReadWriteMap.HasWrite());
+
                 break;
             }
 
@@ -15793,6 +15850,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             // Propagate effects flags upwards
             bndsChk->gtFlags |= (bndsChk->gtIndex->gtFlags & GTF_ALL_EFFECT);
             bndsChk->gtFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
+            bndsChk->lclReadWriteMap.Merge(bndsChk->gtIndex, bndsChk->gtArrLen);
 
             // Otherwise, we don't change the tree.
         }
@@ -15810,10 +15868,12 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags &= ~GTF_CALL;
 
             tree->gtFlags |= tree->AsArrElem()->gtArrObj->gtFlags & GTF_ALL_EFFECT;
+            tree->lclReadWriteMap.Merge(tree->AsArrElem()->gtArrObj);
 
             for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
             {
                 tree->gtFlags |= tree->AsArrElem()->gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
+                tree->lclReadWriteMap.Merge(tree->AsArrElem()->gtArrInds[dim]);
             }
 
             if (fgGlobalMorph)
@@ -15823,19 +15883,24 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             break;
 
         case GT_ARR_OFFSET:
-            tree->AsArrOffs()->gtOffset = fgMorphTree(tree->AsArrOffs()->gtOffset);
-            tree->AsArrOffs()->gtIndex  = fgMorphTree(tree->AsArrOffs()->gtIndex);
-            tree->AsArrOffs()->gtArrObj = fgMorphTree(tree->AsArrOffs()->gtArrObj);
+        {
+            GenTreeArrOffs* arrOffs = tree->AsArrOffs();
+            arrOffs->gtOffset       = fgMorphTree(arrOffs->gtOffset);
+            arrOffs->gtIndex        = fgMorphTree(arrOffs->gtIndex);
+            arrOffs->gtArrObj       = fgMorphTree(arrOffs->gtArrObj);
 
-            tree->gtFlags &= ~GTF_CALL;
-            tree->gtFlags |= tree->AsArrOffs()->gtOffset->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsArrOffs()->gtIndex->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsArrOffs()->gtArrObj->gtFlags & GTF_ALL_EFFECT;
+            arrOffs->gtFlags &= ~GTF_CALL;
+            arrOffs->gtFlags |= arrOffs->gtOffset->gtFlags & GTF_ALL_EFFECT;
+            arrOffs->gtFlags |= arrOffs->gtIndex->gtFlags & GTF_ALL_EFFECT;
+            arrOffs->gtFlags |= arrOffs->gtArrObj->gtFlags & GTF_ALL_EFFECT;
+            arrOffs->lclReadWriteMap.Merge(arrOffs->gtOffset, arrOffs->gtIndex, arrOffs->gtArrObj);
+
             if (fgGlobalMorph)
             {
                 fgSetRngChkTarget(tree, false);
             }
-            break;
+        }
+        break;
 
         case GT_PHI:
             tree->gtFlags &= ~GTF_ALL_EFFECT;
@@ -15843,6 +15908,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             {
                 use.SetNode(fgMorphTree(use.GetNode()));
                 tree->gtFlags |= use.GetNode()->gtFlags & GTF_ALL_EFFECT;
+                tree->lclReadWriteMap.Merge(use.GetNode());
             }
             break;
 
@@ -15852,52 +15918,64 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             {
                 use.SetNode(fgMorphTree(use.GetNode()));
                 tree->gtFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
+                tree->lclReadWriteMap.Merge(use.GetNode());
             }
             break;
 
         case GT_CMPXCHG:
-            tree->AsCmpXchg()->gtOpLocation  = fgMorphTree(tree->AsCmpXchg()->gtOpLocation);
-            tree->AsCmpXchg()->gtOpValue     = fgMorphTree(tree->AsCmpXchg()->gtOpValue);
-            tree->AsCmpXchg()->gtOpComparand = fgMorphTree(tree->AsCmpXchg()->gtOpComparand);
+        {
+            GenTreeCmpXchg* cmpXchng = tree->AsCmpXchg();
+            cmpXchng->gtOpLocation   = fgMorphTree(cmpXchng->gtOpLocation);
+            cmpXchng->gtOpValue      = fgMorphTree(cmpXchng->gtOpValue);
+            cmpXchng->gtOpComparand  = fgMorphTree(cmpXchng->gtOpComparand);
 
-            tree->gtFlags &= (~GTF_EXCEPT & ~GTF_CALL);
+            cmpXchng->gtFlags &= (~GTF_EXCEPT & ~GTF_CALL);
 
-            tree->gtFlags |= tree->AsCmpXchg()->gtOpLocation->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsCmpXchg()->gtOpValue->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsCmpXchg()->gtOpComparand->gtFlags & GTF_ALL_EFFECT;
-            break;
+            cmpXchng->gtFlags |= cmpXchng->gtOpLocation->gtFlags & GTF_ALL_EFFECT;
+            cmpXchng->gtFlags |= cmpXchng->gtOpValue->gtFlags & GTF_ALL_EFFECT;
+            cmpXchng->gtFlags |= cmpXchng->gtOpComparand->gtFlags & GTF_ALL_EFFECT;
+            cmpXchng->lclReadWriteMap.Merge(cmpXchng->gtOpLocation, cmpXchng->gtOpValue, cmpXchng->gtOpComparand);
+        }
+        break;
 
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
-            if (tree->OperGet() == GT_STORE_DYN_BLK)
+        {
+            GenTreeDynBlk* dynBlk = tree->AsDynBlk();
+            if (dynBlk->OperIs(GT_STORE_DYN_BLK))
             {
-                tree->AsDynBlk()->Data() = fgMorphTree(tree->AsDynBlk()->Data());
+                dynBlk->Data() = fgMorphTree(dynBlk->Data());
             }
-            tree->AsDynBlk()->Addr()        = fgMorphTree(tree->AsDynBlk()->Addr());
-            tree->AsDynBlk()->gtDynamicSize = fgMorphTree(tree->AsDynBlk()->gtDynamicSize);
+            dynBlk->Addr()        = fgMorphTree(dynBlk->Addr());
+            dynBlk->gtDynamicSize = fgMorphTree(dynBlk->gtDynamicSize);
 
-            tree->gtFlags &= ~GTF_CALL;
-            tree->SetIndirExceptionFlags(this);
+            dynBlk->gtFlags &= ~GTF_CALL;
+            dynBlk->SetIndirExceptionFlags(this);
 
-            if (tree->OperGet() == GT_STORE_DYN_BLK)
+            if (dynBlk->OperIs(GT_STORE_DYN_BLK))
             {
-                tree->gtFlags |= tree->AsDynBlk()->Data()->gtFlags & GTF_ALL_EFFECT;
+                dynBlk->gtFlags |= dynBlk->Data()->gtFlags & GTF_ALL_EFFECT;
+                dynBlk->lclReadWriteMap.Merge(dynBlk->Data());
             }
-            tree->gtFlags |= tree->AsDynBlk()->Addr()->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsDynBlk()->gtDynamicSize->gtFlags & GTF_ALL_EFFECT;
-            break;
+            dynBlk->gtFlags |= dynBlk->Addr()->gtFlags & GTF_ALL_EFFECT;
+            dynBlk->gtFlags |= dynBlk->gtDynamicSize->gtFlags & GTF_ALL_EFFECT;
+            dynBlk->lclReadWriteMap.Merge(dynBlk->Addr(), dynBlk->gtDynamicSize);
+        }
+        break;
 
         case GT_INDEX_ADDR:
-            GenTreeIndexAddr* indexAddr;
-            indexAddr          = tree->AsIndexAddr();
-            indexAddr->Index() = fgMorphTree(indexAddr->Index());
-            indexAddr->Arr()   = fgMorphTree(indexAddr->Arr());
+        {
+            GenTreeIndexAddr* indexAddr = tree->AsIndexAddr();
+            indexAddr->Index()          = fgMorphTree(indexAddr->Index());
+            indexAddr->Arr()            = fgMorphTree(indexAddr->Arr());
 
-            tree->gtFlags &= ~GTF_CALL;
+            indexAddr->gtFlags &= ~GTF_CALL;
 
-            tree->gtFlags |= indexAddr->Index()->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= indexAddr->Arr()->gtFlags & GTF_ALL_EFFECT;
-            break;
+            indexAddr->gtFlags |= indexAddr->Index()->gtFlags & GTF_ALL_EFFECT;
+            indexAddr->gtFlags |= indexAddr->Arr()->gtFlags & GTF_ALL_EFFECT;
+            indexAddr->lclReadWriteMap.Merge(indexAddr->Index(), indexAddr->Arr());
+        }
+        break;
 
         default:
 #ifdef DEBUG
@@ -19109,6 +19187,11 @@ GenTreeArgList* Compiler::fgMorphArgList(GenTreeArgList* args, MorphAddrContext*
             if (memorizedLastNodes[i] != nullptr)
             {
                 listNode->gtFlags |= trackedFlags[i];
+                if (trackedFlags[i] == GTF_ASG)
+                {
+                    // TODO-asgTracking: improve it.
+                    listNode->lclReadWriteMap.AddGlobalWrite();
+                }
             }
             if (listNode == memorizedLastNodes[i])
             {

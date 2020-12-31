@@ -8725,6 +8725,12 @@ void Compiler::optOptimizeBoolsGcStress(BasicBlock* condBlock)
         return;
     }
 
+    if (comparand->lclReadWriteMap.HasWrite())
+    {
+        assert((comparand->gtFlags & GTF_ASG) != 0);
+        return;
+    }
+
     if (comparand->gtFlags & (GTF_ASG | GTF_CALL | GTF_ORDER_SIDEEFF))
     {
         return;

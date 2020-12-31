@@ -870,6 +870,7 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
 
     if (result && ((tree->gtFlags & GTF_ASG) != 0))
     {
+        assert(tree->lclReadWriteMap.HasWrite());
         if (tree->OperGet() == GT_ASG)
         {
             GenTree* lhs = tree->gtGetOp1();

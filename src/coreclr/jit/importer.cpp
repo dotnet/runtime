@@ -536,6 +536,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
 
 inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
 {
+    // TODO-asgTracking: improve this function with precise information.
     if (chkLevel == (unsigned)CHECK_SPILL_ALL)
     {
         chkLevel = verCurrentState.esStackDepth;
@@ -1284,8 +1285,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
-    GenTree* dest      = nullptr;
-    unsigned destFlags = 0;
+    GenTree* dest              = nullptr;
+    bool     canTargetAnywhere = false;
 
     if (ilOffset == BAD_IL_OFFSET)
     {
@@ -1413,8 +1414,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             {
                 // !!! The destination could be on stack. !!!
                 // This flag will let us choose the correct write barrier.
-                asgType   = returnType;
-                destFlags = GTF_IND_TGTANYWHERE;
+                asgType           = returnType;
+                canTargetAnywhere = true;
             }
         }
     }
@@ -1456,7 +1457,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             {
                 // !!! The destination could be on stack. !!!
                 // This flag will let us choose the correct write barrier.
-                destFlags = GTF_IND_TGTANYWHERE;
+                canTargetAnywhere = true;
             }
         }
     }
@@ -1584,6 +1585,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // of a block assignment.
             dest->gtFlags &= ~GTF_GLOB_REF;
             dest->gtFlags |= (destAddr->gtFlags & GTF_GLOB_REF);
+            dest->lclReadWriteMap.Merge(destAddr);
         }
         else
         {
@@ -1608,8 +1610,10 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         }
     }
 
-    dest->gtFlags |= destFlags;
-    destFlags = dest->gtFlags;
+    if (canTargetAnywhere)
+    {
+        dest->gtFlags |= GTF_IND_TGTANYWHERE;
+    }
 
     // return an assignment node, to be appended
     GenTree* asgNode = gtNewAssignNode(dest, src);
@@ -1617,7 +1621,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
     // TODO-1stClassStructs: Clean up the settings of GTF_DONT_CSE on the lhs
     // of assignments.
-    if ((destFlags & GTF_DONT_CSE) == 0)
+    if ((dest->gtFlags & GTF_DONT_CSE) == 0)
     {
         dest->gtFlags &= ~(GTF_DONT_CSE);
     }
@@ -3826,6 +3830,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             op1 = gtNewOperNode(interlockedOperator, genActualType(callType), op1, op2);
             op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+            op1->lclReadWriteMap.AddGlobalWrite();
             retNode = op1;
             break;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
@@ -3837,6 +3842,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
             op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+            op1->lclReadWriteMap.AddGlobalWrite();
 
             // On XARCH `CORINFO_INTRINSIC_MemoryBarrierLoad` fences need not be emitted.
             // However, we still need to capture the effect on reordering.
@@ -6830,6 +6836,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     for (GenTreeCall::Use& use : node->AsCall()->Args())
     {
         node->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        node->lclReadWriteMap.Merge(use.GetNode());
     }
 
     node->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
@@ -7187,9 +7194,6 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, IL_OFFSETX i
     /* Create the call node */
 
     GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, nullptr, ilOffset);
-
-    call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
-
     return call;
 }
 
@@ -7270,6 +7274,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
     {
         GenTree* arg = argUse.GetNode();
         call->gtFlags |= arg->gtFlags & GTF_GLOB_EFFECT;
+        call->lclReadWriteMap.Merge(arg);
 
         // We should not be passing gc typed args to an unmanaged call.
         if (varTypeIsGC(arg->TypeGet()))
@@ -7446,15 +7451,11 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 #ifdef FEATURE_READYTORUN_COMPILER
             if (opts.IsReadyToRun())
             {
-                unsigned callFlags = 0;
-
+                op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
                 if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
                 {
-                    callFlags |= GTF_CALL_HOISTABLE;
+                    op1->gtFlags |= GTF_CALL_HOISTABLE;
                 }
-
-                op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
-                op1->gtFlags |= callFlags;
 
                 op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
             }
@@ -7486,13 +7487,12 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
             unsigned callFlags = 0;
 
-            if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
-            {
-                callFlags |= GTF_CALL_HOISTABLE;
-            }
             var_types type = TYP_BYREF;
             op1            = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, type, args);
-            op1->gtFlags |= callFlags;
+            if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
+            {
+                op1->gtFlags |= GTF_CALL_HOISTABLE;
+            }
 
             op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
             FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
@@ -8170,8 +8170,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                            (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
                     call = gtNewIndCallNode(stubAddr, callRetTyp, nullptr);
-
-                    call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
 
 #ifdef TARGET_X86
@@ -8257,7 +8255,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 call                          = gtNewIndCallNode(fptr, callRetTyp, args, ilOffset);
                 call->AsCall()->gtCallThisArg = gtNewCallArgs(thisPtrCopy);
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
                 if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
                 {
@@ -8328,7 +8325,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call = gtNewIndCallNode(fptr, callRetTyp, nullptr, ilOffset);
-                call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+
                 if (callInfo->nullInstanceCheck)
                 {
                     call->gtFlags |= GTF_CALL_NULLCHECK;
@@ -8745,6 +8742,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     for (GenTreeCall::Use& use : call->AsCall()->Args())
     {
         call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+        call->lclReadWriteMap.Merge(use.GetNode());
     }
 
     //-------------------------------------------------------------------------
@@ -8771,6 +8769,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // Store the "this" value in the call
         call->gtFlags |= obj->gtFlags & GTF_GLOB_EFFECT;
+        call->lclReadWriteMap.Merge(obj);
         call->AsCall()->gtCallThisArg = gtNewCallArgs(obj);
 
         // Is this a virtual or interface call?
@@ -12560,9 +12559,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewAssignNode(op1, op2);
                 }
 
-                /* Mark the expression as containing an assignment */
-
-                op1->gtFlags |= GTF_ASG;
+                assert((op1->gtFlags & GTF_ASG) != 0);
+                assert(op1->lclReadWriteMap.HasWrite());
 
                 goto SPILL_APPEND;
 
@@ -14730,11 +14728,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #endif
 
                         op1->gtFlags |= (obj->gtFlags & GTF_GLOB_EFFECT);
-
-                        if (fgAddrCouldBeNull(obj))
-                        {
-                            op1->gtFlags |= GTF_EXCEPT;
-                        }
+                        op1->lclReadWriteMap.Merge(obj);
 
                         // If gtFldObj is a BYREF then our target is a value class and
                         // it could point anywhere, example a boxed class static int
@@ -15056,11 +15050,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #endif
 
                         op1->gtFlags |= (obj->gtFlags & GTF_GLOB_EFFECT);
-
-                        if (fgAddrCouldBeNull(obj))
-                        {
-                            op1->gtFlags |= GTF_EXCEPT;
-                        }
+                        op1->lclReadWriteMap.Merge(obj);
 
                         // If gtFldObj is a BYREF then our target is a value class and
                         // it could point anywhere, example a boxed class static int
@@ -15195,9 +15185,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     op1 = gtNewAssignNode(op1, op2);
 
-                    /* Mark the expression as containing an assignment */
-
-                    op1->gtFlags |= GTF_ASG;
+                    assert((op1->gtFlags & GTF_ASG) != 0);
                 }
 
                 /* Check if the class needs explicit initialization */

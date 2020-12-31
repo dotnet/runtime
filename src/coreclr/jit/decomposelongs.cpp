@@ -1358,6 +1358,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
         GenTreeCall* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, argList);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
+        call->lclReadWriteMap.Merge(shift);
 
         if (shift->IsUnusedValue())
         {

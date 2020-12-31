@@ -422,6 +422,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 // Propagate flags of op2 to its parent.
                 stmtExpr->AsOp()->gtOp2 = op2;
                 stmtExpr->gtFlags |= op2->gtFlags & GTF_ALL_EFFECT;
+                stmtExpr->lclReadWriteMap.Merge(op2);
             }
 
 #ifdef DEBUG

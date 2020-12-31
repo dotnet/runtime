@@ -1023,6 +1023,7 @@ void Compiler::fgExtendDbgLifetimes()
                     GenTree* store       = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, type, varNum);
                     store->AsOp()->gtOp1 = zero;
                     store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
+                    store->lclReadWriteMap.AddLclWrite(varNum);
 
                     LIR::Range initRange = LIR::EmptyRange();
                     initRange.InsertBefore(nullptr, zero, store);
@@ -2316,6 +2317,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 
     if (asgNode->gtFlags & GTF_ASG)
     {
+        assert(asgNode->lclReadWriteMap.HasWrite());
         noway_assert(rhsNode);
         noway_assert(tree->gtFlags & GTF_VAR_DEF);
 
@@ -2457,6 +2459,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 
                     asgNode->ChangeOper(GT_COMMA);
                     asgNode->gtFlags |= sideEffList->gtFlags & GTF_ALL_EFFECT;
+                    asgNode->lclReadWriteMap.Merge(sideEffList);
 
                     if (sideEffList->gtOper == GT_COMMA)
                     {

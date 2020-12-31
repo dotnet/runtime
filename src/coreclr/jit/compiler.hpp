@@ -1345,6 +1345,7 @@ inline void GenTree::gtBashToNOP()
     AsOp()->gtOp1 = AsOp()->gtOp2 = nullptr;
 
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
+    lclReadWriteMap.Clear();
 }
 
 // return new arg placeholder node.  Does not do anything but has a type associated
