@@ -207,9 +207,9 @@
   <!-- Packaging -->
   <PropertyGroup>
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
-    <RepositoryUrl>git://github.com/dotnet/runtime</RepositoryUrl>
-    <ProjectUrl>https://github.com/dotnet/runtime</ProjectUrl>
-    <LicenseUrl>https://github.com/dotnet/runtime/blob/master/LICENSE.TXT</LicenseUrl>
+    <RepositoryUrl>git://github.com/dotnet/$(GitHubRepositoryName)</RepositoryUrl>
+    <ProjectUrl>https://github.com/dotnet/$(GitHubRepositoryName)</ProjectUrl>
+    <LicenseUrl>https://github.com/dotnet/$(GitHubRepositoryName)/blob/master/LICENSE.TXT</LicenseUrl>
     <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
     <LicenseFile>$(MSBuildThisFileDirectory)LICENSE.TXT</LicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -220,14 +220,19 @@
     <!-- Keep it in sync with PRERELEASE in eng/native/configureplatform.cmake -->
     <IsPrerelease>true</IsPrerelease>
     <IsExperimentalAssembly>$(MSBuildProjectName.Contains('Experimental'))</IsExperimentalAssembly>
+    <IsPrivateAssembly>$(MSBuildProjectName.Contains('Private'))</IsPrivateAssembly>
     <!-- Experimental packages should not be stable -->
-    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(IsExperimentalAssembly)">true</SuppressFinalPackageVersion>
+    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and ($(IsExperimentalAssembly) or $(IsPrivateAssembly))">true</SuppressFinalPackageVersion>
     <IsShippingAssembly Condition="$(IsExperimentalAssembly)">false</IsShippingAssembly>
     <!-- We don't want Private packages to be shipped to NuGet.org -->
     <IsShippingPackage Condition="($(MSBuildProjectName.Contains('Private')) or $(IsExperimentalAssembly)) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
-    <!-- Set IsPackable true for all pkgproj as Arcade unconditionally overrides the value. -->
-    <IsPackable Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">true</IsPackable>
+    <!-- A package isn't generated (in traversal builds) if in servicing or in runtimelab. Intended to be overridden at project level. -->
+    <GeneratePackage Condition="'$(GeneratePackage)' == ''">true</GeneratePackage>
+    <GeneratePackage Condition="(('$(PreReleaseVersionLabel)' == 'servicing' or
+                                  '$(RepositoryName)' == 'runtimelab') and
+                                 '$(BuildAllProjects)' == 'true')">false</GeneratePackage>
   </PropertyGroup>
+  
 
   <!-- Language configuration -->
   <PropertyGroup>

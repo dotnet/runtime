@@ -1,4 +1,4 @@
-<Project InitialTargets="ErrorForMissingPackageDescription">
+<Project InitialTargets="ErrorForMissingPackageDescription;_OverridePackDependsOn">
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -52,5 +52,14 @@
   <Target Name="ErrorForMissingPackageDescription"
           Condition="'$(IsPackable)' == 'true' and '$(PackageDescription)' == ''">
     <Error Text="Required property 'PackageDescription' is missing for $(MSBuildProjectName)." />
+  </Target>
+
+  <!-- <GeneratePackage /> controls if a package should be created by clearing out <PackDependsOn />. -->
+  <Target Name="_OverridePackDependsOn"
+          Condition="'$(IsPackable)' == 'true' and
+                     '$(GeneratePackage)' != 'true'">
+    <PropertyGroup>
+      <PackDependsOn />
+    </PropertyGroup>
   </Target>
 </Project>

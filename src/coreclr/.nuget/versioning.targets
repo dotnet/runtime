@@ -4,7 +4,7 @@
        We depend on this private Arcade target instead of the SDK-defined GetAssemblyVersion since the packaging
        build does not use the .NET SDK -->
   <Target Name="UpdateAdditionalProperties"
-          BeforeTargets="Build"
+          BeforeTargets="Build;Pack"
           DependsOnTargets="_InitializeAssemblyVersion">
     <ItemGroup>
       <!-- Pass the FileVersion calculated by _InitializeAssemblyVersion to referenced projects -->
