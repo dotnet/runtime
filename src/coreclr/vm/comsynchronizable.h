@@ -50,7 +50,6 @@ public:
         ThreadWaitSleepJoin = 32,
         ThreadSuspended = 64,
         ThreadAbortRequested = 128,
-        ThreadAborted = 256,
     };
 
     enum

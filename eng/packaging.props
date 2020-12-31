@@ -31,13 +31,6 @@
 
   <PropertyGroup>
     <PkgProjPath>$(MSBuildProjectDirectory)\..\pkg\$(MSBuildProjectName).pkgproj</PkgProjPath>
-    <!-- Controls if packages for libraries should be created in (traversal) builds. -->
-    <PackAllLibraries Condition="'$(PackAllLibraries)' == '' and
-                                 ('$(PreReleaseVersionLabel)' != 'servicing' or
-                                  '$(BuildAllProjects)' != 'true')">true</PackAllLibraries>
-    <IsPackable Condition="('$(MSBuildProjectExtension)' == '.pkgproj' or
-                            ('$(IsSourceProject)' == 'true' and Exists('$(PkgProjPath)'))) and
-                           '$(PackAllLibraries)' == 'true'">true</IsPackable>
   </PropertyGroup>
 
   <Import Condition="Exists('$(PkgDir)baseline\baseline.props') and '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
