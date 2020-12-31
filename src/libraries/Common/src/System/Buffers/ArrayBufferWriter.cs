@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
@@ -85,7 +86,12 @@ namespace System.Buffers
         public void Clear()
         {
             Debug.Assert(_buffer.Length >= _index);
+#if NETSTANDARD2_1
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                _buffer.AsSpan(0, _index).Clear();
+#else                
             _buffer.AsSpan(0, _index).Clear();
+#endif            
             _index = 0;
         }
 
