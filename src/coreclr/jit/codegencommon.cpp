@@ -11814,9 +11814,9 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
     // For our example, the register allocator would simple spill r1 because the first def requires it.
     // The code generator would move r3  to r1, leave r2 alone, and then load the spilled value into r3.
 
-    int  offset        = 0;
-    bool isMultiRegVar = lclNode->IsMultiRegLclVar();
-    bool hasRegs       = false;
+    unsigned offset        = 0;
+    bool     isMultiRegVar = lclNode->IsMultiRegLclVar();
+    bool     hasRegs       = false;
 
     if (isMultiRegVar)
     {
@@ -11833,6 +11833,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         regNumber varReg = REG_NA;
         if (isMultiRegVar)
         {
+            // Each field is passed in its own register, use the field types.
             regNumber  varReg      = lclNode->GetRegByIndex(i);
             unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
@@ -11855,15 +11856,35 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {
-                    GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(destType), reg, fieldLclNum, 0);
+                    // A byte field passed in a long register should be written on the stack as a byte.
+                    instruction storeIns = ins_StoreFromSrc(reg, destType);
+                    GetEmitter()->emitIns_S_R(storeIns, emitTypeSize(destType), reg, fieldLclNum, 0);
                 }
             }
             fieldVarDsc->SetRegNum(varReg);
         }
         else
         {
+            // Several fields could be passed in one register, copy using the register type.
+            // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
+            // it is safe to store a long register into a byte field as it is known that we have enough padding after.
             GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, lclNum, offset);
             offset += genTypeSize(srcType);
+#ifdef DEBUG
+#ifdef TARGET_64BIT
+            assert(offset <= varDsc->lvSize());
+#else  // !TARGET_64BIT
+            if (varTypeIsStruct(varDsc))
+            {
+                assert(offset <= varDsc->lvSize());
+            }
+            else
+            {
+                assert(varDsc->TypeGet() == TYP_LONG);
+                assert(offset <= genTypeSize(TYP_LONG));
+            }
+#endif // !TARGET_64BIT
+#endif // DEBUG
         }
     }
 
