@@ -3724,6 +3724,10 @@ void Thread::CommitGCStressInstructionUpdate()
         assert(pbDestCode != NULL);
         assert(pbSrcCode != NULL);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
         *pbDestCode = *pbSrcCode;
