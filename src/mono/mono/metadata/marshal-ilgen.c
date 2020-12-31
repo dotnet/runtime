@@ -2141,7 +2141,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
 		mono_mb_emit_op (mb, CEE_UNBOX, mono_defaults.int_class);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+		if (piinfo && (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) != 0) {
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
 		}

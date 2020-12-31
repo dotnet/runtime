@@ -115,6 +115,7 @@ typedef enum {
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_NATIVE */
 	WRAPPER_SUBTYPE_ICALL_WRAPPER, // specifically JIT icalls
 	WRAPPER_SUBTYPE_NATIVE_FUNC_AOT,
+	WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT,
 	WRAPPER_SUBTYPE_PINVOKE,
 	/* Subtypes of MONO_WRAPPER_OTHER */
 	WRAPPER_SUBTYPE_SYNCHRONIZED_INNER,
@@ -472,6 +473,10 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 
 MonoMethod*
 mono_marshal_get_native_func_wrapper_aot (MonoClass *klass);
+
+MonoMethod*
+mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMethodSignature *sig,
+					       gboolean aot);
 
 MonoMethod *
 mono_marshal_get_struct_to_ptr (MonoClass *klass);

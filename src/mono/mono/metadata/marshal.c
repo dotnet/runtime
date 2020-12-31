@@ -3659,6 +3659,72 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 }
 
 /*
+ * Gets a wrapper for an indirect call to a function with the given signature.
+ * The actual function is passed as the first argument to the wrapper.
+ *
+ * The wrapper is
+ *
+ * retType wrapper (fnPtrBoxed, arg1... argN) {
+ *   enter_gc_safe;
+ *   fnPtr = unbox (fnPtrBoxed)
+ *   ret = fnPtr (arg1, ... argN);
+ *   exit_gc_safe;
+ *   return ret;
+ * }
+ *
+ */
+MonoMethod*
+mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMethodSignature *sig,
+					       gboolean aot)
+{
+	caller_class = mono_class_get_generic_type_definition (caller_class);
+	MonoImage *image = m_class_get_image (caller_class);
+	g_assert (sig->pinvoke);
+	g_assert (!sig->hasthis && ! sig->explicit_this);
+	g_assert (!sig->is_inflated && !sig->has_type_parameters);
+	/* g_assert (every param and return type is blittable) */
+
+	GHashTable *cache = get_cache (&image->wrapper_caches.native_func_wrapper_indirect_cache,
+				       (GHashFunc)mono_signature_hash, 
+				       (GCompareFunc)mono_metadata_signature_equal);
+	
+	MonoMethod *res;
+	if ((res = mono_marshal_find_in_cache (cache, sig)))
+	    return res;
+	
+	fprintf (stderr, "generating wrapper for signature %s\n", mono_signature_full_name (sig));
+	
+	/* FIXME: better wrapper name */
+	char * name = g_strdup_printf ("wrapper_native_indirect_%p", sig);
+	MonoMethodBuilder *mb = mono_mb_new (caller_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+	mb->method->save_lmf = 1;
+
+	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT);
+	info->d.managed_to_native.method = NULL;
+
+	MonoMethodPInvoke *piinfo = NULL;
+	MonoMarshalSpec **mspecs = g_new0 (MonoMarshalSpec *, 1 + sig->param_count);
+        gpointer func = NULL;
+	gboolean check_exceptions = FALSE; /* FIXME: don't expect native to throw */
+	gboolean func_param = TRUE;
+	gboolean skip_gc_trans = FALSE;
+	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, aot, check_exceptions, func_param, skip_gc_trans);
+	g_free (mspecs);
+
+	MonoMethodSignature *csig = mono_metadata_signature_dup_add_this (image, sig, mono_defaults.int_class);
+	csig->pinvoke = 0;
+
+	MonoMethodSignature *key_sig = mono_metadata_signature_dup_full (image, sig);
+
+	gboolean found;
+	res = mono_mb_create_and_cache_full (cache, key_sig, mb, csig, csig->param_count + 16, info, &found);
+
+	mono_mb_free (mb);
+
+	return res;
+}
+
+/*
  * mono_marshal_emit_managed_wrapper:
  *
  *   Emit the body of a native-to-managed wrapper. INVOKE_SIG is the signature of
