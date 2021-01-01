@@ -89,9 +89,9 @@ namespace System.Buffers
 #if NETSTANDARD2_1
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 _buffer.AsSpan(0, _index).Clear();
-#else                
+#else
             _buffer.AsSpan(0, _index).Clear();
-#endif            
+#endif
             _index = 0;
         }
 
