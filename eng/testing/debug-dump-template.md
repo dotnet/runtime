@@ -1,127 +1,146 @@
-# Debugging a CI dump
+# Get the dump
 
-This document describes how to debug a CI/PR test dump by downloading assets from helix, using a dotnet tool called `runfo`.
+Click the link to the dump on the `Helix Test Logs` tab in Azure DevOps. This is the same place you got these instructions from.
 
-## What is runfo?
+# Get the Helix payload
 
-Runfo is a dotnet global tool that helps get information about helix test runs and azure devops builds. For more information see [this](https://github.com/jaredpar/runfo/tree/master/runfo#runfo)
-
-### How do I install it?
-
-You just need to run:
-
+[Runfo](https://github.com/jaredpar/runfo/tree/master/runfo#runfo) helps get information about helix test runs and azure devops builds. We will use it to download the payload and symbols:
+sos
 ```script
 dotnet tool install --global runfo
-```
-
-If you already have it installed, make sure you have at least version `0.6.1` installed, which contains support to download helix payloads. If you don't have the latest version just run:
-
-```script
 dotnet tool update --global runfo
 ```
-
-## Download helix payload containing symbols:
-
-You can just achieve this by running:
-
+If prompted, open a new command prompt to pick up the updated PATH.
 ```script
-runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o <out-dir>
+# On Windows
+runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %WOUTDIR%
+# On Linux and macOS
+runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %LOUTDIR%
 ```
 
 > NOTE: if the helix job is an internal job, you need to pass down a [helix authentication token](https://helix.dot.net/Account/Tokens) using the `--helix-token` argument.
 
-This will download the workitem contents under `<out-dir>\workitems\` and the correlation payload under: `<out-dir>\correlation-payload\`. 
-
-> The correlation payload is usually the testhost or core root, which contain the runtime and dotnet host that we use to run tests.
-
-Once you have those assets, you will need to extract the testhost or core root. Then extract the workitem assets into the same location where coreclr binary is.
-
-## Windows dump on Windows
-
-### Debug with WinDbg
-
-1. Install [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
-2. Run `dotnet sos install` (This has an architecture flag to install diferent plugin versions for specific arch scenarios).
-3. Load the dump with a recent WinDbg version for it to load sos automatically (if not you can run `.update sos`). It is important that bitness of WinDbg matches the bitness of the dump.
-4. Then run the following commands:
+Now extract the files:
 
 ```script
-!setclrpath <path to core root or testhost where coreclr is>
-.sympath+ <directory with symbols (for library tests these are in testhost dir)>
-```
-### Analyze with dotnet-dump
+# On Windows
+for /f %i in ('dir /s/b %WOUTDIR%\*zip') do tar -xf %i -C %WOUTDIR%
 
-1. Install [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
-2. Run: `dotnet-dump analyze <path-to-dump>`
-3. Then run the following commands:
+# On Linux and macOS
+# obtain `unzip` if necessary; eg `sudo apt-get install unzip` or `sudo dnf install unzip`
+find %LOUTDIR% -name '*zip' -exec unzip -d %LOUTDIR% {} \;
+```
+
+Now use the [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos) to install the SOS debugging extension.
+```script
+dotnet tool install --global dotnet-sos
+dotnet tool update --global dotnet-sos
+```
+If prompted, open a new command prompt to pick up the updated PATH.
+```script
+dotnet sos install --architecture Arm
+dotnet sos install --architecture Arm64
+dotnet sos install --architecture x86
+dotnet sos install --architecture x64
+```
+
+# Now choose a section below based on your OS.
+
+## If it's a Windows dump on Windows...
+
+## ... and you want to debug with WinDbg
+
+Install or update WinDbg if necessary ([external](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/debugger-download-tools), [internal](https://osgwiki.com/wiki/Installing_WinDbg)). If you don't have a recent WinDbg you may have to do `.update sos`.
+
+Open WinDbg and open the dump with `File>Open Dump`.
 
 ```script
-setclrpath (To verify an incorrect DAC hasn't been loaded).
-setclrpath <path to core root or testhost where coreclr is>
-setsymbolserver -directory <directory with symbols (for library tests these are in testhost dir)>
+!setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
+.sympath+ %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
 ```
 
-## Linux dumps on Windows
+Now you can use regular SOS commands like `!dumpstack`, `!pe`, etc.
 
-In order to debug a Linux dump on Windows, you will have to first go to the PR/CI build
-that sent the test run and download the cross DAC.
+## ... and you want to debug with Visual Studio...
 
-Download the [`CoreCLRCrossDacArtifacts`](https://dev.azure.com/dnceng/public/_apis/build/builds/%BUILDID%/artifacts?artifactName=CoreCLRCrossDacArtifacts&api-version=6.0&%24format=zip), then extract it, and copy the matching flavor of the DAC with your dump and extract it in the same location where coreclr binary is.
+Currently this is not possible because mscordbi.dll is not signed.
 
-### Debug with WinDbg
+## ... and you want to debug with dotnet-dump...
 
-1. Install [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
-2. Run `dotnet sos install` (This has an architecture flag to install diferent plugin versions for specific arch scenarios).
-3. Load the dump with a recent WinDbg version for it to load sos automatically (if not you can run `.update sos`). It is important that bitness of WinDbg matches the bitness of the dump.
-4. Then run the following commands:
-
+Install the [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
 ```script
-!setclrpath <path to core root or testhost where coreclr is>
-.sympath+ <directory with symbols (for library tests these are in testhost dir)>
+dotnet tool install --global dotnet-dump
+dotnet tool update --global dotnet-dump
 ```
-### Analyze with dotnet-dump
-
-1. Install [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
-2. Run: `dotnet-dump analyze <path-to-dump>`
-3. Then run the following commands:
-
+If prompted, open a new command prompt to pick up the updated PATH.
 ```script
-setclrpath (To verify an incorrect DAC hasn't been loaded).
-setclrpath <path to core root or testhost where coreclr is>
-setsymbolserver -directory <directory with symbols (for library tests these are in testhost dir)>
+dotnet-dump analyze <path-to-dump>
 ```
-
-## Linux dumps on Linux
-
-### Debug with LLDB
-
-1. Install [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
-2. Run `dotnet sos install` (This has an architecture flag to install diferent plugin versions for specific arch scenarios).
-3. Load the dump by running `lldb -c <path-to-dmp> <host binary used (found in testhost)>`
-4. Run the following commands:
-
+Within dotnet-dump:
 ```script
-setclrpath <path to core root or testhost where coreclr is>
-sethostruntime '<path to your local dotnet runtime or testhost where coreclr is>'
-setsymbolserver -directory <directory with symbols (for library tests these are in testhost dir)>
-loadsymbols (if you want to resolve native symbols)
+setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
+setsymbolserver -directory %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
 ```
 
-### Analyze with dotnet-dump
-
-1. Install [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
-2. Run: `dotnet-dump analyze <path-to-dump>`
-3. Then run the following commands:
-
+Now you can use regular SOS commands like `dumpstack`, `pe`, etc.
+If you are debugging a 32 bit dump ousing 64 bit dotnet, you will get an error `SOS does not support the current target architecture`. In that case replace dotnet-dump with the 32 bit version:
 ```script
-setclrpath (To verify an incorrect DAC hasn't been loaded).
-setclrpath <path to core root or testhost where coreclr is>
-setsymbolserver -directory <directory with symbols (for library tests these are in testhost dir)>
+dotnet tool uninstall --global dotnet-dump
+"C:\Program Files (x86)\dotnet\dotnet.exe" tool install --global dotnet-dump
+```
+---
+## If it's a Linux dump on Windows...
+
+Download the [Cross DAC Binaries](https://dev.azure.com/dnceng/public/_apis/build/builds/%BUILDID%/artifacts?artifactName=CoreCLRCrossDacArtifacts&api-version=6.0&%24format=zip), open it and choose the flavor that matches the dump you are to debug, and copy those files to `%WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0`.
+
+Now you can debug with WinDbg or `dotnet-dump` as if it was a Windows dump. See above.
+
+---
+## If it's a Linux dump on Linux...
+
+## ... and you want to debug with LLDB
+
+Install or update LLDB if necessary ([instructions here](https://github.com/dotnet/diagnostics/blob/master/documentation/lldb/linux-instructions.md))
+
+Load the dump:
+```script
+lldb --core <path-to-dmp> %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0/dotnet
 ```
 
-## MacOS dumps
+Within lldb:
+```script
+setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
+sethostruntime /usr/bin/dotnet
+setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
+```
+If you want to load native symbols
+```
+loadsymbols
+```
 
-Instructions for debugging dumps on MacOS the same as [Linux](#linux-dumps-on-linux); however there are a couple of caveats.
+## ... and you want to debug with dotnet-dump
 
-1. It's only supported to debug them in `dotnet-dump` if it's a runtime generated dump. This includes hang dumps and dumps generated by `createdump`, `dotnet-dump` and the runtime itself. 
-2. If it's a system dump, then only `lldb` works.
+Install the [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
+```script
+dotnet tool install --global dotnet-dump
+dotnet tool update --global dotnet-dump
+```
+If prompted, open a new command prompt to pick up the updated PATH.
+```script
+dotnet-dump analyze <path-to-dump>
+```
+Within dotnet-dump:
+```script
+setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
+setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
+```
+
+---
+## If it's a MacOS dump
+
+Instructions for debugging dumps on MacOS are essentially the same as [Linux](#If-it's-a-Linux-dump-on-Linux...) with one exception: `dotnet-dump` cannot analyze macOS system dumps: you must use `lldb` for those. `dotnet-dump` can only analyze dumps created by `dotnet-dump` or `createdump` or by the runtime on hangs.
+
+---
+# Other Helpful Information
+
+* [How to debug a Linux core dump with SOS](https://github.com/dotnet/diagnostics/blob/master/documentation/debugging-coredump.md)
