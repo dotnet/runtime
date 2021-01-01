@@ -341,16 +341,10 @@ namespace System.Threading
                         }
                     }
                 }
-                // entering the lock and incrementing waiters must not suffer a thread-abort, else we cannot
-                // clean up m_waitCount correctly, which may lead to deadlock due to non-woken waiters.
-                try { }
-                finally
+                Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
+                if (lockTaken)
                 {
-                    Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
-                    if (lockTaken)
-                    {
-                        m_waitCount++;
-                    }
+                    m_waitCount++;
                 }
 
                 // If there are any async waiters, for fairness we'll get in line behind
