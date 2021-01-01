@@ -254,15 +254,16 @@ namespace Microsoft.XmlSerializer.Generator
             for (int i = 0; i < types.Length; i++)
             {
                 Type type = types[i];
-                if (verbose)
-                {
-                    Console.WriteLine($"Importing {type.Name} ({i + 1}/{types.Length})");
-                }
 
                 try
                 {
                     if (type != null)
                     {
+                        if (verbose)
+                        {
+                            Console.WriteLine($"Importing {type.Name} ({i + 1}/{types.Length})");
+                        }
+                        
                         bool isObsolete = false;
                         object[] obsoleteAttributes = type.GetCustomAttributes(typeof(ObsoleteAttribute), false);
                         foreach (object attribute in obsoleteAttributes)
