@@ -2419,5 +2419,18 @@ namespace System.Numerics.Tensors.Tests
             int expectedIndexValue = constructor.IsReversedStride ? 4 : 2;
             Assert.Equal(expectedIndexValue, tensorList[1]);
         }
+
+        [Theory]
+        [MemberData(nameof(GetConstructedTensors))]
+        public void TestGetEnumerator(Tensor<int> tensor)
+        {
+            static IEnumerable<int> GetExpected(Tensor<int> tensor)
+            {
+                for (int index = 0; index < tensor.Length; ++index)
+                    yield return tensor.GetValue(index);
+            }
+
+            Assert.Equal(GetExpected(tensor), tensor);
+        }
     }
 }

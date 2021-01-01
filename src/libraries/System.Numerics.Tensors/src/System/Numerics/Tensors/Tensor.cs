@@ -691,6 +691,49 @@ namespace System.Numerics.Tensors
         /// <param name="value">The new value to set at the specified position in this Tensor.</param>
         public abstract void SetValue(int index, T value);
 
+        public struct Enumerator : IEnumerator<T>
+        {
+            private readonly Tensor<T> tensor;
+            private int index;
+
+            internal Enumerator(Tensor<T> tensor)
+            {
+                Debug.Assert(tensor != null);
+
+                this.tensor = tensor;
+                index = 0;
+                Current = default;
+            }
+
+            public T Current { get; private set; }
+
+            public bool MoveNext()
+            {
+                if (index < tensor.Length)
+                {
+                    Current = tensor.GetValue(index);
+                    ++index;
+                    return true;
+                }
+                else
+                {
+                    Current = default;
+                    return false;
+                }
+            }
+
+            object? IEnumerator.Current => Current;
+
+            void IEnumerator.Reset()
+            {
+                index = 0;
+                Current = default;
+            }
+
+            void IDisposable.Dispose() { }
+        }
+
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
         #region statics
         /// <summary>
@@ -717,10 +760,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region IEnumerable members
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IEnumerable<T>)this).GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         #endregion
 
         #region ICollection members
@@ -828,13 +868,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region IEnumerable<T> members
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            for (int i = 0; i < Length; i++)
-            {
-                yield return GetValue(i);
-            }
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         #endregion
 
         #region ICollection<T> members
