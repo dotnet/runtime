@@ -116,6 +116,8 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "Sys
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 #endif
 
+static gboolean type_is_blittable (MonoType *type);
+
 static MonoImage*
 get_method_image (MonoMethod *method)
 {
@@ -3682,6 +3684,17 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	g_assert (sig->pinvoke);
 	g_assert (!sig->hasthis && ! sig->explicit_this);
 	g_assert (!sig->is_inflated && !sig->has_type_parameters);
+
+	if (!type_is_blittable (sig->ret)) {
+		g_assertf (type_is_blittable (sig->ret), "sig return type %s is not blittable\n", mono_type_full_name (sig->ret));
+	}
+	for (int i = 0; i < sig->param_count; ++i)
+	{
+		MonoType *ty = sig->params[i];
+		if (!type_is_blittable (ty)) {
+			g_assertf (type_is_blittable (ty), "sig param %d (type %s) is not blittable\n", i, mono_type_full_name (ty));
+		}
+	}
 	/* g_assert (every param and return type is blittable) */
 
 	GHashTable *cache = get_cache (&image->wrapper_caches.native_func_wrapper_indirect_cache,
