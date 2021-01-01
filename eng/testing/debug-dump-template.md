@@ -60,11 +60,11 @@ Open WinDbg and open the dump with `File>Open Dump`.
 
 Now you can use regular SOS commands like `!dumpstack`, `!pe`, etc.
 
-## ... and you want to debug with Visual Studio...
+## ... and you want to debug with Visual Studio
 
 Currently this is not possible because mscordbi.dll is not signed.
 
-## ... and you want to debug with dotnet-dump...
+## ... and you want to debug with dotnet-dump
 
 Install the [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
 ```script
@@ -82,7 +82,7 @@ setsymbolserver -directory %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
 ```
 
 Now you can use regular SOS commands like `dumpstack`, `pe`, etc.
-If you are debugging a 32 bit dump ousing 64 bit dotnet, you will get an error `SOS does not support the current target architecture`. In that case replace dotnet-dump with the 32 bit version:
+If you are debugging a 32 bit dump using 64 bit dotnet, you will get an error `SOS does not support the current target architecture`. In that case replace dotnet-dump with the 32 bit version:
 ```script
 dotnet tool uninstall --global dotnet-dump
 "C:\Program Files (x86)\dotnet\dotnet.exe" tool install --global dotnet-dump
