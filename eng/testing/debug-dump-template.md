@@ -135,7 +135,7 @@ setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
 ```
 
 ---
-## If it's a MacOS dump
+## If it's a macOS dump
 
 Instructions for debugging dumps on macOS are essentially the same as [Linux](#If-it's-a-Linux-dump-on-Linux...) with one exception: `dotnet-dump` cannot analyze macOS system dumps: you must use `lldb` for those. `dotnet-dump` can only analyze dumps created by `dotnet-dump` or `createdump` or by the runtime on hangs.
 
