@@ -162,9 +162,7 @@ namespace System.Diagnostics.Tests
             string scriptName = GetTestFileName();
             string filename = Path.Combine(TestDirectory, scriptName);
             File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
-            // set x-bit
-            int mode = Convert.ToInt32("744", 8);
-            Assert.Equal(0, chmod(filename, mode));
+            ChMod(filename, "744"); // set x-bit
 
             using (var process = Process.Start(new ProcessStartInfo { FileName = filename }))
             {
@@ -198,8 +196,7 @@ namespace System.Diagnostics.Tests
             // Create a file that has the x-bit set, but which isn't a valid script.
             string filename = WriteScriptFile(TestDirectory, GetTestFileName(), returnValue: 0);
             File.WriteAllText(filename, $"not a script");
-            int mode = Convert.ToInt32("744", 8);
-            Assert.Equal(0, chmod(filename, mode));
+            ChMod(filename, "744"); // set x-bit
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["PATH"] = path;
@@ -482,9 +479,7 @@ namespace System.Diagnostics.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            int mode = Convert.ToInt32("644", 8);
-
-            Assert.Equal(0, chmod(path, mode));
+            ChMod(path, "644");
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
@@ -495,9 +490,7 @@ namespace System.Diagnostics.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            int mode = Convert.ToInt32("744", 8);
-
-            Assert.Equal(0, chmod(path, mode)); // execute permissions
+            ChMod(path, "744"); // set x-bit
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
@@ -548,8 +541,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28922", TestPlatforms.AnyUnix)]
-        public unsafe void TestCheckChildProcessUserAndGroupIds()
+        public void TestCheckChildProcessUserAndGroupIds()
         {
             string userName = GetCurrentRealUserName();
             string userId = GetUserId(userName);
@@ -899,6 +891,11 @@ namespace System.Diagnostics.Tests
         [DllImport("libc")]
         private static extern int chmod(string path, int mode);
 
+        private static void ChMod(string filename, string mode)
+        {
+            Assert.Equal(0, chmod(filename, Convert.ToInt32(mode, 8)));
+        }
+
         [DllImport("libc")]
         private static extern uint geteuid();
         [DllImport("libc")]
@@ -925,7 +922,11 @@ namespace System.Diagnostics.Tests
                 }
 
                 // Return this as a HashSet to filter out duplicates.
-                return new HashSet<uint>(groups.Slice(0, rv).ToArray());
+                var result = new HashSet<uint>(groups.Slice(0, rv).ToArray());
+                // according to https://man7.org/linux/man-pages/man2/getgroups.2.html it's not specified
+                // if this group is included in the list returned by getgroups
+                result.Add(getegid());
+                return result;
             }
         }
 
@@ -946,9 +947,7 @@ namespace System.Diagnostics.Tests
         {
             string filename = Path.Combine(directory, name);
             File.WriteAllText(filename, $"#!/bin/sh\nexit {returnValue}\n");
-            // set x-bit
-            int mode = Convert.ToInt32("744", 8);
-            Assert.Equal(0, chmod(filename, mode));
+            ChMod(filename, "744"); // set x-bit
             return filename;
         }
 

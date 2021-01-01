@@ -62,7 +62,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             _connected = true;
 
             SetCallbackHandler();
-            SetIdleTimeout(TimeSpan.FromSeconds(120));
         }
 
         // constructor for outbound connections
@@ -161,21 +160,21 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _connectTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
             }
 
-            _acceptQueue.Writer.Complete();
-
             return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventShutdownInitiatedByPeer(ref ConnectionEvent connectionEvent)
         {
             _abortErrorCode = connectionEvent.Data.ShutdownInitiatedByPeer.ErrorCode;
-            _acceptQueue.Writer.Complete();
             return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventShutdownComplete(ref ConnectionEvent connectionEvent)
         {
             _shutdownTcs.SetResult(MsQuicStatusCodes.Success);
+
+            // Stop accepting new streams.
+            _acceptQueue?.Writer.Complete();
             return MsQuicStatusCodes.Success;
         }
 
@@ -259,7 +258,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 AddressFamily.Unspecified => 0,
                 AddressFamily.InterNetwork => 2,
                 AddressFamily.InterNetworkV6 => 23,
-                _ => throw new Exception($"Unsupported address family of '{_remoteEndPoint.AddressFamily}' for remote endpoint.")
+                _ => throw new Exception(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
             QuicExceptionHelpers.ThrowIfFailed(
@@ -291,7 +290,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void SetCallbackHandler()
         {
-            Debug.Assert(!_handle.IsAllocated);
+            Debug.Assert(!_handle.IsAllocated, "callback handler allocated already");
             _handle = GCHandle.Alloc(this);
 
             MsQuicApi.Api.SetCallbackHandlerDelegate(
@@ -309,8 +308,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 (uint)Flags,
                 ErrorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "Failed to shutdown connection.");
-
-            Debug.Assert(_shutdownTcs.Task.IsCompleted == false);
 
             return new ValueTask(_shutdownTcs.Task);
         }

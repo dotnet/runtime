@@ -112,21 +112,6 @@ namespace System.IO.Compression
             }
         }
 
-        private static void ValidateParameters(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedPosNum);
-
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedPosNum);
-
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.InvalidArgumentOffsetCount);
-        }
-
         public Stream BaseStream => _stream;
         public override bool CanRead => _mode == CompressionMode.Decompress && _stream != null && _stream.CanRead;
         public override bool CanWrite => _mode == CompressionMode.Compress && _stream != null && _stream.CanWrite;

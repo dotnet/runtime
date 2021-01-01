@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
   <!-- Source files -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\Net\Quic\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\*.cs" />
     <Compile Include="System\Net\Quic\Implementations\Mock\*.cs" />
@@ -14,7 +18,7 @@
     <Compile Include="System\Net\Quic\Interop\*.cs" />
   </ItemGroup>
   <!-- System.Net common -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />

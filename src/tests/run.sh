@@ -9,7 +9,7 @@ function print_usage {
     echo 'src/tests/run.sh <arch> <configurations>'
     echo ''
     echo 'Optional arguments:'
-    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/Windows_NT.x64.Debug).'
+    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
     echo '  --testNativeBinDir=<path>        : Directory of the native CoreCLR test build (e.g. runtime/artifacts/obj/Linux.x64.Debug/tests).'
     echo '  --coreOverlayDir=<path>          : Directory containing core binaries and test dependencies.'
     echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. runtime/artifacts/bin/coreclr/Linux.x64.Debug).'
@@ -332,11 +332,11 @@ echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
 
-if [ $buildArch = "wasm" ]; then
+if [ "$buildArch" = "wasm" ]; then
     runtestPyArguments+=("-os" "Browser")
 fi
 
-if [ $buildOS = "Android" ]; then
+if [ "$buildOS" = "Android" ]; then
     runtestPyArguments+=("-os" "Android")
 fi
     

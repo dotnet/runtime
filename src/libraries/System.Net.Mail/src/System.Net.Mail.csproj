@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -102,8 +102,6 @@
              Link="Common\System\Net\ContextAwareResult.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
              Link="Common\System\Net\NTAuthentication.Common.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
-             Link="Common\System\Net\Security\SSPIHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
@@ -126,6 +124,10 @@
              Link="Common\System\Net\NegotiationInfoClass.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs"
              Link="Common\System\Net\SecurityStatusPal.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"
+             Link="Common\System\Net\Security\SafeCredentialReference.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
+             Link="Common\System\Net\Security\SSPIHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
              Link="Common\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"

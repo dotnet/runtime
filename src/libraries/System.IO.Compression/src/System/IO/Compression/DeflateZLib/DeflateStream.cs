@@ -235,7 +235,7 @@ namespace System.IO.Compression
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return ReadCore(new Span<byte>(buffer, offset, count));
         }
 
@@ -303,21 +303,6 @@ namespace System.IO.Compression
             return totalRead;
         }
 
-        private void ValidateParameters(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count));
-
-            if (buffer.Length - offset < count)
-                throw new ArgumentOutOfRangeException(SR.InvalidArgumentOffsetCount);
-        }
-
         private void EnsureNotDisposed()
         {
             if (_stream == null)
@@ -363,7 +348,7 @@ namespace System.IO.Compression
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return ReadAsyncMemory(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
@@ -453,7 +438,7 @@ namespace System.IO.Compression
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
@@ -741,7 +726,7 @@ namespace System.IO.Compression
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return WriteAsyncMemory(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
@@ -809,23 +794,21 @@ namespace System.IO.Compression
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
 
-            EnsureDecompressionMode();
             EnsureNotDisposed();
+            if (!CanRead) throw new NotSupportedException();
 
             new CopyToStream(this, destination, bufferSize).CopyFromSourceToDestination();
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            // Validation as base CopyToAsync would do
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
 
-            // Validation as ReadAsync would do
-            EnsureDecompressionMode();
-            EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
+            if (!CanRead) throw new NotSupportedException();
+            EnsureNoActiveAsyncOperation();
 
             // Early check for cancellation
             if (cancellationToken.IsCancellationRequested)

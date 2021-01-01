@@ -7,18 +7,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Disable NuGet static graph evaluation as pkgprojs do their own restore.  -->
-    <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageDescriptionFile>$(InstallerProjectRoot)pkg/projects/descriptions.json</PackageDescriptionFile>
-    <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
-    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
-    <ProjectUrl>https://dot.net</ProjectUrl>
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
 
@@ -26,45 +14,6 @@
 
     <!-- this repo doesn't currently use the index so don't force it to be in sync -->
     <SkipIndexCheck>true</SkipIndexCheck>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
-
-    <RpmTemplatesDir>$(MSBuildThisFileDirectory)packaging/rpm/templates/</RpmTemplatesDir>
-
-    <!--
-      Intermediate dir the debtool project is copied to. Use DebtoolAssemblyFile for "dotnet
-      deb-tool" commands, after depending on InitializeDotnetDebTool target.
-    -->
-    <DebToolBinDir>$(ArtifactsBinDir)dotnet-deb-tool\</DebToolBinDir>
-    <DebtoolAssemblyFile>$(DebToolBinDir)$(Configuration)\$(NetCoreAppCurrent)\dotnet-deb-tool.dll</DebtoolAssemblyFile>
-    <DotnetDebToolSourceDir>$(RepoRoot)tools-local/dotnet-deb-tool/</DotnetDebToolSourceDir>
-
-    <IsDebianBasedDistro
-      Condition="
-        $(PackageTargetRid.StartsWith('ubuntu')) or
-        $(PackageTargetRid.StartsWith('debian')) or
-        $(PackageTargetRid.StartsWith('linuxmint'))">true</IsDebianBasedDistro>
-    <BuildDebPackage Condition="'$(IsDebianBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildDebPackage>
-    <BuildDebPackage Condition="'$(BuildLinuxPackages)' == true and '$(PortableBuild)' == true">true</BuildDebPackage>
-
-    <IsRPMBasedDistro Condition="'$(InstallerExtension)' == '.rpm'">true</IsRPMBasedDistro>
-    <BuildRpmPackage Condition="'$(IsRPMBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildRpmPackage>
-    <BuildRpmPackage Condition="'$(BuildLinuxPackages)' == true and '$(PortableBuild)' == true">true</BuildRpmPackage>
-
-    <!--
-      Some Debian and RPM packages only need to be built once for all supported distros, as the bits
-      are portable. By default, build these packages, but in the official build this can be turned
-      off to avoid producing redundant packages.
-    -->
-    <BuildDistroIndependentInstallers Condition="'$(BuildDistroIndependentInstallers)' == ''">true</BuildDistroIndependentInstallers>
-
-    <!--
-      Allow packaging one build's outputs for a different RID. For example, package portable bits
-      for multiple Debian-based distros.
-    -->
-    <InstallerSourceOSPlatformConfig Condition="'$(InstallerSourceOSPlatformConfig)' == ''">$(OSPlatformConfig)</InstallerSourceOSPlatformConfig>
   </PropertyGroup>
 
   <ItemGroup>

@@ -29,13 +29,23 @@ namespace System.Runtime.Loader
             Unloading
         }
 
-        private static readonly Dictionary<long, WeakReference<AssemblyLoadContext>> s_allContexts = new Dictionary<long, WeakReference<AssemblyLoadContext>>();
+        private static volatile Dictionary<long, WeakReference<AssemblyLoadContext>>? s_allContexts;
         private static long s_nextId;
 
+        [MemberNotNull(nameof(s_allContexts))]
+        private static Dictionary<long, WeakReference<AssemblyLoadContext>> AllContexts =>
+            s_allContexts ??
+            Interlocked.CompareExchange(ref s_allContexts, new Dictionary<long, WeakReference<AssemblyLoadContext>>(), null) ??
+            s_allContexts;
+
 #region private data members
-        // If you modify any of these fields, you must also update the
+        // If you modify this field, you must also update the
         // AssemblyLoadContextBaseObject structure in object.h
         // and MonoManagedAssemblyLoadContext in object-internals.h
+
+        // Contains the reference to VM's representation of the AssemblyLoadContext
+        private readonly IntPtr _nativeAssemblyLoadContext;
+#endregion
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
@@ -48,9 +58,6 @@ namespace System.Runtime.Loader
 
         private readonly string? _name;
 
-        // Contains the reference to VM's representation of the AssemblyLoadContext
-        private readonly IntPtr _nativeAssemblyLoadContext;
-
         // Id used by s_allContexts
         private readonly long _id;
 
@@ -58,7 +65,6 @@ namespace System.Runtime.Loader
         private InternalState _state;
 
         private readonly bool _isCollectible;
-#endregion
 
         protected AssemblyLoadContext() : this(false, false, null)
         {
@@ -96,10 +102,11 @@ namespace System.Runtime.Loader
             _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
 
             // Add this instance to the list of alive ALC
-            lock (s_allContexts)
+            Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
+            lock (allContexts)
             {
                 _id = s_nextId++;
-                s_allContexts.Add(_id, new WeakReference<AssemblyLoadContext>(this, true));
+                allContexts.Add(_id, new WeakReference<AssemblyLoadContext>(this, true));
             }
         }
 
@@ -142,9 +149,10 @@ namespace System.Runtime.Loader
                 _state = InternalState.Unloading;
             }
 
-            lock (s_allContexts)
+            Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
+            lock (allContexts)
             {
-                s_allContexts.Remove(_id);
+                allContexts.Remove(_id);
             }
         }
 
@@ -172,6 +180,9 @@ namespace System.Runtime.Loader
         // Returns: A handle to the loaded native library
         public event Func<Assembly, string, IntPtr>? ResolvingUnmanagedDll
         {
+#if MONO
+            [DynamicDependency(nameof(MonoResolveUnmanagedDllUsingEvent))]
+#endif
             add
             {
                 _resolvingUnmanagedDll += value;
@@ -190,6 +201,9 @@ namespace System.Runtime.Loader
         // Returns: The Loaded assembly object.
         public event Func<AssemblyLoadContext, AssemblyName, Assembly?>? Resolving
         {
+#if MONO
+            [DynamicDependency(nameof(MonoResolveUsingResolvingEvent))]
+#endif
             add
             {
                 _resolving += value;
@@ -214,16 +228,28 @@ namespace System.Runtime.Loader
 
 #region AppDomainEvents
         // Occurs when an Assembly is loaded
+#if MONO
+        [method: DynamicDependency(nameof(OnAssemblyLoad))]
+#endif
         internal static event AssemblyLoadEventHandler? AssemblyLoad;
 
         // Occurs when resolution of type fails
+#if MONO
+        [method: DynamicDependency(nameof(OnTypeResolve))]
+#endif
         internal static event ResolveEventHandler? TypeResolve;
 
         // Occurs when resolution of resource fails
+#if MONO
+        [method: DynamicDependency(nameof(OnResourceResolve))]
+#endif
         internal static event ResolveEventHandler? ResourceResolve;
 
         // Occurs when resolution of assembly fails
         // This event is fired after resolve events of AssemblyLoadContext fails
+#if MONO
+        [method: DynamicDependency(nameof(OnAssemblyResolve))]
+#endif
         internal static event ResolveEventHandler? AssemblyResolve;
 #endregion
 
@@ -239,16 +265,24 @@ namespace System.Runtime.Loader
         {
             get
             {
-                _ = AssemblyLoadContext.Default; // Ensure default is initialized
+                _ = Default; // Ensure default is initialized
 
-                List<WeakReference<AssemblyLoadContext>>? alcList = null;
-                lock (s_allContexts)
+                Dictionary<long, WeakReference<AssemblyLoadContext>>? allContexts = s_allContexts;
+                Debug.Assert(allContexts != null, "Creating the default context should have initialized the contexts collection.");
+
+                WeakReference<AssemblyLoadContext>[] alcSnapshot;
+                lock (allContexts)
                 {
                     // To make this thread safe we need a quick snapshot while locked
-                    alcList = new List<WeakReference<AssemblyLoadContext>>(s_allContexts.Values);
+                    alcSnapshot = new WeakReference<AssemblyLoadContext>[allContexts.Count];
+                    int pos = 0;
+                    foreach (KeyValuePair<long, WeakReference<AssemblyLoadContext>> item in allContexts)
+                    {
+                        alcSnapshot[pos++] = item.Value;
+                    }
                 }
 
-                foreach (WeakReference<AssemblyLoadContext> weakAlc in alcList)
+                foreach (WeakReference<AssemblyLoadContext> weakAlc in alcSnapshot)
                 {
                     if (weakAlc.TryGetTarget(out AssemblyLoadContext? alc))
                     {
@@ -428,9 +462,16 @@ namespace System.Runtime.Loader
 
         internal static void OnProcessExit()
         {
-            lock (s_allContexts)
+            Dictionary<long, WeakReference<AssemblyLoadContext>>? allContexts = s_allContexts;
+            if (allContexts is null)
             {
-                foreach (KeyValuePair<long, WeakReference<AssemblyLoadContext>> alcAlive in s_allContexts)
+                // If s_allContexts was never initialized, there are no contexts for which to raise an unload event.
+                return;
+            }
+
+            lock (allContexts)
+            {
+                foreach (KeyValuePair<long, WeakReference<AssemblyLoadContext>> alcAlive in allContexts)
                 {
                     if (alcAlive.Value.TryGetTarget(out AssemblyLoadContext? alc))
                     {

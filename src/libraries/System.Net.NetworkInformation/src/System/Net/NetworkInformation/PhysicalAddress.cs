@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.NetworkInformation
@@ -28,10 +29,7 @@ namespace System.Net.NetworkInformation
 
                 for (i = 0; i < size; i += 4)
                 {
-                    hash ^= (int)_address[i]
-                            | ((int)_address[i + 1] << 8)
-                            | ((int)_address[i + 2] << 16)
-                            | ((int)_address[i + 3] << 24);
+                    hash ^= BinaryPrimitives.ReadInt32LittleEndian(_address.AsSpan(i));
                 }
 
                 if ((_address.Length & 3) != 0)

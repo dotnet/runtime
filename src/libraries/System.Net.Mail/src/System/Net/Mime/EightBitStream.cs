@@ -53,18 +53,7 @@ namespace System.Net.Mime
         /// <param name="state">State to pass to callback</param>
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset >= buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             IAsyncResult result;
             if (_shouldEncodeLeadingDots)
@@ -95,18 +84,7 @@ namespace System.Net.Mime
         /// <param name="count">Count of bytes to write</param>
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset >= buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             if (_shouldEncodeLeadingDots)
             {

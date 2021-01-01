@@ -6,7 +6,7 @@ Param(
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
-  [ValidateSet("Windows_NT","Linux","OSX","Browser")][string]$os,
+  [ValidateSet("windows","Linux","OSX","Browser")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
@@ -16,6 +16,7 @@ Param(
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
+  [switch]$ninja,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -33,7 +34,7 @@ function Get-Help() {
   Write-Host "  -help (-h)                     Print help and exit."
   Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -os                            Target operating system: Windows_NT, Linux, OSX, or Browser."
+  Write-Host "  -os                            Target operating system: windows, Linux, OSX, or Browser."
   Write-Host "                                 [Default: Your machine's OS.]"
   Write-Host "  -runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -73,6 +74,9 @@ function Get-Help() {
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
+
+  Write-Host "Native build settings:"
+  Write-Host "  -ninja                  Use Ninja instead of MSBuild to run the native build."
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
   Write-Host "The above arguments can be shortened as much as to be unambiguous."
@@ -117,9 +121,28 @@ if ($subset -eq 'help') {
 }
 
 if ($vs) {
-  . $PSScriptRoot\common\tools.ps1
-
-  if (-Not (Test-Path $vs)) {
+  if ($vs -ieq "coreclr.sln") {
+    # If someone passes in coreclr.sln (case-insensitive),
+    # launch the generated CMake solution.
+    $archToOpen = $arch[0]
+    $configToOpen = $configuration[0]
+    if ($runtimeConfiguration) {
+      $configToOpen = $runtimeConfiguration
+    }
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "CoreCLR.sln"
+    if (-Not (Test-Path $vs)) {
+      $repoRoot = Split-Path $PSScriptRoot -Parent
+      Invoke-Expression "& `"$repoRoot/src/coreclr/build-runtime.cmd`" -configureonly -$archToOpen -$configToOpen"
+      if ($lastExitCode -ne 0) {
+        Write-Error "Failed to generate the CoreCLR solution file."
+        exit 1
+      }
+      if (-Not (Test-Path $vs)) {
+        Write-Error "Unable to find the CoreCLR solution file at $vs."
+      }
+    }
+  }
+  elseif (-Not (Test-Path $vs)) {
     $solution = $vs
 
     if ($runtimeFlavor -eq "Mono") {
@@ -127,7 +150,7 @@ if ($vs) {
       $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono\netcore" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
     } else {
       # Search for the solution in coreclr
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\src" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
     }
 
     if (-Not (Test-Path $vs)) {
@@ -153,6 +176,8 @@ if ($vs) {
       }
     }
   }
+  
+  . $PSScriptRoot\common\tools.ps1
 
   # This tells .NET Core to use the bootstrapped runtime
   $env:DOTNET_ROOT=InitializeDotNetCli -install:$true -createSdkLocationFile:$true
@@ -204,6 +229,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
     "properties"             { $arguments += " " + $properties }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
+    "ninja"                  { $arguments += " /p:Ninja=$($PSBoundParameters[$argument])" }
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}

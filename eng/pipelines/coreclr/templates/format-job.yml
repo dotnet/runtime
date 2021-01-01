@@ -6,6 +6,7 @@ parameters:
   container: ''
   crossBuild: false
   crossrootfsDir: ''
+  dependOnEvaluatePaths: false
   timeoutInMinutes: ''
   stagedBuild: false
   variables: {}
@@ -23,15 +24,16 @@ jobs:
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     helixType: 'format'
-    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    ${{ if eq(parameters.osGroup, 'windows') }}:
       pool: 
         vmImage: 'windows-2019'
-    ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    ${{ if ne(parameters.osGroup, 'windows') }}:
       pool: ${{ parameters.pool }}
     variables: ${{ parameters.variables }}
     condition: ${{ parameters.condition }}
@@ -49,7 +51,7 @@ jobs:
         versionSpec: '3.x' 
         addToPath: true 
         architecture: 'x64'
-      condition: ${{ eq(parameters.osGroup, 'Windows_NT') }}
+      condition: ${{ eq(parameters.osGroup, 'windows') }}
     - task: PythonScript@0
       displayName: Run tests/scripts/format.py
       inputs:

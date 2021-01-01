@@ -474,6 +474,35 @@
         "android.28-x86"
       ]
     },
+    "android.30": {
+      "#import": [
+        "android.29"
+      ]
+    },
+    "android.30-arm": {
+      "#import": [
+        "android.30",
+        "android.29-arm"
+      ]
+    },
+    "android.30-arm64": {
+      "#import": [
+        "android.30",
+        "android.29-arm64"
+      ]
+    },
+    "android.30-x64": {
+      "#import": [
+        "android.30",
+        "android.29-x64"
+      ]
+    },
+    "android.30-x86": {
+      "#import": [
+        "android.30",
+        "android.29-x86"
+      ]
+    },
     "any": {
       "#import": [
         "base"

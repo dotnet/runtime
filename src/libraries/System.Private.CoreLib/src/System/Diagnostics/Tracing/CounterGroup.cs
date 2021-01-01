@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 #endif
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 using System.Threading;
 
 #if ES_BUILD_STANDALONE
@@ -14,6 +15,7 @@ namespace Microsoft.Diagnostics.Tracing
 namespace System.Diagnostics.Tracing
 #endif
 {
+    [UnsupportedOSPlatform("browser")]
     internal class CounterGroup
     {
         private readonly EventSource _eventSource;

@@ -40,7 +40,7 @@ namespace System.Net.Quic.Implementations.Mock
 
         private StreamBuffer? ReadStreamBuffer => _isInitiator ? _streamState._inboundStreamBuffer : _streamState._outboundStreamBuffer;
 
-        internal override bool CanRead => ReadStreamBuffer is not null;
+        internal override bool CanRead => !_disposed && ReadStreamBuffer is not null;
 
         internal override int Read(Span<byte> buffer)
         {
@@ -80,7 +80,7 @@ namespace System.Net.Quic.Implementations.Mock
 
         private StreamBuffer? WriteStreamBuffer => _isInitiator ? _streamState._outboundStreamBuffer : _streamState._inboundStreamBuffer;
 
-        internal override bool CanWrite => WriteStreamBuffer is not null;
+        internal override bool CanWrite => !_disposed && WriteStreamBuffer is not null;
 
         internal override void Write(ReadOnlySpan<byte> buffer)
         {
@@ -199,8 +199,9 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (!_disposed)
             {
-                _disposed = true;
+                Shutdown();
 
+                _disposed = true;
             }
         }
 
@@ -208,6 +209,8 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (!_disposed)
             {
+                Shutdown();
+
                 _disposed = true;
             }
 

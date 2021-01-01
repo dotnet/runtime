@@ -1327,7 +1327,7 @@ namespace System.Security.Permissions
         public PrincipalPermission(string name, string role, bool isAuthenticated) { }
         public System.Security.IPermission Copy() { throw null; }
         public void Demand() { }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object obj) { throw null; }
         public void FromXml(System.Security.SecurityElement elem) { }
         public override int GetHashCode() { throw null; }
         public System.Security.IPermission Intersect(System.Security.IPermission target) { throw null; }
@@ -2323,7 +2323,7 @@ namespace System.Security.Policy
         public string Url { get { throw null; } set { } }
         public bool Check(System.Security.Policy.Evidence evidence) { throw null; }
         public System.Security.Policy.IMembershipCondition Copy() { throw null; }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object obj) { throw null; }
         public void FromXml(System.Security.SecurityElement e) { }
         public void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level) { }
         public override int GetHashCode() { throw null; }

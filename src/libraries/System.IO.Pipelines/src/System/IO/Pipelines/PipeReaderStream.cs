@@ -45,15 +45,8 @@ namespace System.IO.Pipelines
         {
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            return ReadAsync(buffer, offset, count).GetAwaiter().GetResult();
-        }
+        public override int Read(byte[] buffer, int offset, int count) =>
+            ReadAsync(buffer, offset, count).GetAwaiter().GetResult();
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 

@@ -1,5 +1,18 @@
-trigger: none
+# This job definition automates the SuperPMI collection process.
 
+# Trigger this job if the JIT-EE GUID changes, which invalidates previous SuperPMI
+# collections.
+trigger:
+  batch: false
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - src/coreclr/inc/jiteeversionguid.h
+
+# This pipeline is supposed to be run only on merged changes
+# and should not be triggerable from a PR. 
 pr: none
 
 schedules:
@@ -11,10 +24,6 @@ schedules:
   always: true
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -26,23 +35,22 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
 
-# TODO: Enable SPMI for P1 tests
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-#     buildConfig: checked
-#     platforms:
-#     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-#     jobParameters:
-#       testGroup: outerloop
-#       liveLibrariesBuildConfig: Release
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -54,13 +62,57 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      collectionType: pmi
+      collectionName: libraries
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      collectionType: crossgen
+      collectionName: libraries
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
+      collectionType: pmi
+      collectionName: tests
 

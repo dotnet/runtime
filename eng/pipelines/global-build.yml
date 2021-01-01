@@ -30,11 +30,6 @@ pr:
 
 jobs:
 #
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
-
-#
 # Build with Release config and Debug runtimeConfiguration
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -42,7 +37,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
     platforms:
-    - Windows_NT_x86
+    - windows_x86
     - OSX_x64
     jobParameters:
       testGroup: innerloop
@@ -87,7 +82,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Mono_Libraries

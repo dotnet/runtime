@@ -8481,6 +8481,46 @@ mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char 
 #endif
 }
 
+static const GUID IID_IDrupe = {0x9f001e6b, 0xa244, 0x3911, {0x88,0xdb, 0xbb,0x2b,0x6d,0x58,0x43,0xaa}};
+
+#ifndef HOST_WIN32
+typedef struct IUnknown IUnknown;
+
+typedef struct
+{
+	int (STDCALL *QueryInterface)(IUnknown *iface, REFIID iid, gpointer *out);
+	int (STDCALL *AddRef)(IUnknown *iface);
+	int (STDCALL *Release)(IUnknown *iface);
+} IUnknownVtbl;
+
+struct IUnknown
+{
+	const IUnknownVtbl *lpVtbl;
+};
+#endif
+
+LIBTEST_API int STDCALL
+mono_test_ccw_query_interface (IUnknown *iface)
+{
+	IUnknown *drupe;
+	int hr;
+
+#ifdef __cplusplus
+	hr = iface->QueryInterface (IID_IDrupe, (void **)&drupe);
+#else
+	hr = iface->lpVtbl->QueryInterface (iface, &IID_IDrupe, (void **)&drupe);
+#endif
+	if (hr != 0)
+		return 1;
+#ifdef __cplusplus
+	drupe->Release();
+#else
+	drupe->lpVtbl->Release(drupe);
+#endif
+
+	return 0;
+}
+
 #ifdef __cplusplus
 } // extern C
 #endif

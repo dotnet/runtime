@@ -49,6 +49,10 @@ static GHashTable *native_library_module_map;
 static GHashTable *native_library_module_blocklist;
 #endif
 
+#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+extern const void *GlobalizationResolveDllImport (const char *name);
+#endif
+
 #ifndef DISABLE_DLLMAP
 static MonoDllMap *global_dll_map;
 #endif
@@ -564,13 +568,19 @@ netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAsse
 	MONO_STATIC_POINTER_INIT (MonoMethod, resolve)
 
 		ERROR_DECL (local_error);
-		MonoClass *native_lib_class = mono_class_get_native_library_class ();
-		g_assert (native_lib_class);
-		resolve = mono_class_get_method_from_name_checked (native_lib_class, "MonoLoadLibraryCallbackStub", -1, 0, local_error);
-		mono_error_assert_ok (local_error);
+		static gboolean inited;
+		if (!inited) {
+			MonoClass *native_lib_class = mono_class_get_native_library_class ();
+			g_assert (native_lib_class);
+			resolve = mono_class_get_method_from_name_checked (native_lib_class, "MonoLoadLibraryCallbackStub", -1, 0, local_error);
+			inited = TRUE;
+		}
+		mono_error_cleanup (local_error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve)
-	g_assert (resolve);
+
+	if (!resolve)
+		return NULL;
 
 	if (mono_runtime_get_no_exec ())
 		return NULL;
@@ -1256,6 +1266,27 @@ legacy_lookup_native_library (MonoImage *image, const char *scope)
 
 #endif // ENABLE_NETCORE
 
+#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+
+#ifdef HOST_WIN32
+#define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
+#else
+#define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
+#endif
+
+static gpointer
+default_resolve_dllimport (const char *dll, const char *func)
+{
+	if (strcmp (dll, GLOBALIZATION_DLL_NAME) == 0) {
+		const void *method_impl = GlobalizationResolveDllImport (func);
+		if (method_impl)
+			return (gpointer)method_impl;
+	}
+
+	return NULL;
+}
+#endif
+
 gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
@@ -1334,6 +1365,12 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		}
 		return piinfo->addr;
 	}
+#endif
+
+#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+	gpointer default_override = default_resolve_dllimport (new_scope, new_import);
+	if (default_override)
+		return default_override;
 #endif
 
 #ifdef ENABLE_NETCORE

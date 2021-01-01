@@ -278,8 +278,8 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => outputStream.Write(new byte[2], offset, 0));
-                await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("offset", () => outputStream.WriteAsync(new byte[2], offset, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => outputStream.Write(new byte[2], offset, 0));
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => outputStream.WriteAsync(new byte[2], offset, 0));
             }
         }
 
@@ -292,8 +292,8 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => outputStream.Write(new byte[2], offset, size));
-                await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("size", () => outputStream.WriteAsync(new byte[2], offset, size));
+                Assert.Throws<ArgumentOutOfRangeException>(() => outputStream.Write(new byte[2], offset, size));
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => outputStream.WriteAsync(new byte[2], offset, size));
             }
         }
 

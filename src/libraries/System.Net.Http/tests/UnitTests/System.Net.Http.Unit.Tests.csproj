@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
@@ -22,8 +22,6 @@
              Link="ProductionCode\Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="ProductionCode\Common\System\Text\StringBuilderCache.cs" />
-    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
-             Link="ProductionCode\Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
              Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"

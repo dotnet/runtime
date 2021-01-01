@@ -5,6 +5,7 @@
     <SkipValidatePackage>true</SkipValidatePackage>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
+    <PackageDescription>Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
     <File Include="runtime.json" />
