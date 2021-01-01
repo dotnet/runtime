@@ -5,7 +5,6 @@ Click the link to the dump on the `Helix Test Logs` tab in Azure DevOps. This is
 # Get the Helix payload
 
 [Runfo](https://github.com/jaredpar/runfo/tree/master/runfo#runfo) helps get information about helix test runs and azure devops builds. We will use it to download the payload and symbols:
-sos
 ```script
 dotnet tool install --global runfo
 dotnet tool update --global runfo
