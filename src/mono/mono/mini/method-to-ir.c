@@ -7065,7 +7065,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				addr = mono_emit_jit_icall (cfg, mono_get_native_calli_wrapper, args);
 			}
 
-			if (fsig->pinvoke &&
+			if (!method->dynamic && fsig->pinvoke &&
 			    method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE &&
 			    method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				gboolean skip_gc_trans = FALSE; /* TODO: unmanaged[SuppressGCTransition] call conv */
