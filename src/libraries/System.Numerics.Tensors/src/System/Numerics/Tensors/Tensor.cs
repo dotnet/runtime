@@ -691,6 +691,9 @@ namespace System.Numerics.Tensors
         /// <param name="value">The new value to set at the specified position in this Tensor.</param>
         public abstract void SetValue(int index, T value);
 
+        /// <summary>
+        /// The type that implements enumerators for <see cref="Tensor{T}"/> instances.
+        /// </summary>
         public struct Enumerator : IEnumerator<T>
         {
             private readonly Tensor<T> tensor;
@@ -733,6 +736,10 @@ namespace System.Numerics.Tensors
             void IDisposable.Dispose() { }
         }
 
+        /// <summary>
+        /// Gets an enumerator that enumerates the elements of the <see cref="Tensor{T}"/>.
+        /// </summary>
+        /// <returns>An enumerator for the current <see cref="Tensor{T}"/>.</returns>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         #region statics
