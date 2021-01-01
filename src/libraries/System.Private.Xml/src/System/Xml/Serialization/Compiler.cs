@@ -89,7 +89,7 @@ namespace System.Xml.Serialization
         {
             return parent.Name + ".XmlSerializers" + (ns == null || ns.Length == 0 ? "" : "." + GetPersistentHashCode(ns));
         }
-        
+
         /// <remarks>
         /// Returns the same value returned by .NET Framework 64-bit String.GetHashCode()
         /// </remarks>
