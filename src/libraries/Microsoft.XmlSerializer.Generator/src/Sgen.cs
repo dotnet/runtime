@@ -263,7 +263,7 @@ namespace Microsoft.XmlSerializer.Generator
                         {
                             Console.WriteLine($"Importing {type.Name} ({i + 1}/{types.Length})");
                         }
-                        
+
                         bool isObsolete = false;
                         object[] obsoleteAttributes = type.GetCustomAttributes(typeof(ObsoleteAttribute), false);
                         foreach (object attribute in obsoleteAttributes)
