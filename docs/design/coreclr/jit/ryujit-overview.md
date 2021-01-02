@@ -759,7 +759,7 @@ phase-specific information by searching for the phase name. Some useful points f
 You can enable dumps by setting the `COMPlus_JitDump` environment variable to a space-separated list of the method(s)
 you want to dump. For example:
 
-```cmd
+```bat
 :: Print out lots of useful info when
 :: compiling methods named Main/GetEnumerator
 set "COMPlus_JitDump=Main GetEnumerator"

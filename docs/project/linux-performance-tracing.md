@@ -215,7 +215,7 @@ Traces are best viewed using PerfView on Windows.  Note that we're currently loo
 2. Download PerfView from <https://aka.ms/perfview>.
 3. Run PerfView.exe
 
-	> ```cmd
+	> ```bat
 	> PerfView.exe <path to trace.zip file>
 	> ```
 
