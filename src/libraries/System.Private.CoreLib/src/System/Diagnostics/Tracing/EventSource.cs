@@ -334,8 +334,7 @@ namespace System.Diagnostics.Tracing
         }
 
 #if !ES_BUILD_STANDALONE
-        private const DynamicallyAccessedMemberTypes ManifestMemberTypes = DynamicallyAccessedMemberTypes.PublicNestedTypes
-            | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods;
+        private const DynamicallyAccessedMemberTypes ManifestMemberTypes = DynamicallyAccessedMemberTypes.All;
 #endif
 
         /// <summary>
@@ -2647,7 +2646,7 @@ namespace System.Diagnostics.Tracing
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
-                m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+                m_rawManifest = CreateManifestAndDescriptors(typeof(EventSource), Name, this);
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
@@ -2879,7 +2878,13 @@ namespace System.Diagnostics.Tracing
         // Use reflection to look at the attributes of a class, and generate a manifest for it (as UTF8) and
         // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
-        // then the descriptors are not creaed, and just the manifest is generated.
+        // then the descriptors are not created, and just the manifest is generated.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+        Justification = "Nested types of eventSourceType's fields are preserved  " +
+        "with the parameter tagging")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+        Justification = "All eventSourceType's members in its entirety are preserved  " +
+        "with the parameter tagging")]
         private static byte[]? CreateManifestAndDescriptors(
 #if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -5246,7 +5251,12 @@ namespace System.Diagnostics.Tracing
 #endif
         }
 
-        public void AddEventParameter(Type type, string name)
+        public void AddEventParameter(
+#if !ES_BUILD_STANDALONE
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+#endif
+            Type type,
+            string name)
         {
             if (numParams == 0)
                 templates.Append("  <template tid=\"").Append(eventName).AppendLine("Args\">");
@@ -5372,6 +5382,9 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentException(msg);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+        Justification = "Calls to GetFields on types in mapsTab is safe " +
+        "since all its members are preserved")]
         private string CreateManifestString()
         {
 #if !ES_BUILD_STANDALONE
@@ -5779,7 +5792,14 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private string GetTypeName(Type type)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+        Justification = "The recursive call GetType is safe since the type is not an enum in " +
+        "the 2nd call")]
+        private string GetTypeName(
+#if !ES_BUILD_STANDALONE
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+#endif
+        Type type)
         {
             if (type.IsEnum)
             {
