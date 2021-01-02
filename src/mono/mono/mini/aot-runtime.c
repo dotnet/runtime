@@ -1046,20 +1046,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				
 				kind = decode_value (p, &p);
 
-				/* Can't decode this */
-				if (!target)
-					return FALSE;
-				if (target->wrapper_type == MONO_WRAPPER_STELEMREF) {
-					info = mono_marshal_get_wrapper_info (target);
-
-					g_assert (info);
-					if (info->subtype == subtype && info->d.virtual_stelemref.kind == kind)
-						ref->method = target;
-					else
-						return FALSE;
-				} else {
-					return FALSE;
-				}
+				ref->method = mono_marshal_get_virtual_stelemref_wrapper ((MonoStelemrefKind)kind);
 			} else {
 				mono_error_set_bad_image_by_name (error, module->aot_name, "Invalid STELEMREF subtype %d: %s", subtype, module->aot_name);
 				return FALSE;
