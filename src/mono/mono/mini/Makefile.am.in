@@ -775,7 +775,7 @@ libmaintest_a_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@
 WHITEBOX_ASSEMBLY=interp/whitebox-snippets.exe
 test_mono_interp_whitebox_SOURCES =
 test_mono_interp_whitebox_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
-test_mono_interp_whitebox_LDADD = interp/libmaintest_a-whitebox.$(OBJEXT) libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs)
+test_mono_interp_whitebox_LDADD = interp/libmaintest_a-whitebox.$(OBJEXT) libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 test_mono_interp_whitebox_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
 test_mono_interp_whitebox_DEPENDENCIES = $(WHITEBOX_ASSEMBLY)
 
