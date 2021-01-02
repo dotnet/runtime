@@ -5,12 +5,12 @@ Click the link to the dump on the `Helix Test Logs` tab in Azure DevOps. This is
 # Get the Helix payload
 
 [Runfo](https://github.com/jaredpar/runfo/tree/master/runfo#runfo) helps get information about helix test runs and azure devops builds. We will use it to download the payload and symbols:
-```script
+```sh
 dotnet tool install --global runfo
 dotnet tool update --global runfo
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
-```script
+```sh
 # On Windows
 runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %WOUTDIR%
 # On Linux and macOS
@@ -21,7 +21,7 @@ runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %LOUTDIR%
 
 Now extract the files:
 
-```script
+```sh
 # On Windows
 for /f %i in ('dir /s/b %WOUTDIR%\*zip') do tar -xf %i -C %WOUTDIR%
 
@@ -31,12 +31,12 @@ find %LOUTDIR% -name '*zip' -exec unzip -d %LOUTDIR% {} \;
 ```
 
 Now use the [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos) to install the SOS debugging extension.
-```script
+```sh
 dotnet tool install --global dotnet-sos
 dotnet tool update --global dotnet-sos
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
-```script
+```sh
 dotnet sos install --architecture Arm
 dotnet sos install --architecture Arm64
 dotnet sos install --architecture x86
@@ -53,7 +53,7 @@ Install or update WinDbg if necessary ([external](https://docs.microsoft.com/en-
 
 Open WinDbg and open the dump with `File>Open Dump`.
 
-```script
+```
 !setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
 .sympath+ %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
 ```
@@ -67,23 +67,23 @@ Currently this is not possible because mscordbi.dll is not signed.
 ## ... and you want to debug with dotnet-dump
 
 Install the [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
-```script
+```sh
 dotnet tool install --global dotnet-dump
 dotnet tool update --global dotnet-dump
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
-```script
+```sh
 dotnet-dump analyze <path-to-dump>
 ```
 Within dotnet-dump:
-```script
+```sh
 setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
 setsymbolserver -directory %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
 ```
 
 Now you can use regular SOS commands like `dumpstack`, `pe`, etc.
 If you are debugging a 32 bit dump using 64 bit dotnet, you will get an error `SOS does not support the current target architecture`. In that case replace dotnet-dump with the 32 bit version:
-```script
+```sh
 dotnet tool uninstall --global dotnet-dump
 "C:\Program Files (x86)\dotnet\dotnet.exe" tool install --global dotnet-dump
 ```
@@ -102,12 +102,12 @@ Now you can debug with WinDbg or `dotnet-dump` as if it was a Windows dump. See 
 Install or update LLDB if necessary ([instructions here](https://github.com/dotnet/diagnostics/blob/master/documentation/lldb/linux-instructions.md))
 
 Load the dump:
-```script
+```sh
 lldb --core <path-to-dmp> %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0/dotnet
 ```
 
 Within lldb:
-```script
+```
 setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
 sethostruntime /usr/bin/dotnet
 setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
@@ -120,16 +120,16 @@ loadsymbols
 ## ... and you want to debug with dotnet-dump
 
 Install the [dotnet-dump global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump).
-```script
+```sh
 dotnet tool install --global dotnet-dump
 dotnet tool update --global dotnet-dump
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
-```script
+```sh
 dotnet-dump analyze <path-to-dump>
 ```
 Within dotnet-dump:
-```script
+```sh
 setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
 setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
 ```
