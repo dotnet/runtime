@@ -220,7 +220,10 @@ namespace System.Collections.Generic
 
         public void Clear()
         {
-            _set.Clear();
+            if (_set.Count != 0)
+            {
+                _set.Clear();
+            }
         }
 
         public bool ContainsKey(TKey key)
@@ -323,12 +326,12 @@ namespace System.Collections.Generic
 
         ICollection IDictionary.Keys
         {
-            get { return (ICollection)Keys; }
+            get { return Keys; }
         }
 
         ICollection IDictionary.Values
         {
-            get { return (ICollection)Values; }
+            get { return Values; }
         }
 
         object? IDictionary.this[object key]
@@ -353,7 +356,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue) == null))
+                if (value == null && default(TValue) != null)
                     throw new ArgumentNullException(nameof(value));
 
                 try
@@ -382,7 +385,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (value == null && !(default(TValue) == null))
+            if (value == null && default(TValue) != null)
                 throw new ArgumentNullException(nameof(value));
 
             try
@@ -639,8 +642,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 }
 
-                TKey[]? keys = array as TKey[];
-                if (keys != null)
+                if (array is TKey[] keys)
                 {
                     CopyTo(keys, index);
                 }
@@ -822,8 +824,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 }
 
-                TValue[]? values = array as TValue[];
-                if (values != null)
+                if (array is TValue[] values)
                 {
                     CopyTo(values, index);
                 }
@@ -967,7 +968,6 @@ namespace System.Collections.Generic
     public sealed class TreeSet<T> : SortedSet<T>
     {
         public TreeSet()
-            : base()
         { }
 
         public TreeSet(IComparer<T>? comparer) : base(comparer) { }

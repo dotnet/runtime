@@ -116,7 +116,7 @@ namespace System.Collections.Generic
         // Constructs a new sorted dictionary with a given IComparer
         // implementation and a given initial capacity. The sorted list is
         // initially empty, but will have room for the given number of elements
-        // before any reallocations are required. The elements of the sorted list
+        // before any re-allocations are required. The elements of the sorted list
         // are ordered according to the given IComparer implementation. If
         // comparer is null, the elements are compared to each other using
         // the IComparable interface, which in that case must be implemented
@@ -270,7 +270,7 @@ namespace System.Collections.Generic
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            if (value == null && !(default(TValue) == null))    // null is an invalid value for Value types
+            if (value == null && default(TValue) != null)    // null is an invalid value for Value types
                 throw new ArgumentNullException(nameof(value));
 
             if (!(key is TKey))
@@ -402,18 +402,21 @@ namespace System.Collections.Generic
         // Removes all entries from this sorted list.
         public void Clear()
         {
-            // clear does not change the capacity
-            version++;
-            // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+            if (_size != 0)
             {
-                Array.Clear(keys, 0, _size);
+                // clear does not change the capacity
+                version++;
+                // Don't need to doc this but we clear the elements so that the gc can reclaim  the references.
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+                {
+                    Array.Clear(keys, 0, _size);
+                }
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+                {
+                    Array.Clear(values, 0, _size);
+                }
+                _size = 0;
             }
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
-            {
-                Array.Clear(values, 0, _size);
-            }
-            _size = 0;
         }
 
         bool IDictionary.Contains(object key)
@@ -493,8 +496,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
             }
 
-            KeyValuePair<TKey, TValue>[]? keyValuePairArray = array as KeyValuePair<TKey, TValue>[];
-            if (keyValuePairArray != null)
+            if (array is KeyValuePair<TKey, TValue>[] keyValuePairArray)
             {
                 for (int i = 0; i < Count; i++)
                 {
@@ -588,7 +590,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (((object)key) == null) throw new ArgumentNullException(nameof(key));
+                if (key == null) throw new ArgumentNullException(nameof(key));
                 int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
                 if (i >= 0)
                 {
@@ -622,7 +624,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue) == null))
+                if (value == null && default(TValue) != null)
                     throw new ArgumentNullException(nameof(value));
 
                 TKey tempKey = (TKey)key;
@@ -741,7 +743,7 @@ namespace System.Collections.Generic
         // SortedList.TrimExcess();
         public void TrimExcess()
         {
-            int threshold = (int)(((double)keys.Length) * 0.9);
+            int threshold = (int)(keys.Length * 0.9);
             if (_size < threshold)
             {
                 Capacity = _size;
@@ -1105,7 +1107,7 @@ namespace System.Collections.Generic
 
             public int IndexOf(TKey key)
             {
-                if (((object)key) == null)
+                if (key == null)
                     throw new ArgumentNullException(nameof(key));
 
                 int i = Array.BinarySearch<TKey>(_dict.keys, 0,

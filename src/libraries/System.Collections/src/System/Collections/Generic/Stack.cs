@@ -70,12 +70,15 @@ namespace System.Collections.Generic
         // Removes all Objects from the Stack.
         public void Clear()
         {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            if (_size != 0)
             {
-                Array.Clear(_array, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    Array.Clear(_array, 0, _size); // Don't need to doc this but we clear the   elements so that the gc can reclaim the references.
+                }
+                _size = 0;
+                _version++;
             }
-            _size = 0;
-            _version++;
         }
 
         public bool Contains(T item)
@@ -177,7 +180,7 @@ namespace System.Collections.Generic
 
         public void TrimExcess()
         {
-            int threshold = (int)(((double)_array.Length) * 0.9);
+            int threshold = (int)(_array.Length * 0.9);
             if (_size < threshold)
             {
                 Array.Resize(ref _array, _size);
