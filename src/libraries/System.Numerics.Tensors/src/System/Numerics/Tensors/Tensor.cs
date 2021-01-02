@@ -729,8 +729,7 @@ namespace System.Numerics.Tensors
 
             void IEnumerator.Reset()
             {
-                index = 0;
-                Current = default;
+                this = default;
             }
 
             void IDisposable.Dispose() { }
