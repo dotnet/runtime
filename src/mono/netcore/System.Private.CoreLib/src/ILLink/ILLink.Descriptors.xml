@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <linker>
 	<assembly fullname="System.Private.CoreLib">
-		<!-- appdomain.c: mono_runtime_init -->
-		<type fullname="Mono.MonoDomainSetup" preserve="fields" >
-			<!-- appdomain.c mono_object_new_checked in mono_domain_create_appdomain_checked -->
-			<method signature="System.Void .ctor()" />
-		</type>
-
 		<!-- assembly-load-context.c: -->
 		<!-- object-internals.h: MonoManagedAssemblyLoadContext -->
 		<type fullname="System.Runtime.Loader.AssemblyLoadContext">

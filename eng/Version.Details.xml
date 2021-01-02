@@ -6,7 +6,7 @@
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="6.0.0-beta.20630.2">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="6.0.0-beta.20630.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>4c8515c18ebe0071c32fed467ee3890fbd488898</Sha>
     </Dependency>
@@ -38,7 +38,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>4c8515c18ebe0071c32fed467ee3890fbd488898</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.20630.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.20630.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>4c8515c18ebe0071c32fed467ee3890fbd488898</Sha>
     </Dependency>

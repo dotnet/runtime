@@ -39,9 +39,4 @@
     <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <!-- SuppressFinalPackageVersion on private packages by default -->
-    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Private'))">true</SuppressFinalPackageVersion>
-  </PropertyGroup>
-
 </Project>

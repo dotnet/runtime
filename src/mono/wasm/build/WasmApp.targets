@@ -76,7 +76,6 @@
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
-      MainAssembly="$(WasmMainAssemblyPath)"
       MainJS="$(WasmMainJSPath)"
       Assemblies="@(_WasmAssemblies)"
       InvariantGlobalization="$(WasmInvariantGlobalization)"

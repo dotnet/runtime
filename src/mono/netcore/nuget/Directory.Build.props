@@ -1,5 +1,4 @@
 <Project>
-
   <!-- Packaging projects (.pkgproj) are non-SDK-style, so they need to directly import Directory.Build.props -->
   <Import Project="..\..\Directory.Build.props" />
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.props" />
@@ -13,13 +12,10 @@
     
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
     <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
-    <!-- Set the boolean below to true to generate packages with stabilized versions -->
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageIndex Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" Include="$(PackageIndexFile)" />
   </ItemGroup>
-
 </Project>
