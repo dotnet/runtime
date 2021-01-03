@@ -12,8 +12,8 @@ using System.Runtime.Versioning;
 using System.Security.Principal;
 using System.Threading;
 using CultureInfo = System.Globalization.CultureInfo;
-using FCall = System.Security.Principal.Win32;
 using Luid = Interop.Advapi32.LUID;
+using static System.Security.Principal.Win32;
 
 namespace System.Security.AccessControl
 {
@@ -193,7 +193,7 @@ namespace System.Security.AccessControl
                     //
 
                     SafeTokenHandle? threadHandleBefore = this.threadHandle;
-                    error = FCall.OpenThreadToken(
+                    error = OpenThreadToken(
                                   TokenAccessLevels.Query | TokenAccessLevels.AdjustPrivileges,
                                   WinSecurityContext.Process,
                                   out this.threadHandle);
@@ -230,7 +230,7 @@ namespace System.Security.AccessControl
 
                             if (success == true)
                             {
-                                error = FCall.SetThreadToken(this.threadHandle);
+                                error = SetThreadToken(this.threadHandle);
                                 unchecked { error &= ~(int)0x80070000; }
 
                                 if (error != 0)
