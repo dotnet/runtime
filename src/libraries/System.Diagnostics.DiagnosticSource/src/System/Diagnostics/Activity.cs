@@ -832,7 +832,7 @@ namespace System.Diagnostics
             //  = 55 chars (see https://w3c.github.io/trace-context)
             // The version (00-fe) is used to indicate that this is a WC3 ID.
             return id.Length == 55 &&
-                   ((HexConverter.FromLowerChar(id[0]) << 4) + HexConverter.FromLowerChar(id[1]) < 255);
+                   ((HexConverter.FromLowerChar(id[0]) << 4) | HexConverter.FromLowerChar(id[1])) <= 0xfe;
         }
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
