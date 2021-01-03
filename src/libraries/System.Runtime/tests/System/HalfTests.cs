@@ -376,6 +376,16 @@ namespace System.Tests
                 (UInt16BitsToHalf(0b1_01111_1000000000), -1.5f), // -1.5
                 (UInt16BitsToHalf(0b0_01111_1000000001), 1.5009765625f), // 1.5009765625
                 (UInt16BitsToHalf(0b1_01111_1000000001), -1.5009765625f), // -1.5009765625
+                (UInt16BitsToHalf(0b0_00001_0000000000), BitConverter.Int32BitsToSingle(0x38800000)), // smallest normal
+                // (UInt16BitsToHalf(0b0_00000_1111111111), BitConverter.Int32BitsToSingle(0x387FC000)), // largest subnormal (fails)
+                // (UInt16BitsToHalf(0b0_00000_1000000000), BitConverter.Int32BitsToSingle(0x38000000)), // middle subnormal (fails)
+                (UInt16BitsToHalf(0b0_00000_0111111111), BitConverter.Int32BitsToSingle(0x37FF8000)), // just below middle subnormal
+                (UInt16BitsToHalf(0b0_00000_0000000001), BitConverter.Int32BitsToSingle(0x33800000)), // smallest subnormal
+                (UInt16BitsToHalf(0b1_00000_0000000001), BitConverter.Int32BitsToSingle(unchecked((int)0xB3800000))), // highest negative subnormal
+                (UInt16BitsToHalf(0b1_00000_0111111111), BitConverter.Int32BitsToSingle(unchecked((int)0xB7FF8000))), // just above negative middle subnormal
+                // (UInt16BitsToHalf(0b1_00000_1000000000), BitConverter.Int32BitsToSingle(unchecked((int)0xB8000000))), // negative middle subnormal (fails)
+                // (UInt16BitsToHalf(0b1_00000_1111111111), BitConverter.Int32BitsToSingle(unchecked((int)0xB87FC000))), // lowest negative subnormal (fails)
+                (UInt16BitsToHalf(0b1_00001_0000000000), BitConverter.Int32BitsToSingle(unchecked((int)0xB8800000))) // highest negative normal
             };
 
             foreach ((Half original, float expected) in data)
@@ -420,7 +430,17 @@ namespace System.Tests
                 (UInt16BitsToHalf(0b0_01111_1000000000), 1.5d), // 1.5
                 (UInt16BitsToHalf(0b1_01111_1000000000), -1.5d), // -1.5
                 (UInt16BitsToHalf(0b0_01111_1000000001), 1.5009765625d), // 1.5009765625
-                (UInt16BitsToHalf(0b1_01111_1000000001), -1.5009765625d) // -1.5009765625
+                (UInt16BitsToHalf(0b1_01111_1000000001), -1.5009765625d), // -1.5009765625
+                (UInt16BitsToHalf(0b0_00001_0000000000), BitConverter.Int64BitsToDouble(0x3F10000000000000)), // smallest normal
+                // (UInt16BitsToHalf(0b0_00000_1111111111), BitConverter.Int64BitsToDouble(0x3F0FF80000000000)), // largest subnormal (fails)
+                // (UInt16BitsToHalf(0b0_00000_1000000000), BitConverter.Int64BitsToDouble(0x3f00000000000000)), // middle subnormal (fails)
+                (UInt16BitsToHalf(0b0_00000_0111111111), BitConverter.Int64BitsToDouble(0x3EFFF00000000000)), // just below middle subnormal
+                (UInt16BitsToHalf(0b0_00000_0000000001), BitConverter.Int64BitsToDouble(0x3E70000000000000)), // smallest subnormal
+                (UInt16BitsToHalf(0b1_00000_0000000001), BitConverter.Int64BitsToDouble(unchecked((long)0xBE70000000000000))), // highest negative subnormal
+                (UInt16BitsToHalf(0b1_00000_0111111111), BitConverter.Int64BitsToDouble(unchecked((long)0xBEFFF00000000000))), // just above negative middle subnormal
+                // (UInt16BitsToHalf(0b1_00000_1000000000), BitConverter.Int64BitsToDouble(unchecked((long)0xBF00000000000000))), // negative middle subnormal (fails)
+                // (UInt16BitsToHalf(0b1_00000_1111111111), BitConverter.Int64BitsToDouble(unchecked((long)0xBF0FF80000000000))), // lowest negative subnormal (fails)
+                (UInt16BitsToHalf(0b1_00001_0000000000), BitConverter.Int64BitsToDouble(unchecked((long)0xBF10000000000000))) // highest negative normal
             };
 
             foreach ((Half original, double expected) in data)
@@ -469,6 +489,21 @@ namespace System.Tests
                 (-1.5f, UInt16BitsToHalf(0b1_01111_1000000000)), // -1.5
                 (1.5009765625f, UInt16BitsToHalf(0b0_01111_1000000001)), // 1.5009765625
                 (-1.5009765625f, UInt16BitsToHalf(0b1_01111_1000000001)), // -1.5009765625
+                (BitConverter.Int32BitsToSingle(0x38800000), UInt16BitsToHalf(0b0_00001_0000000000)), // smallest normal
+                (BitConverter.Int32BitsToSingle(0x387FC000), UInt16BitsToHalf(0b0_00000_1111111111)), // largest subnormal
+                (BitConverter.Int32BitsToSingle(0x38000000), UInt16BitsToHalf(0b0_00000_1000000000)), // middle subnormal
+                (BitConverter.Int32BitsToSingle(0x37FF8000), UInt16BitsToHalf(0b0_00000_0111111111)), // just below middle subnormal
+                (BitConverter.Int32BitsToSingle(0x33800000), UInt16BitsToHalf(0b0_00000_0000000001)), // smallest subnormal
+                (BitConverter.Int32BitsToSingle(unchecked((int)0xB3800000)),
+                    UInt16BitsToHalf(0b1_00000_0000000001)), // highest negative subnormal
+                (BitConverter.Int32BitsToSingle(unchecked((int)0xB7FF8000)),
+                    UInt16BitsToHalf(0b1_00000_0111111111)), // just above negative middle subnormal
+                (BitConverter.Int32BitsToSingle(unchecked((int)0xB8000000)),
+                    UInt16BitsToHalf(0b1_00000_1000000000)), // negative middle subnormal
+                (BitConverter.Int32BitsToSingle(unchecked((int)0xB87FC000)),
+                    UInt16BitsToHalf(0b1_00000_1111111111)), // lowest negative subnormal
+                (BitConverter.Int32BitsToSingle(unchecked((int)0xB8800000)),
+                    UInt16BitsToHalf(0b1_00001_0000000000)) // highest negative normal
             };
 
             foreach ((float original, Half expected) in data)
@@ -518,6 +553,26 @@ namespace System.Tests
                 (-1.5d, UInt16BitsToHalf(0b1_01111_1000000000)), // -1.5
                 (1.5009765625d, UInt16BitsToHalf(0b0_01111_1000000001)), // 1.5009765625
                 (-1.5009765625d, UInt16BitsToHalf(0b1_01111_1000000001)), // -1.5009765625
+                (BitConverter.Int64BitsToDouble(0x3F10000000000000),
+                    UInt16BitsToHalf(0b0_00001_0000000000)), // smallest normal
+                (BitConverter.Int64BitsToDouble(0x3F0FF80000000000),
+                    UInt16BitsToHalf(0b0_00000_1111111111)), // largest subnormal
+                (BitConverter.Int64BitsToDouble(0x3f00000000000000),
+                    UInt16BitsToHalf(0b0_00000_1000000000)), // middle subnormal
+                (BitConverter.Int64BitsToDouble(0x3EFFF00000000000),
+                    UInt16BitsToHalf(0b0_00000_0111111111)), // just below middle subnormal
+                (BitConverter.Int64BitsToDouble(0x3E70000000000000),
+                    UInt16BitsToHalf(0b0_00000_0000000001)), // smallest subnormal
+                (BitConverter.Int64BitsToDouble(unchecked((long)0xBE70000000000000)),
+                    UInt16BitsToHalf(0b1_00000_0000000001)), // highest negative subnormal
+                (BitConverter.Int64BitsToDouble(unchecked((long)0xBEFFF00000000000)),
+                    UInt16BitsToHalf(0b1_00000_0111111111)), // just above negative middle subnormal
+                (BitConverter.Int64BitsToDouble(unchecked((long)0xBF00000000000000)),
+                    UInt16BitsToHalf(0b1_00000_1000000000)), // negative middle subnormal
+                (BitConverter.Int64BitsToDouble(unchecked((long)0xBF0FF80000000000)),
+                    UInt16BitsToHalf(0b1_00000_1111111111)), // lowest negative subnormal
+                (BitConverter.Int64BitsToDouble(unchecked((long)0xBF10000000000000)),
+                    UInt16BitsToHalf(0b1_00001_0000000000)) // highest negative normal
             };
 
             foreach ((double original, Half expected) in data)
@@ -885,6 +940,17 @@ namespace System.Tests
             yield return new object[] { MathF.PI };
             yield return new object[] { Half.MaxValue };
             yield return new object[] { Half.PositiveInfinity };
+
+            yield return new object[] { (UInt16BitsToHalf(0b0_00001_0000000000))}; // smallest normal
+            yield return new object[] { (UInt16BitsToHalf(0b0_00000_1111111111))}; // largest subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b0_00000_1000000000))}; // middle subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b0_00000_0111111111))}; // just below middle subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b0_00000_0000000001))}; // smallest subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00000_0000000001))}; // highest negative subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00000_0111111111))}; // just above negative middle subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00000_1000000000))}; // negative middle subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00000_1111111111))}; // lowest negative subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00001_0000000000))}; // highest negative normal
         }
 
         [Theory]
