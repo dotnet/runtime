@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -11,10 +13,20 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 {
     public class DescriptionNameTests
     {
+        // When running both inner and outer loop together, dump only once
+        private static bool dumpedRuntimeInfo = false;
+
+        private static bool isInHelix = Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(key => key.StartsWith("HELIX")).Any();
+
         [Fact]
         [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE when binariesLocation is not an empty string.
         public void DumpRuntimeInformationToConsole()
         {
+            if (dumpedRuntimeInfo || !isInHelix)
+                return;
+
+            dumpedRuntimeInfo = true;
+
             // Not really a test, but useful to dump a variety of information to the test log to help
             // debug environmental issues, in particular in CI
 
@@ -118,14 +130,29 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             if (osd.Contains("Linux"))
             {
+                void OutputHandler(object sender, DataReceivedEventArgs e)
+                {
+                    string trimmed = e.Data?.Trim();
+                    if (!string.IsNullOrEmpty(trimmed) && trimmed[0] != '#') // skip comments in files
+                    {
+                        Console.WriteLine(e.Data);
+                    }
+                }
+
                 // Dump several procfs files and /etc/os-release
-                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits", "/etc/os-release" })
+                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits", "/etc/os-release", "/etc/sysctl.conf", "/proc/meminfo" })
                 {
                     Console.WriteLine($"### CONTENTS OF \"{path}\":");
                     try
                     {
-                        using (Process cat = Process.Start("cat", path))
+                        using (Process cat = new Process())
                         {
+                            cat.StartInfo.FileName = "cat";
+                            cat.StartInfo.Arguments = path;
+                            cat.StartInfo.RedirectStandardOutput = true;
+                            cat.OutputDataReceived += OutputHandler;
+                            cat.Start();
+                            cat.BeginOutputReadLine();
                             cat.WaitForExit();
                         }
                     }
@@ -135,6 +162,16 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     }
                 }
             }
+        }
+
+        [Fact]
+        [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE when binariesLocation is not an empty string.
+        public void DumpRuntimeInformationToConsoleOuter()
+        {
+            // Outer loop runs don't run inner loop tests.
+            // But we want to log this data for any Helix run.
+            DumpRuntimeInformationToConsole();
         }
 
         [Fact]
