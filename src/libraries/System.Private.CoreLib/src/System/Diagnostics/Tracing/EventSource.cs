@@ -1242,40 +1242,36 @@ namespace System.Diagnostics.Tracing
                     }
 
 #if FEATURE_MANAGED_ETW
-                    if (m_eventData[eventId].EnabledForETW
-#if FEATURE_PERFTRACING
-                            || m_eventData[eventId].EnabledForEventPipe
-#endif // FEATURE_PERFTRACING
-                        )
+                    if (!SelfDescribingEvents)
                     {
-                        if (!SelfDescribingEvents)
-                        {
-                            if (!m_etwProvider.WriteEvent(ref m_eventData[eventId].Descriptor, m_eventData[eventId].EventHandle, pActivityId, relatedActivityId, eventDataCount, (IntPtr)data))
-                                ThrowEventSourceException(m_eventData[eventId].Name);
+                        if (m_eventData[eventId].EnabledForETW && !m_etwProvider.WriteEvent(ref m_eventData[eventId].Descriptor, m_eventData[eventId].EventHandle, pActivityId, relatedActivityId, eventDataCount, (IntPtr)data))
+                            ThrowEventSourceException(m_eventData[eventId].Name);
 #if FEATURE_PERFTRACING
-                            if (!m_eventPipeProvider.WriteEvent(ref m_eventData[eventId].Descriptor, m_eventData[eventId].EventHandle, pActivityId, relatedActivityId, eventDataCount, (IntPtr)data))
-                                ThrowEventSourceException(m_eventData[eventId].Name);
+                        if (m_eventData[eventId].EnabledForEventPipe && !m_eventPipeProvider.WriteEvent(ref m_eventData[eventId].Descriptor, m_eventData[eventId].EventHandle, pActivityId, relatedActivityId, eventDataCount, (IntPtr)data))
+                            ThrowEventSourceException(m_eventData[eventId].Name);
 #endif // FEATURE_PERFTRACING
-                        }
-                        else
+                    }
+                    else if (m_eventData[eventId].EnabledForETW
+#if FEATURE_PERFTRACING
+                            || m_eventData[eventId].EnabledForEventPipe)
+#endif // FEATURE_PERFTRACING
+                    {
+                        TraceLoggingEventTypes? tlet = m_eventData[eventId].TraceLoggingEventTypes;
+                        if (tlet == null)
                         {
-                            TraceLoggingEventTypes? tlet = m_eventData[eventId].TraceLoggingEventTypes;
-                            if (tlet == null)
-                            {
-                                tlet = new TraceLoggingEventTypes(m_eventData[eventId].Name,
-                                                                    m_eventData[eventId].Tags,
-                                                                    m_eventData[eventId].Parameters);
-                                Interlocked.CompareExchange(ref m_eventData[eventId].TraceLoggingEventTypes, tlet, null);
-                            }
-                            EventSourceOptions opt = new EventSourceOptions
-                            {
-                                Keywords = (EventKeywords)m_eventData[eventId].Descriptor.Keywords,
-                                Level = (EventLevel)m_eventData[eventId].Descriptor.Level,
-                                Opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode
-                            };
-
-                            WriteMultiMerge(m_eventData[eventId].Name, ref opt, tlet, pActivityId, relatedActivityId, data);
+                            tlet = new TraceLoggingEventTypes(m_eventData[eventId].Name,
+                                                                m_eventData[eventId].Tags,
+                                                                m_eventData[eventId].Parameters);
+                            Interlocked.CompareExchange(ref m_eventData[eventId].TraceLoggingEventTypes, tlet, null);
                         }
+                        EventSourceOptions opt = new EventSourceOptions
+                        {
+                            Keywords = (EventKeywords)m_eventData[eventId].Descriptor.Keywords,
+                            Level = (EventLevel)m_eventData[eventId].Descriptor.Level,
+                            Opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode
+                        };
+
+                        WriteMultiMerge(m_eventData[eventId].Name, ref opt, tlet, pActivityId, relatedActivityId, data);
                     }
 #endif // FEATURE_MANAGED_ETW
 
