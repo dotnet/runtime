@@ -24,6 +24,8 @@ namespace TestStackOverflow
             testProcess.StartInfo.Arguments = $"{Path.Combine(s_currentPath, "..", testName, $"{testName}.dll")} {testArgs}";
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
+            // Prevent dump generation for the child processes that will fail with stack overflow
+            testProcess.EnvironmentVariables.Add("COMPlus_DbgEnableMiniDump", "0");
             testProcess.ErrorDataReceived += (sender, line) => 
             {
                 Console.WriteLine($"\"{line.Data}\"");
