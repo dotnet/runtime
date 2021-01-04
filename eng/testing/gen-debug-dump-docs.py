@@ -89,7 +89,7 @@ dir_separator = '/' if platform.system() != 'Windows' else '\\'
 unix_user_folder = '~/dumps/'
 windows_user_folder = 'c:\\dumps\\'
 source_file = template_dir + dir_separator + 'debug-dump-template.md'
-with open(source_file, 'r+') as f:
+with open(source_file, 'r') as f:
     file_text = f.read()
 
     print('read file: ' + source_file)
