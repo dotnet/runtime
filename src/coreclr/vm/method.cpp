@@ -139,10 +139,10 @@ SIZE_T MethodDesc::SizeOf()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & 
-        (mdcClassification 
-        | mdcHasNonVtableSlot 
-        | mdcMethodImpl 
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags &
+        (mdcClassification
+        | mdcHasNonVtableSlot
+        | mdcMethodImpl
 #ifdef FEATURE_COMINTEROP
         | mdcHasComPlusCallInfo
 #endif
@@ -151,7 +151,7 @@ SIZE_T MethodDesc::SizeOf()
 #ifdef FEATURE_PREJIT
     if (HasNativeCodeSlot())
     {
-        size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ? 
+        size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ?
             sizeof(FixupListSlot) : 0;
     }
 #endif
@@ -4866,7 +4866,11 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         !IsJitOptimizationDisabled() &&
 
         // Policy - Tiered compilation is not disabled by the profiler
-        !CORProfilerDisableTieredCompilation())
+        !CORProfilerDisableTieredCompilation() &&
+
+        // Functional requirement - UnmanagedCallersOnly methods exit in Preemptive GC, which is incompatible with
+        // the lifetime management used for tiered compilation call counting today.
+        !HasUnmanagedCallersOnlyAttribute())
     {
         m_bFlags2 |= enum_flag2_IsEligibleForTieredCompilation;
         _ASSERTE(IsVersionable());
