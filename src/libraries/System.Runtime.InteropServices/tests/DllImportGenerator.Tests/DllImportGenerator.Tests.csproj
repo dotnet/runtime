@@ -1,4 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(RepoRoot)DllImportGenerator\DllImportGenerator\Microsoft.Interop.DllImportGenerator.props" />
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>

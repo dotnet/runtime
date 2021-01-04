@@ -175,5 +175,68 @@ namespace DllImportGenerator.UnitTests
             var newCompDiags = newComp.GetDiagnostics();
             Assert.Empty(newCompDiags);
         }
+        
+        public static IEnumerable<object[]> CodeSnippetsToCompileWithForwarder()
+        {
+            yield return new[] { CodeSnippets.UserDefinedEntryPoint };
+            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
+            
+            // Parameter / return types (supported in DllImportGenerator)
+            yield return new[] { CodeSnippets.BasicParametersAndModifiers<byte>() };
+            // Parameter / return types (not supported in DllImportGenerator)
+            yield return new[] { CodeSnippets.BasicParametersAndModifiers<string>() };
+        }
+
+        [Theory]
+        [MemberData(nameof(CodeSnippetsToCompileWithForwarder))]
+        public async Task ValidateSnippetsWithForwarder(string source)
+        {
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(
+                comp,
+                new DllImportGeneratorOptionsProvider(useMarshalType: false, generateForwarders: true),
+                out var generatorDiags,
+                new Microsoft.Interop.DllImportGenerator());
+
+            Assert.Empty(generatorDiags);
+
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
+        public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
+        {
+            // SetLastError
+            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
+            
+            // SafeHandle
+            yield return new[] { CodeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle") };
+        }
+
+        [Theory]
+        [MemberData(nameof(CodeSnippetsToCompileWithMarshalType))]
+        public async Task ValidateSnippetsWithMarshalType(string source)
+        {
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(
+                comp,
+                new DllImportGeneratorOptionsProvider(useMarshalType: true, generateForwarders: false),
+                out var generatorDiags,
+                new Microsoft.Interop.DllImportGenerator());
+
+            Assert.Empty(generatorDiags);
+
+            var newCompDiags = newComp.GetDiagnostics();
+
+            Assert.All(newCompDiags, diag =>
+            {
+                Assert.Equal("CS0117", diag.Id);
+                Assert.StartsWith("'Marshal' does not contain a definition for ", diag.GetMessage());
+            });
+        }
     }
 }

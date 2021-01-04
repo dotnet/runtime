@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -10,6 +11,12 @@ namespace Microsoft.Interop
     internal class SafeHandleMarshaller : IMarshallingGenerator
     {
         private static readonly TypeSyntax NativeType = ParseTypeName("global::System.IntPtr");
+        private readonly AnalyzerConfigOptions options;
+
+        public SafeHandleMarshaller(AnalyzerConfigOptions options)
+        {
+            this.options = options;
+        }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
@@ -83,7 +90,7 @@ namespace Microsoft.Interop
                                 IdentifierName(managedIdentifier),
                                 InvocationExpression(
                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseName(TypeNames.System_Runtime_InteropServices_MarshalEx),
+                                        ParseName(TypeNames.MarshalEx(options)),
                                         GenericName(Identifier("CreateSafeHandle"),
                                             TypeArgumentList(SingletonSeparatedList(info.ManagedType.AsTypeSyntax())))),
                                     ArgumentList())));
@@ -101,7 +108,7 @@ namespace Microsoft.Interop
                                     .WithInitializer(EqualsValueClause(
                                         InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ParseName(TypeNames.System_Runtime_InteropServices_MarshalEx),
+                                                ParseName(TypeNames.MarshalEx(options)),
                                                 GenericName(Identifier("CreateSafeHandle"),
                                                     TypeArgumentList(SingletonSeparatedList(info.ManagedType.AsTypeSyntax())))),
                                             ArgumentList()))))));
@@ -160,7 +167,7 @@ namespace Microsoft.Interop
                     StatementSyntax unmarshalStatement = ExpressionStatement(
                         InvocationExpression(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                ParseTypeName(TypeNames.System_Runtime_InteropServices_MarshalEx),
+                                ParseTypeName(TypeNames.MarshalEx(options)),
                                 IdentifierName("SetHandle")),
                             ArgumentList(SeparatedList(
                                 new []

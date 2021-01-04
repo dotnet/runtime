@@ -1,6 +1,8 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
@@ -20,15 +22,18 @@ namespace DllImportGenerator.UnitTests
         /// <param name="comp"></param>
         public static void AssertPreSourceGeneratorCompilation(Compilation comp)
         {
-            var compDiags = comp.GetDiagnostics();
-            foreach (var diag in compDiags)
+            var allowedDiagnostics = new HashSet<string>()
             {
-                Assert.True(
-                    "CS8795".Equals(diag.Id)        // Partial method impl missing
-                    || "CS0234".Equals(diag.Id)     // Missing type or namespace - GeneratedDllImportAttribute
-                    || "CS0246".Equals(diag.Id)     // Missing type or namespace - GeneratedDllImportAttribute
-                    || "CS8019".Equals(diag.Id));   // Unnecessary using
-            }
+                "CS8795", // Partial method impl missing
+                "CS0234", // Missing type or namespace - GeneratedDllImportAttribute
+                "CS0246", // Missing type or namespace - GeneratedDllImportAttribute
+                "CS8019", // Unnecessary using
+            };
+            var compDiags = comp.GetDiagnostics();
+            Assert.All(compDiags, diag =>
+            {
+                Assert.Subset(allowedDiagnostics, new HashSet<string> { diag.Id });
+            });
         }
 
         /// <summary>
@@ -85,13 +90,27 @@ namespace DllImportGenerator.UnitTests
         /// <returns>The resulting compilation</returns>
         public static Compilation RunGenerators(Compilation comp, out ImmutableArray<Diagnostic> diagnostics, params ISourceGenerator[] generators)
         {
-            CreateDriver(comp, generators).RunGeneratorsAndUpdateCompilation(comp, out var d, out diagnostics);
+            CreateDriver(comp, null, generators).RunGeneratorsAndUpdateCompilation(comp, out var d, out diagnostics);
             return d;
         }
 
-        private static GeneratorDriver CreateDriver(Compilation c, params ISourceGenerator[] generators)
+        /// <summary>
+        /// Run the supplied generators on the compilation.
+        /// </summary>
+        /// <param name="comp">Compilation target</param>
+        /// <param name="diagnostics">Resulting diagnostics</param>
+        /// <param name="generators">Source generator instances</param>
+        /// <returns>The resulting compilation</returns>
+        public static Compilation RunGenerators(Compilation comp, AnalyzerConfigOptionsProvider options, out ImmutableArray<Diagnostic> diagnostics, params ISourceGenerator[] generators)
+        {
+            CreateDriver(comp, options, generators).RunGeneratorsAndUpdateCompilation(comp, out var d, out diagnostics);
+            return d;
+        }
+
+        private static GeneratorDriver CreateDriver(Compilation c, AnalyzerConfigOptionsProvider? options, ISourceGenerator[] generators)
             => CSharpGeneratorDriver.Create(
                 ImmutableArray.Create(generators),
-                parseOptions: (CSharpParseOptions)c.SyntaxTrees.First().Options);
+                parseOptions: (CSharpParseOptions)c.SyntaxTrees.First().Options,
+                optionsProvider: options);
     }
 }

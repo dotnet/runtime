@@ -10,9 +10,6 @@
     <LangVersion>Preview</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
-
-    <!-- Uncomment to generate stub code that simply forwards parameters to p/invoke (i.e. no marshalling) -->
-     <!--<DefineConstants>GENERATE_FORWARDER</DefineConstants>--> 
   </PropertyGroup>
 
   <PropertyGroup>
@@ -42,6 +39,7 @@
 
   <ItemGroup>
     <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="Microsoft.Interop.DllImportGenerator.props" Pack="true" PackagePath="build" />
   </ItemGroup>
 
   <ItemGroup>

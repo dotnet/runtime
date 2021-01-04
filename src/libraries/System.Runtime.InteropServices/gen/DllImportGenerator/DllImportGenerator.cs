@@ -58,7 +58,7 @@ namespace Microsoft.Interop
                 generatorDiagnostics.ReportTargetFrameworkNotSupported(MinimumSupportedFrameworkVersion);
             }
 
-            var env = new StubEnvironment(context.Compilation, isSupported, targetFrameworkVersion);
+            var env = new StubEnvironment(context.Compilation, isSupported, targetFrameworkVersion, context.AnalyzerConfigOptions.GlobalOptions);
             var generatedDllImports = new StringBuilder();
             foreach (SyntaxReference synRef in synRec.Methods)
             {
@@ -94,7 +94,7 @@ namespace Microsoft.Interop
 
                 // Process the GeneratedDllImport attribute
                 DllImportStub.GeneratedDllImportData dllImportData;
-                AttributeSyntax dllImportAttr = this.ProcessGeneratedDllImportAttribute(methodSymbolInfo, generatedDllImportAttr, out dllImportData);
+                AttributeSyntax dllImportAttr = this.ProcessGeneratedDllImportAttribute(methodSymbolInfo, generatedDllImportAttr, context.AnalyzerConfigOptions.GlobalOptions.GenerateForwarders(), out dllImportData);
                 Debug.Assert((dllImportAttr is not null) && (dllImportData is not null));
 
                 if (dllImportData!.IsUserDefined.HasFlag(DllImportStub.DllImportMember.BestFitMapping))
@@ -213,6 +213,7 @@ namespace Microsoft.Interop
         private AttributeSyntax ProcessGeneratedDllImportAttribute(
             IMethodSymbol method,
             AttributeData attrData,
+            bool generateForwarders,
             out DllImportStub.GeneratedDllImportData dllImportData)
         {
             dllImportData = new DllImportStub.GeneratedDllImportData();
@@ -287,7 +288,9 @@ namespace Microsoft.Interop
 
                 Debug.Assert(expSyntaxMaybe is not null);
 
-                if (PassThroughToDllImportAttribute(namedArg.Key))
+                // If we're generating a forwarder stub, then all parameters on the GenerateDllImport attribute
+                // must also be added to the generated DllImport attribute.
+                if (generateForwarders || PassThroughToDllImportAttribute(namedArg.Key))
                 {
                     // Defer the name equals syntax till we know the value means something. If we created
                     // an expression we know the key value was valid.
@@ -340,9 +343,6 @@ namespace Microsoft.Interop
 
             static bool PassThroughToDllImportAttribute(string argName)
             {
-#if GENERATE_FORWARDER
-                return true;
-#else
                 // Certain fields on DllImport will prevent inlining. Their functionality should be handled by the
                 // generated source, so the generated DllImport declaration should not include these fields.
                 return argName switch
@@ -355,7 +355,6 @@ namespace Microsoft.Interop
                     nameof(DllImportStub.GeneratedDllImportData.SetLastError) => false,
                     _ => true
                 };
-#endif
             }
         }
 

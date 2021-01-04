@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -48,7 +49,7 @@ namespace Microsoft.Interop
         };
 
         private readonly GeneratorDiagnostics diagnostics;
-
+        private readonly AnalyzerConfigOptions options;
         private readonly IMethodSymbol stubMethod;
         private readonly DllImportStub.GeneratedDllImportData dllImportData;
         private readonly IEnumerable<TypePositionInfo> paramsTypeInfo;
@@ -60,7 +61,8 @@ namespace Microsoft.Interop
             DllImportStub.GeneratedDllImportData dllImportData,
             IEnumerable<TypePositionInfo> paramsTypeInfo,
             TypePositionInfo retTypeInfo,
-            GeneratorDiagnostics generatorDiagnostics)
+            GeneratorDiagnostics generatorDiagnostics,
+            AnalyzerConfigOptions options)
         {
             Debug.Assert(retTypeInfo.IsNativeReturnPosition);
 
@@ -68,6 +70,7 @@ namespace Microsoft.Interop
             this.dllImportData = dllImportData;
             this.paramsTypeInfo = paramsTypeInfo.ToList();
             this.diagnostics = generatorDiagnostics;
+            this.options = options;
 
             // Get marshallers for parameters
             this.paramMarshallers = paramsTypeInfo.Select(p => CreateGenerator(p)).ToList();
@@ -79,7 +82,7 @@ namespace Microsoft.Interop
             {
                 try
                 {
-                    return (p, MarshallingGenerators.Create(p, this));
+                    return (p, MarshallingGenerators.Create(p, this, options));
                 }
                 catch (MarshallingNotSupportedException e)
                 {
@@ -174,7 +177,9 @@ namespace Microsoft.Interop
                 AppendVariableDeclations(setupStatements, retMarshaller.TypeInfo, retMarshaller.Generator);
             }
 
-            if (this.dllImportData.SetLastError)
+            // Do not manually handle SetLastError when generating forwarders.
+            // We want the runtime to handle everything.
+            if (this.dllImportData.SetLastError && !options.GenerateForwarders())
             {
                 // Declare variable for last error
                 setupStatements.Add(MarshallerHelpers.DeclareWithDefault(
@@ -247,14 +252,16 @@ namespace Microsoft.Interop
                                 invoke));
                     }
 
-                    if (this.dllImportData.SetLastError)
+                    // Do not manually handle SetLastError when generating forwarders.
+                    // We want the runtime to handle everything.
+                    if (this.dllImportData.SetLastError && !options.GenerateForwarders())
                     {
                         // Marshal.SetLastSystemError(0);
                         var clearLastError = ExpressionStatement(
                             InvocationExpression(
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseName(TypeNames.System_Runtime_InteropServices_MarshalEx),
+                                    ParseName(TypeNames.MarshalEx(options)),
                                     IdentifierName("SetLastSystemError")),
                                 ArgumentList(SingletonSeparatedList(
                                     Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(SuccessErrorCode)))))));
@@ -267,7 +274,7 @@ namespace Microsoft.Interop
                                 InvocationExpression(
                                     MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseName(TypeNames.System_Runtime_InteropServices_MarshalEx),
+                                    ParseName(TypeNames.MarshalEx(options)),
                                     IdentifierName("GetLastSystemError")))));
 
                         invokeStatement = Block(clearLastError, invokeStatement, getLastError);
@@ -312,14 +319,14 @@ namespace Microsoft.Interop
                 allStatements.AddRange(tryStatements);
             }
 
-            if (this.dllImportData.SetLastError)
+            if (this.dllImportData.SetLastError && !options.GenerateForwarders())
             {
                 // Marshal.SetLastWin32Error(<lastError>);
                 allStatements.Add(ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_InteropServices_MarshalEx),
+                            ParseName(TypeNames.MarshalEx(options)),
                             IdentifierName("SetLastWin32Error")),
                         ArgumentList(SingletonSeparatedList(
                             Argument(IdentifierName(LastErrorIdentifier)))))));

@@ -6,6 +6,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -13,7 +14,8 @@ namespace Microsoft.Interop
     internal record StubEnvironment(
         Compilation Compilation,
         bool SupportedTargetFramework,
-        Version TargetFrameworkVersion);
+        Version TargetFrameworkVersion,
+        AnalyzerConfigOptions Options);
 
     internal class DllImportStub
     {
@@ -177,7 +179,9 @@ namespace Microsoft.Interop
             };
 
             var managedRetTypeInfo = retTypeInfo;
-            if (!dllImportData.PreserveSig)
+            // Do not manually handle PreserveSig when generating forwarders.
+            // We want the runtime to handle everything.
+            if (!dllImportData.PreserveSig && !env.Options.GenerateForwarders())
             {
                 // Create type info for native HRESULT return
                 retTypeInfo = TypePositionInfo.CreateForType(env.Compilation.GetSpecialType(SpecialType.System_Int32), NoMarshallingInfo.Instance);
@@ -203,7 +207,7 @@ namespace Microsoft.Interop
             }
 
             // Generate stub code
-            var stubGenerator = new StubCodeGenerator(method, dllImportData, paramsTypeInfo, retTypeInfo, diagnostics);
+            var stubGenerator = new StubCodeGenerator(method, dllImportData, paramsTypeInfo, retTypeInfo, diagnostics, env.Options);
             var (code, dllImport) = stubGenerator.GenerateSyntax();
 
             var additionalAttrs = new List<AttributeListSyntax>();
