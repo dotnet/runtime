@@ -35,6 +35,29 @@ enum class PgoInstrumentationKind
     Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
 };
 
+#define DEFAULT_UNKNOWN_TYPEHANDLE 1
+#define UNKNOWN_TYPEHANDLE_MIN 1
+#define UNKNOWN_TYPEHANDLE_MAX 32
+
+inline bool AddTypeHandleToUnknownTypeHandleMask(INT_PTR typeHandle, uint32_t *unknownTypeHandleMask)
+{
+    uint32_t bitMask = (uint32_t)(1 << (typeHandle - UNKNOWN_TYPEHANDLE_MIN));
+    bool result = (bitMask & *unknownTypeHandleMask) == 0;
+    *unknownTypeHandleMask |= bitMask;
+    return result;
+}
+
+inline bool IsUnknownTypeHandle(INT_PTR typeHandle)
+{
+    return ((typeHandle >= UNKNOWN_TYPEHANDLE_MIN) && (typeHandle <= UNKNOWN_TYPEHANDLE_MAX));
+}
+
+inline INT_PTR HashToPgoUnknownTypeHandle(uint32_t hash)
+{
+    // Map from a 32bit hash to the 32 different unknown type handle values
+    return (hash & 0x1F) + 1;
+}
+
 inline PgoInstrumentationKind operator|(PgoInstrumentationKind a, PgoInstrumentationKind b)
 {
     return static_cast<PgoInstrumentationKind>(static_cast<int>(a) | static_cast<int>(b));
@@ -43,6 +66,10 @@ inline PgoInstrumentationKind operator|(PgoInstrumentationKind a, PgoInstrumenta
 inline PgoInstrumentationKind operator&(PgoInstrumentationKind a, PgoInstrumentationKind b)
 {
     return static_cast<PgoInstrumentationKind>(static_cast<int>(a) & static_cast<int>(b));
+}
+inline PgoInstrumentationKind operator-(PgoInstrumentationKind a, PgoInstrumentationKind b)
+{
+    return static_cast<PgoInstrumentationKind>(static_cast<int>(a) - static_cast<int>(b));
 }
 
 inline PgoInstrumentationKind operator~(PgoInstrumentationKind a)
@@ -166,7 +193,31 @@ inline bool CountInstrumentationDataSize(const uint8_t *pByte, size_t cbDataMax,
     return ReadInstrumentationData(pByte, cbDataMax, [pInstrumentationSchemaCount](const PgoInstrumentationSchema& schema) { (*pInstrumentationSchemaCount)++; return true; });
 }
 
-inline size_t InstrumentationKindToSize(PgoInstrumentationKind kind)
+inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const PgoInstrumentationSchema* schemaTable, size_t cSchemas)
+{
+    size_t iSchema = 0;
+    return ReadInstrumentationData(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const PgoInstrumentationSchema& schema) 
+    {
+        if (iSchema >= cSchemas)
+            return false;
+        
+        if (schema.InstrumentationKind != schemaTable[iSchema].InstrumentationKind)
+            return false;
+
+        if (schema.ILOffset != schemaTable[iSchema].ILOffset)
+            return false;
+
+        if (schema.Count != schemaTable[iSchema].Count)
+            return false;
+
+        if (schema.Other != schemaTable[iSchema].Other)
+            return false;
+
+        return true;
+    });
+}
+
+inline uint32_t InstrumentationKindToSize(PgoInstrumentationKind kind)
 {
     switch(kind & PgoInstrumentationKind::MarshalMask)
     {
@@ -222,13 +273,23 @@ bool ReadInstrumentationDataWithLayout(const uint8_t *pByte, size_t cbDataMax, s
 
     return ReadInstrumentationData(pByte, cbDataMax, [&prevSchema, handler](PgoInstrumentationSchema curSchema)
     {
-        LayoutPgoInstrumentationSchema(prevSchema, curSchema);
+        LayoutPgoInstrumentationSchema(prevSchema, &curSchema);
         if (!handler(curSchema))
             return false;
         prevSchema = curSchema;
         return true;
     });
 }
+
+inline bool ReadInstrumentationDataWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SArray<PgoInstrumentationSchema>* pSchemas)
+{
+    return ReadInstrumentationDataWithLayout(pByte, cbDataMax, initialOffset, [pSchemas](const PgoInstrumentationSchema &schema)
+    {
+        pSchemas->Append(schema);
+        return true;
+    });
+}
+
 
 template<class ByteWriter>
 bool WriteCompressedIntToBytes(int32_t value, ByteWriter& byteWriter)
@@ -254,22 +315,22 @@ bool WriteIndividualSchemaToBytes(PgoInstrumentationSchema prevSchema, PgoInstru
     int32_t ilOffsetDiff = curSchema.ILOffset - prevSchema.ILOffset;
     int32_t OtherDiff = curSchema.Other - prevSchema.Other;
     int32_t CountDiff = curSchema.Count - prevSchema.Count;
-    int32_t TypeDiff = curSchema.InstrumentationKind - prevSchema.InstrumentationKind;
+    int32_t TypeDiff = (int32_t)curSchema.InstrumentationKind - (int32_t)prevSchema.InstrumentationKind;
 
     InstrumentationDataProcessingState modifyMask = (InstrumentationDataProcessingState)0;
 
     if (ilOffsetDiff != 0)
-        modifyMask |= InstrumentationDataProcessingState::ILOffset;
+        modifyMask = modifyMask | InstrumentationDataProcessingState::ILOffset;
     if (TypeDiff != 0)
-        modifyMask |= InstrumentationDataProcessingState::Type;
+        modifyMask = modifyMask | InstrumentationDataProcessingState::Type;
     if (CountDiff != 0)
-        modifyMask |= InstrumentationDataProcessingState::Count;
+        modifyMask = modifyMask | InstrumentationDataProcessingState::Count;
     if (OtherDiff != 0)
-        modifyMask |= InstrumentationDataProcessingState::Other;
+        modifyMask = modifyMask | InstrumentationDataProcessingState::Other;
 
-    _ASSERTE(modifyMask != 0);
+    _ASSERTE(modifyMask != InstrumentationDataProcessingState::Done);
 
-    WriteCompressedIntToBytes(modifyMask, byteWriter);
+    WriteCompressedIntToBytes((int32_t)modifyMask, byteWriter);
     if ((ilOffsetDiff != 0) && !WriteCompressedIntToBytes(ilOffsetDiff, byteWriter))
         return false;
     if ((TypeDiff != 0) && !WriteCompressedIntToBytes(TypeDiff, byteWriter))
@@ -283,19 +344,32 @@ bool WriteIndividualSchemaToBytes(PgoInstrumentationSchema prevSchema, PgoInstru
 }
 
 template<class ByteWriter>
-bool WriteInstrumentationToBytes(PgoInstrumentationSchema* schemaTable, size_t cSchemas, ByteWriter& byteWriter)
+bool WriteInstrumentationToBytes(const PgoInstrumentationSchema* schemaTable, size_t cSchemas, ByteWriter& byteWriter)
 {
     PgoInstrumentationSchema prevSchema;
     memset(&prevSchema, 0, sizeof(PgoInstrumentationSchema));
 
     for (size_t iSchema = 0; iSchema < cSchemas; iSchema++)
     {
-        if (!WriteIndividualSchemaToNibbles(prevSchema, schemaTable[i], byteWriter))
+        if (!WriteIndividualSchemaToBytes(prevSchema, schemaTable[iSchema], byteWriter))
             return false;
-        prevSchema = schemaTable[i];
+        prevSchema = schemaTable[iSchema];
     }
 
     return true;
+}
+
+inline bool WriteInstrumentationSchema(const PgoInstrumentationSchema* schemaTable, size_t cSchemas, uint8_t* array, size_t byteCount)
+{
+    return WriteInstrumentationToBytes(schemaTable, cSchemas, [&array, &byteCount](uint8_t data)
+    {
+        if (byteCount == 0)
+            return false;
+        *array = data;
+        array += 1;
+        byteCount--;
+        return true;
+    });
 }
 
 // PgoManager handles in-process and out of band profile data for jitted code.
@@ -312,13 +386,8 @@ public:
 
 public:
 
-    // Allocate a profile block count buffer for a method
-    static HRESULT allocMethodBlockCounts(MethodDesc* pMD, UINT32 count,
-        ICorJitInfo::BlockCounts** pBlockCounts, unsigned ilSize);
-
-    // Retrieve the profile block count buffer for a method
-    static HRESULT getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT32* pCount,
-        ICorJitInfo::BlockCounts** pBlockCounts, UINT32* pNumRuns);
+    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData);
+    static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
 
     static void CreatePgoManager(PgoManager* volatile* ppPgoManager, bool loaderAllocator);
 
@@ -382,7 +451,7 @@ public:
         unsigned codehash;
         unsigned methodhash;
         unsigned ilSize;
-        unsigned recordCount;
+        unsigned countsOffset;
 
         CodeAndMethodHash GetKey() const
         {
@@ -394,19 +463,24 @@ public:
             return hashpair.Hash();
         }
 
-        void Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned recordCount);
-        void HashInit(unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned recordCount)
+        void Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned countsOffset);
+        void HashInit(unsigned methodhash, unsigned codehash, unsigned ilSize, unsigned countsOffset)
         {
             method = NULL;
             this->codehash = codehash;
             this->methodhash = methodhash;
             this->ilSize = ilSize;
-            this->recordCount = recordCount;
+            this->countsOffset = 0;
         }
 
-        ICorJitInfo::BlockCounts* GetData() const
+        uint8_t* GetData() const
         {
-            return (ICorJitInfo::BlockCounts*)(this + 1);
+            return (uint8_t*)(this + 1);
+        }
+
+        size_t SchemaSizeMax() const
+        {
+            return this->countsOffset;
         }
     };
 
@@ -427,16 +501,17 @@ public:
 
 protected:
 
-    // Allocate a profile block count buffer for a method
-    HRESULT allocMethodBlockCountsInstance(MethodDesc* pMD, UINT32 count,
-        ICorJitInfo::BlockCounts** pBlockCounts, unsigned ilSize);
+    HRESULT getPgoInstrumentationResultsInstance(MethodDesc* pMD,
+                                                 SArray<PgoInstrumentationSchema>* pSchema,
+                                                 BYTE**pInstrumentationData);
 
-    // Retreive the profile block count buffer for a method
-    HRESULT getMethodBlockCountsInstance(MethodDesc* pMD, unsigned ilSize, UINT32* pCount,
-        ICorJitInfo::BlockCounts** pBlockCounts, UINT32* pNumRuns);
-
+    HRESULT allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
+                                                    PgoInstrumentationSchema* pSchema,
+                                                    UINT32 countSchemaItems,
+                                                    BYTE** pInstrumentationData);
 
 private:
+    static HRESULT ComputeOffsetOfActualInstrumentationData(const PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData);
 
     static void ReadPgoData();
     static void WritePgoData();
@@ -448,8 +523,10 @@ private:
     static const char* const s_FileTrailerString;
     static const char* const s_MethodHeaderString;
     static const char* const s_RecordString;
-    static const char* const s_ClassProfileHeader;
-    static const char* const s_ClassProfileEntry;
+    static const char* const s_None;
+    static const char* const s_FourByte;
+    static const char* const s_EightByte;
+    static const char* const s_TypeHandle;
 
     static CrstStatic s_pgoMgrLock;
     static PgoManager s_InitialPgoManager;

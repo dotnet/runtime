@@ -321,7 +321,7 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
     return true;
 }
 
-bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode)
+bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned* ilSize)
 {
     uint32_t maxStack;
     uint32_t EHCount;
@@ -378,6 +378,7 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode)
     hashILData.Add(EHCount);
 
     ILInstructionParser ilParser(pILCode, cbILCode);
+    *ilSize = cbILCode;
     while (!ilParser.IsEmpty())
     {
         if (!AddVersionResilientHashCodeForInstruction(&ilParser, &hashILData))

@@ -5,6 +5,8 @@
 #include "log.h"
 #include "pgo.h"
 #include "versionresilienthashcode.h"
+#include "typestring.h"
+#include "inttypes.h"
 
 #ifdef FEATURE_PGO
 
@@ -42,9 +44,11 @@
 const char* const         PgoManager::s_FileHeaderString  = "*** START PGO Data, max index = %u ***\n";
 const char* const         PgoManager::s_FileTrailerString = "*** END PGO Data ***\n";
 const char* const         PgoManager::s_MethodHeaderString = "@@@ codehash 0x%08X methodhash 0x%08X ilSize 0x%08X records 0x%08X\n";
-const char* const         PgoManager::s_RecordString = "ilOffs %u count %u\n";
-const char* const         PgoManager::s_ClassProfileHeader = "classProfile iloffs %u samples %u entries %u totalCount %u %s\n";
-const char* const         PgoManager::s_ClassProfileEntry = "class %p (%s) count %u\n";
+const char* const         PgoManager::s_RecordString = "Schema InstrumentationKind %u ILOffset %u Count %u Other %u\n";
+const char* const         PgoManager::s_None = "None\n";
+const char* const         PgoManager::s_FourByte = "%u\n";
+const char* const         PgoManager::s_EightByte = "%u %u\n";
+const char* const         PgoManager::s_TypeHandle = "TypeHandle: %s\n";
 
 // Data item in class profile histogram
 //
@@ -60,36 +64,48 @@ struct HistogramEntry
 //
 struct Histogram
 {
-    Histogram(const ICorJitInfo::ClassProfile* classProfile);
+    Histogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount);
 
-    // Number of nonzero entries in the histogram
-    unsigned m_count;
-    // Sum of counts from all entries in the histogram
+    // Sum of counts from all entries in the histogram. This includes "unknown" entries which are not captured in m_histogram
     unsigned m_totalCount;
+    // Rough guess at count of unknown types
+    unsigned m_unknownTypes;
     // Histogram entries, in no particular order.
     // The first m_count of these will be valid.
-    HistogramEntry m_histogram[ICorJitInfo::ClassProfile::SIZE];
+    StackSArray<HistogramEntry> m_histogram;
 };
 
-Histogram::Histogram(const ICorJitInfo::ClassProfile* classProfile)
+Histogram::Histogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount)
 {
-    m_count = 0;
+    m_unknownTypes = 0;
     m_totalCount = 0;
+    uint32_t unknownTypeHandleMask = 0;
 
-    for (unsigned k = 0; k < ICorJitInfo::ClassProfile::SIZE; k++)
+    for (unsigned k = 0; k < entryCount; k++)
     {
-        CORINFO_CLASS_HANDLE currentEntry = classProfile->ClassTable[k];
-        
-        if (currentEntry == NULL)
+
+        if (histogramEntries[k] == 0)
         {
             continue;
         }
         
         m_totalCount++;
+
+        if (IsUnknownTypeHandle(histogramEntries[k]))
+        {
+            if (AddTypeHandleToUnknownTypeHandleMask(histogramEntries[k], &unknownTypeHandleMask))
+            {
+                m_unknownTypes++;
+            }
+            // An unknown type handle will adjust total count but not set of entries
+            continue;
+        }
+
+        CORINFO_CLASS_HANDLE currentEntry = (CORINFO_CLASS_HANDLE)histogramEntries[k];
         
         bool found = false;
         unsigned h = 0;
-        for(; h < m_count; h++)
+        for(; h < m_histogram.GetCount(); h++)
         {
             if (m_histogram[h].m_mt == currentEntry)
             {
@@ -101,17 +117,11 @@ Histogram::Histogram(const ICorJitInfo::ClassProfile* classProfile)
         
         if (!found)
         {
-            m_histogram[h].m_mt = currentEntry;
-            m_histogram[h].m_count = 1;
-            m_count++;
+            HistogramEntry newEntry;
+            newEntry.m_mt = currentEntry;
+            newEntry.m_count = 1;
+            m_histogram.Append(newEntry);
         }
-    }
-
-    // Zero the remainder
-    for (unsigned k = m_count; k < ICorJitInfo::ClassProfile::SIZE; k++)
-    {
-        m_histogram[k].m_mt = 0;
-        m_histogram[k].m_count = 0;
     }
 }
 
@@ -136,8 +146,7 @@ void PgoManager::Shutdown()
 
 void PgoManager::VerifyAddress(void* address)
 {
-    _ASSERTE(address > s_PgoData);
-    _ASSERTE(address <= s_PgoData + BUFFER_SIZE);
+    // TODO Insert an assert to check that an address is a valid pgo address
 }
 
 void PgoManager::WritePgoData()
@@ -176,7 +185,14 @@ void PgoManager::WritePgoData()
 
     EnumeratePGOHeaders([pgoDataFile](HeaderList *pgoData)
     {
-        fprintf(pgoDataFile, s_MethodHeaderString, pgoData->header.codehash, pgoData->header.methodhash, pgoData->header.ilSize, pgoData->header.recordCount);
+        int32_t schemaItems;
+        if (!CountInstrumentationDataSize(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), &schemaItems))
+        {
+            _ASSERTE(!"Invalid instrumentation schema");
+            return true;
+        }
+
+        fprintf(pgoDataFile, s_MethodHeaderString, pgoData->header.codehash, pgoData->header.methodhash, pgoData->header.ilSize, schemaItems);
 
         SString tClass, tMethodName, tMethodSignature;
         pgoData->header.method->GetMethodInfo(tClass, tMethodName, tMethodSignature);
@@ -186,75 +202,53 @@ void PgoManager::WritePgoData()
         fprintf(pgoDataFile, "MethodName: %s.%s\n", tClass.GetUTF8(nameBuffer), tMethodName.GetUTF8(nameBuffer2));
         fprintf(pgoDataFile, "Signature: %s\n", tMethodSignature.GetUTF8(nameBuffer));
 
-        ICorJitInfo::BlockCounts* records = pgoData->header.GetData();
-        unsigned                  lastOffset  = 0;
-        for (unsigned i = 0; i < pgoData->header.recordCount; i++)
+        uint8_t* data = pgoData->header.GetData();
+
+        unsigned lastOffset  = 0;
+        if (!ReadInstrumentationDataWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, [data, pgoDataFile] (const PgoInstrumentationSchema &schema)
         {
-            const unsigned thisOffset = records[i].ILOffset;
-
-
-            if ((thisOffset & ICorJitInfo::ClassProfile::CLASS_FLAG) != 0)
+            fprintf(pgoDataFile, s_RecordString, schema.InstrumentationKind, schema.ILOffset, schema.Count, schema.Other);
+            switch(schema.InstrumentationKind & PgoInstrumentationKind::MarshalMask)
             {
-                // remainder must be class probe data
-                hasClassProfile = true;
-                break;
+                case PgoInstrumentationKind::None:
+                    fprintf(pgoDataFile, s_None);
+                    break;
+                case PgoInstrumentationKind::FourByte:
+                    fprintf(pgoDataFile, s_FourByte, (unsigned)*(uint32_t*)(data + schema.Offset));
+                    break;
+                case PgoInstrumentationKind::EightByte:
+                    // Print a pair of 4 byte values as the PRIu64 specifier isn't generally avaialble
+                    fprintf(pgoDataFile, s_EightByte, (unsigned)*(uint32_t*)(data + schema.Offset), (unsigned)*(uint32_t*)(data + schema.Offset + 4));
+                    break;
+                case PgoInstrumentationKind::TypeHandle:
+                    {
+                        TypeHandle th = *(TypeHandle*)(data + schema.Offset);
+                        if (th.IsNull())
+                        {
+                            fprintf(pgoDataFile, s_TypeHandle, "NULL");
+                        }
+                        else
+                        {
+                            StackSString ss;
+                            StackScratchBuffer nameBuffer;
+                            TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
+                            if (ss.GetCount() > 8192)
+                            {
+                                fprintf(pgoDataFile, s_TypeHandle, "unknown");
+                            }
+                            else
+                            {
+                                fprintf(pgoDataFile, s_TypeHandle, ss.GetUTF8(nameBuffer));
+                            }
+                        }
+                        break;
+                    }
             }
-
-            lastOffset = thisOffset;
-            fprintf(pgoDataFile, s_RecordString, records[i].ILOffset, records[i].ExecutionCount);
-            i++;
+            return true;
         }
-
-        if (hasClassProfile)
+        ))
         {
-            fflush(pgoDataFile);
-
-            // Write out histogram of each probe's data.
-            // We currently don't expect to be able to read this back in.
-            // 
-            while (i < recordCount)
-            {
-                // Should be enough room left for a class profile.
-                _ASSERTE(i + sizeof(ICorJitInfo::ClassProfile) / sizeof(ICorJitInfo::BlockCounts) <= recordCount);
-
-                const ICorJitInfo::ClassProfile* classProfile = (ICorJitInfo::ClassProfile*)&s_PgoData[i + index];
-
-                // Form a histogram...
-                //
-                Histogram h(classProfile);
-
-                // And display...
-                //
-                // Figure out if this is a virtual or interface probe.
-                //
-                const char* profileType = "virtual";
-
-                if ((classProfile->ILOffset & ICorJitInfo::ClassProfile::INTERFACE_FLAG) != 0)
-                {
-                    profileType = "interface";
-                }
-
-                // "classProfile iloffs %u samples %u entries %u totalCount %u %s\n";
-                //
-                fprintf(pgoDataFile, s_ClassProfileHeader, (classProfile->ILOffset & ICorJitInfo::ClassProfile::OFFSET_MASK),
-                    classProfile->Count, h.m_count, h.m_totalCount, profileType);
-
-                for (unsigned j = 0; j < h.m_count; j++)
-                {
-                    CORINFO_CLASS_HANDLE clsHnd = h.m_histogram[j].m_mt;
-                    const char* className = "n/a";
-#ifdef _DEBUG
-                    TypeHandle typeHnd(clsHnd);
-                    MethodTable* pMT = typeHnd.AsMethodTable();
-                    className = pMT->GetDebugClassName();
-#endif
-                    fprintf(pgoDataFile, s_ClassProfileEntry, clsHnd, className, h.m_histogram[j].m_count);
-                }
-
-                // Advance to next entry.
-                //
-                i += sizeof(ICorJitInfo::ClassProfile) / sizeof(ICorJitInfo::BlockCounts);
-            }
+            return true;;
         }
 
         return true;
@@ -280,6 +274,7 @@ void ReadLineAndDiscard(FILE* file)
     }
 }
 
+#ifndef DACCESS_COMPILE
 void PgoManager::ReadPgoData()
 {
     // Skip, if we're not reading, or we're writing profile data, or doing tiered pgo
@@ -305,7 +300,7 @@ void PgoManager::ReadPgoData()
         return;
     }
 
-    char     buffer[256];
+    char     buffer[16384];
     unsigned maxIndex = 0;
 
     // Header must be first line
@@ -341,28 +336,22 @@ void PgoManager::ReadPgoData()
 
         // Find the next method entry line
         //
-        unsigned recordCount = 0;
+        unsigned schemaCount = 0;
         unsigned codehash    = 0;
         unsigned methodhash  = 0;
         unsigned ilSize      = 0;
 
-        if (sscanf_s(buffer, s_MethodHeaderString, &codehash, &methodhash, &ilSize, &recordCount) != 4)
+        if (sscanf_s(buffer, s_MethodHeaderString, &codehash, &methodhash, &ilSize, &schemaCount) != 4)
         {
             continue;
         }
 
-        methods++;
+        StackSArray<PgoInstrumentationSchema> schemaElements;
+        StackSArray<uint8_t> methodInstrumentationData;
+        schemaElements.Preallocate((int)schemaCount);
+        PgoInstrumentationSchema lastSchema = {};
 
-        S_SIZE_T allocationSize = S_SIZE_T(sizeof(Header)) + S_SIZE_T(sizeof(ICorJitInfo::BlockCounts)) * S_SIZE_T(recordCount);
-        if (allocationSize.IsOverflow())
-            return;
-
-        Header* methodData = (Header*)malloc(allocationSize.Value());
-        methodData->HashInit(methodhash, codehash, ilSize, recordCount);
-        ICorJitInfo::BlockCounts* blockCounts = methodData->GetData();
-        // Read il data
-        //
-        for (unsigned i = 0; i < recordCount; i++)
+        for (unsigned i = 0; i < schemaCount; i++)
         {
             if (fgets(buffer, sizeof(buffer), pgoDataFile) == nullptr)
             {
@@ -370,22 +359,144 @@ void PgoManager::ReadPgoData()
                 break;
             }
 
-            if (sscanf_s(buffer, s_RecordString, &blockCounts[i].ILOffset, &blockCounts[i].ExecutionCount) != 2)
+            // Read schema
+            PgoInstrumentationSchema schema;
+            
+            if (sscanf_s(buffer, s_RecordString, &schema.InstrumentationKind, &schema.ILOffset, &schema.Count, &schema.Other) != 4)
             {
-                // This might be class profile data; if so just skip it.
-                //
-                if (strstr(buffer, "class") != buffer)
-                {
-                    failed = true;
-                    break;
-                }
+                failed = true;
+                break;
             }
+
+            LayoutPgoInstrumentationSchema(lastSchema, &schema);
+            schemaElements[i] = schema;
+            COUNT_T maxSize = InstrumentationKindToSize(schema.InstrumentationKind) + (COUNT_T)schema.Offset;
+            methodInstrumentationData.SetCount(maxSize);
+
+            switch(schema.InstrumentationKind & PgoInstrumentationKind::MarshalMask)
+            {
+                case PgoInstrumentationKind::None:
+                    if (sscanf_s(buffer, s_None) != 0)
+                    {
+                        failed = true;
+                    }
+                    break;
+                case PgoInstrumentationKind::FourByte:
+                    {
+                        unsigned val;
+                        if (sscanf_s(buffer, s_FourByte, &val) != 1)
+                        {
+                            failed = true;
+                        }
+                        else
+                        {
+                            uint8_t *rawBuffer = methodInstrumentationData.OpenRawBuffer(maxSize);
+                            *(uint32_t *)(rawBuffer + schema.Offset) = (uint32_t)val;
+                            methodInstrumentationData.CloseRawBuffer();
+                        }
+                    }
+                    break;
+                case PgoInstrumentationKind::EightByte:
+                    {
+                        // Print a pair of 4 byte values as the PRIu64 specifier isn't generally avaialble
+                        unsigned val, val2;
+                        if (sscanf_s(buffer, s_EightByte, &val, &val2) != 2)
+                        {
+                            failed = true;
+                        }
+                        else
+                        {
+                            uint8_t *rawBuffer = methodInstrumentationData.OpenRawBuffer(maxSize);
+                            *(uint32_t *)(rawBuffer + schema.Offset) = (uint32_t)val;
+                            *(uint32_t *)(rawBuffer + schema.Offset + 4) = (uint32_t)val2;
+                            methodInstrumentationData.CloseRawBuffer();
+                        }
+                    }
+                    break;
+                case PgoInstrumentationKind::TypeHandle:
+                    {
+                        char* typeString;
+                        if (strncmp(buffer, "TypeHandle: ", 12) != 0)
+                        {
+                            failed = true;
+                            break;
+                        }
+                        typeString = buffer + 12;
+                        size_t endOfString = strlen(typeString);
+                        if (endOfString == 0 || (typeString[endOfString - 1] != '\n'))
+                        {
+                            failed = true;
+                            break;
+                        }
+                        // Remove \n and replace will null
+                        typeString[endOfString - 1] = '\0';
+
+                        TypeHandle th = NULL;
+                        INT_PTR ptrVal = 0;
+                        if (strcmp(typeString, "NULL") != 0)
+                        {
+                            StackSString ss(SString::Utf8, typeString);
+                            GCX_COOP();
+                            OBJECTREF keepAlive = NULL;
+                            GCPROTECT_BEGIN(keepAlive);
+                            th = TypeName::GetTypeManaged(ss.GetUnicode(), NULL, FALSE, FALSE, FALSE, NULL, &keepAlive);
+                            GCPROTECT_END();
+
+                            if (th.IsNull())
+                            {
+                                ptrVal = HashToPgoUnknownTypeHandle(HashStringA(typeString));
+                            }
+                            else
+                            {
+                                ptrVal = (INT_PTR)th.AsPtr();
+                            }
+                        }
+
+                        uint8_t *rawBuffer = methodInstrumentationData.OpenRawBuffer(maxSize);
+                        *(INT_PTR *)(rawBuffer + schema.Offset) = ptrVal;
+                        methodInstrumentationData.CloseRawBuffer();
+                        break;
+                    }
+            }
+
+            if (failed)
+                break;
+
+            lastSchema = schema;
+        }
+        methods++;
+
+        if (failed)
+            continue;
+
+        UINT offsetOfActualInstrumentationData;
+        HRESULT hr = ComputeOffsetOfActualInstrumentationData(schemaElements.GetElements(), schemaCount, sizeof(Header), &offsetOfActualInstrumentationData);
+        if (FAILED(hr))
+        {
+            return;
+        }
+        UINT offsetOfInstrumentationDataFromStartOfDataRegion = offsetOfActualInstrumentationData - sizeof(Header);
+
+        S_SIZE_T allocationSize = S_SIZE_T(offsetOfActualInstrumentationData) + S_SIZE_T(methodInstrumentationData.GetCount());
+        if (allocationSize.IsOverflow())
+            return;
+
+        Header* methodData = (Header*)malloc(allocationSize.Value());
+        methodData->HashInit(methodhash, codehash, ilSize, offsetOfActualInstrumentationData);
+
+        if (!WriteInstrumentationSchema(schemaElements.GetElements(), schemaCount, methodData->GetData(), offsetOfActualInstrumentationData))
+        {
+            _ASSERTE(!"Unable to write schema");
+            return;
         }
 
+        methodInstrumentationData.Copy(((uint8_t*)methodData) + offsetOfActualInstrumentationData, methodInstrumentationData.Begin(), methodInstrumentationData.GetCount());
+
         s_textFormatPgoData.Add(methodData);
-        probes += recordCount;
+        probes += schemaCount;
     }
 }
+#endif // DACCESS_COMPILE
 
 void PgoManager::CreatePgoManager(PgoManager* volatile* ppMgr, bool loaderAllocator)
 {
@@ -402,17 +513,16 @@ void PgoManager::CreatePgoManager(PgoManager* volatile* ppMgr, bool loaderAlloca
     VolatileStore((PgoManager**)ppMgr, newManager);
 }
 
-void PgoManager::Header::Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned recordCount)
+void PgoManager::Header::Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned countsOffset)
 {
     this->codehash = codehash;
     this->methodhash = pMD->GetStableHash();
     this->ilSize = ilSize;
     this->method = pMD;
-    this->recordCount = recordCount;
+    this->countsOffset = countsOffset;
 }
 
-HRESULT PgoManager::allocMethodBlockCounts(MethodDesc* pMD, UINT32 count,
-    ICorJitInfo::BlockCounts** pBlockCounts, unsigned ilSize)
+HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)
 {
     STANDARD_VM_CONTRACT;
 
@@ -438,21 +548,62 @@ HRESULT PgoManager::allocMethodBlockCounts(MethodDesc* pMD, UINT32 count,
         return E_NOTIMPL;
     }
 
-    return mgr->allocMethodBlockCountsInstance(pMD, count, pBlockCounts, ilSize);
+    return mgr->allocPgoInstrumentationBySchema(pMD, pSchema, countSchemaItems, pInstrumentationData);
 }
 
-HRESULT PgoManager::allocMethodBlockCountsInstance(MethodDesc* pMD, UINT32 count,
-    ICorJitInfo::BlockCounts** pBlockCounts, unsigned ilSize)
+HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData)
 {
-    // Initialize our out param
-    *pBlockCounts = NULL;
-    int codehash;
-    if (!GetVersionResilientILCodeHashCode(pMD, &codehash))
+    // Determine size of compressed schema representation
+    size_t headerSize = headerInitialSize;
+    if (!WriteInstrumentationToBytes(pSchema, countSchemaItems, [&headerSize](uint8_t byte) { headerSize = headerSize + 1; return true; }))
     {
         return E_NOTIMPL;
     }
 
-    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(sizeof(ICorJitInfo::BlockCounts)) * (S_SIZE_T)(count);
+    // Determine alignment of instrumentation data
+    UINT maxAlign = 0;
+    for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
+    {
+        maxAlign = max(InstrumentationKindToAlignment(pSchema[iSchema].InstrumentationKind), maxAlign);
+    }
+
+    *offsetOfActualInstrumentationData = (UINT)AlignUp(headerSize, maxAlign);
+    return S_OK;
+}
+
+HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
+                                                            PgoInstrumentationSchema* pSchema,
+                                                            UINT32 countSchemaItems,
+                                                            BYTE** pInstrumentationData)
+{
+    // Initialize our out param
+    *pInstrumentationData = NULL;
+    int codehash;
+    unsigned ilSize;
+    if (!GetVersionResilientILCodeHashCode(pMD, &codehash, &ilSize))
+    {
+        return E_NOTIMPL;
+    }
+
+    UINT offsetOfActualInstrumentationData;
+    HRESULT hr = ComputeOffsetOfActualInstrumentationData(pSchema, countSchemaItems, sizeof(HeaderList), &offsetOfActualInstrumentationData);
+    UINT offsetOfInstrumentationDataFromStartOfDataRegion = offsetOfActualInstrumentationData - sizeof(HeaderList);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    // Compute offsets for each instrumentation entry
+    PgoInstrumentationSchema prevSchema;
+    memset(&prevSchema, 0, sizeof(PgoInstrumentationSchema));
+    prevSchema.Offset = offsetOfActualInstrumentationData;
+    for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
+    {
+        LayoutPgoInstrumentationSchema(prevSchema, &pSchema[iSchema]);
+    }
+
+    S_SIZE_T allocationSize = S_SIZE_T(pSchema[countSchemaItems - 1].Offset + InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
+    
     if (allocationSize.IsOverflow())
     {
         return E_NOTIMPL;
@@ -465,20 +616,25 @@ HRESULT PgoManager::allocMethodBlockCountsInstance(MethodDesc* pMD, UINT32 count
         HeaderList *currentHeaderList = m_pgoHeaders;
         if (currentHeaderList != NULL)
         {
-            if (currentHeaderList->header.recordCount != count)
+            if (!ComparePgoSchemaEquals(currentHeaderList->header.GetData(), currentHeaderList->header.countsOffset, pSchema, countSchemaItems))
             {
                 return E_NOTIMPL;
             }
             _ASSERTE(currentHeaderList->header.method == pMD);
-            *pBlockCounts = currentHeaderList->header.GetData();
+            *pInstrumentationData = currentHeaderList->header.GetData();
             return S_OK;
         }
 
         pHeaderList = (HeaderList*)pMD->AsDynamicMethodDesc()->GetResolver()->GetJitMetaHeap()->New(unsafeAllocationSize);
 
         memset(pHeaderList, 0, unsafeAllocationSize);
-        pHeaderList->header.Init(pMD, codehash, ilSize, count);
-        *pBlockCounts = pHeaderList->header.GetData();
+        pHeaderList->header.Init(pMD, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
+        *pInstrumentationData = pHeaderList->header.GetData();
+        if (!WriteInstrumentationSchema(pSchema, countSchemaItems, *pInstrumentationData, pHeaderList->header.countsOffset))
+        {
+            _ASSERTE(!"Unable to write schema");
+            return E_NOTIMPL;
+        }
         m_pgoHeaders = pHeaderList;
         return S_OK;
     }
@@ -490,20 +646,25 @@ HRESULT PgoManager::allocMethodBlockCountsInstance(MethodDesc* pMD, UINT32 count
         HeaderList* existingData = laPgoManagerThis->m_pgoDataLookup.Lookup(pMD);
         if (existingData != NULL)
         {
-            if (existingData->header.recordCount != count)
+            if (!ComparePgoSchemaEquals(existingData->header.GetData(), existingData->header.countsOffset, pSchema, countSchemaItems))
             {
                 return E_NOTIMPL;
             }
-            *pBlockCounts = existingData->header.GetData();
+            *pInstrumentationData = existingData->header.GetData();
             return S_OK;
         }
 
         AllocMemTracker loaderHeapAllocation;
         pHeaderList = (HeaderList*)loaderHeapAllocation.Track(pMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(allocationSize));
         memset(pHeaderList, 0, unsafeAllocationSize);
-        pHeaderList->header.Init(pMD, codehash, ilSize, count);
+        pHeaderList->header.Init(pMD, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
         pHeaderList->next = m_pgoHeaders;
-        *pBlockCounts = pHeaderList->header.GetData();
+        *pInstrumentationData = pHeaderList->header.GetData();
+        if (!WriteInstrumentationSchema(pSchema, countSchemaItems, *pInstrumentationData, pHeaderList->header.countsOffset))
+        {
+            _ASSERTE(!"Unable to write schema");
+            return E_NOTIMPL;
+        }
         laPgoManagerThis->m_pgoDataLookup.Add(pHeaderList);
         loaderHeapAllocation.SuppressRelease();
         m_pgoHeaders = pHeaderList;
@@ -511,13 +672,12 @@ HRESULT PgoManager::allocMethodBlockCountsInstance(MethodDesc* pMD, UINT32 count
     }
 }
 
-HRESULT PgoManager::getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT32* pCount,
-    ICorJitInfo::BlockCounts** pBlockCounts, UINT32* pNumRuns)
+
+HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
 {
     // Initialize our out params
-    *pCount = 0;
-    *pBlockCounts = NULL;
-    *pNumRuns = 0;
+    pSchema->Clear();
+    *pInstrumentationData = NULL;
 
     PgoManager *mgr;
     if (!pMD->IsDynamicMethod())
@@ -532,7 +692,7 @@ HRESULT PgoManager::getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT3
     HRESULT hr = E_NOTIMPL;
     if (mgr != NULL)
     {
-        hr = mgr->getMethodBlockCountsInstance(pMD, ilSize, pCount, pBlockCounts, pNumRuns);
+        hr = mgr->getPgoInstrumentationResultsInstance(pMD, pSchema, pInstrumentationData);
     }
 
     // If not found in the data from the current run, look in the data from the text file
@@ -540,15 +700,22 @@ HRESULT PgoManager::getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT3
     {
         COUNT_T methodhash = pMD->GetStableHash();
         int codehash;
-        if (GetVersionResilientILCodeHashCode(pMD, &codehash))
+        unsigned ilSize;
+        if (GetVersionResilientILCodeHashCode(pMD, &codehash, &ilSize))
         {
             Header *found = s_textFormatPgoData.Lookup(CodeAndMethodHash(codehash, methodhash));
             if (found != NULL)
             {
-                *pNumRuns = 1;
-                *pCount = found->recordCount;
-                *pBlockCounts = found->GetData();
-                hr = S_OK;
+                if (ReadInstrumentationDataWithLayoutIntoSArray(found->GetData(), found->countsOffset, found->countsOffset, pSchema))
+                {
+                    *pInstrumentationData = found->GetData();
+                    hr = S_OK;
+                }
+                else
+                {
+                    _ASSERTE(!"Unable to parse schema data");
+                    hr = E_NOTIMPL;
+                }
             }
         }
     }
@@ -556,13 +723,11 @@ HRESULT PgoManager::getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT3
     return hr;
 }
 
-HRESULT PgoManager::getMethodBlockCountsInstance(MethodDesc* pMD, unsigned ilSize, UINT32* pCount,
-    ICorJitInfo::BlockCounts** pBlockCounts, UINT32* pNumRuns)
+HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, SArray<PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
 {
     // Initialize our out params
-    *pCount = 0;
-    *pBlockCounts = NULL;
-    *pNumRuns = 0;
+    pSchema->Clear();
+    *pInstrumentationData = NULL;
 
     HeaderList *found;
 
@@ -582,11 +747,16 @@ HRESULT PgoManager::getMethodBlockCountsInstance(MethodDesc* pMD, unsigned ilSiz
         return E_NOTIMPL;
     }
 
-    *pBlockCounts = found->header.GetData();
-    *pNumRuns = 1;
-    *pCount = found->header.recordCount;
-
-    return S_OK;
+    if (ReadInstrumentationDataWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, found->header.countsOffset, pSchema))
+    {
+        *pInstrumentationData = found->header.GetData();
+        return S_OK;
+    }
+    else
+    {
+        _ASSERTE(!"Unable to parse schema data");
+        return E_NOTIMPL;
+    }
 }
 
 // See if there is a class profile for this method at the indicated il Offset.
@@ -600,157 +770,100 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
     *pLikelihood = 0;
     *pNumberOfClasses = 0;
 
-    // Bail if there's no profile data.
+    StackSArray<PgoInstrumentationSchema> schema;
+    BYTE* pInstrumentationData;
+    HRESULT hr = getPgoInstrumentationResults(pMD, &schema, &pInstrumentationData);
+
+    // Failed to find any sort of profile data for this method
     //
-    if (s_PgoData == NULL)
+    if (FAILED(hr))
     {
         return NULL;
     }
 
-    // See if we can find profile data for this method in the profile buffer.
-    //
-    const unsigned maxIndex = s_PgoIndex;
-    const unsigned token    = pMD->IsDynamicMethod() ? 0 : pMD->GetMemberDef();
-    const unsigned hash     = pMD->GetStableHash();
-
-    unsigned index = 0;
-    unsigned methodsChecked = 0;
-
-    while (index < maxIndex)
+    // TODO This logic should be moved to the JIT
+    for (COUNT_T i = 0; i < schema.GetCount(); i++)
     {
-        // The first two "records" of each entry are actually header data
-        // to identify the method.
-        //
-        Header* const header = (Header*)&s_PgoData[index];
+        if (schema[i].ILOffset != ilOffset)
+            continue;
 
-        // Sanity check that header data looks reasonable. If not, just
-        // fail the lookup.
-        //
-        if ((header->recordCount < MIN_RECORD_COUNT) || (header->recordCount > MAX_RECORD_COUNT))
+        if (((ICorJitInfo::PgoInstrumentationKind)schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount) &&
+            (schema[i].Count == 1) &&
+            ((i + 1) < schema.GetCount()) &&
+            ((ICorJitInfo::PgoInstrumentationKind)schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
         {
-            break;
-        }
+            // Form a histogram
+            //
+            Histogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset), (INT_PTR*)(pInstrumentationData + schema[i].Offset), schema[i + 1].Count);
 
-        // See if the header info matches the current method.
-        //
-        if ((header->token == token) && (header->hash == hash) && (header->ilSize == ilSize))
-        {
-            // Yep, found data. See if there is a suitable class profile.
+            // Use histogram count as number of classes estimate
             //
-            // This bit is currently somewhat hacky ... we scan the records, the count records come
-            // first and are in increasing IL offset order. Class profiles have inverted IL offsets
-            // so when we find an offset with high bit set, it's going to be an class profile.
-            //
-            unsigned countILOffset = 0;
-            unsigned j = 2;
+            *pNumberOfClasses = h.m_histogram.GetCount() + h.m_unknownTypes;
 
-            // Skip past all the count entries
-            //
-            while (j < header->recordCount)
+            // Report back what we've learned
+            // (perhaps, use count to augment likelihood?)
+            // 
+            switch (*pNumberOfClasses)
             {
-                if ((s_PgoData[index + j].ILOffset & ICorJitInfo::ClassProfile::CLASS_FLAG) != 0)
+                case 0:
                 {
-                    break;
+                    return NULL;
                 }
+                break;
 
-                countILOffset = s_PgoData[index + j].ILOffset;
-                j++;
-            }
-
-            // Now we're in the "class profile" portion of the slab for this method.
-            // Look for the one that has the right IL offset.
-            //
-            while (j < header->recordCount)
-            {
-                const ICorJitInfo::ClassProfile* const classProfile = (ICorJitInfo::ClassProfile*)&s_PgoData[index + j];
-
-                if ((classProfile->ILOffset & ICorJitInfo::ClassProfile::OFFSET_MASK) != ilOffset)
+                case 1:
                 {
-                    // Need to make sure this is even divisor
-                    //
-                    j += sizeof(ICorJitInfo::ClassProfile) / sizeof(ICorJitInfo::BlockCounts);
-                    continue;
+                    *pLikelihood = 100;
+                    return h.m_histogram[0].m_mt;
                 }
+                break;
 
-                // Form a histogram
-                //
-                Histogram h(classProfile);
-
-                // Use histogram count as number of classes estimate
-                //
-                *pNumberOfClasses = h.m_count;
-
-                // Report back what we've learned
-                // (perhaps, use count to augment likelihood?)
-                // 
-                switch (h.m_count)
+                case 2:
                 {
-                    case 0:
+                    if (h.m_histogram[0].m_count >= h.m_histogram[1].m_count)
                     {
-                        return NULL;
-                    }
-                    break;
-
-                    case 1:
-                    {
-                        *pLikelihood = 100;
+                        *pLikelihood = (100 * h.m_histogram[0].m_count) / h.m_totalCount;
                         return h.m_histogram[0].m_mt;
                     }
-                    break;
-
-                    case 2:
+                    else
                     {
-                        if (h.m_histogram[0].m_count >= h.m_histogram[1].m_count)
-                        {
-                            *pLikelihood = (100 * h.m_histogram[0].m_count) / h.m_totalCount;
-                            return h.m_histogram[0].m_mt;
-                        }
-                        else
-                        {
-                            *pLikelihood = (100 * h.m_histogram[1].m_count) / h.m_totalCount;
-                            return h.m_histogram[1].m_mt;
-                        }
+                        *pLikelihood = (100 * h.m_histogram[1].m_count) / h.m_totalCount;
+                        return h.m_histogram[1].m_mt;
                     }
-                    break;
-
-                    default:
-                    {
-                        // Find maximum entry and return it
-                        //
-                        unsigned maxIndex = 0;
-                        unsigned maxCount = 0;
-
-                        for (unsigned m = 0; m < h.m_count; m++)
-                        {
-                            if (h.m_histogram[m].m_count > maxCount)
-                            {
-                                maxIndex = m;
-                                maxCount = h.m_histogram[m].m_count;
-                            }
-                        }
-
-                        if (maxCount > 0)
-                        {
-                            *pLikelihood = (100 * maxCount) / h.m_totalCount;
-                            return h.m_histogram[maxIndex].m_mt;
-                        }
-
-                        return NULL;
-                    }
-                    break;
                 }
+                break;
+
+                default:
+                {
+                    // Find maximum entry and return it
+                    //
+                    unsigned maxIndex = 0;
+                    unsigned maxCount = 0;
+
+                    for (unsigned m = 0; m < h.m_histogram.GetCount(); m++)
+                    {
+                        if (h.m_histogram[m].m_count > maxCount)
+                        {
+                            maxIndex = m;
+                            maxCount = h.m_histogram[m].m_count;
+                        }
+                    }
+
+                    if (maxCount > 0)
+                    {
+                        *pLikelihood = (100 * maxCount) / h.m_totalCount;
+                        return h.m_histogram[maxIndex].m_mt;
+                    }
+
+                    return NULL;
+                }
+                break;
             }
 
-            // Failed to find a class profile entry
-            //
-            return NULL;
         }
-
-        index += header->recordCount;
-        methodsChecked++;
     }
 
-    // Failed to find any sort of profile data for this method
+    // Failed to find histogram data for this method
     //
     return NULL;
 }
