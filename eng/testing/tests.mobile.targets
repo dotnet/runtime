@@ -22,7 +22,6 @@
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>link</TrimMode>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
@@ -161,6 +160,10 @@
   <Target Condition="'$(EnableAggressiveTrimming)' == 'true'"
           Name="ConfigureTrimming"
           BeforeTargets="PrepareForILLink">
+    <PropertyGroup>
+      <TrimMode>link</TrimMode>
+    </PropertyGroup>
+
     <ItemGroup>
       <ManagedAssemblyToLink Include="$(OutDir)\*xunit*">
         <IsTrimmable>true</IsTrimmable>
