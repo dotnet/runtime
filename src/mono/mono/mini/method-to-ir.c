@@ -7066,9 +7066,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (!method->dynamic && fsig->pinvoke &&
-			    method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE &&
-			    method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
-				gboolean skip_gc_trans = FALSE; /* TODO: unmanaged[SuppressGCTransition] call conv */
+			    !method->wrapper_type) {
+				/* MONO_WRAPPER_DYNAMIC_METHOD dynamic method handled above in the
+				method->dynamic case; for other wrapper types assume the code knows
+				what its doing and added its own GC transitions */
+
+				/* TODO: unmanaged[SuppressGCTransition] call conv will set
+				 * skip_gc_trans to TRUE*/
+				gboolean skip_gc_trans = FALSE;
 				if (!skip_gc_trans) {
 					/* Call the wrapper that will do the GC transition instead */
 					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
