@@ -635,6 +635,7 @@ namespace System
                 {
                     sig = (ushort)ShiftRightJam(sig, -exp);
                     exp = 0;
+                    roundBits = sig & 0xF;
                 }
                 else if (exp > 0x1D || sig + RoundIncrement >= 0x8000) // Overflow
                 {
