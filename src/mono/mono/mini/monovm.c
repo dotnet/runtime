@@ -183,7 +183,7 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 		} else if (prop_len == 29 && !strncmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES", 29)) {
 			native_lib_paths = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 16 && !strncmp (propertyKeys [i], "PINVOKE_OVERRIDE", 16)) {
-			PInvokeOverrideFn override_fn = (PInvokeOverrideFn)strtoull (propertyValues [i], NULL, 0);
+			PInvokeOverrideFn override_fn = (PInvokeOverrideFn)(uintptr_t)strtoull (propertyValues [i], NULL, 0);
 			mono_loader_install_pinvoke_override (override_fn);
 		} else if (prop_len == 30 && !strncmp (propertyKeys [i], "System.Globalization.Invariant", 30)) {
 			// TODO: Ideally we should propagate this through AppContext options
