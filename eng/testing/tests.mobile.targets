@@ -232,5 +232,5 @@
           AfterTargets="Build"
           DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(TargetOS)' == 'Browser'" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets"" />
 </Project>
