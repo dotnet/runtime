@@ -9,6 +9,11 @@
 
 class COMDouble {
 public:
+    struct SinCosResult {
+        double Sin;
+        double Cos;
+    };
+
     FCDECL1_V(static double, Abs, double x);
     FCDECL1_V(static double, Acos, double x);
     FCDECL1_V(static double, Acosh, double x);
@@ -33,6 +38,7 @@ public:
     FCDECL2_VV(static double, Pow, double x, double y);
     FCDECL2_VI(static double, ScaleB, double x, int n);
     FCDECL1_V(static double, Sin, double x);
+    FCDECL1_V(static SinCosResult, SinCos, double x);
     FCDECL1_V(static double, Sinh, double x);
     FCDECL1_V(static double, Sqrt, double x);
     FCDECL1_V(static double, Tan, double x);

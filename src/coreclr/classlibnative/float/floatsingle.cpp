@@ -267,6 +267,24 @@ FCIMPL1_V(float, COMSingle::Sin, float x)
     return (float)sinf(x);
 FCIMPLEND
 
+/*====================================SinCos====================================
+**
+==============================================================================*/
+FCIMPL1_V(COMSingle::SinCosResult, COMSingle::SinCos, float x)
+    FCALL_CONTRACT;
+
+    SinCosResult result;
+
+#ifdef _MSC_VER
+    result.Sin = (float)sinf(x);
+    result.Cos = (float)cosf(x);
+#else
+    sincosf(x, &result.Sin, &result.Cos);
+#endif
+
+    return result;
+FCIMPLEND
+
 /*=====================================Sinh=====================================
 **
 ==============================================================================*/

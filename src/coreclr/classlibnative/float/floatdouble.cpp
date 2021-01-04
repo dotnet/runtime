@@ -280,6 +280,24 @@ FCIMPL1_V(double, COMDouble::Sin, double x)
     return (double)sin(x);
 FCIMPLEND
 
+/*====================================SinCos====================================
+**
+==============================================================================*/
+FCIMPL1_V(COMDouble::SinCosResult, COMDouble::SinCos, double x)
+    FCALL_CONTRACT;
+
+    SinCosResult result;
+
+#ifdef _MSC_VER
+    result.Sin = (double)sin(x);
+    result.Cos = (double)cos(x);
+#else
+    sincos(x, &result.Sin, &result.Cos);
+#endif
+
+    return result;
+FCIMPLEND
+
 /*=====================================Sinh=====================================
 **
 ==============================================================================*/

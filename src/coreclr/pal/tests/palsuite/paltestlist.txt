@@ -151,6 +151,8 @@ c_runtime/realloc/test1/paltest_realloc_test1
 c_runtime/scalbn/test1/paltest_scalbn_test1
 c_runtime/scalbnf/test1/paltest_scalbnf_test1
 c_runtime/sin/test1/paltest_sin_test1
+c_runtime/sincos/test1/paltest_sincos_test1
+c_runtime/sincosf/test1/paltest_sincosf_test1
 c_runtime/sinf/test1/paltest_sinf_test1
 c_runtime/sinh/test1/paltest_sinh_test1
 c_runtime/sinhf/test1/paltest_sinhf_test1

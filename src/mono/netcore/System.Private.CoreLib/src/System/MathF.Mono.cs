@@ -58,6 +58,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Sin(float x);
 
+        public static (float Sin, float Cos) SinCos(float x) => (Sin(x), Cos(x));
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Sinh(float x);
 

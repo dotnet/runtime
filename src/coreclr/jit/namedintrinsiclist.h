@@ -34,6 +34,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Exp,
     NI_System_Math_Ceiling,
     NI_System_Math_Floor,
+    NI_System_Math_SinCos,
     NI_System_Collections_Generic_EqualityComparer_get_Default,
     NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness,
     NI_System_Numerics_BitOperations_PopCount,

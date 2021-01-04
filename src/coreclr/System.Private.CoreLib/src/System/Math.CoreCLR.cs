@@ -106,6 +106,10 @@ namespace System
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern (double Sin, double Cos) SinCos(double x);
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sinh(double value);
 
         [Intrinsic]

@@ -95,6 +95,10 @@ namespace System
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern (float Sin, float Cos) SinCos(float x);
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Sinh(float x);
 
         [Intrinsic]

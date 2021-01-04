@@ -4421,6 +4421,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Exp:
             case NI_System_Math_Ceiling:
             case NI_System_Math_Floor:
+            case NI_System_Math_SinCos:
             {
                 retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
                 break;
@@ -4800,6 +4801,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "Floor") == 0)
             {
                 result = NI_System_Math_Floor;
+            }
+            else if (strcmp(methodName, "SinCos") == 0)
+            {
+                result = NI_System_Math_SinCos;
             }
         }
         else if (strcmp(className, "GC") == 0)
@@ -20619,6 +20624,7 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Exp:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_SinCos:
             return true;
         default:
             return false;
