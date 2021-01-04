@@ -157,9 +157,7 @@
 
   </Target>
 
-  <Target Condition="'$(EnableAggressiveTrimming)' == 'true'"
-          Name="ConfigureTrimming"
-          BeforeTargets="PrepareForILLink">
+  <Target Name="ConfigureTrimming" Condition="'$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="PrepareForILLink">
     <PropertyGroup>
       <TrimMode>link</TrimMode>
     </PropertyGroup>
