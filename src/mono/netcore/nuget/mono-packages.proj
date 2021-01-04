@@ -17,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="Microsoft.NET.Runtime.Workload.AOT\Microsoft.NET.Runtime.Workload.AOT.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
   </ItemGroup>
 </Project>
