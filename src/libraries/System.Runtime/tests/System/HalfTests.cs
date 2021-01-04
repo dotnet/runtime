@@ -503,7 +503,19 @@ namespace System.Tests
                 (BitConverter.Int32BitsToSingle(unchecked((int)0xB87FC000)),
                     UInt16BitsToHalf(0b1_00000_1111111111)), // lowest negative subnormal
                 (BitConverter.Int32BitsToSingle(unchecked((int)0xB8800000)),
-                    UInt16BitsToHalf(0b1_00001_0000000000)) // highest negative normal
+                    UInt16BitsToHalf(0b1_00001_0000000000)), // highest negative normal
+                (BitConverter.Int32BitsToSingle(0b0_10001001_00000000111000000000001),
+                                  UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5+ULP rounds up
+                (BitConverter.Int32BitsToSingle(0b0_10001001_00000000111000000000000),
+                                  UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5 rounds to even
+                (BitConverter.Int32BitsToSingle(0b0_10001001_00000000110111111111111),
+                                  UInt16BitsToHalf(0b0_11001_0000000011)), // 1027.5-ULP rounds down
+                (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000110111111111111)),
+                                                 UInt16BitsToHalf(0b1_11001_0000000011)), // -1027.5+ULP rounds towards zero
+                (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000111000000000000)),
+                                                 UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5 rounds to even
+                (BitConverter.Int32BitsToSingle(unchecked((int)0b1_10001001_00000000111000000000001)),
+                                                 UInt16BitsToHalf(0b1_11001_0000000100)) // -1027.5-ULP rounds away from zero
             };
 
             foreach ((float original, Half expected) in data)
@@ -572,7 +584,19 @@ namespace System.Tests
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF0FF80000000000)),
                     UInt16BitsToHalf(0b1_00000_1111111111)), // lowest negative subnormal
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF10000000000000)),
-                    UInt16BitsToHalf(0b1_00001_0000000000)) // highest negative normal
+                    UInt16BitsToHalf(0b1_00001_0000000000)), // highest negative normal
+                (BitConverter.Int64BitsToDouble(0x40900E0000000001),
+                    UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5+ULP rounds up
+                (BitConverter.Int64BitsToDouble(0x40900E0000000000),
+                    UInt16BitsToHalf(0b0_11001_0000000100)), // 1027.5 rounds to even
+                (BitConverter.Int64BitsToDouble(0x40900DFFFFFFFFFF),
+                    UInt16BitsToHalf(0b0_11001_0000000011)), // 1027.5-ULP rounds down
+                (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900DFFFFFFFFFF)),
+                    UInt16BitsToHalf(0b1_11001_0000000011)), // -1027.5+ULP rounds towards zero
+                (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900E0000000000)),
+                    UInt16BitsToHalf(0b1_11001_0000000100)), // -1027.5 rounds to even
+                (BitConverter.Int64BitsToDouble(unchecked((long)0xC0900E0000000001)),
+                    UInt16BitsToHalf(0b1_11001_0000000100)) // -1027.5-ULP rounds away from zero
             };
 
             foreach ((double original, Half expected) in data)
