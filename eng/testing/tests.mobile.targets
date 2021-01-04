@@ -154,21 +154,38 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ManagedAssemblyToLink Include="$(OutDir)\*xunit*">
-        <IsTrimmable>true</IsTrimmable>
-        <TrimMode>link</TrimMode>
-      </ManagedAssemblyToLink>
-      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' != '$(MSBuildProjectName).dll')" >
-        <TrimMode>link</TrimMode>
-      </ManagedAssemblyToLink>
-      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' == '$(AssemblyName).dll')" >
-        <TrimMode>copy</TrimMode>
-      </ManagedAssemblyToLink>
-      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'Android'" Include="AndroidTestRunner"/>
-      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'Browser'" Include="WasmTestRunner"/>
-      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'iOS'" Include="AppleTestRunner"/>
-      <TrimmerRootAssembly Include="$(AssemblyName)"/>
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ProcessXUnitFiles" Condition="'$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="_ComputeManagedAssemblyToLink">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(OutDir)\Microsoft.DotNet.XUnitExtensions.dll">
+        <RelativePath>Microsoft.DotNet.XUnitExtensions.dll</RelativePath>
+        <TrimMode>link</TrimMode>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="$(OutDir)\xunit.abstractions.dll">
+        <RelativePath>xunit.abstractions.dll</RelativePath>
+        <TrimMode>link</TrimMode>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="$(OutDir)\xunit.assert.dll">
+        <RelativePath>xunit.assert.dll</RelativePath>
+        <TrimMode>link</TrimMode>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="$(OutDir)\xunit.execution.dotnet.dll">
+        <RelativePath>xunit.execution.dotnet.dll</RelativePath>
+        <TrimMode>link</TrimMode>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="$(OutDir)\xunit.runner.json">
+        <RelativePath>xunit.runner.json</RelativePath>
+        <TrimMode>link</TrimMode>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Condition="('%(ResolvedFileToPublish.FileName).dll' != '$(MSBuildProjectName).dll')" >
+        <TrimMode>link</TrimMode>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Condition="('%(ResolvedFileToPublish.FileName).dll' == '$(AssemblyName).dll')" >
+        <TrimMode>copy</TrimMode>
+      </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
 
