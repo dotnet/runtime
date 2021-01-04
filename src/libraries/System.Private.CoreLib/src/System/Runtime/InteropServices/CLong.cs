@@ -22,6 +22,7 @@ namespace System.Runtime.InteropServices
         {
             _value = (NativeType)value;
         }
+
         public CLong(nint value)
         {
             _value = checked((NativeType)value);

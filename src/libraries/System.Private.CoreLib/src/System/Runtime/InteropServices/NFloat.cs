@@ -21,6 +21,7 @@ namespace System.Runtime.InteropServices
         {
             _value = value;
         }
+
         public NFloat(double value)
         {
 #if TARGET_32BIT
