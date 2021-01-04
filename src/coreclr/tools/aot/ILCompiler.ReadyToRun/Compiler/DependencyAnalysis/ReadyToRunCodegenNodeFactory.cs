@@ -211,6 +211,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
             });
 
+            _importThunks = new NodeCache<ImportThunkKey, ImportThunk>(key =>
+            {
+                return new ImportThunk(this, key.Helper, key.ContainingImportSection, key.UseVirtualCall);
+            });
+
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
 
             _localMethodCache = new NodeCache<MethodDesc, MethodWithGCInfo>(key =>
@@ -489,6 +494,47 @@ namespace ILCompiler.DependencyAnalysis
             return _typeSignatures.GetOrAdd(fixupKey);
         }
 
+        private struct ImportThunkKey : IEquatable<ImportThunkKey>
+        {
+            public readonly ReadyToRunHelper Helper;
+            public readonly ImportSectionNode ContainingImportSection;
+            public readonly bool UseVirtualCall;
+
+            public ImportThunkKey(ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall)
+            {
+                Helper = helper;
+                ContainingImportSection = containingImportSection;
+                UseVirtualCall = useVirtualCall;
+            }
+
+            public bool Equals(ImportThunkKey other)
+            {
+                return Helper == other.Helper &&
+                    ContainingImportSection == other.ContainingImportSection &&
+                    UseVirtualCall == other.UseVirtualCall;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is ImportThunkKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return unchecked(31 * Helper.GetHashCode() +
+                    31 * ContainingImportSection.GetHashCode() +
+                    31 * UseVirtualCall.GetHashCode());
+            }
+        }
+
+        private NodeCache<ImportThunkKey, ImportThunk> _importThunks;
+
+        public ImportThunk ImportThunk(ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall)
+        {
+            ImportThunkKey thunkKey = new ImportThunkKey(helper, containingImportSection, useVirtualCall);
+            return _importThunks.GetOrAdd(thunkKey);
+        }
+
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             var compilerIdentifierNode = new CompilerIdentifierNode(Target);
@@ -582,14 +628,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 Import personalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                     ReadyToRunHelper.PersonalityRoutine));
-                PersonalityRoutine = new ImportThunk(
-                    ReadyToRunHelper.PersonalityRoutine, this, personalityRoutineImport, useVirtualCall: false);
+                PersonalityRoutine = new ImportThunk(this,
+                    ReadyToRunHelper.PersonalityRoutine, EagerImports, useVirtualCall: false);
                 graph.AddRoot(PersonalityRoutine, "Personality routine is faster to root early rather than referencing it from each unwind info");
 
                 Import filterFuncletPersonalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                     ReadyToRunHelper.PersonalityRoutineFilterFunclet));
-                FilterFuncletPersonalityRoutine = new ImportThunk(
-                    ReadyToRunHelper.PersonalityRoutineFilterFunclet, this, filterFuncletPersonalityRoutineImport, useVirtualCall: false);
+                FilterFuncletPersonalityRoutine = new ImportThunk(this,
+                    ReadyToRunHelper.PersonalityRoutineFilterFunclet, EagerImports, useVirtualCall: false);
                 graph.AddRoot(FilterFuncletPersonalityRoutine, "Filter funclet personality routine is faster to root early rather than referencing it from each unwind info");
             }
 

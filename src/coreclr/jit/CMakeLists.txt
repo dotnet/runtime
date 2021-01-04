@@ -121,6 +121,7 @@ set( JIT_SOURCES
   phase.cpp
   rangecheck.cpp
   rationalize.cpp
+  redundantbranchopts.cpp
   regalloc.cpp
   register_arg_convention.cpp
   regset.cpp

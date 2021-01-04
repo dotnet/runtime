@@ -30,11 +30,6 @@ pr:
 
 jobs:
 #
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
-
-#
 # Build with Release config and Debug runtimeConfiguration
 #
 - template: /eng/pipelines/common/platform-matrix.yml

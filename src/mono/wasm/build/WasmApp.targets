@@ -90,7 +90,6 @@
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
-      MainAssembly="$(WasmMainAssemblyPath)"
       MainJS="$(WasmMainJSPath)"
       Profile="$(EnableProfiler)"
       Assemblies="@(_WasmAssemblies)"
@@ -127,7 +126,7 @@
 
     <PropertyGroup>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
-      <EmccFlags Condition="'$(RunAOTCompilation)'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
+      <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
     </PropertyGroup>
 
     <ReadLinesFromFile File="$(RuntimeEmccVersionFile)">

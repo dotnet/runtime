@@ -21,7 +21,9 @@ jobs:
     value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
   steps:
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+  - checkout: self
+    clean: true
+    fetchDepth: 20
 
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@0

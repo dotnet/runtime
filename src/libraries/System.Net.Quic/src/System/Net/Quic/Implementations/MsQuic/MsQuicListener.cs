@@ -50,6 +50,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _sslOptions = options.ServerAuthenticationOptions!;
             _listenEndPoint = options.ListenEndPoint!;
 
+            SetIdleTimeout(options.IdleTimeout);
+
             _ptr = _session.ListenerOpen(options);
         }
 
@@ -137,6 +139,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 "Failed to start listener.");
 
             SetListenPort();
+        }
+
+        private void SetIdleTimeout(TimeSpan timeout)
+        {
+            MsQuicParameterHelpers.SetULongParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_CONN.IDLE_TIMEOUT, (ulong)timeout.TotalMilliseconds);
         }
 
         internal override void Close()

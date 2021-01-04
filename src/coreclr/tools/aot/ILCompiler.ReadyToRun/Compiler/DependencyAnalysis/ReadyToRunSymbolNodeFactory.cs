@@ -418,7 +418,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode InterfaceDispatchCell(MethodWithToken method, MethodDesc callingMethod)
         {
-            MethodAndCallSite cellKey = new MethodAndCallSite(method, callingMethod);
+            MethodAndCallSite cellKey = new MethodAndCallSite(method, null);
             return _interfaceDispatchCells.GetOrAdd(cellKey);
         }
 

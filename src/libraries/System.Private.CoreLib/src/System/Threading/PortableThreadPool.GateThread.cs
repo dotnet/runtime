@@ -168,11 +168,13 @@ namespace System.Threading
                 bool created = false;
                 try
                 {
+                    // Thread pool threads must start in the default execution context without transferring the context, so
+                    // using UnsafeStart() instead of Start()
                     Thread gateThread = new Thread(GateThreadStart, SmallStackSizeBytes);
                     gateThread.IsThreadPoolThread = true;
                     gateThread.IsBackground = true;
                     gateThread.Name = ".NET ThreadPool Gate";
-                    gateThread.Start();
+                    gateThread.UnsafeStart();
                     created = true;
                 }
                 finally

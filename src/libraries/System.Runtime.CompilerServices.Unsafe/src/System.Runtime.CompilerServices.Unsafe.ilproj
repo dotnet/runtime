@@ -22,9 +22,10 @@
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
-                        '$(TargetFramework)' == 'netcoreapp2.0'">
-    <Reference Include="System.Runtime" />
+  <ItemGroup>
+    <!-- mscorlib is passed in as an explicit reference from C# targets but not via the IL SDK. -->
+    <Reference Include="$(CoreAssembly)"
+               Condition="!$(TargetFramework.StartsWith('netstandard'))" />
   </ItemGroup>
 
   <Target Name="GenerateVersionFile"
