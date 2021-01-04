@@ -8,6 +8,7 @@
 #include "threadsuspend.h"
 #include "jithost.h"
 #include "genanalysis.h"
+#include "eventpipeadapter.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -101,6 +102,11 @@ void FinalizerThread::FinalizeAllObjects()
         fcount++;
 
         CallFinalizer(fobj);
+
+        // thread abort could be injected by the debugger,
+        // but should not be allowed to "leak" out of expression evaluation
+        _ASSERTE(!GetFinalizerThread()->IsAbortRequested());
+
         pThread->InternalReset();
 
         fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
@@ -267,7 +273,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         if (gcGenAnalysisState == GcGenAnalysisState::Done)
         {
             gcGenAnalysisState = GcGenAnalysisState::Disabled;
-            EventPipe::Disable(gcGenAnalysisEventPipeSessionId);
+            EventPipeAdapter::Disable(gcGenAnalysisEventPipeSessionId);
             // Writing an empty file to indicate completion
             fclose(fopen(GENAWARE_COMPLETION_FILE_NAME,"w+"));
 #ifdef GEN_ANALYSIS_STRESS
@@ -315,19 +321,8 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             GetFinalizerThread()->DoExtraWorkForFinalizer();
         }
         LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
-        // We may mark the finalizer thread for abort.  If so the abort request is for previous finalizer method, not for next one.
-        if (GetFinalizerThread()->IsAbortRequested())
-        {
-            GetFinalizerThread()->EEResetAbort(Thread::TAR_ALL);
-        }
 
         FinalizeAllObjects();
-
-        // We may still have the finalizer thread for abort.  If so the abort request is for previous finalizer method, not for next one.
-        if (GetFinalizerThread()->IsAbortRequested())
-        {
-            GetFinalizerThread()->EEResetAbort(Thread::TAR_ALL);
-        }
 
         // Anyone waiting to drain the Q can now wake up.  Note that there is a
         // race in that another thread starting a drain, as we leave a drain, may

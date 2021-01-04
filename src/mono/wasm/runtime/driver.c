@@ -318,15 +318,6 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	return NULL;
 }
 
-#ifdef ENABLE_NETCORE
-/* Missing System.Native symbols */
-int SystemNative_CloseNetworkChangeListenerSocket (int a) { return 0; }
-int SystemNative_CreateNetworkChangeListenerSocket (int a) { return 0; }
-void SystemNative_ReadEvents (int a,int b) {}
-int SystemNative_SchedGetAffinity (int a,int b) { return 0; }
-int SystemNative_SchedSetAffinity (int a,int b) { return 0; }
-#endif
-
 #if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
 #define NEED_INTERP 1
 #ifndef LINK_ICALLS

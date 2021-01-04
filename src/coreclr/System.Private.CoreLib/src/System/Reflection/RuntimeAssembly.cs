@@ -691,6 +691,7 @@ namespace System.Reflection
             return types.ToArray();
         }
 
+        [RequiresUnreferencedCode("Types might be removed because recursive nested types can't currently be annotated for dynamic access.")]
         private static void AddPublicNestedTypes(Type type, List<Type> types, List<Exception> exceptions)
         {
             Type[] nestedTypes;

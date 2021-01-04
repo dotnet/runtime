@@ -13,15 +13,6 @@
     <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
-    <RunScriptCommand>$HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$(AssemblyName)" --app=$EXECUTION_DIR/bin/$(TestProjectName).apk --output-directory=$XHARNESS_OUT -v --</RunScriptCommand>
-  </PropertyGroup>
-  <ItemGroup>
-    <RunScriptCommands Include="TEST_NAME=$(TestProjectName)" />
-    <RunScriptCommands Include="TARGET_OS=$(TargetOS)" />
-    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
-  </ItemGroup>
-
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
              TaskName="AndroidAppBuilderTask"
@@ -45,7 +36,7 @@
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
           DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
 
-    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" />
 
     <RemoveDir Directories="$(BundleDir)" />
     <AndroidAppBuilderTask
@@ -86,7 +77,7 @@
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account." />
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
-    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" />
 
     <PropertyGroup>
       <Optimized>true</Optimized>
@@ -146,38 +137,37 @@
 
   </Target>
 
-  <UsingTask TaskName="WasmAppBuilder"
-             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
 
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp">
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
+
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
+    <PropertyGroup>
+      <WasmAppDir>$(BundleDir)</WasmAppDir>
+      <WasmAotDir>$(PublishDir)</WasmAotDir>
+      <WasmMainAssemblyPath>$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
+      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+      <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    </PropertyGroup>
+
     <ItemGroup>
       <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
       <WasmSatelliteAssemblies>
         <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
       </WasmSatelliteAssemblies>
-    </ItemGroup>
-    <ItemGroup>
-      <Assemblies Include="$(PublishDir)\*.dll"/>
+
+      <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
+
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
       <!-- Include files specified by test projects from publish dir -->
       <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(PublishDir)%(Identity)')" />
-      <Assemblies Include="$(PublishDir)$(AssemblyName).dll" />
-      <!-- We need these facades for some tests. -->
-      <Assemblies Include="$(PublishDir)mscorlib.dll" />
-      <Assemblies Include="$(PublishDir)System.Drawing.dll" />
     </ItemGroup>
-    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-    <WasmAppBuilder
-      AppDir="$(BundleDir)"
-      InvariantGlobalization="$(InvariantGlobalization)"
-      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
-      MainAssembly="$(PublishDir)WasmTestRunner.dll"
-      MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
-      Assemblies="@(Assemblies)"
-      SatelliteAssemblies="@(WasmSatelliteAssemblies)"
-      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)" />
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"

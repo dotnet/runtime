@@ -7,10 +7,11 @@ This depends on `emsdk` to be installed.
 * You can either install it yourself (https://emscripten.org/docs/getting_started/downloads.html), and set `EMSDK_PATH` to that. Make sure to have this set whenever building, or running tests for wasm.
 
 * Or you can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk`.
+Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
 
 `EMSDK_PATH` is set to `$reporoot/src/mono/wasm/emsdk` by default, by the Makefile.
 
-Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that should have it set. But you might need to set it manually if
+Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that will have it set. But you might need to set it manually if
 you are directly using the `dotnet build`, or `build.sh`.
 
 ## Building
@@ -50,11 +51,11 @@ These tests are run with `xharness wasm test-browser`, for running on the browse
 The wrapper script used to actually run these tests, accepts:
 
 `$XHARNESS_COMMAND`, which defaults to `test`.
-`$XHARNESS_CLI_COMMAND` (see next section)
+`$XHARNESS_CLI_PATH` (see next section)
 
 ### Using a local build of xharness
 
-* set `XHARNESS_CLI_COMMAND=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/netcoreapp3.1/Microsoft.DotNet.XHarness.CLI.dll`
+* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/netcoreapp3.1/Microsoft.DotNet.XHarness.CLI.dll`
 
 ### Note: Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 

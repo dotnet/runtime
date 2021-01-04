@@ -63,7 +63,7 @@ namespace Internal.JitInterface
     public struct CORINFO_VarArgInfo
     {
     }
-    
+
     public struct PatchpointInfo
     {
     }
@@ -314,10 +314,11 @@ namespace Internal.JitInterface
         // These correspond to CorCallingConvention
 
         CORINFO_CALLCONV_DEFAULT = 0x0,
-        CORINFO_CALLCONV_C = 0x1,
-        CORINFO_CALLCONV_STDCALL = 0x2,
-        CORINFO_CALLCONV_THISCALL = 0x3,
-        CORINFO_CALLCONV_FASTCALL = 0x4,
+        // Instead of using the below values, use the CorInfoCallConvExtension enum for unmanaged calling conventions.
+        // CORINFO_CALLCONV_C = 0x1,
+        // CORINFO_CALLCONV_STDCALL = 0x2,
+        // CORINFO_CALLCONV_THISCALL = 0x3,
+        // CORINFO_CALLCONV_FASTCALL = 0x4,
         CORINFO_CALLCONV_VARARG = 0x5,
         CORINFO_CALLCONV_FIELD = 0x6,
         CORINFO_CALLCONV_LOCAL_SIG = 0x7,
@@ -332,15 +333,16 @@ namespace Internal.JitInterface
         CORINFO_CALLCONV_PARAMTYPE = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
     }
 
-    public enum CorInfoUnmanagedCallConv
+    // Represents the calling conventions supported with the extensible calling convention syntax
+    // as well as the original metadata-encoded calling conventions.
+    enum CorInfoCallConvExtension
     {
-        // These correspond to CorUnmanagedCallingConvention
-
-        CORINFO_UNMANAGED_CALLCONV_UNKNOWN,
-        CORINFO_UNMANAGED_CALLCONV_C,
-        CORINFO_UNMANAGED_CALLCONV_STDCALL,
-        CORINFO_UNMANAGED_CALLCONV_THISCALL,
-        CORINFO_UNMANAGED_CALLCONV_FASTCALL
+        Managed,
+        C,
+        Stdcall,
+        Thiscall,
+        Fastcall
+        // New calling conventions supported with the extensible calling convention encoding go here.
     }
 
     public enum CORINFO_CALLINFO_FLAGS

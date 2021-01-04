@@ -27,7 +27,7 @@ namespace System.Reflection.Emit
         }
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type[]? parameterTypes, ModuleBuilder mod, TypeBuilder type) :
+            Type[]? parameterTypes, ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type) :
             this(name, attributes, callingConvention, parameterTypes, null, null, mod, type)
         {
         }

@@ -61,7 +61,7 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
             flowList* preds = m_pCompiler->BlockPredsWithEH(block);
             for (flowList* pred = preds; pred; pred = pred->flNext)
             {
-                callback.Merge(block, pred->flBlock, preds);
+                callback.Merge(block, pred->getBlock(), preds);
             }
         }
 

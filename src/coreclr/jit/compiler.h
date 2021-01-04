@@ -837,36 +837,7 @@ public:
 #endif // defined(TARGET_64BIT)
     }
 
-    unsigned lvSize() const // Size needed for storage representation. Only used for structs or TYP_BLK.
-    {
-        // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
-        // where the struct itself is no longer used because all access is via its member fields.
-        // When that happens, the struct is marked as unused and its type has been changed to
-        // TYP_INT (to keep the GC tracking code from looking at it).
-        // See Compiler::raAssignVars() for details. For example:
-        //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
-        //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
-        //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
-        //                                                                        f8 (last use) (last use) $345
-        // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
-        // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
-
-        assert(varTypeIsStruct(lvType) || (lvType == TYP_BLK) || (lvPromoted && lvUnusedStruct));
-
-#if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
-        // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
-        // this for arguments, which must be passed according the defined ABI. We don't want to do this for
-        // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
-        // (Note that for 64-bits, we are already rounding up to 16.)
-        if ((lvType == TYP_SIMD12) && !lvIsParam)
-        {
-            assert(lvExactSize == 12);
-            return 16;
-        }
-#endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
-
-        return roundUp(lvExactSize, TARGET_POINTER_SIZE);
-    }
+    unsigned lvSize() const;
 
     size_t lvArgStackSize() const;
 
@@ -1480,7 +1451,6 @@ public:
         return roundUp(GetStackByteSize(), TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
     }
 
-    unsigned byteAlignment; // usually 8 or 16 bytes (slots/registers).
 private:
     unsigned _lateArgInx; // index into gtCallLateArgs list; UINT_MAX if this is not a late arg.
 public:
@@ -1643,10 +1613,7 @@ public:
         assert(!IsHfaArg() || !IsSplit());
 
         assert(GetByteSize() > TARGET_POINTER_SIZE * numRegs);
-        unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
-#if !defined(OSX_ARM64_ABI)
-        stackByteSize = roundUp(stackByteSize, TARGET_POINTER_SIZE);
-#endif
+        const unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
         return stackByteSize;
     }
 
@@ -1809,7 +1776,13 @@ public:
 
 private:
     unsigned m_byteOffset;
+
+    // byte size that this argument takes including the padding after.
+    // For example, 1-byte arg on x64 with 8-byte alignment
+    // will have `m_byteSize == 8`, the same arg on apple arm64 will have `m_byteSize == 1`.
     unsigned m_byteSize;
+
+    unsigned m_byteAlignment; // usually 4 or 8 bytes (slots/registers).
 
 public:
     void SetByteOffset(unsigned byteOffset)
@@ -1824,22 +1797,53 @@ public:
         return m_byteOffset;
     }
 
-    void SetByteSize(unsigned byteSize)
+    void SetByteSize(unsigned byteSize, bool isStruct, bool isFloatHfa)
     {
+
+#ifdef OSX_ARM64_ABI
+        unsigned roundedByteSize;
+        // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
+        if (isStruct && !isFloatHfa)
+        {
+            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+        }
+        else
+        {
+            roundedByteSize = byteSize;
+        }
+#else  // OSX_ARM64_ABI
+        unsigned roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+#endif // OSX_ARM64_ABI
+
+#if !defined(TARGET_ARM)
+        // Arm32 could have a struct with 8 byte alignment
+        // which rounded size % 8 is not 0.
+        assert(m_byteAlignment != 0);
+        assert(roundedByteSize % m_byteAlignment == 0);
+#endif // TARGET_ARM
+
 #if defined(DEBUG_ARG_SLOTS)
-        assert(byteAlignment != 0);
         if (!isStruct)
         {
-            const unsigned alignedByteSize = roundUp(byteSize, byteAlignment);
-            assert(alignedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
+            assert(roundedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
         }
 #endif
-        m_byteSize = byteSize;
+        m_byteSize = roundedByteSize;
     }
 
     unsigned GetByteSize() const
     {
         return m_byteSize;
+    }
+
+    void SetByteAlignment(unsigned byteAlignment)
+    {
+        m_byteAlignment = byteAlignment;
+    }
+
+    unsigned GetByteAlignment() const
+    {
+        return m_byteAlignment;
     }
 
     // Set the register numbers for a multireg argument.
@@ -1966,6 +1970,7 @@ public:
                              unsigned          byteSize,
                              unsigned          byteAlignment,
                              bool              isStruct,
+                             bool              isFloatHfa,
                              bool              isVararg = false);
 
 #ifdef UNIX_AMD64_ABI
@@ -1977,6 +1982,7 @@ public:
                              unsigned                                                         byteSize,
                              unsigned                                                         byteAlignment,
                              const bool                                                       isStruct,
+                             const bool                                                       isFloatHfa,
                              const bool                                                       isVararg,
                              const regNumber                                                  otherRegNum,
                              const unsigned                                                   structIntRegs,
@@ -1991,6 +1997,7 @@ public:
                              unsigned          byteSize,
                              unsigned          byteAlignment,
                              bool              isStruct,
+                             bool              isFloatHfa,
                              bool              isVararg = false);
 
     void RemorphReset();
@@ -2519,7 +2526,9 @@ public:
     unsigned ehFuncletCount(); // Return the count of funclets in the function
 
     unsigned bbThrowIndex(BasicBlock* blk); // Get the index to use as the cache key for sharing throw blocks
-#else                                       // !FEATURE_EH_FUNCLETS
+
+#else  // !FEATURE_EH_FUNCLETS
+
     bool ehAnyFunclets()
     {
         return false;
@@ -2533,7 +2542,7 @@ public:
     {
         return blk->bbTryIndex;
     } // Get the index to use as the cache key for sharing throw blocks
-#endif                                      // !FEATURE_EH_FUNCLETS
+#endif // !FEATURE_EH_FUNCLETS
 
     // Returns a flowList representing the "EH predecessors" of "blk".  These are the normal predecessors of
     // "blk", plus one special case: if "blk" is the first block of a handler, considers the predecessor(s) of the first
@@ -2830,7 +2839,7 @@ public:
 
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
-    GenTree* gtNewIndir(var_types typ, GenTree* addr);
+    GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
@@ -2878,6 +2887,8 @@ public:
     GenTreeAllocObj* gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken, BOOL useParent);
 
     GenTree* gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* lookupTree);
+
+    GenTreeIndir* gtNewMethodTableLookup(GenTree* obj);
 
     //------------------------------------------------------------------------
     // Other GenTree functions
@@ -3672,7 +3683,7 @@ public:
         assert(varDsc->lvType == TYP_SIMD12);
         assert(varDsc->lvExactSize == 12);
 
-#if defined(TARGET_64BIT)
+#if defined(TARGET_64BIT) && !defined(OSX_ARM64_ABI)
         assert(varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
@@ -3847,7 +3858,7 @@ protected:
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE specialIntrinsicHandle);
 
-    bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo);
+    bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo, CorInfoCallConvExtension callConv);
 
     GenTree* impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd);
 
@@ -4635,6 +4646,8 @@ public:
     unsigned impInlinedCodeSize;
     bool     fgPrintInlinedMethods;
 #endif
+
+    jitstd::vector<flowList*>* fgPredListSortVector;
 
     //-------------------------------------------------------------------------
 
@@ -6845,6 +6858,11 @@ public:
                              BasicBlock* basicBlock);
 #endif
 
+    // Redundant branch opts
+    //
+    PhaseStatus optRedundantBranches();
+    bool optRedundantBranch(BasicBlock* const block);
+
 #if ASSERTION_PROP
     /**************************************************************************
      *               Value/Assertion propagation
@@ -7414,6 +7432,7 @@ public:
     CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE list);
     CORINFO_CLASS_HANDLE eeGetClassFromContext(CORINFO_CONTEXT_HANDLE context);
     unsigned eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
+    static unsigned eeGetArgAlignment(var_types type, bool isFloatHfa);
 
     // VOM info, method sigs
 
@@ -8713,16 +8732,9 @@ private:
     // Answer the question: Is a particular ISA supported for explicit hardware intrinsics?
     bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa) const
     {
-        if ((opts.compSupportsISA & (1ULL << isa)) != 0)
-        {
-            // Report intent to use the ISA to the EE
-            compExactlyDependsOn(isa);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        // Report intent to use the ISA to the EE
+        compExactlyDependsOn(isa);
+        return ((opts.compSupportsISA & (1ULL << isa)) != 0);
     }
 
     bool canUseVexEncoding() const
@@ -9137,6 +9149,7 @@ public:
         STRESS_MODE(CLONE_EXPR)                                                                 \
         STRESS_MODE(USE_CMOV)                                                                   \
         STRESS_MODE(FOLD)                                                                       \
+        STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
         STRESS_MODE(OPT_BOOLS_GC)                                                               \
         STRESS_MODE(REMORPH_TREES)                                                              \
@@ -9312,6 +9325,8 @@ public:
 
         unsigned compUnmanagedCallCountWithGCTransition; // count of unmanaged calls with GC transition.
 
+        CorInfoCallConvExtension compCallConv; // The entry-point calling convention for this method.
+
         unsigned compLvFrameListRoot; // lclNum for the Frame root
         unsigned compXcptnsCount;     // Number of exception-handling clauses read in the method's IL.
                                       // You should generally use compHndBBtabCount instead: it is the
@@ -9391,7 +9406,7 @@ public:
         //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        auto callConv = compMethodInfoGetEntrypointCallConv(info.compMethodInfo);
+        auto callConv = info.compCallConv;
         if (callConvIsInstanceMethodCallConv(callConv))
         {
             return (info.compRetBuffArg != BAD_VAR_NUM);
@@ -9597,8 +9612,8 @@ public:
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
 
-    // Gets the calling convention the method's entry point should have.
-    CorInfoCallConvExtension compMethodInfoGetEntrypointCallConv(CORINFO_METHOD_INFO* mthInfo);
+    // Returns true if the method being compiled has a return buffer.
+    bool compHasRetBuffArg();
 
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and

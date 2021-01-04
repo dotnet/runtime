@@ -11,6 +11,10 @@ trigger:
     include:
     - src/coreclr/inc/jiteeversionguid.h
 
+# This pipeline is supposed to be run only on merged changes
+# and should not be triggerable from a PR. 
+pr: none
+
 schedules:
 - cron: "0 17 * * 0"
   displayName: Sun at 9:00 AM (UTC-8:00)
@@ -20,11 +24,6 @@ schedules:
   always: true
 
 jobs:
-#
-# Checkout repository
-#
-
-- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -71,6 +70,28 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
+      collectionType: pmi
+      collectionName: libraries
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      collectionType: crossgen
       collectionName: libraries
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -92,5 +113,6 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
+      collectionType: pmi
       collectionName: tests
 

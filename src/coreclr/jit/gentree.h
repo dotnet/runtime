@@ -1736,6 +1736,8 @@ public:
 
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
+    inline GenTree* gtCommaAssignVal();
+
     // Tunnel through any GT_RET_EXPRs
     inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
 
@@ -7152,6 +7154,39 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
             return effectiveVal;
         }
     }
+}
+
+//-------------------------------------------------------------------------
+// gtCommaAssignVal - find value being assigned to a comma wrapped assigment
+//
+// Returns:
+//    tree representing value being assigned if this tree represents a
+//    comma-wrapped local definition and use.
+//
+//    original tree, of not.
+//
+inline GenTree* GenTree::gtCommaAssignVal()
+{
+    GenTree* result = this;
+
+    if (OperIs(GT_COMMA))
+    {
+        GenTree* commaOp1 = AsOp()->gtOp1;
+        GenTree* commaOp2 = AsOp()->gtOp2;
+
+        if (commaOp2->OperIs(GT_LCL_VAR) && commaOp1->OperIs(GT_ASG))
+        {
+            GenTree* asgOp1 = commaOp1->AsOp()->gtOp1;
+            GenTree* asgOp2 = commaOp1->AsOp()->gtOp2;
+
+            if (asgOp1->OperIs(GT_LCL_VAR) && (asgOp1->AsLclVar()->GetLclNum() == commaOp2->AsLclVar()->GetLclNum()))
+            {
+                result = asgOp2;
+            }
+        }
+    }
+
+    return result;
 }
 
 //-------------------------------------------------------------------------

@@ -1,0 +1,6 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <PackageDescription>XML configuration provider implementation for Microsoft.Extensions.Configuration.</PackageDescription>
+  </PropertyGroup>
+</Project>

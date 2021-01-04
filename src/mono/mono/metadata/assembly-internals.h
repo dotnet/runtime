@@ -139,8 +139,10 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 gboolean
 mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
 
+#ifndef ENABLE_NETCORE
 MonoAssembly*
 mono_assembly_binding_applies_to_image (MonoAssemblyLoadContext *alc, MonoImage* image, MonoImageOpenStatus *status);
+#endif
 
 MonoAssembly *
 mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gboolean refonly);
