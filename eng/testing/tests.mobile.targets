@@ -20,7 +20,7 @@
     <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'">
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
   </PropertyGroup>
