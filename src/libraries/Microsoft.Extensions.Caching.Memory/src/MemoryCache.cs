@@ -276,6 +276,16 @@ namespace Microsoft.Extensions.Caching.Memory
             StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
         }
 
+        /// <inheritdoc />
+        public void Clear()
+        {
+            CheckDisposed();
+            if (!_entries.IsEmpty)
+            {
+                _entries.Clear();
+            }
+        }
+
         private void RemoveEntry(CacheEntry entry)
         {
             if (EntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))

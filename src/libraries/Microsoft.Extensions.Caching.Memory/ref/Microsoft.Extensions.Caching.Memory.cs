@@ -34,6 +34,7 @@ namespace Microsoft.Extensions.Caching.Memory
         ~MemoryCache() { }
         public void Remove(object key) { }
         public bool TryGetValue(object key, out object result) { throw null; }
+        public void Clear() { }
     }
     public partial class MemoryCacheOptions : Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions>
     {
