@@ -1004,7 +1004,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 6, actual: await t4);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // timeout involved
         public async Task TestReceive_Timeout()
         {
