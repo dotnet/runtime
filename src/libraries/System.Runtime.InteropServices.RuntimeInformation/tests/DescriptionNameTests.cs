@@ -130,15 +130,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             if (osd.Contains("Linux"))
             {
-                void OutputHandler(object sender, DataReceivedEventArgs e)
-                {
-                    string trimmed = e.Data?.Trim();
-                    if (!string.IsNullOrEmpty(trimmed) && trimmed[0] != '#') // skip comments in files
-                    {
-                        Console.WriteLine(e.Data);
-                    }
-                }
-
                 // Dump several procfs files and /etc/os-release
                 foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits", "/etc/os-release", "/etc/sysctl.conf", "/proc/meminfo" })
                 {
@@ -150,7 +141,14 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                             cat.StartInfo.FileName = "cat";
                             cat.StartInfo.Arguments = path;
                             cat.StartInfo.RedirectStandardOutput = true;
-                            cat.OutputDataReceived += OutputHandler;
+                            cat.OutputDataReceived += (sender, e) =>
+                            {
+                                string trimmed = e.Data?.Trim();
+                                if (!string.IsNullOrEmpty(trimmed) && trimmed[0] != '#') // skip comments in files
+                                {
+                                    Console.WriteLine(e.Data);
+                                }
+                            };
                             cat.Start();
                             cat.BeginOutputReadLine();
                             cat.WaitForExit();
