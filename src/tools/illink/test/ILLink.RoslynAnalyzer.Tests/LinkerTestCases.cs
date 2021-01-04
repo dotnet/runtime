@@ -18,7 +18,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public void RequiresCapability (MethodDeclarationSyntax m, List<AttributeSyntax> attrs)
 		{
 			switch (m.Identifier.ValueText) {
-			case "RequiresAndCallsOtherRequiresMethods":
 			case "MethodWithDuplicateRequiresAttribute":
 				return;
 			}
