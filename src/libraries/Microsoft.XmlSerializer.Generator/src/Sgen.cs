@@ -262,7 +262,7 @@ namespace Microsoft.XmlSerializer.Generator
 
             var mappings = new ArrayList();
             var importedTypes = new ArrayList();
-            var importer = new XmlReflectionImporter();
+            var importer = new XmlReflectionImporter(defaultNamespace);
 
             for (int i = 0; i < types.Length; i++)
             {
@@ -439,7 +439,7 @@ namespace Microsoft.XmlSerializer.Generator
         private void ImportType(Type type, string defaultNamespace, ArrayList mappings, ArrayList importedTypes, bool verbose, XmlReflectionImporter importer, bool parsableerrors)
         {
             XmlTypeMapping xmlTypeMapping = null;
-            var localImporter = new XmlReflectionImporter();
+            var localImporter = new XmlReflectionImporter(defaultNamespace);
             try
             {
                 xmlTypeMapping = localImporter.ImportTypeMapping(type, defaultNamespace);
