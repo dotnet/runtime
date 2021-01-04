@@ -3791,7 +3791,7 @@ void Compiler::optUnrollLoops()
             if (block->isLoopAlign())
             {
                 block->bbFlags &= ~BBF_LOOP_ALIGN;
-                JITDUMP("Removing align flag from unrolled loop in " FMT_BB "\n", block->bbNum);
+                JITDUMP("Removing LOOP_ALIGN flag from unrolled loop in " FMT_BB "\n", block->bbNum);
             }
 
             if (block == bottom)
@@ -8033,7 +8033,8 @@ void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
     {
         BasicBlock* first = optLoopTable[lnum].lpFirst;
         first->bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " because loop has a call.\n", lnum, first->bbNum);
+        JITDUMP("Removing LOOP_ALIGN flag for L%02u that starts at " FMT_BB " because loop has a call.\n", lnum,
+                first->bbNum);
     }
 #endif
 
