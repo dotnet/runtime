@@ -14,18 +14,18 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
     public class DescriptionNameTests
     {
         // When running both inner and outer loop together, dump only once
-        private static bool dumpedRuntimeInfo = false;
+        private static bool s_dumpedRuntimeInfo = false;
 
-        private static bool isInHelix = Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(key => key.StartsWith("HELIX")).Any();
+        private static readonly bool s_isInHelix = Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(key => key.StartsWith("HELIX")).Any();
 
         [Fact]
         [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE when binariesLocation is not an empty string.
         public void DumpRuntimeInformationToConsole()
         {
-            if (dumpedRuntimeInfo || !isInHelix)
+            if (s_dumpedRuntimeInfo || !s_isInHelix)
                 return;
 
-            dumpedRuntimeInfo = true;
+            s_dumpedRuntimeInfo = true;
 
             // Not really a test, but useful to dump a variety of information to the test log to help
             // debug environmental issues, in particular in CI
