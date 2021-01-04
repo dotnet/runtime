@@ -310,9 +310,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!string.IsNullOrEmpty(AotProfilePath))
         {
             aotArgs.Add($"profile={AotProfilePath},profile-only");
-
-            // foreach (var profiler in Profilers!)
-            //     processArgs.Add($"--profile={profiler}");
         }
 
         processArgs.Add(string.Join(" ", aotProfileArgs));
@@ -378,7 +375,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     writer.WriteLine ($"void mono_profiler_init_{profiler} (const char *desc);");
                     writer.WriteLine ("EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_" + profiler + " (const char *desc) { mono_profiler_init_" + profiler + " (desc); }");
                 }
-
 
                 if (parsedAotMode == MonoAotMode.LLVMOnly)
                 {
