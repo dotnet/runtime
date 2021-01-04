@@ -12,8 +12,10 @@ dotnet tool update --global runfo
 If prompted, open a new command prompt to pick up the updated PATH.
 ```sh
 # On Windows
+# assumes %WOUTDIR% does not exist
 runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %WOUTDIR%
 # On Linux and macOS
+# assumes %LOUTDIR% does not exist
 runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %LOUTDIR%
 ```
 
