@@ -224,7 +224,4 @@
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>
   </data>
-  <data name="PlatformNotSupported_CryptographyOpenSSL" xml:space="preserve">
-    <value>OpenSSL is not supported on this platform.</value>
-  </data>
 </root>

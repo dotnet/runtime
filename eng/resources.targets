@@ -3,6 +3,7 @@
     <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.csproj'">.cs</ResourcesSourceFileExtension>
     <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.vbproj'">.vb</ResourcesSourceFileExtension>
 
+    <StringResourcesPath Condition="'$(StringResourcesPath)' == '' and Exists('$(MSBuildProjectDirectory)/Resources/NotSupported.resx') and '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(MSBuildProjectDirectory)/Resources/NotSupported.resx</StringResourcesPath>
     <StringResourcesPath Condition="'$(StringResourcesPath)' == '' and Exists('$(MSBuildProjectDirectory)/Resources/Strings.resx')">$(MSBuildProjectDirectory)/Resources/Strings.resx</StringResourcesPath>
     <StringResourcesNamespace Condition="'$(StringResourcesNamespace)' == ''">System</StringResourcesNamespace>
     <StringResourcesClassName Condition="'$(StringResourcesClassName)' == ''">SR</StringResourcesClassName>
@@ -12,6 +13,12 @@
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
     <!-- For debug builds we include the full value string so that we get actual resources, even in the case the toolchain strips the resources file -->
     <GenerateResxSourceIncludeDefaultValues Condition="'$(Configuration)' == 'Debug'">true</GenerateResxSourceIncludeDefaultValues>
+
+    <!-- Not supported message is always in resources -->
+    <OmitResources Condition="'$(OmitResources)' == '' and '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</OmitResources>
+
+    <!-- Partial facades by default have no resources -->
+    <OmitResources Condition="'$(OmitResources)' == '' and '$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
   </PropertyGroup>
 
   <!-- Include files under StringResourcesPath by convention unless OmitResources is set. -->

@@ -123,7 +123,4 @@
   <data name="net_http_winhttp_error" xml:space="preserve">
     <value>Error {0} calling {1}, '{2}'.</value>
   </data>
-  <data name="PlatformNotSupported_WinHttpHandler" xml:space="preserve">
-    <value>WinHttpHandler is only supported on .NET Framework and .NET runtimes on Windows. It is not supported for Windows Store Applications (UWP) or Unix platforms.</value>
-  </data>
 </root>

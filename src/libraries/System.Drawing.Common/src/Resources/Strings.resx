@@ -1,4 +1,4 @@
-<root>
+﻿<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -353,9 +353,6 @@
   <data name="PDOCqueryPageSettingsDescr" xml:space="preserve">
     <value>Occurs before each page is printed.  Useful for changing PageSettings for a particular page.</value>
   </data>
-  <data name="PlatformNotSupported_Drawing" xml:space="preserve">
-    <value>System.Drawing is not supported on this platform.</value>
-  </data>
   <data name="PrintDocumentDesc" xml:space="preserve">
     <value>Defines an object that sends output to a printer.</value>
   </data>
@@ -463,8 +460,5 @@
   </data>
   <data name="TargetDirectoryDoesNotExist" xml:space="preserve">
     <value>The directory {0} of the filename {1} does not exist.</value>
-  </data>
-  <data name="SystemDrawingCommon_PlatformNotSupported" xml:space="preserve">
-    <value>System.Drawing.Common is not supported on this platform.</value>
   </data>
 </root>

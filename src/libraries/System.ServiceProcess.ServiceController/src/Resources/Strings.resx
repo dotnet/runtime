@@ -93,9 +93,6 @@
   <data name="Timeout" xml:space="preserve">
     <value>The operation requested for service '{0}' has not been completed within the specified time interval.</value>
   </data>
-  <data name="PlatformNotSupported_ServiceController" xml:space="preserve">
-    <value>ServiceController enables manipulating and accessing Windows services and it is not applicable for other operating systems.</value>
-  </data>
   <data name="CannotChangeProperties" xml:space="preserve">
     <value>Cannot change CanStop, CanPauseAndContinue, CanShutdown, CanHandlePowerEvent, or CanHandleSessionChangeEvent property values after the service has been started.</value>
   </data>

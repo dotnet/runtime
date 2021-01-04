@@ -581,8 +581,4 @@
     <data name="TimespanExceedMax" xml:space="preserve">
         <value>The value exceeds the maximum allowed.</value>
     </data>
-    <data name="DirectoryServices_PlatformNotSupported" xml:space="preserve">
-        <value>System.DirectoryServices is not supported on this platform.</value>
-    </data>
 </root>
-

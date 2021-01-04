@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -280,9 +279,6 @@
   </data>
   <data name="UnableToCreateCodeGeneratorException" xml:space="preserve">
     <value>Unable to create code generator for '{0}'</value>
-  </data>
-  <data name="PlatformNotSupported_SystemManagement" xml:space="preserve">
-    <value>System.Management currently is only supported for Windows desktop applications.</value>
   </data>
   <data name="PlatformNotSupported_FullFrameworkRequired" xml:space="preserve">
     <value>Could not find an installation of .NET Framework v4.0.30319. System.Management requires native modules from the .NET Framework to operate.</value>

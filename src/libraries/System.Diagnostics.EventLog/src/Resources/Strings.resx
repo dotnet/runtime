@@ -209,9 +209,6 @@
   <data name="ParameterTooLong" xml:space="preserve">
     <value>The size of {0} is too big. It cannot be longer than {1} characters.</value>
   </data>
-  <data name="PlatformNotSupported_EventLog" xml:space="preserve">
-    <value>EventLog access is not supported on this platform.</value>
-  </data>
   <data name="RegKeyMissing" xml:space="preserve">
     <value>Cannot open registry key {0}\\{1}\\{2} on computer '{3}'.</value>
   </data>

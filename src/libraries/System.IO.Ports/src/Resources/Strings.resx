@@ -221,12 +221,6 @@
   <data name="UnauthorizedAccess_IODenied_Port" xml:space="preserve">
     <value>Access to the port '{0}' is denied.</value>
   </data>
-  <data name="PlatformNotSupported_IOPorts" xml:space="preserve">
-    <value>System.IO.Ports is currently only supported on Windows.</value>
-  </data>
-  <data name="PlatformNotSupported_SerialPort_GetPortNames" xml:space="preserve">
-    <value>Enumeration of serial port names is not supported on the current platform.</value>
-  </data>
   <data name="IO_PathTooLong_Path_PortName" xml:space="preserve">
     <value>The specified port name '{0}' is too long.  The port name must be less than 260 characters.</value>
   </data>

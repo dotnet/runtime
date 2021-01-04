@@ -134,7 +134,4 @@
   <data name="InvalidLowBoundArgument" xml:space="preserve">
     <value>'{1}' is not a valid value for '{0}'. '{0}' must be greater than {2}.</value>
   </data>
-  <data name="PlatformNotSupported_SystemEvents" xml:space="preserve">
-    <value>SystemEvents is not supported on this platform.</value>
-  </data>
 </root>

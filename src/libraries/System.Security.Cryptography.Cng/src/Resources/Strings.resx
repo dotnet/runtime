@@ -255,9 +255,6 @@
   <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
     <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
   </data>
-  <data name="PlatformNotSupported_CryptographyCng" xml:space="preserve">
-    <value>Windows Cryptography Next Generation (CNG) is not supported on this platform.</value>
-  </data>
   <data name="Cryptography_ECC_NamedCurvesOnly" xml:space="preserve">
     <value>Only named curves are supported on this platform.</value>
   </data>

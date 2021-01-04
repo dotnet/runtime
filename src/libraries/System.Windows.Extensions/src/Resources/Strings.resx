@@ -125,9 +125,6 @@
   <data name="Enum_InvalidValue" xml:space="preserve">
     <value>Enumeration value '{0}' specified in condition mapping is not valid.</value>
   </data>
-  <data name="PlatformNotSupported_System_Windows_Extensions" xml:space="preserve">
-    <value>System.Windows.Extensions types are not supported on this platform.</value>
-  </data>
   <data name="SoundAPIBadSoundLocation" xml:space="preserve">
     <value>Could not determine a universal resource identifier for the sound location.</value>
   </data>

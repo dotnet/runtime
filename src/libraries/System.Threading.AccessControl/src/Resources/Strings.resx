@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -167,9 +166,6 @@
   </data>
   <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
     <value>The process cannot access the file because it is being used by another process.</value>
-  </data>
-  <data name="PlatformNotSupported_AccessControl" xml:space="preserve">
-    <value>Access Control List (ACL) APIs are part of resource management on Windows and are not supported on this platform.</value>
   </data>
   <data name="Threading_WaitHandleCannotBeOpenedException_InvalidHandle" xml:space="preserve">
     <value>A WaitHandle with system-wide name '{0}' cannot be created. A WaitHandle of a different type might have the same name.</value>

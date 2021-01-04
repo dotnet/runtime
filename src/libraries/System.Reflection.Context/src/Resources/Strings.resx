@@ -99,9 +99,6 @@
   <data name="InvalidOperation_NullAttribute" xml:space="preserve">
     <value>The attribute object cannot be null.</value>
   </data>
-  <data name="PlatformNotSupported_ReflectionContext" xml:space="preserve">
-    <value>Customized reflection contexts are only supported on .NET Framework.</value>
-  </data>
   <data name="Target_InstanceMethodRequiresTarget" xml:space="preserve">
     <value>Non-static method requires a target.</value>
   </data>

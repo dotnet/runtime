@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <!--
     Microsoft ResX Schema
 
@@ -141,6 +140,7 @@
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
   </data>
+<<<<<<< HEAD
   <data name="SystemNetQuic_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Quic is not supported on this platform.</value>
   </data>
@@ -152,3 +152,6 @@
   </data>
 </root>
 
+=======
+</root>
+>>>>>>> 57c870c1e95 (Remove SR from partial facades)

@@ -286,9 +286,6 @@
   </data>
   <data name="CantReadCategory" xml:space="preserve">
     <value>Cannot read Category {0}.</value>
-  </data>
-  <data name="PlatformNotSupported_PerfCounters" xml:space="preserve">
-    <value>Performance Counters are not supported on this platform.</value>
   </data>  
   <data name="Perflib_Argument_InvalidCounterSetInstanceType" xml:space="preserve">
     <value>CounterSetInstanceType '{0}' is not a valid CounterSetInstanceType.</value>

@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -485,9 +484,6 @@
   </data>
   <data name="InvliadRequestType" xml:space="preserve">
     <value>The specified request is not supported.</value>
-  </data>
-  <data name="DirectoryServicesProtocols_PlatformNotSupported" xml:space="preserve">
-    <value>System.DirectoryServices.Protocols is not supported on this platform.</value>
   </data>
   <data name="QuotaControlNotSupported" xml:space="preserve">
     <value>System.DirectoryServices.Protocols.QuotaControl is not supported on this platform.</value>

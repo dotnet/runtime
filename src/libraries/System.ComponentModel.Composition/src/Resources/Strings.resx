@@ -384,9 +384,6 @@
   <data name="InvalidOperation_RevertAndCompleteActionsMustNotThrow" xml:space="preserve">
     <value>AtomicComposition encountered an unexpected Exception, review InnerException for details.</value>
   </data>
-  <data name="PlatformNotSupported_ComponentModel_Composition" xml:space="preserve">
-    <value>System.ComponentModel.Composition APIs are not supported on this platform.</value>
-  </data>
   <data name="Expecting_AtleastOne_Type" xml:space="preserve">
     <value>Expecting genericTypeArguments to contain at least one Type</value>
   </data>

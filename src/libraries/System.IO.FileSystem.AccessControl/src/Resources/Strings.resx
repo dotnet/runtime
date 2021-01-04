@@ -1,4 +1,4 @@
-<root>
+﻿<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -133,9 +133,6 @@
   </data>
   <data name="ObjectDisposed_FileClosed" xml:space="preserve">
     <value>Cannot access a closed file.</value>
-  </data>
-  <data name="PlatformNotSupported_AccessControl" xml:space="preserve">
-    <value>Access Control List (ACL) APIs are part of resource management on Windows and are not supported on this platform.</value>
   </data>
   <data name="TypeUnrecognized_AccessControl" xml:space="preserve">
     <value>AccessControlType '{0}' unrecognized</value>

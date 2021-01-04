@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -369,9 +368,6 @@
   <data name="SQL_InvalidDataLength" xml:space="preserve">
     <value>Data length '{0}' is less than 0.</value>
   </data>
-  <data name="PlatformNotSupported_OleDb" xml:space="preserve">
-    <value>System.Data.OleDb is not supported on this platform.</value>
-  </data>
   <data name="PlatformNotSupported_GetIDispatchForObject" xml:space="preserve">
     <value>Marshal.GetIDispatchForObject API not available on this plaTform</value>
   </data>
@@ -445,7 +441,7 @@
     <value>Fill: expected a non-empty string for the SourceTable name.</value>
   </data>
   <data name="ADP_InvalidCommandTimeout" xml:space="preserve">
-    <value>Invalid CommandTimeout value {0}; the value must be >= 0.</value>
+    <value>Invalid CommandTimeout value {0}; the value must be &gt;= 0.</value>
   </data>
   <data name="ADP_DeriveParametersNotSupported" xml:space="preserve">
     <value>{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType.{1}.</value>
@@ -484,7 +480,7 @@
     <value>Internal DbConnection Error: {0}</value>
   </data>
   <data name="ADP_InvalidConnectTimeoutValue" xml:space="preserve">
-    <value>Invalid 'Connect Timeout' value which must be an integer >= 0.</value>
+    <value>Invalid 'Connect Timeout' value which must be an integer &gt;= 0.</value>
   </data>
   <data name="ADP_DataReaderNoData" xml:space="preserve">
     <value>No data exists for the row/column.</value>

@@ -268,9 +268,6 @@
   <data name="InvalidOperation_WrongOidInAsnCollection" xml:space="preserve">
     <value>AsnEncodedData element in the collection has wrong Oid value: expected = '{0}', actual = '{1}'.</value>
   </data>
-  <data name="PlatformNotSupported_CryptographyPkcs" xml:space="preserve">
-    <value>System.Security.Cryptography.Pkcs is only supported on Windows platforms.</value>
-  </data>
   <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
     <value>ASN1 corrupted data.</value>
   </data>
