@@ -199,6 +199,9 @@ mono_wasm_deregister_root (char *addr)
 #include "driver-gen.c"
 #endif
 
+// void mono_profiler_init_aot (const char *desc);
+// EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_profiler_init_aot (desc); }
+
 typedef struct WasmAssembly_ WasmAssembly;
 
 struct WasmAssembly_ {
@@ -999,10 +1002,6 @@ mono_unbox_int (MonoObject *obj)
 		return 0;
 	}
 }
-void mono_profiler_init_aot (const char *desc);
-
-EMSCRIPTEN_KEEPALIVE void 
-mono_wasm_load_profiler_aot (const char *desc) { mono_profiler_init_aot (desc); }
 
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_array_length (MonoArray *array)
