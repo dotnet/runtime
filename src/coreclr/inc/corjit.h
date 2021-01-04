@@ -303,6 +303,7 @@ public:
         TypeHandleHistogramCount = (DescriptorMin * 1) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
         TypeHandleHistogramTypeHandle = (DescriptorMin * 1) | TypeHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
+        NumRuns = (DescriptorMin * 3) | None, // Number of runs is encoded in the Other field of the schema
     };
 
     struct PgoInstrumentationSchema

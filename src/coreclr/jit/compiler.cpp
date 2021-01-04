@@ -2834,8 +2834,20 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         hr = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
                                                     &fgPgoData);
 
-        // TODO consider representing this somehow in the pgo data
-        fgNumProfileRuns = 1;
+        if (SUCCEEDED(hr))
+        {
+            fgNumProfileRuns = 0;
+            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
+            {
+                if (fgPgoSchema[iSchema].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::NumRuns)
+                {
+                    fgNumProfileRuns += fgPgoSchema[iSchema].Other;
+                }
+            }
+
+            if (fgNumProfileRuns == 0)
+                fgNumProfileRuns = 1;
+        }
 
         JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema elements, %d runs\n",
                 info.compFullName, hr, fgPgoSchema, fgPgoData, fgPgoSchemaCount, fgNumProfileRuns);
