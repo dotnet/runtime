@@ -1112,12 +1112,12 @@ namespace System.Diagnostics
                             if (isHelp)
                             {
                                 // Category Help Table
-                                throw new InvalidOperationException(SR.Format(SR.CategoryHelpCorrupt, names[index * 2], _machineName));
+                                throw new InvalidOperationException(SR.Format(SR.CategoryHelpCorrupt, names[index * 2]));
                             }
                             else
                             {
                                 // Counter Name Table
-                                throw new InvalidOperationException(SR.Format(SR.CounterNameCorrupt, names[index * 2], _machineName));
+                                throw new InvalidOperationException(SR.Format(SR.CounterNameCorrupt, names[index * 2]));
                             }
                         }
 
@@ -1364,7 +1364,7 @@ namespace System.Diagnostics
                 }
                 catch (InvalidCastException e)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.CounterDataCorrupt, perfDataKey.ToString(), machineName), e);
+                    throw new InvalidOperationException(SR.Format(SR.CounterDataCorrupt, perfDataKey.ToString()), e);
                 }
             }
 
