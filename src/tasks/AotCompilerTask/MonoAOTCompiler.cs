@@ -284,9 +284,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!string.IsNullOrEmpty(AotProfilePath))
         {
             aotArgs.Add($"profile={AotProfilePath},profile-only");
-
-            // foreach (var profiler in Profilers!)
-            //     processArgs.Add($"--profile={profiler}");
         }
 
         processArgs.Add(string.Join(" ", aotProfileArgs));

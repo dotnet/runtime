@@ -101,7 +101,7 @@ internal static partial class Interop
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void StopProfile ()
+        public static void StopProfile()
         {
         }
 
@@ -110,7 +110,7 @@ internal static partial class Interop
         public static unsafe void DumpAotProfileData (ref byte buf, int len, string s)
         {
             var arr = new byte [len];
-            fixed (void *p = &buf) 
+            fixed (void *p = &buf)
             {
                 var span = new ReadOnlySpan<byte> (p, len);
                 // Send it to JS
