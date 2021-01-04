@@ -23,7 +23,13 @@ namespace System.Runtime.InteropServices
         }
         public NFloat(double value)
         {
-            _value = checked((NativeType)value);
+#if TARGET_32BIT
+            if (value > NativeType.MaxValue)
+            {
+                throw new OverflowException();
+            }
+#endif
+            _value = (NativeType)value;
         }
 
         public double Value => _value;

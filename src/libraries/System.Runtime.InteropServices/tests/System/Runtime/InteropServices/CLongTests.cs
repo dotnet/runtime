@@ -12,8 +12,10 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class CLongTests
     {
-        private static unsafe bool Has64BitStorage => !PlatformDetection.Is32BitProcess && !PlatformDetection.IsWindows;
-        private static unsafe bool Has32BitStorage => PlatformDetection.Is32BitProcess || PlatformDetection.IsWindows;
+        private static bool Has64BitStorage => !PlatformDetection.Is32BitProcess && !PlatformDetection.IsWindows;
+        private static bool Has32BitStorage => PlatformDetection.Is32BitProcess || PlatformDetection.IsWindows;
+        private static bool NativeIntConstructorCanOverflow => !PlatformDetection.Is32BitProcess && Has32BitStorage;
+        private static bool NativeIntConstructorCannotOverflow => !NativeIntConstructorCanOverflow;
 
         [Fact]
         public void Ctor_Empty()
@@ -36,13 +38,13 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(42, value.Value);
         }
 
-        [ConditionalFact(nameof(Has32BitStorage))]
+        [ConditionalFact(nameof(NativeIntConstructorCanOverflow))]
         public void Ctor_NInt_OutOfRange()
         {
             Assert.Throws<OverflowException>(() => new CLong(unchecked(((nint)int.MaxValue) + 1)));
         }
 
-        [ConditionalFact(nameof(Has64BitStorage))]
+        [ConditionalFact(nameof(NativeIntConstructorCannotOverflow))]
         public void Ctor_NInt_LargeValue()
         {
             nint largeValue = unchecked(((nint)int.MaxValue) + 1);
@@ -65,10 +67,14 @@ namespace System.Runtime.InteropServices.Tests
             if (obj is int i)
             {
                 CLong i2 = new CLong(i);
+                Assert.Equal(expected, new CLong(i1).Equals((object)i2));
                 Assert.Equal(expected, new CLong(i1).Equals(i2));
                 Assert.Equal(expected, new CLong(i1).GetHashCode().Equals(i2.GetHashCode()));
             }
-            Assert.Equal(expected, new CLong(i1).Equals(obj));
+            else
+            {
+                Assert.Equal(expected, new CLong(i1).Equals(obj));
+            }
         }
 
         [Theory]

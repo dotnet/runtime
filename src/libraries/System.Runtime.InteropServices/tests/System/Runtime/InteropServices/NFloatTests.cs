@@ -58,18 +58,22 @@ namespace System.Runtime.InteropServices.Tests
             if (obj is float f)
             {
                 NFloat f2 = new NFloat(f);
+                Assert.Equal(expected, new NFloat(f1).Equals((object)f2));
                 Assert.Equal(expected, new NFloat(f1).Equals(f2));
                 Assert.Equal(expected, new NFloat(f1).GetHashCode().Equals(f2.GetHashCode()));
             }
-            Assert.Equal(expected, new NFloat(f1).Equals(obj));
+            else
+            {
+                Assert.Equal(expected, new NFloat(f1).Equals(obj));
+            }
         }
 
         [Theory]
         [InlineData(-4567.0f, "-4567")]
-        [InlineData(-4567.89101f, "-4567.891")]
+        [InlineData(-4567.89101f, "-4567.89111328125")]
         [InlineData(0.0f, "0")]
         [InlineData(4567.0f, "4567")]
-        [InlineData(4567.89101f, "4567.891")]
+        [InlineData(4567.89101f, "4567.89111328125")]
 
         [InlineData(float.NaN, "NaN")]
         public static void ToStringTest(float value, string expected)

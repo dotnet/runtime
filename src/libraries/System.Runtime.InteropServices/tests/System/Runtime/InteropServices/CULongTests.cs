@@ -12,8 +12,10 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class CULongTests
     {
-        private static unsafe bool Has64BitStorage => !PlatformDetection.Is32BitProcess && !PlatformDetection.IsWindows;
-        private static unsafe bool Has32BitStorage => PlatformDetection.Is32BitProcess || PlatformDetection.IsWindows;
+        private static bool Has64BitStorage => !PlatformDetection.Is32BitProcess && !PlatformDetection.IsWindows;
+        private static bool Has32BitStorage => PlatformDetection.Is32BitProcess || PlatformDetection.IsWindows;
+        private static bool NativeIntConstructorCanOverflow => !PlatformDetection.Is32BitProcess && Has32BitStorage;
+        private static bool NativeIntConstructorCannotOverflow => !NativeIntConstructorCanOverflow;
 
         [Fact]
         public void Ctor_Empty()
@@ -36,13 +38,13 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(42u, value.Value);
         }
 
-        [ConditionalFact(nameof(Has32BitStorage))]
+        [ConditionalFact(nameof(NativeIntConstructorCanOverflow))]
         public void Ctor_NInt_OutOfRange()
         {
             Assert.Throws<OverflowException>(() => new CULong(unchecked(((nuint)uint.MaxValue) + 1)));
         }
 
-        [ConditionalFact(nameof(Has64BitStorage))]
+        [ConditionalFact(nameof(NativeIntConstructorCannotOverflow))]
         public void Ctor_NInt_LargeValue()
         {
             nuint largeValue = unchecked(((nuint)uint.MaxValue) + 1);
@@ -62,10 +64,14 @@ namespace System.Runtime.InteropServices.Tests
             if (obj is uint i)
             {
                 CULong i2 = new CULong(i);
+                Assert.Equal(expected, new CULong(i1).Equals((object)i2));
                 Assert.Equal(expected, new CULong(i1).Equals(i2));
                 Assert.Equal(expected, new CULong(i1).GetHashCode().Equals(i2.GetHashCode()));
             }
-            Assert.Equal(expected, new CULong(i1).Equals(obj));
+            else
+            {
+                Assert.Equal(expected, new CULong(i1).Equals(obj));
+            }
         }
 
         [Theory]
