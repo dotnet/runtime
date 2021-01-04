@@ -266,5 +266,7 @@ namespace Microsoft.Interop
             }
             return true;
         }
+        
+        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
     }
 }

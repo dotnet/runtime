@@ -109,6 +109,8 @@ namespace Microsoft.Interop
         }
 
         public override bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
+        
+        public override bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
 
         // This marshaller only uses the conditional allocaction base for setup and cleanup.
         // It relies on the UTF-16 (Windows) and UTF-8 (non-Windows) string marshallers for allocation/marshalling.

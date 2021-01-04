@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -58,6 +59,18 @@ namespace Microsoft.Interop
                             .WithInitializer(
                                 EqualsValueClause(
                                     LiteralExpression(SyntaxKind.DefaultLiteralExpression))))));
+        }
+
+        public static RefKind GetRefKindForByValueContentsKind(this ByValueContentsMarshalKind byValue)
+        {
+            return byValue switch
+            {
+                ByValueContentsMarshalKind.Default => RefKind.None,
+                ByValueContentsMarshalKind.In => RefKind.In,
+                ByValueContentsMarshalKind.InOut => RefKind.Ref,
+                ByValueContentsMarshalKind.Out => RefKind.Out,
+                _ => throw new System.ArgumentOutOfRangeException(nameof(byValue))
+            };
         }
 
         public static class StringMarshaller

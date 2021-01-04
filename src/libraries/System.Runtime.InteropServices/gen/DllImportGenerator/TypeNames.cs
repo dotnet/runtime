@@ -39,6 +39,10 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_SafeHandle = "System.Runtime.InteropServices.SafeHandle";
 
+        public const string System_Runtime_InteropServices_OutAttribute = "System.Runtime.InteropServices.OutAttribute";
+
+        public const string System_Runtime_InteropServices_InAttribute = "System.Runtime.InteropServices.InAttribute";
+        
         public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
     }
 }

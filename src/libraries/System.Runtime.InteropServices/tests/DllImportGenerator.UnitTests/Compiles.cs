@@ -91,6 +91,11 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.ArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPUTF8Str) };
             yield return new[] { CodeSnippets.ArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPStr) };
 
+            // [In, Out] attributes
+            // By value non-blittable array
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier<bool[]>("Out") };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier<bool[]>("In, Out") };
+
             // Enums
             yield return new[] { CodeSnippets.EnumParameters };
 

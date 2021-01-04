@@ -99,6 +99,8 @@ namespace Microsoft.Interop
         {
             return info.IsByRef && !info.IsManagedReturnPosition && !context.PinningSupported;
         }
+        
+        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
     }
 
 }

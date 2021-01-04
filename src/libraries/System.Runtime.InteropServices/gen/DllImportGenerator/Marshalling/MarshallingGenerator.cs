@@ -61,6 +61,15 @@ namespace Microsoft.Interop
         /// <see cref="StubCodeContext.CurrentStage" /> of <paramref name="context"/> may not be valid.
         /// </remarks>
         bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context);
+
+        /// <summary>
+        /// Returns if the given ByValueContentsMarshalKind is supported in the current marshalling context.
+        /// A supported marshal kind has a different behavior than the default behavior.
+        /// </summary>
+        /// <param name="marshalKind">The marshal kind.</param>
+        /// <param name="context">The marshalling context.</param>
+        /// <returns></returns>
+        bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context);
     }
 
     /// <summary>
@@ -113,12 +122,53 @@ namespace Microsoft.Interop
         public static readonly HResultExceptionMarshaller HResultException = new HResultExceptionMarshaller();
 
         /// <summary>
-        /// Create an <see cref="IMarshallingGenerator"/> instance to marshalling the supplied type.
+        /// Create an <see cref="IMarshallingGenerator"/> instance for marshalling the supplied type in the given position.
         /// </summary>
         /// <param name="info">Type details</param>
         /// <param name="context">Metadata about the stub the type is associated with</param>
         /// <returns>A <see cref="IMarshallingGenerator"/> instance.</returns>
         public static IMarshallingGenerator Create(
+            TypePositionInfo info,
+            StubCodeContext context,
+            AnalyzerConfigOptions options)
+        {
+            return ValidateByValueMarshalKind(context, info, CreateCore(info, context, options));
+        }
+
+        private static IMarshallingGenerator ValidateByValueMarshalKind(StubCodeContext context, TypePositionInfo info, IMarshallingGenerator generator)
+        {
+            if (info.IsByRef && info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
+            {
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = Resources.InOutAttributeByRefNotSupported
+                };
+            }
+            else if (info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.In)
+            {
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = Resources.InAttributeNotSupportedWithoutOut
+                };
+            }
+            else if (info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default
+                && !generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, context))
+            {
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = Resources.InOutAttributeMarshalerNotSupported
+                };
+            }
+            return generator;
+        }
+
+        /// <summary>
+        /// Create an <see cref="IMarshallingGenerator"/> instance to marshalling the supplied type.
+        /// </summary>
+        /// <param name="info">Type details</param>
+        /// <param name="context">Metadata about the stub the type is associated with</param>
+        /// <returns>A <see cref="IMarshallingGenerator"/> instance.</returns>
+        private static IMarshallingGenerator CreateCore(
             TypePositionInfo info,
             StubCodeContext context,
             AnalyzerConfigOptions options)

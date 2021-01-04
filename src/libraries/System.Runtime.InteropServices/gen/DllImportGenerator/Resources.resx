@@ -192,6 +192,15 @@
   <data name="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
     <value>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</value>
   </data>
+  <data name="InAttributeNotSupportedWithoutOut" xml:space="preserve">
+    <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</value>
+  </data>
+  <data name="InOutAttributeByRefNotSupported" xml:space="preserve">
+    <value>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</value>
+  </data>
+  <data name="InOutAttributeMarshalerNotSupported" xml:space="preserve">
+    <value>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</value>
+  </data>
   <data name="MarshallingCharAsSpecifiedCharSetNotSupported" xml:space="preserve">
     <value>Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
   </data>
@@ -221,6 +230,12 @@
   </data>
   <data name="NativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
     <value>The native type '{0}' must be a value type and have a constructor that takes one parameter of type '{1}' or a parameterless instance method named 'ToManaged' that returns '{1}'</value>
+  </data>
+  <data name="OutByValueNotSupportedDescription" xml:space="preserve">
+    <value>The '[Out]' attribute is only supported on array parameters.</value>
+  </data>
+  <data name="OutByValueNotSupportedMessage" xml:space="preserve">
+    <value>The '[Out]' attribute is not supported on the '{0}' parameter.</value>
   </data>
   <data name="RefValuePropertyUnsupportedDescription" xml:space="preserve">
     <value>The 'Value' property must not be a 'ref' or 'readonly ref' property.</value>

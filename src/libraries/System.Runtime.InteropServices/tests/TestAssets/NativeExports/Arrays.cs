@@ -67,7 +67,34 @@ namespace NativeExports
 
             return retVal;
         }
-        
+
+        [UnmanagedCallersOnly(EntryPoint = "fill_range_array")]
+        [DNNE.C99DeclCode("struct int_struct_wrapper;")]
+        public static byte FillRange([DNNE.C99Type("struct int_struct_wrapper*")] IntStructWrapperNative* numValues, int length, int start)
+        {
+            if (numValues == null)
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < length; i++, start++)
+            {
+                numValues[i] = new IntStructWrapperNative { value = start };
+            }
+
+            return 1;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "double_values")]
+        [DNNE.C99DeclCode("struct int_struct_wrapper { int value; };")]
+        public static void DoubleValues([DNNE.C99Type("struct int_struct_wrapper*")] IntStructWrapperNative* numValues, int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                numValues[i].value *= 2;
+            }
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "sum_string_lengths")]
         public static int SumStringLengths(ushort** strArray)
         {

@@ -200,4 +200,21 @@ namespace SharedTypes
 
         public const int StackBufferSize = 0x100;
     }
+
+    [NativeMarshalling(typeof(IntStructWrapperNative))]
+    public struct IntStructWrapper
+    {
+        public int Value;
+    }
+
+    public struct IntStructWrapperNative
+    {
+        public int value;
+        public IntStructWrapperNative(IntStructWrapper managed)
+        {
+            value = managed.Value;
+        }
+
+        public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
+    }
 }

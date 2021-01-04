@@ -17,6 +17,35 @@ namespace Microsoft.Interop
     );
 
     /// <summary>
+    /// Describes how to marshal the contents of a value in comparison to the value itself.
+    /// Only makes sense for array-like types. For example, an "out" array doesn't change the
+    /// pointer to the array value, but it marshals the contents of the native array back to the
+    /// contents of the managed array.
+    /// </summary>
+    [Flags]
+    internal enum ByValueContentsMarshalKind
+    {
+        /// <summary>
+        /// Marshal contents from managed to native only.
+        /// This is the default behavior.
+        /// </summary>
+        Default = 0x0,
+        /// <summary>
+        /// Marshal contents from managed to native only.
+        /// This is the default behavior.
+        /// </summary>
+        In = 0x1,
+        /// <summary>
+        /// Marshal contents from native to managed only.
+        /// </summary>
+        Out = 0x2,
+        /// <summary>
+        /// Marshal contents both to and from native.
+        /// </summary>
+        InOut = In | Out
+    }
+
+    /// <summary>
     /// Positional type information involved in unmanaged/managed scenarios.
     /// </summary>
     internal sealed record TypePositionInfo
@@ -43,6 +72,8 @@ namespace Microsoft.Interop
 
         public bool IsByRef => RefKind != RefKind.None;
 
+        public ByValueContentsMarshalKind ByValueContentsMarshalKind { get; init; }
+
         public bool IsManagedReturnPosition { get => this.ManagedIndex == ReturnIndex; }
         public bool IsNativeReturnPosition { get => this.NativeIndex == ReturnIndex; }
 
@@ -60,7 +91,8 @@ namespace Microsoft.Interop
                 InstanceIdentifier = paramSymbol.Name,
                 RefKind = paramSymbol.RefKind,
                 RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind),
-                MarshallingAttributeInfo = marshallingInfo
+                MarshallingAttributeInfo = marshallingInfo,
+                ByValueContentsMarshalKind = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation)
             };
 
             return typeInfo;
@@ -295,6 +327,28 @@ namespace Microsoft.Interop
                 marshallingInfo = NoMarshallingInfo.Instance;
                 return false;
             }
+        }
+
+        private static ByValueContentsMarshalKind GetByValueContentsMarshalKind(IEnumerable<AttributeData> attributes, Compilation compilation)
+        {
+            INamedTypeSymbol outAttributeType = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
+            INamedTypeSymbol inAttributeType = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_InAttribute)!;
+
+            ByValueContentsMarshalKind marshalKind = ByValueContentsMarshalKind.Default;
+
+            foreach (var attr in attributes)
+            {
+                if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, outAttributeType))
+                {
+                    marshalKind |= ByValueContentsMarshalKind.Out;
+                }
+                else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, inAttributeType))
+                {
+                    marshalKind |= ByValueContentsMarshalKind.In;
+                }
+            }
+
+            return marshalKind;
         }
 
         private static SyntaxKind RefKindToSyntax(RefKind refKind)

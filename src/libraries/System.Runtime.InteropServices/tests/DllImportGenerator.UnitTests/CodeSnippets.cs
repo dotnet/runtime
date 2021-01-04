@@ -368,6 +368,20 @@ partial class Test
         public static string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).ToString());
 
         /// <summary>
+        /// Declaration with [In, Out] style attributes on a by-value parameter.
+        /// </summary>
+        public static string ByValueParameterWithModifier(string typeName, string attributeName) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method(
+        [{attributeName}] {typeName} p);
+}}";
+
+        public static string ByValueParameterWithModifier<T>(string attributeName) => ByValueParameterWithModifier(typeof(T).ToString(), attributeName);
+
+        /// <summary>
         /// Declaration with parameters with MarshalAs.
         /// </summary>
         public static string MarshalAsParametersAndModifiers(string typeName, UnmanagedType unmanagedType) => @$"

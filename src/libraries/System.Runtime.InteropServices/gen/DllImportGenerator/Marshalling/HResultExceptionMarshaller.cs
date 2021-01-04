@@ -41,6 +41,8 @@ namespace Microsoft.Interop
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
+        
+        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
     }
 
 }

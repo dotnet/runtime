@@ -284,6 +284,32 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The &apos;[In]&apos; attribute is not supported unless the &apos;[Out]&apos; attribute is also used. The behavior of the &apos;[In]&apos; attribute without the &apos;[Out]&apos; attribute is the same as the default behavior..
+        /// </summary>
+        internal static string InAttributeNotSupportedWithoutOut {
+            get {
+                return ResourceManager.GetString("InAttributeNotSupportedWithoutOut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;[In]&apos; and &apos;[Out]&apos; attributes are unsupported on parameters passed by reference. Use the &apos;in&apos;, &apos;ref&apos;, or &apos;out&apos; keywords instead..
+        /// </summary>
+        internal static string InOutAttributeByRefNotSupported {
+            get {
+                return ResourceManager.GetString("InOutAttributeByRefNotSupported", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;[In]&apos; and &apos;[Out]&apos; attributes on this parameter are unsupported on this parameter..
+        /// </summary>
+        internal static string InOutAttributeMarshalerNotSupported {
+            get {
+                return ResourceManager.GetString("InOutAttributeMarshalerNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Marshalling char with &apos;CharSet.{0}&apos; is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke..
         /// </summary>
         internal static string MarshallingCharAsSpecifiedCharSetNotSupported {
@@ -370,6 +396,24 @@ namespace Microsoft.Interop {
         internal static string NativeTypeMustHaveRequiredShapeMessage {
             get {
                 return ResourceManager.GetString("NativeTypeMustHaveRequiredShapeMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;[Out]&apos; attribute is only supported on array parameters..
+        /// </summary>
+        internal static string OutByValueNotSupportedDescription {
+            get {
+                return ResourceManager.GetString("OutByValueNotSupportedDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;[Out]&apos; attribute is not supported on the &apos;{0}&apos; parameter..
+        /// </summary>
+        internal static string OutByValueNotSupportedMessage {
+            get {
+                return ResourceManager.GetString("OutByValueNotSupportedMessage", resourceCulture);
             }
         }
         

@@ -101,92 +101,116 @@ namespace Microsoft.Interop
                             yield return statement;
                         }
 
-                        // new Span<T>(managedIdentifier).CopyTo(new Span<T>(nativeIdentifier, managedIdentifier.Length));
-                        yield return ExpressionStatement(
-                            InvocationExpression(
-                                MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                        ObjectCreationExpression(
-                                                        GenericName(Identifier(TypeNames.System_Span),
-                                                            TypeArgumentList(
-                                                                SingletonSeparatedList(
-                                                                    GetElementTypeSyntax(info)))))
-                                                    .WithArgumentList(
-                                                        ArgumentList(SingletonSeparatedList(
-                                                            Argument(IdentifierName(managedIdentifer))))),
-                                    IdentifierName("CopyTo")))
-                            .WithArgumentList(
-                                ArgumentList(
-                                    SingletonSeparatedList(
+                        // new Span<T>(nativeIdentifier, managedIdentifier.Length)
+                        var nativeSpan = ObjectCreationExpression(
+                            GenericName(TypeNames.System_Span)
+                            .WithTypeArgumentList(
+                                TypeArgumentList(
+                                    SingletonSeparatedList(spanElementTypeSyntax))))
+                        .WithArgumentList(
+                            ArgumentList(
+                                SeparatedList(
+                                    new []{
                                         Argument(
-                                            ObjectCreationExpression(
-                                                GenericName(TypeNames.System_Span)
-                                                .WithTypeArgumentList(
-                                                    TypeArgumentList(
-                                                        SingletonSeparatedList(spanElementTypeSyntax))))
-                                            .WithArgumentList(
-                                                ArgumentList(
-                                                    SeparatedList(
-                                                        new []{
-                                                            Argument(
-                                                                CastExpression(
-                                                                    PointerType(spanElementTypeSyntax),
-                                                                    IdentifierName(nativeIdentifier))),
-                                                            Argument(
-                                                                MemberAccessExpression(
-                                                                    SyntaxKind.SimpleMemberAccessExpression,
-                                                                    IdentifierName(managedIdentifer),
-                                                                    IdentifierName("Length")))}))))))));
-                    }
-                    break;
-                case StubCodeContext.Stage.Unmarshal:
-                    if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
-                    {
+                                            CastExpression(
+                                                PointerType(spanElementTypeSyntax),
+                                                IdentifierName(nativeIdentifier))),
+                                        Argument(
+                                            MemberAccessExpression(
+                                                SyntaxKind.SimpleMemberAccessExpression,
+                                                IdentifierName(managedIdentifer),
+                                                IdentifierName("Length")))
+                                    })));
+
+                        // new Span<T>(managedIdentifier).CopyTo(<nativeSpan>);
                         yield return IfStatement(
-                            BinaryExpression(SyntaxKind.NotEqualsExpression,
-                            IdentifierName(nativeIdentifier),
-                            LiteralExpression(SyntaxKind.NullLiteralExpression)),
-                            Block(
-                                // <managedIdentifier> = new <managedElementType>[<numElementsExpression>];
-                                ExpressionStatement(
-                                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                        IdentifierName(managedIdentifer),
-                                        ArrayCreationExpression(
-                                        ArrayType(GetElementTypeSyntax(info),
-                                            SingletonList(ArrayRankSpecifier(
-                                                SingletonSeparatedList(_numElementsExpr))))))),                      
-                                // new Span<T>(nativeIdentifier, managedIdentifier.Length).CopyTo(managedIdentifier);
+                                BinaryExpression(SyntaxKind.NotEqualsExpression,
+                                    IdentifierName(managedIdentifer),
+                                    LiteralExpression(SyntaxKind.NullLiteralExpression)),
                                 ExpressionStatement(
                                     InvocationExpression(
                                         MemberAccessExpression(
                                             SyntaxKind.SimpleMemberAccessExpression,
-                                            ObjectCreationExpression(
-                                                        GenericName(Identifier(TypeNames.System_Span),
-                                                            TypeArgumentList(
-                                                                SingletonSeparatedList(
-                                                                    spanElementTypeSyntax))))
-                                                    .WithArgumentList(
-                                                        ArgumentList(
-                                                            SeparatedList(
-                                                                new[]{
-                                                                    Argument(
-                                                                        CastExpression(
-                                                                            PointerType(spanElementTypeSyntax),
-                                                                            IdentifierName(nativeIdentifier))),
-                                                                    Argument(
-                                                                        MemberAccessExpression(
-                                                                            SyntaxKind.SimpleMemberAccessExpression,
-                                                                            IdentifierName(managedIdentifer),
-                                                                            IdentifierName("Length")))}))),
+                                                ObjectCreationExpression(
+                                                                GenericName(Identifier(TypeNames.System_Span),
+                                                                    TypeArgumentList(
+                                                                        SingletonSeparatedList(
+                                                                            spanElementTypeSyntax))))
+                                                            .WithArgumentList(
+                                                                ArgumentList(SingletonSeparatedList(
+                                                                    Argument(IdentifierName(managedIdentifer))))),
                                             IdentifierName("CopyTo")))
                                     .WithArgumentList(
                                         ArgumentList(
                                             SingletonSeparatedList(
-                                                Argument(IdentifierName(managedIdentifer))))))),
-                            ElseClause(
-                                ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                                Argument(nativeSpan))))));
+                    }
+                    break;
+                case StubCodeContext.Stage.Unmarshal:
+                    if (info.IsManagedReturnPosition
+                        || (info.IsByRef && info.RefKind != RefKind.In)
+                        || info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+                    {
+                        // new Span<T>(nativeIdentifier, managedIdentifier.Length).CopyTo(managedIdentifier);
+                        var unmarshalContentsStatement =
+                            ExpressionStatement(
+                                InvocationExpression(
+                                    MemberAccessExpression(
+                                        SyntaxKind.SimpleMemberAccessExpression,
+                                        ObjectCreationExpression(
+                                                    GenericName(Identifier(TypeNames.System_Span),
+                                                        TypeArgumentList(
+                                                            SingletonSeparatedList(
+                                                                spanElementTypeSyntax))))
+                                                .WithArgumentList(
+                                                    ArgumentList(
+                                                        SeparatedList(
+                                                            new[]{
+                                                                Argument(CastExpression(
+                                                                    PointerType(spanElementTypeSyntax),
+                                                                    IdentifierName(nativeIdentifier))),
+                                                                Argument(
+                                                                    MemberAccessExpression(
+                                                                        SyntaxKind.SimpleMemberAccessExpression,
+                                                                        IdentifierName(managedIdentifer),
+                                                                        IdentifierName("Length")))
+                                                            }))),
+                                        IdentifierName("CopyTo")))
+                                .WithArgumentList(
+                                    ArgumentList(
+                                        SingletonSeparatedList(
+                                            Argument(IdentifierName(managedIdentifer))))));
+
+                        if (info.IsManagedReturnPosition || info.IsByRef)
+                        {
+                            yield return IfStatement(
+                                BinaryExpression(SyntaxKind.NotEqualsExpression,
+                                IdentifierName(nativeIdentifier),
+                                LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                                Block(
+                                    // <managedIdentifier> = new <managedElementType>[<numElementsExpression>];
+                                    ExpressionStatement(
+                                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                            IdentifierName(managedIdentifer),
+                                            ArrayCreationExpression(
+                                            ArrayType(GetElementTypeSyntax(info),
+                                                SingletonList(ArrayRankSpecifier(
+                                                    SingletonSeparatedList(_numElementsExpr))))))),
+                                    unmarshalContentsStatement),
+                                ElseClause(
+                                    ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                        IdentifierName(managedIdentifer),
+                                        LiteralExpression(SyntaxKind.NullLiteralExpression)))));
+                        }
+                        else
+                        {
+                            yield return IfStatement(
+                                BinaryExpression(SyntaxKind.NotEqualsExpression,
                                     IdentifierName(managedIdentifer),
-                                    LiteralExpression(SyntaxKind.NullLiteralExpression)))));
+                                    LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                                unmarshalContentsStatement);
+                        }
+
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
@@ -241,6 +265,11 @@ namespace Microsoft.Interop
                         CastExpression(
                             ParseTypeName("System.IntPtr"),
                             IdentifierName(context.GetIdentifiers(info).native))))));
+        }
+
+        public override bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
+        {
+            return !context.PinningSupported && marshalKind.HasFlag(ByValueContentsMarshalKind.Out);
         }
     }
 

@@ -39,6 +39,22 @@ namespace DllImportGenerator.UnitTests
             //  * UnmanagedType.CustomMarshaler, MarshalTypeRef, MarshalType, MarshalCookie
             yield return new object[] { CodeSnippets.MarshalAsCustomMarshalerOnTypes, 16, 0 };
 
+            // Unsupported [In, Out] attributes usage
+            // Blittable array
+            yield return new object[] { CodeSnippets.ByValueParameterWithModifier<int[]>("Out"), 1, 0 };
+            yield return new object[] { CodeSnippets.ByValueParameterWithModifier<int[]>("In, Out"), 1, 0 };
+
+            // By ref with [In, Out] attributes
+            yield return new object[] { CodeSnippets.ByValueParameterWithModifier("in int", "In"), 1, 0 };
+            yield return new object[] { CodeSnippets.ByValueParameterWithModifier("ref int", "In"), 1, 0 };
+            yield return new object[] { CodeSnippets.ByValueParameterWithModifier("ref int", "In, Out"), 1, 0 };
+            yield return new object[] { CodeSnippets.ByValueParameterWithModifier("out int", "Out"), 1, 0 };
+
+            // By value non-array with [In, Out] attributes
+            yield return new object[] { CodeSnippets.ByValueParameterWithModifier<byte>("In"), 1, 0 };
+            yield return new object[] { CodeSnippets.ByValueParameterWithModifier<byte>("Out"), 1, 0 };
+            yield return new object[] { CodeSnippets.ByValueParameterWithModifier<byte>("In, Out"), 1, 0 };
+
             // Unsupported named arguments
             //  * BestFitMapping, ThrowOnUnmappableChar
             yield return new object[] { CodeSnippets.AllDllImportNamedArguments, 2, 0 };

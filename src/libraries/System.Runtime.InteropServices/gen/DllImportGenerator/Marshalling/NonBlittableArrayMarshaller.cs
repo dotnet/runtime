@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -64,6 +65,7 @@ namespace Microsoft.Interop
         public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
             var (managedIdentifer, nativeIdentifier) = context.GetIdentifiers(info);
+            RefKind elementRefKind = info.IsByRef ? info.RefKind : info.ByValueContentsMarshalKind.GetRefKindForByValueContentsKind();
             bool cacheManagedValue = ShouldCacheManagedValue(info, context);
             string managedLocal = !cacheManagedValue ? managedIdentifer : managedIdentifer + ArrayMarshallingCodeContext.LocalManagedIdentifierSuffix;
 
@@ -95,6 +97,8 @@ namespace Microsoft.Interop
                             yield return statement;
                         }
 
+                        var arraySubContext = new ArrayMarshallingCodeContext(context.CurrentStage, IndexerIdentifier, context, appendLocalManagedIdentifierSuffix: cacheManagedValue);
+                            
                         TypeSyntax spanElementTypeSyntax = GetNativeElementTypeSyntax(info);
                         if (spanElementTypeSyntax is PointerTypeSyntax)
                         {
@@ -102,8 +106,14 @@ namespace Microsoft.Interop
                             spanElementTypeSyntax = ParseTypeName("System.IntPtr");
                         }
 
+                        if (info is { IsByRef: false, ByValueContentsMarshalKind: ByValueContentsMarshalKind.Out })
+                        {
+                            // We don't marshal values from managed to native for [Out] by value arrays,
+                            // we only allocate the buffer.
+                            yield break;
+                        }
+
                         // Iterate through the elements of the array to marshal them
-                        var arraySubContext = new ArrayMarshallingCodeContext(context.CurrentStage, IndexerIdentifier, context, appendLocalManagedIdentifierSuffix: cacheManagedValue);
                         yield return IfStatement(BinaryExpression(SyntaxKind.NotEqualsExpression,
                             IdentifierName(managedLocal),
                             LiteralExpression(SyntaxKind.NullLiteralExpression)),
@@ -135,13 +145,46 @@ namespace Microsoft.Interop
                                         ArgumentList())),
                             MarshallerHelpers.GetForLoop(managedLocal, IndexerIdentifier)
                                 .WithStatement(Block(
-                                    List(_elementMarshaller.Generate(info with { ManagedType = GetElementTypeSymbol(info) }, arraySubContext))))));
+                                    List(_elementMarshaller.Generate(
+                                        info with { ManagedType = GetElementTypeSymbol(info), RefKind = elementRefKind },
+                                        arraySubContext))))));
                     }
                     break;
                 case StubCodeContext.Stage.Unmarshal:
-                    if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+                    if (info.IsManagedReturnPosition
+                        || (info.IsByRef && info.RefKind != RefKind.In)
+                        || info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
                     {
                         var arraySubContext = new ArrayMarshallingCodeContext(context.CurrentStage, IndexerIdentifier, context, appendLocalManagedIdentifierSuffix: cacheManagedValue);
+                        // Iterate through the elements of the native array to unmarshal them
+                        StatementSyntax unmarshalContentsStatement =
+                            MarshallerHelpers.GetForLoop(managedLocal, IndexerIdentifier)
+                                .WithStatement(Block(
+                                    List(_elementMarshaller.Generate(
+                                        info with { ManagedType = GetElementTypeSymbol(info), RefKind = elementRefKind },
+                                        arraySubContext))));
+
+                        if (!info.IsByRef)
+                        {
+                            if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+                            {
+                                yield return IfStatement(
+                                    BinaryExpression(SyntaxKind.NotEqualsExpression,
+                                        IdentifierName(managedLocal),
+                                        LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                                    unmarshalContentsStatement);
+
+                                if (cacheManagedValue)
+                                {
+                                    yield return ExpressionStatement(
+                                        AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                            IdentifierName(managedIdentifer),
+                                            IdentifierName(managedLocal))
+                                    );
+                                }
+                                yield break;
+                            }
+                        }
 
                         yield return IfStatement(
                             BinaryExpression(SyntaxKind.NotEqualsExpression,
@@ -156,12 +199,8 @@ namespace Microsoft.Interop
                                         ArrayType(GetElementTypeSymbol(info).AsTypeSyntax(),
                                             SingletonList(ArrayRankSpecifier(
                                                 SingletonSeparatedList(_numElementsExpr))))))),
-                                // Iterate through the elements of the native array to unmarshal them
-                                MarshallerHelpers.GetForLoop(managedLocal, IndexerIdentifier)
-                                    .WithStatement(Block(
-                                        List(_elementMarshaller.Generate(
-                                            info with { ManagedType = GetElementTypeSymbol(info) },
-                                            arraySubContext))))),
+                                unmarshalContentsStatement
+                                ),
                             ElseClause(
                                 ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                                     IdentifierName(managedLocal),
@@ -180,7 +219,7 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Cleanup:
                     {
                         var arraySubContext = new ArrayMarshallingCodeContext(context.CurrentStage, IndexerIdentifier, context, appendLocalManagedIdentifierSuffix: cacheManagedValue);
-                        var elementCleanup = List(_elementMarshaller.Generate(info with { ManagedType = GetElementTypeSymbol(info) }, arraySubContext));
+                        var elementCleanup = List(_elementMarshaller.Generate(info with { ManagedType = GetElementTypeSymbol(info), RefKind = elementRefKind }, arraySubContext));
                         if (elementCleanup.Count != 0)
                         {
                             // Iterate through the elements of the native array to clean up any unmanaged resources.
@@ -254,6 +293,11 @@ namespace Microsoft.Interop
                         CastExpression(
                             ParseTypeName("System.IntPtr"),
                             IdentifierName(context.GetIdentifiers(info).native))))));
+        }
+
+        public override bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
+        {
+            return marshalKind.HasFlag(ByValueContentsMarshalKind.Out);
         }
 
         protected override ExpressionSyntax GenerateNullCheckExpression(TypePositionInfo info, StubCodeContext context)

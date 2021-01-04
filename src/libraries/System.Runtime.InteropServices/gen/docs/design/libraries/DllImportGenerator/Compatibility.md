@@ -62,6 +62,10 @@ In the source-generated marshalling, arrays will be allocated on the stack (inst
 
 [`LCIDConversionAttribute`](`https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute`) will not be supported for methods marked with `GeneratedDllImportAttribute`.
 
+### `[In, Out]` Attributes
+
+In the source generated marshalling, the `[In]` and `[Out]` attributes will only be supported on parameters passed by value. For by-ref parameters, users should use the `in`, `ref`, or `out` keywords respectively. Additionally, they will only be supported in scenarios where applying them would result in behavior different from the default, such as applying `[Out]` or `[In, Out]` to a by-value non-blittable array parameter. This is in contrast to the built-in system which will allow them in all cases even when they have no effect.
+
 ## Verison 0
 
 This version is the built-in IL Stub generation system that is triggered whenever a method marked with `DllImport` is invoked.
