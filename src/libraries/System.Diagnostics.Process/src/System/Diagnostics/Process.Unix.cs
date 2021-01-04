@@ -529,9 +529,7 @@ namespace System.Diagnostics
                         return false;
                     }
 
-                    string directoryForException = string.IsNullOrEmpty(cwd) ? Directory.GetCurrentDirectory() : cwd;
-                    string msg = SR.Format(SR.FailedToStartFileDirectory, filename, directoryForException, GetErrorMessage(errno));
-                    throw new Win32Exception(errno, msg);
+                    throw CreateExceptionForFailedToStartFileDirectory(GetErrorMessage(errno), errno, filename, cwd);
                 }
             }
             finally

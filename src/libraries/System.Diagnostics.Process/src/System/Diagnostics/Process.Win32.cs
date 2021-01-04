@@ -91,13 +91,11 @@ namespace System.Diagnostics
                             // This happens on Windows Nano
                             throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
                         default:
-                            string innerMsg = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
+                            string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
                                 ? SR.InvalidApplication
                                 : GetErrorMessage(errorCode);
 
-                            string directoryForException = startInfo.WorkingDirectory.Length > 0 ? startInfo.WorkingDirectory : Directory.GetCurrentDirectory();
-                            string msg = SR.Format(SR.FailedToStartFileDirectory, startInfo.FileName, directoryForException, innerMsg);
-                            throw new Win32Exception(errorCode, msg);
+                            throw CreateExceptionForFailedToStartFileDirectory(nativeErrorMessage, errorCode, startInfo.FileName, startInfo.WorkingDirectory);
                     }
                 }
 
