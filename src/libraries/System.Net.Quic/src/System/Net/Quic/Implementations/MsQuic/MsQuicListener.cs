@@ -50,9 +50,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             _sslOptions = options.ServerAuthenticationOptions!;
             _listenEndPoint = options.ListenEndPoint!;
 
-            SetIdleTimeout(options.IdleTimeout);
-
             _ptr = _session.ListenerOpen(options);
+
+            SetIdleTimeout(options.IdleTimeout);
         }
 
         internal override IPEndPoint ListenEndPoint
