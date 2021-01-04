@@ -1,3 +1,4 @@
+<!-- Some assembly methods are not tracked by the linker, so we add them here  -->
 <linker>
   <assembly fullname="xunit.execution.dotnet">
     <type fullname="Xunit.Sdk.ReflectionAssemblyInfo">
