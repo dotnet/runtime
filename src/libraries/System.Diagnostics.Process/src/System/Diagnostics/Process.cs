@@ -1208,7 +1208,6 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.FileNameMissing);
             }
-
             if (startInfo.StandardInputEncoding != null && !startInfo.RedirectStandardInput)
             {
                 throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
