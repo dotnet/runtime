@@ -2646,7 +2646,7 @@ namespace System.Diagnostics.Tracing
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
-                m_rawManifest = CreateManifestAndDescriptors(typeof(EventSource), Name, this);
+                m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
@@ -2879,9 +2879,6 @@ namespace System.Diagnostics.Tracing
         // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
         // then the descriptors are not created, and just the manifest is generated.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-        Justification = "Nested types of eventSourceType's fields are preserved  " +
-        "with the parameter tagging")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
         Justification = "All eventSourceType's members in its entirety are preserved  " +
         "with the parameter tagging")]
