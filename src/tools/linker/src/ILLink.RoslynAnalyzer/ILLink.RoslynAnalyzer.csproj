@@ -2,14 +2,35 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>8</LangVersion>
+    <LangVersion>latest</LangVersion>
+    <OutputType>Library</OutputType>
     <Nullable>enable</Nullable>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+  </PropertyGroup>
+
+  <!-- Analyzer package properties -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NET.ILLink.Analyzers</PackageId>
+    <Authors>Microsoft</Authors>
+    <RepositoryUrl>https://github.com/mono/linker</RepositoryUrl>
+    <Description>Analyzer utilities for ILLink attributes and single-file</Description>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
   </PropertyGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources.resx" GenerateSource="true" />
-    <PackageReference Include="microsoft.codeanalysis.csharp" Version="3.7.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.7.0" PrivateAssets="all" />
   </ItemGroup>
+
+  <Target Name="IncludeAnalyzerAssembliesInPkg"
+          DependsOnTargets="InitializeStandardNuspecProperties"
+          AfterTargets="AfterBuild">
+    <ItemGroup>
+      <None Include="$(OutputPath)\**\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+  </Target>
 
 </Project>
