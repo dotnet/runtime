@@ -25,27 +25,27 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void Ctor_Int()
+        public void Ctor_UInt()
         {
             CULong value = new CULong(42u);
             Assert.Equal(42u, value.Value);
         }
 
         [Fact]
-        public void Ctor_NInt()
+        public void Ctor_NUInt()
         {
             CULong value = new CULong((nuint)42);
             Assert.Equal(42u, value.Value);
         }
 
         [ConditionalFact(nameof(NativeIntConstructorCanOverflow))]
-        public void Ctor_NInt_OutOfRange()
+        public void Ctor_NUInt_OutOfRange()
         {
             Assert.Throws<OverflowException>(() => new CULong(unchecked(((nuint)uint.MaxValue) + 1)));
         }
 
         [ConditionalFact(nameof(NativeIntConstructorCannotOverflow))]
-        public void Ctor_NInt_LargeValue()
+        public void Ctor_NUInt_LargeValue()
         {
             nuint largeValue = unchecked(((nuint)uint.MaxValue) + 1);
             CULong value = new CULong(largeValue);

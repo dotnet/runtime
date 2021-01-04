@@ -20,27 +20,28 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void Ctor_Int()
+        public void Ctor_Float()
         {
             NFloat value = new NFloat(42.0f);
             Assert.Equal(42.0, value.Value);
         }
 
         [Fact]
-        public void Ctor_NInt()
+        public void Ctor_Double()
         {
             NFloat value = new NFloat(42.0);
             Assert.Equal(42.0, value.Value);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
-        public void Ctor_NInt_OutOfRange()
+        public void Ctor_Double_OutOfRange()
         {
-            Assert.Throws<OverflowException>(() => new NFloat(double.MaxValue));
+            NFloat value = new NFloat(double.MaxValue);
+            Assert.Equal((double)(float)double.MaxValue, value.Value);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
-        public void Ctor_NInt_LargeValue()
+        public void Ctor_Double_LargeValue()
         {
             NFloat value = new NFloat(double.MaxValue);
             Assert.Equal(double.MaxValue, value.Value);

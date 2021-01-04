@@ -39,12 +39,6 @@ namespace System.Runtime.InteropServices
         /// <param name="value">The floating-point vaule.</param>
         public NFloat(double value)
         {
-#if TARGET_32BIT
-            if (value > NativeType.MaxValue || value < NativeType.MinValue)
-            {
-                throw new OverflowException();
-            }
-#endif
             _value = (NativeType)value;
         }
 
