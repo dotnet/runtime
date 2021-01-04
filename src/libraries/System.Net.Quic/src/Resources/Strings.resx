@@ -140,10 +140,6 @@
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
   </data>
-<<<<<<< HEAD
-  <data name="SystemNetQuic_PlatformNotSupported" xml:space="preserve">
-    <value>System.Net.Quic is not supported on this platform.</value>
-  </data>
   <data name="net_quic_unsupported_address_family" xml:space="preserve">
     <value>Unsupported address family of '{0}' for remote endpoint.</value>
   </data>
@@ -151,7 +147,3 @@
     <value>Writing is not allowed on stream.</value>
   </data>
 </root>
-
-=======
-</root>
->>>>>>> 57c870c1e95 (Remove SR from partial facades)
