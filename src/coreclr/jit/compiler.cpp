@@ -560,6 +560,18 @@ bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const
 }
 #endif // TARGET_X86
 
+//---------------------------------------------------------------------------
+// isNativePrimitiveStructType:
+//    Check if the given struct type is an intrinsic type that should be treated as though
+//    it is not a struct at the unmanaged ABI boundary.
+//
+// Arguments:
+//    clsHnd - the handle for the struct type.
+//
+// Return Value:
+//    true if the given struct type should be treated as a primitive for unmanaged calls,
+//    false otherwise.
+//
 bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
 {
     if (!isIntrinsicType(clsHnd))

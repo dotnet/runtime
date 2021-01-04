@@ -5035,7 +5035,6 @@ public:
     // Convert a BYTE which represents the VM's CorInfoGCtype to the JIT's var_types
     var_types getJitGCType(BYTE gcType);
 
-
     // Returns true if the provided type should be treated as a primitive type
     // for the unmanaged calling conventions.
     bool isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd);
