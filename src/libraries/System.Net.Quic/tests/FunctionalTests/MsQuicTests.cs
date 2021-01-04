@@ -72,7 +72,6 @@ namespace System.Net.Quic.Tests
             {
                 RemoteEndPoint = listener.ListenEndPoint,
                 ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
-                //IdleTimeout = TimeSpan.FromSeconds(10)
             };
 
             using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
