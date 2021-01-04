@@ -9,7 +9,7 @@ The tests can be filtered based on xunit trait attributes defined in [`Microsoft
 ```
 Tests marked as `OuterLoop` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through `dotnet build` but can be enabled manually by adding the `-testscope outerloop` switch or `/p:TestScope=outerloop` e.g.
 
-```bat
+```cmd
 build -test -testscope outerloop
 cd src/System.Text.RegularExpressions/tests && dotnet build /t:Test /p:TestScope=outerloop
 ```
@@ -147,7 +147,7 @@ public class TestClass
 _**A few common examples with the above attributes:**_
 
 - Run all tests acceptable on Windows that are not failing:
-```bat
+```cmd
 dotnet build <csproj_file> /t:Test /p:TargetOS=windows
 ```
 - Run all outer loop tests acceptable on OS X that are currently associated with active issues:
