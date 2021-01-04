@@ -12,10 +12,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project ToolsVersion="14.0">
 
   <PropertyGroup>
-    <_AOTTasksDirectoryRoot Condition=" '$(_ILLinkTasksDirectoryRoot)' == '' ">$(MSBuildThisFileDirectory)../tools/</_AOTTasksDirectoryRoot>
+    <_AOTTasksDirectoryRoot Condition="'$(_AOTTasksDirectoryRoot)' == ''">$(MSBuildThisFileDirectory)../tools/</_AOTTasksDirectoryRoot>
     <_AOTTasksTFM>net5.0</_AOTTasksTFM>
-    <_AOTTasksDirectory>$(_ILLinkTasksDirectoryRoot)$(_AOTTasksTFM)/</_AOTTasksDirectory>
-    <AOTTasksAssembly Condition=" '$(AOTTasksAssembly)' == '' ">$(_AOTTasksDirectory)MonoAOTCompiler.dll</ILLinkTasksAssembly>
+    <_AOTTasksDirectory>$(_AOTTasksDirectoryRoot)$(_AOTTasksTFM)/</_AOTTasksDirectory>
+    <AOTTasksAssembly Condition="'$(AOTTasksAssembly)' == ''">$(_AOTTasksDirectory)MonoAOTCompiler.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(AOTTasksAssembly)" />
