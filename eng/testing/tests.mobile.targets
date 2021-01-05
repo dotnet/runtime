@@ -157,10 +157,15 @@
       <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
       <ResolvedFileToPublish TrimMode="link" />
 
-      <!-- Don't trim the test runner, and main assembly.
+      <!-- Don't trim the main assembly.
            TrimMode="" is needed so the root assemblies are correctly identified -->
       <ResolvedFileToPublish TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
-      <ResolvedFileToPublish TrimMode="" Condition="$([System.String]::Copy('%(FileName)%(Extension)').EndsWith('TestRunner.dll'))" />
+
+      <!-- Even though we are trimming the test runner assembly, we want it to be treated
+           as a root -->
+      <TrimmerRootAssembly
+          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('TestRunner.dll'))"
+          Include="%(ResolvedFileToPublish.FileName)" />
     </ItemGroup>
 
     <ItemGroup>
