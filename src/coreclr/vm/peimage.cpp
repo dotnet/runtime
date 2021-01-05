@@ -1062,8 +1062,9 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
                 EEFileLoadException::Throw(GetPath(), loadFailure);
             }
 
-            // IL only images will always be mapped. We also dont bother doing the conversion of PE header on 64bit,
-            // as done below for the desktop case, as there is no appcompat burden for CoreCLR on 64bit to have that conversion done.
+            // IL only images will always be mapped. We don't bother doing a conversion
+            // of PE header on 64bit, as done for .NET Framework, since there is no
+            // appcompat burden for CoreCLR on 64bit.
             fMarkAnyCpuImageAsLoaded = true;
         }
 
