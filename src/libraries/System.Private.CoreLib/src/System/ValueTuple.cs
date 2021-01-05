@@ -315,15 +315,17 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1> objTuple)
+                {
+                    return Comparer<T1>.Default.Compare(Item1, objTuple.Item1);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            return Comparer<T1>.Default.Compare(Item1, objTuple.Item1);
+            return 1;
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -502,15 +504,17 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2> tuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2> objTuple)
+                {
+                    return CompareTo(objTuple);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                tuple = default; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo(tuple);
+            return 1;
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -689,15 +693,17 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3> objTuple)
+                {
+                    return CompareTo(objTuple);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo(objTuple);
+            return 1;
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -892,15 +898,17 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4> objTuple)
+                {
+                    return CompareTo(objTuple);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo(objTuple);
+            return 1;
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -1112,15 +1120,17 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4, T5> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4, T5> objTuple)
+                {
+                    return CompareTo(objTuple);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo(objTuple);
+            return 1;
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -1350,15 +1360,17 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4, T5, T6> objTuple)
+                {
+                    return CompareTo(objTuple);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo(objTuple);
+            return 1;
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -1606,15 +1618,17 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
+                {
+                    return CompareTo(objTuple);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo(objTuple);
+            return 1;
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -1886,15 +1900,17 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
+                {
+                    return CompareTo(objTuple);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo(objTuple);
+            return 1;
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
