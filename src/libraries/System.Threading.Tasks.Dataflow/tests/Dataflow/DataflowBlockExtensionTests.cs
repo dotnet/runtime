@@ -344,6 +344,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         [Fact]
         [OuterLoop] // stress test
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46566", TestPlatforms.Browser)]
         public void TestAsObservableAndAsObserver_AsObservableDoesntLeak()
         {
             const int Count = 1000;
