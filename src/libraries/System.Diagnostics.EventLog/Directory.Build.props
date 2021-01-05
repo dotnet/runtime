@@ -3,5 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IsWindowsSpecific>true</IsWindowsSpecific>
+    <PackageVersion>5.0.1</PackageVersion>
+    <AssemblyVersion>5.0.0.1</AssemblyVersion>
   </PropertyGroup>
 </Project>

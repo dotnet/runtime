@@ -21,6 +21,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)\pkg\Microsoft.Windows.Compatibility\Microsoft.Windows.Compatibility.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Text.Json\pkg\System.Text.Json.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.DiagnosticSource\pkg\System.Diagnostics.DiagnosticSource.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.EventLog\pkg\System.Diagnostics.EventLog.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Composition*\pkg\System.Composition*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
