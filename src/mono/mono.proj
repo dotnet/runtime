@@ -436,8 +436,6 @@
 
     <MakeDir Directories="$(MonoObjDir)/cross" />
     <!-- offsets tool -->
-    <Message Text="DEBUG locating offsets" Importance="High" />
-    <Exec Command="find $([System.IO.Path]::GetDirectoryName('$(ArtifactsObjDir)\monooffsetfiles')) -type f" />
     <Message Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" Text="Out-of-tree offset file found, moving into place" Importance="High" />
     <Copy Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" SourceFiles="$(_MonoAotPrebuiltOffsetsFile)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(MonoAotOffsetsFile)'))" />
     <Message Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Text="Running '$(_MonoAotCrossOffsetsCommand)'" Importance="High" />
