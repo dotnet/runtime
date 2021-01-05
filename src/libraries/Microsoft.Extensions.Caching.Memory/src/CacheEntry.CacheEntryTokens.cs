@@ -60,9 +60,9 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
-            internal bool CanCopyTokens() => _expirationTokens != null;
+            internal bool CanPropagateTokens() => _expirationTokens != null;
 
-            internal void CopyTokens(CacheEntry parentEntry)
+            internal void PropagateTokens(CacheEntry parentEntry)
             {
                 if (_expirationTokens != null)
                 {

@@ -216,7 +216,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         // this simple check very often allows us to avoid expensive call to PropagateOptions(CacheEntryHelper.Current)
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
-        internal bool CanPropagateOptions() => (_tokens != null && _tokens.CanCopyTokens()) || AbsoluteExpiration.HasValue;
+        internal bool CanPropagateOptions() => (_tokens != null && _tokens.CanPropagateTokens()) || AbsoluteExpiration.HasValue;
 
         internal void PropagateOptions(CacheEntry parent)
         {
@@ -227,7 +227,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Copy expiration tokens and AbsoluteExpiration to the cache entries hierarchy.
             // We do this regardless of it gets cached because the tokens are associated with the value we'll return.
-            _tokens?.CopyTokens(parent);
+            _tokens?.PropagateTokens(parent);
 
             if (AbsoluteExpiration.HasValue)
             {
