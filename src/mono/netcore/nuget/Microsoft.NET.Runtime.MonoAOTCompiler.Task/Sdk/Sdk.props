@@ -13,9 +13,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <_AOTTasksDirectoryRoot Condition="'$(_AOTTasksDirectoryRoot)' == ''">$(MSBuildThisFileDirectory)../tools/</_AOTTasksDirectoryRoot>
-    <_AOTTasksTFM>net5.0</_AOTTasksTFM>
-    <_AOTTasksDirectory>$(_AOTTasksDirectoryRoot)$(_AOTTasksTFM)/</_AOTTasksDirectory>
-    <AOTTasksAssembly Condition="'$(AOTTasksAssembly)' == ''">$(_AOTTasksDirectory)MonoAOTCompiler.dll</ILLinkTasksAssembly>
+    <AOTTasksAssembly Condition="'$(AOTTasksAssembly)' == ''">$(_AOTTasksDirectoryRoot)net5.0/MonoAOTCompiler.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(AOTTasksAssembly)" />
