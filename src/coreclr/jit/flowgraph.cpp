@@ -376,9 +376,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
         if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
             ((IL_OFFSET)fgPgoSchema[i].ILOffset == offset))
         {
-            *weightWB = *(BasicBlock::weight_t *)(fgPgoData + fgPgoSchema[i].Offset);
-            return true;
-
+            *weightWB = (BasicBlock::weight_t)*(uint32_t *)(fgPgoData + fgPgoSchema[i].Offset);
             return true;
         }
     }

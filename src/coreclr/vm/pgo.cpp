@@ -321,18 +321,15 @@ void PgoManager::ReadPgoData()
     unsigned methods = 0;
     unsigned probes = 0;
 
-    bool failed = false;
 
-    while (!failed)
+    while (true) // Read till the file is empty
     {
         if (fgets(buffer, sizeof(buffer), pgoDataFile) == nullptr)
         {
             break;
         }
 
-        // Discard the next two lines that hold the string name of the method
-        ReadLineAndDiscard(pgoDataFile);
-        ReadLineAndDiscard(pgoDataFile);
+        bool failed = false;
 
         // Find the next method entry line
         //
@@ -345,6 +342,10 @@ void PgoManager::ReadPgoData()
         {
             continue;
         }
+
+        // Discard the next two lines that hold the string name of the method
+        ReadLineAndDiscard(pgoDataFile);
+        ReadLineAndDiscard(pgoDataFile);
 
         StackSArray<PgoInstrumentationSchema> schemaElements;
         StackSArray<uint8_t> methodInstrumentationData;
@@ -372,6 +373,12 @@ void PgoManager::ReadPgoData()
             schemaElements[i] = schema;
             COUNT_T maxSize = InstrumentationKindToSize(schema.InstrumentationKind) + (COUNT_T)schema.Offset;
             methodInstrumentationData.SetCount(maxSize);
+
+            if (fgets(buffer, sizeof(buffer), pgoDataFile) == nullptr)
+            {
+                failed = true;
+                break;
+            }
 
             switch(schema.InstrumentationKind & PgoInstrumentationKind::MarshalMask)
             {
@@ -464,27 +471,37 @@ void PgoManager::ReadPgoData()
 
             lastSchema = schema;
         }
-        methods++;
 
         if (failed)
             continue;
+
+        methods++;
 
         UINT offsetOfActualInstrumentationData;
         HRESULT hr = ComputeOffsetOfActualInstrumentationData(schemaElements.GetElements(), schemaCount, sizeof(Header), &offsetOfActualInstrumentationData);
         if (FAILED(hr))
         {
-            return;
+            continue;
         }
         UINT offsetOfInstrumentationDataFromStartOfDataRegion = offsetOfActualInstrumentationData - sizeof(Header);
 
+        // Adjust schema offsets to account for embedding the instrumentation schema in front of the data
+        for (unsigned iSchema = 0; iSchema < schemaCount; iSchema++)
+        {
+            schemaElements[iSchema].Offset += offsetOfInstrumentationDataFromStartOfDataRegion;
+        }
+
         S_SIZE_T allocationSize = S_SIZE_T(offsetOfActualInstrumentationData) + S_SIZE_T(methodInstrumentationData.GetCount());
         if (allocationSize.IsOverflow())
+        {
+            _ASSERTE(!"Unexpected overflow");
             return;
+        }
 
         Header* methodData = (Header*)malloc(allocationSize.Value());
-        methodData->HashInit(methodhash, codehash, ilSize, offsetOfActualInstrumentationData);
+        methodData->HashInit(methodhash, codehash, ilSize, offsetOfInstrumentationDataFromStartOfDataRegion);
 
-        if (!WriteInstrumentationSchema(schemaElements.GetElements(), schemaCount, methodData->GetData(), offsetOfActualInstrumentationData))
+        if (!WriteInstrumentationSchema(schemaElements.GetElements(), schemaCount, methodData->GetData(), offsetOfInstrumentationDataFromStartOfDataRegion))
         {
             _ASSERTE(!"Unable to write schema");
             return;
@@ -548,7 +565,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, PgoInstrume
         return E_NOTIMPL;
     }
 
-    return mgr->allocPgoInstrumentationBySchema(pMD, pSchema, countSchemaItems, pInstrumentationData);
+    return mgr->allocPgoInstrumentationBySchemaInstance(pMD, pSchema, countSchemaItems, pInstrumentationData);
 }
 
 HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData)
@@ -596,13 +613,14 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     // Compute offsets for each instrumentation entry
     PgoInstrumentationSchema prevSchema;
     memset(&prevSchema, 0, sizeof(PgoInstrumentationSchema));
-    prevSchema.Offset = offsetOfActualInstrumentationData;
+    prevSchema.Offset = offsetOfInstrumentationDataFromStartOfDataRegion;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
     {
         LayoutPgoInstrumentationSchema(prevSchema, &pSchema[iSchema]);
+        prevSchema = pSchema[iSchema];
     }
 
-    S_SIZE_T allocationSize = S_SIZE_T(pSchema[countSchemaItems - 1].Offset + InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
+    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(pSchema[countSchemaItems - 1].Offset + InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
     
     if (allocationSize.IsOverflow())
     {

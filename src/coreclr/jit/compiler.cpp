@@ -5755,7 +5755,7 @@ void Compiler::compCompileFinish()
                     (fgPgoSchema[iSchema].ILOffset == 0))
                 {
                     foundEntrypointBasicBlockCount = true;
-                    profCallCount = *(unsigned *)(fgPgoData + fgPgoSchema[iSchema].Offset);
+                    profCallCount = *(uint32_t *)(fgPgoData + fgPgoSchema[iSchema].Offset);
                     break;
                 }
             }

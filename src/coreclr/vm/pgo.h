@@ -96,6 +96,7 @@ bool ReadCompressedInts(const uint8_t *pByte, size_t cbDataMax, IntHandler intPr
         if (cbDataMax < bytesRead)
             return false;
         cbDataMax -= bytesRead;
+        pByte += bytesRead;
         if (!intProcessor(signedInt))
         {
             return false;
@@ -171,16 +172,18 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaHandl
 
         if (processingState == InstrumentationDataProcessingState::Done)
         {
-            if (!handler(curSchema))
-            {
-                return false;
-            }
-
+            processingState = InstrumentationDataProcessingState::UpdateProcessMaskFlag;
             if (curSchema.InstrumentationKind == PgoInstrumentationKind::Done)
             {
                 done = true;
                 return false;
             }
+
+            if (!handler(curSchema))
+            {
+                return false;
+            }
+
         }
         return true;
     });
@@ -190,6 +193,7 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaHandl
 
 inline bool CountInstrumentationDataSize(const uint8_t *pByte, size_t cbDataMax, int32_t *pInstrumentationSchemaCount)
 {
+    *pInstrumentationSchemaCount = 0;
     return ReadInstrumentationData(pByte, cbDataMax, [pInstrumentationSchemaCount](const PgoInstrumentationSchema& schema) { (*pInstrumentationSchemaCount)++; return true; });
 }
 
@@ -356,6 +360,12 @@ bool WriteInstrumentationToBytes(const PgoInstrumentationSchema* schemaTable, si
         prevSchema = schemaTable[iSchema];
     }
 
+    // Terminate the schema list with an entry which is Done
+    PgoInstrumentationSchema terminationSchema = prevSchema;
+    terminationSchema.InstrumentationKind = PgoInstrumentationKind::Done;
+    if (!WriteIndividualSchemaToBytes(prevSchema, terminationSchema, byteWriter))
+        return false;
+
     return true;
 }
 
@@ -470,7 +480,7 @@ public:
             this->codehash = codehash;
             this->methodhash = methodhash;
             this->ilSize = ilSize;
-            this->countsOffset = 0;
+            this->countsOffset = countsOffset;
         }
 
         uint8_t* GetData() const
