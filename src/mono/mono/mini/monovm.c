@@ -8,6 +8,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/loader-internals.h>
+#include <mono/metadata/native-library.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/mini.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -181,6 +182,9 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 			platform_resource_roots = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 29 && !strncmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES", 29)) {
 			native_lib_paths = parse_lookup_paths (propertyValues [i]);
+		} else if (prop_len == 16 && !strncmp (propertyKeys [i], "PINVOKE_OVERRIDE", 16)) {
+			PInvokeOverrideFn override_fn = (PInvokeOverrideFn)(uintptr_t)strtoull (propertyValues [i], NULL, 0);
+			mono_loader_install_pinvoke_override (override_fn);
 		} else if (prop_len == 30 && !strncmp (propertyKeys [i], "System.Globalization.Invariant", 30)) {
 			// TODO: Ideally we should propagate this through AppContext options
 			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues [i], TRUE);
