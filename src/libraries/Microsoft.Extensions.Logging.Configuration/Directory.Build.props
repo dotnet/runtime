@@ -1,0 +1,6 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <PackageDescription>Configuration support for Microsoft.Extensions.Logging.</PackageDescription>
+  </PropertyGroup>
+</Project>

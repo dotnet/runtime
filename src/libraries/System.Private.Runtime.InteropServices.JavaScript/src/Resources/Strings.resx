@@ -117,7 +117,40 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ArgumentCannotBeNull" xml:space="preserve">
+    <value>Invalid argument: {0} can not be null.</value>
+  </data>
+  <data name="ArgumentCannotBeNullWithLength" xml:space="preserve">
+    <value>Invalid argument: {0} can not be null and must have a length</value>
+  </data>
+  <data name="CoreObjectErrorBinding" xml:space="preserve">
+    <value>CoreObject Error binding: {0}</value>
+  </data>
+  <data name="ErrorReleasingObject" xml:space="preserve">
+    <value>Error releasing object {0}</value>
+  </data>
+  <data name="HostObjectErrorBinding" xml:space="preserve">
+    <value>HostObject Error binding: {0}</value>
+  </data>
+  <data name="JSObjectErrorBinding" xml:space="preserve">
+    <value>JSObject Error binding: {0}</value>
+  </data>
+  <data name="MultipleHandlesPointingJsId" xml:space="preserve">
+    <value>Multiple handles pointing at jsId: {0}</value>
+  </data>
   <data name="SystemRuntimeInteropServicesJavaScript_PlatformNotSupported" xml:space="preserve">
     <value>System.Private.Runtime.InteropServices.JavaScript is not supported on this platform.</value>
+  </data>
+  <data name="TypedArrayNotCorrectType" xml:space="preserve">
+    <value>TypedArray is not of correct type.</value>
+  </data>
+  <data name="UnableCastNullToType" xml:space="preserve">
+    <value>Unable to cast null to type {0}.</value>
+  </data>
+  <data name="UnableCastObjectToType" xml:space="preserve">
+    <value>Unable to cast object of type {0} to type {1}.</value>
+  </data>
+  <data name="ValueTypeNotSupported" xml:space="preserve">
+    <value>ValueType arguments are not supported.</value>
   </data>
 </root>

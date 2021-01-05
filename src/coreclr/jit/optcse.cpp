@@ -786,6 +786,8 @@ unsigned Compiler::optValnumCSE_Locate()
         /* Walk the statement trees in this basic block */
         for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
         {
+            const bool isReturn = stmt->GetRootNode()->OperIs(GT_RETURN);
+
             /* We walk the tree in the forwards direction (bottom up) */
             bool stmtHasArrLenCandidate = false;
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
@@ -806,6 +808,15 @@ unsigned Compiler::optValnumCSE_Locate()
                     {
                         continue;
                     }
+                }
+
+                // Don't allow non-SIMD struct CSEs under a return; we don't fully
+                // re-morph these if we introduce a CSE assignment, and so may create
+                // IR that lower is not yet prepared to handle.
+                //
+                if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
+                {
+                    continue;
                 }
 
                 if (!optIsCSEcandidate(tree))

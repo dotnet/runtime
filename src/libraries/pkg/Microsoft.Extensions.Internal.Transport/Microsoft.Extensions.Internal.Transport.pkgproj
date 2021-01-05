@@ -5,6 +5,7 @@
     <SkipValidatePackage>true</SkipValidatePackage>
     <HarvestStablePackage>false</HarvestStablePackage>
     <IsShipping>false</IsShipping>
+    <PackageDescription>Internal transport package to provide aspnetcore with the assemblies that make up the Microsoft.ASPNetCore.App shared framework.</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
     <_libDocs Include="$(ASPNETCoreAppPackageRuntimePath)\*.xml" />

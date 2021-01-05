@@ -896,7 +896,7 @@ void DestroyThread(Thread *th)
 
     if (th->IsAbortRequested()) {
         // Reset trapping count.
-        th->UnmarkThreadForAbort(Thread::TAR_ALL);
+        th->UnmarkThreadForAbort();
     }
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
@@ -985,7 +985,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     if (IsAbortRequested()) {
         // Reset trapping count.
-        UnmarkThreadForAbort(Thread::TAR_ALL);
+        UnmarkThreadForAbort();
     }
 
     if (!IsBackground())
@@ -1158,6 +1158,9 @@ void InitThreadManager()
 #ifdef TARGET_ARM64
     // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
     JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
+
+    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
 #endif // TARGET_ARM64
 
 #else // FEATURE_WRITEBARRIER_COPY
@@ -1457,7 +1460,6 @@ Thread::Thread()
     NewHolder<Dbg_TrackSyncStack> trackSyncHolder(static_cast<Dbg_TrackSyncStack*>(m_pTrackSync));
 #endif  // TRACK_SYNC
 
-    m_RequestedStackSize = 0;
     m_PreventAsync = 0;
     m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
@@ -1482,7 +1484,6 @@ Thread::Thread()
    }
 
     m_AbortType = EEPolicy::TA_None;
-    m_AbortInfo = 0;
     m_AbortEndTime = MAXULONGLONG;
     m_RudeAbortEndTime = MAXULONGLONG;
     m_AbortController = 0;
@@ -1862,7 +1863,7 @@ FAILURE:
         SetThreadState(TS_FailStarted);
 
         if (GetThread() != NULL && IsAbortRequested())
-            UnmarkThreadForAbort(TAR_ALL);
+            UnmarkThreadForAbort();
 
         if (!fKeepTLS)
         {
@@ -2554,7 +2555,7 @@ Thread::~Thread()
     // we need to unmark it so that g_TrapReturningThreads is decremented.
     if (IsAbortRequested())
     {
-        UnmarkThreadForAbort(TAR_ALL);
+        UnmarkThreadForAbort();
     }
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -3032,7 +3033,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 
             if (CurrentThreadID == ThisThreadID && IsAbortRequested())
             {
-                UnmarkThreadForAbort(Thread::TAR_ALL);
+                UnmarkThreadForAbort();
             }
         }
 
@@ -7511,9 +7512,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             ExceptionTracker::PopTrackers(pArgs->pFrame);
     #endif // FEATURE_EH_FUNCLETS
 
-            // Fortunately, ThreadAbortExceptions are always
-            if (pArgs->pThread->IsAbortRequested())
-                pArgs->pThread->EEResetAbort(Thread::TAR_Thread);
+            _ASSERTE(!pArgs->pThread->IsAbortRequested());
         }
         PAL_ENDTRY;
 
@@ -8016,11 +8015,8 @@ void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeed
     }
 
     if (fResetAbort && IsAbortRequested()) {
-        UnmarkThreadForAbort(TAR_ALL);
+        UnmarkThreadForAbort();
     }
-
-    if (fResetAbort && IsAborted())
-        ClearAborted();
 
     if (IsThreadPoolThread() && fThreadObjectResetNeeded)
     {

@@ -2368,12 +2368,6 @@ namespace Internal.JitInterface
 
         private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
         {
-            if (_compilation.NodeFactory.Target.Architecture == TargetArchitecture.X86)
-            {
-                // TODO-PERF: x86 pinvoke stubs on Unix platforms
-                return true;
-            }
-
             if (handle != null)
             {
                 var method = HandleToObject(handle);

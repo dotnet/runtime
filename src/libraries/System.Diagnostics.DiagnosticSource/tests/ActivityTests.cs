@@ -599,22 +599,28 @@ namespace System.Diagnostics.Tests
             Activity activity0 = new Activity("activity0");
             Activity activity1 = new Activity("activity1");
             Activity activity2 = new Activity("activity2");
+            Activity activity3 = new Activity("activity3");
             activity0.SetParentId("01-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
             activity0.Start();
             activity1.SetParentId("cc-1123456789abcdef0123456789abcdef-1123456789abcdef-00");
             activity1.Start();
             activity2.SetParentId("fe-2123456789abcdef0123456789abcdef-2123456789abcdef-00");
             activity2.Start();
+            activity3.SetParentId("ef-3123456789abcdef0123456789abcdef-3123456789abcdef-00");
+            activity3.Start();
 
             Assert.Equal(ActivityIdFormat.W3C, activity0.IdFormat);
             Assert.Equal(ActivityIdFormat.W3C, activity1.IdFormat);
             Assert.Equal(ActivityIdFormat.W3C, activity2.IdFormat);
+            Assert.Equal(ActivityIdFormat.W3C, activity3.IdFormat);
             Assert.Equal("0123456789abcdef0123456789abcdef", activity0.TraceId.ToHexString());
             Assert.Equal("1123456789abcdef0123456789abcdef", activity1.TraceId.ToHexString());
             Assert.Equal("2123456789abcdef0123456789abcdef", activity2.TraceId.ToHexString());
+            Assert.Equal("3123456789abcdef0123456789abcdef", activity3.TraceId.ToHexString());
             Assert.Equal("0123456789abcdef", activity0.ParentSpanId.ToHexString());
             Assert.Equal("1123456789abcdef", activity1.ParentSpanId.ToHexString());
             Assert.Equal("2123456789abcdef", activity2.ParentSpanId.ToHexString());
+            Assert.Equal("3123456789abcdef", activity3.ParentSpanId.ToHexString());
         }
 
         [Fact]

@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             _helper = helper;
             _useVirtualCall = useVirtualCall;
-            _delayLoadHelper = new ImportThunk(helper, factory, this, useVirtualCall);
+            _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

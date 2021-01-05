@@ -10,10 +10,6 @@ trigger: none
 #   always: true
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Build CoreCLR checked and libraries Release
