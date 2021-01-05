@@ -528,7 +528,7 @@ namespace System.Tests
                                                 UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal rounds to even
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001101111111111111)),
                                                 UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal - ULP rounds lower,
-                (BitConverter.Int32BitsToSingle(0x3E60000000000000), UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
+                (BitConverter.Int32BitsToSingle(0x33000000), UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
             };
 
             foreach ((float original, Half expected) in data)
@@ -621,8 +621,8 @@ namespace System.Tests
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF001C0000000000)),
                     UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal rounds to even
                 (BitConverter.Int64BitsToDouble(unchecked((long)0xBF001C0000000001)),
-                    UInt16BitsToHalf(0b1_00000_1000000100)) // neg subnormal - ULP rounds lower
-                (BitConverter.Int64BitsToDouble(0x33000000), UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
+                    UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal - ULP rounds lower
+                (BitConverter.Int64BitsToDouble(0x3E60000000000000), UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
             };
 
             foreach ((double original, Half expected) in data)
