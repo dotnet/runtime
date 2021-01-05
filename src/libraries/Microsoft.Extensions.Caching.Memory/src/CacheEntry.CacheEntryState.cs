@@ -2,24 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
     internal partial class CacheEntry
     {
         // this type exists just to reduce CacheEntry size by replacing many enum & boolean fields with one of a size of Int32
-        [StructLayout(LayoutKind.Explicit)]
         private struct CacheEntryState
         {
-            [FieldOffset(0)]
             private byte _flags;
-            [FieldOffset(1)]
             private byte _evictionReason;
-            [FieldOffset(2)]
             private byte _priority;
-            [FieldOffset(3)]
-            private byte _reserved; // for future use
 
             internal CacheEntryState(CacheItemPriority priority) => _priority = (byte)priority;
 
