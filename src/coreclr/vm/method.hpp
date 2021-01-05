@@ -2137,12 +2137,10 @@ public:
         return m_shouldCountCalls;
     }
 
-    void SetShouldCountCalls()
+    void SetShouldCountCalls(bool value = true)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(!m_shouldCountCalls);
-
-        m_shouldCountCalls = true;
+        m_shouldCountCalls = value;
     }
 #endif
 
@@ -3611,7 +3609,7 @@ public:
 #ifdef FEATURE_PREJIT
         if (HasNativeCodeSlot())
         {
-            size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ? 
+            size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ?
                 sizeof(FixupListSlot) : 0;
         }
 #endif

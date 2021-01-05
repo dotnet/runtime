@@ -412,6 +412,17 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         DACNotifyCompilationFinished(this, pCode);
     }
 
+#if defined(FEATURE_TIERED_COMPILATION) && !defined(TARGET_X86)
+    if (pConfig->ShouldCountCalls()
+        && (pConfig->GetCallerGCMode() == CallerGCMode::Preemptive
+            || (pConfig->GetCallerGCMode() == CallerGCMode::Unknown
+                && HasUnmanagedCallersOnlyAttribute())))
+    {
+        // We can't count calls for UnmanagedCallersOnly methods due to GC mode issues.
+        pConfig->SetShouldCountCalls(false);
+    }
+#endif
+
     // Mark the code as hot in case the method ends up in the native image
     g_IBCLogger.LogMethodCodeAccess(this);
 
