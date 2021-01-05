@@ -33,6 +33,8 @@
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid)\**" />
     </ItemGroup>
 
+    <Message Text="Copying @(_MonoAOTCrossFiles) to $(RealRuntimeBinDir)cross\$(MonoAotTargetRid)" Importance="High" />
+
     <Copy SourceFiles="@(_MonoAOTCrossFiles)" DestinationFolder="$(RealRuntimeBinDir)cross\$(MonoAotTargetRid)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
