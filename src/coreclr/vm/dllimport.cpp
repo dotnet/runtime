@@ -3007,13 +3007,7 @@ namespace
 
 void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
+    STANDARD_VM_CONTRACT;
 
     // Convert WinAPI methods to either StdCall or CDecl based on if they are varargs or not.
     if (callConv == pmCallConvWinapi)
