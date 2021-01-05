@@ -197,7 +197,7 @@ public:
         // Returns size of that element in bytes. This is the minimum size that a
         // field of this type would occupy inside an object.
         //------------------------------------------------------------------------
-        UINT SizeOf(Module* pModule, const SigTypeContext *pTypeContext) const;
+        UINT SizeOf(Module* pModule, const SigTypeContext *pTypeContext, TypeHandle* pTypeHandle) const;
 
 private:
 
@@ -856,7 +856,8 @@ class MetaSig
         {
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
-            return m_pRetType.SizeOf(m_pModule, &m_typeContext);
+            TypeHandle thValueType;
+            return m_pRetType.SizeOf(m_pModule, &m_typeContext, &thValueType);
         }
 
         //------------------------------------------------------------------

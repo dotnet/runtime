@@ -138,9 +138,9 @@ void AdvanceArgPtr(VARARGS *data)
             break;
 
         SigTypeContext      typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-        SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext);
-        SIZE_T cbArg = StackElemSize(cbRaw);
-
+        TypeHandle thValueType;
+        unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext, &thValueType);
+        unsigned cbArg = StackElemSize(cbRaw);
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         if (ArgIterator::IsVarArgPassedByRef(cbRaw))
             cbArg = sizeof(void*);
@@ -263,9 +263,9 @@ VarArgsNative::Init2,
             }
 
             SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-            SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
-            SIZE_T cbArg = StackElemSize(cbRaw);
-
+            TypeHandle thValueType;
+            unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext, &thValueType);
+            unsigned cbArg = StackElemSize(cbRaw);
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
             if (ArgIterator::IsVarArgPassedByRef(cbRaw))
                 cbArg = sizeof(void*);
@@ -401,7 +401,7 @@ FCIMPL3(void, VarArgsNative::GetNextArg2, VARARGS* _this, void * value, ReflectC
     TypeHandle typehandle = refType->GetType();
 
     _ASSERTE(_this != NULL);
-    UINT size = 0;
+    unsigned size = 0;
 
     CorElementType typ = typehandle.GetInternalCorElementType();
     if (CorTypeInfo::IsPrimitiveType(typ))
@@ -472,9 +472,9 @@ VarArgsNative::GetNextArgHelper(
     _ASSERTE(data->RemainingArgs != 0);
 
     SigTypeContext typeContext; // This is an empty type context.  This is OK because the vararg methods may not be generic
-    SIZE_T cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext);
-    SIZE_T cbArg = StackElemSize(cbRaw);
-
+    TypeHandle thValueType;
+    unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext, &thValueType);
+    unsigned cbArg = StackElemSize(cbRaw);
     AdjustArgPtrForAlignment(data, cbArg);
 
     // Get a pointer to the beginning of the argument.
