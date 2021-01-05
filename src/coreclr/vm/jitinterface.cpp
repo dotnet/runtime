@@ -6817,7 +6817,13 @@ void CEEInfo::setMethodAttribs (
             if (attribs & CORINFO_FLG_SWITCHED_TO_MIN_OPT)
             {
                 _ASSERTE(!ftn->IsJitOptimizationDisabled());
-                config->SetJitSwitchedToMinOpt();
+                // UnmanagedCallersOnly methods that are switched to optimized must be optimized.
+                // Otherwise, tiered compilation will kick back in and try to tier them, which
+                // causes instability.
+                if (config->JitSwitchedToOptimized() && !ftn->HasUnmanagedCallersOnlyAttribute())
+                {
+                    config->SetJitSwitchedToMinOpt();
+                }
             }
 #ifdef FEATURE_TIERED_COMPILATION
             else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)

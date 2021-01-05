@@ -4866,11 +4866,7 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         !IsJitOptimizationDisabled() &&
 
         // Policy - Tiered compilation is not disabled by the profiler
-        !CORProfilerDisableTieredCompilation() &&
-
-        // Functional requirement - UnmanagedCallersOnly methods exit in Preemptive GC, which is incompatible with
-        // the lifetime management used for tiered compilation call counting today.
-        !HasUnmanagedCallersOnlyAttribute())
+        !CORProfilerDisableTieredCompilation())
     {
         m_bFlags2 |= enum_flag2_IsEligibleForTieredCompilation;
         _ASSERTE(IsVersionable());
