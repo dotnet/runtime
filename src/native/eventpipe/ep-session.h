@@ -1,10 +1,9 @@
 #ifndef __EVENTPIPE_SESSION_H__
 #define __EVENTPIPE_SESSION_H__
 
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #include "ep-types.h"
 #include "ep-thread.h"
 

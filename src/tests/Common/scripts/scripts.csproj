@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.DotNet.xunit.performance">
       <Version>1.0.0-alpha-build0040</Version>
     </PackageReference>
-    <PackageReference Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)">
+    <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner">
       <Version>$(MicrosoftDotNetXUnitConsoleRunnerVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">

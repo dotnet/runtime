@@ -1,3 +1,7 @@
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include "ep-tests-debug.h"
+#endif
+
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-session.h>
 #include <eventpipe/ep-thread.h>

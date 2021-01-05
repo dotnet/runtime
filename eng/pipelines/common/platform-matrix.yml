@@ -169,7 +169,7 @@ jobs:
       targetRid: linux-x64
       platform: Linux_x64
       container:
-        image: centos-7-359e48e-20200313130914
+        image: centos-7-20201227183837-5fe0e50
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -193,7 +193,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20201024150726-a0359ae
+        image: ubuntu-18.04-webassembly-20201218203401-96da775
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

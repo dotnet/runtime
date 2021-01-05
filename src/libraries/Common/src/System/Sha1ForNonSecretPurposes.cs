@@ -79,7 +79,11 @@ namespace System
         /// bytes will be lost. If the buffer is larger than 20 bytes, the
         /// rest of the buffer is left unmodified.
         /// </param>
+#if ES_BUILD_STANDALONE
         public void Finish(byte[] output)
+#else
+        public void Finish(Span<byte> output)
+#endif
         {
             long l = _length + 8 * _pos;
             Append(0x80);

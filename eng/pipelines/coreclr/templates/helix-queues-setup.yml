@@ -8,6 +8,8 @@ parameters:
   pool: ''
   platform: ''
   runtimeFlavorDisplayName: ''
+  shouldContinueOnError: false
+  dependOnEvaluatePaths: false
   jobParameters: {}
 
 jobs:
@@ -19,9 +21,15 @@ jobs:
     archType: ${{ parameters.archType }}
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
     runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
     helixQueues:
 
+    # Android arm64
+    - ${{ if in(parameters.platform, 'Android_arm64') }}:
+      - Windows.10.Amd64.Android.Open
+    
     # Android x64
     - ${{ if in(parameters.platform, 'Android_x64') }}:
       - Ubuntu.1804.Amd64.Android.Open

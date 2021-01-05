@@ -562,6 +562,10 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
+#if !defined(RLIMIT_RSS) || !(defined(RLIMIT_MEMLOCK) || defined(RLIMIT_VMEM)) || !defined(RLIMIT_NPROC)
+        default:
+            break;
+#endif
     }
 
     assert_msg(false, "Unknown RLIMIT value", (int)value);
@@ -836,6 +840,14 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 
     return sched_setaffinity(pid, sizeof(cpu_set_t), &set);
 }
+#else
+int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+}
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
@@ -867,6 +879,14 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
     }
 
     return result;
+}
+#else
+int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
 }
 #endif
 

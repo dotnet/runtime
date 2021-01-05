@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_SESSION_GETTER_SETTER
@@ -92,11 +91,11 @@ session_create_ipc_streaming_thread (EventPipeSession *session)
 	ep_session_set_ipc_streaming_enabled (session, true);
 	ep_rt_wait_event_alloc (&session->rt_thread_shutdown_event, true, false);
 	if (!ep_rt_wait_event_is_valid (&session->rt_thread_shutdown_event))
-		EP_ASSERT (!"Unable to create IPC stream flushing thread shutdown event.");
+		EP_UNREACHABLE ("Unable to create IPC stream flushing thread shutdown event.");
 
 	ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, EP_THREAD_TYPE_SESSION, &thread_id))
-		EP_ASSERT (!"Unable to create IPC stream flushing thread.");
+		EP_UNREACHABLE ("Unable to create IPC stream flushing thread.");
 }
 
 static
@@ -275,7 +274,7 @@ ep_session_enable_rundown (EventPipeSession *session)
 	const EventPipeEventLevel verbose_logging_level = EP_EVENT_LEVEL_VERBOSE;
 
 	EventPipeProviderConfiguration rundown_providers [2];
-	uint32_t rundown_providers_len = EP_ARRAY_SIZE (rundown_providers);
+	uint32_t rundown_providers_len = (uint32_t)EP_ARRAY_SIZE (rundown_providers);
 
 	ep_provider_config_init (&rundown_providers [0], ep_config_get_public_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Public provider.
 	ep_provider_config_init (&rundown_providers [1], ep_config_get_rundown_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Rundown provider.

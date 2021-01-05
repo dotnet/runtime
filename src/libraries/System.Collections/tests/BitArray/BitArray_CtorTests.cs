@@ -67,6 +67,17 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void Ctor_Int_Bool_ShouldNotLeaveDirtyBits()
+        {
+            BitArray bitArray = new BitArray(33, true);
+            bitArray.RightShift(31);
+
+            Assert.True(bitArray[0]);
+            Assert.True(bitArray[1]);
+            Assert.False(bitArray[2]);
+        }
+
+        [Fact]
         public static void Ctor_Int_NegativeLength_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => new BitArray(-1));

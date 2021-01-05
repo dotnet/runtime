@@ -126,7 +126,7 @@
 
 //#define MONO_DEBUG_ICALLARRAY
 
-// Inline with CoreCLR heuristics, https://github.com/dotnet/runtime/blob/385b4d4296f9c5cb82363565aa210a1a37f92d90/src/coreclr/src/vm/threads.cpp#L6344.
+// Inline with CoreCLR heuristics, https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/vm/threads.cpp#L6408.
 // Minimum stack size should be sufficient to allow a typical non-recursive call chain to execute,
 // including potential exception handling and garbage collection. Used for probing for available
 // stack space through RuntimeHelpers.EnsureSufficientExecutionStack.
@@ -3294,6 +3294,28 @@ leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
 
+#ifndef ENABLE_NETCORE
+void
+ves_icall_RuntimeType_GetGUID (MonoReflectionTypeHandle type_handle, MonoArrayHandle guid_handle, MonoError *error)
+{
+	error_init (error);
+
+	g_assert (mono_array_handle_length (guid_handle) == 16);
+	if (MONO_HANDLE_IS_NULL (type_handle)) {
+		mono_error_set_argument_null (error, "type", "");
+		return;
+	}
+
+	MonoType *type = MONO_HANDLE_GETVAL (type_handle, type);
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	if (!mono_class_init_checked (klass, error))
+		return;
+
+	guint8 *data = (guint8*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (guid_handle), 1, 0);
+	mono_metadata_get_class_guid (klass, data, error);
+}
+#endif
+
 MonoArrayHandle
 ves_icall_RuntimeType_GetGenericArguments (MonoReflectionTypeHandle ref_type, MonoBoolean runtimeTypeArray, MonoError *error)
 {
@@ -4610,7 +4632,7 @@ method_nonpublic (MonoMethod* method, gboolean start_klass)
 {
 	switch (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) {
 		case METHOD_ATTRIBUTE_ASSEM:
-			return (start_klass || mono_defaults.generic_ilist_class);
+			return TRUE;
 		case METHOD_ATTRIBUTE_PRIVATE:
 			return start_klass;
 		case METHOD_ATTRIBUTE_PUBLIC:
@@ -5153,11 +5175,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHand
 		g_free (str);
 		mono_reflection_free_type_info (&info);
 		if (throwOnError) {
-			/* 1.0 and 2.0 throw different exceptions */
-			if (mono_defaults.generic_ilist_class)
-				mono_error_set_argument (error, NULL, "Type names passed to Assembly.GetType() must not specify an assembly.");
-			else
-				mono_error_set_type_load_name (error, g_strdup (""), g_strdup (""), "Type names passed to Assembly.GetType() must not specify an assembly.");
+			mono_error_set_argument (error, NULL, "Type names passed to Assembly.GetType() must not specify an assembly.");
 			goto fail;
 		}
 		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
@@ -5548,13 +5566,20 @@ try_resource_resolve_name (MonoReflectionAssemblyHandle assembly_handle, MonoStr
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, resolve_method)
 
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		resolve_method = mono_class_get_method_from_name_checked (alc_class, "OnResourceResolve", -1, 0, error);
+		static gboolean inited;
+		if (!inited) {
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			resolve_method = mono_class_get_method_from_name_checked (alc_class, "OnResourceResolve", -1, 0, error);
+			inited = TRUE;
+		}
+		mono_error_cleanup (error);
+		error_init_reuse (error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve_method)
 
-	goto_if_nok (error, return_null);
+	if (!resolve_method)
+		goto return_null;
 
 	gpointer args [2];
 	args [0] = MONO_HANDLE_RAW (assembly_handle);
@@ -9206,6 +9231,44 @@ add_internal_call_with_flags (const char *name, gconstpointer method, guint32 fl
 }
 
 /**
+* mono_dangerous_add_internal_call_coop:
+* \param name method specification to surface to the managed world
+* \param method pointer to a C method to invoke when the method is called
+*
+* Similar to \c mono_dangerous_add_raw_internal_call.
+*
+*/
+void
+mono_dangerous_add_internal_call_coop (const char *name, gconstpointer method)
+{
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_COOPERATIVE);
+}
+
+/**
+* mono_dangerous_add_internal_call_no_wrapper:
+* \param name method specification to surface to the managed world
+* \param method pointer to a C method to invoke when the method is called
+*
+* Similar to \c mono_dangerous_add_raw_internal_call but with more requirements for correct
+* operation.
+*
+* The \p method must NOT:
+*
+* Run for an unbounded amount of time without calling the mono runtime.
+* Additionally, the method must switch to GC Safe mode to perform all blocking
+* operations: performing blocking I/O, taking locks, etc. The method can't throw or raise
+* exceptions or call other methods that will throw or raise exceptions since the runtime won't
+* be able to detect exeptions and unwinder won't be able to correctly find last managed frame in callstack.
+* This registration method is for icalls that needs very low overhead and follow all rules in their implementation.
+*
+*/
+void
+mono_dangerous_add_internal_call_no_wrapper (const char *name, gconstpointer method)
+{
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_NO_WRAPPER);
+}
+
+/**
  * mono_add_internal_call:
  * \param name method specification to surface to the managed world
  * \param method pointer to a C method to invoke when the method is called
@@ -9245,7 +9308,7 @@ add_internal_call_with_flags (const char *name, gconstpointer method, guint32 fl
 void
 mono_add_internal_call (const char *name, gconstpointer method)
 {
-	mono_add_internal_call_with_flags (name, method, FALSE);
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_FOREIGN);
 }
 
 /**
@@ -9270,7 +9333,7 @@ mono_add_internal_call (const char *name, gconstpointer method)
 void
 mono_dangerous_add_raw_internal_call (const char *name, gconstpointer method)
 {
-	mono_add_internal_call_with_flags (name, method, TRUE);
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_COOPERATIVE);
 }
 
 /**
@@ -9300,7 +9363,7 @@ mono_add_internal_call_with_flags (const char *name, gconstpointer method, gbool
 void
 mono_add_internal_call_internal (const char *name, gconstpointer method)
 {
-	mono_add_internal_call_with_flags (name, method, TRUE);
+	add_internal_call_with_flags (name, method, MONO_ICALL_FLAGS_COOPERATIVE);
 }
 
 /* 

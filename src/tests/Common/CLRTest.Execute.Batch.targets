@@ -287,7 +287,7 @@ REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Android' ">
     <![CDATA[
 $(BatchLinkerTestLaunchCmds)
 $(BatchCopyCoreShimLocalCmds)
@@ -311,6 +311,27 @@ if defined RunCrossGen (
 )
 $(BatchLinkerTestCleanupCmds)
       ]]></BatchCLRTestLaunchCmds>
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+    <![CDATA[
+REM run Android app
+IF NOT "%__TestDotNetCmd%"=="" (
+  set __Command=%__TestDotNetCmd%
+) ELSE (
+  set __Command=dotnet
+)
+
+IF NOT "%XHARNESS_CLI_PATH%"=="" (
+  REM When running in CI, we only have the .NET runtime available
+  REM We need to call the XHarness CLI DLL directly via dotnet exec
+  set HARNESS_RUNNER=exec "%XHARNESS_CLI_PATH%"
+) ELSE (
+  set HARNESS_RUNNER=xharness
+)
+
+%__Command% %HARNESS_RUNNER% android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.%__Category%" --app="%__TestBinaryBase%\%__Category%.apk" --output-directory="%25cd%25" --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100 -v
+set CLRTestExitCode=!ERRORLEVEL!
+set CLRTestExpectedExitCode=0
+    ]]></BatchCLRTestLaunchCmds>
 
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 $(BatchCopyCoreShimLocalCmds)
