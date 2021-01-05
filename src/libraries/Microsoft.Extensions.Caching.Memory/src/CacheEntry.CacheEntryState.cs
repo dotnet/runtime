@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Caching.Memory
             [FieldOffset(3)]
             private byte _reserved; // for future use
 
-            internal CacheEntryState(CacheItemPriority priority) : this() => _priority = (byte)priority;
+            internal CacheEntryState(CacheItemPriority priority) => _priority = (byte)priority;
 
             internal bool IsDisposed
             {

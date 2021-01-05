@@ -34,10 +34,7 @@ namespace Microsoft.Extensions.Caching.Memory
                             IChangeToken expirationToken = _expirationTokens[i];
                             if (expirationToken.ActiveChangeCallbacks)
                             {
-                                if (_expirationTokenRegistrations == null)
-                                {
-                                    _expirationTokenRegistrations = new List<IDisposable>(1);
-                                }
+                                _expirationTokenRegistrations ??= new List<IDisposable>(1);
                                 IDisposable registration = expirationToken.RegisterChangeCallback(ExpirationCallback, this);
                                 _expirationTokenRegistrations.Add(registration);
                             }
