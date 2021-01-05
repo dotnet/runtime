@@ -1975,17 +1975,23 @@ put_unwind_info(unw_addr_space_t as, unw_proc_info_t *pip, void *arg)
 {
 }
 
-static unw_accessors_t unwind_accessors =
+static unw_accessors_t init_unwind_accessors()
 {
-    .find_proc_info = find_proc_info,
-    .put_unwind_info = put_unwind_info,
-    .get_dyn_info_list_addr = get_dyn_info_list_addr,
-    .access_mem = access_mem,
-    .access_reg = access_reg,
-    .access_fpreg = access_fpreg,
-    .resume = resume,
-    .get_proc_name = get_proc_name
+    unw_accessors_t a = {0};
+
+    a.find_proc_info = find_proc_info;
+    a.put_unwind_info = put_unwind_info;
+    a.get_dyn_info_list_addr = get_dyn_info_list_addr;
+    a.access_mem = access_mem;
+    a.access_reg = access_reg;
+    a.access_fpreg = access_fpreg;
+    a.resume = resume;
+    a.get_proc_name = get_proc_name;
+
+    return a;
 };
+
+static unw_accessors_t unwind_accessors = init_unwind_accessors();
 
 /*++
 Function:

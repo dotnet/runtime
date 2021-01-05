@@ -6340,7 +6340,7 @@ void emitter::emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr)
     }
 
 #ifdef DEBUG
-    if (EMIT_GC_VERBOSE)
+    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
     {
         VarSetOps::Assign(emitComp, debugThisGCrefVars, vars);
     }

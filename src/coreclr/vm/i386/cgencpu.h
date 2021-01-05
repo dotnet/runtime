@@ -453,21 +453,6 @@ EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
 
 // SEH info forward declarations
 
-inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifndef UNIX_X86_ABI
-    // odd-sized small structures are not
-    //  enregistered e.g. struct { char a,b,c; }
-    return (sizeofvaluetype > 8) ||
-        (sizeofvaluetype & (sizeofvaluetype - 1)); // check that the size is power of two
-#else
-    // For UNIX_X86_ABI, we always return the value type by reference regardless of its size
-    return true;
-#endif
-}
-
 #include <pshpack1.h>
 struct DECLSPEC_ALIGN(4) UMEntryThunkCode
 {

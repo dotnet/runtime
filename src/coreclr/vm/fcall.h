@@ -926,7 +926,7 @@ void HCallAssert(void*& cache, void* target);
 // might do, which would otherwise confuse the epilog walker.
 //
 // * See #FC_INNER for more
-extern int FC_NO_TAILCALL;
+extern RAW_KEYWORD(volatile) int FC_NO_TAILCALL;
 #define FC_INNER_RETURN(type, expr)                                                        \
     type __retVal = expr;                                                                  \
     while (0 == FC_NO_TAILCALL) { }; /* side effect the compile can't remove */            \

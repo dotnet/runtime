@@ -35,12 +35,17 @@ else(CLR_CMAKE_HOST_WIN32)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
     endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
+    if(CORECLR_SET_RPATH AND CLR_CMAKE_HOST_OSX AND CLR_CMAKE_HOST_ARCH_ARM64)
+      set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+      set(CMAKE_INSTALL_NAME_DIR "@rpath")
+    endif(CORECLR_SET_RPATH AND CLR_CMAKE_HOST_OSX AND CLR_CMAKE_HOST_ARCH_ARM64)
+
     if(CLR_CMAKE_HOST_LINUX)
 
         # Generate DAC export file with the DAC_ prefix
         generate_exports_file_prefix(${DEF_SOURCES} ${EXPORTS_FILE} DAC_)
 
-        set(REDEFINES_FILE_AWK_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.awk)
+        set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.sh)
 
         if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
             set(JUMP_INSTRUCTION b)
@@ -52,9 +57,10 @@ else(CLR_CMAKE_HOST_WIN32)
         set(PAL_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/palredefines.inc)
         add_custom_command(
             OUTPUT ${PAL_REDEFINES_INC}
-            COMMAND ${AWK} -f ${REDEFINES_FILE_AWK_SCRIPT} -v jump=${JUMP_INSTRUCTION} -v prefix2=DAC_ ${DEF_SOURCES} > ${PAL_REDEFINES_INC}
-            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_AWK_SCRIPT}
+            COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} "" DAC_ > ${PAL_REDEFINES_INC}
+            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
             COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
+            VERBATIM
         )
         add_custom_target(pal_redefines_file DEPENDS ${PAL_REDEFINES_INC})
 
@@ -62,8 +68,8 @@ else(CLR_CMAKE_HOST_WIN32)
         set(LIB_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/libredefines.inc)
         add_custom_command(
             OUTPUT ${LIB_REDEFINES_INC}
-            COMMAND ${AWK} -f ${REDEFINES_FILE_AWK_SCRIPT} -v jump=${JUMP_INSTRUCTION} -v prefix1=DAC_ ${DEF_SOURCES} > ${LIB_REDEFINES_INC}
-            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_AWK_SCRIPT}
+            COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} DAC_ > ${LIB_REDEFINES_INC}
+            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
             COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
         )
         add_custom_target(lib_redefines_inc DEPENDS ${LIB_REDEFINES_INC})

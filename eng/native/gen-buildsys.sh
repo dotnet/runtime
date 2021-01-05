@@ -41,7 +41,7 @@ generator="Unix Makefiles"
 __UnprocessedCMakeArgs=""
 
 for i in "${@:7}"; do
-    upperI="$(echo "$i" | awk '{print toupper($0)}')"
+    upperI="$(echo "$i" | tr "[:lower:]" "[:upper:]")"
     case "$upperI" in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO.
       DEBUG | CHECKED | RELEASE | RELWITHDEBINFO)

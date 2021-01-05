@@ -332,6 +332,8 @@ namespace System.Reflection.Emit
 
         // Constructs a EnumBuilder.
         // EnumBuilder can only be a top-level (not nested) enum type.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2064:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         internal EnumBuilder(
             string name,                       // name of type
             Type underlyingType,             // underlying type for an Enum

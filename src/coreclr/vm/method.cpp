@@ -5314,12 +5314,6 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
 
         UINT16 numParamBytesMangle = GetStackArgumentSize();
 
-        if (IsStdCallWithRetBuf())
-        {
-            _ASSERTE(numParamBytesMangle >= sizeof(LPVOID));
-            numParamBytesMangle -= (UINT16)sizeof(LPVOID);
-        }
-
         sprintf_s(szProbedEntrypointName + probedEntrypointNameLength, dstbufsize - probedEntrypointNameLength + 1, "@%lu", (ULONG)numParamBytesMangle);
         pFunc = GetProcAddress(hMod, szProbedEntrypointName);
     }

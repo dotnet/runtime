@@ -792,7 +792,7 @@ void fgArgTabEntry::Dump() const
 
 #endif
     }
-    printf(", byteAlignment=%u", byteAlignment);
+    printf(", byteAlignment=%u", m_byteAlignment);
     if (isLateArg())
     {
         printf(", lateArgInx=%u", GetLateArgInx());
@@ -991,6 +991,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
                                     unsigned          byteSize,
                                     unsigned          byteAlignment,
                                     bool              isStruct,
+                                    bool              isFloatHfa,
                                     bool              isVararg /*=false*/)
 {
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
@@ -1012,7 +1013,6 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->numSlots = 0;
 #endif
 
-    curArgTabEntry->byteAlignment = byteAlignment;
     curArgTabEntry->SetLateArgInx(UINT_MAX);
     curArgTabEntry->tmpNum = BAD_VAR_NUM;
     curArgTabEntry->SetSplit(false);
@@ -1027,7 +1027,8 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->isNonStandard = false;
     curArgTabEntry->isStruct      = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
-    curArgTabEntry->SetByteSize(byteSize);
+    curArgTabEntry->SetByteAlignment(byteAlignment);
+    curArgTabEntry->SetByteSize(byteSize, isStruct, isFloatHfa);
     curArgTabEntry->SetByteOffset(0);
 
     hasRegArgs = true;
@@ -1044,6 +1045,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned                                    
                                     unsigned                                                         byteSize,
                                     unsigned                                                         byteAlignment,
                                     const bool                                                       isStruct,
+                                    const bool                                                       isFloatHfa,
                                     const bool                                                       isVararg,
                                     const regNumber                                                  otherRegNum,
                                     const unsigned                                                   structIntRegs,
@@ -1051,7 +1053,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned                                    
                                     const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr)
 {
     fgArgTabEntry* curArgTabEntry =
-        AddRegArg(argNum, node, use, regNum, numRegs, byteSize, byteAlignment, isStruct, isVararg);
+        AddRegArg(argNum, node, use, regNum, numRegs, byteSize, byteAlignment, isStruct, isFloatHfa, isVararg);
     assert(curArgTabEntry != nullptr);
 
     curArgTabEntry->isStruct        = isStruct; // is this a struct arg
@@ -1081,6 +1083,7 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
                                     unsigned          byteSize,
                                     unsigned          byteAlignment,
                                     bool              isStruct,
+                                    bool              isFloatHfa,
                                     bool              isVararg /*=false*/)
 {
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
@@ -1107,7 +1110,6 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->structIntRegs   = 0;
     curArgTabEntry->structFloatRegs = 0;
 #endif // defined(UNIX_AMD64_ABI)
-    curArgTabEntry->byteAlignment = byteAlignment;
     curArgTabEntry->SetLateArgInx(UINT_MAX);
     curArgTabEntry->tmpNum = BAD_VAR_NUM;
     curArgTabEntry->SetSplit(false);
@@ -1123,13 +1125,15 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->isStruct      = isStruct;
     curArgTabEntry->SetIsVararg(isVararg);
 
-    curArgTabEntry->SetByteSize(byteSize);
+    curArgTabEntry->SetByteAlignment(byteAlignment);
+    curArgTabEntry->SetByteSize(byteSize, isStruct, isFloatHfa);
     curArgTabEntry->SetByteOffset(nextStackByteOffset);
 
     hasStackArgs = true;
     AddArg(curArgTabEntry);
     DEBUG_ARG_SLOTS_ONLY(nextSlotNum += numSlots;)
-    nextStackByteOffset += byteSize;
+    nextStackByteOffset += curArgTabEntry->GetByteSize();
+
     return curArgTabEntry;
 }
 
@@ -1183,12 +1187,12 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     assert((curArgTabEntry->GetRegNum() == REG_STK) || curArgTabEntry->IsSplit());
     assert(curArgTabEntry->use->GetNode() == node);
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->byteAlignment / TARGET_POINTER_SIZE);
+    nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
     assert(curArgTabEntry->slotNum == nextSlotNum);
     nextSlotNum += curArgTabEntry->numSlots;
 #endif
 
-    nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->byteAlignment);
+    nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->GetByteAlignment());
     assert(curArgTabEntry->GetByteOffset() == nextStackByteOffset);
     nextStackByteOffset += curArgTabEntry->GetStackByteSize();
 }
@@ -2788,11 +2792,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         const unsigned  byteSize      = TARGET_POINTER_SIZE;
         const unsigned  byteAlignment = TARGET_POINTER_SIZE;
         const bool      isStruct      = false;
+        const bool      isFloatHfa    = false;
 
         // This is a register argument - put it in the table.
         call->fgArgInfo->AddRegArg(argIndex, argx, call->gtCallThisArg, regNum, numRegs, byteSize, byteAlignment,
-                                   isStruct, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(REG_STK) UNIX_AMD64_ABI_ONLY_ARG(0)
-                                                 UNIX_AMD64_ABI_ONLY_ARG(0) UNIX_AMD64_ABI_ONLY_ARG(nullptr));
+                                   isStruct, isFloatHfa,
+                                   callIsVararg UNIX_AMD64_ABI_ONLY_ARG(REG_STK) UNIX_AMD64_ABI_ONLY_ARG(0)
+                                       UNIX_AMD64_ABI_ONLY_ARG(0) UNIX_AMD64_ABI_ONLY_ARG(nullptr));
 
         intArgRegNum++;
 #ifdef WINDOWS_AMD64_ABI
@@ -2994,6 +3000,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             compFloatingPointUsed = true;
         }
 #endif // FEATURE_HFA
+
+        const bool isFloatHfa = (hfaType == TYP_FLOAT);
 
 #ifdef TARGET_ARM
         passUsingFloatRegs    = !callIsVararg && (isHfaArg || varTypeUsesFloatReg(argx)) && !opts.compUseSoftFP;
@@ -3205,10 +3213,10 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             }
         }
 
+        const var_types argType = args->GetNode()->TypeGet();
         if (args->GetNode()->OperIs(GT_PUTARG_TYPE))
         {
-            const GenTreeUnOp* putArgType = args->GetNode()->AsUnOp();
-            byteSize                      = genTypeSize(putArgType->TypeGet());
+            byteSize = genTypeSize(argType);
         }
 
         // The 'size' value has now must have been set. (the original value of zero is an invalid value)
@@ -3219,15 +3227,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // Arm64 Apple has a special ABI for passing small size arguments on stack,
         // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
         // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-        unsigned argAlignBytes;
-        if (isStructArg)
-        {
-            argAlignBytes = TARGET_POINTER_SIZE;
-        }
-        else
-        {
-            argAlignBytes = byteSize;
-        }
+        unsigned argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
 #endif
 
         //
@@ -3473,12 +3473,12 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif
 
             // This is a register argument - put it in the table
-            newArgEntry = call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, byteSize, argAlignBytes,
-                                                     isStructArg, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
-                                                                      UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
-                                                                          UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
-                                                                              UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
-
+            newArgEntry =
+                call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, byteSize, argAlignBytes, isStructArg,
+                                           isFloatHfa, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
+                                                           UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
+                                                               UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
+                                                                   UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
             newArgEntry->SetIsBackFilled(isBackFilled);
             newArgEntry->isNonStandard = isNonStandard;
 
@@ -3539,7 +3539,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             // This is a stack argument - put it in the table
             newArgEntry = call->fgArgInfo->AddStkArg(argIndex, argx, args, size, byteSize, argAlignBytes, isStructArg,
-                                                     callIsVararg);
+                                                     isFloatHfa, callIsVararg);
 #ifdef UNIX_AMD64_ABI
             // TODO-Amd64-Unix-CQ: This is temporary (see also in fgMorphArgs).
             if (structDesc.passedInRegisters)
@@ -3691,7 +3691,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
 
 #if defined(DEBUG_ARG_SLOTS)
-        if (argEntry->byteAlignment == 2 * TARGET_POINTER_SIZE)
+        if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
         {
             if (argSlots % 2 == 1)
             {
@@ -3959,12 +3959,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                            ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsEnregisterable(structBaseType)));
                 }
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARMARCH)
+                // TODO-CQ-XARCH: there is no need for a temp copy if we improve our code generation in
+                // `genPutStructArgStk` for xarch like we did it for Arm/Arm64.
+
                 // We still have a struct unless we converted the GT_OBJ into a GT_IND above...
                 if (isHfaArg && passUsingFloatRegs)
                 {
                 }
-                else if ((!isHfaArg || !passUsingFloatRegs) && (structBaseType == TYP_STRUCT))
+                else if (structBaseType == TYP_STRUCT)
                 {
                     // If the valuetype size is not a multiple of TARGET_POINTER_SIZE,
                     // we must copyblk to a temp before doing the obj to avoid
@@ -6828,8 +6831,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     if (callee->IsTailPrefixedCall())
     {
         var_types retType = (compDoOldStructRetyping() ? info.compRetNativeType : info.compRetType);
-        assert(impTailCallRetTypeCompatible(retType, info.compMethodInfo->args.retTypeClass,
-                                            compMethodInfoGetEntrypointCallConv(info.compMethodInfo),
+        assert(impTailCallRetTypeCompatible(retType, info.compMethodInfo->args.retTypeClass, info.compCallConv,
                                             (var_types)callee->gtReturnType, callee->gtRetClsHnd,
                                             callee->GetUnmanagedCallConv()));
     }
@@ -6848,7 +6850,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     {
         fgArgTabEntry* arg = argInfo->GetArgEntry(index, false);
 
-        calleeArgStackSize = roundUp(calleeArgStackSize, arg->byteAlignment);
+        calleeArgStackSize = roundUp(calleeArgStackSize, arg->GetByteAlignment());
         calleeArgStackSize += arg->GetStackByteSize();
     }
     calleeArgStackSize = GetOutgoingArgByteSize(calleeArgStackSize);
@@ -17182,8 +17184,7 @@ GenTree* Compiler::fgInitThisClass()
                 GenTree* vtTree = gtNewLclvNode(info.compThisArg, TYP_REF);
                 vtTree->gtFlags |= GTF_VAR_CONTEXT;
                 // Vtable pointer of this object
-                vtTree = gtNewOperNode(GT_IND, TYP_I_IMPL, vtTree);
-                vtTree->gtFlags |= GTF_EXCEPT; // Null-pointer exception
+                vtTree             = gtNewMethodTableLookup(vtTree);
                 GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
                 return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, gtNewCallArgs(vtTree, methodHnd));
@@ -17951,16 +17952,38 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                         }
                         // Access the promoted field as a field of a non-promoted struct with the same class handle.
                     }
-#ifdef DEBUG
-                    else if (tree->TypeGet() == TYP_STRUCT)
+                    else
                     {
-                        // The field tree accesses it as a struct, but the promoted lcl var for the field
-                        // says that it has another type. It can happen only if struct promotion faked
-                        // field type for a struct of single field of scalar type aligned at their natural boundary.
+                        // As we already checked this above, we must have a tree with a TYP_STRUCT type
+                        //
+                        assert(tree->TypeGet() == TYP_STRUCT);
+
+                        // The field tree accesses it as a struct, but the promoted LCL_VAR field
+                        // says that it has another type. This happens when struct promotion unwraps
+                        // a single field struct to get to its ultimate type.
+                        //
+                        // Note that currently, we cannot have a promoted LCL_VAR field with a struct type.
+                        //
+                        // This mismatch in types can lead to problems for some parent node type like GT_RETURN.
+                        // So we check the parent node and only allow this optimization when we have
+                        // a GT_ADDR or a GT_ASG.
+                        //
+                        // Note that for a GT_ASG we have to do some additional work,
+                        // see below after the SetOper(GT_LCL_VAR)
+                        //
+                        if (!parent->OperIs(GT_ADDR, GT_ASG))
+                        {
+                            // Don't transform other operations such as GT_RETURN
+                            //
+                            return;
+                        }
+#ifdef DEBUG
+                        // This is an additional DEBUG-only sanity check
+                        //
                         assert(structPromotionHelper != nullptr);
                         structPromotionHelper->CheckRetypedAsScalar(field->gtFldHnd, fieldType);
-                    }
 #endif // DEBUG
+                    }
                 }
 
                 tree->SetOper(GT_LCL_VAR);
@@ -17970,6 +17993,9 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
 
                 if (parent->gtOper == GT_ASG)
                 {
+                    // If we are changing the left side of an assignment, we need to set
+                    // these two flags:
+                    //
                     if (parent->AsOp()->gtOp1 == tree)
                     {
                         tree->gtFlags |= GTF_VAR_DEF;

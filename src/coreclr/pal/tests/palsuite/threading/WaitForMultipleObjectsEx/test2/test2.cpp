@@ -26,6 +26,7 @@ VOID PALAPI APCFunc_WFMO_test2(ULONG_PTR dwParam);
 DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter);
 
 DWORD ThreadWaitDelta_WFMO_test2;
+static volatile bool s_preWaitTimestampRecorded = false;
 
 PALTEST(threading_WaitForMultipleObjectsEx_test2_paltest_waitformultipleobjectsex_test2, "threading/WaitForMultipleObjectsEx/test2/paltest_waitformultipleobjectsex_test2")
 {
@@ -92,6 +93,7 @@ void RunTest_WFMO_test2(BOOL AlertThread)
     DWORD dwThreadId = 0;
     int ret;
 
+    s_preWaitTimestampRecorded = false;
     hThread = CreateThread( NULL,
                             0,
                             (LPTHREAD_START_ROUTINE)WaiterProc_WFMO_test2,
@@ -103,6 +105,13 @@ void RunTest_WFMO_test2(BOOL AlertThread)
     {
         Fail("ERROR: Was not able to create the thread to test!\n"
             "GetLastError returned %d\n", GetLastError());
+    }
+
+    // Wait for the pre-wait timestamp to be recorded on the other thread before sleeping, since the sleep duration here will be
+    // compared against the sleep/wait duration on the other thread
+    while (!s_preWaitTimestampRecorded)
+    {
+        Sleep(0);
     }
 
     Sleep(InterruptTime);
@@ -154,6 +163,7 @@ DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter)
     }
 
     OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    s_preWaitTimestampRecorded = true;
 
     ret = WaitForMultipleObjectsEx(1, &Semaphore, FALSE, ChildThreadWaitTime,
         Alertable);

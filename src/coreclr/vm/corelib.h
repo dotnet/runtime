@@ -868,14 +868,12 @@ DEFINE_CLASS(STACKCRAWMARK,         Threading,       StackCrawlMark)
 
 DEFINE_CLASS_U(Threading,              Thread,                     ThreadBaseObject)
 DEFINE_FIELD_U(_name,                     ThreadBaseObject,   m_Name)
-DEFINE_FIELD_U(_delegate,                 ThreadBaseObject,   m_Delegate)
-DEFINE_FIELD_U(_threadStartArg,           ThreadBaseObject,   m_ThreadStartArg)
+DEFINE_FIELD_U(_startHelper,              ThreadBaseObject,   m_StartHelper)
 DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               INTERNAL_GET_CURRENT_THREAD,             InternalGetCurrentThread,                    SM_RetIntPtr)
-
-DEFINE_CLASS(PARAMETERIZEDTHREADSTART,     Threading,                 ParameterizedThreadStart)
+DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 
 DEFINE_CLASS(IOCB_HELPER,              Threading,            _IOCompletionCallback)
 DEFINE_METHOD(IOCB_HELPER,             PERFORM_IOCOMPLETION_CALLBACK,        PerformIOCompletionCallback,          SM_UInt_UInt_PtrNativeOverlapped_RetVoid)

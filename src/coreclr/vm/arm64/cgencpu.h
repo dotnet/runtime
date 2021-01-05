@@ -338,15 +338,6 @@ inline PCODE decodeBackToBackJump(PCODE pBuffer)
     return decodeJump(pBuffer);
 }
 
-// SEH info forward declarations
-
-inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
-{
-    // ARM64TODO: Does this need to care about HFA. It does not for ARM32
-    return (sizeofvaluetype > ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE);
-}
-
-
 //----------------------------------------------------------------------
 
 struct IntReg

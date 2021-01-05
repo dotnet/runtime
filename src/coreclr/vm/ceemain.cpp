@@ -212,8 +212,8 @@
 #include "perfmap.h"
 #endif
 
-#include "diagnosticserver.h"
-#include "eventpipe.h"
+#include "diagnosticserveradapter.h"
+#include "eventpipeadapter.h"
 
 #ifndef TARGET_UNIX
 // Included for referencing __security_cookie
@@ -609,7 +609,7 @@ void EESocketCleanupHelper()
 
     // Close the diagnostic server socket.
 #ifdef FEATURE_PERFTRACING
-    DiagnosticServer::Shutdown();
+    DiagnosticServerAdapter::Shutdown();
 #endif // FEATURE_PERFTRACING
 }
 #endif // TARGET_UNIX
@@ -691,7 +691,7 @@ void EEStartupHelper()
 
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
-        EventPipe::Initialize();
+        EventPipeAdapter::Initialize();
 #endif // FEATURE_PERFTRACING
         GenAnalysis::Initialize();
 
@@ -711,8 +711,8 @@ void EEStartupHelper()
 #endif
 
 #ifdef FEATURE_PERFTRACING
-        DiagnosticServer::Initialize();
-        DiagnosticServer::PauseForDiagnosticsMonitor();
+        DiagnosticServerAdapter::Initialize();
+        DiagnosticServerAdapter::PauseForDiagnosticsMonitor();
 #endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_GDBJIT
@@ -961,7 +961,7 @@ void EEStartupHelper()
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
         // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
         // EventPipe initialization, so this is done after the GC has been fully initialized.
-        EventPipe::FinishInitialize();
+        EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
@@ -1233,8 +1233,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         ETW::EnumerationLog::ProcessShutdown();
 
 #ifdef FEATURE_PERFTRACING
-        EventPipe::Shutdown();
-        DiagnosticServer::Shutdown();
+        EventPipeAdapter::Shutdown();
+        DiagnosticServerAdapter::Shutdown();
 #endif // FEATURE_PERFTRACING
     }
 

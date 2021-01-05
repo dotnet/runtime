@@ -52,6 +52,7 @@
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAsyncEventArgsTest.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
+    <Compile Include="SocketTaskExtensionsTest.cs" />
     <Compile Include="MulticastOptionTest.cs" />
     <Compile Include="UdpClientTest.cs" />
     <Compile Include="UnixDomainSocketTest.cs" />

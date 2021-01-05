@@ -1416,9 +1416,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_aborted = false;
     m_completed = false;
     m_evalDuringException = fInException;
-    m_rethrowAbortException = false;
     m_retValueBoxing = Debugger::NoValueTypeBoxing;
-    m_requester = (Thread::ThreadAbortRequester)0;
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
 
     // Copy the thread's context.
@@ -1431,61 +1429,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
         memcpy(&m_context, pContext, sizeof(m_context));
     }
 }
-
-//---------------------------------------------------------------------------------------
-//
-// This constructor is only used when setting up an eval to re-abort a thread.
-//
-// Arguments:
-//      pContext - The context to return to when done with this eval.
-//      pThread - The thread to re-abort.
-//      requester - The type of abort to throw.
-//
-DebuggerEval::DebuggerEval(CONTEXT * pContext, Thread * pThread, Thread::ThreadAbortRequester requester)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Allocate the breakpoint instruction info in executable memory.
-    m_bpInfoSegment = new (interopsafeEXEC, nothrow) DebuggerEvalBreakpointInfoSegment(this);
-
-    // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
-    // so that we can have a breakpoint instruction in any slot in the bundle.
-    m_bpInfoSegment->m_breakpointInstruction[0] = 0x16;
-    m_thread = pThread;
-    m_evalType = DB_IPCE_FET_RE_ABORT;
-    m_methodToken = mdMethodDefNil;
-    m_classToken = mdTypeDefNil;
-    m_debuggerModule = NULL;
-    m_funcEvalKey = RSPTR_CORDBEVAL::NullPtr();
-    m_argCount = 0;
-    m_stringSize = 0;
-    m_arrayRank = 0;
-    m_genericArgsCount = 0;
-    m_genericArgsNodeCount = 0;
-    m_successful = false;
-    m_argData = NULL;
-    m_targetCodeAddr = NULL;
-    memset(m_result, 0, sizeof(m_result));
-    m_md = NULL;
-    m_resultType = TypeHandle();
-    m_aborting = FE_ABORT_NONE;
-    m_aborted = false;
-    m_completed = false;
-    m_evalDuringException = false;
-    m_rethrowAbortException = false;
-    m_retValueBoxing = Debugger::NoValueTypeBoxing;
-    m_requester = requester;
-
-    if (pContext == NULL)
-    {
-        memset(&m_context, 0, sizeof(m_context));
-    }
-    else
-    {
-        memcpy(&m_context, pContext, sizeof(m_context));
-    }
-}
-
 
 #ifdef _DEBUG
 // Thread proc for interop stress coverage. Have an unmanaged thread
@@ -7947,15 +7890,6 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
         _ASSERTE(ret == NULL);
     }
 
-    // If we need to re-throw a ThreadAbortException, go ahead and do it now.
-    if (GetThread()->m_StateNC & Thread::TSNC_DebuggerReAbort)
-    {
-        // Now clear the bit else we'll see it again when we process the Exception notification
-        // from this upcoming UserAbort exception.
-        pThread->ResetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-        pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Safe, INFINITE);
-    }
-
 #endif
 
 }
@@ -10361,13 +10295,6 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     _ASSERTE(pDE->m_completed);
     _ASSERTE((g_pEEInterface->GetThread() && !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC);
     _ASSERTE(ThreadHoldsLock());
-
-    // If we need to rethrow a ThreadAbortException then set the thread's state so we remember that.
-    if (pDE->m_rethrowAbortException)
-    {
-        pThread->SetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-    }
-
 
     //
     // Get the domain that the result is valid in. The RS will cache this in the ICorDebugValue
@@ -15357,87 +15284,6 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
 }
 
 //
-// FuncEvalSetupReAbort sets up a function evaluation specifically to rethrow a ThreadAbortException on the given
-// thread.
-//
-HRESULT Debugger::FuncEvalSetupReAbort(Thread *pThread, Thread::ThreadAbortRequester requester)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO1000,
-            "D::FESRA: performing reabort on thread %#x, id=0x%x\n",
-            pThread, GetThreadIdHelper(pThread)));
-
-    // The thread has to be at a GC safe place. It should be, since this is only done in response to a previous eval
-    // completing with a ThreadAbortException.
-    if (!g_pDebugger->IsThreadAtSafePlace(pThread))
-        return CORDBG_E_ILLEGAL_AT_GC_UNSAFE_POINT;
-
-    // Grab the filter context.
-    CONTEXT *filterContext = GetManagedStoppedCtx(pThread);
-
-    if (filterContext == NULL)
-    {
-        return CORDBG_E_ILLEGAL_AT_GC_UNSAFE_POINT;
-    }
-
-    if (::GetSP(filterContext) != ALIGN_DOWN(::GetSP(filterContext), STACK_ALIGN_SIZE))
-    {
-        // SP is not aligned, we cannot do a FuncEval here
-        LOG((LF_CORDB, LL_INFO1000, "D::FESRA: SP is unaligned"));
-        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
-    }
-
-    // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
-    // CONTEXT.
-    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pThread, requester);
-
-    if (pDE == NULL)
-    {
-        return E_OUTOFMEMORY;
-    }
-    else if (!pDE->Init())
-    {
-        // We fail to change the m_breakpointInstruction field to PAGE_EXECUTE_READWRITE permission.
-        return E_FAIL;
-    }
-
-    // Set the thread's IP (in the filter context) to our hijack function.
-    _ASSERTE(filterContext != NULL);
-
-    ::SetIP(filterContext, (UINT_PTR)GetEEFuncEntryPoint(::FuncEvalHijack));
-
-#ifdef TARGET_X86 // reliance on filterContext->Eip & Eax
-    // Set EAX to point to the DebuggerEval.
-    filterContext->Eax = (DWORD)pDE;
-#elif defined(TARGET_AMD64)
-    // Set RCX to point to the DebuggerEval.
-    filterContext->Rcx = (SIZE_T)pDE;
-#elif defined(TARGET_ARM)
-    filterContext->R0 = (DWORD)pDE;
-#elif defined(TARGET_ARM64)
-    filterContext->X0 = (SIZE_T)pDE;
-#else
-    PORTABILITY_ASSERT("FuncEvalSetupReAbort (Debugger.cpp) is not implemented on this platform.");
-#endif
-
-    // Now clear the bit requesting a re-abort
-    pThread->ResetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-
-    g_pDebugger->IncThreadsAtUnsafePlaces();
-
-    // Return that all went well. Tracing the stack at this point should not show that the func eval is setup, but it
-    // will show a wrong IP, so it shouldn't be done.
-
-    return S_OK;
-}
-
-//
 // FuncEvalAbort: Does a gentle abort of a func-eval already in progress.
 //    Because this type of abort waits for the thread to get to a good state,
 //    it may never return, or may time out.
@@ -15486,7 +15332,7 @@ Debugger::FuncEvalAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
+                hr = pDE->m_thread->UserAbort(EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;
@@ -15552,7 +15398,7 @@ Debugger::FuncEvalRudeAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
+                hr = pDE->m_thread->UserAbort(EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;

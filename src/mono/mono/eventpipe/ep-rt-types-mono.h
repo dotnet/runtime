@@ -20,6 +20,9 @@
 #define EP_ASSERT(expr) g_assert_checked(expr)
 //#define EP_ASSERT(expr) g_assert(expr)
 
+#undef EP_UNREACHABLE
+#define EP_UNREACHABLE(msg) g_assert_not_reached()
+
 #undef EP_LIKELY
 #define EP_LIKELY(expr) G_LIKELY(expr)
 

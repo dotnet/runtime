@@ -24,23 +24,22 @@ namespace R2RDump
             Target_Arm64
         };
 
-        [DllImport(_dll)]
+        [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr InitBufferedDisasm(TargetArch Target);
 
-        [DllImport(_dll)]
-        public static extern void DumpCodeBlock(IntPtr Disasm, ulong Address, IntPtr Bytes, int Size);
+        [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void DumpCodeBlock(IntPtr Disasm, IntPtr Address, IntPtr Bytes, IntPtr Size);
 
-        [DllImport(_dll)]
-        [return: MarshalAs(UnmanagedType.I4)]
-        public static extern int DumpInstruction(IntPtr Disasm, ulong Address, IntPtr Bytes, int Size);
+        [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int DumpInstruction(IntPtr Disasm, IntPtr Address, IntPtr Bytes, IntPtr Size);
 
-        [DllImport(_dll)]
+        [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetOutputBuffer();
 
-        [DllImport(_dll)]
+        [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ClearOutputBuffer();
 
-        [DllImport(_dll)]
+        [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
         public static extern void FinishDisasm(IntPtr Disasm);
 
         public unsafe static int GetInstruction(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, int rtfOffset, byte[] image, out string instr)
@@ -49,7 +48,7 @@ namespace R2RDump
             fixed (byte* p = image)
             {
                 IntPtr ptr = (IntPtr)(p + imageOffset + rtfOffset);
-                instrSize = DumpInstruction(Disasm, (ulong)(rtf.StartAddress + rtfOffset), ptr, rtf.Size);
+                instrSize = DumpInstruction(Disasm, new IntPtr(rtf.StartAddress + rtfOffset), ptr, new IntPtr(rtf.Size));
             }
             IntPtr pBuffer = GetOutputBuffer();
             instr = Marshal.PtrToStringAnsi(pBuffer);

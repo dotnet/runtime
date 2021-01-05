@@ -962,7 +962,7 @@ The following dumps and debugging modes are provided:
 LSRA Stress Modes
 -----------------
 
-The implementation uses the `COMPLUS_JitStressRegs` environment variable.
+The implementation uses the `COMPlus_JitStressRegs` environment variable.
 The following are the stress modes associated with this variable. For
 the most part they can be combined, though in some cases the values are
 exclusive:
@@ -1299,7 +1299,7 @@ Issue [\#9896](https://github.com/dotnet/runtime/issues/9896).
 
 -   Issue [#13090](https://github.com/dotnet/runtime/issues/13090) involves a case where anti-preferencing might be useful.
 
--   Issue 10296 may also be related to preferencing, if it is still an issue. 
+-   Issue [#10296](https://github.com/dotnet/runtime/issues/10296) may also be related to preferencing, if it is still an issue. 
 
 ### Leveraging SSA form
 
