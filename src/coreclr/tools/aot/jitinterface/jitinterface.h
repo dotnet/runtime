@@ -175,7 +175,6 @@ struct JitInterfaceCallbacks
     void (* reportFatalError)(void * thisHandle, CorInfoExceptionClass** ppException, int result);
     int (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, void* ftnHnd, void** pSchema, unsigned int* pCountSchemaItems, unsigned char** pInstrumentationData);
     int (* allocPgoInstrumentationBySchema)(void * thisHandle, CorInfoExceptionClass** ppException, void* ftnHnd, void* pSchema, unsigned int countSchemaItems, unsigned char** pInstrumentationData);
-    int (* recordPgoInstrumentationBySchemaForAot)(void * thisHandle, CorInfoExceptionClass** ppException, void* ftnHnd, void* pSchema, unsigned int countSchemaItems, unsigned char* pInstrumentationData);
     void* (* getLikelyClass)(void * thisHandle, CorInfoExceptionClass** ppException, void* ftnHnd, void* baseHnd, unsigned int ilOffset, unsigned int* pLikelihood, unsigned int* pNumberOfClasses);
     void (* recordCallSite)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
@@ -1790,18 +1789,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     int temp = _callbacks->allocPgoInstrumentationBySchema(_thisHandle, &pException, ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual int recordPgoInstrumentationBySchemaForAot(
-          void* ftnHnd,
-          void* pSchema,
-          unsigned int countSchemaItems,
-          unsigned char* pInstrumentationData)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->recordPgoInstrumentationBySchemaForAot(_thisHandle, &pException, ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
     if (pException != nullptr) throw pException;
     return temp;
 }

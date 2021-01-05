@@ -14352,18 +14352,6 @@ HRESULT CEEInfo::getPgoInstrumentationResults(
     UNREACHABLE_RET();      // only called on derived class.
 }
 
-HRESULT CEEInfo::recordPgoInstrumentationBySchemaForAot (
-    CORINFO_METHOD_HANDLE     ftnHnd,
-    PgoInstrumentationSchema *pSchema,                     // pointer to the schema table which describes the instrumentation results
-    UINT32                    countSchemaItems,            // pointer to the count schema items
-    BYTE *                    pInstrumentationData         // pointer to the actual instrumentation data
-    )
-{
-    // This method is only supported in crossgen2
-    LIMITED_METHOD_CONTRACT;
-    return E_NOTIMPL;
-}
-
 CORINFO_CLASS_HANDLE CEEInfo::getLikelyClass(
                      CORINFO_METHOD_HANDLE ftnHnd,
                      CORINFO_CLASS_HANDLE  baseHnd,

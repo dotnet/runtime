@@ -422,6 +422,29 @@ public:
         DWORDLONG method;
         DWORDLONG delegateCls;
     };
+    struct Agnostic_PgoInstrumentationSchema
+    {
+        DWORDLONG Offset;
+        ICorJitInfo::PgoInstrumentationKind InstrumentationKind;
+        int32_t ILOffset;
+        int32_t Count;
+        int32_t Other;
+    };
+    struct Agnostic_AllocPgoInstrumentationBySchema
+    {
+        DWORDLONG address;
+        DWORD schema_index;
+        DWORD schemaCount;
+        DWORD result;
+    };
+    struct Agnostic_GetPgoInstrumentationResults
+    {
+        DWORD schemaCount;
+        DWORD dataByteCount;
+        DWORD schema_index;
+        DWORD data_index;
+        DWORD result;
+    };
     struct Agnostic_GetLikelyClass
     {
         DWORDLONG ftnHnd;
@@ -1182,6 +1205,14 @@ public:
     void dmpGetFieldThreadLocalStoreID(DWORDLONG key, DLD value);
     DWORD repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection);
 
+    void recAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData, HRESULT result);
+    void dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agnostic_AllocPgoInstrumentationBySchema& value);
+    DWORD repAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
+
+    void recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, HRESULT result);
+    void dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value);
+    DWORD repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData);
+
     void recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE  baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE classHnd, UINT32* pLikelihood, UINT32* pNumberOfClasses);
     void dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value);
     CORINFO_CLASS_HANDLE repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE  baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses);
@@ -1352,11 +1383,11 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 184
+// Highest packet number: 186
 // *************************************************************************************
 enum mcPackets
 {
-    Packet_AllocMethodBlockCounts     = 131,
+    Packet_AllocMethodBlockCounts     = 131, // retired 1/4/2021
     Packet_AppendClassName            = 149, // Added 8/6/2014 - needed for SIMD
     Packet_AreTypesEquivalent         = 1,
     Packet_AsCorInfoType              = 2,
@@ -1512,6 +1543,8 @@ enum mcPackets
     Packet_SatisfiesClassConstraints                     = 110,
     Packet_SatisfiesMethodConstraints                    = 111,
     Packet_ShouldEnforceCallvirtRestriction              = 112, // Retired 2/18/2020
+    Packet_AllocPgoInstrumentationBySchema               = 185, // Added 1/4/2021
+    Packet_GetPgoInstrumentationResults                  = 186, // Added 1/4/2021
 
     PacketCR_AddressMap                        = 113,
     PacketCR_AllocGCInfo                       = 114,

@@ -341,14 +341,6 @@ public:
             BYTE **                   pInstrumentationData         // pointer to the actual instrumentation data
             ) = 0;
 
-    // Record into aot image information to be used by the runtime jit
-    virtual HRESULT recordPgoInstrumentationBySchemaForAot (
-            CORINFO_METHOD_HANDLE     ftnHnd,
-            PgoInstrumentationSchema *pSchema,                     // pointer to the schema table which describes the instrumentation results
-            UINT32                    countSchemaItems,            // pointer to the count schema items
-            BYTE *                    pInstrumentationData         // pointer to the actual instrumentation data
-            ) = 0;
-
     // Get the likely implementing class for a virtual call or interface call made by ftnHnd
     // at the indicated IL offset. baseHnd is the interface class or base class for the method
     // being called. May returns NULL.

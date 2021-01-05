@@ -687,12 +687,6 @@ HRESULT allocPgoInstrumentationBySchema(
           UINT32 countSchemaItems,
           BYTE** pInstrumentationData) override;
 
-HRESULT recordPgoInstrumentationBySchemaForAot(
-          CORINFO_METHOD_HANDLE ftnHnd,
-          PgoInstrumentationSchema* pSchema,
-          UINT32 countSchemaItems,
-          BYTE* pInstrumentationData) override;
-
 CORINFO_CLASS_HANDLE getLikelyClass(
           CORINFO_METHOD_HANDLE ftnHnd,
           CORINFO_CLASS_HANDLE baseHnd,

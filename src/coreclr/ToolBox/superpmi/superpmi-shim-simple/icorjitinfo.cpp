@@ -1173,15 +1173,6 @@ HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(
     return original_ICorJitInfo->allocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
 }
 
-HRESULT interceptor_ICJI::recordPgoInstrumentationBySchemaForAot(
-          CORINFO_METHOD_HANDLE ftnHnd,
-          PgoInstrumentationSchema* pSchema,
-          UINT32 countSchemaItems,
-          BYTE* pInstrumentationData)
-{
-    return original_ICorJitInfo->recordPgoInstrumentationBySchemaForAot(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
-}
-
 CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(
           CORINFO_METHOD_HANDLE ftnHnd,
           CORINFO_CLASS_HANDLE baseHnd,

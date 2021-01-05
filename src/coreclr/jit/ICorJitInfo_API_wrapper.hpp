@@ -1626,18 +1626,6 @@ HRESULT WrapICorJitInfo::allocPgoInstrumentationBySchema(
     return temp;
 }
 
-HRESULT WrapICorJitInfo::recordPgoInstrumentationBySchemaForAot(
-          CORINFO_METHOD_HANDLE ftnHnd,
-          PgoInstrumentationSchema* pSchema,
-          UINT32 countSchemaItems,
-          BYTE* pInstrumentationData)
-{
-    API_ENTER(recordPgoInstrumentationBySchemaForAot);
-    HRESULT temp = wrapHnd->recordPgoInstrumentationBySchemaForAot(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
-    API_LEAVE(recordPgoInstrumentationBySchemaForAot);
-    return temp;
-}
-
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getLikelyClass(
           CORINFO_METHOD_HANDLE ftnHnd,
           CORINFO_CLASS_HANDLE baseHnd,
