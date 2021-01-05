@@ -1367,9 +1367,6 @@ public:
     void instInit();
 
     void instGen(instruction ins);
-#ifdef TARGET_XARCH
-    void instNop(unsigned size);
-#endif
 
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 
