@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     lock (this)
                     {
-                        IList<IDisposable> registrations = _expirationTokenRegistrations;
+                        List<IDisposable> registrations = _expirationTokenRegistrations;
                         if (registrations != null)
                         {
                             _expirationTokenRegistrations = null;
@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             private static void InvokeCallbacks(CacheEntry entry)
             {
-                IList<PostEvictionCallbackRegistration> callbackRegistrations = Interlocked.Exchange(ref entry._tokens._postEvictionCallbacks, null);
+                List<PostEvictionCallbackRegistration> callbackRegistrations = Interlocked.Exchange(ref entry._tokens._postEvictionCallbacks, null);
 
                 if (callbackRegistrations == null)
                 {
