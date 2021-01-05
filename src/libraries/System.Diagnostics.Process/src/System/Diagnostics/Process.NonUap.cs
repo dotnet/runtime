@@ -16,6 +16,7 @@ namespace System.Diagnostics
             }
             else
             {
+                CheckDisposed();
                 EnsureState(State.Associated | State.IsLocal);
 
                 if (IsSelfOrDescendantOf(GetCurrentProcess()))

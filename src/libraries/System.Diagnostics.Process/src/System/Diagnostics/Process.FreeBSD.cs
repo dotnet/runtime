@@ -14,6 +14,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
 
@@ -30,6 +31,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
                 return Process.TicksToTimeSpan(stat.userTime + stat.systemTime);
@@ -44,6 +46,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
 
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
@@ -56,6 +59,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
 
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
@@ -68,6 +72,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
 
                 Interop.Process.kinfo_proc* processInfo = Interop.Process.GetProcInfo(_processId, false, out int count);

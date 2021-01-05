@@ -17,6 +17,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return new TimeSpan(Convert.ToInt64(info.ri_system_time / NanosecondsTo100NanosecondsFactor));
@@ -28,6 +29,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(Id);
 
@@ -56,6 +58,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return new TimeSpan(Convert.ToInt64((info.ri_system_time + info.ri_user_time) / NanosecondsTo100NanosecondsFactor));
@@ -70,6 +73,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return new TimeSpan(Convert.ToInt64(info.ri_user_time / NanosecondsTo100NanosecondsFactor));
@@ -81,6 +85,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(Id);
 

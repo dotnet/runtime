@@ -122,6 +122,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.Associated);
                 return GetOrOpenProcessHandle();
             }
@@ -135,7 +136,11 @@ namespace System.Diagnostics
         /// <internalonly/>
         private bool Associated
         {
-            get { return _haveProcessId || _haveProcessHandle; }
+            get
+            {
+                CheckDisposed();
+                return _haveProcessId || _haveProcessHandle;
+            }
         }
 
         /// <devdoc>
@@ -148,6 +153,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.BasePriority;
             }
@@ -164,6 +170,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.Exited);
                 return _exitCode;
             }
@@ -179,6 +186,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (!_exited)
                 {
                     EnsureState(State.Associated);
@@ -197,6 +205,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (!_startTime.HasValue)
                 {
                     _startTime = StartTimeCore;
@@ -214,6 +223,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (!_haveExitTime)
                 {
                     EnsureState(State.Exited);
@@ -234,6 +244,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveId);
                 return _processId;
             }
@@ -249,6 +260,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.Associated);
                 return _machineName;
             }
@@ -262,6 +274,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
@@ -270,6 +283,7 @@ namespace System.Diagnostics
             [SupportedOSPlatform("freebsd")]
             set
             {
+                CheckDisposed();
                 SetWorkingSetLimits(null, value);
             }
         }
@@ -282,6 +296,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
@@ -290,6 +305,7 @@ namespace System.Diagnostics
             [SupportedOSPlatform("freebsd")]
             set
             {
+                CheckDisposed();
                 SetWorkingSetLimits(value, null);
             }
         }
@@ -298,6 +314,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (_modules == null)
                 {
                     EnsureState(State.HaveNonExitedId | State.IsLocal);
@@ -311,6 +328,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PoolNonPagedBytes;
             }
@@ -321,6 +339,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PoolNonPagedBytes);
             }
@@ -331,6 +350,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PageFileBytes;
             }
@@ -341,6 +361,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PageFileBytes);
             }
@@ -351,6 +372,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PoolPagedBytes;
             }
@@ -361,6 +383,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PoolPagedBytes);
             }
@@ -371,6 +394,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PageFileBytesPeak;
             }
@@ -381,6 +405,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PageFileBytesPeak);
             }
@@ -390,6 +415,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.WorkingSetPeak;
             }
@@ -400,6 +426,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.WorkingSetPeak);
             }
@@ -409,6 +436,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.VirtualBytesPeak;
             }
@@ -419,6 +447,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.VirtualBytesPeak);
             }
@@ -435,6 +464,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (!_havePriorityBoostEnabled)
                 {
                     _priorityBoostEnabled = PriorityBoostEnabledCore;
@@ -444,6 +474,7 @@ namespace System.Diagnostics
             }
             set
             {
+                CheckDisposed();
                 PriorityBoostEnabledCore = value;
                 _priorityBoostEnabled = value;
                 _havePriorityBoostEnabled = true;
@@ -460,6 +491,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (!_havePriorityClass)
                 {
                     _priorityClass = PriorityClassCore;
@@ -469,6 +501,7 @@ namespace System.Diagnostics
             }
             set
             {
+                CheckDisposed();
                 if (!Enum.IsDefined(typeof(ProcessPriorityClass), value))
                 {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ProcessPriorityClass));
@@ -484,6 +517,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PrivateBytes;
             }
@@ -494,6 +528,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PrivateBytes);
             }
@@ -509,6 +544,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.ProcessName;
             }
@@ -524,6 +560,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (!_haveProcessorAffinity)
                 {
                     _processorAffinity = ProcessorAffinityCore;
@@ -533,6 +570,7 @@ namespace System.Diagnostics
             }
             set
             {
+                CheckDisposed();
                 ProcessorAffinityCore = value;
                 _processorAffinity = value;
                 _haveProcessorAffinity = true;
@@ -543,6 +581,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.SessionId;
             }
@@ -557,6 +596,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (_startInfo == null)
                 {
                     if (Associated)
@@ -570,6 +610,7 @@ namespace System.Diagnostics
             }
             set
             {
+                CheckDisposed();
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(value));
@@ -594,6 +635,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (_threads == null)
                 {
                     EnsureState(State.HaveProcessInfo);
@@ -615,6 +657,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 EnsureHandleCountPopulated();
                 return _processInfo!.HandleCount;
@@ -627,6 +670,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.VirtualBytes;
             }
@@ -637,6 +681,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.VirtualBytes);
             }
@@ -653,10 +698,12 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 return _watchForExit;
             }
             set
             {
+                CheckDisposed();
                 if (value != _watchForExit)
                 {
                     if (Associated)
@@ -683,6 +730,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (_standardInput == null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardIn);
@@ -700,6 +748,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (_standardOutput == null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardOut);
@@ -725,6 +774,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (_standardError == null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardError);
@@ -747,6 +797,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.WorkingSet;
             }
@@ -757,6 +808,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.WorkingSet);
             }
@@ -913,6 +965,7 @@ namespace System.Diagnostics
         /// <internalonly/>
         private void EnsureState(State state)
         {
+            CheckDisposed();
             if ((state & State.Associated) != (State)0)
                 if (!Associated)
                     throw new InvalidOperationException(SR.NoAssociatedProcess);
@@ -1362,6 +1415,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void WaitForExit()
         {
+            CheckDisposed();
             WaitForExit(Timeout.Infinite);
         }
 
@@ -1371,6 +1425,7 @@ namespace System.Diagnostics
         /// </summary>
         public bool WaitForExit(int milliseconds)
         {
+            CheckDisposed();
             bool exited = WaitForExitCore(milliseconds);
             if (exited && _watchForExit)
             {
@@ -1511,6 +1566,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void BeginOutputReadLine()
         {
+            CheckDisposed();
             if (_outputStreamReadMode == StreamReadMode.Undefined)
             {
                 _outputStreamReadMode = StreamReadMode.AsyncMode;
@@ -1549,6 +1605,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void BeginErrorReadLine()
         {
+            CheckDisposed();
             if (_errorStreamReadMode == StreamReadMode.Undefined)
             {
                 _errorStreamReadMode = StreamReadMode.AsyncMode;
@@ -1586,6 +1643,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void CancelOutputRead()
         {
+            CheckDisposed();
             if (_output != null)
             {
                 _output.CancelOperation();
@@ -1606,6 +1664,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void CancelErrorRead()
         {
+            CheckDisposed();
             if (_error != null)
             {
                 _error.CancelOperation();
@@ -1620,6 +1679,7 @@ namespace System.Diagnostics
 
         internal void OutputReadNotifyUser(string? data)
         {
+            CheckDisposed();
             // To avoid race between remove handler and raising the event
             DataReceivedEventHandler? outputDataReceived = OutputDataReceived;
             if (outputDataReceived != null)
@@ -1639,6 +1699,7 @@ namespace System.Diagnostics
 
         internal void ErrorReadNotifyUser(string? data)
         {
+            CheckDisposed();
             // To avoid race between remove handler and raising the event
             DataReceivedEventHandler? errorDataReceived = ErrorDataReceived;
             if (errorDataReceived != null)
@@ -1653,6 +1714,16 @@ namespace System.Diagnostics
                 {
                     errorDataReceived(this, e);
                 }
+            }
+        }
+
+        /// <summary>Throws a System.ObjectDisposedException if the Proces was disposed</summary>
+        /// <exception cref="System.ObjectDisposedException">If the Proces has been disposed.</exception>
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(Process), SR.ProcessDisposed);
             }
         }
 

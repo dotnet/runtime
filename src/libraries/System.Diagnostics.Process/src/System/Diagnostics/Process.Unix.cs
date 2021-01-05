@@ -56,6 +56,7 @@ namespace System.Diagnostics
         /// <summary>Terminates the associated process immediately.</summary>
         public void Kill()
         {
+            CheckDisposed();
             EnsureState(State.HaveId);
 
             // Check if we know the process has exited. This avoids us targetting another

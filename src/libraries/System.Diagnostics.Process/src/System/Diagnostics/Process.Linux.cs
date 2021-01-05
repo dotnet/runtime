@@ -45,6 +45,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 return TicksToTimeSpan(GetStat().stime);
             }
         }
@@ -54,6 +55,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 return BootTimeToDateTime(TicksToTimeSpan(GetStat().starttime));
             }
         }
@@ -127,6 +129,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 Interop.procfs.ParsedStat stat = GetStat();
                 return TicksToTimeSpan(stat.utime + stat.stime);
             }
@@ -140,6 +143,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 return TicksToTimeSpan(GetStat().utime);
             }
         }
