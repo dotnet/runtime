@@ -40,6 +40,9 @@ namespace System.Net.Sockets.Tests
             using var left = useClone ? new Socket(origLeft.SafeHandle) : origLeft;
             using var right = useClone ? new Socket(origRight.SafeHandle) : origRight;
 
+            ConfigureSocket(left);
+            ConfigureSocket(right);
+
             var leftEndpoint = (IPEndPoint)left.LocalEndPoint;
             var rightEndpoint = (IPEndPoint)right.LocalEndPoint;
 
