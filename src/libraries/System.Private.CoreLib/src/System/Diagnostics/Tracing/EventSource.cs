@@ -2940,7 +2940,7 @@ namespace System.Diagnostics.Tracing
 
                 // Scoping the call to GetFields to a local function to limit the linker suppression
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-                Justification = "Nested type members are safe from linker with the parent annotation")]
+                    Justification = "Nested type members will be preserved by the ILLinker with the parent annotation")]
                 static FieldInfo[] GetNestedFields(Type nestedType) => nestedType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
 
                 // Collect task, opcode, keyword and channel information
