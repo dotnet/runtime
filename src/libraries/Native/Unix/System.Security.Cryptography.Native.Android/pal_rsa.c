@@ -161,8 +161,6 @@ PALEXPORT int32_t CryptoNative_RsaVerify(int32_t type, uint8_t* m, int32_t mlen,
     return FAIL;
 }
 
-
-// ;;; 2
 PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject pubExp)
 {
     if (!rsa)
@@ -191,7 +189,6 @@ PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-// ;;; 3, 5
 PALEXPORT int32_t CryptoNative_GetRsaParameters(RSA* rsa, 
     jobject* n, jobject* e, jobject* d, jobject* p, jobject* dmp1, jobject* q, jobject* dmq1, jobject* iqmp)
 {
