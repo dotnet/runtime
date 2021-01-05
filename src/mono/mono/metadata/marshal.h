@@ -504,6 +504,9 @@ MonoMethod**
 mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers);
 
 MonoMethod*
+mono_marshal_get_virtual_stelemref_wrapper (MonoStelemrefKind kind);
+
+MonoMethod*
 mono_marshal_get_array_address (int rank, int elem_size);
 
 MonoMethod *

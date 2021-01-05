@@ -4816,6 +4816,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_Array_Clone;
             }
         }
+        else if (strcmp(className, "Object") == 0)
+        {
+            if (strcmp(methodName, "MemberwiseClone") == 0)
+            {
+                result = NI_System_Object_MemberwiseClone;
+            }
+        }
         else if (strcmp(className, "Type") == 0)
         {
             if (strcmp(methodName, "get_IsValueType") == 0)

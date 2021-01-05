@@ -1558,7 +1558,9 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // it needs Notepad
+        [ConditionalFact(typeof(PlatformDetection),
+            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
+            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
         [OuterLoop("Pops UI")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
@@ -1591,7 +1593,9 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // it needs Notepad
+        [ConditionalFact(typeof(PlatformDetection),
+            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
+            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
         [OuterLoop("Pops UI")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
@@ -1603,8 +1607,6 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    Assert.Equal(string.Empty, process.MainWindowTitle);
-
                     for (int attempt = 0; attempt < 50; ++attempt)
                     {
                         process.Refresh();

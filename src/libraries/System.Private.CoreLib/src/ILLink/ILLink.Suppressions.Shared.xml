@@ -21,12 +21,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.StartupHookProvider.ProcessStartupHooks()</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.InteropServices.Marshal.BindMoniker(System.Runtime.InteropServices.ComTypes.IMoniker,System.UInt32,System.Guid@,System.Object@)</property>
@@ -138,12 +132,6 @@
       <argument>IL2075</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Diagnostics.Tracing.ManifestBuilder.CreateManifestString</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.StartupHookProvider.CallStartupHook(System.StartupHookProvider.StartupHookNameOrPath)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
