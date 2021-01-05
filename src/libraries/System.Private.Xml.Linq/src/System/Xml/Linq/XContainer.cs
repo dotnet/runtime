@@ -807,13 +807,7 @@ namespace System.Xml.Linq
 
         internal static string GetStringValue(object value)
         {
-            string? s = ConvertToString(value);
-            if (s == null) throw new ArgumentException(SR.Argument_ConvertToString);
-            return s;
-        }
-
-        private static string? ConvertToString(object value) =>
-            value switch
+            string? s = value switch
             {
                 string stringValue => stringValue,
                 int intValue => XmlConvert.ToString(intValue),
@@ -831,6 +825,9 @@ namespace System.Xml.Linq
                 _ => value.ToString()
             };
 
+            if (s == null) throw new ArgumentException(SR.Argument_ConvertToString);
+            return s;
+        }
 
         internal void ReadContentFrom(XmlReader r)
         {
