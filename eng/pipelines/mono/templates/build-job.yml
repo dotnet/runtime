@@ -141,6 +141,11 @@ jobs:
           df -h
         displayName: Disk Usage after Build
 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+      - script: |
+          find artifacts/bin -type f
+        displayName: Why are computers like this
+
     # Publish product output directory for consumption by tests.
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
