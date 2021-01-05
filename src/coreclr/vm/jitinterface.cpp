@@ -6820,7 +6820,7 @@ void CEEInfo::setMethodAttribs (
                 // UnmanagedCallersOnly methods that are switched to optimized must be optimized.
                 // Otherwise, tiered compilation will kick back in and try to tier them, which
                 // causes instability.
-                if (config->JitSwitchedToOptimized() && !ftn->HasUnmanagedCallersOnlyAttribute())
+                if (!config->JitSwitchedToOptimized() && !ftn->HasUnmanagedCallersOnlyAttribute())
                 {
                     config->SetJitSwitchedToMinOpt();
                 }
