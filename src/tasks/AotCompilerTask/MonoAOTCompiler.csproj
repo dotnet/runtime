@@ -23,5 +23,9 @@
     </Content>
   </ItemGroup>
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(AssemblyName).dll" TargetPath="tools\$(NetCoreAppToolCurrent)" />
+    </ItemGroup>
+  </Target>
 </Project>
