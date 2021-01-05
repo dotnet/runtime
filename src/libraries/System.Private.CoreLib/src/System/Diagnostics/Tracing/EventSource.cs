@@ -5250,12 +5250,7 @@ namespace System.Diagnostics.Tracing
 #endif
         }
 
-        public void AddEventParameter(
-#if !ES_BUILD_STANDALONE
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-#endif
-            Type type,
-            string name)
+        public void AddEventParameter(Type type, string name)
         {
             if (numParams == 0)
                 templates.Append("  <template tid=\"").Append(eventName).AppendLine("Args\">");
