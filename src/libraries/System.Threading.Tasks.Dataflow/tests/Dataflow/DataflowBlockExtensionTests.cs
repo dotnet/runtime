@@ -116,6 +116,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         [Fact]
         [OuterLoop] // finalizer/GC interactions
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46566", TestPlatforms.Browser)]
         public void TestNullTarget_CompletionNoCaching()
         {
             // Make sure that the Completion task returned by a NullTarget
