@@ -1253,8 +1253,9 @@ namespace System.Diagnostics.Tracing
                     }
                     else if (m_eventData[eventId].EnabledForETW
 #if FEATURE_PERFTRACING
-                            || m_eventData[eventId].EnabledForEventPipe)
+                            || m_eventData[eventId].EnabledForEventPipe
 #endif // FEATURE_PERFTRACING
+                            )
                     {
                         TraceLoggingEventTypes? tlet = m_eventData[eventId].TraceLoggingEventTypes;
                         if (tlet == null)
