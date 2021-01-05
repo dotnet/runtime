@@ -9,6 +9,7 @@
 
 class COMDouble {
 public:
+    // This needs to have the same layout as System.ValueTuple<double, double>
     struct SinCosResult {
         double Sin;
         double Cos;

@@ -9,6 +9,7 @@
 
 class COMSingle {
 public:
+    // This needs to have the same layout as System.ValueTuple<float, float>
     struct SinCosResult {
         float Sin;
         float Cos;

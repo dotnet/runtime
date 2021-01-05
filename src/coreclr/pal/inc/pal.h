@@ -3808,6 +3808,7 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define log10         PAL_log10
 #define pow           PAL_pow
 #define scalbn        PAL_scalbn
+#define sincos        PAL_sincos
 #define acosf         PAL_acosf
 #define acoshf        PAL_acoshf
 #define asinf         PAL_asinf
@@ -3821,6 +3822,7 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define log10f        PAL_log10f
 #define powf          PAL_powf
 #define scalbnf       PAL_scalbnf
+#define sincosf       PAL_sincosf
 #define malloc        PAL_malloc
 #define free          PAL_free
 #define _strdup       PAL__strdup

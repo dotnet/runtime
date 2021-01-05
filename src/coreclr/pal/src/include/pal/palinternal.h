@@ -217,7 +217,6 @@ function_name() to call the system's implementation
 #define fmod DUMMY_fmod
 #define modf DUMMY_modf
 #define sin DUMMY_sin
-#define sincos DUMMY_sincos
 #define sinh DUMMY_sinh
 #define sqrt DUMMY_sqrt
 #define tan DUMMY_tan
@@ -230,7 +229,6 @@ function_name() to call the system's implementation
 #define fmodf DUMMY_fmodf
 #define modff DUMMY_modff
 #define sinf DUMMY_sinf
-#define sincosf DUMMY_sincosf
 #define sinhf DUMMY_sinhf
 #define sqrtf DUMMY_sqrtf
 #define tanf DUMMY_tanf
