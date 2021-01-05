@@ -449,8 +449,6 @@ protected:
     void genProfilingLeaveCallback(unsigned helper);
 #endif // PROFILING_SUPPORTED
 
-    void genPrologPadForReJit();
-
     // clang-format off
     void genEmitCall(int                   callType,
                      CORINFO_METHOD_HANDLE methHnd,
