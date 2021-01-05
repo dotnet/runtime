@@ -427,7 +427,9 @@ mono_domain_create (void)
 
 	domain->shadow_serial = shadow_serial;
 	domain->domain = NULL;
+#ifndef ENABLE_NETCORE
 	domain->setup = NULL;
+#endif
 	domain->friendly_name = NULL;
 	domain->search_path = NULL;
 
@@ -735,9 +737,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
                 mono_defaults.corlib, "System.Threading", "ThreadAbortException");
 #endif
 
-#ifdef ENABLE_NETCORE
-	mono_defaults.appdomain_class = mono_defaults.object_class;
-#else
+#ifndef ENABLE_NETCORE
 	mono_defaults.appdomain_class = mono_class_get_appdomain_class ();
 #endif
 
@@ -1024,10 +1024,11 @@ void
 mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 {
 	if (!mono_runtime_get_no_exec () && !domain->entry_assembly && assembly) {
-		gchar *str;
-		ERROR_DECL (error);
 
 		domain->entry_assembly = assembly;
+#ifndef ENABLE_NETCORE
+		gchar *str;
+		ERROR_DECL (error);
 		/* Domains created from another domain already have application_base and configuration_file set */
 		if (domain->setup->application_base == NULL) {
 			MonoString *basedir = mono_string_new_checked (domain, assembly->basedir, error);
@@ -1043,6 +1044,7 @@ mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 			g_free (str);
 			mono_domain_set_options_from_config (domain);
 		}
+#endif
 	}
 }
 

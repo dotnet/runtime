@@ -315,6 +315,12 @@ function(install_with_stripped_symbols targetName kind destination)
       strip_symbols(${targetName} symbol_file)
       install_symbols(${symbol_file} ${destination})
     endif()
+
+    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
+      # We want to avoid the kind=TARGET install behaviors which corrupt code signatures on osx-arm64
+      set(kind PROGRAMS)
+    endif()
+
     if ("${kind}" STREQUAL "TARGETS")
       set(install_source ${targetName})
     elseif("${kind}" STREQUAL "PROGRAMS")

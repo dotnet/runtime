@@ -1,33 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <linker>
 	<assembly fullname="System.Private.CoreLib">
-		<!-- appdomain.c: mono_runtime_init -->
-		<type fullname="Mono.MonoDomainSetup" preserve="fields" >
-			<!-- appdomain.c mono_object_new_checked in mono_domain_create_appdomain_checked -->
-			<method signature="System.Void .ctor()" />
-		</type>
-
 		<!-- assembly-load-context.c: -->
 		<!-- object-internals.h: MonoManagedAssemblyLoadContext -->
-		<type fullname="System.Runtime.Loader.AssemblyLoadContext" preserve="fields">
+		<type fullname="System.Runtime.Loader.AssemblyLoadContext">
 			<!-- assembly-load-context.c: mono_alc_invoke_resolve_using_load -->
 			<method name="MonoResolveUsingLoad" />
-			<!-- assembly-load-context.c: mono_alc_invoke_resolve_using_resolving_event -->
-			<method name="MonoResolveUsingResolvingEvent" />
 			<!-- assembly-load-context.c: mono_alc_invoke_resolve_using_resolve_satellite -->
 			<method name="MonoResolveUsingResolveSatelliteAssembly" />
 			<!-- native-library.c: netcore_resolve_with_load () -->
 			<method name="MonoResolveUnmanagedDll" />
-			<!-- native-library.c: netcore_resolve_with_resolving_event () -->
-			<method name="MonoResolveUnmanagedDllUsingEvent" />
-			<!-- appdomain.c: mono_domain_fire_assembly_load_event -->
-			<method name="OnAssemblyLoad" />
-			<!-- appdomain.c: mono_try_assembly_resolve_handle () -->
-			<method name="OnAssemblyResolve" />
-			<!-- appdomain.c: mono_domain_try_type_resolve_name -->
-			<method name="OnTypeResolve" />
-			<!-- icall.c: try_resource_resolve_name -->
-			<method name="OnResourceResolve" />
 		</type>
 
 		<!-- exception.c (mono_get_exception_argument) -->
@@ -643,10 +625,6 @@
 			<method name="OnProcessExit"/>
 			<!-- appdomain.c: get_app_context_base_directory -->
 			<method name="get_BaseDirectory"/>
-			<!-- object.c: mono_unhandled_exception_checked -->
-			<field name="UnhandledException"/>
-			<!-- object.c: mono_first_chance_exception_checked -->
-			<field name="FirstChanceException"/>
 		</type>
 
 		<!-- mono_method_has_unmanaged_callers_only_attribute () -->

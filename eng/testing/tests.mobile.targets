@@ -6,11 +6,22 @@
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
     <JSEngine Condition="'$(TargetOS)' == 'Browser' and '$(JSEngine)' == ''">V8</JSEngine>
     <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
+
+    <PublishingTestsRun>true</PublishingTestsRun>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
     <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
   <!-- Generate a self-contained app bundle for Android with tests. -->
@@ -137,6 +148,30 @@
 
   </Target>
 
+  <Target Name="ConfigureTrimming" Condition="'$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="PrepareForILLink">
+    <PropertyGroup>
+      <TrimMode>link</TrimMode>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ManagedAssemblyToLink Include="$(OutDir)\*xunit*">
+        <IsTrimmable>true</IsTrimmable>
+        <TrimMode>link</TrimMode>
+      </ManagedAssemblyToLink>
+      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' != '$(MSBuildProjectName).dll')" >
+        <TrimMode>link</TrimMode>
+      </ManagedAssemblyToLink>
+      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' == '$(AssemblyName).dll')" >
+        <TrimMode>copy</TrimMode>
+      </ManagedAssemblyToLink>
+      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'Android'" Include="AndroidTestRunner"/>
+      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'Browser'" Include="WasmTestRunner"/>
+      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'iOS'" Include="AppleTestRunner"/>
+      <TrimmerRootAssembly Include="$(AssemblyName)"/>
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
+    </ItemGroup>
+  </Target>
+
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
@@ -177,8 +212,7 @@
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
 
-      <!-- Exclude xunit assemblies as those should be resolved by our own package references -->
-      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" Condition="!$([System.String]::Copy('%(Filename)').StartsWith('xunit.'))" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
+      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 
@@ -186,4 +220,6 @@
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
           DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
+
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
 </Project>

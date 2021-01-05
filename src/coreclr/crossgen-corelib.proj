@@ -1,8 +1,11 @@
-<Project>
-  <Import Project="Directory.Build.props" />
-  <Import Project="Directory.Build.targets" />
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <!-- NoTargets SDK needs a TFM set. So we used the latest .NETCoreApp supported one. -->
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
 
-  <Target Name="Build">
+  <Target Name="InvokeCrossgen"
+          AfterTargets="Build">
     <PropertyGroup>
       <!-- Default for using Crossgen2 when not set externally -->
       <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">false</UseCrossgen2>
@@ -105,8 +108,4 @@
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded.  Finished at $(TIME)" />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
   </Target>
-
-  <Target Name="Restore" />
-  <Target Name="Test" />
-  <Target Name="Pack" />
 </Project>

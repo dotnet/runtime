@@ -2814,20 +2814,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 GetEmitter()->emitIns_R_R_R(INS_swpal, dataSize, dataReg, targetReg, addrReg);
                 break;
             case GT_XADD:
-                if ((targetReg == REG_NA) || (targetReg == REG_ZR))
-                {
-                    GetEmitter()->emitIns_R_R(INS_staddl, dataSize, dataReg, addrReg);
-                }
-                else
-                {
-                    GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, targetReg, addrReg);
-                }
+                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
+                                            addrReg);
                 break;
             default:
                 assert(!"Unexpected treeNode->gtOper");
         }
-
-        instGen_MemoryBarrier();
     }
     else
     {
@@ -2955,8 +2947,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
             noway_assert(dataReg != targetReg);
         }
         GetEmitter()->emitIns_R_R_R(INS_casal, dataSize, targetReg, dataReg, addrReg);
-
-        instGen_MemoryBarrier();
     }
     else
     {
