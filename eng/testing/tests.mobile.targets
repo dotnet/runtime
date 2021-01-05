@@ -148,26 +148,27 @@
 
   </Target>
 
-  <Target Name="ConfigureTrimming" Condition="'$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="PrepareForILLink">
+  <Target Name="ConfigureTrimming" Condition="'$(EnableAggressiveTrimming)' == 'true'" AfterTargets="AddTestRunnersToPublishedFiles">
     <PropertyGroup>
       <TrimMode>link</TrimMode>
     </PropertyGroup>
 
     <ItemGroup>
-      <ManagedAssemblyToLink Include="$(OutDir)\*xunit*">
-        <IsTrimmable>true</IsTrimmable>
-        <TrimMode>link</TrimMode>
-      </ManagedAssemblyToLink>
-      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' != '$(MSBuildProjectName).dll')" >
-        <TrimMode>link</TrimMode>
-      </ManagedAssemblyToLink>
-      <ManagedAssemblyToLink Condition="('%(ManagedAssemblyToLink.FileName).dll' == '$(AssemblyName).dll')" >
-        <TrimMode>copy</TrimMode>
-      </ManagedAssemblyToLink>
-      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'Android'" Include="AndroidTestRunner"/>
-      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'Browser'" Include="WasmTestRunner"/>
-      <TrimmerRootAssembly Condition="'$(TargetOS)' == 'iOS'" Include="AppleTestRunner"/>
-      <TrimmerRootAssembly Include="$(AssemblyName)"/>
+      <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
+      <ResolvedFileToPublish TrimMode="link" />
+
+      <!-- Don't trim the main assembly.
+           TrimMode="" is needed so the root assemblies are correctly identified -->
+      <ResolvedFileToPublish TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
+
+      <!-- Even though we are trimming the test runner assembly, we want it to be treated
+           as a root -->
+      <TrimmerRootAssembly
+          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('TestRunner.dll'))"
+          Include="%(ResolvedFileToPublish.FileName)" />
+    </ItemGroup>
+
+    <ItemGroup>
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" />
     </ItemGroup>
   </Target>
