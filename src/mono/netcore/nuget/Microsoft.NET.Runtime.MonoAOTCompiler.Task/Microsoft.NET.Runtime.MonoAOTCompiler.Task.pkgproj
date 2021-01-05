@@ -11,10 +11,8 @@
 
   <ItemGroup>
     <_AOTCompilerTaskFile Include="$(MonoAOTCompilerTasksAssemblyPath)" />
-    <_SDKPropsFile Include="Sdk\Sdk.props" />
 
     <PackageFile Include="@(_AOTCompilerTaskFile)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
-    <PackageFile Include="@(_SDKPropsFile)" TargetPath="Sdk" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
