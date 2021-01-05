@@ -39,6 +39,7 @@ dotnet tool update --global dotnet-sos
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
 ```sh
+# Install only one: the one matching your dump
 dotnet sos install --architecture Arm
 dotnet sos install --architecture Arm64
 dotnet sos install --architecture x86
@@ -139,7 +140,7 @@ setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
 ---
 ## If it's a macOS dump
 
-Instructions for debugging dumps on macOS are essentially the same as [Linux](#If-it's-a-Linux-dump-on-Linux...) with one exception: `dotnet-dump` cannot analyze macOS system dumps: you must use `lldb` for those. `dotnet-dump` can only analyze dumps created by `dotnet-dump` or `createdump` or by the runtime on hangs.
+Instructions for debugging dumps on macOS are essentially the same as [Linux](#If-it's-a-Linux-dump-on-Linux...) with one exception: `dotnet-dump` cannot analyze macOS system dumps: you must use `lldb` for those. `dotnet-dump` can only analyze dumps created by `dotnet-dump` or `createdump`, by the runtime on crashes when the appropriate environment variables are set, or the [`blame-hang` setting of `dotnet test`](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-test).
 
 ---
 # Other Helpful Information
