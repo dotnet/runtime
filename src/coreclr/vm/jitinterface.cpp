@@ -11943,10 +11943,12 @@ void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
 }
 
 /*********************************************************************/
-HRESULT CEEJitInfo::allocMethodBlockCounts (
-    UINT32                        count,           // count of <ILOffset, ExecutionCount> tuples
-    ICorJitInfo::BlockCounts **   pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
-    )
+HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            UINT32 countSchemaItems, /* IN */
+            BYTE** pInstrumentationData /* OUT */
+            )
 {
     CONTRACTL {
         THROWS;
@@ -11980,7 +11982,7 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
     hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
 #else // FEATURE_PREJIT
 #ifdef FEATURE_PGO
-    hr = PgoManager::allocMethodBlockCounts(m_pMethodBeingCompiled, count, pBlockCounts, codeSize);
+    hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, count, pBlockCounts, codeSize);
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
@@ -14312,10 +14314,12 @@ void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
     UNREACHABLE();      // only called on derived class.
 }
 
-HRESULT CEEInfo::allocMethodBlockCounts (
-        UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
-        BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
-        )
+HRESULT CEEInfo::allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            UINT32 countSchemaItems, /* IN */
+            BYTE** pInstrumentationData /* OUT */
+            )
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.

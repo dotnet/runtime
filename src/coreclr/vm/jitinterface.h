@@ -669,18 +669,26 @@ public:
             CORINFO_EH_CLAUSE* clause               /* OUT */
             ) override final;
 
+    HRESULT allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            UINT32 countSchemaItems, /* IN */
+            BYTE** pInstrumentationData /* OUT */
+            ) override final;
 
-    HRESULT allocMethodBlockCounts (
-        UINT32                        count,         // the count of <ILOffset, ExecutionCount> tuples
-        ICorJitInfo::BlockCounts **   pBlockCounts   // pointer to array of <ILOffset, ExecutionCount> tuples
-    ) override final;
+    HRESULT getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema** pSchema, /* OUT */
+            UINT32* pCountSchemaItems, /* OUT */
+            BYTE**pInstrumentationData /* OUT */
+            ) override final;
 
-    HRESULT getMethodBlockCounts(
-        CORINFO_METHOD_HANDLE         ftnHnd,
-        UINT32 *                      pCount,        // pointer to the count of <ILOffset, ExecutionCount> tuples
-        BlockCounts **                pBlockCounts,  // pointer to array of <ILOffset, ExecutionCount> tuples
-        UINT32 *                      pNumRuns
-    ) override final;
+    HRESULT recordPgoInstrumentationBySchemaForAot(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN */
+            UINT32 countSchemaItems, /* IN */
+            BYTE* pInstrumentationData /* IN */
+            ) override final;
 
     CORINFO_CLASS_HANDLE getLikelyClass(
             CORINFO_METHOD_HANDLE ftnHnd,

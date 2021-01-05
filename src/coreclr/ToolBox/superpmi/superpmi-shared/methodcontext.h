@@ -422,20 +422,6 @@ public:
         DWORDLONG method;
         DWORDLONG delegateCls;
     };
-    struct Agnostic_AllocMethodBlockCounts
-    {
-        DWORDLONG address;
-        DWORD count;
-        DWORD result;
-    };
-    struct Agnostic_GetMethodBlockCounts
-    {
-        DWORD count;
-        DWORD pBlockCounts_index;
-        DWORD numRuns;
-        DWORD result;
-    };
-
     struct Agnostic_GetLikelyClass
     {
         DWORDLONG ftnHnd;
@@ -1195,21 +1181,6 @@ public:
     void recGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection, DWORD result);
     void dmpGetFieldThreadLocalStoreID(DWORDLONG key, DLD value);
     DWORD repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection);
-
-    void recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result);
-    void dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value);
-    HRESULT repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts);
-
-    void recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                                 UINT32 *                     pCount,
-                                 ICorJitInfo::BlockCounts**   pBlockCounts,
-                                 UINT32 *                     pNumRuns,
-                                 HRESULT                      result);
-    void dmpGetMethodBlockCounts(DWORDLONG key, const Agnostic_GetMethodBlockCounts& value);
-    HRESULT repGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                                    UINT32 *                     pCount,
-                                    ICorJitInfo::BlockCounts**   pBlockCounts,
-                                    UINT32 *                     pNumRuns);
 
     void recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE  baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE classHnd, UINT32* pLikelihood, UINT32* pNumberOfClasses);
     void dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value);

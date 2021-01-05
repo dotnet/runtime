@@ -4,14 +4,44 @@
 #include "common.h"
 #include "log.h"
 #include "pgo.h"
+#include "versionresilienthashcode.h"
 
 #ifdef FEATURE_PGO
 
-ICorJitInfo::BlockCounts* PgoManager::s_PgoData;
-unsigned volatile         PgoManager::s_PgoIndex;
+// Data structure for holding pgo data
+// Need to be walkable at process shutdown without taking meaningful locks
+//  Need to have an associated MethodDesc for emission
+//
+//  Need to support lookup by Exact method, and at the non-generic level as well
+//   In addition, lookup by some form of stable hash would be really nice for both R2R multi-module scenarios
+//    as well as the existing text format approach
+//
+// In the current implementation, the method stable hash code isn't a good replacement for "token" as it doesn't
+// carry any detail about signatures, and is probably quite slow to compute
+// The plan is to swap over to the typenamehash 
+
+// Goals
+// 1. Need to be able to walk at any time.
+// 2. Need to be able to lookup by MethodDesc
+// 3. Need to be able to lookup by Hash!
+
+// Solution:
+
+// Lookup patterns for use by JIT
+// 1. For Current Runtime generated lookups, there is a SHash in each LoaderAllocator, using the MethodDesc as
+//    key for non-dynamic methods, and a field in the DynamicMethodDesc for the dynamic methods.
+// 2. For R2R lookups, lookup via IL token exact match, as well as a hash based lookup.
+// 3. For text based lookups, lookup by hash (only enabled if the ReadPGOData COMPlus is set).
+
+// For emission into output, we will use an approach that relies on walking linked lists
+// 1. InstrumentationDataHeader shall be placed before any instrumentation data. It will be part of a linked
+//    list of instrumentation data that has the same lifetime.
+// 2. InstrumentationDataWithEqualLifetimeHeader shall be part of a doubly linked list. This list shall be protected
+//    by a lock, and serves to point at the various singly linked lists of InstrumentationData.
+
 const char* const         PgoManager::s_FileHeaderString  = "*** START PGO Data, max index = %u ***\n";
 const char* const         PgoManager::s_FileTrailerString = "*** END PGO Data ***\n";
-const char* const         PgoManager::s_MethodHeaderString = "@@@ token 0x%08X hash 0x%08X ilSize 0x%08X records 0x%08X index %u\n";
+const char* const         PgoManager::s_MethodHeaderString = "@@@ codehash 0x%08X methodhash 0x%08X ilSize 0x%08X records 0x%08X\n";
 const char* const         PgoManager::s_RecordString = "ilOffs %u count %u\n";
 const char* const         PgoManager::s_ClassProfileHeader = "classProfile iloffs %u samples %u entries %u totalCount %u %s\n";
 const char* const         PgoManager::s_ClassProfileEntry = "class %p (%s) count %u\n";
@@ -85,18 +115,15 @@ Histogram::Histogram(const ICorJitInfo::ClassProfile* classProfile)
     }
 }
 
+PtrSHash<PgoManager::Header, PgoManager::CodeAndMethodHash> PgoManager::s_textFormatPgoData;
+CrstStatic PgoManager::s_pgoMgrLock;
+PgoManager PgoManager::s_InitialPgoManager;
+
 void PgoManager::Initialize()
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
-    // If any PGO mode is active, allocate the slab
-    if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0) ||
-        (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0) ||
-        (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0))
-    {
-        s_PgoData = new ICorJitInfo::BlockCounts[BUFFER_SIZE];
-        s_PgoIndex = 0;
-    }
+    s_pgoMgrLock.Init(CrstLeafLock, CRST_DEFAULT);
 
     // If we're reading in counts, do that now
     ReadPgoData();
@@ -120,7 +147,14 @@ void PgoManager::WritePgoData()
         return;
     }
 
-    if (s_PgoData == NULL)
+    int pgoDataCount = 0;
+    EnumeratePGOHeaders([&pgoDataCount](HeaderList *pgoData)
+    {
+        pgoDataCount++;
+        return true;
+    });
+
+    if (pgoDataCount == 0)
     {
         return;
     }
@@ -138,31 +172,23 @@ void PgoManager::WritePgoData()
         return;
     }
 
-    fprintf(pgoDataFile, s_FileHeaderString, s_PgoIndex);
-    unsigned       index    = 0;
-    const unsigned maxIndex = s_PgoIndex;
+    fprintf(pgoDataFile, s_FileHeaderString, pgoDataCount);
 
-    while (index < maxIndex)
+    EnumeratePGOHeaders([pgoDataFile](HeaderList *pgoData)
     {
-        const Header* const header = (Header*)&s_PgoData[index];
+        fprintf(pgoDataFile, s_MethodHeaderString, pgoData->header.codehash, pgoData->header.methodhash, pgoData->header.ilSize, pgoData->header.recordCount);
 
-        if ((header->recordCount < MIN_RECORD_COUNT) || (header->recordCount > MAX_RECORD_COUNT))
-        {
-            fprintf(pgoDataFile, "Unreasonable record count %u at index %u\n", header->recordCount, index);
-            break;
-        }
+        SString tClass, tMethodName, tMethodSignature;
+        pgoData->header.method->GetMethodInfo(tClass, tMethodName, tMethodSignature);
 
-        fprintf(pgoDataFile, s_MethodHeaderString, header->token, header->hash, header->ilSize, header->recordCount, index);
+        StackScratchBuffer nameBuffer;
+        StackScratchBuffer nameBuffer2;
+        fprintf(pgoDataFile, "MethodName: %s.%s\n", tClass.GetUTF8(nameBuffer), tMethodName.GetUTF8(nameBuffer2));
+        fprintf(pgoDataFile, "Signature: %s\n", tMethodSignature.GetUTF8(nameBuffer));
 
-        index += 2;
-
-        ICorJitInfo::BlockCounts* records         = &s_PgoData[index];
-        unsigned                  recordCount     = header->recordCount - 2;
-        unsigned                  lastOffset      = 0;
-        bool                      hasClassProfile = false;
-        unsigned                  i               = 0;
-
-        while (i < recordCount)
+        ICorJitInfo::BlockCounts* records = pgoData->header.GetData();
+        unsigned                  lastOffset  = 0;
+        for (unsigned i = 0; i < pgoData->header.recordCount; i++)
         {
             const unsigned thisOffset = records[i].ILOffset;
 
@@ -231,11 +257,27 @@ void PgoManager::WritePgoData()
             }
         }
 
-        index += recordCount;
-    }
+        return true;
+    });
 
     fprintf(pgoDataFile, s_FileTrailerString);
     fclose(pgoDataFile);
+}
+
+void ReadLineAndDiscard(FILE* file)
+{
+    char buffer[255];
+    while (fgets(buffer, sizeof(buffer), file) != NULL)
+    {
+        auto stringLen = strlen(buffer);
+        if (stringLen == 0)
+            return;
+        
+        if (buffer[stringLen - 1] == '\n')
+        {
+            return;
+        }
+    }
 }
 
 void PgoManager::ReadPgoData()
@@ -245,13 +287,6 @@ void PgoManager::ReadPgoData()
     if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0) ||
         (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0) ||
         (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) == 0))
-    {
-        return;
-    }
-
-    // PGO data slab should already be set up, if not, just bail
-    //
-    if (s_PgoData == NULL)
     {
         return;
     }
@@ -285,20 +320,14 @@ void PgoManager::ReadPgoData()
         return;
     }
 
-    // Sanity check data will fit into the slab
-    //
-    if ((maxIndex == 0) || (maxIndex >= MAX_RECORD_COUNT))
-    {
-        return;
-    }
 
     // Fill in the data
     //
-    unsigned index   = 0;
     unsigned methods = 0;
     unsigned probes = 0;
 
     bool failed = false;
+
     while (!failed)
     {
         if (fgets(buffer, sizeof(buffer), pgoDataFile) == nullptr)
@@ -306,49 +335,34 @@ void PgoManager::ReadPgoData()
             break;
         }
 
+        // Discard the next two lines that hold the string name of the method
+        ReadLineAndDiscard(pgoDataFile);
+        ReadLineAndDiscard(pgoDataFile);
+
         // Find the next method entry line
         //
         unsigned recordCount = 0;
-        unsigned token       = 0;
-        unsigned hash        = 0;
+        unsigned codehash    = 0;
+        unsigned methodhash  = 0;
         unsigned ilSize      = 0;
-        unsigned rIndex      = 0;
 
-        if (sscanf_s(buffer, s_MethodHeaderString, &token, &hash, &ilSize, &recordCount, &rIndex) != 5)
+        if (sscanf_s(buffer, s_MethodHeaderString, &codehash, &methodhash, &ilSize, &recordCount) != 4)
         {
             continue;
         }
 
-        _ASSERTE(index == rIndex);
         methods++;
 
-        // If there's not enough room left, bail
-        if ((index + recordCount) > maxIndex)
-        {
-            failed = true;
-            break;
-        }
+        S_SIZE_T allocationSize = S_SIZE_T(sizeof(Header)) + S_SIZE_T(sizeof(ICorJitInfo::BlockCounts)) * S_SIZE_T(recordCount);
+        if (allocationSize.IsOverflow())
+            return;
 
-        Header* const header = (Header*)&s_PgoData[index];
-
-        header->recordCount = recordCount;
-        header->token       = token;
-        header->hash        = hash;
-        header->ilSize      = ilSize;
-
-        // Sanity check
-        //
-        if ((recordCount < MIN_RECORD_COUNT) || (recordCount > MAX_RECORD_COUNT))
-        {
-            failed = true;
-            break;
-        }
-
-        index += 2;
-
+        Header* methodData = (Header*)malloc(allocationSize.Value());
+        methodData->HashInit(methodhash, codehash, ilSize, recordCount);
+        ICorJitInfo::BlockCounts* blockCounts = methodData->GetData();
         // Read il data
         //
-        for (unsigned i = 0; i < recordCount - 2; i++)
+        for (unsigned i = 0; i < recordCount; i++)
         {
             if (fgets(buffer, sizeof(buffer), pgoDataFile) == nullptr)
             {
@@ -356,7 +370,7 @@ void PgoManager::ReadPgoData()
                 break;
             }
 
-            if (sscanf_s(buffer, s_RecordString, &s_PgoData[index].ILOffset, &s_PgoData[index].ExecutionCount) != 2)
+            if (sscanf_s(buffer, s_RecordString, &blockCounts[i].ILOffset, &blockCounts[i].ExecutionCount) != 2)
             {
                 // This might be class profile data; if so just skip it.
                 //
@@ -366,66 +380,135 @@ void PgoManager::ReadPgoData()
                     break;
                 }
             }
-
-            index++;
         }
 
-        probes += recordCount - 2;
+        s_textFormatPgoData.Add(methodData);
+        probes += recordCount;
     }
+}
 
-    s_PgoIndex = maxIndex;
+void PgoManager::CreatePgoManager(PgoManager* volatile* ppMgr, bool loaderAllocator)
+{
+    CrstHolder lock(&s_pgoMgrLock);
+    if (*ppMgr != NULL)
+        return;
+
+    PgoManager* newManager;
+    if (loaderAllocator)
+        newManager = new LoaderAllocatorPgoManager();
+    else
+        newManager = new PgoManager();
+
+    VolatileStore((PgoManager**)ppMgr, newManager);
+}
+
+void PgoManager::Header::Init(MethodDesc *pMD, unsigned codehash, unsigned ilSize, unsigned recordCount)
+{
+    this->codehash = codehash;
+    this->methodhash = pMD->GetStableHash();
+    this->ilSize = ilSize;
+    this->method = pMD;
+    this->recordCount = recordCount;
 }
 
 HRESULT PgoManager::allocMethodBlockCounts(MethodDesc* pMD, UINT32 count,
     ICorJitInfo::BlockCounts** pBlockCounts, unsigned ilSize)
 {
-    // Initialize our out param
-    *pBlockCounts = NULL;
+    STANDARD_VM_CONTRACT;
 
-    if (s_PgoData == nullptr)
+    PgoManager* mgr;
+    if (!pMD->IsDynamicMethod())
     {
-        return E_NOTIMPL;
+        mgr = pMD->GetLoaderAllocator()->GetOrCreatePgoManager();
     }
-
-    unsigned methodIndex = 0;
-    unsigned recordCount = count + 2;
-
-    // Look for space in the profile buffer for this method.
-    // Note other jit invocations may be vying for space concurrently.
-    //
-    while (true)
+    else
     {
-        const unsigned oldIndex = s_PgoIndex;
-        const unsigned newIndex = oldIndex + recordCount;
-
-        // If there is no room left for this method,
-        // that's ok, we just won't profile this method.
-        //
-        if (newIndex >= BUFFER_SIZE)
+        PgoManager* volatile* ppMgr = pMD->AsDynamicMethodDesc()->GetResolver()->GetDynamicPgoManagerPointer();
+        if (ppMgr == NULL)
         {
             return E_NOTIMPL;
         }
 
-        const unsigned updatedIndex = InterlockedCompareExchangeT(&s_PgoIndex, newIndex, oldIndex);
-
-        if (updatedIndex == oldIndex)
-        {
-            // Found space
-            methodIndex = oldIndex;
-            break;
-        }
+        CreatePgoManager(ppMgr, false);
+        mgr = *ppMgr;
     }
 
-    // Fill in the header
-    Header* const header = (Header*)&s_PgoData[methodIndex];
-    header->recordCount = recordCount;
-    header->token = pMD->IsDynamicMethod() ? 0 : pMD->GetMemberDef();
-    header->hash = pMD->GetStableHash();
-    header->ilSize = ilSize;
+    if (mgr == NULL)
+    {
+        return E_NOTIMPL;
+    }
 
-    // Return pointer to start of count records
-    *pBlockCounts = &s_PgoData[methodIndex + 2];
-    return S_OK;
+    return mgr->allocMethodBlockCountsInstance(pMD, count, pBlockCounts, ilSize);
+}
+
+HRESULT PgoManager::allocMethodBlockCountsInstance(MethodDesc* pMD, UINT32 count,
+    ICorJitInfo::BlockCounts** pBlockCounts, unsigned ilSize)
+{
+    // Initialize our out param
+    *pBlockCounts = NULL;
+    int codehash;
+    if (!GetVersionResilientILCodeHashCode(pMD, &codehash))
+    {
+        return E_NOTIMPL;
+    }
+
+    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(sizeof(ICorJitInfo::BlockCounts)) * (S_SIZE_T)(count);
+    if (allocationSize.IsOverflow())
+    {
+        return E_NOTIMPL;
+    }
+    size_t unsafeAllocationSize = allocationSize.Value();
+    HeaderList* pHeaderList = NULL;
+
+    if (pMD->IsDynamicMethod())
+    {
+        HeaderList *currentHeaderList = m_pgoHeaders;
+        if (currentHeaderList != NULL)
+        {
+            if (currentHeaderList->header.recordCount != count)
+            {
+                return E_NOTIMPL;
+            }
+            _ASSERTE(currentHeaderList->header.method == pMD);
+            *pBlockCounts = currentHeaderList->header.GetData();
+            return S_OK;
+        }
+
+        pHeaderList = (HeaderList*)pMD->AsDynamicMethodDesc()->GetResolver()->GetJitMetaHeap()->New(unsafeAllocationSize);
+
+        memset(pHeaderList, 0, unsafeAllocationSize);
+        pHeaderList->header.Init(pMD, codehash, ilSize, count);
+        *pBlockCounts = pHeaderList->header.GetData();
+        m_pgoHeaders = pHeaderList;
+        return S_OK;
+    }
+    else
+    {
+        LoaderAllocatorPgoManager *laPgoManagerThis = (LoaderAllocatorPgoManager *)this;
+        CrstHolder (&laPgoManagerThis->m_lock);
+
+        HeaderList* existingData = laPgoManagerThis->m_pgoDataLookup.Lookup(pMD);
+        if (existingData != NULL)
+        {
+            if (existingData->header.recordCount != count)
+            {
+                return E_NOTIMPL;
+            }
+            *pBlockCounts = existingData->header.GetData();
+            return S_OK;
+        }
+
+        AllocMemTracker loaderHeapAllocation;
+        pHeaderList = (HeaderList*)loaderHeapAllocation.Track(pMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(allocationSize));
+        memset(pHeaderList, 0, unsafeAllocationSize);
+        pHeaderList->header.Init(pMD, codehash, ilSize, count);
+        pHeaderList->next = m_pgoHeaders;
+        *pBlockCounts = pHeaderList->header.GetData();
+        laPgoManagerThis->m_pgoDataLookup.Add(pHeaderList);
+        loaderHeapAllocation.SuppressRelease();
+        m_pgoHeaders = pHeaderList;
+        return S_OK;
+    }
 }
 
 HRESULT PgoManager::getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT32* pCount,
@@ -436,55 +519,74 @@ HRESULT PgoManager::getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT3
     *pBlockCounts = NULL;
     *pNumRuns = 0;
 
-   // Bail if there's no profile data.
-    //
-    if (s_PgoData == NULL)
+    PgoManager *mgr;
+    if (!pMD->IsDynamicMethod())
+    {
+        mgr = pMD->GetLoaderAllocator()->GetPgoManager();
+    }
+    else
+    {
+        mgr = pMD->AsDynamicMethodDesc()->GetResolver()->GetDynamicPgoManager();
+    }
+
+    HRESULT hr = E_NOTIMPL;
+    if (mgr != NULL)
+    {
+        hr = mgr->getMethodBlockCountsInstance(pMD, ilSize, pCount, pBlockCounts, pNumRuns);
+    }
+
+    // If not found in the data from the current run, look in the data from the text file
+    if (FAILED(hr) && s_textFormatPgoData.GetCount() > 0)
+    {
+        COUNT_T methodhash = pMD->GetStableHash();
+        int codehash;
+        if (GetVersionResilientILCodeHashCode(pMD, &codehash))
+        {
+            Header *found = s_textFormatPgoData.Lookup(CodeAndMethodHash(codehash, methodhash));
+            if (found != NULL)
+            {
+                *pNumRuns = 1;
+                *pCount = found->recordCount;
+                *pBlockCounts = found->GetData();
+                hr = S_OK;
+            }
+        }
+    }
+
+    return hr;
+}
+
+HRESULT PgoManager::getMethodBlockCountsInstance(MethodDesc* pMD, unsigned ilSize, UINT32* pCount,
+    ICorJitInfo::BlockCounts** pBlockCounts, UINT32* pNumRuns)
+{
+    // Initialize our out params
+    *pCount = 0;
+    *pBlockCounts = NULL;
+    *pNumRuns = 0;
+
+    HeaderList *found;
+
+    if (pMD->IsDynamicMethod())
+    {
+        found = m_pgoHeaders;
+    }
+    else
+    {
+        LoaderAllocatorPgoManager *laPgoManagerThis = (LoaderAllocatorPgoManager *)this;
+        CrstHolder (&laPgoManagerThis->m_lock);
+        found = laPgoManagerThis->m_pgoDataLookup.Lookup(pMD);
+    }
+
+    if (found == NULL)
     {
         return E_NOTIMPL;
     }
 
-    // See if we can find counts for this method in the profile buffer.
-    //
-    const unsigned maxIndex = s_PgoIndex;
-    const unsigned token    = pMD->IsDynamicMethod() ? 0 : pMD->GetMemberDef();
-    const unsigned hash     = pMD->GetStableHash();
+    *pBlockCounts = found->header.GetData();
+    *pNumRuns = 1;
+    *pCount = found->header.recordCount;
 
-
-    unsigned index = 0;
-    unsigned methodsChecked = 0;
-
-    while (index < maxIndex)
-    {
-        // The first two "records" of each entry are actually header data
-        // to identify the method.
-        //
-        Header* const header = (Header*)&s_PgoData[index];
-
-        // Sanity check that header data looks reasonable. If not, just
-        // fail the lookup.
-        //
-        if ((header->recordCount < MIN_RECORD_COUNT) || (header->recordCount > MAX_RECORD_COUNT))
-        {
-            break;
-        }
-
-        // See if the header info matches the current method.
-        //
-        if ((header->token == token) && (header->hash == hash) && (header->ilSize == ilSize))
-        {
-            // Yep, found data.
-            //
-            *pBlockCounts = &s_PgoData[index + 2];
-            *pCount       = header->recordCount - 2;
-            *pNumRuns     = 1;
-            return S_OK;
-        }
-
-        index += header->recordCount;
-        methodsChecked++;
-    }
-
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 // See if there is a class profile for this method at the indicated il Offset.
@@ -680,6 +782,11 @@ HRESULT PgoManager::getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT3
 CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset)
 {
     return NULL;
+}
+
+void PgoManager::CreatePgoManager(PgoManager** ppMgr, bool loaderAllocator)
+{
+    *ppMgr = NULL;
 }
 
 #endif // FEATURE_PGO

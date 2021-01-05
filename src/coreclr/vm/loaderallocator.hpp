@@ -24,6 +24,7 @@ class FuncPtrStubs;
 #include "crossloaderallocatorhash.h"
 #include "onstackreplacement.h"
 #include "lockedrangelist.h"
+#include "pgo.h"
 
 #define VPTRU_LoaderAllocator 0x3200
 
@@ -191,6 +192,11 @@ protected:
 
     // IL stub cache with fabricated MethodTable parented by a random module in this LoaderAllocator.
     ILStubCache         m_ILStubCache;
+
+#ifdef FEATURE_PGO
+    // PgoManager to hold pgo data associated with this LoaderAllocator
+    Volatile<PgoManager *> m_pgoManager;
+#endif // FEATURE_PGO
 
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
@@ -480,6 +486,36 @@ public:
     virtual void CleanupHandles() { }
 
     void RegisterFailedTypeInitForCleanup(ListLockEntry *pListLockEntry);
+
+#ifdef FEATURE_PGO
+    PgoManager *GetPgoManager()
+    {
+        return m_pgoManager;
+    }
+
+    PgoManager *GetOrCreatePgoManager()
+    {
+        auto currentValue = GetPgoManager();
+        if (currentValue != NULL)
+        {
+            return currentValue;
+        }
+        PgoManager::CreatePgoManager(&m_pgoManager, true);
+        return GetPgoManager();
+    }
+#endif // FEATURE_PGO
+#else
+#ifdef FEATURE_PGO
+    PgoManager *GetPgoManager()
+    {
+        return NULL;
+    }
+
+    PgoManager *GetOrCreatePgoManager()
+    {
+        return NULL;
+    }
+#endif // FEATURE_PGO
 #endif // !defined(DACCESS_COMPILE)
 
 
