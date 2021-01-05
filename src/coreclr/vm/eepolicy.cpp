@@ -348,6 +348,14 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 {
     WRAPPER_NO_CONTRACT;
 
+    static volatile LONG s_recursionGuard = 0;
+
+    if (::InterlockedCompareExchange(&s_recursionGuard, 1, 0) != 0)
+    {
+        PrintToStdErrA("Repeated call to LogInfoForFatalError skipped to avoid infinite recursion and interaction between crashing threads.");
+        return;
+    }
+
     Thread *pThread = GetThread();
     EX_TRY
     {
