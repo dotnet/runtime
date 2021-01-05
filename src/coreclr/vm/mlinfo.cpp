@@ -2909,16 +2909,8 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype)
 
     if (nativeSize == VARIABLESIZE)
     {
-        switch (mtype)
-        {
-            case MARSHAL_TYPE_BLITTABLEVALUECLASS:
-            case MARSHAL_TYPE_VALUECLASS:
-            case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
-                return (UINT16) m_pMT->GetNativeSize();
-
-            default:
-                _ASSERTE(0);
-        }
+        _ASSERTE(IsValueClass(mtype));
+        return (UINT16) m_pMT->GetNativeSize();
     }
 
     return nativeSize;
@@ -2943,6 +2935,20 @@ bool MarshalInfo::IsInOnly(MarshalType mtype)
     };
 
     return ILMarshalerIsInOnly[mtype];
+}
+
+bool MarshalInfo::IsValueClass(MarshalType mtype)
+{
+    switch (mtype)
+    {
+    case MARSHAL_TYPE_BLITTABLEVALUECLASS:
+    case MARSHAL_TYPE_VALUECLASS:
+    case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
+        return true;
+
+    default:
+        return false;
+    }
 }
 
 OVERRIDEPROC MarshalInfo::GetArgumentOverrideProc(MarshalType mtype)
