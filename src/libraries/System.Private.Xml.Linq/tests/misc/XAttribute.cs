@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using Xunit;
 
 namespace System.Xml.Linq.Tests
@@ -30,7 +31,11 @@ namespace System.Xml.Linq.Tests
         [MemberData(nameof(NumericValuesWithMinusSign))]
         public void MinusSignWithDifferentTypeSwedishCulture(object value)
         {
-            System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("SE-SW");
+            try
+            {
+                Threading.Thread.CurrentThread.CurrentCulture = new CultureInfo("SE-SW");
+            }
+            catch (CultureNotFoundException) { /* Do nothing */ }
 
             Assert.Equal('-', (new XAttribute("a", value)).Value[0]);
         }
@@ -54,7 +59,11 @@ namespace System.Xml.Linq.Tests
         [MemberData(nameof(NonNumericValues))]
         public void NonNumericTypeSwedishCulture(object value, string expected)
         {
-            System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("SE-SW");
+            try
+            {
+                Threading.Thread.CurrentThread.CurrentCulture = new CultureInfo("SE-SW");
+            }
+            catch (CultureNotFoundException) { /* Do nothing */ }
 
             Assert.Equal(expected, (new XAttribute("a", value)).Value);
         }
