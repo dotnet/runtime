@@ -1,4 +1,5 @@
 parameters:
+  buildConfig: 'Debug'
   osGroup: ''
   platform: ''
   container: ''
@@ -12,7 +13,7 @@ parameters:
 jobs:
 - template: xplat-pipeline-job.yml
   parameters:
-    buildConfig: Debug
+    buildConfig: ${{ parameters.buildConfig }}
     osGroup: ${{ parameters.osGroup }}
     helixType: 'build/product/'
     enableMicrobuild: true

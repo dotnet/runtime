@@ -189,6 +189,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
+    buildConfig: release
     platforms:
     - Android_x64
     jobParameters:
