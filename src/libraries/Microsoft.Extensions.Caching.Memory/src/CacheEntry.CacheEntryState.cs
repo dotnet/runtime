@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Caching.Memory
             private byte _evictionReason;
             private byte _priority;
 
-            internal CacheEntryState(CacheItemPriority priority) => _priority = (byte)priority;
+            internal CacheEntryState(CacheItemPriority priority) : this() => _priority = (byte)priority;
 
             internal bool IsDisposed
             {
