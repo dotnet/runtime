@@ -158,8 +158,8 @@
       <ResolvedFileToPublish TrimMode="link" />
 
       <!-- Don't trim the test runner, and main assembly.
-           TrimMode="" is needed to the root assemblies are correctly identified -->
-      <ResolvedFileToPublish TrimMode="" Condition="'%(ResolvedFileToPublish.FileName)' == '$(AssemblyName)'" />
+           TrimMode="" is needed so the root assemblies are correctly identified -->
+      <ResolvedFileToPublish TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
       <ResolvedFileToPublish TrimMode="" Condition="$([System.String]::Copy('%(FileName)%(Extension)').EndsWith('TestRunner.dll'))" />
     </ItemGroup>
 
