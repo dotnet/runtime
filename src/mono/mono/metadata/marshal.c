@@ -3689,15 +3689,11 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	g_assert (!sig->hasthis && ! sig->explicit_this);
 	g_assert (!sig->is_inflated && !sig->has_type_parameters);
 
-	if (!type_is_blittable (sig->ret)) {
-		g_assertf (type_is_blittable (sig->ret), "sig return type %s is not blittable\n", mono_type_full_name (sig->ret));
-	}
-	for (int i = 0; i < sig->param_count; ++i)
-	{
-		MonoType *ty = sig->params[i];
-		if (!type_is_blittable (ty)) {
-			g_assertf (type_is_blittable (ty), "sig param %d (type %s) is not blittable\n", i, mono_type_full_name (ty));
-		}
+	g_assertf (type_is_blittable (sig->ret), "sig return type %s is not blittable\n", mono_type_full_name (sig->ret));
+
+	for (int i = 0; i < sig->param_count; ++i) {
+		MonoType *ty = sig->params [i];
+		g_assertf (type_is_blittable (ty), "sig param %d (type %s) is not blittable\n", i, mono_type_full_name (ty));
 	}
 	/* g_assert (every param and return type is blittable) */
 
@@ -3709,7 +3705,9 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
 	    return res;
 	
+#if 0
 	fprintf (stderr, "generating wrapper for signature %s\n", mono_signature_full_name (sig));
+#endif
 	
 	/* FIXME: better wrapper name */
 	char * name = g_strdup_printf ("wrapper_native_indirect_%p", sig);
@@ -3721,13 +3719,9 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 
 	MonoMethodPInvoke *piinfo = NULL;
 	MonoMarshalSpec **mspecs = g_new0 (MonoMarshalSpec *, 1 + sig->param_count);
-        gpointer func = NULL;
-	gboolean check_exceptions = FALSE; /* FIXME: don't expect native to throw */
-	gboolean func_param = TRUE;
-	gboolean skip_gc_trans = FALSE;
 	MonoNativeWrapperFlags flags = aot ? EMIT_NATIVE_WRAPPER_AOT : (MonoNativeWrapperFlags)0;
 	flags |= EMIT_NATIVE_WRAPPER_FUNC_PARAM | EMIT_NATIVE_WRAPPER_FUNC_PARAM_UNBOXED;
-	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, flags);
+	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, /*func*/NULL, flags);
 	g_free (mspecs);
 
 	MonoMethodSignature *csig = mono_metadata_signature_dup_add_this (image, sig, mono_defaults.int_class);

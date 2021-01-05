@@ -7113,12 +7113,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						g_assert (costs > 0);
 						cfg->real_offset += 5; /* FIXME: why? */
 						inline_costs += costs;
-						/* FIXME: calli_end expects ins to be the result of the call. */
-						ins = sp[0]; /*FIXME: is that the right instruction?*/
+						ins = sp[0];
 					} else {
 						ins = mono_emit_method_call (cfg, wrapper, /*args*/sp, NULL);
 					}
-					goto calli_end; /* FIXME? yes? */
+					goto calli_end;
 				}
 			}
 
