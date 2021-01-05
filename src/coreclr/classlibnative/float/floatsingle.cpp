@@ -270,19 +270,16 @@ FCIMPLEND
 /*====================================SinCos====================================
 **
 ==============================================================================*/
-FCIMPL1_V(COMSingle::SinCosResult, COMSingle::SinCos, float x)
+FCIMPL3_VII(void, COMSingle::SinCos, float x, float* pSin, float* pCos)
     FCALL_CONTRACT;
 
-    SinCosResult result;
-
 #ifdef _MSC_VER
-    result.Sin = (float)sinf(x);
-    result.Cos = (float)cosf(x);
+    *pSin = (float)sinf(x);
+    *pCos = (float)cosf(x);
 #else
-    sincosf(x, &result.Sin, &result.Cos);
+    sincosf(x, pSin, pCos);
 #endif
 
-    return result;
 FCIMPLEND
 
 /*=====================================Sinh=====================================

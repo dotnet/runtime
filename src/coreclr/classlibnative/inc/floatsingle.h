@@ -9,12 +9,6 @@
 
 class COMSingle {
 public:
-    // This needs to have the same layout as System.ValueTuple<float, float>
-    struct SinCosResult {
-        float Sin;
-        float Cos;
-    };
-
     FCDECL1_V(static float, Abs, float x);
     FCDECL1_V(static float, Acos, float x);
     FCDECL1_V(static float, Acosh, float x);
@@ -39,7 +33,7 @@ public:
     FCDECL2_VV(static float, Pow, float x, float y);
     FCDECL2_VI(static float, ScaleB, float x, int n);
     FCDECL1_V(static float, Sin, float x);
-    FCDECL1_V(static SinCosResult, SinCos, float x);
+    FCDECL3_VII(static void, SinCos, float x, float* sin, float* cos);
     FCDECL1_V(static float, Sinh, float x);
     FCDECL1_V(static float, Sqrt, float x);
     FCDECL1_V(static float, Tan, float x);
