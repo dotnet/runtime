@@ -352,7 +352,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 
     if (::InterlockedCompareExchange(&s_recursionGuard, 1, 0) != 0)
     {
-        PrintToStdErrA("Repeated call to LogInfoForFatalError skipped to avoid infinite recursion and interaction between crashing threads.");
+        PrintToStdErrA("Repeated fatal crash skipped to avoid infinite recursion and interaction between crashing threads.");
         return;
     }
 
