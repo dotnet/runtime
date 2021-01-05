@@ -2879,9 +2879,6 @@ namespace System.Diagnostics.Tracing
         // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
         // then the descriptors are not created, and just the manifest is generated.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-        Justification = "All eventSourceType's members in its entirety are preserved  " +
-        "with the parameter tagging")]
         private static byte[]? CreateManifestAndDescriptors(
 #if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -3091,13 +3088,18 @@ namespace System.Diagnostics.Tracing
                             }
                         }
 
+                        // Scoping the call to AddEventParameter to a local function to limit the linker suppression
+                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+                        Justification = "All eventSourceType's members in their entirety are preserved with the parameter tagging")]
+                        void CallAddEventParameter(Type type, string name) => manifest.AddEventParameter(type, name);
+
                         bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
                         if (!(source != null && source.SelfDescribingEvents))
                         {
                             manifest.StartEvent(eventName, eventAttribute);
                             for (int fieldIdx = 0; fieldIdx < args.Length; fieldIdx++)
                             {
-                                manifest.AddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name!);
+                                CallAddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name!);
                             }
                             manifest.EndEvent();
                         }
@@ -5250,7 +5252,7 @@ namespace System.Diagnostics.Tracing
 
         public void AddEventParameter(
 #if !ES_BUILD_STANDALONE
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 #endif
             Type type,
             string name)
@@ -5380,8 +5382,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-        Justification = "Calls to GetFields on types in mapsTab is safe " +
-        "since all its members are preserved")]
+        Justification = "Calls to GetFields on types in mapsTab are safe since all their members are preserved")]
         private string CreateManifestString()
         {
 #if !ES_BUILD_STANDALONE
@@ -5789,19 +5790,11 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-        Justification = "The recursive call GetType is safe since the type is not an enum in " +
-        "the 2nd call")]
-        private string GetTypeName(
-#if !ES_BUILD_STANDALONE
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-#endif
-        Type type)
+        private string GetTypeName(Type type)
         {
             if (type.IsEnum)
             {
-                FieldInfo[] fields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                string typeName = GetTypeName(fields[0].FieldType);
+                string typeName = GetTypeName(type.GetEnumUnderlyingType());
                 return typeName.Replace("win:Int", "win:UInt"); // ETW requires enums to be unsigned.
             }
 
