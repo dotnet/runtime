@@ -131,7 +131,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45674", TestPlatforms.Browser)]
         public async Task ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
@@ -148,7 +147,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45674", TestPlatforms.Browser)]
         public async Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
