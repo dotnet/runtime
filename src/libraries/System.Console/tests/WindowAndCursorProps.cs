@@ -276,9 +276,8 @@ public class WindowAndCursorProps
         AssertExtensions.Throws<ArgumentNullException>("value", () => Console.Title = null);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     [OuterLoop] // makes noise, not very inner-loop friendly
-    [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
     public static void Beep_Invoke_Success()
     {
         // Nothing to verify; just run the code.

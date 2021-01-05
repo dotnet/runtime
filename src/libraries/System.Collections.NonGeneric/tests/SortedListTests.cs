@@ -1537,9 +1537,8 @@ namespace System.Collections.Tests
         private SortedList _sortListGrandDaughter;
         private const int NumberOfElements = 100;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void GetSyncRootBasic()
         {
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working

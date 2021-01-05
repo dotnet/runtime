@@ -451,9 +451,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
 
     public sealed class TaskWaitAllAny
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskWaitAllAny0()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Heavy);
@@ -463,7 +462,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskWaitAllAny1()
         {
@@ -505,9 +504,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskWaitAllAny5()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -533,9 +531,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskWaitAllAny7()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -810,9 +807,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskWaitAllAny31()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -896,9 +892,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskWaitAllAny33()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryLight);
@@ -908,9 +903,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskWaitAllAny34()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -946,9 +940,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskWaitAllAny37()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryHeavy);
@@ -1035,9 +1028,8 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskWaitAllAny45()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);

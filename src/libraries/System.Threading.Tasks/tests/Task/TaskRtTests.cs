@@ -12,9 +12,8 @@ namespace System.Threading.Tasks.Tests
 {
     public static class TaskRtTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunRunTests()
         {
             //
@@ -129,9 +128,8 @@ namespace System.Threading.Tasks.Tests
             Assert.True(future2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Future(unwrapped) w/ uncanceled token did not end in RanToCompletion state.");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunRunTests_Cancellation_Negative()
         {
             CancellationTokenSource cts = new CancellationTokenSource();

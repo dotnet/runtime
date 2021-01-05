@@ -1334,9 +1334,8 @@ namespace System.Threading.Tasks.Tests
         }
 
         // creates a large number of tasks and does WaitAll on them from a thread of the specified apartment state
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunTaskWaitAllTests()
         {
             Assert.Throws<ArgumentNullException>(() => Task.WaitAll((Task[])null));

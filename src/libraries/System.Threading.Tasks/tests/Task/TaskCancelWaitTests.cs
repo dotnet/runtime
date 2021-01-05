@@ -72,9 +72,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait5()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "RespectParentCancellation");
@@ -107,9 +106,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait7()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning");
@@ -188,9 +186,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait11()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "AttachedToParent");
@@ -229,9 +226,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait13()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -266,9 +262,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait15()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "None");
@@ -321,9 +316,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait18()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "None");
@@ -359,9 +353,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait20()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, RespectParentCancellation");
@@ -472,9 +465,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait26()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning");
@@ -488,9 +480,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait27()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "RespectParentCancellation");
@@ -512,9 +503,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait28()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "AttachedToParent");
@@ -540,9 +530,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait29()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, RespectParentCancellation");
@@ -558,9 +547,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait30()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, RespectParentCancellation");
@@ -583,9 +571,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait31()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -596,9 +583,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait32()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "RespectParentCancellation");
@@ -609,9 +595,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait33()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "None");
@@ -633,9 +618,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait34()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, RespectParentCancellation");
@@ -658,9 +642,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait35()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -674,9 +657,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait36()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "AttachedToParent");
@@ -702,9 +684,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait37()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, RespectParentCancellation");
@@ -720,9 +701,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait38()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "AttachedToParent");
@@ -733,9 +713,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait39()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -751,9 +730,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait40()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, RespectParentCancellation");
@@ -776,9 +754,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait41()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "AttachedToParent");
@@ -804,9 +781,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait42()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning");
@@ -820,9 +796,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait43()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, RespectParentCancellation");
@@ -844,9 +819,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait44()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "AttachedToParent");
@@ -857,9 +831,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait45()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, RespectParentCancellation");
@@ -882,9 +855,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait46()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, RespectParentCancellation");
@@ -898,9 +870,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait47()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, RespectParentCancellation");
@@ -922,9 +893,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait48()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, RespectParentCancellation");
@@ -946,9 +916,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait49()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, AttachedToParent");
@@ -959,9 +928,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait50()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning");
@@ -984,9 +952,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait51()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "RespectParentCancellation");
@@ -1000,9 +967,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait52()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "None");
@@ -1028,9 +994,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait53()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "AttachedToParent");
@@ -1044,9 +1009,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait54()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, AttachedToParent");
@@ -1072,9 +1036,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait55()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -1085,9 +1048,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait56()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning");
@@ -1103,9 +1065,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait57()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, AttachedToParent");
@@ -1119,9 +1080,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait58()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "AttachedToParent");
@@ -1147,9 +1107,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait59()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "RespectParentCancellation");
@@ -1165,9 +1124,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait60()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning");
@@ -1183,9 +1141,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait61()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, RespectParentCancellation");
@@ -1208,9 +1165,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait62()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "None");
@@ -1226,9 +1182,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait63()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -1254,9 +1209,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait64()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, RespectParentCancellation");
@@ -1279,9 +1233,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait65()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning");
@@ -1303,9 +1256,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait66()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "RespectParentCancellation");
@@ -1327,9 +1279,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait67()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -1340,9 +1291,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait68()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, RespectParentCancellation");
@@ -1364,9 +1314,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait69()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "None");
@@ -1380,9 +1329,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait70()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, RespectParentCancellation");
@@ -1408,9 +1356,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait71()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -1432,9 +1379,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait72()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "AttachedToParent");
@@ -1457,9 +1403,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait73()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "RespectParentCancellation");
@@ -1485,9 +1430,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait74()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "None");
@@ -1503,9 +1447,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait75()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning");
@@ -1521,9 +1464,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait76()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -1534,9 +1476,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait77()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "None");
@@ -1559,9 +1500,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait78()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, AttachedToParent");
@@ -1583,9 +1523,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait79()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -1608,9 +1547,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait80()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, AttachedToParent");
@@ -1621,9 +1559,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait81()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "RespectParentCancellation");
@@ -1646,9 +1583,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait82()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "None");
@@ -1670,9 +1606,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait83()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "RespectParentCancellation");
@@ -1688,9 +1623,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait84()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning");
@@ -1701,9 +1635,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait85()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "RespectParentCancellation");
@@ -1717,9 +1650,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait86()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, RespectParentCancellation");
@@ -1745,9 +1677,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait87()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "AttachedToParent");
@@ -1758,9 +1689,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait88()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning");
@@ -1774,9 +1704,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait89()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, RespectParentCancellation");
@@ -1790,9 +1719,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait90()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, RespectParentCancellation");
@@ -1818,9 +1746,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait91()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning");
@@ -1836,9 +1763,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait92()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, AttachedToParent");
@@ -1854,9 +1780,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait93()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, AttachedToParent");
@@ -1872,9 +1797,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait94()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -1890,9 +1814,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait95()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "AttachedToParent");
@@ -1903,9 +1826,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait96()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, RespectParentCancellation");
@@ -1928,9 +1850,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait97()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, RespectParentCancellation");
@@ -1956,9 +1877,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait98()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -1969,9 +1889,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait99()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, RespectParentCancellation");
@@ -1985,9 +1904,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait100()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning");
@@ -2009,9 +1927,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait101()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "RespectParentCancellation");
@@ -2027,9 +1944,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait102()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, AttachedToParent");
@@ -2052,9 +1968,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait103()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, AttachedToParent");
@@ -2076,9 +1991,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait104()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, RespectParentCancellation");
@@ -2092,9 +2006,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait105()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, RespectParentCancellation");
@@ -2105,9 +2018,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait106()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, RespectParentCancellation");
@@ -2129,9 +2041,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait107()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, AttachedToParent");
@@ -2154,9 +2065,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait108()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "RespectParentCancellation");
@@ -2182,9 +2092,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait109()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "RespectParentCancellation");
@@ -2210,9 +2119,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait110()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, AttachedToParent");
@@ -2226,9 +2134,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait111()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "None");
@@ -2250,9 +2157,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait112()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "AttachedToParent");
@@ -2274,9 +2180,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait113()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -2290,9 +2195,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait114()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, RespectParentCancellation");
@@ -2308,9 +2212,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait115()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -2321,9 +2224,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait116()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "AttachedToParent");
@@ -2346,9 +2248,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait117()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, AttachedToParent");
@@ -2374,9 +2275,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait118()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "AttachedToParent");
@@ -2399,9 +2299,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait119()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning");
@@ -2427,9 +2326,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait120()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, RespectParentCancellation");
@@ -2440,9 +2338,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait121()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, RespectParentCancellation");
@@ -2458,9 +2355,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait122()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, AttachedToParent");
@@ -2474,9 +2370,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait123()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -2492,9 +2387,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait124()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "None");
@@ -2505,9 +2399,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait125()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, RespectParentCancellation");
@@ -2521,9 +2414,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait126()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "AttachedToParent");
@@ -2539,9 +2431,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait127()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -2563,9 +2454,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait128()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "RespectParentCancellation");
@@ -2587,9 +2477,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait129()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "LongRunning, AttachedToParent");
@@ -2615,9 +2504,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait130()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "AttachedToParent");
@@ -2643,9 +2531,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait131()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, RespectParentCancellation");
@@ -2667,9 +2554,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait132()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, AttachedToParent");
@@ -2683,9 +2569,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait133()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -2711,9 +2596,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait134()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -2724,9 +2608,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait135()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning");
@@ -2749,9 +2632,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait136()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, RespectParentCancellation");
@@ -2774,9 +2656,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait137()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -2792,9 +2673,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait138()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "None");
@@ -2816,9 +2696,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait139()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "RespectParentCancellation");
@@ -2841,9 +2720,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait140()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "RespectParentCancellation");
@@ -2857,9 +2735,8 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void TaskCancelWait141()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, RespectParentCancellation");

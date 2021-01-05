@@ -371,9 +371,8 @@ namespace System.Threading.Tests
             EnsurePostPhaseThrew(barrier);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunBarrierTest10a()
         {
             // Regression test for Barrier race condition

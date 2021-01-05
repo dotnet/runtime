@@ -1469,8 +1469,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [OuterLoop("Runs for several seconds")]
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Unregister_ConcurrentUse_ThreadSafe()
         {
             CancellationTokenRegistration reg = default;

@@ -42,11 +42,10 @@ namespace System.Threading.Tasks.Tests
         /// </summary>
         private const int LongTaskMilliseconds = 100;
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void WaitUntilCompleteTechnique(bool hasReturnType)
         {
             _hasReturnType = hasReturnType;
@@ -111,11 +110,10 @@ namespace System.Threading.Tasks.Tests
             Assert.False(asyncResult.CompletedSynchronously, "Should not have completed synchronously.");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void CallbackTechnique(bool hasReturnType)
         {
             _hasReturnType = hasReturnType;

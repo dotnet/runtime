@@ -1007,9 +1007,8 @@ namespace System.Collections.Tests
 
         private const int MAX_TEST_TIME_MS = 10000; // 10 seconds
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void GetItem_ThreadSafety()
         {
             int i1 = 0x10;
@@ -1101,9 +1100,8 @@ namespace System.Collections.Tests
         private Hashtable _hash2;
         private int _iNumberOfElements = 20;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public void SynchronizedThreadSafety()
         {
             const int NumberOfWorkers = 3;

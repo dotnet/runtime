@@ -69,14 +69,13 @@ namespace System.Threading.Tests
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(2, false)]
         [InlineData(128, false)]
         [InlineData(256, false)]
         [InlineData(2, true)]
         [InlineData(128, true)]
         [InlineData(256, true)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunSpinLockTest0_Enter(int threadsCount, bool enableThreadIDs)
         {
             // threads array
@@ -140,14 +139,13 @@ namespace System.Threading.Tests
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(2, false)]
         [InlineData(128, false)]
         [InlineData(256, false)]
         [InlineData(2, true)]
         [InlineData(128, true)]
         [InlineData(256, true)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunSpinLockTest1_TryEnter(int threadsCount, bool enableThreadIDs)
         {
             for (int j = 0; j < 2; j++)
@@ -195,14 +193,13 @@ namespace System.Threading.Tests
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(2, false)]
         [InlineData(128, false)]
         [InlineData(256, false)]
         [InlineData(2, true)]
         [InlineData(128, true)]
         [InlineData(256, true)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Cannot wait on monitors on this runtime.
         public static void RunSpinLockTest2_TryEnter(int threadsCount, bool enableThreadIDs)
         {
             for (int j = 0; j < 2; j++)
