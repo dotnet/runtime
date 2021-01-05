@@ -3670,9 +3670,8 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
  *
  * The wrapper is
  *
- * retType wrapper (fnPtrBoxed, arg1... argN) {
+ * retType wrapper (fnPtr, arg1... argN) {
  *   enter_gc_safe;
- *   fnPtr = unbox (fnPtrBoxed)
  *   ret = fnPtr (arg1, ... argN);
  *   exit_gc_safe;
  *   return ret;

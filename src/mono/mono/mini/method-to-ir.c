@@ -7080,15 +7080,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #endif
 					/* Call the wrapper that will do the GC transition instead */
 					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
-					/* box the indirect function ptr */
-					/* FIXME: it would be nice if the wrapper didn't require a boxed argument */
-
-					MONO_INST_NEW (cfg, ins, OP_BOX);
-					ins->type = STACK_OBJ;
-					ins->klass = mono_defaults.int_class;
-					ins->sreg1 = addr->dreg;
-					ins->dreg = alloc_dreg (cfg, STACK_PTR);
-					MONO_ADD_INS (cfg->cbb, ins);
 
 					fsig = mono_method_signature_internal (wrapper);
 
@@ -7102,7 +7093,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						sp [1] = sp [0];
 					}
 
-					sp[0] = ins; /* n+1 args, first arg is the boxed address of the indirect method to call */
+					sp[0] = addr; /* n+1 args, first arg is the address of the indirect method to call */
 
 					g_assert (!fsig->hasthis && !fsig->pinvoke);
 
@@ -7111,7 +7102,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						int costs = inline_method (cfg, wrapper, fsig, sp, ip, cfg->real_offset, TRUE);
 						CHECK_CFG_EXCEPTION;
 						g_assert (costs > 0);
-						cfg->real_offset += 5; /* FIXME: why? */
+						cfg->real_offset += 5;
 						inline_costs += costs;
 						ins = sp[0];
 					} else {
