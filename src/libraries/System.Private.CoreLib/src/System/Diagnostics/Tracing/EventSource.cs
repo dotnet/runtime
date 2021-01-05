@@ -2938,6 +2938,11 @@ namespace System.Diagnostics.Tracing
                     }
                 }
 
+                // Scoping the call to GetFields to a local function to limit the linker suppression
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification = "Nested type members are safe from linker with the parent annotation")]
+                static FieldInfo[] GetNestedFields(Type nestedType) => nestedType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
                 // Collect task, opcode, keyword and channel information
 #if FEATURE_MANAGED_ETW_CHANNELS && FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
                 foreach (var providerEnumKind in new string[] { "Keywords", "Tasks", "Opcodes", "Channels" })
@@ -2954,7 +2959,7 @@ namespace System.Diagnostics.Tracing
                         }
                         else
                         {
-                            foreach (FieldInfo staticField in nestedType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+                            foreach (FieldInfo staticField in GetNestedFields(nestedType))
                             {
                                 AddProviderEnumKind(manifest, staticField, providerEnumKind);
                             }
@@ -3088,18 +3093,13 @@ namespace System.Diagnostics.Tracing
                             }
                         }
 
-                        // Scoping the call to AddEventParameter to a local function to limit the linker suppression
-                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-                        Justification = "All eventSourceType's members in their entirety are preserved with the parameter tagging")]
-                        void CallAddEventParameter(Type type, string name) => manifest.AddEventParameter(type, name);
-
                         bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
                         if (!(source != null && source.SelfDescribingEvents))
                         {
                             manifest.StartEvent(eventName, eventAttribute);
                             for (int fieldIdx = 0; fieldIdx < args.Length; fieldIdx++)
                             {
-                                CallAddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name!);
+                                manifest.AddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name!);
                             }
                             manifest.EndEvent();
                         }
@@ -5376,8 +5376,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentException(msg);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-        Justification = "Calls to GetFields on types in mapsTab are safe since all their members are preserved")]
         private string CreateManifestString()
         {
 #if !ES_BUILD_STANDALONE
@@ -5460,6 +5458,16 @@ namespace System.Diagnostics.Tracing
             }
 
             // Write out the maps
+
+            // Scoping the call to enum GetFields to a local function to limit the linker suppression
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Linker does not trim enums")]
+            static FieldInfo[] GetEnumFields(Type localEnumType)
+            {
+                Debug.Assert(localEnumType.IsEnum);
+                return localEnumType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+            }
+
             if (mapsTab != null)
             {
                 sb.AppendLine(" <maps>");
@@ -5470,7 +5478,7 @@ namespace System.Diagnostics.Tracing
                     sb.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).AppendLine("\">");
 
                     // write out each enum value
-                    FieldInfo[] staticFields = enumType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                    FieldInfo[] staticFields = GetEnumFields(enumType);
                     bool anyValuesWritten = false;
                     foreach (FieldInfo staticField in staticFields)
                     {
