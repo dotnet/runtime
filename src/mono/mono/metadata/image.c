@@ -2493,6 +2493,7 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->native_wrapper_aot_check_cache);
 
 	free_hash (cache->native_func_wrapper_aot_cache);
+	free_hash (cache->native_func_wrapper_indirect_cache);
 	free_hash (cache->remoting_invoke_cache);
 	free_hash (cache->synchronized_cache);
 	free_hash (cache->unbox_wrapper_cache);
