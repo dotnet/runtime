@@ -10,9 +10,9 @@
   <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
         <WasmAppDir>$(AppDir)</WasmAppDir>
-        <WasmAOTDir>$(PublishDir)</WasmAOTDir>
+        <WasmBuildDir>$(PublishDir)</WasmBuildDir>
         <WasmMainJSPath>runtime.js</WasmMainJSPath>
-        <WasmMainAssemblyPath>$(WasmAotDir)$(TestName).dll</WasmMainAssemblyPath>
+        <WasmMainAssemblyPath>$(WasmBuildDir)$(TestName).dll</WasmMainAssemblyPath>
     </PropertyGroup>
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
