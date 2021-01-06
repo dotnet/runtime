@@ -11923,7 +11923,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 tree->AsOp()->gtOp1 = op1->gtGetOp1();
                 DEBUG_DESTROY_NODE(op1);
                 op2->AsIntCon()->SetIconValue(-op2->AsIntCon()->IconValue()); // -C
-                return tree;
+                return fgMorphSmpOp(tree, mac);
             }
 
 #ifndef TARGET_64BIT
@@ -12086,7 +12086,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 tree->AsOp()->gtOp1 = op1->gtGetOp1();
                 DEBUG_DESTROY_NODE(op1);
                 op2->AsIntCon()->SetIconValue(-op2->AsIntCon()->IconValue()); // -C
-                return tree;
+                return fgMorphSmpOp(tree, mac);
             }
 
 #ifndef TARGET_64BIT
