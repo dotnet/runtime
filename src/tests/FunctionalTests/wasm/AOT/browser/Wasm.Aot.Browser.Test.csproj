@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <WasmModeSpecificPath>\aot\browser\</WasmModeSpecificPath>
+  </PropertyGroup>
+
+  <Import Project="..\..\common.props" />
+
+  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
+    <PropertyGroup>
+        <WasmAppDir>$(AppDir)</WasmAppDir>
+        <WasmBuildDir>$(PublishDir)</WasmBuildDir>
+        <WasmMainJSPath>runtime.js</WasmMainJSPath>
+        <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
+    <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(AppDir)" />
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Content Include="index.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Import Project="..\..\common.targets" />
+
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
+</Project>

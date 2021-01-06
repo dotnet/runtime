@@ -1,14 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>Link</TrimMode>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
-  </PropertyGroup>
+
+  <Import Project="..\..\common.props" />
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
@@ -50,10 +42,10 @@
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         SourceDir="$(PublishDir)"
-        ProjectName="HelloAndroid"
-        ForceInterpreter="$(MonoForceInterpreter)"
+        ProjectName="Android.Emulator.Interpreter.Test"
+        ForceInterpreter="True"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
-        MainLibraryFileName="$(AssemblyName).dll"
+        MainLibraryFileName="Android.Emulator.Interpreter.Test.dll"
         StripDebugSymbols="$(StripDebugSymbols)"
         OutputDir="$(ApkDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
@@ -62,17 +54,6 @@
 
     <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
-
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) kill-server"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) start-server"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) logcat -c" ContinueOnError="WarnAndContinue" />
-    <Message Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Importance="High" Text="Uninstalling apk (ignore errors if any):"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' != 'true' and '$(ArchiveTests)' != 'true'"
-          Command="$(AdbTool) shell am instrument -e env:MONO_LOG_LEVEL warning -e env:MONO_LOG_MASK all -w net.dot.HelloAndroid/net.dot.MonoRunner"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) shell am start -n net.dot.HelloAndroid/net.dot.MainActivity" />
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) logcat -d" />
   </Target>
 
   <ItemGroup>
@@ -80,14 +61,10 @@
   </ItemGroup>
 
   <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
           AfterTargets="Build"
           DependsOnTargets="Publish;BuildApp" >
     <PropertyGroup>
-      <!-- Helix properties -->
-      <!-- AnyCPU as Platform-->
       <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-      <!-- <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig> -->
       <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
       <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>

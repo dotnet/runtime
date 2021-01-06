@@ -48,7 +48,7 @@
       UseAotDataFile="false"
       AotModulesTablePath="$(WasmBuildDir)driver-gen.c"
       UseLLVM="true"
-        DisableParallelAot="true"
+      DisableParallelAot="true"
       LLVMPath="$(EMSDK_PATH)\upstream\bin">
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblies" />
     </MonoAOTCompiler>
@@ -104,7 +104,8 @@
     <ItemGroup>
       <_managedAppAssemblies Include="$(WasmAppDir)managed\*.dll"/>
     </ItemGroup>
-    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
+    <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
+    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
   </Target>
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp" Condition="'$(WasmBuildNative)' == 'true'">
@@ -120,13 +121,15 @@
     <PropertyGroup>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
+      <_EmsdkEnvSourceCommand>source $(EMSDK_PATH)/emsdk_env.sh</_EmsdkEnvSourceCommand>
+      <_EmccCommand>$(_EmsdkEnvSourceCommand) &amp;&amp; emcc</_EmccCommand>
     </PropertyGroup>
 
     <ReadLinesFromFile File="$(RuntimeEmccVersionFile)">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
 
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc --version | head -1 > emcc-version.txt" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
+    <Exec Command="bash -c '$(_EmccCommand) --version | head -1 > emcc-version.txt'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
     <ReadLinesFromFile File="$(EmccPublishVersionFile)">
         <Output TaskParameter="Lines" PropertyName="EmccVersion" />
     </ReadLinesFromFile>
@@ -166,16 +169,15 @@
    <PropertyGroup>
      <_WasmIncludeDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/include</_WasmIncludeDir>
      <_WasmSrcDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/src</_WasmSrcDir>
-     <_WasmEmcc>source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc</_WasmEmcc>
      <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 -I$(WasmBuildDir) -I$(_WasmIncludeDir)/mono-2.0 -I$(_WasmIncludeDir)/wasm</EmccCFlags>
      <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
    </PropertyGroup>
 
-    <Exec Command="$(_WasmEmcc) $(EmccCFlags) $(_WasmSrcDir)/driver.c -c -o driver.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
-    <Exec Command="$(_WasmEmcc) $(EmccCFlags) $(_WasmSrcDir)/corebindings.c -c -o corebindings.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
-    <Exec Command="$(_WasmEmcc) $(EmccCFlags) $(_WasmSrcDir)/pinvoke.c -c -o pinvoke.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
-    <Exec Command="$(_WasmEmcc) $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o dotnet.js" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
-    <Exec Condition="'$(WasmNativeStrip)' == 'true'" Command="$(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf dotnet.wasm -o dotnet.wasm" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
+    <Exec Command="bash -c '$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/driver.c -c -o driver.o'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Command="bash -c '$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/corebindings.c -c -o corebindings.o'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Command="bash -c '$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/pinvoke.c -c -o pinvoke.o'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Command="bash -c '$(_EmccCommand) $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o dotnet.js'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Condition="'$(WasmNativeStrip)' == 'true'" Command="bash -c '$(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf dotnet.wasm -o dotnet.wasm'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
   </Target>
 
   <Target Name="_GenerateRunV8Script">
