@@ -54,6 +54,9 @@ namespace BasicEventSourceTests
                     Thread.Sleep(TimeSpan.FromSeconds(5));
 
                     tracesession.Flush();
+
+                    Thread.Sleep(TimeSpan.FromSeconds(5));
+
                     tracesession.DisableProvider("SimpleEventSource");
                     tracesession.Dispose();
 
@@ -86,6 +89,8 @@ namespace BasicEventSourceTests
                     Thread.Sleep(TimeSpan.FromSeconds(5));
 
                     tracesession.Flush();
+
+                    Thread.Sleep(TimeSpan.FromSeconds(5));
 
                     tracesession.SetFileName(rolloverFile);
 
