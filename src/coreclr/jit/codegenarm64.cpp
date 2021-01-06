@@ -9695,11 +9695,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rOffset, -(ssize_t)pageSize);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rLimit, -(ssize_t)frameSize);
 
-        //
-        // Can't have a label inside the ReJIT padding area
-        //
-        genPrologPadForReJit();
-
         // There's a "virtual" label here. But we can't create a label in the prolog, so we use the magic
         // `emitIns_J` with a negative `instrCount` to branch back a specific number of instructions.
 

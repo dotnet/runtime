@@ -68,7 +68,7 @@ public:
         CORJIT_FLAG_MAKEFINALCODE           = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN              = 19, // Use version-resilient code generation
         CORJIT_FLAG_PROF_ENTERLEAVE         = 20, // Instrument prologues/epilogues
-        CORJIT_FLAG_PROF_REJIT_NOPS         = 21, // Insert NOPs to ensure code is re-jitable
+        CORJIT_FLAG_UNUSED11                = 21,
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE  = 22, // Disables PInvoke inlining
         CORJIT_FLAG_SKIP_VERIFICATION       = 23, // (lazy) skip verification - determined without doing a full resolve. See comment below
         CORJIT_FLAG_PREJIT                  = 24, // jit or prejit is the execution engine.
@@ -81,43 +81,43 @@ public:
         CORJIT_FLAG_FRAMED                  = 31, // All methods have an EBP frame
         CORJIT_FLAG_ALIGN_LOOPS             = 32, // add NOPs before loops to align them at 16 byte boundaries
         CORJIT_FLAG_PUBLISH_SECRET_PARAM    = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
-        CORJIT_FLAG_UNUSED11                = 34,
+        CORJIT_FLAG_UNUSED12                = 34,
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS     = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE         = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        CORJIT_FLAG_UNUSED12                = 38,
+        CORJIT_FLAG_UNUSED13                = 38,
         CORJIT_FLAG_TIER0                   = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1                   = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
 
 #if defined(TARGET_ARM)
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 41, // JIT should generate PC-relative address computations instead of EE relocation records
 #else // !defined(TARGET_ARM)
-        CORJIT_FLAG_UNUSED13                = 41,
+        CORJIT_FLAG_UNUSED14                = 41,
 #endif // !defined(TARGET_ARM)
 
         CORJIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
-        CORJIT_FLAG_UNUSED14                = 43,
-        CORJIT_FLAG_UNUSED15                = 44,
-        CORJIT_FLAG_UNUSED16                = 45,
-        CORJIT_FLAG_UNUSED17                = 46,
-        CORJIT_FLAG_UNUSED18                = 47,
-        CORJIT_FLAG_UNUSED19                = 48,
-        CORJIT_FLAG_UNUSED20                = 49,
-        CORJIT_FLAG_UNUSED21                = 50,
-        CORJIT_FLAG_UNUSED22                = 51,
-        CORJIT_FLAG_UNUSED23                = 52,
-        CORJIT_FLAG_UNUSED24                = 53,
-        CORJIT_FLAG_UNUSED25                = 54,
-        CORJIT_FLAG_UNUSED26                = 55,
-        CORJIT_FLAG_UNUSED27                = 56,
-        CORJIT_FLAG_UNUSED28                = 57,
-        CORJIT_FLAG_UNUSED29                = 58,
-        CORJIT_FLAG_UNUSED30                = 59,
-        CORJIT_FLAG_UNUSED31                = 60,
-        CORJIT_FLAG_UNUSED32                = 61,
-        CORJIT_FLAG_UNUSED33                = 62,
-        CORJIT_FLAG_UNUSED34                = 63
+        CORJIT_FLAG_UNUSED15                = 43,
+        CORJIT_FLAG_UNUSED16                = 44,
+        CORJIT_FLAG_UNUSED17                = 45,
+        CORJIT_FLAG_UNUSED18                = 46,
+        CORJIT_FLAG_UNUSED19                = 47,
+        CORJIT_FLAG_UNUSED20                = 48,
+        CORJIT_FLAG_UNUSED21                = 49,
+        CORJIT_FLAG_UNUSED22                = 50,
+        CORJIT_FLAG_UNUSED23                = 51,
+        CORJIT_FLAG_UNUSED24                = 52,
+        CORJIT_FLAG_UNUSED25                = 53,
+        CORJIT_FLAG_UNUSED26                = 54,
+        CORJIT_FLAG_UNUSED27                = 55,
+        CORJIT_FLAG_UNUSED28                = 56,
+        CORJIT_FLAG_UNUSED29                = 57,
+        CORJIT_FLAG_UNUSED30                = 58,
+        CORJIT_FLAG_UNUSED31                = 59,
+        CORJIT_FLAG_UNUSED32                = 60,
+        CORJIT_FLAG_UNUSED33                = 61,
+        CORJIT_FLAG_UNUSED34                = 62,
+        CORJIT_FLAG_UNUSED35                = 63
     };
 
     CORJIT_FLAGS()
