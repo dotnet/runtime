@@ -497,7 +497,7 @@ var BindingSupportLib = {
 			// you need to use a view. A view provides a context — that is, a data type, starting offset, 
 			// and number of elements — that turns the data into an actual typed array.
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-			if (!!(js_obj.buffer instanceof ArrayBuffer && js_obj.BYTES_PER_ELEMENT)) 
+			if (!!((js_obj.buffer instanceof ArrayBuffer || js_obj.buffer instanceof SharedArrayBuffer) && js_obj.BYTES_PER_ELEMENT))
 			{
 				var arrayType = js_obj[Symbol.for("wasm type")];
 				var heapBytes = this.js_typedarray_to_heap(js_obj);
@@ -523,7 +523,7 @@ var BindingSupportLib = {
 			// you need to use a view. A view provides a context — that is, a data type, starting offset, 
 			// and number of elements — that turns the data into an actual typed array.
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-			if (!!(typed_array.buffer instanceof ArrayBuffer && typed_array.BYTES_PER_ELEMENT)) 
+			if (!!((typed_array.buffer instanceof ArrayBuffer || typed_array.buffer instanceof SharedArrayBuffer) && typed_array.BYTES_PER_ELEMENT))
 			{
 				// Some sanity checks of what is being asked of us
 				// lets play it safe and throw an error here instead of assuming to much.
@@ -566,7 +566,7 @@ var BindingSupportLib = {
 			// you need to use a view. A view provides a context — that is, a data type, starting offset, 
 			// and number of elements — that turns the data into an actual typed array.
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-			if (!!(typed_array.buffer instanceof ArrayBuffer && typed_array.BYTES_PER_ELEMENT)) 
+			if (!!((typed_array.buffer instanceof ArrayBuffer || typed_array.buffer instanceof SharedArrayBuffer) && typed_array.BYTES_PER_ELEMENT))
 			{
 				// Some sanity checks of what is being asked of us
 				// lets play it safe and throw an error here instead of assuming to much.
