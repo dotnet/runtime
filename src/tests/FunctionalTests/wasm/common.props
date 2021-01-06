@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <OutputPath>$(RepoRoot)artifacts\bin\$(TestName)</OutputPath>
+    <OutputPath>$(RepoRoot)artifacts\bin\$(AssemblyName)</OutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RunAOTCompilation>false</RunAOTCompilation>
-    <TestName>Wasm.Interpreter.Console.Test</TestName>
     <WasmModeSpecificPath>\interpreter\console\</WasmModeSpecificPath>
   </PropertyGroup>
 
@@ -11,7 +10,7 @@
     <PropertyGroup>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
-      <WasmMainAssemblyPath>$(PublishDir)$(TestName).dll</WasmMainAssemblyPath>
+      <WasmMainAssemblyPath>$(PublishDir)$(AssemblyName).dll</WasmMainAssemblyPath>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
     <ItemGroup>

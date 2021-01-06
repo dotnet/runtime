@@ -15,7 +15,6 @@
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <RunAnalyzers>false</RunAnalyzers>
-    <SampleName>$(AssemblyName)</SampleName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
@@ -42,7 +41,7 @@
       <WasmAppDir>$(AppBundleDir)</WasmAppDir>
       <WasmBuildDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmBuildDir>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
-      <WasmMainAssemblyPath>$(WasmBuildDir)$(SampleName).dll</WasmMainAssemblyPath>
+      <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
     <ItemGroup>
@@ -65,7 +64,7 @@
       <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
       <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/console/</HelixArchiveRunOnlyAppsDir>
-      <ZippedApp>$(OutputPath)$(SampleName).zip</ZippedApp>
+      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
     </PropertyGroup>
     <ZipDirectory SourceDirectory="$(AppBundleDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />

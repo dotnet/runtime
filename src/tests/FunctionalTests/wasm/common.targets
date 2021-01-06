@@ -18,7 +18,7 @@
       <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
       <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)$(WasmModeSpecificPath)/</HelixArchiveRunOnlyAppsDir>
-      <ZippedApp>$(OutputPath)$(TestName).zip</ZippedApp>
+      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
     </PropertyGroup>
     <ZipDirectory SourceDirectory="$(AppDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />

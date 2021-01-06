@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RunAOTCompilation>true</RunAOTCompilation>
-    <TestName>Wasm.Aot.Browser.Test</TestName>
     <WasmModeSpecificPath>\aot\browser\</WasmModeSpecificPath>
   </PropertyGroup>
 
@@ -12,7 +11,7 @@
         <WasmAppDir>$(AppDir)</WasmAppDir>
         <WasmBuildDir>$(PublishDir)</WasmBuildDir>
         <WasmMainJSPath>runtime.js</WasmMainJSPath>
-        <WasmMainAssemblyPath>$(WasmBuildDir)$(TestName).dll</WasmMainAssemblyPath>
+        <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
     </PropertyGroup>
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
