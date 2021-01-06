@@ -130,12 +130,12 @@ namespace Microsoft.Extensions.DependencyInjection
             public int Offset { get; }
             public StringBuilder Builder { get; }
 
-            public bool ShouldFormat(ServiceCallSite serviceCallSite)
+            public readonly bool ShouldFormat(ServiceCallSite serviceCallSite)
             {
                 return _processedCallSites.Add(serviceCallSite);
             }
 
-            public CallSiteFormatterContext IncrementOffset()
+            public readonly CallSiteFormatterContext IncrementOffset()
             {
                 return new CallSiteFormatterContext(Builder, Offset + 4, _processedCallSites)
                 {
@@ -143,13 +143,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 };
             }
 
-            public CallSiteFormatterContext StartObject()
+            public readonly CallSiteFormatterContext StartObject()
             {
                 Builder.Append('{');
                 return IncrementOffset();
             }
 
-            public void EndObject()
+            public readonly void EndObject()
             {
                 Builder.Append('}');
             }
@@ -192,13 +192,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
-            public CallSiteFormatterContext StartArray()
+            public readonly CallSiteFormatterContext StartArray()
             {
                 Builder.Append('[');
                 return IncrementOffset();
             }
 
-            public void EndArray()
+            public readonly void EndArray()
             {
                 Builder.Append(']');
             }
