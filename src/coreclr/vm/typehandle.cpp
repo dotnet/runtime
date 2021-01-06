@@ -388,6 +388,7 @@ Instantiation TypeHandle::GetInstantiation() const
 BOOL TypeHandle::IsValueType()  const
 {
     LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(!IsNull());
 
     if (!IsTypeDesc()) return AsMethodTable()->IsValueType();
     else return AsTypeDesc()->IsNativeValueType();

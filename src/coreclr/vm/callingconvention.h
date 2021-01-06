@@ -218,7 +218,9 @@ struct TransitionBlock
 #if defined(UNIX_AMD64_ABI)
         _ASSERTE(offset != TransitionBlock::StructInRegsOffset);
 #endif
-        return (offset - GetOffsetOfArgumentRegisters()) / TARGET_POINTER_SIZE;
+        offset -= GetOffsetOfArgumentRegisters();
+        _ASSERTE((offset % TARGET_POINTER_SIZE) == 0);
+        return offset / TARGET_POINTER_SIZE;
     }
 
     static UINT GetStackArgumentIndexFromOffset(int offset)
@@ -319,6 +321,7 @@ public:
         if (!(m_dwFlags & SIZE_OF_ARG_STACK_COMPUTED))
             ForceSigWalk();
         _ASSERTE((m_dwFlags & SIZE_OF_ARG_STACK_COMPUTED) != 0);
+        _ASSERTE((m_nSizeOfArgStack % TARGET_POINTER_SIZE) == 0);
         return m_nSizeOfArgStack;
     }
 
@@ -336,7 +339,7 @@ public:
         // The argument registers are not included in the stack size on AMD64
         size += ARGUMENTREGISTERS_SIZE;
 #endif
-
+        _ASSERTE((size % TARGET_POINTER_SIZE) == 0);
         return size;
     }
 
@@ -1428,9 +1431,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     default:
         break;
     }
+    const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
+    const int cbArg = StackElemSize(argSize, isValueType);
+    const int cArgSlots = cbArg / STACK_ELEM_SIZE;
 
-    int cbArg = StackElemSize(argSize);
-    int cArgSlots = cbArg / STACK_ELEM_SIZE;
 
     if (cFPRegs>0 && !this->IsVarArg())
     {
@@ -1734,7 +1738,8 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         stackElemSize = STACK_ELEM_SIZE;
 #endif // UNIX_AMD64_ABI
 #else // TARGET_AMD64
-        stackElemSize = StackElemSize(GetArgSize());
+        const bool isValueType = (GetArgType() == ELEMENT_TYPE_VALUETYPE);
+        stackElemSize = StackElemSize(GetArgSize(), isValueType);
 #if defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
         if (IsArgPassedByRef())
             stackElemSize = STACK_ELEM_SIZE;
