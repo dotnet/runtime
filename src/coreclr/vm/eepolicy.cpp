@@ -348,12 +348,23 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 {
     WRAPPER_NO_CONTRACT;
 
-    static volatile LONG s_recursionGuard = 0;
+    static volatile LONG s_crashingThreadId = 0;
 
-    if (::InterlockedCompareExchange(&s_recursionGuard, 1, 0) != 0)
+    LONG currentThread = GetCurrentThreadId();
+    LONG previousThread = ::InterlockedCompareExchange(&s_crashingThreadId, currentThread, 0);
+
+    if (previousThread == currentThread)
     {
-        PrintToStdErrA("Repeated fatal crash skipped to avoid infinite recursion and interaction between crashing threads.");
+        PrintToStdErrA("Repeated fatal crash ignored to avoid infinite recursion.\n");
         return;
+    }
+    else if (previousThread != 0)
+    {
+        PrintToStdErrA("Fatal crash detected on another thread, waiting for termination...\n");
+        for (;;)
+        {
+            ClrSleepEx(1000, /*bAlertable*/ FALSE);
+        }
     }
 
     Thread *pThread = GetThread();

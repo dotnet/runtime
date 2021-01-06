@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestExitCode>-2146232797</CLRTestExitCode>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ParallelCrash.cs" />
+  </ItemGroup>
+</Project>
