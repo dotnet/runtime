@@ -4,6 +4,11 @@
 
 #include "config.h"
 
+#if defined(TARGET_OSX)
+/* So we can use the declaration of pthread_jit_write_protect_np () */
+#define _DARWIN_C_SOURCE
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -661,7 +666,7 @@ mono_code_manager_size (MonoCodeManager *cman, int *used_size)
 void
 mono_codeman_enable_write (void)
 {
-#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+#if defined(HAVE_PTHREAD_JIT_WRITE_PROTECT_NP) && defined(TARGET_OSX)
 	if (__builtin_available (macOS 11, *)) {
 		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
 		level ++;
@@ -680,7 +685,7 @@ mono_codeman_enable_write (void)
 void
 mono_codeman_disable_write (void)
 {
-#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+#if defined(HAVE_PTHREAD_JIT_WRITE_PROTECT_NP) && defined(TARGET_OSX)
 	if (__builtin_available (macOS 11, *)) {
 		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
 		g_assert (level);

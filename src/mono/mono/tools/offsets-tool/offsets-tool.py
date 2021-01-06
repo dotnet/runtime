@@ -151,6 +151,11 @@ class OffsetsTool:
 			self.target = Target ("TARGET_AMD64", "", IOS_DEFINES)
 			self.target_args += ["-arch", "x86_64"]
 			self.target_args += ["-isysroot", args.sysroot]
+		elif "aarch64-apple-darwin20" == args.abi:
+			require_sysroot (args)
+			self.target = Target ("TARGET_ARM64", "TARGET_OSX", IOS_DEFINES)
+			self.target_args += ["-arch", "arm64"]
+			self.target_args += ["-isysroot", args.sysroot]
 
 		# watchOS
 		elif "armv7k-apple-darwin" == args.abi:

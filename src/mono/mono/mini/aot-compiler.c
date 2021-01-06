@@ -12378,6 +12378,10 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_OPTIONS "-arch i386"
 #elif defined(TARGET_X86) && !defined(TARGET_MACH)
 #define AS_OPTIONS "--32"
+#elif defined(TARGET_AMD64) && defined(TARGET_OSX)
+#define AS_OPTIONS "-arch x86_64"
+#elif defined(TARGET_ARM64) && defined(TARGET_OSX)
+#define AS_OPTIONS "-arch arm64"
 #else
 #define AS_OPTIONS ""
 #endif
@@ -12407,7 +12411,7 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_OPTIONS "--shared"
 #elif defined(TARGET_ARM64) && defined(TARGET_OSX)
 #define LD_NAME "clang"
-#define LD_OPTIONS "--shared"
+#define LD_OPTIONS "--shared -arch arm64"
 #elif defined(TARGET_WIN32_MSVC)
 #define LD_NAME "link.exe"
 #define LD_OPTIONS "/DLL /MACHINE:X64 /NOLOGO /INCREMENTAL:NO"
