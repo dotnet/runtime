@@ -91,12 +91,41 @@ bool ReadCompressedInts(const uint8_t *pByte, size_t cbDataMax, IntHandler intPr
 {
     while (cbDataMax > 0)
     {
+        // This logic is a variant on CorSigUncompressSignedInt which allows for the full range of an int32_t
         int32_t signedInt;
-        uint32_t bytesRead = CorSigUncompressSignedInt(pByte, &signedInt);
-        if (cbDataMax < bytesRead)
-            return false;
-        cbDataMax -= bytesRead;
-        pByte += bytesRead;
+        if ((*pByte & 0x80) == 0x0) // 0??? ????
+        {
+            signedInt = *pByte >> 1;
+            if (*pByte & 1)
+                signedInt |= SIGN_MASK_ONEBYTE;
+
+            pByte += 1;
+            cbDataMax -=1;
+        }
+        else if ((*pByte & 0xC0) == 0x80) // 10?? ????
+        {
+            if (cbDataMax < 2)
+                return false;
+            
+            int shiftedInt = ((*pByte & 0x3f) << 8) | *(pByte + 1);
+            signedInt = shiftedInt >> 1;
+            if (shiftedInt & 1)
+                signedInt |= SIGN_MASK_TWOBYTE;
+
+            pByte += 2;
+            cbDataMax -= 2;
+        }
+        else
+        {
+            if (cbDataMax < 5)
+                return false;
+
+            signedInt = (int32_t)((*(pByte + 1) << 24 | *(pByte+2) << 16 | *(pByte+3) << 8 | *(pByte+4)));
+
+            pByte += 5;
+            cbDataMax -= 5;
+        }
+        
         if (!intProcessor(signedInt))
         {
             return false;
@@ -259,7 +288,7 @@ inline void LayoutPgoInstrumentationSchema(const PgoInstrumentationSchema& prevS
     size_t instrumentationSize = InstrumentationKindToSize(currentSchema->InstrumentationKind);
     if (instrumentationSize != 0)
     {
-        currentSchema->Offset = (UINT)AlignUp((size_t)prevSchema.Offset + (size_t)InstrumentationKindToSize(prevSchema.InstrumentationKind),
+        currentSchema->Offset = (UINT)AlignUp((size_t)prevSchema.Offset + (size_t)InstrumentationKindToSize(prevSchema.InstrumentationKind) * prevSchema.Count,
                                         InstrumentationKindToAlignment(currentSchema->InstrumentationKind));
     }
     else
@@ -298,19 +327,34 @@ inline bool ReadInstrumentationDataWithLayoutIntoSArray(const uint8_t *pByte, si
 template<class ByteWriter>
 bool WriteCompressedIntToBytes(int32_t value, ByteWriter& byteWriter)
 {
-    uint8_t bytes[4];
-    uint32_t bytesToWrite = CorSigCompressSignedInt(value, bytes);
-    uint8_t*pByte = bytes;
-    
-    while (bytesToWrite > 0)
-    {
-        if (!byteWriter(*pByte))
-            return false;
-        bytesToWrite--;
-        pByte++;
-    }
+    uint8_t isSigned = 0;
 
-    return true;
+    // This function is modeled on CorSigCompressSignedInt, but differs in that
+    // it handles arbitrary int32 values, not just a subset
+    if (value < 0)
+        isSigned = 1;
+
+    if ((value & SIGN_MASK_ONEBYTE) == 0 || (value & SIGN_MASK_ONEBYTE) == SIGN_MASK_ONEBYTE)
+    {
+        return byteWriter((uint8_t)((value & ~SIGN_MASK_ONEBYTE) << 1 | isSigned));
+    }
+    else if ((value & SIGN_MASK_TWOBYTE) == 0 || (value & SIGN_MASK_TWOBYTE) == SIGN_MASK_TWOBYTE)
+    {
+        int32_t iData = (int32_t)((value & ~SIGN_MASK_TWOBYTE) << 1 | isSigned);
+        _ASSERTE(iData <= 0x3fff);
+        byteWriter(uint8_t((iData >> 8) | 0x80));
+        return byteWriter(uint8_t(iData & 0xff));
+    }
+    else
+    {
+        // Unlike CorSigCompressSignedInt, this just writes a header bit
+        // then a full 4 bytes, ignoring the whole signed bit detail
+        byteWriter(0xC0);
+        byteWriter(uint8_t((value >> 24) & 0xff));
+        byteWriter(uint8_t((value >> 16) & 0xff));
+        byteWriter(uint8_t((value >> 8) & 0xff));
+        return byteWriter(uint8_t((value >> 0) & 0xff));
+    }
 }
 
 template<class ByteWriter>

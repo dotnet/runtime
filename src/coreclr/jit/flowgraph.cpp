@@ -613,7 +613,7 @@ void Compiler::fgInstrumentMethod()
                     bool m_instrument;
 
                 public:
-                    int m_count;
+                    int m_count = 0;
 
                     ClassProbeInserter(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema, BYTE* profileMemory, int *pCurrentSchemaIndex, bool instrument) :
                         m_schema(schema),

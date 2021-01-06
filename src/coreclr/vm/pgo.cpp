@@ -208,41 +208,46 @@ void PgoManager::WritePgoData()
         if (!ReadInstrumentationDataWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, [data, pgoDataFile] (const PgoInstrumentationSchema &schema)
         {
             fprintf(pgoDataFile, s_RecordString, schema.InstrumentationKind, schema.ILOffset, schema.Count, schema.Other);
-            switch(schema.InstrumentationKind & PgoInstrumentationKind::MarshalMask)
+            for (int32_t iEntry = 0; iEntry < schema.Count; iEntry++)
             {
-                case PgoInstrumentationKind::None:
-                    fprintf(pgoDataFile, s_None);
-                    break;
-                case PgoInstrumentationKind::FourByte:
-                    fprintf(pgoDataFile, s_FourByte, (unsigned)*(uint32_t*)(data + schema.Offset));
-                    break;
-                case PgoInstrumentationKind::EightByte:
-                    // Print a pair of 4 byte values as the PRIu64 specifier isn't generally avaialble
-                    fprintf(pgoDataFile, s_EightByte, (unsigned)*(uint32_t*)(data + schema.Offset), (unsigned)*(uint32_t*)(data + schema.Offset + 4));
-                    break;
-                case PgoInstrumentationKind::TypeHandle:
-                    {
-                        TypeHandle th = *(TypeHandle*)(data + schema.Offset);
-                        if (th.IsNull())
+                size_t entryOffset = schema.Offset + iEntry * InstrumentationKindToSize(schema.InstrumentationKind);
+
+                switch(schema.InstrumentationKind & PgoInstrumentationKind::MarshalMask)
+                {
+                    case PgoInstrumentationKind::None:
+                        fprintf(pgoDataFile, s_None);
+                        break;
+                    case PgoInstrumentationKind::FourByte:
+                        fprintf(pgoDataFile, s_FourByte, (unsigned)*(uint32_t*)(data + entryOffset));
+                        break;
+                    case PgoInstrumentationKind::EightByte:
+                        // Print a pair of 4 byte values as the PRIu64 specifier isn't generally avaialble
+                        fprintf(pgoDataFile, s_EightByte, (unsigned)*(uint32_t*)(data + entryOffset), (unsigned)*(uint32_t*)(data + entryOffset + 4));
+                        break;
+                    case PgoInstrumentationKind::TypeHandle:
                         {
-                            fprintf(pgoDataFile, s_TypeHandle, "NULL");
-                        }
-                        else
-                        {
-                            StackSString ss;
-                            StackScratchBuffer nameBuffer;
-                            TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
-                            if (ss.GetCount() > 8192)
+                            TypeHandle th = *(TypeHandle*)(data + entryOffset);
+                            if (th.IsNull())
                             {
-                                fprintf(pgoDataFile, s_TypeHandle, "unknown");
+                                fprintf(pgoDataFile, s_TypeHandle, "NULL");
                             }
                             else
                             {
-                                fprintf(pgoDataFile, s_TypeHandle, ss.GetUTF8(nameBuffer));
+                                StackSString ss;
+                                StackScratchBuffer nameBuffer;
+                                TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
+                                if (ss.GetCount() > 8192)
+                                {
+                                    fprintf(pgoDataFile, s_TypeHandle, "unknown");
+                                }
+                                else
+                                {
+                                    fprintf(pgoDataFile, s_TypeHandle, ss.GetUTF8(nameBuffer));
+                                }
                             }
+                            break;
                         }
-                        break;
-                    }
+                }
             }
             return true;
         }
@@ -371,99 +376,95 @@ void PgoManager::ReadPgoData()
 
             LayoutPgoInstrumentationSchema(lastSchema, &schema);
             schemaElements[i] = schema;
-            COUNT_T maxSize = InstrumentationKindToSize(schema.InstrumentationKind) + (COUNT_T)schema.Offset;
+            COUNT_T entrySize = InstrumentationKindToSize(schema.InstrumentationKind);
+            COUNT_T maxSize = entrySize * schema.Count + (COUNT_T)schema.Offset;
             methodInstrumentationData.SetCount(maxSize);
 
-            if (fgets(buffer, sizeof(buffer), pgoDataFile) == nullptr)
+            for (int32_t iEntry = 0; !failed && iEntry < schema.Count; iEntry++)
             {
-                failed = true;
-                break;
-            }
-
-            switch(schema.InstrumentationKind & PgoInstrumentationKind::MarshalMask)
-            {
-                case PgoInstrumentationKind::None:
-                    if (sscanf_s(buffer, s_None) != 0)
-                    {
-                        failed = true;
-                    }
+                size_t entryOffset = schema.Offset + iEntry * entrySize;
+                if (fgets(buffer, sizeof(buffer), pgoDataFile) == nullptr)
+                {
+                    failed = true;
                     break;
-                case PgoInstrumentationKind::FourByte:
-                    {
-                        unsigned val;
-                        if (sscanf_s(buffer, s_FourByte, &val) != 1)
-                        {
-                            failed = true;
-                        }
-                        else
-                        {
-                            uint8_t *rawBuffer = methodInstrumentationData.OpenRawBuffer(maxSize);
-                            *(uint32_t *)(rawBuffer + schema.Offset) = (uint32_t)val;
-                            methodInstrumentationData.CloseRawBuffer();
-                        }
-                    }
-                    break;
-                case PgoInstrumentationKind::EightByte:
-                    {
-                        // Print a pair of 4 byte values as the PRIu64 specifier isn't generally avaialble
-                        unsigned val, val2;
-                        if (sscanf_s(buffer, s_EightByte, &val, &val2) != 2)
-                        {
-                            failed = true;
-                        }
-                        else
-                        {
-                            uint8_t *rawBuffer = methodInstrumentationData.OpenRawBuffer(maxSize);
-                            *(uint32_t *)(rawBuffer + schema.Offset) = (uint32_t)val;
-                            *(uint32_t *)(rawBuffer + schema.Offset + 4) = (uint32_t)val2;
-                            methodInstrumentationData.CloseRawBuffer();
-                        }
-                    }
-                    break;
-                case PgoInstrumentationKind::TypeHandle:
-                    {
-                        char* typeString;
-                        if (strncmp(buffer, "TypeHandle: ", 12) != 0)
-                        {
-                            failed = true;
-                            break;
-                        }
-                        typeString = buffer + 12;
-                        size_t endOfString = strlen(typeString);
-                        if (endOfString == 0 || (typeString[endOfString - 1] != '\n'))
-                        {
-                            failed = true;
-                            break;
-                        }
-                        // Remove \n and replace will null
-                        typeString[endOfString - 1] = '\0';
+                }
 
-                        TypeHandle th = NULL;
-                        INT_PTR ptrVal = 0;
-                        if (strcmp(typeString, "NULL") != 0)
+                switch(schema.InstrumentationKind & PgoInstrumentationKind::MarshalMask)
+                {
+                    case PgoInstrumentationKind::None:
+                        if (sscanf_s(buffer, s_None) != 0)
                         {
-                            StackSString ss(SString::Utf8, typeString);
-                            GCX_COOP();
-                            OBJECTREF keepAlive = NULL;
-                            GCPROTECT_BEGIN(keepAlive);
-                            th = TypeName::GetTypeManaged(ss.GetUnicode(), NULL, FALSE, FALSE, FALSE, NULL, &keepAlive);
-                            GCPROTECT_END();
-
-                            if (th.IsNull())
+                            failed = true;
+                        }
+                        break;
+                    case PgoInstrumentationKind::FourByte:
+                        {
+                            unsigned val;
+                            if (sscanf_s(buffer, s_FourByte, &val) != 1)
                             {
-                                ptrVal = HashToPgoUnknownTypeHandle(HashStringA(typeString));
+                                failed = true;
                             }
                             else
                             {
-                                ptrVal = (INT_PTR)th.AsPtr();
+                                uint8_t *rawBuffer = methodInstrumentationData.OpenRawBuffer(maxSize);
+                                *(uint32_t *)(rawBuffer + entryOffset) = (uint32_t)val;
+                                methodInstrumentationData.CloseRawBuffer();
                             }
                         }
-
-                        uint8_t *rawBuffer = methodInstrumentationData.OpenRawBuffer(maxSize);
-                        *(INT_PTR *)(rawBuffer + schema.Offset) = ptrVal;
-                        methodInstrumentationData.CloseRawBuffer();
                         break;
-                    }
+                    case PgoInstrumentationKind::EightByte:
+                        {
+                            // Print a pair of 4 byte values as the PRIu64 specifier isn't generally avaialble
+                            unsigned val, val2;
+                            if (sscanf_s(buffer, s_EightByte, &val, &val2) != 2)
+                            {
+                                failed = true;
+                            }
+                            else
+                            {
+                                uint8_t *rawBuffer = methodInstrumentationData.OpenRawBuffer(maxSize);
+                                *(uint32_t *)(rawBuffer + entryOffset) = (uint32_t)val;
+                                *(uint32_t *)(rawBuffer + entryOffset + 4) = (uint32_t)val2;
+                                methodInstrumentationData.CloseRawBuffer();
+                            }
+                        }
+                        break;
+                    case PgoInstrumentationKind::TypeHandle:
+                        {
+                            char* typeString;
+                            if (strncmp(buffer, "TypeHandle: ", 12) != 0)
+                            {
+                                failed = true;
+                                break;
+                            }
+                            typeString = buffer + 12;
+                            size_t endOfString = strlen(typeString);
+                            if (endOfString == 0 || (typeString[endOfString - 1] != '\n'))
+                            {
+                                failed = true;
+                                break;
+                            }
+                            // Remove \n and replace will null
+                            typeString[endOfString - 1] = '\0';
+
+                            TypeHandle th;
+                            INT_PTR ptrVal = 0;
+                            if (strcmp(typeString, "NULL") != 0)
+                            {
+                                // As early type loading is likely problematic, simply drop the string into the data, and fix it up later
+                                void* tempString = malloc(endOfString);
+                                memcpy(tempString, typeString, endOfString);
+
+                                ptrVal = (INT_PTR)tempString;
+                                ptrVal += 1; // Set low bit to indicate that this isn't actually a TypeHandle, but is instead a pointer
+                            }
+
+                            uint8_t *rawBuffer = methodInstrumentationData.OpenRawBuffer(maxSize);
+                            *(INT_PTR *)(rawBuffer + entryOffset) = ptrVal;
+                            methodInstrumentationData.CloseRawBuffer();
+                            break;
+                        }
+                }
             }
 
             if (failed)
@@ -690,7 +691,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     }
 }
 
-
+#ifndef DACCESS_COMPILE
 HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
 {
     // Initialize our out params
@@ -726,8 +727,59 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInst
             {
                 if (ReadInstrumentationDataWithLayoutIntoSArray(found->GetData(), found->countsOffset, found->countsOffset, pSchema))
                 {
-                    *pInstrumentationData = found->GetData();
-                    hr = S_OK;
+                    EX_TRY
+                    {
+                        // TypeHandles can't reliably be loaded at ReadPGO time
+                        // Instead, translate them before leaving this method.
+                        // The ReadPgo method will place pointers to C style null
+                        // terminated strings in the TypeHandle slots, and this will
+                        // translate any of those into loaded TypeHandles as appropriate
+
+                        for (unsigned iSchema = 0; iSchema < pSchema->GetCount(); iSchema++)
+                        {
+                            PgoInstrumentationSchema *schema = &(*pSchema)[iSchema];
+                            if ((schema->InstrumentationKind & PgoInstrumentationKind::MarshalMask) == PgoInstrumentationKind::TypeHandle)
+                            {
+                                for (int iEntry = 0; iEntry < schema->Count; iEntry++)
+                                {
+                                    INT_PTR* typeHandleValueAddress = (INT_PTR*)(found->GetData() + schema->Offset + iEntry * InstrumentationKindToSize(schema->InstrumentationKind));
+                                    INT_PTR initialTypeHandleValue = VolatileLoad(typeHandleValueAddress);
+                                    if (((initialTypeHandleValue & 1) == 1) && !IsUnknownTypeHandle(initialTypeHandleValue))
+                                    {
+                                        INT_PTR newPtr = 0;
+                                        TypeHandle th;
+                                        char* typeString = ((char *)initialTypeHandleValue) - 1;
+
+                                        // Don't attempt to load any types until the EE is started
+                                        if (g_fEEStarted)
+                                        {
+                                            StackSString ss(SString::Utf8, typeString);
+                                            th = TypeName::GetTypeManaged(ss.GetUnicode(), NULL, FALSE, FALSE, FALSE, NULL, NULL);
+                                        }
+
+                                        if (th.IsNull())
+                                        {
+                                            newPtr = HashToPgoUnknownTypeHandle(HashStringA(typeString));
+                                        }
+                                        else
+                                        {
+                                            newPtr = (INT_PTR)th.AsPtr();
+                                        }
+                                        InterlockedCompareExchangeT(typeHandleValueAddress, newPtr, initialTypeHandleValue);
+                                    }
+                                }
+                            }
+                        }
+
+                        *pInstrumentationData = found->GetData();
+                        hr = S_OK;
+                    }
+                    EX_CATCH
+                    {
+                        hr = E_FAIL;
+                    }
+                    EX_END_CATCH(RethrowTerminalExceptions)
+
                 }
                 else
                 {
@@ -740,6 +792,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInst
 
     return hr;
 }
+#endif // DACCESS_COMPILE
 
 HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, SArray<PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
 {
@@ -812,7 +865,7 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
         {
             // Form a histogram
             //
-            Histogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset), (INT_PTR*)(pInstrumentationData + schema[i].Offset), schema[i + 1].Count);
+            Histogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset), (INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
 
             // Use histogram count as number of classes estimate
             //
