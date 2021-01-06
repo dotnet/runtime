@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
+using System.Diagnostics;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
@@ -10,18 +10,13 @@ namespace System.Reflection
 {
     internal static class AssemblyNameFormatter
     {
-        public static string ComputeDisplayName(string? name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags, AssemblyContentType contentType)
+        public static string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0)
         {
             const int PUBLIC_KEY_TOKEN_LEN = 8;
-
-            if (name == string.Empty)
-                throw new FileLoadException();
+            Debug.Assert(name.Length != 0);
 
             StringBuilder sb = new StringBuilder();
-            if (name != null)
-            {
-                sb.AppendQuoted(name);
-            }
+            sb.AppendQuoted(name);
 
             if (version != null)
             {
