@@ -1,9 +1,8 @@
-# Template to evaluate common paths in different pipelines.
 parameters:
   extraSubsets: ''
 
 jobs:
-- template: /eng/pipelines/common/evaluate-paths-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
   parameters:
     paths:
     - subset: coreclr
