@@ -2481,8 +2481,7 @@ public:
     U1ARRAYREF GetWatsonBucketReference()
     {
         LIMITED_METHOD_CONTRACT;
-        PTR_U1Array buckets = (PTR_U1Array)OBJECTREFToObject(_watsonBuckets);
-        return U1ARRAYREF(buckets);
+        return _watsonBuckets;
     }
 
     // This method will return a BOOL to indicate if the

@@ -10573,10 +10573,10 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
 
             if (gotWatsonBucketDetails)
             {
-            // Set the flag that we got bucketing details for the exception
-            pCurExState->GetFlags()->SetGotWatsonBucketDetails();
-            LOG((LF_EH, LL_INFO1000, "SetStateForWatsonBucketing - Using innermost exception details for Watson bucketing for thrown exception.\n"));
-        }
+                // Set the flag that we got bucketing details for the exception
+                pCurExState->GetFlags()->SetGotWatsonBucketDetails();
+                LOG((LF_EH, LL_INFO1000, "SetStateForWatsonBucketing - Using innermost exception details for Watson bucketing for thrown exception.\n"));
+            }
         }
 done:;
     }
