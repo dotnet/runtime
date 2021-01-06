@@ -1131,6 +1131,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/ReflectObj/reflectobj/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/doublinknoleak2/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/nstructtun/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/SingLinkList/singlinkgen/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1880,6 +1886,9 @@
 
         <!-- The following only fail in the mono interpreter, but we don't have a way to exclude based on scenario yet -->
 
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/tail/**">
             <Issue>https://github.com/dotnet/runtime/issues/37955</Issue>
         </ExcludeList>
