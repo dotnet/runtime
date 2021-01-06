@@ -764,7 +764,7 @@ public:
             pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
             int argOnStackSize;
             if (IsArgPassedByRef())
-                argOnStackSize = STACK_ELEM_SIZE;
+                argOnStackSize = TARGET_POINTER_SIZE;
             else
                 argOnStackSize = GetArgSize();
             pLoc->m_cStack = (argOnStackSize + STACK_ELEM_SIZE - 1) / STACK_ELEM_SIZE;
@@ -1198,9 +1198,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     m_fArgInRegisters = false;
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_idxStack * STACK_ELEM_SIZE;
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_idxStack * TARGET_POINTER_SIZE;
 
-    int cArgSlots = cbArg / STACK_ELEM_SIZE;
+    int cArgSlots = cbArg / TARGET_POINTER_SIZE;
     m_idxStack += cArgSlots;
 
     return argOfs;

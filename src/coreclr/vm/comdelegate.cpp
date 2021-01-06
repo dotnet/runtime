@@ -605,13 +605,13 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
             entry.srcofs = ShuffleOfs(ofsSrc);
             entry.dstofs = ShuffleOfs(ofsDst, stackSizeDelta);
 
-            ofsSrc += STACK_ELEM_SIZE;
-            ofsDst += STACK_ELEM_SIZE;
+            ofsSrc += TARGET_POINTER_SIZE;
+            ofsDst += TARGET_POINTER_SIZE;
 
             if (entry.srcofs != entry.dstofs)
                 pShuffleEntryArray->Append(entry);
 
-            cbSize -= STACK_ELEM_SIZE;
+            cbSize -= TARGET_POINTER_SIZE;
         }
         while (cbSize > 0);
     }
