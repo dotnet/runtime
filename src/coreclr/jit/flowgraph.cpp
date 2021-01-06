@@ -10957,6 +10957,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
                     block->bbNum);
         }
     }
+
     // If we're collapsing a block created after the dominators are
     // computed, copy block number the block and reuse dominator
     // information from bNext to block.
