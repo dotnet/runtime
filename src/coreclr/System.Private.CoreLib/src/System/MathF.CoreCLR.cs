@@ -93,6 +93,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Sin(float x);
 
+        [Intrinsic]
         public static unsafe (float Sin, float Cos) SinCos(float x)
         {
             float sin, cos;
@@ -122,7 +123,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe float ModF(float x, float* intptr);
 
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void SinCos(float x, float* sin, float* cos);
     }
