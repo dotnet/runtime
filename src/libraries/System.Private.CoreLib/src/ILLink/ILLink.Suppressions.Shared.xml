@@ -75,12 +75,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2067</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.__ComObject.CreateEventProvider(System.RuntimeType)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Diagnostics.Tracing.ManifestBuilder.GetTypeName(System.Type)</property>

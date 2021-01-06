@@ -8,7 +8,13 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
     public sealed class ComEventInterfaceAttribute : Attribute
     {
-        public ComEventInterfaceAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type SourceInterface, Type EventProvider)
+        private const DynamicallyAccessedMemberTypes EventProviderAccessedMemberTypes =
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields;
+
+        public ComEventInterfaceAttribute(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type SourceInterface,
+            [DynamicallyAccessedMembers(EventProviderAccessedMemberTypes)] Type EventProvider)
         {
             this.SourceInterface = SourceInterface;
             this.EventProvider = EventProvider;
@@ -16,6 +22,7 @@ namespace System.Runtime.InteropServices
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public Type SourceInterface { get; }
+        [DynamicallyAccessedMembers(EventProviderAccessedMemberTypes)]
         public Type EventProvider { get; }
     }
 }
