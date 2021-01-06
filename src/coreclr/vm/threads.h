@@ -4606,12 +4606,6 @@ public:
 #endif // FEATURE_HIJACK
 
 public:
-    OBJECTHANDLE GetOrCreateDeserializationTracker();
-
-private:
-    OBJECTHANDLE m_DeserializationTracker;
-
-public:
     static uint64_t dead_threads_non_alloc_bytes;
 
 #ifndef DACCESS_COMPILE
