@@ -22,8 +22,6 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/>
         /// class with the default type converter, which is an empty string ("").
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2079:DynamicallyAccessedMembersNotSatisfied",
-            Justification = "The ConverterTypeName value can be empty to signify the 'default' type converter.")]
         public TypeConverterAttribute()
         {
             ConverterTypeName = string.Empty;
