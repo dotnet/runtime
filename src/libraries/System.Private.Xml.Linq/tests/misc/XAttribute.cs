@@ -35,13 +35,12 @@ namespace System.Xml.Linq.Tests
             CultureInfo newCulture = null;
             try
             {
-                newCulture = new CultureInfo("SE-SW");
+                newCulture = new CultureInfo("sv-SE");
             }
             catch (CultureNotFoundException) { /* Do nothing */ }
 
             using (new ThreadCultureChange(newCulture))
             {
-
                 Assert.Equal('-', (new XAttribute("a", value)).Value[0]);
             }
         }
@@ -68,7 +67,7 @@ namespace System.Xml.Linq.Tests
             CultureInfo newCulture = null;
             try
             {
-                newCulture = new CultureInfo("SE-SW");
+                newCulture = new CultureInfo("sv-SE");
             }
             catch (CultureNotFoundException) { /* Do nothing */ }
 
