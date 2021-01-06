@@ -5258,7 +5258,15 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
         return;
     }
 
-    CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)objRef->GetMethodTable();
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    // If the object class is collectible, record NULL
+    // for the class handle.
+    //
+    if (pMT->GetLoaderAllocator()->IsCollectible())
+    {
+        pMT = NULL;
+    }
 
 #ifdef _DEBUG
     PgoManager::VerifyAddress(classProfile);
@@ -5269,7 +5277,7 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
     //
     if (count < S)
     {
-        classProfile->ClassTable[count] = clsHnd;
+        classProfile->ClassTable[count] = (CORINFO_CLASS_HANDLE)pMT;
     }
     else
     {
@@ -5301,7 +5309,7 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
         if ((x % N) < S)
         {
             unsigned i = x % S;
-            classProfile->ClassTable[i] = clsHnd;
+            classProfile->ClassTable[i] = (CORINFO_CLASS_HANDLE)pMT;
         }
     }
 }
@@ -5541,8 +5549,6 @@ void InitJITHelpers2()
 #if defined(TARGET_X86) || defined(TARGET_ARM)
     SetJitHelperFunction(CORINFO_HELP_INIT_PINVOKE_FRAME, (void *)GenerateInitPInvokeFrameHelper()->GetEntryPoint());
 #endif // TARGET_X86 || TARGET_ARM
-
-    ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(GetThread), ECall::InternalGetCurrentThread);
 
     InitJitHelperLogging();
 

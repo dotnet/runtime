@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="WasmBuildApp">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputType>Library</OutputType>
     <NoWarn>219</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RunAnalyzers>false</RunAnalyzers>
-    <DebugType>portable</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

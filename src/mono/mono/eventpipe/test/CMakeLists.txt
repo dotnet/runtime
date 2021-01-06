@@ -54,7 +54,7 @@ if(ENABLE_PERFTRACING)
         endif()
 
         set(CMAKE_SKIP_RPATH 1)
-        add_executable(ep-test ${EVENTPIPE_TEST_SOURCES})
+        add_executable(ep-test ${EVENTPIPE_TEST_SOURCES} ${EVENTPIPE_TEST_HEADERS})
         target_link_libraries(ep-test monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
         if(ICU_LDFLAGS)
             set_target_properties(ep-test PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})

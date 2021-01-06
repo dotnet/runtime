@@ -2087,6 +2087,11 @@ void ModelPolicy::NoteInt(InlineObservation obs, int value)
     // Let underlying policy do its thing.
     DiscretionaryPolicy::NoteInt(obs, value);
 
+    if (InlDecisionIsFailure(m_Decision))
+    {
+        return;
+    }
+
     // Fail fast for inlinees that are too large to ever inline.
     // The value of 120 is model-dependent; see notes above.
     if (!m_IsForceInline && (obs == InlineObservation::CALLEE_IL_CODE_SIZE) && (value >= 120))
@@ -2094,18 +2099,6 @@ void ModelPolicy::NoteInt(InlineObservation obs, int value)
         // Callee too big, not a candidate
         SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
         return;
-    }
-
-    // Safeguard against overly deep inlines
-    if (obs == InlineObservation::CALLSITE_DEPTH)
-    {
-        unsigned depthLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth();
-
-        if (m_CallsiteDepth > depthLimit)
-        {
-            SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
-            return;
-        }
     }
 }
 
@@ -2271,6 +2264,11 @@ void ProfilePolicy::NoteInt(InlineObservation obs, int value)
     // Let underlying policy do its thing.
     DiscretionaryPolicy::NoteInt(obs, value);
 
+    if (InlDecisionIsFailure(m_Decision))
+    {
+        return;
+    }
+
     // Fail fast for inlinees that are too large to ever inline.
     //
     if (!m_IsForceInline && (obs == InlineObservation::CALLEE_IL_CODE_SIZE) && (value >= 1000))
@@ -2278,18 +2276,6 @@ void ProfilePolicy::NoteInt(InlineObservation obs, int value)
         // Callee too big, not a candidate
         SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
         return;
-    }
-
-    // Safeguard against overly deep inlines
-    if (obs == InlineObservation::CALLSITE_DEPTH)
-    {
-        unsigned depthLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth();
-
-        if (m_CallsiteDepth > depthLimit)
-        {
-            SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
-            return;
-        }
     }
 
     // This observation happens after we determine profitability
