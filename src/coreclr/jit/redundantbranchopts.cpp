@@ -76,7 +76,6 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     BasicBlock* prevBlock   = block;
     BasicBlock* domBlock    = block->bbIDom;
     int         relopValue  = -1;
-    bool        wasThreaded = false;
 
     if (domBlock == nullptr)
     {
@@ -113,7 +112,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 //
                 if (domCmpVN == tree->GetVN(VNK_Liberal))
                 {
-                    // Thes compare in "tree" is redundant.
+                    // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
                     JITDUMP(FMT_BB " has dominating relop with same liberal VN:\n", domBlock->bbNum);
@@ -134,7 +133,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         // However we may be able to update the flow from block's predecessors so they
                         // bypass block and instead transfer control to jump's successors (aka jump threading).
                         //
-                        wasThreaded = optJumpThread(block, domBlock);
+                        const bool wasThreaded = optJumpThread(block, domBlock);
 
                         if (wasThreaded)
                         {
@@ -446,13 +445,13 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     {
         // This is possible, but should be rare.
         //
-        JITDUMP(FMT_BB " only has ambiguous preds, not optimizing\n");
+        JITDUMP(FMT_BB " only has ambiguous preds, not optimizing\n", block->bbNum);
         return false;
     }
 
     if ((numAmbiguousPreds > 0) && (fallThroughPred != nullptr))
     {
-        JITDUMP(FMT_BB " has both ambiguous preds and a fall through pred, not optimizing\n");
+        JITDUMP(FMT_BB " has both ambiguous preds and a fall through pred, not optimizing\n", block->bbNum);
         return false;
     }
 
