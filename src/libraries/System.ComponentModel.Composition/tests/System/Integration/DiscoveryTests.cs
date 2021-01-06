@@ -771,7 +771,7 @@ namespace Tests.Integration
         public class FooWithTwoFoos : IFoo1, IFoo2 { }
 
         [Fact]
-	[ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void InheritedExport_TwoInterfaces()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(FooWithTwoFoos));
