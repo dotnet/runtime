@@ -47,18 +47,27 @@ set(NATIVECRYPTO_SOURCES
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_ANDROID)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
 
     # by default uninitialized variables like the shim _ptr functions, will turn into common symbols
     # and on OSX those have linking problems in libraries (ELF vs. Mach-O difference)
     add_compile_options(-fno-common)
+
+    # Needed for LOG_XX macros on Android
+    add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
 endif()
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)
-    list(APPEND NATIVECRYPTO_SOURCES
-        opensslshim.c
-    )
+    if (CLR_CMAKE_TARGET_ANDROID)
+        list(APPEND NATIVECRYPTO_SOURCES
+            opensslshim_android.c
+        )
+    else()
+        list(APPEND NATIVECRYPTO_SOURCES
+            opensslshim.c
+        )
+    endif()
     add_definitions(-DFEATURE_DISTRO_AGNOSTIC_SSL)
 endif()
 
@@ -86,7 +95,7 @@ if (GEN_SHARED_LIB)
         #
         # on Linux, the build will succeed with undefined symbols, then the script reports them
         # and fails the build for us.
-        if (NOT APPLE)
+        if (NOT APPLE AND NOT CLR_CMAKE_TARGET_ANDROID)
             add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
                 COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
                 COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
@@ -111,6 +120,12 @@ if (GEN_SHARED_LIB)
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
         ${NATIVE_LIBS_EXTRA}
     )
+
+    if (CLR_CMAKE_TARGET_ANDROID)
+        target_link_libraries(System.Security.Cryptography.Native.OpenSsl
+            -llog
+        )
+    endif()
 endif()
 
 include(configure.cmake)
