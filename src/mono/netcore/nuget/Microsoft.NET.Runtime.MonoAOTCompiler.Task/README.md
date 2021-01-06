@@ -1,5 +1,5 @@
 # MonoAOTCompiler MSBuild Task NuPkg
-The MonoAOTCompiler MSBuild task is useful outside the context of `dotnet/runtime`. The task is made available through a NuGet Package by packaging the `MonoAOTCompiler.dll` assembly produced from building `MonoAOTCompiler.csproj`. To use the task in a project, download the NuGet package through setting up the proper source and importing the package.
+The `MonoAOTCompiler` MSBuild task is also useful outside the context of `dotnet/runtime`. The task is made available through a NuGet Package containing the `MonoAOTCompiler.dll` assembly produced from building `MonoAOTCompiler.csproj`. To use the task in a project, reference the NuGet package, with the appropriate nuget source.
 
 ## NuGet.config
 ```
