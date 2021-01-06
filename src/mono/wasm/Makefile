@@ -177,6 +177,9 @@ run-tests-%:
 run-browser-tests-%:
 	PATH="$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND=test-browser $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
+run-browser-outerloop-tests-%:
+	PATH="$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND=test-browser $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:OuterLoop=true $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
 run-debugger-tests:
 	if [ ! -z "$(TEST_FILTER)" ]; then \
 		export LC_ALL=en_US.UTF-8; \
