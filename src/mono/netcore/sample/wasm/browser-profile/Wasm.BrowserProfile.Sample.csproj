@@ -40,7 +40,7 @@
     <PropertyGroup>
         <WasmAppDir>$(AppDir)</WasmAppDir>
         <WasmBuildDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmBuildDir>
-        <WasmMainAssemblyPath>$(MSBuildProjectDirectory)\bin\$(AssemblyName).dll</WasmMainAssemblyPath>
+        <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
         <WasmMainJSPath>runtime.js</WasmMainJSPath>
         <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
     </PropertyGroup>
@@ -50,7 +50,7 @@
   </Target>
 
   <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
-    <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(AppDir)" />
+    <Copy SourceFiles="index.html" DestinationFolder="$(AppDir)" />
   </Target>
 
   <ItemGroup>
