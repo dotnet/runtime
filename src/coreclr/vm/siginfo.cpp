@@ -5329,6 +5329,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     {
         STANDARD_VM_CHECK;
         PRECONDITION(callConvOut != NULL);
+        PRECONDITION(suppressGCTransitionOut != NULL);
         PRECONDITION(errorResID != NULL);
     }
     CONTRACTL_END

@@ -6741,7 +6741,6 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         // need to convert the CALLI signature to stub signature with managed calling convention
         BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
 
-
         // Unmanaged calling convention indicates modopt should be read
         if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {

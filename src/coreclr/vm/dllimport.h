@@ -152,8 +152,9 @@ enum NDirectStubFlags
     NDIRECTSTUB_FL_FIELDSETTER              = 0x00004000, // COM->CLR field setter
 #endif // FEATURE_COMINTEROP
     NDIRECTSTUB_FL_SUPPRESSGCTRANSITION     = 0x00008000,
-    NDIRECTSTUB_FL_STUB_HAS_THIS            = 0x00010000,
-    NDIRECTSTUB_FL_TARGET_HAS_THIS          = 0x00020000,
+    // unused                               = 0x00010000,
+    // unused                               = 0x00020000,
+    // unused                               = 0x00040000,
     // unused                               = 0x00080000,
     // unused                               = 0x00100000,
     // unused                               = 0x00200000,
@@ -161,11 +162,12 @@ enum NDirectStubFlags
     // unused                               = 0x00800000,
 
     // internal flags -- these won't ever show up in an NDirectStubHashBlob
-    // unused                               = 0x10000000,
+    NDIRECTSTUB_FL_STUB_HAS_THIS            = 0x10000000,
+    NDIRECTSTUB_FL_TARGET_HAS_THIS          = 0x20000000,
 
 #ifdef FEATURE_COMINTEROP
-    NDIRECTSTUB_FL_COMLATEBOUND             = 0x20000000,   // we use a generic stub for late bound calls
-    NDIRECTSTUB_FL_COMEVENTCALL             = 0x40000000,   // we use a generic stub for event calls
+    NDIRECTSTUB_FL_COMLATEBOUND             = 0x40000000,   // we use a generic stub for late bound calls
+    NDIRECTSTUB_FL_COMEVENTCALL             = 0x80000000,   // we use a generic stub for event calls
 #endif // FEATURE_COMINTEROP
 
     // Note: The upper half of the range is reserved for ILStubTypes enum

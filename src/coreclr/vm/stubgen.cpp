@@ -2167,6 +2167,9 @@ void FunctionSigBuilder::SetSig(PCCOR_SIGNATURE pSig, DWORD cSig)
 void
 FunctionSigBuilder::AddCallConvModOpt(mdToken token)
 {
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(TypeFromToken(token) == mdtTypeDef || TypeFromToken(token) == mdtTypeRef);
+
     int temp;
     ULONG len = CorSigCompressToken(token, &temp);
     m_qbCallConvModOpts.ReSizeThrows(m_qbCallConvModOpts.Size() + 1 + len);
@@ -2400,10 +2403,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
         ULONG   uStubCallingConvInfo;
         IfFailThrow(m_managedSigPtr.GetCallingConvInfo(&uStubCallingConvInfo));
 
-        if ((flags & ILSTUB_LINKER_FLAG_STUB_HAS_THIS) != 0)
-        {
-            m_fHasThis = true;
-        }
+        m_fHasThis = (flags & ILSTUB_LINKER_FLAG_STUB_HAS_THIS) != 0;
 
         //
         // If target calling convention was specified, use it instead.
