@@ -2144,10 +2144,12 @@ public:
         return m_shouldCountCalls;
     }
 
-    void SetShouldCountCalls(bool value = true)
+    void SetShouldCountCalls()
     {
         WRAPPER_NO_CONTRACT;
-        m_shouldCountCalls = value;
+        _ASSERTE(!m_shouldCountCalls);
+
+        m_shouldCountCalls = true;
     }
 #endif
 
