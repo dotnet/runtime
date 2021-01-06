@@ -1041,6 +1041,10 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => DateTime.Parse(""));
             Assert.Throws<FormatException>(() => DateTime.Parse("", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.Parse("", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c"));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
         }
 
         [Theory]
