@@ -59,7 +59,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseAotDataFile { get; set; } = true;
 
     /// <summary>
-    /// Path to AOT profile file.
+    /// File to use for profile-guided optimization.
     /// </summary>
     public string? AotProfilePath { get; set; }
 
@@ -209,7 +209,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         string directory = Path.GetDirectoryName(assembly)!;
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
-        var aotProfileArgs = new List<string>();
         var processArgs = new List<string>();
 
         var a = assemblyItem.GetMetadata("AotArguments");
@@ -312,8 +311,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"profile={AotProfilePath},profile-only");
         }
 
-        processArgs.Add(string.Join(" ", aotProfileArgs));
-
         // we need to quote the entire --aot arguments here to make sure it is parsed
         // on Windows as one argument. Otherwise it will be split up into multiple
         // values, which wont work.
@@ -371,9 +368,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 }
                 writer.WriteLine("}");
 
-                foreach (var profiler in profilers!) {
-                    writer.WriteLine ($"void mono_profiler_init_{profiler} (const char *desc);");
-                    writer.WriteLine ("EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_" + profiler + " (const char *desc) { mono_profiler_init_" + profiler + " (desc); }");
+                foreach (var profiler in profilers!)
+                {
+                    writer.WriteLine($"void mono_profiler_init_{profiler} (const char *desc);");
+                    writer.WriteLine("EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_" + profiler + " (const char *desc) { mono_profiler_init_" + profiler + " (desc); }");
                 }
 
                 if (parsedAotMode == MonoAotMode.LLVMOnly)

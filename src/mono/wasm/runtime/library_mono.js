@@ -1475,7 +1475,7 @@ var MonoSupportLib = {
 			if (args.runtime_options)
 				MONO.mono_wasm_set_runtime_options (args.runtime_options);
 
-			if (args.aot_profiler_options) 
+			if (args.aot_profiler_options)
 				MONO.mono_wasm_init_aot_profiler (args.aot_profiler_options);
 
 			if (args.coverage_profiler_options)

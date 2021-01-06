@@ -107,7 +107,7 @@ internal static partial class Interop
 
         // Called by the AOT profiler to save profile data into Module.aot_profile_data
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static unsafe void DumpAotProfileData(ref byte buf, int len, string s)
+        public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
             if (len == 0)
                 throw new JSException("Profile data length is 0");
@@ -118,7 +118,7 @@ internal static partial class Interop
                 var span = new ReadOnlySpan<byte>(p, len);
                 // Send it to JS
                 var module = (JSObject)Runtime.GetGlobalObject("Module");
-                module.SetObjectProperty("aot_profile_data", Uint8Array.From (span));
+                module.SetObjectProperty("aot_profile_data", Uint8Array.From(span));
             }
         }
     }

@@ -70,9 +70,9 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.GetGlobalObject(str);
         }
 
-        public static void DumpAotProfileData (ref byte buf, int len, string s)
+        public static void DumpAotProfileData (ref byte buf, int len, string extraArg)
         {
-            Interop.Runtime.DumpAotProfileData(ref buf, len, s);
+            Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
         private static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
