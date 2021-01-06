@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+
+  <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
+
+  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
+    <PropertyGroup>
+      <StripDebugSymbols>False</StripDebugSymbols>
+      <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+      <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
+      <ApkDir>$(PublishDir)apk\</ApkDir>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(ApkDir)" />
+
+    <PropertyGroup>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
+    </PropertyGroup>
+
+    <!-- TODO: delete once we switch to Android Crypto -->
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
+
+    <AndroidAppBuilderTask
+        RuntimeIdentifier="$(RuntimeIdentifier)"
+        SourceDir="$(PublishDir)"
+        ProjectName="Android.Emulator.Interpreter.Test"
+        ForceInterpreter="True"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
+        MainLibraryFileName="Android.Emulator.Interpreter.Test.dll"
+        StripDebugSymbols="$(StripDebugSymbols)"
+        OutputDir="$(ApkDir)">
+        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+        <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
+    </AndroidAppBuilderTask>
+
+    <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
+    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+
+  <Target Name="CopySampleAppToHelixTestDir" 
+          AfterTargets="Build"
+          DependsOnTargets="Publish;BuildApp" >
+    <PropertyGroup>
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_apkFiles Include="$(ApkBundlePath)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_apkFiles)"
+          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/%(RecursiveDir)" />
+
+    <Message Importance="High" Text="ApkBundlePath: $(ApkBundlePath)"/>
+    <Message Importance="High" Text="TestArchiveTestsDir: $(TestArchiveTestsDir)"/>
+  </Target>
+</Project>

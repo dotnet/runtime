@@ -1,11 +1,12 @@
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_STREAM_GETTER_SETTER
+#define EP_IMPL_IPC_STREAM_GETTER_SETTER
 #include "ep-stream.h"
+#include "ep-ipc-stream.h"
 #include "ep-rt.h"
 
 /*
@@ -166,7 +167,7 @@ ep_fast_serializer_alloc (StreamWriter *stream_writer)
 	EP_ASSERT (stream_writer != NULL);
 
 	const ep_char8_t signature[] = "!FastSerialization.1"; // the consumer lib expects exactly the same string, it must not be changed
-	uint32_t signature_len = EP_ARRAY_SIZE (signature) - 1;
+	uint32_t signature_len = (uint32_t)(EP_ARRAY_SIZE (signature) - 1);
 
 	FastSerializer *instance = ep_rt_object_alloc (FastSerializer);
 	ep_raise_error_if_nok (instance != NULL);

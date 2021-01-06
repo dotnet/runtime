@@ -288,14 +288,18 @@ TYPED_HANDLE_DECL (MonoMarshalByRefObject);
 /* This is a copy of System.AppDomain */
 struct _MonoAppDomain {
 	MonoMarshalByRefObject mbr;
+#ifndef ENABLE_NETCORE
 	MonoDomain *data;
+#endif
 };
 
 /* Safely access System.AppDomain from native code */
 TYPED_HANDLE_DECL (MonoAppDomain);
 
+#ifndef ENABLE_NETCORE
 /* Safely access System.AppDomainSetup from native code.  (struct is in domain-internals.h) */
 TYPED_HANDLE_DECL (MonoAppDomainSetup);
+#endif
 
 typedef struct _MonoStringBuilder MonoStringBuilder;
 TYPED_HANDLE_DECL (MonoStringBuilder);
@@ -1658,15 +1662,7 @@ typedef enum {
 // Keep in sync with System.Runtime.Loader.AssemblyLoadContext
 typedef struct {
 	MonoObject object;
-	MonoObject *unload_lock;
-	MonoEvent *resolving_unmaned_dll;
-	MonoEvent *resolving;
-	MonoEvent *unloading;
-	MonoString *name;
 	MonoAssemblyLoadContext *native_assembly_load_context;
-	gint64 id;
-	gint32 internal_state;
-	MonoBoolean is_collectible;
 } MonoManagedAssemblyLoadContext;
 
 TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);

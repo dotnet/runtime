@@ -20,6 +20,8 @@ trigger:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
+# This is an official pipeline that should not be triggerable from a PR,
+# there is no public pipeline assosiated with it.
 pr: none
 
 variables:
@@ -38,10 +40,6 @@ variables:
 stages:
 - stage: Build
   jobs:
-  #
-  # Checkout repository
-  #
-  - template: /eng/pipelines/common/checkout-job.yml
 
   #
   # Build CoreCLR
@@ -112,8 +110,8 @@ stages:
       - Browser_wasm
       # - Linux_musl_arm
       # - Linux_musl_arm64
-      # - windows_x64 enable once coreclr.dll has a version header: https://github.com/dotnet/runtime/issues/37503
-      # - windows_x86
+      - windows_x64
+      - windows_x86
       # - windows_arm
       # - windows_arm64
       jobParameters:

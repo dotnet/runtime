@@ -56,6 +56,4 @@ PALEXPORT  int32_t SystemNative_EnumerateInterfaceAddresses(
     IPv4AddressFound onIpv4Found, IPv6AddressFound onIpv6Found, LinkLayerAddressFound onLinkLayerFound);
 PALEXPORT int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo** interfaces, int32_t * addressCount, IpAddressInfo **addressList);
 
-#if HAVE_RT_MSGHDR
 PALEXPORT int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound);
-#endif

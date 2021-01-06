@@ -3436,6 +3436,7 @@ typedef struct
 	int (STDCALL *ArrayIn)(MonoComObject* pUnk, void *array);
 	int (STDCALL *ArrayIn2)(MonoComObject* pUnk, void *array);
 	int (STDCALL *ArrayIn3)(MonoComObject* pUnk, void *array);
+	int (STDCALL *ArrayOut)(MonoComObject* pUnk, guint32 *array, guint32 *result);
 	int (STDCALL *GetDefInterface1)(MonoComObject* pUnk, MonoDefItfObject **iface);
 	int (STDCALL *GetDefInterface2)(MonoComObject* pUnk, MonoDefItfObject **iface);
 } MonoIUnknown;
@@ -3591,6 +3592,12 @@ ArrayIn3(MonoComObject* pUnk, void *array)
 }
 
 LIBTEST_API int STDCALL
+ArrayOut(MonoComObject* pUnk, guint32 *array, guint32 *result)
+{
+	return S_OK;
+}
+
+LIBTEST_API int STDCALL
 GetDefInterface1(MonoComObject* pUnk, MonoDefItfObject **obj)
 {
 	return S_OK;
@@ -3638,6 +3645,7 @@ static void create_com_object (MonoComObject** pOut)
 	(*pOut)->vtbl->ArrayIn = ArrayIn;
 	(*pOut)->vtbl->ArrayIn2 = ArrayIn2;
 	(*pOut)->vtbl->ArrayIn3 = ArrayIn3;
+	(*pOut)->vtbl->ArrayOut = ArrayOut;
 	(*pOut)->vtbl->GetDefInterface1 = GetDefInterface1;
 	(*pOut)->vtbl->GetDefInterface2 = GetDefInterface2;
 }
@@ -5712,6 +5720,29 @@ mono_test_marshal_safearray_in_ccw(MonoComObject *pUnk)
 	SafeArrayDestroy(array);
 
 	return ret;
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_lparray_out_ccw(MonoComObject *pUnk)
+{
+	guint32 array, result;
+	int ret;
+
+	ret = pUnk->vtbl->ArrayOut (pUnk, &array, &result);
+	if (ret)
+		return ret;
+	if (array != 55)
+		return 1;
+	if (result != 1)
+		return 2;
+
+	ret = pUnk->vtbl->ArrayOut (pUnk, NULL, &result);
+	if (ret)
+		return ret;
+	if (result != 0)
+		return 3;
+
+	return 0;
 }
 
 #endif
@@ -8479,6 +8510,46 @@ mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char 
 	// TODO: Win32 version of this test
 	return 1;
 #endif
+}
+
+static const GUID IID_IDrupe = {0x9f001e6b, 0xa244, 0x3911, {0x88,0xdb, 0xbb,0x2b,0x6d,0x58,0x43,0xaa}};
+
+#ifndef HOST_WIN32
+typedef struct IUnknown IUnknown;
+
+typedef struct
+{
+	int (STDCALL *QueryInterface)(IUnknown *iface, REFIID iid, gpointer *out);
+	int (STDCALL *AddRef)(IUnknown *iface);
+	int (STDCALL *Release)(IUnknown *iface);
+} IUnknownVtbl;
+
+struct IUnknown
+{
+	const IUnknownVtbl *lpVtbl;
+};
+#endif
+
+LIBTEST_API int STDCALL
+mono_test_ccw_query_interface (IUnknown *iface)
+{
+	IUnknown *drupe;
+	int hr;
+
+#ifdef __cplusplus
+	hr = iface->QueryInterface (IID_IDrupe, (void **)&drupe);
+#else
+	hr = iface->lpVtbl->QueryInterface (iface, &IID_IDrupe, (void **)&drupe);
+#endif
+	if (hr != 0)
+		return 1;
+#ifdef __cplusplus
+	drupe->Release();
+#else
+	drupe->lpVtbl->Release(drupe);
+#endif
+
+	return 0;
 }
 
 #ifdef __cplusplus

@@ -568,8 +568,6 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException("Method is not a generic method definition");
             if (typeArguments == null)
                 throw new ArgumentNullException(nameof(typeArguments));
-            if (generic_params!.Length != typeArguments.Length)
-                throw new ArgumentException("Incorrect length", nameof(typeArguments));
             foreach (Type type in typeArguments)
             {
                 if (type == null)

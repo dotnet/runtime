@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <Import Project="..\..\common.props" />
+
+  <UsingTask TaskName="AppleAppBuilderTask"
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+
+  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
+    <PropertyGroup>
+      <AppDir>$(PublishDir)\app</AppDir>
+      <IosSimulator Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86'">iPhone 11</IosSimulator>
+      <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(AppDir)" />
+
+    <ItemGroup>
+      <BundleAssemblies Include="$(PublishDir)\*.dll" />
+    </ItemGroup>
+
+    <AppleAppBuilderTask
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="iOS.Simulator.Interpreter.Test"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
+        Assemblies="@(BundleAssemblies)"
+        MainLibraryFileName="iOS.Simulator.Interpreter.Test.dll"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(AppDir)"
+        Optimized="$(Optimized)"
+        ForceAOT="False"
+        ForceInterpreter="$(MonoForceInterpreter)"
+        AppDir="$(PublishDir)">
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
+    <Message Importance="High" Text="App:   $(AppBundlePath)"/>
+  </Target>
+
+  <Import Project="..\..\common.targets" />
+</Project>

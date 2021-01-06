@@ -30,7 +30,7 @@ Consider that you already have a .NET application DLL called HelloWorld.dll and 
 (You could make such a DLL by using 'dotnet new' 'dotnet restore' 'dotnet build' in a 'HelloWorld' directory).
 
 If you execute the following
-```bat
+```cmd
     set PATH=%PATH%;%CoreCLR%\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\
     set CORE_LIBRARIES=%ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\1.0.0
 
@@ -64,7 +64,7 @@ your new runtime.
 When you execute 'runtime/src/tests/build.cmd' one of the things that it does is set up a directory where it
 gathers the CoreCLR that has just been built with the pieces of the class library that tests need.
 It places this runtime in the directory
-```bat
+```cmd
     runtime\artifacts\tests\coreclr\<OS>.<Arch>.<BuildType>\Tests\Core_Root
 ```
 off the CoreCLR Repository.    The way the tests are expected to work is that you set the environment
@@ -72,12 +72,12 @@ variable CORE_ROOT to this directory
 (you don't have to set CORE_LIBRARIES) and you can run any tests.  For example after building the tests
 (running src\tests\build from the repository base) and running 'src\tests\run') you can do the following
 
-```bat
+```cmd
     set PATH=%PATH%;%CoreCLR%\artifacts\Product\windows.x64.Debug
     set CORE_ROOT=%CoreCLR%\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root
 ```
 sets you up so that corerun can run any of the test.   For example
-```bat
+```cmd
     corerun artifacts\tests\coreclr\windows.X64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.exe
 ```
 runs the finalizerio test.

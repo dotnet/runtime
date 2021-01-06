@@ -24,7 +24,7 @@
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --pmi -pmi_location $(SuperPMIDirectory)\pmi.dll </WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll </WorkItemCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>$HELIX_PYTHONPATH</Python>
@@ -34,11 +34,11 @@
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --pmi -pmi_location $(SuperPMIDirectory)/pmi.dll </WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll </WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
-    <WorkItemCommand>$(Python) $(WorkItemCommand) -pmi_assemblies $(PmiAssembliesDirectory) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(WorkItemCommand) -assemblies $(PmiAssembliesDirectory) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -60,7 +60,7 @@
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-      <OutputFileName>$(CollectionName).pmi.%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
+      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)$(CollectionName)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
       <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
