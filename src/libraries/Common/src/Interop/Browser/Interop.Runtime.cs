@@ -109,6 +109,9 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static unsafe void DumpAotProfileData(ref byte buf, int len, string s)
         {
+            if (len == 0)
+                throw new JSException("Profile data length is 0");
+
             var arr = new byte[len];
             fixed (void *p = &buf)
             {
