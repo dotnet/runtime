@@ -21,7 +21,7 @@ jobs:
     shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
-    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging')) }}
+    useCheckoutBundle: ${{ eq(variables['Build.Reason'], 'PullRequest') }}
 
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
