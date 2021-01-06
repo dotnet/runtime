@@ -859,7 +859,7 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
     // TODO This logic should be moved to the JIT
     for (COUNT_T i = 0; i < schema.GetCount(); i++)
     {
-        if (schema[i].ILOffset != ilOffset)
+        if (schema[i].ILOffset != (int32_t)ilOffset)
             continue;
 
         if (((ICorJitInfo::PgoInstrumentationKind)schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount) &&
