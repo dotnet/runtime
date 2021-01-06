@@ -446,9 +446,6 @@ DEFINE_METHOD(COMWRAPPERS,                RELEASE_OBJECTS,  CallReleaseObjects, 
 DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_Obj_RefGuid_RefIntPtr_RetInt)
 #endif //FEATURE_COMINTEROP
 
-DEFINE_CLASS(SERIALIZATION_INFO,        Serialization,      SerializationInfo)
-DEFINE_CLASS(DESERIALIZATION_TRACKER,   Serialization,      DeserializationTracker)
-
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
 
 DEFINE_CLASS(IENUMERABLE,           Collections,            IEnumerable)
