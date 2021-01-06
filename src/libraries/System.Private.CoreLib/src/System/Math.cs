@@ -1300,7 +1300,7 @@ namespace System
 #if TARGET_64BIT
             return unchecked((int)(value >> 63 | (long)((ulong)-value >> 63)));
 #else
-            return unchecked(value >> 31 | (int)((uint)-value >> 31));
+            return unchecked((int)(value >> 31) | (int)((uint)-value >> 31));
 #endif
         }
 
