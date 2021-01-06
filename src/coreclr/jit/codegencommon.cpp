@@ -6298,11 +6298,23 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 #else
         if (!useLoop)
         {
-            while (uCntBytes >= REGSIZE_BYTES * 2)
+            const regNumber zeroSIMDReg = REG_V16;
+
+            if (uCntBytes >= FP_REGSIZE_BYTES * 2)
+            {
+                GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, zeroSIMDReg, 0, INS_OPTS_2D);
+
+                for (; uCntBytes >= FP_REGSIZE_BYTES * 2; uCntBytes -= FP_REGSIZE_BYTES * 2)
+                {
+                    GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSIMDReg, zeroSIMDReg, rAddr,
+                                                  2 * FP_REGSIZE_BYTES, INS_OPTS_POST_INDEX);
+                }
+            }
+
+            for (; uCntBytes >= REGSIZE_BYTES * 2; uCntBytes -= REGSIZE_BYTES * 2)
             {
                 GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, rAddr, 2 * REGSIZE_BYTES,
                                               INS_OPTS_POST_INDEX);
-                uCntBytes -= REGSIZE_BYTES * 2;
             }
         }
         else
