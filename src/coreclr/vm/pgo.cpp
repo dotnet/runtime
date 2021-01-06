@@ -6,7 +6,7 @@
 #include "pgo.h"
 #include "versionresilienthashcode.h"
 #include "typestring.h"
-#include "inttypes.h"
+//#include "inttypes.h"
 
 #ifdef FEATURE_PGO
 
@@ -247,6 +247,8 @@ void PgoManager::WritePgoData()
                             }
                             break;
                         }
+                    default:
+                        break;
                 }
             }
             return true;
@@ -464,6 +466,8 @@ void PgoManager::ReadPgoData()
                             methodInstrumentationData.CloseRawBuffer();
                             break;
                         }
+                    default:
+                        break;
                 }
             }
 

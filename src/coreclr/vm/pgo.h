@@ -392,7 +392,7 @@ bool WriteIndividualSchemaToBytes(PgoInstrumentationSchema prevSchema, PgoInstru
 }
 
 template<class ByteWriter>
-bool WriteInstrumentationToBytes(const PgoInstrumentationSchema* schemaTable, size_t cSchemas, ByteWriter& byteWriter)
+bool WriteInstrumentationToBytes(const PgoInstrumentationSchema* schemaTable, size_t cSchemas, const ByteWriter& byteWriter)
 {
     PgoInstrumentationSchema prevSchema;
     memset(&prevSchema, 0, sizeof(PgoInstrumentationSchema));

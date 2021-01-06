@@ -247,6 +247,7 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
             if (!parser->GetByte(&varValue))
                 return false;
             hash->Add(varValue);
+            break;
         }
         
         case InlineVar: // 2 byte value which is token change resilient
@@ -255,6 +256,7 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
             if (!parser->GetUInt16(&varValue))
                 return false;
             hash->Add(varValue);
+            break;
         }
         case InlineI:
         case InlineBrTarget:
@@ -264,6 +266,7 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
             if (!parser->GetUInt32(&varValue))
                 return false;
             hash->Add(varValue);
+            break;
         }
 
         case InlineR:
@@ -278,6 +281,7 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
                 return false;
             hash->Add(varValue);
             hash->Add(varValue2);
+            break;
         }
 
         case InlineSwitch:
@@ -296,6 +300,7 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
                     return false;
                 hash->Add(switchEntry);
             }
+            break;
         }
 
         case InlineMethod:
@@ -309,6 +314,7 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
             uint32_t varValue;
             if (!parser->GetUInt32(&varValue))
                 return false;
+            break;
         }
         default:
         {

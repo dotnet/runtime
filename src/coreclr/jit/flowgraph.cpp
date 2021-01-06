@@ -386,7 +386,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
 }
 
 template<class TFunctor>
-class ClassProbeVisitor final : public GenTreeVisitor<typename ClassProbeVisitor<TFunctor>>
+class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor<TFunctor>>
 {
 public:
     enum
@@ -395,10 +395,12 @@ public:
     };
 
     TFunctor& m_functor;
+    Compiler *m_compiler;
 
     ClassProbeVisitor(Compiler* compiler, TFunctor& functor)
         : GenTreeVisitor<ClassProbeVisitor>(compiler)
         , m_functor(functor)
+        , m_compiler(compiler)
     {
     }
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)

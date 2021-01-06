@@ -1039,7 +1039,7 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     ProfileDataResults* pgoResults = m_pgoResults;
     while (pgoResults != nullptr)
     {
-        if (pgoResults->m_ftn = ftnHnd)
+        if (pgoResults->m_ftn == ftnHnd)
             break;
     }
 
