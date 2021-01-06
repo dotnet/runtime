@@ -40,8 +40,9 @@ namespace System.Net.Sockets.Tests
             using var left = useClone ? new Socket(origLeft.SafeHandle) : origLeft;
             using var right = useClone ? new Socket(origRight.SafeHandle) : origRight;
 
-            ConfigureSocket(left);
-            ConfigureSocket(right);
+            // Force non-blocking mode in ...SyncForceNonBlocking variants of the test: 
+            ConfigureNonBlocking(left);
+            ConfigureNonBlocking(right);
 
             var leftEndpoint = (IPEndPoint)left.LocalEndPoint;
             var rightEndpoint = (IPEndPoint)right.LocalEndPoint;
@@ -100,49 +101,6 @@ namespace System.Net.Sockets.Tests
                 Assert.NotNull(receivedChecksums[i]);
                 Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
             }
-        }
-
-        [Theory]
-        [MemberData(nameof(Loopbacks))]
-        public async Task SendToRecvFrom_Datagram_UDP_CombineSyncAsync(IPAddress address)
-        {
-            const int DatagramCount = 16;
-            const int DatagramSize = 512;
-
-            using var leftSocket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            using var rightSocket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-
-            int leftPort = leftSocket.BindToAnonymousPort(address);
-            int rightPort = rightSocket.BindToAnonymousPort(address);
-            IPEndPoint leftEp = new IPEndPoint(address, leftPort);
-            IPEndPoint rightEp = new IPEndPoint(address, rightPort);
-
-            Task leftThread = Task.Run(async () =>
-            {
-                byte[] sendBuffer = new byte[DatagramSize];
-                byte[] receiveBuffer = new byte[DatagramSize];
-
-                for (int i = 0; i < DatagramCount; i++)
-                {
-                    int sentBytes = leftSocket.SendTo(sendBuffer, rightEp);
-                    Assert.Equal(DatagramSize, sentBytes);
-
-                    int receivedBytes = (await ReceiveFromAsync(leftSocket, receiveBuffer, rightEp)).ReceivedBytes;
-                    Assert.Equal(DatagramSize, receivedBytes);
-                }
-            });
-
-            byte[] rightBuffer = new byte[DatagramSize];
-            for (int i = 0; i < DatagramCount; i++)
-            {
-                EndPoint ep = leftEp;
-                int receivedBytes = rightSocket.ReceiveFrom(rightBuffer, ref ep);
-                Assert.Equal(DatagramSize, receivedBytes);
-                int sentBytes = await SendToAsync(rightSocket, rightBuffer, leftEp);
-                Assert.Equal(DatagramSize, sentBytes);
-            }
-
-            await leftThread;
         }
     }
 
