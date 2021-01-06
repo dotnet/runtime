@@ -259,6 +259,40 @@ namespace System
             return y;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReciprocalEstimate(float x)
+        {
+            if (Sse.IsSupported)
+            {
+                return Sse.ReciprocalScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return 1.0f / x;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReciprocalSqrtEstimate(float x)
+        {
+            if (Sse.IsSupported)
+            {
+                return Sse.ReciprocalSqrtScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return 1.0f / Sqrt(x);
+            }
+        }
+
         [Intrinsic]
         public static float Round(float x)
         {

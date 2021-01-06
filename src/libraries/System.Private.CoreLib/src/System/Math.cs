@@ -951,6 +951,36 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double ReciprocalEstimate(double d)
+        {
+            // x86 doesn't provide an estimate instruction for double-precision reciprocal
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
+            }
+            else
+            {
+                return 1.0 / d;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double ReciprocalSqrtEstimate(double d)
+        {
+            // x86 doesn't provide an estimate instruction for double-precision reciprocal square root
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
+            }
+            else
+            {
+                return 1.0 / Sqrt(d);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Round(decimal d)
         {
             return decimal.Round(d, 0);
