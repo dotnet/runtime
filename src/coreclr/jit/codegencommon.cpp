@@ -6269,44 +6269,53 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
         }
 
-#if defined(TARGET_ARM)
+#ifdef TARGET_ARM
         rZero1 = genGetZeroReg(initReg, pInitRegZeroed);
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
         target_ssize_t stmImm = (target_ssize_t)(genRegMask(rZero1) | genRegMask(rZero2));
-#endif // TARGET_ARM
 
         if (!useLoop)
         {
             while (uCntBytes >= REGSIZE_BYTES * 2)
             {
-#ifdef TARGET_ARM
                 GetEmitter()->emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm);
-#else  // !TARGET_ARM
-                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, rAddr, 2 * REGSIZE_BYTES,
-                                              INS_OPTS_POST_INDEX);
-#endif // !TARGET_ARM
                 uCntBytes -= REGSIZE_BYTES * 2;
             }
         }
-        else // useLoop is true
+        else
         {
-#ifdef TARGET_ARM
             GetEmitter()->emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm); // zero stack slots
             GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, rCnt, 1, INS_FLAGS_SET);
-#else  // !TARGET_ARM
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, rAddr, 2 * REGSIZE_BYTES,
-                                          INS_OPTS_POST_INDEX); // zero stack slots
-            GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, rCnt, rCnt, 1);
-#endif // !TARGET_ARM
             GetEmitter()->emitIns_J(INS_bhi, NULL, -3);
             uCntBytes %= REGSIZE_BYTES * 2;
         }
 
         if (uCntBytes >= REGSIZE_BYTES) // check and zero the last register-sized stack slot (odd number)
         {
-#ifdef TARGET_ARM
             GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, rZero1, rAddr, 0);
-#else  // TARGET_ARM
+            uCntBytes -= REGSIZE_BYTES;
+        }
+#else
+        if (!useLoop)
+        {
+            while (uCntBytes >= REGSIZE_BYTES * 2)
+            {
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, rAddr, 2 * REGSIZE_BYTES,
+                                              INS_OPTS_POST_INDEX);
+                uCntBytes -= REGSIZE_BYTES * 2;
+            }
+        }
+        else
+        {
+            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, rAddr, 2 * REGSIZE_BYTES,
+                                          INS_OPTS_POST_INDEX); // zero stack slots
+            GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, rCnt, rCnt, 1);
+            GetEmitter()->emitIns_J(INS_bhi, NULL, -3);
+            uCntBytes %= REGSIZE_BYTES * 2;
+        }
+
+        if (uCntBytes >= REGSIZE_BYTES) // check and zero the last register-sized stack slot (odd number)
+        {
             if ((uCntBytes - REGSIZE_BYTES) == 0)
             {
                 GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_ZR, rAddr, 0);
@@ -6315,17 +6324,16 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             {
                 GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_ZR, rAddr, REGSIZE_BYTES, INS_OPTS_POST_INDEX);
             }
-#endif // !TARGET_ARM
             uCntBytes -= REGSIZE_BYTES;
         }
-#ifdef TARGET_ARM64
+
         if (uCntBytes > 0)
         {
             assert(uCntBytes == sizeof(int));
             GetEmitter()->emitIns_R_R_I(INS_str, EA_4BYTE, REG_ZR, rAddr, 0);
             uCntBytes -= sizeof(int);
         }
-#endif // TARGET_ARM64
+#endif
         noway_assert(uCntBytes == 0);
 
 #elif defined(TARGET_XARCH)
