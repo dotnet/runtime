@@ -722,7 +722,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <PropertyGroup>
       <AssemblyName>$(Category)</AssemblyName>
-      <BuildDir>$(IntermediateOutputPath)/iOSApps</BuildDir>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)/$(Configuration)/runtimes/ios-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
     </PropertyGroup>
@@ -736,7 +735,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
     </ItemGroup>
     <PropertyGroup>
-      <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+      <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
     </PropertyGroup>
 
     <MakeDir Directories="$(BuildDir)" />
