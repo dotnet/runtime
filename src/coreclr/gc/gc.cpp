@@ -16,6 +16,7 @@
 // allocation helpers in gcscan.cpp
 //
 
+
 #include "gcpriv.h"
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -19176,7 +19177,7 @@ void gc_heap::gc1()
     recover_bgc_settings();
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
-    // printf("naricc: gc1() finished\n");
+    printf("naricc: gc1() finished\n");
 }
 
 void gc_heap::save_data_for_no_gc()
@@ -41425,8 +41426,12 @@ void gc_heap::do_post_gc()
             pause_duration += (size_t)(gc_start_ts - suspended_start_time);
         }
 
+        printf("naricc: pause_duration: %d\n", pause_duration);
         last_gc_info->pause_durations[0] = pause_duration;
         total_suspended_time += pause_duration;
+
+        printf("naricc: total_suspended_time: %d\n", total_suspended_time);
+        
         last_gc_info->pause_durations[1] = 0;
     }
 
@@ -42238,6 +42243,8 @@ size_t gc_heap::get_gen0_min_size()
                 gen0size, n_heaps, (gen0size * n_heaps),
                 gc_heap::total_physical_mem,
                 gc_heap::total_physical_mem / 6));
+
+        printf("naricc: gen0zise: %d: ", gen0size);
 
         // if the total min GC across heaps will exceed 1/6th of available memory,
         // then reduce the min GC size until it either fits or has been reduced to cache size.
