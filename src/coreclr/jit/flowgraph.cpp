@@ -176,10 +176,10 @@ void Compiler::fgInit()
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
 
-    fgHasSwitch   = false;
-    fgPgoSchema = nullptr;
-    fgPgoData = nullptr;
-    fgPgoSchemaCount = 0;
+    fgHasSwitch          = false;
+    fgPgoSchema          = nullptr;
+    fgPgoData            = nullptr;
+    fgPgoSchemaCount     = 0;
     fgPredListSortVector = nullptr;
 }
 
@@ -376,7 +376,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
         if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
             ((IL_OFFSET)fgPgoSchema[i].ILOffset == offset))
         {
-            *weightWB = (BasicBlock::weight_t)*(uint32_t *)(fgPgoData + fgPgoSchema[i].Offset);
+            *weightWB = (BasicBlock::weight_t) * (uint32_t*)(fgPgoData + fgPgoSchema[i].Offset);
             return true;
         }
     }
@@ -385,7 +385,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
     return true;
 }
 
-template<class TFunctor>
+template <class TFunctor>
 class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor<TFunctor>>
 {
 public:
@@ -395,12 +395,10 @@ public:
     };
 
     TFunctor& m_functor;
-    Compiler *m_compiler;
+    Compiler* m_compiler;
 
     ClassProbeVisitor(Compiler* compiler, TFunctor& functor)
-        : GenTreeVisitor<ClassProbeVisitor>(compiler)
-        , m_functor(functor)
-        , m_compiler(compiler)
+        : GenTreeVisitor<ClassProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
     {
     }
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -464,10 +462,12 @@ void Compiler::fgInstrumentMethod()
             class BuildClassProbeSchemaGen
             {
                 jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* m_schema;
+
             public:
-                BuildClassProbeSchemaGen(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema) :
-                    m_schema(schema)
-                {}
+                BuildClassProbeSchemaGen(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema)
+                    : m_schema(schema)
+                {
+                }
                 void operator()(Compiler* compiler, GenTreeCall* call)
                 {
                     ICorJitInfo::PgoInstrumentationSchema schemaElem;
@@ -483,19 +483,19 @@ void Compiler::fgInstrumentMethod()
                     }
 
                     schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount;
-                    schemaElem.ILOffset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-                    schemaElem.Offset = 0;
+                    schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+                    schemaElem.Offset              = 0;
 
                     m_schema->push_back(schemaElem);
 
                     schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
-                    schemaElem.Count = ICorJitInfo::ClassProfile::SIZE;
+                    schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
                     m_schema->push_back(schemaElem);
                 }
             };
             // Scan the statements and identify the class probes
             //
-            BuildClassProbeSchemaGen schemaGen(&schema);
+            BuildClassProbeSchemaGen                    schemaGen(&schema);
             ClassProbeVisitor<BuildClassProbeSchemaGen> visitor(this, schemaGen);
             for (Statement* stmt : block->Statements())
             {
@@ -515,11 +515,11 @@ void Compiler::fgInstrumentMethod()
         assert((int)offset >= 0);
 
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
-        schemaElem.Count = 1;
-        schemaElem.Other = 0;
+        schemaElem.Count               = 1;
+        schemaElem.Other               = 0;
         schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
-        schemaElem.ILOffset = offset;
-        schemaElem.Offset = 0;
+        schemaElem.ILOffset            = offset;
+        schemaElem.Offset              = 0;
 
         schema.push_back(schemaElem);
 
@@ -549,9 +549,10 @@ void Compiler::fgInstrumentMethod()
 
     // Allocate the profile buffer
     //
-    BYTE*                     profileMemory;
+    BYTE* profileMemory;
 
-    HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(), (UINT32)schema.size(), &profileMemory);
+    HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
+                                                                    (UINT32)schema.size(), &profileMemory);
 
     // We may not be able to instrument, if so we'll set this false.
     // We can't just early exit, because we have to clean up calls that we might have profiled.
@@ -578,7 +579,6 @@ void Compiler::fgInstrumentMethod()
     // To start we initialize our current one with the first one that we allocated
     //
     int currentSchemaIndex = 0;
-
 
     // Hold the address of the first blocks ExecutionCount
     size_t addrOfFirstExecutionCount = 0;
@@ -610,24 +610,27 @@ void Compiler::fgInstrumentMethod()
                 class ClassProbeInserter
                 {
                     jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* m_schema;
-                    BYTE* m_profileMemory;
-                    int* m_currentSchemaIndex;
-                    bool m_instrument;
+                    BYTE*                                                  m_profileMemory;
+                    int*                                                   m_currentSchemaIndex;
+                    bool                                                   m_instrument;
 
                 public:
                     int m_count = 0;
 
-                    ClassProbeInserter(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema, BYTE* profileMemory, int *pCurrentSchemaIndex, bool instrument) :
-                        m_schema(schema),
-                        m_profileMemory(profileMemory),
-                        m_currentSchemaIndex(pCurrentSchemaIndex),
-                        m_instrument(instrument)
+                    ClassProbeInserter(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema,
+                                       BYTE*                                                  profileMemory,
+                                       int*                                                   pCurrentSchemaIndex,
+                                       bool                                                   instrument)
+                        : m_schema(schema)
+                        , m_profileMemory(profileMemory)
+                        , m_currentSchemaIndex(pCurrentSchemaIndex)
+                        , m_instrument(instrument)
                     {
                     }
                     void operator()(Compiler* compiler, GenTreeCall* call)
                     {
-                        JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n",
-                                compiler->dspTreeID(call), call->gtClassProfileCandidateInfo->probeIndex,
+                        JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n", compiler->dspTreeID(call),
+                                call->gtClassProfileCandidateInfo->probeIndex,
                                 call->gtClassProfileCandidateInfo->ilOffset);
 
                         m_count++;
@@ -648,7 +651,7 @@ void Compiler::fgInstrumentMethod()
 
                             // Figure out where the table is located.
                             //
-                            BYTE *classProfile = (*m_schema)[*m_currentSchemaIndex].Offset + m_profileMemory;
+                            BYTE* classProfile = (*m_schema)[*m_currentSchemaIndex].Offset + m_profileMemory;
                             *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
                             // Grab a temp to hold the 'this' object as it will be used three times
@@ -661,15 +664,15 @@ void Compiler::fgInstrumentMethod()
                             GenTree* const classProfileNode =
                                 compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
                             GenTree* const          tmpNode = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                            GenTreeCall::Use* const args = compiler->gtNewCallArgs(tmpNode, classProfileNode);
+                            GenTreeCall::Use* const args    = compiler->gtNewCallArgs(tmpNode, classProfileNode);
                             GenTree* const          helperCallNode =
                                 compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
                             GenTree* const tmpNode2 = compiler->gtNewLclvNode(tmpNum, TYP_REF);
                             GenTree* const callCommaNode =
                                 compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
                             GenTree* const tmpNode3 = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                            GenTree* const asgNode  = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3,
-                                                                                call->gtCallThisArg->GetNode());
+                            GenTree* const asgNode =
+                                compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
                             GenTree* const asgCommaNode =
                                 compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
@@ -686,8 +689,6 @@ void Compiler::fgInstrumentMethod()
                         call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
                     }
                 };
-
-
 
                 // Scan the statements and add class probes
                 //

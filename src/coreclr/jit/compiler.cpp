@@ -2823,16 +2823,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     // Profile data
     //
-    fgPgoSchema                = nullptr;
-    fgPgoData = nullptr;
-    fgPgoSchemaCount = 0;
+    fgPgoSchema                  = nullptr;
+    fgPgoData                    = nullptr;
+    fgPgoSchemaCount             = 0;
     fgProfileData_ILSizeMismatch = false;
     fgNumProfileRuns             = 0;
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         HRESULT hr;
         hr = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
-                                                    &fgPgoData);
+                                                            &fgPgoData);
 
         if (SUCCEEDED(hr))
         {
@@ -2849,7 +2849,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 fgNumProfileRuns = 1;
         }
 
-        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema elements, %d runs\n",
+        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema "
+                "elements, %d runs\n",
                 info.compFullName, hr, fgPgoSchema, fgPgoData, fgPgoSchemaCount, fgNumProfileRuns);
 
         // a failed result that also has a non-NULL fgPgoSchema
@@ -5751,11 +5752,12 @@ void Compiler::compCompileFinish()
             bool foundEntrypointBasicBlockCount = false;
             for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
             {
-                if ((fgPgoSchema[iSchema].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
+                if ((fgPgoSchema[iSchema].InstrumentationKind ==
+                     ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
                     (fgPgoSchema[iSchema].ILOffset == 0))
                 {
                     foundEntrypointBasicBlockCount = true;
-                    profCallCount = *(uint32_t *)(fgPgoData + fgPgoSchema[iSchema].Offset);
+                    profCallCount                  = *(uint32_t*)(fgPgoData + fgPgoSchema[iSchema].Offset);
                     break;
                 }
             }
