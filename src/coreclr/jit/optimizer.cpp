@@ -2594,12 +2594,19 @@ void Compiler::optIdentifyLoopsForAlignment()
             BasicBlock* first = optLoopTable[loopInd].lpFirst;
 
             // An innerloop candidate that might need alignment
-            if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) &&
-                first->getBBWeight(this) >= opts.compJitAlignLoopMinBlockWeight)
+            if (optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP)
             {
-                first->bbFlags |= BBF_LOOP_ALIGN;
-                JITDUMP("L%02u that starts at " FMT_BB " needs alignment, weight=%f.\n", loopInd, first->bbNum,
-                        first->getBBWeight(this));
+                if (first->getBBWeight(this) >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
+                {
+                    first->bbFlags |= BBF_LOOP_ALIGN;
+                    JITDUMP("L%02u that starts at " FMT_BB " needs alignment, weight=%f.\n", loopInd, first->bbNum,
+                            first->getBBWeight(this));
+                }
+                else
+                {
+                    JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " weight=%f.\n", loopInd, first->bbNum,
+                            first->getBBWeight(this));
+                }
             }
         }
     }
