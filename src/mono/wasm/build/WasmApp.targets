@@ -99,7 +99,7 @@
       AppDir="$(WasmAppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
       MainJS="$(WasmMainJSPath)"
-      Profile="$(EnableProfiler)"
+      EnableProfile="$(EnableProfiler)"
       Assemblies="@(_WasmAssemblies)"
       InvariantGlobalization="$(WasmInvariantGlobalization)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
@@ -181,7 +181,6 @@
         <Output TaskParameter="Lines" PropertyName="EmccVersion" />
     </ReadLinesFromFile>
     <Error Condition="'$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
-    
     <!-- Either created by MonoAOTCompiler or here -->
     <PropertyGroup>
       <InitAotProfilerCmd>

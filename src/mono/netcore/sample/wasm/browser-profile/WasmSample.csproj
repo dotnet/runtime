@@ -43,9 +43,9 @@
     <PropertyGroup>
         <WasmAppDir>$(AppDir)</WasmAppDir>
         <WasmBuildDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmBuildDir>
-        <WasmMainAssemblyPath>$(MSBuildProjectDirectory)\bin\WasmSample.dll</WasmMainAssemblyPath>
+        <WasmMainAssemblyPath>$(MSBuildProjectDirectory)\bin\$(AssemblyName).dll</WasmMainAssemblyPath>
         <WasmMainJSPath>runtime.js</WasmMainJSPath>
-        <WasmMainAssemblyPath>$(WasmBuildDir)WasmSample.dll</WasmMainAssemblyPath>
+        <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
     </PropertyGroup>
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
@@ -74,7 +74,7 @@
       <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
       <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/browser-profile/</HelixArchiveRunOnlyAppsDir>
-      <ZippedApp>$(OutputPath)/WasmBrowserProfileSample.zip</ZippedApp>
+      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
     </PropertyGroup>
     <ZipDirectory SourceDirectory="$(AppDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />

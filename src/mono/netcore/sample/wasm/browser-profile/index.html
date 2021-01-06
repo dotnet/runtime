@@ -13,12 +13,12 @@
     <script type='text/javascript'>
       var App = {
         init: function () {
-          var ret = BINDING.call_static_method("[WasmSample] Sample.Test:TestMeaning", []);
+          var ret = BINDING.call_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:TestMeaning", []);
           document.getElementById("out").innerHTML = ret;
           console.log ("ready");
 
           if (config.enable_profiler) {
-            BINDING.call_static_method("[WasmSample] Sample.Test:StopProfile", []);
+            BINDING.call_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:StopProfile", []);
             saveProfile();
           }
         },
@@ -29,7 +29,6 @@
         var blob = new Blob([Module.aot_profile_data]);
         a.href = URL.createObjectURL(blob);
         a.download = "data.aotprofile";
-        console.log("data", Module.aot_profile_data);
         // Append anchor to body.
         document.body.appendChild(a);
         a.click();
