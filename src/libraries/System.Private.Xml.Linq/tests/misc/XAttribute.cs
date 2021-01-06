@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Tests;
 using Xunit;
 
 namespace System.Xml.Linq.Tests
@@ -31,13 +32,18 @@ namespace System.Xml.Linq.Tests
         [MemberData(nameof(NumericValuesWithMinusSign))]
         public void MinusSignWithDifferentTypeSwedishCulture(object value)
         {
+            CultureInfo newCulture = null;
             try
             {
-                Threading.Thread.CurrentThread.CurrentCulture = new CultureInfo("SE-SW");
+                newCulture = new CultureInfo("SE-SW");
             }
             catch (CultureNotFoundException) { /* Do nothing */ }
 
-            Assert.Equal('-', (new XAttribute("a", value)).Value[0]);
+            using (new ThreadCultureChange(newCulture))
+            {
+
+                Assert.Equal('-', (new XAttribute("a", value)).Value[0]);
+            }
         }
 
         [Theory]
@@ -59,13 +65,17 @@ namespace System.Xml.Linq.Tests
         [MemberData(nameof(NonNumericValues))]
         public void NonNumericTypeSwedishCulture(object value, string expected)
         {
+            CultureInfo newCulture = null;
             try
             {
-                Threading.Thread.CurrentThread.CurrentCulture = new CultureInfo("SE-SW");
+                newCulture = new CultureInfo("SE-SW");
             }
             catch (CultureNotFoundException) { /* Do nothing */ }
 
-            Assert.Equal(expected, (new XAttribute("a", value)).Value);
+            using (new ThreadCultureChange(newCulture))
+            {
+                Assert.Equal(expected, (new XAttribute("a", value)).Value);
+            }
         }
 
         [Theory]
