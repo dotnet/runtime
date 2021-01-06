@@ -16,6 +16,9 @@
 #include "errorhandling.h"
 #include "hash.h"
 
+// Helper function for dumping.
+const char* toString(CorInfoType cit);
+
 #define METHOD_IDENTITY_INFO_SIZE 0x10000 // We assume that the METHOD_IDENTITY_INFO_SIZE will not exceed 64KB
 
 class MethodContext
