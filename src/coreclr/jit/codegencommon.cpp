@@ -6149,36 +6149,32 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
     {
         assert(untrLclHi > untrLclLo);
 #ifdef TARGET_ARM
-        /*
-            Generate the following code:
-
-            For cnt less than 10
-
-                mov     rZero1, 0
-                mov     rZero2, 0
-                mov     rCnt,  <cnt>
-                stm     <rZero1,rZero2>,[rAddr!]
-    <optional>  stm     <rZero1,rZero2>,[rAddr!]
-    <optional>  stm     <rZero1,rZero2>,[rAddr!]
-    <optional>  stm     <rZero1,rZero2>,[rAddr!]
-    <optional>  str     rZero1,[rAddr]
-
-            For rCnt greater than or equal to 10
-
-                mov     rZero1, 0
-                mov     rZero2, 0
-                mov     rCnt,  <cnt/2>
-                sub     rAddr, sp, OFFS
-
-            loop:
-                stm     <rZero1,rZero2>,[rAddr!]
-                sub     rCnt,rCnt,1
-                jnz     loop
-
-    <optional>  str     rZero1,[rAddr]   // When cnt is odd
-
-            NOTE: for ARM64, the instruction is stp, not stm. And we can use ZR instead of allocating registers.
-         */
+        // Generate the following code:
+        //
+        // For cnt less than 10
+        //
+        //            mov     rZero1, 0
+        //            mov     rZero2, 0
+        //            mov     rCnt,  <cnt>
+        //            stm     <rZero1,rZero2>,[rAddr!]
+        // <optional> stm     <rZero1,rZero2>,[rAddr!]
+        // <optional> stm     <rZero1,rZero2>,[rAddr!]
+        // <optional> stm     <rZero1,rZero2>,[rAddr!]
+        // <optional> str     rZero1,[rAddr]
+        //
+        // For rCnt greater than or equal to 10
+        //
+        //            mov     rZero1, 0
+        //            mov     rZero2, 0
+        //            mov     rCnt,  <cnt/2>
+        //            sub     rAddr, sp, OFFS
+        //
+        //        loop:
+        //            stm     <rZero1,rZero2>,[rAddr!]
+        //            sub     rCnt,rCnt,1
+        //            jnz     loop
+        //
+        // <optional> str     rZero1,[rAddr]   // When cnt is odd
 
         regNumber rAddr;
         regNumber rCnt = REG_NA; // Invalid
