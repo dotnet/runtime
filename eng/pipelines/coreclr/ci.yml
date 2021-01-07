@@ -24,7 +24,16 @@ trigger:
     - eng/pipelines/libraries/*
     - eng/pipelines/runtime.yml
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 jobs:
+
+#
+# Checkout repository
+#
+- ${{ if eq(variables.useCheckoutBundle, true) }}:
+  - template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Debug builds

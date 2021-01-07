@@ -417,7 +417,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     pMT->SetParentMethodTable(pParentClass);
 
-    // Method tables for arrays of generic type parameters are needed for type analysis. 
+    // Method tables for arrays of generic type parameters are needed for type analysis.
     // No instances will be created, so we can use 0 as element size.
     DWORD dwComponentSize = CorTypeInfo::IsGenericVariable(elemType) ?
                                 0 :
@@ -751,7 +751,7 @@ class ArrayOpLinker : public ILStubLinker
 
 public:
     ArrayOpLinker(ArrayMethodDesc * pMD)
-        : ILStubLinker(pMD->GetModule(), pMD->GetSignature(), &m_emptyContext, pMD, TRUE, TRUE, FALSE)
+        : ILStubLinker(pMD->GetModule(), pMD->GetSignature(), &m_emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS))
     {
         m_pCode = NewCodeStream(kDispatch);
         m_pMD = pMD;

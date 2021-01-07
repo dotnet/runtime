@@ -294,6 +294,10 @@ static
 uint32_t
 ep_rt_config_value_get_circular_mb (void);
 
+static
+bool
+ep_rt_config_value_get_use_portable_thread_pool (void);
+
 /*
  * EventPipeSampleProfiler.
  */

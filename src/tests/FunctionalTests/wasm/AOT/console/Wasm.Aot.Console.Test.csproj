@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <WasmModeSpecificPath>\aot\console\</WasmModeSpecificPath>
+  </PropertyGroup>
+
+  <Import Project="..\..\common.props" />
+
+  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
+    <PropertyGroup>
+      <WasmAppDir>$(AppDir)</WasmAppDir>
+      <WasmBuildDir>$(PublishDir)</WasmBuildDir>
+      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+      <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    </PropertyGroup>
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+
+  <Import Project="..\..\common.targets" />
+
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
+</Project>

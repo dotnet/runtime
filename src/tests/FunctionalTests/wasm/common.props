@@ -1,0 +1,27 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>$(RepoRoot)artifacts\bin\$(AssemblyName)</OutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
+    <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
+    <AppDir>$(OutputPath)\$(Configuration)\AppBundle\</AppDir> 
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+  </PropertyGroup>
+</Project>

@@ -980,6 +980,15 @@ ep_rt_config_value_get_circular_mb (void)
 	return circular_mb;
 }
 
+static
+inline
+bool
+ep_rt_config_value_get_use_portable_thread_pool (void)
+{
+	// Only supports portable thread pool.
+	return true;
+}
+
 /*
  * EventPipeSampleProfiler.
  */

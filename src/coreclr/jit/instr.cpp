@@ -221,19 +221,6 @@ bool CodeGenInterface::instIsFP(instruction ins)
 #endif
 }
 
-#ifdef TARGET_XARCH
-/*****************************************************************************
- *
- *  Generate a multi-byte NOP instruction.
- */
-
-void CodeGen::instNop(unsigned size)
-{
-    assert(size <= 15);
-    GetEmitter()->emitIns_Nop(size);
-}
-#endif
-
 /*****************************************************************************
  *
  *  Generate a jump instruction.
