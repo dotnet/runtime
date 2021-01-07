@@ -357,7 +357,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
 
     for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
-        BasicBlock* const predBlock = pred->flBlock;
+        BasicBlock* const predBlock = pred->getBlock();
         numPreds++;
 
         // We don't do switch updates, yet.
@@ -471,7 +471,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     //
     for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
-        BasicBlock* const predBlock = pred->flBlock;
+        BasicBlock* const predBlock = pred->getBlock();
 
         const bool isTruePred =
             ((predBlock == domBlock) && (trueSuccessor == block)) || fgReachable(trueSuccessor, predBlock);
