@@ -6,7 +6,7 @@
 #include "pgo.h"
 #include "versionresilienthashcode.h"
 #include "typestring.h"
-//#include "inttypes.h"
+#include "pgo_formatprocessing.h"
 
 #ifdef FEATURE_PGO
 
