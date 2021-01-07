@@ -2436,16 +2436,16 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Clamp_SignedInt_TestData))]
-        public static void Clamp_NInt(nint value, nint min, nint max, nint expected)
+        public static void Clamp_NInt(int value, int min, int max, int expected)
         {
-            Assert.Equal(expected, Math.Clamp(value, min, max));
+            Assert.Equal((nint)expected, Math.Clamp((nint)value, (nint)min, (nint)max));
         }
 
         [Theory]
         [MemberData(nameof(Clamp_UnsignedInt_TestData))]
-        public static void Clamp_NUInt(nuint value, nuint min, nuint max, nuint expected)
+        public static void Clamp_NUInt(uint value, uint min, uint max, uint expected)
         {
-            Assert.Equal(expected, Math.Clamp(value, min, max));
+            Assert.Equal((nuint)expected, Math.Clamp((nuint)value, (nuint)min, (nuint)max));
         }
 
         [Theory]
