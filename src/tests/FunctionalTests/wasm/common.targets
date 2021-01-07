@@ -1,0 +1,27 @@
+<Project>
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+  
+  <Target Name="CopySampleAppToHelixTestDir" AfterTargets="Build" DependsOnTargets="Publish" >
+    <PropertyGroup>
+      <!-- Helix properties -->
+      <!-- AnyCPU as Platform-->
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)$(WasmModeSpecificPath)/</HelixArchiveRunOnlyAppsDir>
+      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
+    </PropertyGroup>
+    <ZipDirectory SourceDirectory="$(AppDir)" DestinationFile="$(ZippedApp)" />
+    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
+  </Target>
+  
+</Project>

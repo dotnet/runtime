@@ -88,15 +88,15 @@
       <!-- AnyCPU as Platform-->
       <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
       <!-- <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig> -->
-      <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
-      <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
-      <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
     </PropertyGroup>
     <ItemGroup>
-      <_appFiles Include="$(ApkBundlePath)" />
+      <_apkFiles Include="$(ApkBundlePath)" />
     </ItemGroup>
-    <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(TestArchiveTestsDir)" />
+    <Copy SourceFiles="@(_apkFiles)"
+          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/%(RecursiveDir)" />
 
     <Message Importance="High" Text="ApkBundlePath: $(ApkBundlePath)"/>
     <Message Importance="High" Text="TestArchiveTestsDir: $(TestArchiveTestsDir)"/>
