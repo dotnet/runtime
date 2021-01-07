@@ -6,35 +6,6 @@
 #include "typehashingalgorithms.h"
 #include "shash.h"
 
-
-enum class PgoInstrumentationKind
-{
-    // Schema data types
-    None = 0,
-    FourByte = 1,
-    EightByte = 2,
-    TypeHandle = 3,
-
-    // Mask of all schema data types
-    MarshalMask = 0xF,
-
-    // ExcessAlignment
-    Align4Byte = 0x10,
-    Align8Byte = 0x20,
-    AlignPointer = 0x30,
-
-    // Mask of all schema data types
-    AlignMask = 0x30,
-
-    DescriptorMin = 0x40,
-
-    Done = None, // All instrumentation schemas must end with a record which is "Done"
-    BasicBlockIntCount = DescriptorMin | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
-    TypeHandleHistogramCount = (DescriptorMin * 1) | FourByte, // 4 byte counter that is part of a type histogram
-    TypeHandleHistogramTypeHandle = (DescriptorMin * 1) | TypeHandle, // TypeHandle that is part of a type histogram
-    Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
-};
-
 #define DEFAULT_UNKNOWN_TYPEHANDLE 1
 #define UNKNOWN_TYPEHANDLE_MIN 1
 #define UNKNOWN_TYPEHANDLE_MAX 32
@@ -58,29 +29,29 @@ inline INT_PTR HashToPgoUnknownTypeHandle(uint32_t hash)
     return (hash & 0x1F) + 1;
 }
 
-inline PgoInstrumentationKind operator|(PgoInstrumentationKind a, PgoInstrumentationKind b)
+inline ICorJitInfo::PgoInstrumentationKind operator|(ICorJitInfo::PgoInstrumentationKind a, ICorJitInfo::PgoInstrumentationKind b)
 {
-    return static_cast<PgoInstrumentationKind>(static_cast<int>(a) | static_cast<int>(b));
+    return static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int>(a) | static_cast<int>(b));
 }
 
-inline PgoInstrumentationKind operator&(PgoInstrumentationKind a, PgoInstrumentationKind b)
+inline ICorJitInfo::PgoInstrumentationKind operator&(ICorJitInfo::PgoInstrumentationKind a, ICorJitInfo::PgoInstrumentationKind b)
 {
-    return static_cast<PgoInstrumentationKind>(static_cast<int>(a) & static_cast<int>(b));
+    return static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int>(a) & static_cast<int>(b));
 }
-inline PgoInstrumentationKind operator-(PgoInstrumentationKind a, PgoInstrumentationKind b)
+inline ICorJitInfo::PgoInstrumentationKind operator-(ICorJitInfo::PgoInstrumentationKind a, ICorJitInfo::PgoInstrumentationKind b)
 {
-    return static_cast<PgoInstrumentationKind>(static_cast<int>(a) - static_cast<int>(b));
+    return static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int>(a) - static_cast<int>(b));
 }
 
-inline PgoInstrumentationKind operator~(PgoInstrumentationKind a)
+inline ICorJitInfo::PgoInstrumentationKind operator~(ICorJitInfo::PgoInstrumentationKind a)
 {
-    return static_cast<PgoInstrumentationKind>(~static_cast<int>(a));
+    return static_cast<ICorJitInfo::PgoInstrumentationKind>(~static_cast<int>(a));
 }
 
 struct PgoInstrumentationSchema
 {
     size_t Offset;
-    PgoInstrumentationKind InstrumentationKind;
+    ICorJitInfo::PgoInstrumentationKind InstrumentationKind;
     int32_t ILOffset;
     int32_t Count;
     int32_t Other;
@@ -185,7 +156,7 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaHandl
         }
         else if ((processingState & InstrumentationDataProcessingState::Type) == InstrumentationDataProcessingState::Type)
         {
-            curSchema.InstrumentationKind = static_cast<PgoInstrumentationKind>(static_cast<int>(curSchema.InstrumentationKind) + curValue);
+            curSchema.InstrumentationKind = static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int>(curSchema.InstrumentationKind) + curValue);
             processingState = processingState & ~InstrumentationDataProcessingState::Type;
         }
         else if ((processingState & InstrumentationDataProcessingState::Count) == InstrumentationDataProcessingState::Count)
@@ -202,7 +173,7 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaHandl
         if (processingState == InstrumentationDataProcessingState::Done)
         {
             processingState = InstrumentationDataProcessingState::UpdateProcessMaskFlag;
-            if (curSchema.InstrumentationKind == PgoInstrumentationKind::Done)
+            if (curSchema.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::Done)
             {
                 done = true;
                 return false;
@@ -250,17 +221,17 @@ inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const
     });
 }
 
-inline uint32_t InstrumentationKindToSize(PgoInstrumentationKind kind)
+inline uint32_t InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind kind)
 {
-    switch(kind & PgoInstrumentationKind::MarshalMask)
+    switch(kind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
     {
-        case PgoInstrumentationKind::None:
+        case ICorJitInfo::PgoInstrumentationKind::None:
             return 0;
-        case PgoInstrumentationKind::FourByte:
+        case ICorJitInfo::PgoInstrumentationKind::FourByte:
             return 4;
-        case PgoInstrumentationKind::EightByte:
+        case ICorJitInfo::PgoInstrumentationKind::EightByte:
             return 8;
-        case PgoInstrumentationKind::TypeHandle:
+        case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
             return TARGET_POINTER_SIZE;
         default:
             _ASSERTE(FALSE);
@@ -268,15 +239,15 @@ inline uint32_t InstrumentationKindToSize(PgoInstrumentationKind kind)
     }
 }
 
-inline UINT InstrumentationKindToAlignment(PgoInstrumentationKind kind)
+inline UINT InstrumentationKindToAlignment(ICorJitInfo::PgoInstrumentationKind kind)
 {
-    switch(kind & PgoInstrumentationKind::AlignMask)
+    switch(kind & ICorJitInfo::PgoInstrumentationKind::AlignMask)
     {
-        case PgoInstrumentationKind::Align4Byte:
+        case ICorJitInfo::PgoInstrumentationKind::Align4Byte:
             return 4;
-        case PgoInstrumentationKind::Align8Byte:
+        case ICorJitInfo::PgoInstrumentationKind::Align8Byte:
             return 8;
-        case PgoInstrumentationKind::AlignPointer:
+        case ICorJitInfo::PgoInstrumentationKind::AlignPointer:
             return TARGET_POINTER_SIZE;
         default:
             return (UINT)InstrumentationKindToSize(kind);
@@ -406,7 +377,7 @@ bool WriteInstrumentationToBytes(const PgoInstrumentationSchema* schemaTable, si
 
     // Terminate the schema list with an entry which is Done
     PgoInstrumentationSchema terminationSchema = prevSchema;
-    terminationSchema.InstrumentationKind = PgoInstrumentationKind::Done;
+    terminationSchema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::Done;
     if (!WriteIndividualSchemaToBytes(prevSchema, terminationSchema, byteWriter))
         return false;
 

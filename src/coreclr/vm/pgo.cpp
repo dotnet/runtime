@@ -212,19 +212,19 @@ void PgoManager::WritePgoData()
             {
                 size_t entryOffset = schema.Offset + iEntry * InstrumentationKindToSize(schema.InstrumentationKind);
 
-                switch(schema.InstrumentationKind & PgoInstrumentationKind::MarshalMask)
+                switch(schema.InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
                 {
-                    case PgoInstrumentationKind::None:
+                    case ICorJitInfo::PgoInstrumentationKind::None:
                         fprintf(pgoDataFile, s_None);
                         break;
-                    case PgoInstrumentationKind::FourByte:
+                    case ICorJitInfo::PgoInstrumentationKind::FourByte:
                         fprintf(pgoDataFile, s_FourByte, (unsigned)*(uint32_t*)(data + entryOffset));
                         break;
-                    case PgoInstrumentationKind::EightByte:
+                    case ICorJitInfo::PgoInstrumentationKind::EightByte:
                         // Print a pair of 4 byte values as the PRIu64 specifier isn't generally avaialble
                         fprintf(pgoDataFile, s_EightByte, (unsigned)*(uint32_t*)(data + entryOffset), (unsigned)*(uint32_t*)(data + entryOffset + 4));
                         break;
-                    case PgoInstrumentationKind::TypeHandle:
+                    case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
                         {
                             TypeHandle th = *(TypeHandle*)(data + entryOffset);
                             if (th.IsNull())
@@ -391,15 +391,15 @@ void PgoManager::ReadPgoData()
                     break;
                 }
 
-                switch(schema.InstrumentationKind & PgoInstrumentationKind::MarshalMask)
+                switch(schema.InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
                 {
-                    case PgoInstrumentationKind::None:
+                    case ICorJitInfo::PgoInstrumentationKind::None:
                         if (sscanf_s(buffer, s_None) != 0)
                         {
                             failed = true;
                         }
                         break;
-                    case PgoInstrumentationKind::FourByte:
+                    case ICorJitInfo::PgoInstrumentationKind::FourByte:
                         {
                             unsigned val;
                             if (sscanf_s(buffer, s_FourByte, &val) != 1)
@@ -414,7 +414,7 @@ void PgoManager::ReadPgoData()
                             }
                         }
                         break;
-                    case PgoInstrumentationKind::EightByte:
+                    case ICorJitInfo::PgoInstrumentationKind::EightByte:
                         {
                             // Print a pair of 4 byte values as the PRIu64 specifier isn't generally avaialble
                             unsigned val, val2;
@@ -431,7 +431,7 @@ void PgoManager::ReadPgoData()
                             }
                         }
                         break;
-                    case PgoInstrumentationKind::TypeHandle:
+                    case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
                         {
                             char* typeString;
                             if (strncmp(buffer, "TypeHandle: ", 12) != 0)
@@ -742,7 +742,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInst
                         for (unsigned iSchema = 0; iSchema < pSchema->GetCount(); iSchema++)
                         {
                             PgoInstrumentationSchema *schema = &(*pSchema)[iSchema];
-                            if ((schema->InstrumentationKind & PgoInstrumentationKind::MarshalMask) == PgoInstrumentationKind::TypeHandle)
+                            if ((schema->InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask) == ICorJitInfo::PgoInstrumentationKind::TypeHandle)
                             {
                                 for (int iEntry = 0; iEntry < schema->Count; iEntry++)
                                 {
@@ -862,10 +862,10 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
         if (schema[i].ILOffset != (int32_t)ilOffset)
             continue;
 
-        if (((ICorJitInfo::PgoInstrumentationKind)schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount) &&
+        if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount) &&
             (schema[i].Count == 1) &&
             ((i + 1) < schema.GetCount()) &&
-            ((ICorJitInfo::PgoInstrumentationKind)schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
+            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
         {
             // Form a histogram
             //
