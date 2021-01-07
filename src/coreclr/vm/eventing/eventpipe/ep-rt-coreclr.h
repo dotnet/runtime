@@ -824,6 +824,7 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_list_is_valid<list_type>(list); \
 	}
 
+#undef EP_RT_DEFINE_LIST
 #define EP_RT_DEFINE_LIST(list_name, list_type, item_type) \
 	EP_RT_DEFINE_LIST_PREFIX(ep, list_name, list_type, item_type)
 
@@ -849,6 +850,7 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_list_iterator_value<iterator_type, item_type>(iterator); \
 	}
 
+#undef EP_RT_DEFINE_LIST_ITERATOR
 #define EP_RT_DEFINE_LIST_ITERATOR(list_name, list_type, iterator_type, item_type) \
 	EP_RT_DEFINE_LIST_ITERATOR_PREFIX(ep, list_name, list_type, iterator_type, item_type)
 
@@ -889,6 +891,7 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_queue_is_valid<queue_type>(queue); \
 	}
 
+#undef EP_RT_DEFINE_QUEUE
 #define EP_RT_DEFINE_QUEUE(queue_name, queue_type, item_type) \
 	EP_RT_DEFINE_QUEUE_PREFIX(ep, queue_name, queue_type, item_type)
 
@@ -946,9 +949,11 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		STATIC_CONTRACT_NOTHROW; \
 	}
 
+#undef EP_RT_DEFINE_ARRAY
 #define EP_RT_DEFINE_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
+#undef EP_RT_DEFINE_LOCAL_ARRAY
 #define EP_RT_DEFINE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
@@ -1001,9 +1006,11 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_array_reverse_iterator_value<iterator_type, item_type> (iterator); \
 	}
 
+#undef EP_RT_DEFINE_ARRAY_ITERATOR
 #define EP_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
+#undef EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR
 #define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
@@ -1060,9 +1067,11 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		_rt_coreclr_hash_map_remove<hash_map_type, key_type>(hash_map, key); \
 	}
 
+#undef EP_RT_DEFINE_HASH_MAP
 #define EP_RT_DEFINE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
 
+#undef EP_RT_DEFINE_HASH_MAP_REMOVE
 #define EP_RT_DEFINE_HASH_MAP_REMOVE(hash_map_name, hash_map_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_REMOVE_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
 
@@ -1093,15 +1102,9 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_hash_map_iterator_value<hash_map_type, iterator_type, value_type>(iterator); \
 	}
 
+#undef EP_RT_DEFINE_HASH_MAP_ITERATOR
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
-
-//TODO: Move types into type API.
-typedef DWORD (WINAPI *ep_rt_thread_start_func)(LPVOID lpThreadParameter);
-typedef DWORD ep_rt_thread_start_func_return_t;
-
-//TODO: Should be a redefinable define.
-#define EP_RT_DEFINE_THREAD_FUNC(name) static ep_rt_thread_start_func_return_t WINAPI name (LPVOID data)
 
 static
 inline
@@ -1624,6 +1627,29 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 EP_RT_DEFINE_LIST (session_provider_list, ep_rt_session_provider_list_t, EventPipeSessionProvider *)
 EP_RT_DEFINE_LIST_ITERATOR (session_provider_list, ep_rt_session_provider_list_t, ep_rt_session_provider_list_iterator_t, EventPipeSessionProvider *)
 
+static
+EventPipeSessionProvider *
+ep_rt_session_provider_list_find_by_name (
+	const ep_rt_session_provider_list_t *list,
+	const ep_char8_t *name)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	SList<SListElem<EventPipeSessionProvider *>> *provider_list = list->list;
+	EventPipeSessionProvider *session_provider = NULL;
+	SListElem<EventPipeSessionProvider *> *element = provider_list->GetHead ();
+	while (element) {
+		EventPipeSessionProvider *candidate = element->GetValue ();
+		if (ep_rt_utf8_string_compare (ep_session_provider_get_provider_name (candidate), name) == 0) {
+			session_provider = candidate;
+			break;
+		}
+		element = provider_list->GetNext (element);
+	}
+
+	return session_provider;
+}
+
 /*
  * EventPipeSequencePoint.
  */
@@ -1660,29 +1686,6 @@ EP_RT_DEFINE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_st
 #undef EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY
 #define EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY(var_name) \
 	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ep_rt_thread_session_state_array_t)
-
-static
-EventPipeSessionProvider *
-ep_rt_session_provider_list_find_by_name (
-	const ep_rt_session_provider_list_t *list,
-	const ep_char8_t *name)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	SList<SListElem<EventPipeSessionProvider *>> *provider_list = list->list;
-	EventPipeSessionProvider *session_provider = NULL;
-	SListElem<EventPipeSessionProvider *> *element = provider_list->GetHead ();
-	while (element) {
-		EventPipeSessionProvider *candidate = element->GetValue ();
-		if (ep_rt_utf8_string_compare (ep_session_provider_get_provider_name (candidate), name) == 0) {
-			session_provider = candidate;
-			break;
-		}
-		element = provider_list->GetNext (element);
-	}
-
-	return session_provider;
-}
 
 /*
  * Arrays.
@@ -1902,24 +1905,18 @@ ep_rt_execute_rundown (void)
  * PAL.
  */
 
-typedef struct ep_rt_thread_params_t {
-	ep_rt_thread_handle_t thread;
-	EventPipeThreadType thread_type;
-	ep_rt_thread_start_func thread_func;
-	void *thread_params;
-} ep_rt_thread_params_t;
-
 typedef struct _rt_coreclr_thread_params_internal_t {
 	ep_rt_thread_params_t thread_params;
 } rt_coreclr_thread_params_internal_t;
 
-static
-DWORD WINAPI
-ep_rt_thread_coreclr_start_func (LPVOID params)
+#undef EP_RT_DEFINE_THREAD_FUNC
+#define EP_RT_DEFINE_THREAD_FUNC(name) static ep_rt_thread_start_func_return_t WINAPI name (LPVOID data)
+
+EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_coreclr_start_func)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	rt_coreclr_thread_params_internal_t *thread_params = reinterpret_cast<rt_coreclr_thread_params_internal_t *>(params);
+	rt_coreclr_thread_params_internal_t *thread_params = reinterpret_cast<rt_coreclr_thread_params_internal_t *>(data);
 	DWORD result = thread_params->thread_params.thread_func (thread_params);
 	if (thread_params->thread_params.thread)
 		::DestroyThread (thread_params->thread_params.thread);
@@ -2441,38 +2438,6 @@ ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
 }
 
 static
-ep_char16_t *
-ep_rt_utf8_to_utf16_string (
-	const ep_char8_t *str,
-	size_t len)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	if (!str)
-		return NULL;
-
-	COUNT_T len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), 0, 0);
-	if (len_utf16 == 0)
-		return NULL;
-
-	if (static_cast<int>(len) != -1)
-		len_utf16 += 1;
-
-	ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc (len_utf16 * sizeof (ep_char16_t)));
-	if (!str_utf16)
-		return NULL;
-
-	len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), reinterpret_cast<LPWSTR>(str_utf16), len_utf16);
-	if (len_utf16 == 0) {
-		free (str_utf16);
-		return NULL;
-	}
-
-	str_utf16 [len_utf16 - 1] = 0;
-	return str_utf16;
-}
-
-static
 inline
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str)
@@ -2504,6 +2469,38 @@ ep_rt_utf8_string_strtok (
 	str_len, \
 	format, ...) \
 sprintf_s (reinterpret_cast<char *>(str), static_cast<size_t>(str_len), reinterpret_cast<const char *>(format), __VA_ARGS__)
+
+static
+ep_char16_t *
+ep_rt_utf8_to_utf16_string (
+	const ep_char8_t *str,
+	size_t len)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	if (!str)
+		return NULL;
+
+	COUNT_T len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), 0, 0);
+	if (len_utf16 == 0)
+		return NULL;
+
+	if (static_cast<int>(len) != -1)
+		len_utf16 += 1;
+
+	ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc (len_utf16 * sizeof (ep_char16_t)));
+	if (!str_utf16)
+		return NULL;
+
+	len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), reinterpret_cast<LPWSTR>(str_utf16), len_utf16);
+	if (len_utf16 == 0) {
+		free (str_utf16);
+		return NULL;
+	}
+
+	str_utf16 [len_utf16 - 1] = 0;
+	return str_utf16;
+}
 
 static
 inline

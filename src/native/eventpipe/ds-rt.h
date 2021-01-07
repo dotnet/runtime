@@ -26,14 +26,22 @@
 #define DS_RT_DECLARE_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DECLARE_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
 
+#define DS_RT_DEFINE_ARRAY ds_rt_redefine
+
 #define DS_RT_DECLARE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DECLARE_LOCAL_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
+
+#define DS_RT_DEFINE_LOCAL_ARRAY ds_rt_redefine
 
 #define DS_RT_DECLARE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DECLARE_ARRAY_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
 
+#define DS_RT_DEFINE_ARRAY_ITERATOR ds_rt_redefine
+
 #define DS_RT_DECLARE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DECLARE_ARRAY_REVERSE_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
+
+#define DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR ds_rt_redefine
 
 /*
 * AutoTrace.
