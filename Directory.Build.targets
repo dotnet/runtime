@@ -27,16 +27,10 @@
   
   <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
        This is required to show all the files corresponding to all target frameworks in VS. -->
-  <ItemGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' or '$(DesignTimeBuild)' == 'true'">
-    <None Include="$(MSBuildProjectDirectory)\**\*.cs"
-          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)"
-          Condition="'$(MSBuildProjectExtension)' == '.csproj'" />
-    <None Include="$(MSBuildProjectDirectory)\**\*.vb"
-          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)"
-          Condition="'$(MSBuildProjectExtension)' == '.vbproj'" />
-    <None Include="$(MSBuildProjectDirectory)\**\*.fs"
-          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)"
-          Condition="'$(MSBuildProjectExtension)' == '.fsproj'" />
+  <ItemGroup Condition="'$(DefaultLanguageSourceExtension)' != '' and
+                        ('$(BuildingInsideVisualStudio)' == 'true' or '$(DesignTimeBuild)' == 'true')">
+    <None Include="$(MSBuildProjectDirectory)\**\*$(DefaultLanguageSourceExtension)"
+          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
   </ItemGroup>
 
   <!-- Packaging -->
