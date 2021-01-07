@@ -1014,10 +1014,6 @@ ep_buffer_manager_suspend_write_event (
 			EventPipeThread *thread = ep_thread_session_state_get_thread (ep_rt_thread_session_state_list_iterator_value (&thread_session_state_list_iterator));
 			ep_rt_thread_array_append (&thread_array, thread);
 			ep_rt_thread_session_state_list_iterator_next (&thread_session_state_list_iterator);
-
-			// Once EventPipeSession::SuspendWriteEvent completes, we shouldn't have any
-			// in progress writes left.
-			EP_ASSERT (ep_thread_get_session_write_in_progress (thread) != session_index);
 		}
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1);
 

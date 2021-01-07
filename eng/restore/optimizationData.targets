@@ -1,10 +1,10 @@
 ﻿<Project>
 
   <ItemGroup>
-    <IBCPackage Include="$(WindowsCoreFxOptimizationDataPackage)" Version="$(optimizationwindows_ntx64IBCCoreFxVersion)" />
-    <IBCPackage Include="$(LinuxCoreFxOptimizationDataPackage)" Version="$(optimizationlinuxx64IBCCoreFxVersion)" />
-    <IBCPackage Include="$(WindowsOptimizationIBCCoreCLRPackage)" Version="$(optimizationwindows_ntx64IBCCoreCLRVersion)" />
-    <IBCPackage Include="$(LinuxOptimizationIBCCoreCLRPackage)" Version="$(optimizationlinuxx64IBCCoreCLRVersion)" />
+    <IBCPackage Include="optimization.windows_nt-x64.ibc.corefx" Version="$(optimizationwindows_ntx64IBCCoreFxVersion)" />
+    <IBCPackage Include="optimization.linux-x64.ibc.corefx" Version="$(optimizationlinuxx64IBCCoreFxVersion)" />
+    <IBCPackage Include="optimization.windows_nt-x64.IBC.CoreCLR" Version="$(optimizationwindows_ntx64IBCCoreCLRVersion)" />
+    <IBCPackage Include="optimization.linux-x64.IBC.CoreCLR" Version="$(optimizationlinuxx64IBCCoreCLRVersion)" />
     <PackageDownload Include="@(IBCPackage)" Version="[%(Version)]" />
   </ItemGroup>
 

@@ -205,7 +205,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (runtimeTarget == null)
             {
-                throw new FormatException("No runtime target found");
+                throw new FormatException(SR.NoRuntimeTarget);
             }
 
             return new DependencyContext(
@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (targets == null || targets.Count == 0)
             {
-                throw new FormatException("Dependency file does not have 'targets' section");
+                throw new FormatException(SR.NoTargetsSection);
             }
 
             if (!string.IsNullOrEmpty(runtimeTargetName))
@@ -230,7 +230,7 @@ namespace Microsoft.Extensions.DependencyModel
                 target = targets.FirstOrDefault(t => t.Name == runtimeTargetName);
                 if (target == null)
                 {
-                    throw new FormatException($"Target with name {runtimeTargetName} not found");
+                    throw new FormatException(SR.Format(SR.TargetNotFound, runtimeTargetName));
                 }
             }
             else
@@ -700,7 +700,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (libraryStubs == null || !libraryStubs.TryGetValue(nameWithVersion, out LibraryStub stub))
             {
-                throw new InvalidOperationException($"Cannot find library information for {nameWithVersion}");
+                throw new InvalidOperationException(SR.Format(SR.LibraryInformationNotFound, nameWithVersion));
             }
 
             int separatorPosition = nameWithVersion.IndexOf(DependencyContextStrings.VersionSeparator);

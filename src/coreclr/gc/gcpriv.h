@@ -778,7 +778,7 @@ public:
     PTR_heap_segment start_segment;
 #ifndef USE_REGIONS
     uint8_t*        allocation_start;
-#endif //USE_REGIONS
+#endif //!USE_REGIONS
     heap_segment*   allocation_segment;
     uint8_t*        allocation_context_start_region;
 #ifdef USE_REGIONS
@@ -797,8 +797,10 @@ public:
     size_t          free_list_space;
     size_t          free_obj_space;
     size_t          allocation_size;
+#ifndef USE_REGIONS
     uint8_t*        plan_allocation_start;
     size_t          plan_allocation_start_size;
+#endif //!USE_REGIONS
 
     // this is the pinned plugs that got allocated into this gen.
     size_t          pinned_allocated;
@@ -4902,6 +4904,7 @@ heap_segment*& generation_allocation_segment (generation* inst)
 {
   return inst->allocation_segment;
 }
+#ifndef USE_REGIONS
 inline
 uint8_t*& generation_plan_allocation_start (generation* inst)
 {
@@ -4912,6 +4915,7 @@ size_t& generation_plan_allocation_start_size (generation* inst)
 {
   return inst->plan_allocation_start_size;
 }
+#endif //!USE_REGIONS
 inline
 uint8_t*& generation_allocation_context_start_region (generation* inst)
 {

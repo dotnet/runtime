@@ -278,7 +278,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (scope != ScopeParameter)
             {
-                throw new NotSupportedException("GetCaptureDisposable call is supported only for main scope");
+                throw new NotSupportedException(SR.GetCaptureDisposableNotSupported);
             }
             return CaptureDisposable;
         }

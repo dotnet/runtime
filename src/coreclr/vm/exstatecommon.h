@@ -508,8 +508,8 @@ public:
 
 void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOriginalException);
 BOOL CopyWatsonBucketsToThrowable(PTR_VOID pUnmanagedBuckets, OBJECTREF oTargetThrowable = NULL);
-void CopyWatsonBucketsFromThrowableToCurrentThrowable(OBJECTREF oThrowableFrom);
-void CopyWatsonBucketsBetweenThrowables(OBJECTREF oThrowableFrom, OBJECTREF oThrowableTo = NULL);
+void CopyWatsonBucketsFromThrowableToCurrentThrowable(U1ARRAYREF oManagedWatsonBuckets);
+void CopyWatsonBucketsBetweenThrowables(U1ARRAYREF oManagedWatsonBuckets, OBJECTREF oThrowableTo = NULL);
 void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp);
 BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException);
 void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject);

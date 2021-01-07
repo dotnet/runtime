@@ -9132,6 +9132,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
+    public class CallConvSuppressGCTransition
+    {
+        public CallConvSuppressGCTransition() { }
+    }
     public partial class CallConvThiscall
     {
         public CallConvThiscall() { }

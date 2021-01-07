@@ -5606,7 +5606,7 @@ struct ValueNumberState
                 bool allNonLoopPredsDone = true;
                 for (flowList* pred = m_comp->BlockPredsWithEH(cand); pred != nullptr; pred = pred->flNext)
                 {
-                    BasicBlock* predBlock = pred->flBlock;
+                    BasicBlock* predBlock = pred->getBlock();
                     if (!m_comp->optLoopTable[lnum].lpContains(predBlock))
                     {
                         if (!GetVisitBit(predBlock->bbNum, BVB_complete))
@@ -5663,7 +5663,7 @@ struct ValueNumberState
             bool allPredsVisited = true;
             for (flowList* pred = m_comp->BlockPredsWithEH(succ); pred != nullptr; pred = pred->flNext)
             {
-                BasicBlock* predBlock = pred->flBlock;
+                BasicBlock* predBlock = pred->getBlock();
                 if (!GetVisitBit(predBlock->bbNum, BVB_complete))
                 {
                     allPredsVisited = false;
@@ -6174,7 +6174,7 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
     bool        multipleNonLoopPreds = false;
     for (flowList* pred = BlockPredsWithEH(entryBlock); pred != nullptr; pred = pred->flNext)
     {
-        BasicBlock* predBlock = pred->flBlock;
+        BasicBlock* predBlock = pred->getBlock();
         if (!optLoopTable[loopNum].lpContains(predBlock))
         {
             if (nonLoopPred == nullptr)

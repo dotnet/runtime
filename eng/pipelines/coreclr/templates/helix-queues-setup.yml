@@ -9,7 +9,7 @@ parameters:
   platform: ''
   runtimeFlavorDisplayName: ''
   shouldContinueOnError: false
-  dependOnEvaluatePaths: false
+  useCheckoutBundle: false
   jobParameters: {}
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
+    useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
     runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
     helixQueues:
 
@@ -85,13 +85,13 @@ jobs:
         - Debian.9.Amd64.Open
         - Ubuntu.1604.Amd64.Open
         - Ubuntu.1804.Amd64.Open
-        - Centos.7.Amd64.Open
+        - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
         - RedHat.7.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Debian.9.Amd64
         - Ubuntu.1604.Amd64
         - Ubuntu.1804.Amd64
-        - Centos.7.Amd64
+        - (Centos.8.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
         - (Fedora.30.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-20200512010621-4f8cef7
         - RedHat.7.Amd64
 

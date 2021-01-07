@@ -863,6 +863,12 @@ struct BasicBlock : private LIR::Range
         flowList*       bbPreds;      // ptr to list of predecessors
     };
 
+    // Pred list maintenance
+    //
+    bool checkPredListOrder();
+    void ensurePredListOrder(Compiler* compiler);
+    void reorderPredList(Compiler* compiler);
+
     BlockSet    bbReach; // Set of all blocks that can reach this one
     BasicBlock* bbIDom;  // Represent the closest dominator to this block (called the Immediate
                          // Dominator) used to compute the dominance tree.
@@ -1230,19 +1236,33 @@ struct BasicBlockList
 
 struct flowList
 {
-    flowList*   flNext;     // The next BasicBlock in the list, nullptr for end of list.
-    BasicBlock* flBlock;    // The BasicBlock of interest.
-    unsigned    flDupCount; // The count of duplicate "edges" (use only for switch stmts)
+public:
+    flowList* flNext; // The next BasicBlock in the list, nullptr for end of list.
 
 private:
+    BasicBlock*          m_block; // The BasicBlock of interest.
     BasicBlock::weight_t flEdgeWeightMin;
     BasicBlock::weight_t flEdgeWeightMax;
 
 public:
+    unsigned flDupCount; // The count of duplicate "edges" (use only for switch stmts)
+
+public:
+    BasicBlock* getBlock() const
+    {
+        return m_block;
+    }
+
+    void setBlock(BasicBlock* newBlock)
+    {
+        m_block = newBlock;
+    }
+
     BasicBlock::weight_t edgeWeightMin() const
     {
         return flEdgeWeightMin;
     }
+
     BasicBlock::weight_t edgeWeightMax() const
     {
         return flEdgeWeightMax;
@@ -1257,12 +1277,8 @@ public:
     bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
     void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight);
 
-    flowList() : flNext(nullptr), flBlock(nullptr), flDupCount(0), flEdgeWeightMin(0), flEdgeWeightMax(0)
-    {
-    }
-
-    flowList(BasicBlock* blk, flowList* rest)
-        : flNext(rest), flBlock(blk), flDupCount(0), flEdgeWeightMin(0), flEdgeWeightMax(0)
+    flowList(BasicBlock* block, flowList* rest)
+        : flNext(rest), m_block(block), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)
     {
     }
 };
