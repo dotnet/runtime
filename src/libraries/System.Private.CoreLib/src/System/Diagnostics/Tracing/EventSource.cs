@@ -2939,8 +2939,10 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // Scoping the call to GetFields to a local function to limit the linker suppression
+#if !ES_BUILD_STANDALONE
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
                     Justification = "Nested type members will be preserved with the parent annotation")]
+#endif
                 static FieldInfo[] GetNestedFields(Type nestedType) => nestedType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
 
                 // Collect task, opcode, keyword and channel information
@@ -5460,8 +5462,10 @@ namespace System.Diagnostics.Tracing
             // Write out the maps
 
             // Scoping the call to enum GetFields to a local function to limit the linker suppression
+#if !ES_BUILD_STANDALONE
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Linker does not trim enums")]
+#endif
             static FieldInfo[] GetEnumFields(Type localEnumType)
             {
                 Debug.Assert(localEnumType.IsEnum);
