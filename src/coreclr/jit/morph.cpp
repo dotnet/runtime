@@ -11605,16 +11605,16 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*   tree,
 }
 
 /*****************************************************************************
- *  If a read operation tries to access simd struct field, then transform the
- *  operation to the SIMD intrinsic SIMDIntrinsicGetItem, and return the new tree.
- *  Otherwise, return the old tree.
- *  Argument:
- *   tree - GenTree*. If this pointer points to simd struct which is used for simd
- *          intrinsic, we will morph it as simd intrinsic SIMDIntrinsicGetItem.
- *  Return:
- *   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
- *   return nullptr.
- */
+*  If a read operation tries to access simd struct field, then transform the
+*  operation to the SIMD intrinsic SIMDIntrinsicGetItem, and return the new tree.
+*  Otherwise, return the old tree.
+*  Argument:
+*   tree - GenTree*. If this pointer points to simd struct which is used for simd
+*          intrinsic, we will morph it as simd intrinsic SIMDIntrinsicGetItem.
+*  Return:
+*   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
+   return nullptr.
+*/
 
 GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
 {
@@ -11635,16 +11635,16 @@ GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
 }
 
 /*****************************************************************************
- *  Transform an assignment of a SIMD struct field to SIMD intrinsic
- *  SIMDIntrinsicSet*, and return a new tree. If it is not such an assignment,
- *  then return the old tree.
- *  Argument:
- *   tree - GenTree*. If this pointer points to simd struct which is used for simd
- *          intrinsic, we will morph it as simd intrinsic set.
- *  Return:
- *   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
- *   return nullptr.
- */
+*  Transform an assignment of a SIMD struct field to SIMD intrinsic
+*  SIMDIntrinsicSet*, and return a new tree. If it is not such an assignment,
+*  then return the old tree.
+*  Argument:
+*   tree - GenTree*. If this pointer points to simd struct which is used for simd
+*          intrinsic, we will morph it as simd intrinsic set.
+*  Return:
+*   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
+*   return nullptr.
+*/
 
 GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
 {
@@ -11911,15 +11911,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_MUL:
             // -a * C => a * -C, where C is constant
             // MUL(NEG(a), C) => MUL(a, NEG(C))
-            if (fgGlobalMorph && op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
-                !op2->IsIconHandle() && op2->AsIntCon()->IconValue() != 1 && op2->AsIntCon()->IconValue() != 0 &&
-                op2->AsIntCon()->IconValue() != -1 && !tree->gtOverflow())
+            if (opts.OptimizationEnabled() && fgGlobalMorph && op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() &&
+                op2->IsCnsIntOrI() && !op2->IsIconHandle() && op2->AsIntCon()->IconValue() != 1 &&
+                op2->AsIntCon()->IconValue() != 0 && op2->AsIntCon()->IconValue() != -1 && !tree->gtOverflow())
             {
-                // tree: MUL
-                // op1: a
-                // op2: NEG
-                // op2Child: C
-
                 tree->AsOp()->gtOp1 = op1->gtGetOp1();
                 DEBUG_DESTROY_NODE(op1);
                 op2->AsIntCon()->SetIconValue(-op2->AsIntCon()->IconValue()); // -C
@@ -12074,15 +12069,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             // -a / C => a / -C, where C is constant
             // DIV(NEG(a), C) => DIV(a, NEG(C))
-            if (fgGlobalMorph && op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
-                !op2->IsIconHandle() && op2->AsIntCon()->IconValue() != 1 && op2->AsIntCon()->IconValue() != 0 &&
-                op2->AsIntCon()->IconValue() != -1)
+            if (opts.OptimizationEnabled() && fgGlobalMorph && op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() &&
+                op2->IsCnsIntOrI() && !op2->IsIconHandle() && op2->AsIntCon()->IconValue() != 1 &&
+                op2->AsIntCon()->IconValue() != 0 && op2->AsIntCon()->IconValue() != -1)
             {
-                // tree: DIV
-                // op1: a
-                // op2: NEG
-                // op2Child: C
-
                 tree->AsOp()->gtOp1 = op1->gtGetOp1();
                 DEBUG_DESTROY_NODE(op1);
                 op2->AsIntCon()->SetIconValue(-op2->AsIntCon()->IconValue()); // -C
