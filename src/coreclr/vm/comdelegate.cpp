@@ -194,7 +194,7 @@ public:
             index = byteIndex / TARGET_POINTER_SIZE;
             _ASSERTE((m_argLocDesc->m_idxStack + m_currentStackSlotIndex) == index);
             m_currentStackSlotIndex++;
-            m_currentByteStackIndex += m_argLocDesc->m_byteStackSize;
+            m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
             // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
             if (index >= ShuffleEntry::REGMASK)

@@ -1764,14 +1764,14 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
 #else // UNIX_AMD64_ABI
         // All stack arguments take just one stack slot on AMD64 because of arguments bigger
         // than a stack slot are passed by reference.
-        stackElemSize = STACK_ELEM_SIZE;
+        stackElemSize = TARGET_POINTER_SIZE;
 #endif // UNIX_AMD64_ABI
 #else // TARGET_AMD64
         const bool isValueType = (GetArgType() == ELEMENT_TYPE_VALUETYPE);
         stackElemSize = StackElemSize(GetArgSize(), isValueType);
 #if defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
         if (IsArgPassedByRef())
-            stackElemSize = STACK_ELEM_SIZE;
+            stackElemSize = TARGET_POINTER_SIZE;
 #endif
 #endif // TARGET_AMD64
 

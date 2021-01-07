@@ -145,14 +145,13 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 // Parameter size
 //**********************************************************************
 
-typedef INT64 StackElemType;
-#define STACK_ELEM_SIZE sizeof(StackElemType)
-
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false)
 {
+    typedef INT64 StackElemType;
+    const unsigned stackSlotSize = sizeof(StackElemType);
     // The next expression assumes STACK_ELEM_SIZE is a power of 2.
-    static_assert(((STACK_ELEM_SIZE & (STACK_ELEM_SIZE-1)) == 0), "STACK_ELEM_SIZE must be a power of 2");
-    return (parmSize + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1);
+    static_assert(((stackSlotSize & (stackSlotSize-1)) == 0), "STACK_ELEM_SIZE must be a power of 2");
+    return (parmSize + stackSlotSize - 1) & ~(stackSlotSize - 1);
 }
 
 //**********************************************************************
