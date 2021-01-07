@@ -31,50 +31,6 @@
 #include "utilcode.h"
 #endif
 
-// To include definition of CAPTURE_BUCKETS_AT_TRANSITION
-#include "exstate.h"
-
-// The two threads need to communicate some information.  Any object references must
-// be declared to GC.
-struct SharedState
-{
-    OBJECTHANDLE    m_Threadable;
-    OBJECTHANDLE    m_ThreadStartArg;
-    Thread         *m_Internal;
-
-    SharedState(OBJECTREF threadable, OBJECTREF threadStartArg, Thread *internal)
-    {
-        CONTRACTL
-        {
-            GC_NOTRIGGER;
-            THROWS;  // From CreateHandle()
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        AppDomain *ad = ::GetAppDomain();
-
-        m_Threadable = ad->CreateHandle(threadable);
-        m_ThreadStartArg = ad->CreateHandle(threadStartArg);
-
-        m_Internal = internal;
-    }
-
-    ~SharedState()
-    {
-        CONTRACTL
-        {
-            GC_NOTRIGGER;
-            NOTHROW;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        DestroyHandle(m_Threadable);
-        DestroyHandle(m_ThreadStartArg);
-    }
-};
-
 
 // For the following helpers, we make no attempt to synchronize.  The app developer
 // is responsible for managing their own race conditions.
@@ -191,62 +147,14 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
     }
     CONTRACTL_END;
 
-    KickOffThread_Args *args = (KickOffThread_Args *) ptr;
-    _ASSERTE(ObjectFromHandle(args->share->m_Threadable) != NULL);
-    args->retVal = 0;
+    KickOffThread_Args *pKickOffArgs = (KickOffThread_Args *) ptr;
+    pKickOffArgs->retVal = 0;
 
-    // we are saving the delagate and result primarily for debugging
-    struct _gc
-    {
-        OBJECTREF orThreadStartArg;
-        OBJECTREF orDelegate;
-        OBJECTREF orResult;
-        OBJECTREF orThread;
-    } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__START_CALLBACK);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(GetThread()->GetExposedObjectRaw());
 
-    Thread *pThread;
-    pThread = GetThread();
-    _ASSERTE(pThread);
-    GCPROTECT_BEGIN(gc);
-
-    gc.orDelegate = ObjectFromHandle(args->share->m_Threadable);
-    gc.orThreadStartArg = ObjectFromHandle(args->share->m_ThreadStartArg);
-
-    // We cannot call the Delegate Invoke method directly from ECall.  The
-    //  stub has not been created for non multicast delegates.  Instead, we
-    //  will invoke the Method on the OR stored in the delegate directly.
-    // If there are changes to the signature of the ThreadStart delegate
-    //  this code will need to change.  I've noted this in the Thread start
-    //  class.
-
-    delete args->share;
-    args->share = 0;
-
-    MethodDesc *pMeth = ((DelegateEEClass*)( gc.orDelegate->GetMethodTable()->GetClass() ))->GetInvokeMethod();
-    _ASSERTE(pMeth);
-    MethodDescCallSite invokeMethod(pMeth, &gc.orDelegate);
-
-    if (CoreLibBinder::IsClass(gc.orDelegate->GetMethodTable(), CLASS__PARAMETERIZEDTHREADSTART))
-    {
-        //Parameterized ThreadStart
-        ARG_SLOT arg[2];
-
-        arg[0] = ObjToArgSlot(gc.orDelegate);
-        arg[1]=ObjToArgSlot(gc.orThreadStartArg);
-        invokeMethod.Call(arg);
-    }
-    else
-    {
-        //Simple ThreadStart
-        ARG_SLOT arg[1];
-
-        arg[0] = ObjToArgSlot(gc.orDelegate);
-        invokeMethod.Call(arg);
-    }
-	STRESS_LOG2(LF_SYNC, LL_INFO10, "Managed thread exiting normally for delegate %p Type %pT\n", OBJECTREFToObject(gc.orDelegate), (size_t) gc.orDelegate->GetMethodTable());
-
-    GCPROTECT_END();
+    CALL_MANAGED_METHOD_NORET(args);
 }
 
 // Helper to avoid two EX_TRY/EX_CATCH blocks in one function
@@ -287,16 +195,7 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
     }
     CONTRACTL_END;
 
-    ULONG retVal = 0;
-    // Before we do anything else, get Setup so that we have a real thread.
-
-    KickOffThread_Args args;
-    // don't have a separate var becuase this can be updated in the worker
-    args.share   = (SharedState *) pass;
-    args.pThread = args.share->m_Internal;
-
-    Thread* pThread = args.pThread;
-
+    Thread* pThread = (Thread*)pass;
     _ASSERTE(pThread != NULL);
 
     if (pThread->HasStarted())
@@ -321,13 +220,12 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
         // we can adjust the delegate we are going to invoke on.
 
         _ASSERTE(GetThread() == pThread);        // Now that it's started
-        ManagedThreadBase::KickOff(KickOffThread_Worker, &args);
 
-        // If TS_FailStarted is set then the args are deleted in ThreadNative::StartInner
-        if ((args.share) && !pThread->HasThreadState(Thread::TS_FailStarted))
-        {
-            delete args.share;
-        }
+        KickOffThread_Args args;
+        args.share = NULL;
+        args.pThread = pThread;
+
+        ManagedThreadBase::KickOff(KickOffThread_Worker, &args);
 
         PulseAllHelper(pThread);
 
@@ -338,158 +236,90 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
         DestroyThread(pThread);
     }
 
-    return retVal;
+    return 0;
 }
 
-
-FCIMPL1(void, ThreadNative::Start, ThreadBaseObject* pThisUNSAFE)
+void QCALLTYPE ThreadNative::Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
+    BEGIN_QCALL;
 
-    StartInner(pThisUNSAFE);
+    Thread * pNewThread = thread;
+    _ASSERTE(pNewThread != NULL);
 
-    HELPER_METHOD_FRAME_END_POLL();
-}
-FCIMPLEND
-
-// Start up a thread, which by now should be in the ThreadStore's Unstarted list.
-void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
-{
-    CONTRACTL
+    // Is the thread already started?  You can't restart a thread.
+    if (!ThreadNotStarted(pNewThread))
     {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
+        COMPlusThrow(kThreadStateException, IDS_EE_THREADSTART_STATE);
     }
-    CONTRACTL_END;
 
-    struct _gc
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    // Attempt to eagerly set the apartment state during thread startup.
+    Thread::ApartmentState as = pNewThread->GetExplicitApartment();
+    if (as == Thread::AS_Unknown)
     {
-        THREADBASEREF   pThis;
-    } gc;
-
-    gc.pThis       = (THREADBASEREF) pThisUNSAFE;
-
-    GCPROTECT_BEGIN(gc);
-
-    if (gc.pThis == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-
-    Thread        *pNewThread = gc.pThis->GetInternal();
-    if (pNewThread == NULL)
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
-
-    _ASSERTE(GetThread() != NULL);          // Current thread wandered in!
-
-    gc.pThis->EnterObjMonitor();
-
-    EX_TRY
-    {
-        // Is the thread already started?  You can't restart a thread.
-        if (!ThreadNotStarted(pNewThread))
-        {
-            COMPlusThrow(kThreadStateException, IDS_EE_THREADSTART_STATE);
-        }
-
-        OBJECTREF   threadable = gc.pThis->GetDelegate();
-        OBJECTREF   threadStartArg = gc.pThis->GetThreadStartArg();
-        gc.pThis->SetDelegate(NULL);
-        gc.pThis->SetThreadStartArg(NULL);
-
-        // This can never happen, because we construct it with a valid one and then
-        // we never let you change it (because SetStart is private).
-        _ASSERTE(threadable != NULL);
-
-        // Allocate this away from our stack, so we can unwind without affecting
-        // KickOffThread.  It is inside a GCFrame, so we can enable GC now.
-        NewHolder<SharedState> share(new SharedState(threadable, threadStartArg, pNewThread));
-
-        pNewThread->IncExternalCount();
-
-        // Fire an ETW event to mark the current thread as the launcher of the new thread
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadCreating))
-            FireEtwThreadCreating(pNewThread, GetClrInstanceId());
-
-        // copy out the managed name into a buffer that will not move if a GC happens
-        const WCHAR* nativeThreadName = NULL;
-        InlineSString<64> threadNameBuffer;
-        STRINGREF managedThreadName = gc.pThis->GetName();
-        if (managedThreadName != NULL)
-        {
-            managedThreadName->GetSString(threadNameBuffer);
-            nativeThreadName = threadNameBuffer.GetUnicode();
-        }
-
-        // As soon as we create the new thread, it is eligible for suspension, etc.
-        // So it gets transitioned to cooperative mode before this call returns to
-        // us.  It is our duty to start it running immediately, so that GC isn't blocked.
-
-        BOOL success = pNewThread->CreateNewThread(
-                                        pNewThread->RequestedThreadStackSize() /* 0 stackSize override*/,
-                                        KickOffThread, share, nativeThreadName);
-
-        if (!success)
-        {
-            pNewThread->DecExternalCount(FALSE);
-            COMPlusThrowOM();
-        }
-
-        // After we have established the thread handle, we can check m_Priority.
-        // This ordering is required to eliminate the race condition on setting the
-        // priority of a thread just as it starts up.
-        pNewThread->SetThreadPriority(MapToNTPriority(gc.pThis->m_Priority));
-        pNewThread->ChooseThreadCPUGroupAffinity();
-
-        FastInterlockOr((ULONG *) &pNewThread->m_State, Thread::TS_LegalToJoin);
-
-        DWORD   ret;
-        ret = pNewThread->StartThread();
-
-        // When running under a user mode native debugger there is a race
-        // between the moment we've created the thread (in CreateNewThread) and
-        // the moment we resume it (in StartThread); the debugger may receive
-        // the "ct" (create thread) notification, and it will attempt to
-        // suspend/resume all threads in the process.  Now imagine the debugger
-        // resumes this thread first, and only later does it try to resume the
-        // newly created thread.  In these conditions our call to ResumeThread
-        // may come before the debugger's call to ResumeThread actually causing
-        // ret to equal 2.
-        // We cannot use IsDebuggerPresent() in the condition below because the
-        // debugger may have been detached between the time it got the notification
-        // and the moment we execute the test below.
-        _ASSERTE(ret == 1 || ret == 2);
-
-        {
-            GCX_PREEMP();
-
-            // Synchronize with HasStarted.
-            YIELD_WHILE (!pNewThread->HasThreadState(Thread::TS_FailStarted) &&
-                   pNewThread->HasThreadState(Thread::TS_Unstarted));
-        }
-
-        if (!pNewThread->HasThreadState(Thread::TS_FailStarted))
-        {
-            share.SuppressRelease();       // we have handed off ownership of the shared struct
-        }
-        else
-        {
-            share.Release();
-            PulseAllHelper(pNewThread);
-            pNewThread->HandleThreadStartupFailure();
-        }
+        pNewThread->SetApartment(Thread::AS_InMTA);
     }
-    EX_CATCH
+#endif
+
+    pNewThread->IncExternalCount();
+
+    // Fire an ETW event to mark the current thread as the launcher of the new thread
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadCreating))
+        FireEtwThreadCreating(pNewThread, GetClrInstanceId());
+
+    // As soon as we create the new thread, it is eligible for suspension, etc.
+    // So it gets transitioned to cooperative mode before this call returns to
+    // us.  It is our duty to start it running immediately, so that GC isn't blocked.
+
+    BOOL success = pNewThread->CreateNewThread(
+                                    threadStackSize /* 0 stackSize override*/,
+                                    KickOffThread, pNewThread, pThreadName);
+
+    if (!success)
     {
-        gc.pThis->LeaveObjMonitor();
-        EX_RETHROW;
+        pNewThread->DecExternalCount(FALSE);
+        COMPlusThrowOM();
     }
-    EX_END_CATCH_UNREACHABLE;
 
-    gc.pThis->LeaveObjMonitor();
+    // After we have established the thread handle, we can check m_Priority.
+    // This ordering is required to eliminate the race condition on setting the
+    // priority of a thread just as it starts up.
+    pNewThread->SetThreadPriority(MapToNTPriority(priority));
+    pNewThread->ChooseThreadCPUGroupAffinity();
 
-    GCPROTECT_END();
+    FastInterlockOr((ULONG *) &pNewThread->m_State, Thread::TS_LegalToJoin);
+
+    DWORD ret = pNewThread->StartThread();
+
+    // When running under a user mode native debugger there is a race
+    // between the moment we've created the thread (in CreateNewThread) and
+    // the moment we resume it (in StartThread); the debugger may receive
+    // the "ct" (create thread) notification, and it will attempt to
+    // suspend/resume all threads in the process.  Now imagine the debugger
+    // resumes this thread first, and only later does it try to resume the
+    // newly created thread.  In these conditions our call to ResumeThread
+    // may come before the debugger's call to ResumeThread actually causing
+    // ret to equal 2.
+    // We cannot use IsDebuggerPresent() in the condition below because the
+    // debugger may have been detached between the time it got the notification
+    // and the moment we execute the test below.
+    _ASSERTE(ret == 1 || ret == 2);
+
+    // Synchronize with HasStarted.
+    YIELD_WHILE (!pNewThread->HasThreadState(Thread::TS_FailStarted) &&
+            pNewThread->HasThreadState(Thread::TS_Unstarted));
+
+    if (pNewThread->HasThreadState(Thread::TS_FailStarted))
+    {
+        GCX_COOP();
+
+        PulseAllHelper(pNewThread);
+        pNewThread->HandleThreadStartupFailure();
+    }
+
+    END_QCALL;
 }
 
 // Note that you can manipulate the priority of a thread that hasn't started yet,
@@ -719,42 +549,34 @@ UINT64 QCALLTYPE ThreadNative::GetCurrentOSThreadId()
     return threadId;
 }
 
-FCIMPL3(void, ThreadNative::SetStart, ThreadBaseObject* pThisUNSAFE, Object* pDelegateUNSAFE, INT32 iRequestedStackSize)
+FCIMPL1(void, ThreadNative::Initialize, ThreadBaseObject* pThisUNSAFE)
 {
     FCALL_CONTRACT;
 
-    if (pThisUNSAFE==NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
-
     THREADBASEREF   pThis       = (THREADBASEREF) pThisUNSAFE;
-    OBJECTREF       pDelegate   = (OBJECTREF    ) pDelegateUNSAFE;
 
-    HELPER_METHOD_FRAME_BEGIN_2(pThis, pDelegate);
+    HELPER_METHOD_FRAME_BEGIN_1(pThis);
 
     _ASSERTE(pThis != NULL);
-    _ASSERTE(pDelegate != NULL); // Thread's constructor validates this
+    _ASSERTE(pThis->m_InternalThread == NULL);
 
-    if (pThis->m_InternalThread == NULL)
+    // if we don't have an internal Thread object associated with this exposed object,
+    // now is our first opportunity to create one.
+    Thread      *unstarted = SetupUnstartedThread();
+
+    PREFIX_ASSUME(unstarted != NULL);
+
+    if (GetThread()->GetDomain()->IgnoreUnhandledExceptions())
     {
-        // if we don't have an internal Thread object associated with this exposed object,
-        // now is our first opportunity to create one.
-        Thread      *unstarted = SetupUnstartedThread();
-
-        PREFIX_ASSUME(unstarted != NULL);
-
-        if (GetThread()->GetDomain()->IgnoreUnhandledExceptions())
-        {
-            unstarted->SetThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions);
-        }
-
-        pThis->SetInternal(unstarted);
-        pThis->SetManagedThreadId(unstarted->GetThreadId());
-        unstarted->SetExposedObject(pThis);
-        unstarted->RequestedThreadStackSize(iRequestedStackSize);
+        unstarted->SetThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions);
     }
 
-    // save off the delegate
-    pThis->SetDelegate(pDelegate);
+    pThis->SetInternal(unstarted);
+    pThis->SetManagedThreadId(unstarted->GetThreadId());
+    unstarted->SetExposedObject(pThis);
+
+    // Initialize the thread priority to normal.
+    pThis->SetPriority(ThreadNative::PRIORITY_NORMAL);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -837,10 +659,7 @@ FCIMPL1(INT32, ThreadNative::GetThreadState, ThreadBaseObject* pThisUNSAFE)
     // Don't report a StopRequested if the thread has actually stopped.
     if (state & Thread::TS_Dead)
     {
-        if (state & Thread::TS_Aborted)
-            res |= ThreadAborted;
-        else
-            res |= ThreadStopped;
+        res |= ThreadStopped;
     }
     else
     {
@@ -1005,39 +824,6 @@ FCIMPL1(INT32, ThreadNative::GetApartmentState, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
-
-// Attempt to eagerly set the apartment state during thread startup.
-FCIMPL1(void, ThreadNative::StartupSetApartmentState, ThreadBaseObject* pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    THREADBASEREF refThis = (THREADBASEREF) ObjectToOBJECTREF(pThisUNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_1(refThis);
-
-    if (refThis == NULL)
-    {
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-    }
-
-    Thread* thread = refThis->GetInternal();
-
-    if (!ThreadNotStarted(thread))
-        COMPlusThrow(kThreadStateException, IDS_EE_THREADSTART_STATE);
-
-    // Assert that the thread hasn't been started yet.
-    _ASSERTE(Thread::TS_Unstarted & thread->GetSnapshotState());
-
-    Thread::ApartmentState as = thread->GetExplicitApartment();
-    if (as == Thread::AS_Unknown)
-    {
-        thread->SetApartment(Thread::AS_InMTA);
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 void ReleaseThreadExternalCount(Thread * pThread)
@@ -1124,44 +910,6 @@ BOOL ThreadNative::DoJoin(THREADBASEREF DyingThread, INT32 timeout)
 
     return FALSE;
 }
-
-
-// We don't get a constructor for ThreadBaseObject, so we rely on the fact that this
-// method is only called once, out of SetStart.  Since SetStart is private/native
-// and only called from the constructor, we'll only get called here once to set it
-// up and once (with NULL) to tear it down.  The 'null' can only come from Finalize
-// because the constructor throws if it doesn't get a valid delegate.
-void ThreadBaseObject::SetDelegate(OBJECTREF delegate)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#ifdef APPDOMAIN_STATE
-    if (delegate != NULL)
-    {
-        AppDomain *pDomain = delegate->GetAppDomain();
-        Thread *pThread = GetInternal();
-        AppDomain *kickoffDomain = pThread->GetKickOffDomain();
-        _ASSERTE_ALL_BUILDS("clr/src/VM/COMSynchronizable.cpp", !pDomain || pDomain == kickoffDomain);
-        _ASSERTE_ALL_BUILDS("clr/src/VM/COMSynchronizable.cpp", kickoffDomain == GetThread()->GetDomain());
-    }
-#endif
-
-    SetObjectReference( (OBJECTREF *)&m_Delegate, delegate );
-
-    // If the delegate is being set then initialize the other data members.
-    if (m_Delegate != NULL)
-    {
-        // Initialize the thread priority to normal.
-        m_Priority = ThreadNative::PRIORITY_NORMAL;
-    }
-}
-
 
 // If the exposed object is created after-the-fact, for an existing thread, we call
 // InitExisting on it.  This is the other "construction", as opposed to SetDelegate.
@@ -1253,7 +1001,7 @@ void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, 
 
     BEGIN_QCALL;
 
-    Thread* pThread = &(*thread);
+    Thread* pThread = thread;
 
     // Set on Windows 10 Creators Update and later machines the unmanaged thread name as well. That will show up in ETW traces and debuggers which is very helpful
     // if more and more threads get a meaningful name
@@ -1409,30 +1157,6 @@ BOOL QCALLTYPE ThreadNative::YieldThread()
 
     return ret;
 }
-
-FCIMPL1(Object*, ThreadNative::GetThreadDeserializationTracker, StackCrawlMark* stackMark)
-{
-    FCALL_CONTRACT;
-    OBJECTREF refRetVal = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal)
-
-    // To avoid reflection trying to bypass deserialization tracking, check the caller
-    // and only allow SerializationInfo to call into this method.
-    MethodTable* pCallerMT = SystemDomain::GetCallersType(stackMark);
-    if (pCallerMT != CoreLibBinder::GetClass(CLASS__SERIALIZATION_INFO))
-    {
-        COMPlusThrowArgumentException(W("stackMark"), NULL);
-    }
-
-    Thread* pThread = GetThread();
-
-    refRetVal = ObjectFromHandle(pThread->GetOrCreateDeserializationTracker());
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
 
 FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
 {

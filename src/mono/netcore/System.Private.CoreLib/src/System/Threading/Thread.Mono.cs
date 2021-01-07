@@ -178,6 +178,82 @@ namespace System.Threading
 
         public ThreadState ThreadState => GetState(this);
 
+        public Thread(ThreadStart start)
+            : this()
+        {
+            if (start == null)
+            {
+                throw new ArgumentNullException(nameof(start));
+            }
+
+            Create(start);
+        }
+
+        public Thread(ThreadStart start, int maxStackSize)
+            : this()
+        {
+            if (start == null)
+            {
+                throw new ArgumentNullException(nameof(start));
+            }
+            if (maxStackSize < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            Create(start, maxStackSize);
+        }
+
+        public Thread(ParameterizedThreadStart start)
+            : this()
+        {
+            if (start == null)
+            {
+                throw new ArgumentNullException(nameof(start));
+            }
+
+            Create(start);
+        }
+
+        public Thread(ParameterizedThreadStart start, int maxStackSize)
+            : this()
+        {
+            if (start == null)
+            {
+                throw new ArgumentNullException(nameof(start));
+            }
+            if (maxStackSize < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            Create(start, maxStackSize);
+        }
+
+        private void RequireCurrentThread()
+        {
+            if (this != CurrentThread)
+            {
+                throw new InvalidOperationException(SR.Thread_Operation_RequiresCurrentThread);
+            }
+        }
+
+        private void SetCultureOnUnstartedThread(CultureInfo value, bool uiCulture)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            if ((ThreadState & ThreadState.Unstarted) == 0)
+            {
+                throw new InvalidOperationException(SR.Thread_Operation_RequiresCurrentThread);
+            }
+            if (uiCulture)
+                ui_culture = value;
+            else
+                culture = value;
+        }
+
         private void Create(ThreadStart start) => SetStartHelper((Delegate)start, 0); // 0 will setup Thread with default stackSize
 
         private void Create(ThreadStart start, int maxStackSize) => SetStartHelper((Delegate)start, maxStackSize);
@@ -218,14 +294,6 @@ namespace System.Threading
             return JoinInternal(this, millisecondsTimeout);
         }
 
-        private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
-        {
-            if (uiCulture)
-                ui_culture = value;
-            else
-                culture = value;
-        }
-
         private void SetStartHelper(Delegate start, int maxStackSize)
         {
             m_start = start;
@@ -252,6 +320,8 @@ namespace System.Threading
         internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
 #if !TARGET_BROWSER
+        internal const bool IsThreadStartSupported = true;
+
         [UnsupportedOSPlatform("browser")]
         public void Start()
         {
@@ -432,9 +502,6 @@ namespace System.Threading
         private static void SpinWait_nop()
         {
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Thread CreateInternal();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool JoinInternal(Thread thread, int millisecondsTimeout);

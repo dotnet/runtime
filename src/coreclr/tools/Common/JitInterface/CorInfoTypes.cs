@@ -370,7 +370,7 @@ namespace Internal.JitInterface
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
-        CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
+        // unused = 0x04,
         CORINFO_SIGFLAG_FAT_CALL = 0x08,
     };
 
@@ -1296,7 +1296,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
         CORJIT_FLAG_PROF_ENTERLEAVE = 20, // Instrument prologues/epilogues
-        CORJIT_FLAG_PROF_REJIT_NOPS = 21, // Insert NOPs to ensure code is re-jitable
+        CORJIT_FLAG_UNUSED7 = 21,
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE = 22, // Disables PInvoke inlining
         CORJIT_FLAG_SKIP_VERIFICATION = 23, // (lazy) skip verification - determined without doing a full resolve. See comment below
         CORJIT_FLAG_PREJIT = 24, // jit or prejit is the execution engine.

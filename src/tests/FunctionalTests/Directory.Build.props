@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <RunAnalyzers>false</RunAnalyzers>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <Import Project="..\..\mono\Directory.Build.props" />
+</Project>

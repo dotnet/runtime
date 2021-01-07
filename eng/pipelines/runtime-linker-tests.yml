@@ -45,7 +45,16 @@ pr:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 jobs:
+#
+# Checkout repository
+#
+- ${{ if eq(variables.useCheckoutBundle, true) }}:
+  - template: /eng/pipelines/common/checkout-job.yml
+
 #
 # Build Release config vertical for Windows, Linux, Linux musl and OSX
 #

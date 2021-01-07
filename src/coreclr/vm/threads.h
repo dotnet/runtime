@@ -1032,7 +1032,6 @@ class Thread
 #endif // FEATURE_HIJACK
 
     friend void         InitThreadManager();
-    friend void         ThreadBaseObject::SetDelegate(OBJECTREF delegate);
 
     friend void CallFinalizerOnThreadObject(Object *obj);
 
@@ -1142,7 +1141,7 @@ public:
 
         TS_SuspendUnstarted       = 0x00400000,    // latch a user suspension on an unstarted thread
 
-        TS_Aborted                = 0x00800000,    // is the thread aborted?
+        // unused                 = 0x00800000,    
         TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread?
 
         TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
@@ -1186,7 +1185,7 @@ public:
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
         TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger
-        TSNC_DebuggerReAbort            = 0x00000002, // thread needs to re-abort itself when resumed by the debugger
+        // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
         TSNC_WaitUntilGCFinished        = 0x00000010, // The current thread is waiting for GC.  If host returns
@@ -1469,22 +1468,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (m_State & TS_Dead);
-    }
-
-    DWORD IsAborted()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_State & TS_Aborted);
-    }
-
-    void SetAborted()
-    {
-        FastInterlockOr((ULONG *) &m_State, TS_Aborted);
-    }
-
-    void ClearAborted()
-    {
-        FastInterlockAnd((ULONG *) &m_State, ~TS_Aborted);
     }
 
     DWORD DoWeOwn()
@@ -2527,43 +2510,9 @@ public:
 
     void           UserSleep(INT32 time);
 
-    // AD unload uses ThreadAbort support.  We need to distinguish pure ThreadAbort and AD unload
-    // cases.
-    enum ThreadAbortRequester
-    {
-        TAR_Thread =      0x00000001,   // Request by Thread
-        TAR_FuncEval =    0x00000004,   // Request by Func-Eval
-        TAR_ALL = 0xFFFFFFFF,
-    };
-
 private:
 
-    //
-    // Bit mask for tracking which aborts came in and why.
-    //
-    enum ThreadAbortInfo
-    {
-        TAI_ThreadAbort       = 0x00000001,
-        TAI_ThreadRudeAbort   = 0x00000004,
-        TAI_FuncEvalAbort     = 0x00000040,
-        TAI_FuncEvalRudeAbort = 0x00000100,
-    };
-
-    static const DWORD TAI_AnySafeAbort = (TAI_ThreadAbort   |
-                                           TAI_FuncEvalAbort
-                                          );
-
-    static const DWORD TAI_AnyRudeAbort = (TAI_ThreadRudeAbort   |
-                                           TAI_FuncEvalRudeAbort
-                                          );
-
-    static const DWORD TAI_AnyFuncEvalAbort = (TAI_FuncEvalAbort   |
-                                           TAI_FuncEvalRudeAbort
-                                          );
-
-
     // Specifies type of thread abort.
-    DWORD  m_AbortInfo;
     DWORD  m_AbortType;
     ULONGLONG  m_AbortEndTime;
     ULONGLONG  m_RudeAbortEndTime;
@@ -2605,25 +2554,12 @@ public:
 
 
 public:
-    HRESULT        UserAbort(ThreadAbortRequester requester,
-                             EEPolicy::ThreadAbortTypes abortType,
-                             DWORD timeout
-                            );
+    HRESULT UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout);
 
     BOOL    HandleJITCaseForAbort();
-
-    void           UserResetAbort(ThreadAbortRequester requester)
-    {
-        InternalResetAbort(requester, FALSE);
-    }
-    void           EEResetAbort(ThreadAbortRequester requester)
-    {
-        InternalResetAbort(requester, TRUE);
-    }
+    void    ResetAbort();
 
 private:
-    void           InternalResetAbort(ThreadAbortRequester requester, BOOL fResetRudeAbort);
-
     void SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort);
 
 public:
@@ -2657,7 +2593,6 @@ public:
     }
 
     BOOL           IsRudeAbort();
-    BOOL           IsFuncEvalAbort();
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HIJACK)
     BOOL           IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck);
@@ -2748,8 +2683,8 @@ private:
     void RemoveAbortRequestBit();
 
 public:
-    void MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::ThreadAbortTypes abortType);
-    void UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce = TRUE);
+    void MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType);
+    void UnmarkThreadForAbort();
 
     static ULONGLONG GetNextSelfAbortEndTime()
     {
@@ -4366,29 +4301,6 @@ public:
         return m_fCompletionPortDrained;
     }
 
-    // --------------------------------
-    //  Store the maxReservedStackSize
-    //  This is passed in from managed code in the thread constructor
-    // ---------------------------------
-private:
-    SIZE_T m_RequestedStackSize;
-
-public:
-
-    // Get the MaxStackSize
-    SIZE_T RequestedThreadStackSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_RequestedStackSize);
-    }
-
-    // Set the MaxStackSize
-    void RequestedThreadStackSize(SIZE_T requestedStackSize)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_RequestedStackSize = requestedStackSize;
-    }
-
     static BOOL CheckThreadStackSize(SIZE_T *SizeToCommitOrReserve,
                                       BOOL   isSizeToReserve  // When TRUE, the previous argument is the stack size to reserve.
                                                               // Otherwise, it is the size to commit.
@@ -4692,12 +4604,6 @@ public:
         m_HijackReturnKind = returnKind;
     }
 #endif // FEATURE_HIJACK
-
-public:
-    OBJECTHANDLE GetOrCreateDeserializationTracker();
-
-private:
-    OBJECTHANDLE m_DeserializationTracker;
 
 public:
     static uint64_t dead_threads_non_alloc_bytes;

@@ -3670,4 +3670,7 @@
   <data name="Activator_CannotCreateInstance" xml:space="preserve">
     <value>Cannot dynamically create an instance of type '{0}'. Reason: {1}</value>
   </data>
+  <data name="Argv_IncludeDoubleQuote" xml:space="preserve">
+    <value>The argv[0] argument cannot include a double quote.</value>
+  </data>
 </root>

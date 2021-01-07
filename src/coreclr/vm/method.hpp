@@ -2023,16 +2023,23 @@ public:
 
 private:
     PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
+#ifdef FEATURE_TIERED_COMPILATION
+    PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldCountCalls);
+    PCODE JitCompileCode(PrepareCodeConfig* pConfig, bool shouldCountCalls);
+    PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, bool shouldCountCalls);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, bool shouldCountCalls, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
+#else
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig);
+    PCODE JitCompileCode(PrepareCodeConfig* pConfig);
+    PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
+#endif
     PCODE GetPrecompiledNgenCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0Jit);
     COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
-    PCODE JitCompileCode(PrepareCodeConfig* pConfig);
-    PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
-    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
 #endif // DACCESS_COMPILE
 
 #ifdef HAVE_GCCOVER
@@ -3611,7 +3618,7 @@ public:
 #ifdef FEATURE_PREJIT
         if (HasNativeCodeSlot())
         {
-            size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ? 
+            size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ?
                 sizeof(FixupListSlot) : 0;
         }
 #endif

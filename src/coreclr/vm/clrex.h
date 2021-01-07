@@ -143,28 +143,22 @@ public:
 
 
     // Accessors for all the preallocated exception objects.
-    static OBJECTREF GetPreallocatedBaseException();
     static OBJECTREF GetPreallocatedOutOfMemoryException();
-    static OBJECTREF GetPreallocatedRudeThreadAbortException();
-    static OBJECTREF GetPreallocatedThreadAbortException();
     static OBJECTREF GetPreallocatedStackOverflowException();
     static OBJECTREF GetPreallocatedExecutionEngineException();
 
-    // Accessors for all the preallocated exception handles.
-    static OBJECTHANDLE GetPreallocatedOutOfMemoryExceptionHandle();
-    static OBJECTHANDLE GetPreallocatedRudeThreadAbortExceptionHandle();
-    static OBJECTHANDLE GetPreallocatedThreadAbortExceptionHandle();
     static OBJECTHANDLE GetPreallocatedStackOverflowExceptionHandle();
-    static OBJECTHANDLE GetPreallocatedExecutionEngineExceptionHandle();
     static OBJECTHANDLE GetPreallocatedHandleForObject(OBJECTREF o);
 
     // Use these to determine if a handle or object ref is one of the preallocated handles or object refs.
     static BOOL IsPreallocatedExceptionObject(OBJECTREF o);
     static BOOL IsPreallocatedExceptionHandle(OBJECTHANDLE h);
 
-    // Prefer a new OOM exception if we can make one.  If we cannot, then give back the pre-allocated
-    // one.
+    // Prefer a new exception if we can make one.  If we cannot, then give back the pre-allocated OOM.
+    static OBJECTREF GetBestException(HRESULT hr, PTR_MethodTable mt);
     static OBJECTREF GetBestOutOfMemoryException();
+    static OBJECTREF GetBestBaseException();
+    static OBJECTREF GetBestThreadAbortException();
 
     static OBJECTREF GetThrowableFromException(Exception *pException);
     static OBJECTREF GetThrowableFromExceptionRecord(EXCEPTION_RECORD *pExceptionRecord);

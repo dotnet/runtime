@@ -61,39 +61,6 @@ namespace MS.Internal.Xml.XPath
             return true;
         }
 
-#if false
-        string dump { get { return Dump(); } }
-
-        string Dump(ResetableIterator it) {
-            it = (ResetableIterator) it.Clone();
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            sb.Append('(');
-            do {
-                XPathNavigator nav = it.Current.Clone();
-                nav.MoveToAttribute("id1", "");
-                sb.Append(nav.Value);
-                sb.Append(", ");
-            } while (it.MoveNext());
-            sb.Length = sb.Length - 2;
-            sb.Append(')');
-            return sb.ToString();
-        }
-
-        string Dump() {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            for (int i = 0; i < arr.Length; i ++) {
-                sb.Append(i);
-                sb.Append(": ");
-                if (i < firstNotEmpty) {
-                    sb.Append("()");
-                }   else {
-                    sb.Append(Dump(arr[i]));
-                }
-                sb.Append("; ");
-            }
-            return sb.ToString();
-        }
-#endif
 
         // Invariant: a[i] < a[i+1] for i > item
         // returns flase is head of the list was moved & as a result consistancy of list depends on head consistancy.

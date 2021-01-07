@@ -30,7 +30,14 @@ public class MonoRunner extends Instrumentation
 {
     static {
         // loadLibrary triggers JNI_OnLoad in these libs
-        System.loadLibrary("System.Security.Cryptography.Native.OpenSsl");
+        try
+        {
+            // loadLibrary can throw an error here if OpenSSL bits aren't around. 
+            // We'll delete OpenSSL impl once we finish the transition to Android Crypto.
+            System.loadLibrary("System.Security.Cryptography.Native.OpenSsl");
+        } catch (java.lang.UnsatisfiedLinkError e) {
+            Log.e("DOTNET", e.getLocalizedMessage());
+        }
         System.loadLibrary("monodroid");
     }
 
