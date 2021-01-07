@@ -24,7 +24,7 @@ namespace System.Net.Security.Tests
         static SslStreamNetworkStreamTest()
         {
             TestHelper.CleanupCertificates(nameof(SslStreamNetworkStreamTest));
-            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest));
+            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
         }
 
         [ConditionalFact]
@@ -216,15 +216,27 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialCHain)
+        public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
         {
+            var rnd = new Random();
+            int split = rnd.Next(0, _serverChain.Count - 1);
+
             var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.RemoteCertificateValidationCallback =
                 (sender, certificate, chain, sslPolicyErrors) =>
                 {
-                    // Add only root CA to verify that peer did send intermediate CA cert.
-                    chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
+                    // add our custom root CA
+                    chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count - 1]);
                     chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    // Add only one CA to verify that peer did send intermediate CA cert.
+                    // In case of partial chain, we need to make missing certs available.
+                    if (usePartialChain)
+                    {
+                        for (int i = split; i < _serverChain.Count - 1; i++)
+                        {
+                            chain.ChainPolicy.ExtraStore.Add(_serverChain[i]);
+                        }
+                    }
 
                     bool result = chain.Build((X509Certificate2)certificate);
                     Assert.True(result);
@@ -233,13 +245,15 @@ namespace System.Net.Security.Tests
                 };
 
             var serverOptions = new SslServerAuthenticationOptions();
-
             X509Certificate2Collection serverChain;
-            if (usePartialCHain)
+            if (usePartialChain)
             {
-                // give certificates  without root
+                // give first few certificates without root CA
                 serverChain = new X509Certificate2Collection();
-                serverChain.Add(_serverChain[0]);
+                for (int i = 0; i < split; i++)
+                {
+                    serverChain.Add(_serverChain[i]);
+                }
             }
             else
             {
