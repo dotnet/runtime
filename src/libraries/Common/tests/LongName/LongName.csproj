@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-   <!-- 
-      For testing Long Paths support we need to have a library that has a path > 260. 
-      The easiest way to do it is to define a library with 260 characters in name 
-   -->
-   <AssemblyName>LibraryWithAVeryLoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooongNameSoWeCanTestLongPathsSupport</AssemblyName>
+    <AssemblyName>LongName</AssemblyName>
     <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
     <IsTestProject>false</IsTestProject>
     <!--
