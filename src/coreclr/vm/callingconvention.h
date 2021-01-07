@@ -42,6 +42,9 @@ struct ArgLocDesc
     int     m_idxStack;           // First stack slot used (or -1)
     int     m_cStack;             // Count of stack slots used (or 0)
 
+    int     m_byteStackIndex;     // Stack offset in bytes (or -1)
+    int     m_byteStackSize;      // Stack size in bytes
+
 #if defined(UNIX_AMD64_ABI)
 
     EEClass* m_eeClass;           // For structs passed in register, it points to the EEClass of the struct
@@ -87,6 +90,8 @@ struct ArgLocDesc
         m_cGenReg = 0;
         m_idxStack = -1;
         m_cStack = 0;
+        m_byteStackIndex = -1;
+        m_byteStackSize = 0;
 #if defined(TARGET_ARM)
         m_fRequires64BitAlignment = FALSE;
 #endif
@@ -227,7 +232,14 @@ struct TransitionBlock
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (offset - TransitionBlock::GetOffsetOfArgs()) / STACK_ELEM_SIZE;
+        return (offset - TransitionBlock::GetOffsetOfArgs()) / TARGET_POINTER_SIZE;
+    }
+
+    static UINT GetStackArgumentByteIndexFromOffset(int offset)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (offset - TransitionBlock::GetOffsetOfArgs());
     }
 
 #ifdef CALLDESCR_FPARGREGS
@@ -599,16 +611,21 @@ public:
         pLoc->Init();
 
         int cSlots = (GetArgSize() + 3) / 4;
+        const unsigned byteArgSize = StackElemSize(GetArgSize());
         if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
             pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
             _ASSERTE(cSlots == 1);
-            pLoc->m_cGenReg = cSlots;
+            _ASSERTE(byteArgSize <= TARGET_POINTER_SIZE);
+            pLoc->m_cGenReg = 1;
         }
         else
         {
             pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
             pLoc->m_cStack = cSlots;
+            pLoc->m_byteStackSize = GetArgSize();
+            pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
+            _ASSERTE(pLoc->m_byteStackIndex / TARGET_POINTER_SIZE == pLoc->m_idxStack);
         }
     }
 #endif
@@ -623,12 +640,13 @@ public:
 
         pLoc->m_fRequires64BitAlignment = m_fRequires64BitAlignment;
 
+        const unsigned byteArgSize = StackElemSize(GetArgSize());
         int cSlots = (GetArgSize() + 3) / 4;
-
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 4;
-            pLoc->m_cFloatReg = cSlots;
+            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / TARGET_POINTER_SIZE;
+            _ASSERTE(byteArgSize / TARGET_POINTER_SIZE == cSlots);
+            pLoc->m_cFloatReg = byteArgSize / TARGET_POINTER_SIZE;
             return;
         }
 
@@ -636,22 +654,27 @@ public:
         {
             pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
 
-            if (cSlots <= (4 - pLoc->m_idxGenReg))
+            if ((int)byteArgSize <= (4 - pLoc->m_idxGenReg) * TARGET_POINTER_SIZE)
             {
-                pLoc->m_cGenReg = cSlots;
+                pLoc->m_cGenReg = (byteArgSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
             }
             else
             {
                 pLoc->m_cGenReg = 4 - pLoc->m_idxGenReg;
-
-                pLoc->m_idxStack = 0;
                 pLoc->m_cStack = cSlots - pLoc->m_cGenReg;
+                pLoc->m_idxStack = 0;
+                pLoc->m_byteStackIndex = 0;
+                pLoc->m_byteStackSize = byteArgSize - pLoc->m_cGenReg * TARGET_POINTER_SIZE;
             }
         }
         else
         {
             pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
             pLoc->m_cStack = cSlots;
+
+            pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
+            pLoc->m_byteStackSize = byteArgSize;
+            _ASSERTE(pLoc->m_byteStackIndex / TARGET_POINTER_SIZE == pLoc->m_idxStack);
         }
     }
 #endif // TARGET_ARM
@@ -664,6 +687,9 @@ public:
 
         pLoc->Init();
 
+        const bool isValueType = (m_argType == ELEMENT_TYPE_VALUETYPE);
+        unsigned byteArgSize = StackElemSize(GetArgSize(), isValueType);
+
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
             // Dividing by 16 as size of each register in FloatArgumentRegisters is 16 bytes.
@@ -673,7 +699,7 @@ public:
             {
                 CorInfoHFAElemType type = m_argTypeHandle.GetHFAType();
                 pLoc->setHFAFieldSize(type);
-                pLoc->m_cFloatReg = GetArgSize()/pLoc->m_hfaFieldSize;
+                pLoc->m_cFloatReg = byteArgSize / pLoc->m_hfaFieldSize;
 
             }
             else
@@ -683,17 +709,17 @@ public:
             return;
         }
 
-        const unsigned argSizeInBytes = GetArgSize();
-        unsigned cSlots;
+
+        unsigned cSlots = (byteArgSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+
+        // Question: why do not arm and x86 have similar checks?
         // Composites greater than 16 bytes are passed by reference
-        if ((GetArgType() == ELEMENT_TYPE_VALUETYPE) && (argSizeInBytes > ENREGISTERED_PARAMTYPE_MAXSIZE))
+        if ((GetArgType() == ELEMENT_TYPE_VALUETYPE) && (byteArgSize > ENREGISTERED_PARAMTYPE_MAXSIZE))
         {
+            byteArgSize = TARGET_POINTER_SIZE;
             cSlots = 1;
         }
-        else
-        {
-            cSlots = (argSizeInBytes + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
-        }
+
 
         // Sanity check to make sure no caller is trying to get an ArgLocDesc that
         // describes the return buffer reg field that's in the TransitionBlock.
@@ -702,12 +728,15 @@ public:
         if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
             pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
-            pLoc->m_cGenReg = cSlots;
+            pLoc->m_cGenReg = (byteArgSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;;
         }
         else
         {
             pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
             pLoc->m_cStack = cSlots;
+            pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
+            pLoc->m_byteStackSize = byteArgSize;
+            _ASSERTE(pLoc->m_byteStackIndex / TARGET_POINTER_SIZE == pLoc->m_idxStack);
         }
     }
 #endif // TARGET_ARM64
@@ -764,12 +793,15 @@ public:
         else
         {
             pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
-            int argOnStackSize;
+            pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
+            int argSizeInBytes;
             if (IsArgPassedByRef())
-                argOnStackSize = TARGET_POINTER_SIZE;
+                argSizeInBytes = TARGET_POINTER_SIZE;
             else
-                argOnStackSize = GetArgSize();
-            pLoc->m_cStack = (argOnStackSize + STACK_ELEM_SIZE - 1) / STACK_ELEM_SIZE;
+                argSizeInBytes = GetArgSize();
+            pLoc->m_cStack = (argSizeInBytes + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+            pLoc->m_byteStackSize = argSizeInBytes;
+            _ASSERTE(pLoc->m_byteStackIndex / TARGET_POINTER_SIZE == pLoc->m_idxStack);
         }
     }
 #endif // TARGET_AMD64
@@ -789,15 +821,14 @@ protected:
     bool                m_hasArgLocDescForStructInRegs;
 #endif // (TARGET_AMD64 && UNIX_AMD64_ABI) || TARGET_ARM64
 
+    int                 m_curOfs;           // Current position of the stack iterator, in bytes
+
 #ifdef TARGET_X86
-    int                 m_curOfs;           // Current position of the stack iterator
     int                 m_numRegistersUsed;
 #ifdef FEATURE_INTERPRETER
     bool                m_fUnmanagedCallConv;
 #endif
 #endif
-
-    int                 m_curOfs;           // Current position of the stack iterator, in bytes
 
 #ifdef UNIX_AMD64_ABI
     int                 m_idxGenReg;        // Next general register to be assigned a value
@@ -1196,7 +1227,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_curOfs;
 
-    int cArgSlots = cbArg / TARGET_POINTER_SIZE;
     m_curOfs += cbArg;
 
     return argOfs;
@@ -1342,10 +1372,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 4;
 
         int cRemainingRegs = 4 - m_idxGenReg;
-        if (cArgSlots <= cRemainingRegs)
+        if (cbArg <= cRemainingRegs * TARGET_POINTER_SIZE)
         {
             // Mark the registers just allocated as used.
-            m_idxGenReg += cArgSlots;
+            m_idxGenReg += (cbArg + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
             return argOfs;
         }
 
