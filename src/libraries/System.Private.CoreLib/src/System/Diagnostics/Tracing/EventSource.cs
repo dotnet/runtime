@@ -2912,8 +2912,16 @@ namespace System.Diagnostics.Tracing
                 if (eventSourceAttrib != null && eventSourceAttrib.LocalizationResources != null)
                     resources = new ResourceManager(eventSourceAttrib.LocalizationResources, eventSourceType.Assembly);
 
-                manifest = new ManifestBuilder(GetName(eventSourceType, flags), GetGuid(eventSourceType), eventSourceDllName,
+                if (source is not null)
+                {
+                    // We have the source so don't need to use reflection to get the Name and Guid
+                    manifest = new ManifestBuilder(source.Name, source.Guid, eventSourceDllName, resources, flags);
+                }
+                else
+                {
+                    manifest = new ManifestBuilder(GetName(eventSourceType, flags), GetGuid(eventSourceType), eventSourceDllName,
                                                resources, flags);
+                }
 
                 // Add an entry unconditionally for event ID 0 which will be for a string message.
                 manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
