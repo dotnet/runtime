@@ -9701,13 +9701,45 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
 #else
 
 #ifdef USE_REGIONS
+// a variant of binary search that doesn't look for an exact match,
+// but finds the first element >= e
+static uint8_t** binary_search(uint8_t** left, uint8_t** right, uint8_t* e)
+{
+    if (left == right)
+        return left;
+    assert (left < right);
+    uint8_t** a = left;
+    size_t l = 0;
+    size_t r = (size_t)(right - left);
+    while ((r - l) >= 2)
+    {
+        size_t m = l + (r - l) / 2;
+
+        // loop condition says that r - l is at least 2
+        // so l, m, r are all different
+        assert ((l < m) && (m < r));
+
+        if (a[m] < e)
+        {
+            l = m;
+        }
+        else
+        {
+            r = m;
+        }
+    }
+    if (a[l] < e)
+        return a + l + 1;
+    else
+        return a + l;
+}
+
 uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
 {
-    assert (!"not yet implemented");
-
-    // idea: do a binary search over the sorted marked list to find start and end of the
+    // do a binary search over the sorted marked list to find start and end of the
     // mark list for this region
-    return nullptr;
+    *mark_list_end_ptr = binary_search(mark_list, mark_list_index, end);
+    return binary_search(mark_list, mark_list_index, start);
 }
 #endif //USE_REGIONS
 #endif //MULTIPLE_HEAPS
