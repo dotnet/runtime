@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+   <!-- 
+      For testing Long Paths support we need to have a library that has a path > 260. 
+      The easiest way to do it is to define a library with 260 characters in name 
+   -->
+   <AssemblyName>LibraryWithAVeryLoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooongNameSoWeCanTestLongPathsSupport</AssemblyName>
+    <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
+    <IsTestProject>false</IsTestProject>
+    <!--
+      This assembly is referenced from rid agnostic configurations therefore we can't make it RID specific
+      and instead use runtime checks.
+    -->
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ClassDefinedInAssemblyWithAVeryLongName.cs" />
+  </ItemGroup>
+</Project>
