@@ -1,5 +1,5 @@
 ﻿//
-// TypeMapStep.cs
+// TypeMapInfo.cs
 //
 // Author:
 //   Jb Evain (jbevain@novell.com)
@@ -29,16 +29,74 @@
 using System.Collections.Generic;
 using Mono.Cecil;
 
-namespace Mono.Linker.Steps
+namespace Mono.Linker
 {
 
-	public class TypeMapStep : BaseStep
+	public class TypeMapInfo
 	{
+		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
+		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
+		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
+		protected readonly Dictionary<MethodDefinition, List<(TypeDefinition InstanceType, InterfaceImplementation ImplementationProvider)>> default_interface_implementations = new Dictionary<MethodDefinition, List<(TypeDefinition, InterfaceImplementation)>> ();
 
-		protected override void ProcessAssembly (AssemblyDefinition assembly)
+
+		void EnsureProcessed (AssemblyDefinition assembly)
 		{
+			if (!assemblies.Add (assembly))
+				return;
+
 			foreach (TypeDefinition type in assembly.MainModule.Types)
 				MapType (type);
+		}
+
+		public IEnumerable<OverrideInformation> GetOverrides (MethodDefinition method)
+		{
+			EnsureProcessed (method.Module.Assembly);
+			override_methods.TryGetValue (method, out List<OverrideInformation> overrides);
+			return overrides;
+		}
+
+		public List<MethodDefinition> GetBaseMethods (MethodDefinition method)
+		{
+			EnsureProcessed (method.Module.Assembly);
+			base_methods.TryGetValue (method, out List<MethodDefinition> bases);
+			return bases;
+		}
+
+		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)> GetDefaultInterfaceImplementations (MethodDefinition method)
+		{
+			default_interface_implementations.TryGetValue (method, out var ret);
+			return ret;
+		}
+
+		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base)
+		{
+			if (!base_methods.TryGetValue (method, out List<MethodDefinition> methods)) {
+				methods = new List<MethodDefinition> ();
+				base_methods[method] = methods;
+			}
+
+			methods.Add (@base);
+		}
+
+		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation matchingInterfaceImplementation = null)
+		{
+			if (!override_methods.TryGetValue (@base, out List<OverrideInformation> methods)) {
+				methods = new List<OverrideInformation> ();
+				override_methods.Add (@base, methods);
+			}
+
+			methods.Add (new OverrideInformation (@base, @override, matchingInterfaceImplementation));
+		}
+
+		public void AddDefaultInterfaceImplementation (MethodDefinition @base, TypeDefinition implementingType, InterfaceImplementation matchingInterfaceImplementation)
+		{
+			if (!default_interface_implementations.TryGetValue (@base, out var implementations)) {
+				implementations = new List<(TypeDefinition, InterfaceImplementation)> ();
+				default_interface_implementations.Add (@base, implementations);
+			}
+
+			implementations.Add ((implementingType, matchingInterfaceImplementation));
 		}
 
 		protected virtual void MapType (TypeDefinition type)
@@ -91,7 +149,7 @@ namespace Mono.Linker.Steps
 
 					// Look for a default implementation last.
 					foreach (var defaultImpl in GetDefaultInterfaceImplementations (type, resolvedInterfaceMethod)) {
-						Annotations.AddDefaultInterfaceImplementation (resolvedInterfaceMethod, type, defaultImpl);
+						AddDefaultInterfaceImplementation (resolvedInterfaceMethod, type, defaultImpl);
 					}
 				}
 			}
@@ -135,8 +193,8 @@ namespace Mono.Linker.Steps
 
 		void AnnotateMethods (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation matchingInterfaceImplementation = null)
 		{
-			Annotations.AddBaseMethod (@override, @base);
-			Annotations.AddOverride (@base, @override, matchingInterfaceImplementation);
+			AddBaseMethod (@override, @base);
+			AddOverride (@base, @override, matchingInterfaceImplementation);
 		}
 
 		static MethodDefinition GetBaseMethodInTypeHierarchy (MethodDefinition method)
