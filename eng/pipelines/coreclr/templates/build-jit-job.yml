@@ -10,7 +10,7 @@ parameters:
   stagedBuild: false
   timeoutInMinutes: ''
   variables: {}
-  dependOnEvaluatePaths: false
+  useCheckoutBundle: false
 
 ### Product build
 jobs:
@@ -24,7 +24,7 @@ jobs:
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
 
     # Compute job name from template parameters
     name: ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}

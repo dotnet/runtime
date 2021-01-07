@@ -52,6 +52,11 @@ variables:
 stages:
 - stage: Build
   jobs:
+  #
+  # Checkout repository
+  #
+  - ${{ if eq(variables.useCheckoutBundle, true) }}:
+    - template: /eng/pipelines/common/checkout-job.yml
 
   #
   # Build with Debug config and Checked runtimeConfiguration
