@@ -302,6 +302,10 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
         [InlineData(null)]
         public static void CfbFeedbackSizeIsRespected(int? feedbackSize)
         {
+            // Windows 7 CFB only supports CFB8.
+            if (PlatformDetection.IsWindows7 && feedbackSize != 8)
+                return;
+
             void Test(Rijndael alg)
             {
                 alg.Mode = CipherMode.CFB;
