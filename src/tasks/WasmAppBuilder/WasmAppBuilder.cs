@@ -33,7 +33,7 @@ public class WasmAppBuilder : Task
     [Required]
     public string[]? Assemblies { get; set; }
 
-    public bool EnableProfile { get; set; }
+    public bool EnableProfiler { get; set; }
 
     private List<string> _fileWrites = new();
 
@@ -231,7 +231,7 @@ public class WasmAppBuilder : Task
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
         }
-        if (EnableProfile)
+        if (EnableProfiler)
         {
             config.EnableProfiler = true;
         }

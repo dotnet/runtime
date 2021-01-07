@@ -33,8 +33,8 @@
       <_WasmAssemblies Remove="@(_WasmAssemblies)" />
     </ItemGroup>
     <PropertyGroup>
-      <AOTMode>LLVMOnly</AOTMode>
-      <AOTMode Condition="'$(BuildAOTProfiled)' == 'true'">AotInterp</AOTMode>
+      <AOTMode Condition="'$(AOTMode)' == '' and '$(BuildAOTProfiled)' == 'true'">AotInterp</AOTMode>
+      <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
     </PropertyGroup>
 
     <MonoAOTCompiler
@@ -99,7 +99,7 @@
       AppDir="$(WasmAppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
       MainJS="$(WasmMainJSPath)"
-      EnableProfile="$(EnableProfiler)"
+      EnableProfiler="$(EnableProfiler)"
       Assemblies="@(_WasmAssemblies)"
       InvariantGlobalization="$(WasmInvariantGlobalization)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
