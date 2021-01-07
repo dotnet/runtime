@@ -10,12 +10,12 @@ parameters:
   crossrootfsDir: ''
   strategy: ''
   pool: ''
+  useCheckoutBundle: false
 
   # arcade-specific parameters
   condition: ''
   continueOnError: false
   dependsOn: ''
-  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -32,8 +32,8 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-        - evaluate_paths
+      - ${{ if eq(parameters.useCheckoutBundle, true) }}:
+        - checkout
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -96,8 +96,8 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - checkout: self
-      clean: true
-      fetchDepth: $(checkoutFetchDepth)
+    - template: /eng/pipelines/common/checkout-step.yml
+      parameters:
+        useBundle: ${{ parameters.useCheckoutBundle }}
 
     - ${{ parameters.steps }}

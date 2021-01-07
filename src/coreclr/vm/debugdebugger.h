@@ -20,9 +20,9 @@ class DebugDebugger
 {
 public:
     static FCDECL0(void, Break);
-    static FCDECL0(FC_BOOL_RET, Launch);
+    static BOOL QCALLTYPE Launch();
     static FCDECL0(FC_BOOL_RET, IsDebuggerAttached);
-    static FCDECL3(void, Log, INT32 Level, StringObject* strModule, StringObject* strMessage);
+    static void QCALLTYPE Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage);
 
     // receives a custom notification object from the target and sends it to the RS via
     // code:Debugger::SendCustomDebuggerNotification

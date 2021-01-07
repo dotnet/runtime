@@ -62,7 +62,6 @@
 
     <PropertyGroup>
       <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
-      <CoreLibSharedILLinkSuppressionsFilesPrefix>$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared</CoreLibSharedILLinkSuppressionsFilesPrefix>
     </PropertyGroup>
 
     <ItemGroup>
@@ -70,7 +69,8 @@
       <_SuppressionsXmls Include="$(ILLinkTrimAssemblySuppressionsXmlsDir)*.xml" />
 
       <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
-      <_SuppressionsXmls Include="$(CoreLibSharedILLinkSuppressionsFilesPrefix).xml" />
+      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
+      <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
 
       <!-- netstandard2.1-only System.ComponentModel.Annotations XML file is not bin-placed during -allConfigurations builds
            due to the linker not being run on the assembly (eng\illink.targets). Manually include it. -->

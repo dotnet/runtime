@@ -27,6 +27,8 @@ namespace System.Threading
                         }
                     });
 
+            private static readonly ThreadStart s_workerThreadStart = WorkerThreadStart;
+
             private static void WorkerThreadStart()
             {
                 Thread.CurrentThread.SetThreadPoolWorkerThreadName();
@@ -290,7 +292,7 @@ namespace System.Threading
                 {
                     // Thread pool threads must start in the default execution context without transferring the context, so
                     // using UnsafeStart() instead of Start()
-                    Thread workerThread = new Thread(WorkerThreadStart);
+                    Thread workerThread = new Thread(s_workerThreadStart);
                     workerThread.IsThreadPoolThread = true;
                     workerThread.IsBackground = true;
                     workerThread.UnsafeStart();
