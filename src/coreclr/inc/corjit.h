@@ -334,7 +334,7 @@ public:
     //  4. Each data entry shall be laid out without extra padding.
     //
     //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with 
-    //  inst5rumentation helper functions
+    //  instrumentation helper functions
     virtual HRESULT allocPgoInstrumentationBySchema (
             CORINFO_METHOD_HANDLE     ftnHnd,
             PgoInstrumentationSchema *pSchema,                     // pointer to the schema table which describes the instrumentation results

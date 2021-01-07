@@ -488,6 +488,7 @@ void Compiler::fgInstrumentMethod()
 
                     m_schema->push_back(schemaElem);
 
+                    // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
                     schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
                     schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
                     m_schema->push_back(schemaElem);
@@ -684,7 +685,7 @@ void Compiler::fgInstrumentMethod()
                             DISPTREE(call);
                         }
 
-                        // Restore the stub address \on call, whether instrumenting or not.
+                        // Restore the stub address on the call, whether instrumenting or not.
                         //
                         call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
                     }
