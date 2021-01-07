@@ -947,22 +947,22 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
 
 // Stub version for !FEATURE_PGO builds
 //
-HRESULT PgoManager::allocMethodBlockCounts(MethodDesc* pMD, UINT32 count,
-    ICorJitInfo::BlockCounts** pBlockCounts, unsigned ilSize)
+HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)
 {
-    pBlockCounts = NULL;
+    *pInstrumentationData = NULL;
     return E_NOTIMPL;
 }
 
 // Stub version for !FEATURE_PGO builds
 //
-HRESULT PgoManager::getMethodBlockCounts(MethodDesc* pMD, unsigned ilSize, UINT32* pCount,
-    ICorJitInfo::BlockCounts** pBlockCounts, UINT32* pNumRuns)
+HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
 {
-    pBlockCounts = NULL;
-    pCount = 0;
-    pNumRuns = 0;
+    *pInstrumentationData = NULL;
     return E_NOTIMPL;
+}
+
+void PgoManager::VerifyAddress(void* address)
+{
 }
 
 // Stub version for !FEATURE_PGO builds
