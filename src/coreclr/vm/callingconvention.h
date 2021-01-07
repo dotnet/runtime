@@ -683,19 +683,21 @@ public:
             return;
         }
 
-        int cSlots = (GetArgSize() + 7)/ 8;
-
+        const unsigned argSizeInBytes = GetArgSize();
+        unsigned cSlots;
         // Composites greater than 16 bytes are passed by reference
-        if (GetArgType() == ELEMENT_TYPE_VALUETYPE && GetArgSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
+        if ((GetArgType() == ELEMENT_TYPE_VALUETYPE) && (argSizeInBytes > ENREGISTERED_PARAMTYPE_MAXSIZE))
         {
             cSlots = 1;
         }
+        else
+        {
+            cSlots = (argSizeInBytes + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        }
 
-#ifdef TARGET_ARM64
         // Sanity check to make sure no caller is trying to get an ArgLocDesc that
         // describes the return buffer reg field that's in the TransitionBlock.
         _ASSERTE(argOffset != TransitionBlock::GetOffsetOfRetBuffArgReg());
-#endif
 
         if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
@@ -795,28 +797,22 @@ protected:
 #endif
 #endif
 
-#ifdef TARGET_AMD64
+    int                 m_curOfs;           // Current position of the stack iterator, in bytes
+
 #ifdef UNIX_AMD64_ABI
     int                 m_idxGenReg;        // Next general register to be assigned a value
-    int                 m_idxStack;         // Next stack slot to be assigned a value
     int                 m_idxFPReg;         // Next floating point register to be assigned a value
     bool                m_fArgInRegisters;  // Indicates that the current argument is stored in registers
-#else
-    int                 m_curOfs;           // Current position of the stack iterator
-#endif
 #endif
 
 #ifdef TARGET_ARM
     int                 m_idxGenReg;        // Next general register to be assigned a value
-    int                 m_idxStack;         // Next stack slot to be assigned a value
-
     WORD                m_wFPRegs;          // Bitmask of available floating point argument registers (s0-s15/d0-d7)
     bool                m_fRequires64BitAlignment; // Cached info about the current arg
 #endif
 
 #ifdef TARGET_ARM64
     int             m_idxGenReg;        // Next general register to be assigned a value
-    int             m_idxStack;         // Next stack slot to be assigned a value
     int             m_idxFPReg;         // Next FP register to be assigned a value
 #endif
 
@@ -1048,19 +1044,19 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
         m_idxGenReg = numRegistersUsed;
-        m_idxStack = 0;
+        m_curOfs = 0;
         m_idxFPReg = 0;
 #else
         m_curOfs = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
 #endif
 #elif defined(TARGET_ARM)
         m_idxGenReg = numRegistersUsed;
-        m_idxStack = 0;
+        m_curOfs = 0;
 
         m_wFPRegs = 0;
 #elif defined(TARGET_ARM64)
         m_idxGenReg = numRegistersUsed;
-        m_idxStack = 0;
+        m_curOfs = 0;
 
         m_idxFPReg = 0;
 #else
@@ -1198,10 +1194,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     m_fArgInRegisters = false;
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_idxStack * TARGET_POINTER_SIZE;
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_curOfs;
 
     int cArgSlots = cbArg / TARGET_POINTER_SIZE;
-    m_idxStack += cArgSlots;
+    m_curOfs += cbArg;
 
     return argOfs;
 #else
@@ -1269,7 +1265,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     m_fRequires64BitAlignment = fRequiresAlign64Bit;
 
     int cbArg = StackElemSize(argSize);
-    int cArgSlots = cbArg / 4;
+    assert((cbArg % TARGET_POINTER_SIZE) == 0);
 
     // Ignore floating point argument placement in registers if we're dealing with a vararg function (the ABI
     // specifies this so that vararg processing on the callee side is simplified).
@@ -1316,13 +1312,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
         // Doubles or HFAs containing doubles need the stack aligned appropriately.
         if (fRequiresAlign64Bit)
-            m_idxStack = (int)ALIGN_UP(m_idxStack, 2);
+        {
+            m_curOfs = (int)ALIGN_UP(m_curOfs, TARGET_POINTER_SIZE * 2);
+        }
 
         // Indicate the stack location of the argument to the caller.
-        int argOfs = TransitionBlock::GetOffsetOfArgs() + m_idxStack * 4;
+        int argOfs = TransitionBlock::GetOffsetOfArgs() + m_curOfs;
 
         // Record the stack usage.
-        m_idxStack += cArgSlots;
+        m_curOfs += cbArg;
 
         return argOfs;
     }
@@ -1358,9 +1356,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
         m_idxGenReg = 4;
 
-        if (m_idxStack == 0)
+        if (m_curOfs == 0)
         {
-            m_idxStack += cArgSlots - cRemainingRegs;
+            m_curOfs += cbArg - cRemainingRegs * TARGET_POINTER_SIZE;
             return argOfs;
         }
     }
@@ -1369,13 +1367,13 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     {
         // The argument requires 64-bit alignment. If it is going to be passed on the stack, align
         // the next stack slot.  See step C.6 in the algorithm in the ABI spec.
-        m_idxStack = (int)ALIGN_UP(m_idxStack, 2);
+        m_curOfs = (int)ALIGN_UP(m_curOfs, TARGET_POINTER_SIZE * 2);
     }
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_idxStack * 4;
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_curOfs;
 
     // Advance the stack pointer over the argument just placed.
-    m_idxStack += cArgSlots;
+    m_curOfs += cbArg;
 
     return argOfs;
 #elif defined(TARGET_ARM64)
@@ -1433,9 +1431,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     }
     const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
     const int cbArg = StackElemSize(argSize, isValueType);
-    const int cArgSlots = cbArg / STACK_ELEM_SIZE;
-
-
     if (cFPRegs>0 && !this->IsVarArg())
     {
         if (cFPRegs + m_idxFPReg <= 8)
@@ -1452,13 +1447,17 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     }
     else
     {
+#if !defined(OSX_ARM64_ABI)
+        _ASSERTE((cbArg% TARGET_POINTER_SIZE) == 0);
+#endif
+        const int regSlots = (cbArg + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
         // Only x0-x7 are valid argument registers (x8 is always the return buffer)
-        if (m_idxGenReg + cArgSlots <= 8)
+        if (m_idxGenReg + regSlots <= 8)
         {
             // The entirety of the arg fits in the register slots.
 
             int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-            m_idxGenReg += cArgSlots;
+            m_idxGenReg += regSlots;
             return argOfs;
         }
         else
@@ -1471,9 +1470,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 // into x0-x7, and any remaining stack arguments are placed normally.
                 int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
 
-                // Increase m_idxStack to account for the space used for the remainder of the arg after
-                // register slots are filled.
-                m_idxStack += (m_idxGenReg + cArgSlots - 8);
+                // Increase m_curOfs to account for the space used for the remainder of the arg after
+                // registers are filled.
+                m_curOfs += cbArg + (m_idxGenReg - 8) * TARGET_POINTER_SIZE;
 
                 // We used up the remaining reg slots.
                 m_idxGenReg = 8;
@@ -1489,8 +1488,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
     }
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_idxStack * 8;
-    m_idxStack += cArgSlots;
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_curOfs;
+    m_curOfs += cbArg;
     return argOfs;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
