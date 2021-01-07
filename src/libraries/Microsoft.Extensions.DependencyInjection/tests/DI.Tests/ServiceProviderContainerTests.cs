@@ -607,41 +607,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36458")]
-        public void GetRequiredService_CircularReference_ThrowsSOEAndHangs()
-        {
-            // Arrange
-            var services = new ServiceCollection();
-            services.AddSingleton<RecursiveThing>();
-            IServiceProvider sp = services.BuildServiceProvider();
-            using var scope1 = sp.CreateScope();
-
-            bool doesNotHang = Task.Run(() =>
-            {
-                SingleThreadedSynchronizationContext.Run(() =>
-                {
-                    // Act
-                    Assert.Throws<StackOverflowException>(() =>
-                    {
-                        // ctor disposes ServiceProvider
-                        var service = sp.GetRequiredService<RecursiveThing>();
-                    });
-                });
-            }).Wait(TimeSpan.FromSeconds(10));
-
-            // Assert
-            Assert.False(doesNotHang);
-        }
-
-        private class RecursiveThing
-        {
-            public RecursiveThing(IServiceProvider sp)
-            {
-                sp.GetRequiredService<RecursiveThing>();
-            }
-        }
-
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42160")] // We don't support value task services currently
         [Theory]
         [InlineData(ServiceLifetime.Transient)]
