@@ -363,7 +363,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
 #if defined(FEATURE_TIERED_COMPILATION)
     bool shouldCountCalls = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
-#if !defined(TARGET_X86)
     if (shouldCountCalls
         && (pConfig->GetCallerGCMode() == CallerGCMode::Preemptive
             || (pConfig->GetCallerGCMode() == CallerGCMode::Unknown
@@ -371,7 +370,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     {
         shouldCountCalls = false;
     }
-#endif
 #endif
 
     if (pConfig->MayUsePrecompiledCode())
