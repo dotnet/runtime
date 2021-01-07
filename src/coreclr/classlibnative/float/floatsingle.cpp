@@ -274,8 +274,8 @@ FCIMPL3_VII(void, COMSingle::SinCos, float x, float* pSin, float* pCos)
     FCALL_CONTRACT;
 
 #ifdef _MSC_VER
-    *pSin = (float)sinf(x);
-    *pCos = (float)cosf(x);
+    *pSin = sinf(x);
+    *pCos = cosf(x);
 #else
     sincosf(x, pSin, pCos);
 #endif

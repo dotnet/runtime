@@ -287,8 +287,8 @@ FCIMPL3_VII(void, COMDouble::SinCos, double x, double* pSin, double* pCos)
     FCALL_CONTRACT;
 
 #ifdef _MSC_VER
-    *pSin = (double)sin(x);
-    *pCos = (double)cos(x);
+    *pSin = sin(x);
+    *pCos = cos(x);
 #else
     sincos(x, pSin, pCos);
 #endif
