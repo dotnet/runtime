@@ -24,8 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public int ByteLength => (int)GetObjectProperty("byteLength");
 
         /// <summary>
-        /// Returns a new JavaScript Core SharedArrayBuffer whose contents are a copy of this SharedArrayBuffer's bytes from begin = 0,
-        /// inclusive, through to the end of the sequence, exclusive.
+        /// Returns a new JavaScript Core SharedArrayBuffer whose contents are a copy of this SharedArrayBuffer's bytes.
         /// </summary>
         /// <returns>a new JavaScript Core SharedArrayBuffer</returns>
         public SharedArrayBuffer Slice() => (SharedArrayBuffer)Invoke("slice");
