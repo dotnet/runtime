@@ -220,10 +220,7 @@ namespace System.Collections.Generic
 
         public void Clear()
         {
-            if (_set.Count != 0)
-            {
-                _set.Clear();
-            }
+            _set.Clear();
         }
 
         public bool ContainsKey(TKey key)

@@ -402,21 +402,18 @@ namespace System.Collections.Generic
         // Removes all entries from this sorted list.
         public void Clear()
         {
-            if (_size != 0)
+            // clear does not change the capacity
+            version++;
+            // Don't need to doc this but we clear the elements so that the gc can reclaim  the references.
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
             {
-                // clear does not change the capacity
-                version++;
-                // Don't need to doc this but we clear the elements so that the gc can reclaim  the references.
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
-                {
-                    Array.Clear(keys, 0, _size);
-                }
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
-                {
-                    Array.Clear(values, 0, _size);
-                }
-                _size = 0;
+                Array.Clear(keys, 0, _size);
             }
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+            {
+                Array.Clear(values, 0, _size);
+            }
+            _size = 0;
         }
 
         bool IDictionary.Contains(object key)
