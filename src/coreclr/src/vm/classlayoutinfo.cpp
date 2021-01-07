@@ -654,8 +654,11 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         );
 
     // Type is blittable only if parent is also blittable and is not empty.
-    isBlittable = isBlittable && (fHasNonTrivialParent
-        ? pParentMT->IsBlittable() && (!pParentLayoutInfo || !pParentLayoutInfo->IsZeroSized()) : TRUE);
+    if (isBlittable && fHasNonTrivialParent)
+    {
+        isBlittable = pParentMT->IsBlittable()  // Check parent
+            && (!pParentLayoutInfo || !pParentLayoutInfo->IsZeroSized()); // Ensure non-zero size
+    }
     pEEClassLayoutInfoOut->SetIsBlittable(isBlittable);
 
     S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));
