@@ -366,6 +366,21 @@ template<typename ARRAY_TYPE>
 static
 inline
 void
+_rt_coreclr_array_init_capacity (
+	ARRAY_TYPE *ep_array,
+	size_t capacity)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (ep_array != NULL);
+
+	if (ep_array->array)
+		ep_array->array->AllocNoThrow (capacity);
+}
+
+template<typename ARRAY_TYPE>
+static
+inline
+void
 _rt_coreclr_array_free (ARRAY_TYPE *ep_array)
 {
 	STATIC_CONTRACT_NOTHROW;
@@ -919,8 +934,28 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_array_is_valid<array_type> (ep_array); \
 	}
 
+#define EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init) (array_type *ep_array) { \
+		STATIC_CONTRACT_NOTHROW; \
+	} \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init_capacity) (array_type *ep_array, size_t capacity) { \
+		STATIC_CONTRACT_NOTHROW; \
+		_rt_coreclr_array_init_capacity<array_type>(ep_array, capacity); \
+	} \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, fini) (array_type *ep_array) { \
+		STATIC_CONTRACT_NOTHROW; \
+	}
+
 #define EP_RT_DEFINE_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#define EP_RT_DEFINE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
+	EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#define EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, var_type) \
+	var_type::array_type_t _local_ ##var_name; \
+	var_type var_name; \
+	var_name.array = &_local_ ##var_name
 
 #define EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static inline iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_begin) (const array_type *ep_array) \
@@ -1429,14 +1464,24 @@ ep_rt_provider_invoke_callback (
  */
 
 EP_RT_DEFINE_ARRAY (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+EP_RT_DEFINE_LOCAL_ARRAY (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
 EP_RT_DEFINE_ARRAY_ITERATOR (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+
+#undef EP_RT_DECLARE_LOCAL_BUFFER_ARRAY
+#define EP_RT_DECLARE_LOCAL_BUFFER_ARRAY(var_name) \
+	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ep_rt_buffer_array_t)
 
 /*
  * EventPipeBufferList.
  */
 
 EP_RT_DEFINE_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
+EP_RT_DEFINE_LOCAL_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
 EP_RT_DEFINE_ARRAY_ITERATOR (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
+
+#undef EP_RT_DECLARE_LOCAL_BUFFER_LIST_ARRAY
+#define EP_RT_DECLARE_LOCAL_BUFFER_LIST_ARRAY(var_name) \
+	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ep_rt_buffer_list_array_t)
 
 /*
  * EventPipeEvent.
@@ -1594,7 +1639,12 @@ EP_RT_DEFINE_LIST (thread_list, ep_rt_thread_list_t, EventPipeThread *)
 EP_RT_DEFINE_LIST_ITERATOR (thread_list, ep_rt_thread_list_t, ep_rt_thread_list_iterator_t, EventPipeThread *)
 
 EP_RT_DEFINE_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+EP_RT_DEFINE_LOCAL_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
 EP_RT_DEFINE_ARRAY_ITERATOR (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+
+#undef EP_RT_DECLARE_LOCAL_THREAD_ARRAY
+#define EP_RT_DECLARE_LOCAL_THREAD_ARRAY(var_name) \
+	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ep_rt_thread_array_t)
 
 /*
  * EventPipeThreadSessionState.
@@ -1604,7 +1654,12 @@ EP_RT_DEFINE_LIST (thread_session_state_list, ep_rt_thread_session_state_list_t,
 EP_RT_DEFINE_LIST_ITERATOR (thread_session_state_list, ep_rt_thread_session_state_list_t, ep_rt_thread_session_state_list_iterator_t, EventPipeThreadSessionState *)
 
 EP_RT_DEFINE_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
+EP_RT_DEFINE_LOCAL_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
 EP_RT_DEFINE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
+
+#undef EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY
+#define EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY(var_name) \
+	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ep_rt_thread_session_state_array_t)
 
 static
 EventPipeSessionProvider *
