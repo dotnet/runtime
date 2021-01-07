@@ -140,8 +140,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/1514/InterlockExchange/*">
             <Issue>https://github.com/dotnet/runtime/issues/12166</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">	
-            <Issue>https://github.com/dotnet/runtime/issues/46175</Issue>	
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/46175</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -2455,6 +2455,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)JIT/IL_Conformance/Old/Base/ckfinite/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Attributes/SuppressGCTransition/SuppressGCTransitionTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/46451</Issue>
         </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>
