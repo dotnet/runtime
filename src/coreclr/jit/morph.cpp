@@ -11613,7 +11613,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*   tree,
 *          intrinsic, we will morph it as simd intrinsic SIMDIntrinsicGetItem.
 *  Return:
 *   A GenTree* which points to the new tree. If the tree is not for simd intrinsic,
-   return nullptr.
+*   return nullptr.
 */
 
 GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
