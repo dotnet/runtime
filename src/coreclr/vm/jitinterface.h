@@ -945,7 +945,7 @@ protected :
 
         ComputedPgoData* m_next = nullptr;
         MethodDesc *m_pMD;
-        SArray<::PgoInstrumentationSchema> m_schema;
+        SArray<PgoInstrumentationSchema> m_schema;
         BYTE *m_pInstrumentationData = nullptr;
         HRESULT m_hr = E_NOTIMPL;
     };

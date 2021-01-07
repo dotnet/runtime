@@ -11982,7 +11982,7 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
 #else // FEATURE_PREJIT
 #ifdef FEATURE_PGO
-    hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, (::PgoInstrumentationSchema *)pSchema, countSchemaItems, pInstrumentationData);
+    hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
@@ -12026,7 +12026,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     {
         if (pDataCur->m_pMD == pMD)
         {
-            *pSchema = (ICorJitInfo::PgoInstrumentationSchema *)pDataCur->m_schema.GetElements();
+            *pSchema = pDataCur->m_schema.GetElements();
             *pCountSchemaItems = pDataCur->m_schema.GetCount();
             *pInstrumentationData = pDataCur->m_pInstrumentationData;
             hr = pDataCur->m_hr;
@@ -12046,7 +12046,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         pDataCur = m_foundPgoData;
     }
 
-    *pSchema = (PgoInstrumentationSchema *)pDataCur->m_schema.GetElements();
+    *pSchema = pDataCur->m_schema.GetElements();
     *pCountSchemaItems = pDataCur->m_schema.GetCount();
     *pInstrumentationData = pDataCur->m_pInstrumentationData;
     hr = pDataCur->m_hr;

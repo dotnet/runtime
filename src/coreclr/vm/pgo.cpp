@@ -205,7 +205,7 @@ void PgoManager::WritePgoData()
         uint8_t* data = pgoData->header.GetData();
 
         unsigned lastOffset  = 0;
-        if (!ReadInstrumentationDataWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, [data, pgoDataFile] (const PgoInstrumentationSchema &schema)
+        if (!ReadInstrumentationDataWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, [data, pgoDataFile] (const ICorJitInfo::PgoInstrumentationSchema &schema)
         {
             fprintf(pgoDataFile, s_RecordString, schema.InstrumentationKind, schema.ILOffset, schema.Count, schema.Other);
             for (int32_t iEntry = 0; iEntry < schema.Count; iEntry++)
@@ -354,10 +354,10 @@ void PgoManager::ReadPgoData()
         ReadLineAndDiscard(pgoDataFile);
         ReadLineAndDiscard(pgoDataFile);
 
-        StackSArray<PgoInstrumentationSchema> schemaElements;
+        StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaElements;
         StackSArray<uint8_t> methodInstrumentationData;
         schemaElements.Preallocate((int)schemaCount);
-        PgoInstrumentationSchema lastSchema = {};
+        ICorJitInfo::PgoInstrumentationSchema lastSchema = {};
 
         for (unsigned i = 0; i < schemaCount; i++)
         {
@@ -368,7 +368,7 @@ void PgoManager::ReadPgoData()
             }
 
             // Read schema
-            PgoInstrumentationSchema schema;
+            ICorJitInfo::PgoInstrumentationSchema schema;
             
             if (sscanf_s(buffer, s_RecordString, &schema.InstrumentationKind, &schema.ILOffset, &schema.Count, &schema.Other) != 4)
             {
@@ -544,7 +544,7 @@ void PgoManager::Header::Init(MethodDesc *pMD, unsigned codehash, unsigned ilSiz
     this->countsOffset = countsOffset;
 }
 
-HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)
+HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)
 {
     STANDARD_VM_CONTRACT;
 
@@ -573,7 +573,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, PgoInstrume
     return mgr->allocPgoInstrumentationBySchemaInstance(pMD, pSchema, countSchemaItems, pInstrumentationData);
 }
 
-HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData)
+HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData)
 {
     // Determine size of compressed schema representation
     size_t headerSize = headerInitialSize;
@@ -594,7 +594,7 @@ HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const PgoInstrument
 }
 
 HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
-                                                            PgoInstrumentationSchema* pSchema,
+                                                            ICorJitInfo::PgoInstrumentationSchema* pSchema,
                                                             UINT32 countSchemaItems,
                                                             BYTE** pInstrumentationData)
 {
@@ -616,8 +616,8 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     }
 
     // Compute offsets for each instrumentation entry
-    PgoInstrumentationSchema prevSchema;
-    memset(&prevSchema, 0, sizeof(PgoInstrumentationSchema));
+    ICorJitInfo::PgoInstrumentationSchema prevSchema;
+    memset(&prevSchema, 0, sizeof(ICorJitInfo::PgoInstrumentationSchema));
     prevSchema.Offset = offsetOfInstrumentationDataFromStartOfDataRegion;
     for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
     {
@@ -696,7 +696,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
+HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
 {
     // Initialize our out params
     pSchema->Clear();
@@ -741,7 +741,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInst
 
                         for (unsigned iSchema = 0; iSchema < pSchema->GetCount(); iSchema++)
                         {
-                            PgoInstrumentationSchema *schema = &(*pSchema)[iSchema];
+                            ICorJitInfo::PgoInstrumentationSchema *schema = &(*pSchema)[iSchema];
                             if ((schema->InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask) == ICorJitInfo::PgoInstrumentationKind::TypeHandle)
                             {
                                 for (int iEntry = 0; iEntry < schema->Count; iEntry++)
@@ -798,7 +798,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInst
 }
 #endif // DACCESS_COMPILE
 
-HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, SArray<PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
+HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
 {
     // Initialize our out params
     pSchema->Clear();
@@ -845,7 +845,7 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
     *pLikelihood = 0;
     *pNumberOfClasses = 0;
 
-    StackSArray<PgoInstrumentationSchema> schema;
+    StackSArray<ICorJitInfo::PgoInstrumentationSchema> schema;
     BYTE* pInstrumentationData;
     HRESULT hr = getPgoInstrumentationResults(pMD, &schema, &pInstrumentationData);
 

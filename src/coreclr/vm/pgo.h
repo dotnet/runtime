@@ -48,15 +48,6 @@ inline ICorJitInfo::PgoInstrumentationKind operator~(ICorJitInfo::PgoInstrumenta
     return static_cast<ICorJitInfo::PgoInstrumentationKind>(~static_cast<int>(a));
 }
 
-struct PgoInstrumentationSchema
-{
-    size_t Offset;
-    ICorJitInfo::PgoInstrumentationKind InstrumentationKind;
-    int32_t ILOffset;
-    int32_t Count;
-    int32_t Other;
-};
-
 template<class IntHandler>
 bool ReadCompressedInts(const uint8_t *pByte, size_t cbDataMax, IntHandler intProcessor)
 {
@@ -135,7 +126,7 @@ inline InstrumentationDataProcessingState operator~(InstrumentationDataProcessin
 template<class SchemaHandler>
 bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaHandler handler)
 {
-    PgoInstrumentationSchema curSchema;
+    ICorJitInfo::PgoInstrumentationSchema curSchema;
     InstrumentationDataProcessingState processingState;
     bool done = false;
     
@@ -194,13 +185,13 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaHandl
 inline bool CountInstrumentationDataSize(const uint8_t *pByte, size_t cbDataMax, int32_t *pInstrumentationSchemaCount)
 {
     *pInstrumentationSchemaCount = 0;
-    return ReadInstrumentationData(pByte, cbDataMax, [pInstrumentationSchemaCount](const PgoInstrumentationSchema& schema) { (*pInstrumentationSchemaCount)++; return true; });
+    return ReadInstrumentationData(pByte, cbDataMax, [pInstrumentationSchemaCount](const ICorJitInfo::PgoInstrumentationSchema& schema) { (*pInstrumentationSchemaCount)++; return true; });
 }
 
-inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const PgoInstrumentationSchema* schemaTable, size_t cSchemas)
+inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
 {
     size_t iSchema = 0;
-    return ReadInstrumentationData(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const PgoInstrumentationSchema& schema) 
+    return ReadInstrumentationData(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const ICorJitInfo::PgoInstrumentationSchema& schema) 
     {
         if (iSchema >= cSchemas)
             return false;
@@ -254,7 +245,7 @@ inline UINT InstrumentationKindToAlignment(ICorJitInfo::PgoInstrumentationKind k
     }
 }
 
-inline void LayoutPgoInstrumentationSchema(const PgoInstrumentationSchema& prevSchema, PgoInstrumentationSchema* currentSchema)
+inline void LayoutPgoInstrumentationSchema(const ICorJitInfo::PgoInstrumentationSchema& prevSchema, ICorJitInfo::PgoInstrumentationSchema* currentSchema)
 {
     size_t instrumentationSize = InstrumentationKindToSize(currentSchema->InstrumentationKind);
     if (instrumentationSize != 0)
@@ -271,11 +262,11 @@ inline void LayoutPgoInstrumentationSchema(const PgoInstrumentationSchema& prevS
 template<class SchemaHandler>
 bool ReadInstrumentationDataWithLayout(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SchemaHandler handler)
 {
-    PgoInstrumentationSchema prevSchema;
-    memset(&prevSchema, 0, sizeof(PgoInstrumentationSchema));
+    ICorJitInfo::PgoInstrumentationSchema prevSchema;
+    memset(&prevSchema, 0, sizeof(ICorJitInfo::PgoInstrumentationSchema));
     prevSchema.Offset = initialOffset;
 
-    return ReadInstrumentationData(pByte, cbDataMax, [&prevSchema, handler](PgoInstrumentationSchema curSchema)
+    return ReadInstrumentationData(pByte, cbDataMax, [&prevSchema, handler](ICorJitInfo::PgoInstrumentationSchema curSchema)
     {
         LayoutPgoInstrumentationSchema(prevSchema, &curSchema);
         if (!handler(curSchema))
@@ -285,9 +276,9 @@ bool ReadInstrumentationDataWithLayout(const uint8_t *pByte, size_t cbDataMax, s
     });
 }
 
-inline bool ReadInstrumentationDataWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SArray<PgoInstrumentationSchema>* pSchemas)
+inline bool ReadInstrumentationDataWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchemas)
 {
-    return ReadInstrumentationDataWithLayout(pByte, cbDataMax, initialOffset, [pSchemas](const PgoInstrumentationSchema &schema)
+    return ReadInstrumentationDataWithLayout(pByte, cbDataMax, initialOffset, [pSchemas](const ICorJitInfo::PgoInstrumentationSchema &schema)
     {
         pSchemas->Append(schema);
         return true;
@@ -329,7 +320,7 @@ bool WriteCompressedIntToBytes(int32_t value, ByteWriter& byteWriter)
 }
 
 template<class ByteWriter>
-bool WriteIndividualSchemaToBytes(PgoInstrumentationSchema prevSchema, PgoInstrumentationSchema curSchema, ByteWriter& byteWriter)
+bool WriteIndividualSchemaToBytes(ICorJitInfo::PgoInstrumentationSchema prevSchema, ICorJitInfo::PgoInstrumentationSchema curSchema, ByteWriter& byteWriter)
 {
     int32_t ilOffsetDiff = curSchema.ILOffset - prevSchema.ILOffset;
     int32_t OtherDiff = curSchema.Other - prevSchema.Other;
@@ -363,10 +354,10 @@ bool WriteIndividualSchemaToBytes(PgoInstrumentationSchema prevSchema, PgoInstru
 }
 
 template<class ByteWriter>
-bool WriteInstrumentationToBytes(const PgoInstrumentationSchema* schemaTable, size_t cSchemas, const ByteWriter& byteWriter)
+bool WriteInstrumentationToBytes(const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas, const ByteWriter& byteWriter)
 {
-    PgoInstrumentationSchema prevSchema;
-    memset(&prevSchema, 0, sizeof(PgoInstrumentationSchema));
+    ICorJitInfo::PgoInstrumentationSchema prevSchema;
+    memset(&prevSchema, 0, sizeof(ICorJitInfo::PgoInstrumentationSchema));
 
     for (size_t iSchema = 0; iSchema < cSchemas; iSchema++)
     {
@@ -376,7 +367,7 @@ bool WriteInstrumentationToBytes(const PgoInstrumentationSchema* schemaTable, si
     }
 
     // Terminate the schema list with an entry which is Done
-    PgoInstrumentationSchema terminationSchema = prevSchema;
+    ICorJitInfo::PgoInstrumentationSchema terminationSchema = prevSchema;
     terminationSchema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::Done;
     if (!WriteIndividualSchemaToBytes(prevSchema, terminationSchema, byteWriter))
         return false;
@@ -384,7 +375,7 @@ bool WriteInstrumentationToBytes(const PgoInstrumentationSchema* schemaTable, si
     return true;
 }
 
-inline bool WriteInstrumentationSchema(const PgoInstrumentationSchema* schemaTable, size_t cSchemas, uint8_t* array, size_t byteCount)
+inline bool WriteInstrumentationSchema(const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas, uint8_t* array, size_t byteCount)
 {
     return WriteInstrumentationToBytes(schemaTable, cSchemas, [&array, &byteCount](uint8_t data)
     {
@@ -411,8 +402,8 @@ public:
 
 public:
 
-    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, SArray<PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData);
-    static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
+    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData);
+    static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
 
     static void CreatePgoManager(PgoManager* volatile* ppPgoManager, bool loaderAllocator);
 
@@ -527,16 +518,16 @@ public:
 protected:
 
     HRESULT getPgoInstrumentationResultsInstance(MethodDesc* pMD,
-                                                 SArray<PgoInstrumentationSchema>* pSchema,
+                                                 SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema,
                                                  BYTE**pInstrumentationData);
 
     HRESULT allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
-                                                    PgoInstrumentationSchema* pSchema,
+                                                    ICorJitInfo::PgoInstrumentationSchema* pSchema,
                                                     UINT32 countSchemaItems,
                                                     BYTE** pInstrumentationData);
 
 private:
-    static HRESULT ComputeOffsetOfActualInstrumentationData(const PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData);
+    static HRESULT ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData);
 
     static void ReadPgoData();
     static void WritePgoData();
