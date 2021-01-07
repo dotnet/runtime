@@ -104,7 +104,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sin(double a);
 
-        [Intrinsic]
         public static unsafe (double Sin, double Cos) SinCos(double x)
         {
             double sin, cos;

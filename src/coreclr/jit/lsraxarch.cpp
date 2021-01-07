@@ -1825,7 +1825,6 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 #ifdef TARGET_X86
         case NI_System_Math_Cos:
         case NI_System_Math_Sin:
-        case NI_System_Math_SinCos:
             NYI_X86("Math intrinsics Cos and Sin");
             break;
 #endif // TARGET_X86

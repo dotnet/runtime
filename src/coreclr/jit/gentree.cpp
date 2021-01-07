@@ -3723,7 +3723,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             case NI_System_Math_Exp:
                             case NI_System_Math_Ceiling:
                             case NI_System_Math_Floor:
-                            case NI_System_Math_SinCos:
                                 // Giving intrinsics a large fixed execution cost is because we'd like to CSE
                                 // them, even if they are implemented by calls. This is different from modeling
                                 // user calls since we never CSE user calls.
@@ -11639,9 +11638,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                         break;
                     case NI_System_Math_Floor:
                         printf(" floor");
-                        break;
-                    case NI_System_Math_SinCos:
-                        printf(" sincos");
                         break;
 
                     default:
