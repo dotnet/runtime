@@ -8,9 +8,6 @@
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
-    <File Include="$(PlaceHolderFile)">
-      <TargetPath>runtimes/win/lib/net45</TargetPath>
-    </File>
     <PackageFile Include=".\build\System.Speech.targets">
       <TargetPath>build\netcoreapp2.0\</TargetPath>
     </PackageFile>
