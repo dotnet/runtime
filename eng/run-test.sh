@@ -287,7 +287,8 @@ then
 else
     platform="$(uname)"
     if [ "$platform" = "FreeBSD" ]; then
-      maxProcesses=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+      output=("$(sysctl hw.ncpu)")
+      maxProcesses="$((output[1] + 1))"
     if [ "$platform" = "NetBSD" ] || [ "$platform" = "SunOS" ] ; then
       maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
     else

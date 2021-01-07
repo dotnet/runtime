@@ -23,7 +23,7 @@ parameters:
   runtimeFlavorDisplayName: 'CoreCLR'
   runtimeVariant: ''
   dependsOn: []
-  dependOnEvaluatePaths: false
+  useCheckoutBundle: false
 
 ### Build managed test components (native components are getting built as part
 ### of the the product build job).
@@ -48,7 +48,8 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
+
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:

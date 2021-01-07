@@ -2060,6 +2060,7 @@ FunctionSigBuilder::FunctionSigBuilder() :
     m_callingConv(IMAGE_CEE_CS_CALLCONV_DEFAULT)
 {
     STANDARD_VM_CONTRACT;
+    m_qbCallConvModOpts.Init();
     m_qbReturnSig.ReSizeThrows(1);
     *(CorElementType *)m_qbReturnSig.Ptr() = ELEMENT_TYPE_VOID;
 }
@@ -2075,7 +2076,7 @@ void FunctionSigBuilder::SetReturnType(LocalDesc* pLoc)
     CONTRACTL_END;
 
     m_qbReturnSig.ReSizeThrows(pLoc->cbType);
-    memcpyNoGCRefs(m_qbReturnSig.Ptr(), pLoc->ElementType, pLoc->cbType);
+    memcpyNoGCRefs((BYTE*)m_qbReturnSig.Ptr(), pLoc->ElementType, pLoc->cbType);
 
     size_t i = 0;
 
@@ -2160,6 +2161,22 @@ void FunctionSigBuilder::SetSig(PCCOR_SIGNATURE pSig, DWORD cSig)
     m_pbSigCursor += cbSigLen;
 }
 
+//--------------------------------------------------------------------------------------
+//
+
+void
+FunctionSigBuilder::AddCallConvModOpt(mdToken token)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(TypeFromToken(token) == mdtTypeDef || TypeFromToken(token) == mdtTypeRef);
+
+    int temp;
+    ULONG len = CorSigCompressToken(token, &temp);
+    m_qbCallConvModOpts.ReSizeThrows(m_qbCallConvModOpts.Size() + 1 + len);
+    SET_UNALIGNED_PTR((BYTE*)m_qbCallConvModOpts.Ptr() + m_qbCallConvModOpts.Size() - len - 1, (BYTE)ELEMENT_TYPE_CMOD_OPT);
+    memcpyNoGCRefs((BYTE*)m_qbCallConvModOpts.Ptr() + m_qbCallConvModOpts.Size() - len, &temp, len);
+}
+
 //---------------------------------------------------------------------------------------
 //
 DWORD
@@ -2171,11 +2188,14 @@ FunctionSigBuilder::GetSigSize()
     DWORD  cbEncodedLen     = CorSigCompressData(m_nItems, temp);
     SIZE_T cbEncodedRetType = m_qbReturnSig.Size();
 
+    SIZE_T cbEncodedCallConv = m_qbCallConvModOpts.Size();
+
     CONSISTENCY_CHECK(cbEncodedRetType > 0);
 
     S_UINT32 cbSigSize =
         S_UINT32(1) +                   // calling convention
         S_UINT32(cbEncodedLen) +        // encoded number of args
+        S_UINT32(cbEncodedCallConv) +   // encoded callconv modopts
         S_UINT32(cbEncodedRetType) +    // encoded return type
         S_UINT32(m_cbSig) +             // types
         S_UINT32(1);                    // ELEMENT_TYPE_END
@@ -2195,12 +2215,13 @@ FunctionSigBuilder::GetSig(
 {
     STANDARD_VM_CONTRACT;
     BYTE    tempLen[4];
-    size_t  cbEncodedLen     = CorSigCompressData(m_nItems, tempLen);
-    size_t  cbEncodedRetType = m_qbReturnSig.Size();
+    size_t  cbEncodedLen      = CorSigCompressData(m_nItems, tempLen);
+    size_t  cbEncodedCallConv = m_qbCallConvModOpts.Size();
+    size_t  cbEncodedRetType  = m_qbReturnSig.Size();
 
     CONSISTENCY_CHECK(cbEncodedRetType > 0);
 
-    _ASSERTE((1 + cbEncodedLen + cbEncodedRetType + m_cbSig + 1) == GetSigSize());
+    _ASSERTE((1 + cbEncodedLen + cbEncodedCallConv + cbEncodedRetType + m_cbSig + 1) == GetSigSize());
 
     if ((1 + cbEncodedLen + cbEncodedRetType + m_cbSig + 1) <= cbBuffer)
     {
@@ -2210,6 +2231,9 @@ FunctionSigBuilder::GetSig(
 
         memcpyNoGCRefs(pbCursor, tempLen, cbEncodedLen);
         pbCursor += cbEncodedLen;
+
+        memcpyNoGCRefs(pbCursor, m_qbCallConvModOpts.Ptr(), m_qbCallConvModOpts.Size());
+        pbCursor += m_qbCallConvModOpts.Size();
 
         memcpyNoGCRefs(pbCursor, m_qbReturnSig.Ptr(), m_qbReturnSig.Size());
         pbCursor += m_qbReturnSig.Size();
@@ -2315,9 +2339,28 @@ static BOOL SigHasVoidReturnType(const Signature &signature)
     return (ELEMENT_TYPE_VOID == retType);
 }
 
+static PTR_MethodTable GetModOptTypeForCallConv(CorUnmanagedCallingConvention callConv)
+{
+    switch(callConv)
+    {
+        case IMAGE_CEE_UNMANAGED_CALLCONV_C:
+            return CoreLibBinder::GetClass(CLASS__CALLCONV_CDECL);
+            break;
+        case IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL:
+            return CoreLibBinder::GetClass(CLASS__CALLCONV_STDCALL);
+            break;
+        case IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL:
+            return CoreLibBinder::GetClass(CLASS__CALLCONV_THISCALL);
+            break;
+        case IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL:
+            return CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL);
+            break;
+        default:
+            return NULL;
+    }
+}
 
-ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD,
-                           BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub, BOOL fIsReverseStub) :
+ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD, ILStubLinkerFlags flags) :
     m_pCodeStreamList(NULL),
     m_stubSig(signature),
     m_pTypeContext(pTypeContext),
@@ -2325,7 +2368,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     m_pStubSigModule(pStubSigModule),
     m_pLabelList(NULL),
     m_StubHasVoidReturnType(FALSE),
-    m_fIsReverseStub(fIsReverseStub),
+    m_fIsReverseStub((flags & ILSTUB_LINKER_FLAG_REVERSE) != 0),
     m_iTargetStackDelta(0),
     m_cbCurrentCompressedSigLen(1),
     m_nLocals(0),
@@ -2341,6 +2384,11 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     CONTRACTL_END
 
     m_managedSigPtr = signature.CreateSigPointer();
+    if ((flags & ILSTUB_LINKER_FLAG_SUPPRESSGCTRANSITION) != 0)
+    {
+        m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_SUPPRESSGCTRANSITION)));
+        m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_UNMANAGED);
+    }
     if (!signature.IsEmpty())
     {
         // Until told otherwise, assume that the stub has the same return type as the signature.
@@ -2355,10 +2403,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
         ULONG   uStubCallingConvInfo;
         IfFailThrow(m_managedSigPtr.GetCallingConvInfo(&uStubCallingConvInfo));
 
-        if (fStubHasThis)
-        {
-            m_fHasThis = true;
-        }
+        m_fHasThis = (flags & ILSTUB_LINKER_FLAG_STUB_HAS_THIS) != 0;
 
         //
         // If target calling convention was specified, use it instead.
@@ -2392,7 +2437,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
             // convention to be vararg for non-PInvoke stubs, so we just use
             // the default callconv.
             //
-            if (!fIsNDirectStub)
+            if ((flags & ILSTUB_LINKER_FLAG_NDIRECT) == 0)
                 uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_DEFAULT;
             else
                 uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_NATIVEVARARG;
@@ -2402,18 +2447,38 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
             uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_DEFAULT;
         }
 
-        if (fTargetHasThis && !fIsNDirectStub)
+        if ((flags & (ILSTUB_LINKER_FLAG_TARGET_HAS_THIS | ILSTUB_LINKER_FLAG_NDIRECT)) == ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
         {
             // ndirect native sig never has a 'this' pointer
             uNativeCallingConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
         }
 
-        if (fTargetHasThis && !fIsReverseStub)
+        if ((flags & (ILSTUB_LINKER_FLAG_TARGET_HAS_THIS | ILSTUB_LINKER_FLAG_REVERSE)) == ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
         {
             m_iTargetStackDelta--;
         }
 
-        m_nativeFnSigBuilder.SetCallingConv((CorCallingConvention)uNativeCallingConv);
+        if (m_nativeFnSigBuilder.GetCallingConv() == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+        {
+            switch((CorUnmanagedCallingConvention)uNativeCallingConv)
+            {
+                case IMAGE_CEE_UNMANAGED_CALLCONV_C:
+                case IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL:
+                case IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL:
+                case IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL:
+                    m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(GetModOptTypeForCallConv((CorUnmanagedCallingConvention)uNativeCallingConv)));
+                    break;
+                default:
+                    // If the calling convention isn't one of the unmanaged calling conventions
+                    // and we've already decided that we need to emit the Unmanaged calling convention in metadata,
+                    // let the code that builds the stub set the calling convention.
+                    break;
+            }
+        }
+        else
+        {
+            m_nativeFnSigBuilder.SetCallingConv((CorCallingConvention)uNativeCallingConv);
+        }
 
         if (uStubCallingConvInfo & IMAGE_CEE_CS_CALLCONV_GENERIC)
             IfFailThrow(m_managedSigPtr.GetData(NULL));    // skip number of type parameters
@@ -2423,7 +2488,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
         // If we are a reverse stub, then the target signature called in the stub
         // is the managed signature. In that case, we calculate the target IL stack delta
         // here from the managed signature.
-        if (fIsReverseStub)
+        if ((flags & ILSTUB_LINKER_FLAG_REVERSE) != 0)
         {
             // As per ECMA 335, the max number of parameters is 0x1FFFFFFF (see section 11.23.2), which fits in a 32-bit signed integer
             // So this cast is safe.
@@ -2678,7 +2743,15 @@ void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingC
 {
     LIMITED_METHOD_CONTRACT;
     CorCallingConvention originalCallingConvention = m_nativeFnSigBuilder.GetCallingConv();
-    m_nativeFnSigBuilder.SetCallingConv(uNativeCallingConv);
+    if (originalCallingConvention == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+    {
+        m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(GetModOptTypeForCallConv((CorUnmanagedCallingConvention)uNativeCallingConv)));
+    }
+    else
+    {
+        m_nativeFnSigBuilder.SetCallingConv(uNativeCallingConv);
+    }
+
     if (!m_fIsReverseStub)
     {
         if ( (originalCallingConvention & CORINFO_CALLCONV_HASTHIS) && !(uNativeCallingConv & CORINFO_CALLCONV_HASTHIS))

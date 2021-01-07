@@ -2009,8 +2009,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, spOffset);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
 
-        // Can't have a call until we have enough padding for ReJit.
-        genPrologPadForReJit();
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
         if (compiler->info.compPublishStubParam)
@@ -2029,8 +2027,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, -(int)frameSize);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
 
-        // Can't have a call until we have enough padding for ReJit.
-        genPrologPadForReJit();
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
         if (initReg == REG_DEFAULT_HELPER_CALL_TARGET)
@@ -5954,29 +5950,28 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
-        emitAttr targetSize = emitActualTypeSize(op1->TypeGet());
-        emitAttr op1Size    = emitActualTypeSize(op1->TypeGet());
-
-        // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
-        // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
-        if ((targetSize >= 4) && (op1Size >= 4) && (targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE))
-        {
-            if (targetReg != op1->GetRegNum())
-            {
-                inst_RV_RV(INS_mov, targetReg, op1->GetRegNum(), op1->TypeGet());
-            }
-            if (tree->OperIs(GT_GE))
-            {
-                // emit "not" for "x>=0" case
-                inst_RV(INS_not, targetReg, tree->TypeGet(), op1Size);
-            }
-            inst_RV_IV(INS_shr_N, targetReg, (int)op1Size * 8 - 1, op1Size);
-            genProduceReg(tree);
-            return;
-        }
-
         if (compiler->opts.OptimizationEnabled())
         {
+            emitAttr op1Size = emitActualTypeSize(op1->TypeGet());
+            assert((int)op1Size >= 4);
+
+            // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
+            // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
+            if ((targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE) && !tree->IsUnsigned())
+            {
+                if (targetReg != op1->GetRegNum())
+                {
+                    inst_RV_RV(INS_mov, targetReg, op1->GetRegNum(), op1->TypeGet());
+                }
+                if (tree->OperIs(GT_GE))
+                {
+                    // emit "not" for "x>=0" case
+                    inst_RV(INS_not, targetReg, op1->TypeGet());
+                }
+                inst_RV_IV(INS_shr_N, targetReg, (int)op1Size * 8 - 1, op1Size);
+                genProduceReg(tree);
+                return;
+            }
             canReuseFlags = true;
         }
 
@@ -8493,11 +8488,6 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         inst_IV(INS_push, (size_t)compiler->compProfilerMethHnd);
     }
 
-    //
-    // Can't have a call until we have enough padding for rejit
-    //
-    genPrologPadForReJit();
-
     // This will emit either
     // "call ip-relative 32-bit offset" or
     // "mov rax, helper addr; call rax"
@@ -8699,9 +8689,6 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
     GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
 
-    // Can't have a call until we have enough padding for rejit
-    genPrologPadForReJit();
-
     // This will emit either
     // "call ip-relative 32-bit offset" or
     // "mov rax, helper addr; call rax"
@@ -8788,9 +8775,6 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     assert(compiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
     int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
     GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_1, genFramePointerReg(), -callerSPOffset);
-
-    // Can't have a call until we have enough padding for rejit
-    genPrologPadForReJit();
 
     // We can use any callee trash register (other than RAX, RDI, RSI) for call target.
     // We use R11 here. This will emit either

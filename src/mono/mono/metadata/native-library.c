@@ -47,11 +47,11 @@ static GHashTable *native_library_module_map;
  * This is a rare scenario and considered a worthwhile tradeoff.
  */
 static GHashTable *native_library_module_blocklist;
-#endif
 
-#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
+#ifndef NO_GLOBALIZATION_SHIM
 extern const void *GlobalizationResolveDllImport (const char *name);
 #endif
+#endif // ENABLE_NETCORE
 
 #ifndef DISABLE_DLLMAP
 static MonoDllMap *global_dll_map;
@@ -60,6 +60,8 @@ static MonoDllMap *global_dll_map;
 static GHashTable *global_module_map; // should only be accessed with the global loader data lock
 
 static MonoDl *internal_module; // used when pinvoking `__Internal`
+
+static PInvokeOverrideFn pinvoke_override;
 
 // Did we initialize the temporary directory for dynamic libraries
 // FIXME: this is racy
@@ -568,13 +570,19 @@ netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAsse
 	MONO_STATIC_POINTER_INIT (MonoMethod, resolve)
 
 		ERROR_DECL (local_error);
-		MonoClass *native_lib_class = mono_class_get_native_library_class ();
-		g_assert (native_lib_class);
-		resolve = mono_class_get_method_from_name_checked (native_lib_class, "MonoLoadLibraryCallbackStub", -1, 0, local_error);
-		mono_error_assert_ok (local_error);
+		static gboolean inited;
+		if (!inited) {
+			MonoClass *native_lib_class = mono_class_get_native_library_class ();
+			g_assert (native_lib_class);
+			resolve = mono_class_get_method_from_name_checked (native_lib_class, "MonoLoadLibraryCallbackStub", -1, 0, local_error);
+			inited = TRUE;
+		}
+		mono_error_cleanup (local_error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve)
-	g_assert (resolve);
+
+	if (!resolve)
+		return NULL;
 
 	if (mono_runtime_get_no_exec ())
 		return NULL;
@@ -927,6 +935,26 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 	return flags;
 }
 
+#ifndef NO_GLOBALIZATION_SHIM
+#ifdef HOST_WIN32
+#define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
+#else
+#define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
+#endif
+
+static gpointer
+default_resolve_dllimport (const char *dll, const char *func)
+{
+	if (strcmp (dll, GLOBALIZATION_DLL_NAME) == 0) {
+		const void *method_impl = GlobalizationResolveDllImport (func);
+		if (method_impl)
+			return (gpointer)method_impl;
+	}
+
+	return NULL;
+}
+#endif // NO_GLOBALIZATION_SHIM
+
 #else // ENABLE_NETCORE
 
 static MonoDl *
@@ -1257,29 +1285,7 @@ legacy_lookup_native_library (MonoImage *image, const char *scope)
 
 	return module;
 }
-
 #endif // ENABLE_NETCORE
-
-#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
-
-#ifdef HOST_WIN32
-#define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
-#else
-#define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
-#endif
-
-static gpointer
-default_resolve_dllimport (const char *dll, const char *func)
-{
-	if (strcmp (dll, GLOBALIZATION_DLL_NAME) == 0) {
-		const void *method_impl = GlobalizationResolveDllImport (func);
-		if (method_impl)
-			return (gpointer)method_impl;
-	}
-
-	return NULL;
-}
-#endif
 
 gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
@@ -1361,13 +1367,19 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	}
 #endif
 
-#if defined(ENABLE_NETCORE) && !defined(NO_GLOBALIZATION_SHIM)
-	gpointer default_override = default_resolve_dllimport (new_scope, new_import);
-	if (default_override)
-		return default_override;
+#ifdef ENABLE_NETCORE
+#ifndef NO_GLOBALIZATION_SHIM
+	addr = default_resolve_dllimport (new_scope, new_import);
+	if (addr)
+		goto exit;
 #endif
 
-#ifdef ENABLE_NETCORE
+	if (pinvoke_override) {
+		addr = pinvoke_override (new_scope, new_import);
+		if (addr)
+			goto exit;
+	}
+
 #ifndef HOST_WIN32
 retry_with_libcoreclr:
 #endif
@@ -1393,7 +1405,7 @@ retry_with_libcoreclr:
 	module = netcore_lookup_native_library (alc, image, new_scope, flags);
 #else
 	module = legacy_lookup_native_library (image, new_scope);
-#endif
+#endif // ENABLE_NETCORE
 
 	if (!module) {
 		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
@@ -1749,4 +1761,10 @@ mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const 
 	bundle_library_paths = g_slist_append (bundle_library_paths, file);
 	
 	g_free (buffer);
+}
+
+void
+mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn)
+{
+	pinvoke_override = override_fn;
 }

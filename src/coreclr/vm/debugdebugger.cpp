@@ -158,36 +158,25 @@ FCIMPL0(void, DebugDebugger::Break)
 }
 FCIMPLEND
 
-FCIMPL0(FC_BOOL_RET, DebugDebugger::Launch)
+BOOL QCALLTYPE DebugDebugger::Launch()
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerAttached())
     {
-        FC_RETURN_BOOL(TRUE);
+        return TRUE;
     }
-    else if (g_pDebugInterface != NULL)
+
+    if (g_pDebugInterface != NULL)
     {
-        HRESULT hr = S_OK;
-
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-        hr = g_pDebugInterface->LaunchDebuggerForUser(GetThread(), NULL, TRUE, TRUE);
-
-        HELPER_METHOD_FRAME_END();
-
-        if (SUCCEEDED (hr))
-        {
-            FC_RETURN_BOOL(TRUE);
-        }
+        HRESULT hr = g_pDebugInterface->LaunchDebuggerForUser(GetThread(), NULL, TRUE, TRUE);
+        return SUCCEEDED(hr);
     }
 #endif // DEBUGGING_SUPPORTED
 
-    FC_RETURN_BOOL(FALSE);
+    return FALSE;
 }
-FCIMPLEND
-
 
 FCIMPL0(FC_BOOL_RET, DebugDebugger::IsDebuggerAttached)
 {
@@ -229,42 +218,33 @@ FCIMPLEND
 // appending a newline to anything.
 // It will also call OutputDebugString() which will send a native debug event. The message
 // string there will be a composite of the two managed string parameters and may include a newline.
-FCIMPL3(void, DebugDebugger::Log,
-        INT32 Level,
-        StringObject* strModuleUNSAFE,
-        StringObject* strMessageUNSAFE
-       )
+void QCALLTYPE DebugDebugger::Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(strModuleUNSAFE, NULL_OK));
-        PRECONDITION(CheckPointer(strMessageUNSAFE, NULL_OK));
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(pwzModule, NULL_OK));
+        PRECONDITION(CheckPointer(pwzMessage, NULL_OK));
     }
     CONTRACTL_END;
 
-    STRINGREF strModule   = (STRINGREF)ObjectToOBJECTREF(strModuleUNSAFE);
-    STRINGREF strMessage  = (STRINGREF)ObjectToOBJECTREF(strMessageUNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_2(strModule, strMessage);
-
     // OutputDebugString will log to native/interop debugger.
-    if (strModule != NULL)
+    if (pwzModule != NULL)
     {
-        WszOutputDebugString(strModule->GetBuffer());
+        WszOutputDebugString(pwzModule);
         WszOutputDebugString(W(" : "));
     }
 
-    if (strMessage != NULL)
+    if (pwzMessage != NULL)
     {
-        WszOutputDebugString(strMessage->GetBuffer());
+        WszOutputDebugString(pwzMessage);
     }
 
     // If we're not logging a module prefix, then don't log the newline either.
     // Thus if somebody is just logging messages, there won't be any extra newlines in there.
     // If somebody is also logging category / module information, then this call to OutputDebugString is
     // already prepending that to the message, so we append a newline for readability.
-    if (strModule != NULL)
+    if (pwzModule != NULL)
     {
         WszOutputDebugString(W("\n"));
     }
@@ -283,21 +263,21 @@ FCIMPL3(void, DebugDebugger::Log,
             // Strings may contain embedded nulls, but we need to handle null-terminated
             // strings, so use truncate now.
             StackSString switchName;
-            if( strModule != NULL )
+            if (pwzModule != NULL)
             {
                 // truncate if necessary
-                COUNT_T iLen = (COUNT_T) wcslen(strModule->GetBuffer());
+                COUNT_T iLen = (COUNT_T) wcslen(pwzModule);
                 if (iLen > MAX_LOG_SWITCH_NAME_LEN)
                 {
                     iLen = MAX_LOG_SWITCH_NAME_LEN;
                 }
-                switchName.Set(strModule->GetBuffer(), iLen);
+                switchName.Set(pwzModule, iLen);
             }
 
             SString message;
-            if( strMessage != NULL )
+            if (pwzMessage != NULL)
             {
-                message.Set(strMessage->GetBuffer(), (COUNT_T) wcslen(strMessage->GetBuffer()));
+                message.Set(pwzMessage, (COUNT_T) wcslen(pwzMessage));
             }
 
             g_pDebugInterface->SendLogMessage (Level, &switchName, &message);
@@ -305,11 +285,7 @@ FCIMPL3(void, DebugDebugger::Log,
     }
 
 #endif // DEBUGGING_SUPPORTED
-
-    HELPER_METHOD_FRAME_END();
 }
-FCIMPLEND
-
 
 FCIMPL0(FC_BOOL_RET, DebugDebugger::IsLogging)
 {

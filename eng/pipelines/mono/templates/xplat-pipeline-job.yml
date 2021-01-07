@@ -11,12 +11,12 @@ parameters:
   pool: ''
   runtimeVariant: ''
   liveRuntimeBuildConfig: 'release'
+  useCheckoutBundle: false
 
   # arcade-specific parameters
   condition: true
   continueOnError: false
   dependsOn: ''
-  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -37,12 +37,12 @@ jobs:
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
+    useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
 
     # arcade-specific parameters
     condition: and(succeeded(), ${{ parameters.condition }})
     continueOnError: ${{ parameters.continueOnError }}
     dependsOn: ${{ parameters.dependsOn }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     displayName: ${{ parameters.displayName }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}

@@ -15,6 +15,7 @@
 #include "sigparser.h"
 #include "zapsig.h"
 #include "threads.h"
+#include "corinfo.h"
 
 #include "eecontract.h"
 #include "typectxt.h"
@@ -790,10 +791,11 @@ class MetaSig
         //                          than one calling convention specified)
         //----------------------------------------------------------
         static HRESULT TryGetUnmanagedCallingConventionFromModOpt(
-            _In_ Module *pModule,
+            _In_ CORINFO_MODULE_HANDLE pModule,
             _In_ PCCOR_SIGNATURE pSig,
             _In_ ULONG cSig,
             _Out_ CorUnmanagedCallingConvention *callConvOut,
+            _Out_ bool* suppressGCTransitionOut,
             _Out_ UINT *errorResID);
 
         static CorUnmanagedCallingConvention GetDefaultUnmanagedCallingConvention()

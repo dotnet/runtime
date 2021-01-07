@@ -3,19 +3,28 @@
   <UsingTask TaskName="WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="WasmAOT" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+
+  <!--
+      Public properties:
+      - WasmBuildDir    - Directory where build artifacts are stored.
+      - WasmBuildNative - Whenever to build the native executable. Defaults to false.
+      - WasmNativeStrip - Whenever to strip the native executable. Defaults to true.
+  -->
 
   <PropertyGroup>
-      <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmAOT</WasmBuildAppDependsOn>
+    <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+    <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+    <WasmNativeStrip>true</WasmNativeStrip>
+  </PropertyGroup>
+
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative</WasmBuildAppDependsOn>
   </PropertyGroup>
 
   <Target Name="WasmBuildApp" AfterTargets="Publish" />
 
-  <Target Condition="'$(RunAOTCompilation)' == 'true'" Name="_WasmAotCompileApp">
-    <PropertyGroup>
-      <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
-      <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
-      <EmccPublishVersionFile>$(WasmAOTDir)emcc-version.txt</EmccPublishVersionFile>
-    </PropertyGroup>
+  <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
       <MonoAOTCompilerDefaultAotArguments Include="static" />
@@ -37,9 +46,9 @@
       OutputType="AsmOnly"
       Assemblies="@(AotInputAssemblies)"
       UseAotDataFile="false"
-      AotModulesTablePath="$(WasmAOTDir)driver-gen.c"
+      AotModulesTablePath="$(WasmBuildDir)driver-gen.c"
       UseLLVM="true"
-        DisableParallelAot="true"
+      DisableParallelAot="true"
       LLVMPath="$(EMSDK_PATH)\upstream\bin">
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblies" />
     </MonoAOTCompiler>
@@ -63,10 +72,9 @@
   <Target Name="_BeforeWasmBuildApp">
       <Error Condition="'$(WasmMainAssemblyPath)' == ''" Text="%24(WasmMainAssemblyPath) property needs to be set" />
       <Error Condition="'$(WasmAppDir)' == ''" Text="%24(WasmAppDir) property needs to be set" />
-      <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(WasmAOTDir)' == ''" Text="%24(WasmAOTDir) property needs to be set" />
+      <Error Condition="'$(WasmBuildNative)' == 'true' and '$(WasmBuildDir)' == ''" Text="%24(WasmBuildDir) property needs to be set" />
       <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
       <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
-
       <ItemGroup>
           <_WasmAssemblies Include="$(WasmMainAssemblyPath);@(WasmAssembliesToBundle)" />
       </ItemGroup>
@@ -76,7 +84,6 @@
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
-      MainAssembly="$(WasmMainAssemblyPath)"
       MainJS="$(WasmMainJSPath)"
       Assemblies="@(_WasmAssemblies)"
       InvariantGlobalization="$(WasmInvariantGlobalization)"
@@ -97,32 +104,80 @@
     <ItemGroup>
       <_managedAppAssemblies Include="$(WasmAppDir)managed\*.dll"/>
     </ItemGroup>
-    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
+    <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
+    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
   </Target>
 
-  <Target Name="_WasmAOT" DependsOnTargets="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
+  <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp" Condition="'$(WasmBuildNative)' == 'true'">
+    <PropertyGroup>
+      <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
+      <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
+      <EmccPublishVersionFile>$(WasmBuildDir)emcc-version.txt</EmccPublishVersionFile>
+    </PropertyGroup>
     <ReadLinesFromFile File="$(EmccFlagsFile)">
         <Output TaskParameter="Lines" PropertyName="EmccFlags" />
     </ReadLinesFromFile>
 
     <PropertyGroup>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
+      <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
+      <_EmsdkEnvSourceCommand>source $(EMSDK_PATH)/emsdk_env.sh</_EmsdkEnvSourceCommand>
+      <_EmccCommand>$(_EmsdkEnvSourceCommand) &amp;&amp; emcc</_EmccCommand>
     </PropertyGroup>
 
     <ReadLinesFromFile File="$(RuntimeEmccVersionFile)">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
 
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc --version | head -1 > emcc-version.txt" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" />
+    <Exec Command="bash -c '$(_EmccCommand) --version | head -1 > emcc-version.txt'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
     <ReadLinesFromFile File="$(EmccPublishVersionFile)">
         <Output TaskParameter="Lines" PropertyName="EmccVersion" />
     </ReadLinesFromFile>
     <Error Condition="'$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
 
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DCORE_BINDINGS -DENABLE_AOT=1 -DDRIVER_GEN=1 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/mono-2.0 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/wasm -I$(WasmAOTDir) $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/driver.c -c -o driver.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" StandardOutputImportance="Low" />
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/mono-2.0 $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/corebindings.c -c -o corebindings.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" StandardOutputImportance="Low" />
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DGEN_PINVOKE=1 -I$(MicrosoftNetCoreAppRuntimePackRidDir)native/include/wasm $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pinvoke.c -c -o pinvoke.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" StandardOutputImportance="Low" />
-    <Exec Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -s TOTAL_MEMORY=536870912 --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/library_mono.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/binding_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/dotnet_support.js --js-library $(MicrosoftNetCoreAppRuntimePackRidDir)native/src/pal_random.js driver.o pinvoke.o corebindings.o @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') libmono-ee-interp.a libmonosgen-2.0.a libmono-ilgen.a libmono-icall-table.a libSystem.Native.a libSystem.IO.Compression.Native.a libicuuc.a libicui18n.a -o dotnet.js" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmAOTDir)" StandardOutputImportance="Low" />
+    <!-- Either created by MonoAOTCompiler or here -->
+    <WriteLinesToFile File="$(WasmBuildDir)driver-gen.c" Overwrite="true" Condition="'$(RunAOTCompilation)' == 'false'"
+                      Lines=""
+                      />
+
+    <ItemGroup>
+      <_WasmPInvokeModules Include="libSystem.Native" />
+      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
+      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+      <_WasmPInvokeAssemblies Include="$(WasmBuildDir)\*.dll" />
+   </ItemGroup>
+   <!--This pinvoke-table.h will be used instead of the one in the runtime pack because of -I$(WasmBuildDir) -->
+   <PInvokeTableGenerator
+     Modules="@(_WasmPInvokeModules)"
+     Assemblies="@(_WasmPInvokeAssemblies)"
+     OutputPath="$(WasmBuildDir)pinvoke-table.h" />
+
+   <ItemGroup>
+     <_WasmObjects Include="libmono-ee-interp.a"/>
+     <_WasmObjects Include="libmonosgen-2.0.a"/>
+     <_WasmObjects Include="libmono-ilgen.a"/>
+     <_WasmObjects Include="libmono-icall-table.a"/>
+     <_WasmObjects Include="libSystem.Native.a"/>
+     <_WasmObjects Include="libSystem.IO.Compression.Native.a"/>
+     <_WasmObjects Include="libicuuc.a"/>
+     <_WasmObjects Include="libicui18n.a"/>
+     <_WasmObjects Include="driver.o"/>
+     <_WasmObjects Include="pinvoke.o"/>
+     <_WasmObjects Include="corebindings.o"/>
+   </ItemGroup>
+
+   <PropertyGroup>
+     <_WasmIncludeDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/include</_WasmIncludeDir>
+     <_WasmSrcDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/src</_WasmSrcDir>
+     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 -I$(WasmBuildDir) -I$(_WasmIncludeDir)/mono-2.0 -I$(_WasmIncludeDir)/wasm</EmccCFlags>
+     <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
+   </PropertyGroup>
+
+    <Exec Command="bash -c '$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/driver.c -c -o driver.o'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Command="bash -c '$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/corebindings.c -c -o corebindings.o'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Command="bash -c '$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/pinvoke.c -c -o pinvoke.o'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Command="bash -c '$(_EmccCommand) $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o dotnet.js'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
+    <Exec Condition="'$(WasmNativeStrip)' == 'true'" Command="bash -c '$(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf dotnet.wasm -o dotnet.wasm'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
   </Target>
 
   <Target Name="_GenerateRunV8Script">

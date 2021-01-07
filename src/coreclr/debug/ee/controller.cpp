@@ -2950,7 +2950,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
         DWORD dwEvent = 0xFFFFFFFF;
         DWORD dwNumberEvents = 0;
-        BOOL reabort = FALSE;
 
         SENDIPCEVENT_BEGIN(g_pDebugger, thread);
 
@@ -2992,10 +2991,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
             LOG((LF_CORDB,LL_INFO1000, "SAT called!\n"));
         }
 
-
-        // If we need to to a re-abort (see below), then save the current IP in the thread's context before we block and
-        // possibly let another func eval get setup.
-        reabort = thread->m_StateNC & Thread::TSNC_DebuggerReAbort;
         SENDIPCEVENT_END;
 
         if (!atSafePlace)
@@ -3009,19 +3004,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         {
             dcq.dcqDequeue();
             dwEvent++;
-        }
-        // If a func eval completed with a ThreadAbortException, go ahead and setup the thread to re-abort itself now
-        // that we're continuing the thread. Note: we make sure that the thread's IP hasn't changed between now and when
-        // we blocked above. While blocked above, the debugger has a chance to setup another func eval on this
-        // thread. If that happens, we don't want to setup the reabort just yet.
-        if (reabort)
-        {
-            if ((UINT_PTR)GetEEFuncEntryPoint(::FuncEvalHijack) != (UINT_PTR)GetIP(context))
-            {
-                HRESULT hr;
-                hr = g_pDebugger->FuncEvalSetupReAbort(thread, Thread::TAR_Thread);
-                _ASSERTE(SUCCEEDED(hr));
-            }
         }
     }
 

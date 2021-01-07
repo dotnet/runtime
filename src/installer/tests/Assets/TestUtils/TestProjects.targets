@@ -4,7 +4,7 @@
     provides basic info needed for restore and build with the vanilla SDK.
   -->
   <PropertyGroup>
-    <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
+    <NETCoreAppMaximumVersion>6.0</NETCoreAppMaximumVersion>
   </PropertyGroup>
   <!--
     We are using to best emulate the live version. This should be removed once we start using the live bits.
