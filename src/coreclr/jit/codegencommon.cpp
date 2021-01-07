@@ -6148,7 +6148,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
     if (genUseBlockInit)
     {
         assert(untrLclHi > untrLclLo);
-#ifdef TARGET_ARMARCH
+#ifdef TARGET_ARM
         /*
             Generate the following code:
 
@@ -6190,8 +6190,6 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for
                                            // a large constant.
 
-#if defined(TARGET_ARM)
-
         if (compiler->compLocallocUsed)
         {
             availMask &= ~RBM_SAVED_LOCALLOC_SP; // Remove the register reserved when we have a localloc frame
@@ -6213,13 +6211,6 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         regMask = genFindLowestBit(availMask);
         rAddr   = genRegNumFromMask(regMask);
         availMask &= ~regMask;
-
-#else // !define(TARGET_ARM)
-
-        rAddr           = initReg;
-        *pInitRegZeroed = false;
-
-#endif // !defined(TARGET_ARM)
 
         bool     useLoop   = false;
         unsigned uCntBytes = untrLclHi - untrLclLo;
@@ -6245,11 +6236,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         // rAddr is not a live incoming argument reg
         assert((genRegMask(rAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
 
-#if defined(TARGET_ARM)
         if (arm_Valid_Imm_For_Add(untrLclLo, INS_FLAGS_DONT_CARE))
-#else  // !TARGET_ARM
-        if (emitter::emitIns_valid_imm_for_add(untrLclLo, EA_PTRSIZE))
-#endif // !TARGET_ARM
         {
             GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), untrLclLo);
         }
@@ -6269,7 +6256,6 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
         }
 
-#ifdef TARGET_ARM
         rZero1 = genGetZeroReg(initReg, pInitRegZeroed);
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
         target_ssize_t stmImm = (target_ssize_t)(genRegMask(rZero1) | genRegMask(rZero2));
@@ -6295,7 +6281,10 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, rZero1, rAddr, 0);
             uCntBytes -= REGSIZE_BYTES;
         }
-#else
+
+        noway_assert(uCntBytes == 0);
+
+#elif defined(TARGET_ARM64)
         if (!useLoop)
         {
             const regNumber zeroSIMDReg = REG_V16;
@@ -6345,9 +6334,6 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             GetEmitter()->emitIns_R_R_I(INS_str, EA_4BYTE, REG_ZR, rAddr, 0);
             uCntBytes -= sizeof(int);
         }
-#endif
-        noway_assert(uCntBytes == 0);
-
 #elif defined(TARGET_XARCH)
         assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
         emitter*  emit        = GetEmitter();
