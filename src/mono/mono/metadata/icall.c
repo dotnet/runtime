@@ -6777,21 +6777,21 @@ ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportab
 	return result;
 }
 
-#ifdef ENABLE_METADATA_UPDATE
+#if defined (ENABLE_NETCORE) && defined (ENABLE_METADATA_UPDATE)
 void
-ves_icall_Mono_Runtime_LoadMetadataUpdate (MonoReflectionAssemblyHandle refassm,
+ves_icall_Mono_Runtime_LoadMetadataUpdate (MonoAssembly *assm,
 					   gconstpointer dmeta_bytes, int32_t dmeta_len,
-					   gconstpointer dil_bytes, int32_t dil_len,
-					   MonoError *error)
+					   gconstpointer dil_bytes, int32_t dil_len)
 {
-	g_assert (MONO_HANDLE_BOOL (refassm));
+	ERROR_DECL (error);
+	g_assert (assm);
 	g_assert (dmeta_len >= 0);
-	MonoAssembly *assm = MONO_HANDLE_GETVAL (refassm, assembly);
 	MonoImage *image_base = assm->image;
 	g_assert (image_base);
 
 	MonoDomain *domain = mono_domain_get ();
 	mono_image_load_enc_delta (domain, image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
+	mono_error_set_pending_exception (error);
 }
 #endif
 

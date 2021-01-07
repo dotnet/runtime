@@ -447,7 +447,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 }
 
 void
-mono_image_effective_table (const MonoTableInfo **t, int *idx)
+mono_image_effective_table_slow (const MonoTableInfo **t, int *idx)
 {
 	if (G_LIKELY (*idx < (*t)->rows))
 		return;

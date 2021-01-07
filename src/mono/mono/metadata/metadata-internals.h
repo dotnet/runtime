@@ -911,7 +911,15 @@ mono_image_effective_table (const MonoTableInfo **t, int *idx)
 }
 #else /* ENABLE_METADATA_UPDATE */
 void
-mono_image_effective_table (const MonoTableInfo **t, int *idx);
+mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
+
+static inline void
+mono_image_effective_table (const MonoTableInfo **t, int *idx)
+{
+	if (G_LIKELY (*idx < (*t)->rows))
+		return;
+	mono_image_effective_table_slow (t, idx);
+}
 
 int
 mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
@@ -985,7 +993,16 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 }
 #else
 gboolean
-mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index);
+mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
+
+static inline gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+{
+	/* returns true if given index is not in bounds with provided table/index pair */
+	if (G_LIKELY (token_index <= image->tables [table_index].rows))
+		return FALSE;
+	return mono_metadata_table_bounds_check_slow (image, table_index, token_index);
+}
 #endif
 
 const char *   mono_meta_table_name              (int table);

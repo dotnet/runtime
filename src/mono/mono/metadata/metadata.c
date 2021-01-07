@@ -993,7 +993,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 #ifdef ENABLE_METADATA_UPDATE
 /* returns true if given index is not in bounds with provided table/index pair */
 gboolean
-mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index)
 {
 	if (G_LIKELY (token_index <= image->tables [table_index].rows))
 		return FALSE;

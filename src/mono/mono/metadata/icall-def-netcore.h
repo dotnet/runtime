@@ -328,7 +328,7 @@ HANDLES(MPROP_5, "internal_from_handle_type", ves_icall_System_Reflection_Runtim
 
 #ifdef ENABLE_METADATA_UPDATE
 ICALL_TYPE(RUNF, "System.Runtime.CompilerServices.RuntimeFeature", RUNF_1)
-HANDLES(RUNF_1, "LoadMetadataUpdate_internal", ves_icall_Mono_Runtime_LoadMetadataUpdate, void, 5, (MonoReflectionAssembly, gconstpointer, gint32, gconstpointer, gint32))
+NOHANDLES(ICALL(RUNF_1, "LoadMetadataUpdate_internal", ves_icall_Mono_Runtime_LoadMetadataUpdate))
 #endif
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)

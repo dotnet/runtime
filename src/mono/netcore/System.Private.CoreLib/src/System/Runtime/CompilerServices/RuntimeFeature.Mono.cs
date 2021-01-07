@@ -24,13 +24,14 @@ namespace System.Runtime.CompilerServices
         }
 #else
         [MethodImplAttribute (MethodImplOptions.InternalCall)]
-        private static unsafe extern void LoadMetadataUpdate_internal (Assembly base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length);
+        private static unsafe extern void LoadMetadataUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length);
 
         internal static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data) {
             unsafe {
                 fixed (byte* dmeta_bytes = dmeta_data)
                 fixed (byte* dil_bytes = dil_data) {
-                    LoadMetadataUpdate_internal (assm, dmeta_bytes, dmeta_data.Length, dil_bytes, dil_data.Length);
+                    IntPtr mono_assembly = ((RuntimeAssembly)assm).GetUnderlyingNativeHandle ();
+                    LoadMetadataUpdate_internal (mono_assembly, dmeta_bytes, dmeta_data.Length, dil_bytes, dil_data.Length);
                 }
             }
         }
