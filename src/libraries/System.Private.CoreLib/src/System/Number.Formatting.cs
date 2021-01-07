@@ -1360,8 +1360,8 @@ namespace System
             int p = bufferLength;
             do
             {
-                    uint remainder;
-                    (value, remainder) = Math.DivRem(value, 10);
+                uint remainder;
+                (value, remainder) = Math.DivRem(value, 10);
                 buffer[--p] = (char)(remainder + '0');
             }
             while (value != 0);
