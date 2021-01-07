@@ -42,6 +42,12 @@ namespace Internal.Cryptography
             }
         }
 
+        public override int FeedbackSize
+        {
+            get => _impl.FeedbackSize;
+            set => _impl.FeedbackSize = value;
+        }
+
         public override byte[] IV
         {
             get { return _impl.IV; }
