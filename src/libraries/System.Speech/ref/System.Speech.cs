@@ -82,7 +82,6 @@ namespace System.Speech.Recognition
         internal AudioStateChangedEventArgs() { }
         public System.Speech.Recognition.AudioState AudioState { get { throw null; } }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{_oneOf.DebugSummary}")]
     public partial class Choices
     {
         public Choices() { }
@@ -112,7 +111,6 @@ namespace System.Speech.Recognition
         internal EmulateRecognizeCompletedEventArgs() : base (default(System.Exception), default(bool), default(object)) { }
         public System.Speech.Recognition.RecognitionResult Result { get { throw null; } }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("Grammar: {(_uri != null ? \"uri=\" + _uri.ToString () + \" \" : \"\") + \"rule=\" + _ruleName }")]
     public partial class Grammar
     {
         protected Grammar() { }
@@ -146,7 +144,6 @@ namespace System.Speech.Recognition
         public static System.Speech.Recognition.Grammar LoadLocalizedGrammarFromType(System.Type type, params object[] onInitParameters) { throw null; }
         protected void StgInit(object[] parameters) { }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebugSummary}")]
     public partial class GrammarBuilder
     {
         public GrammarBuilder() { }
@@ -197,7 +194,6 @@ namespace System.Speech.Recognition
         internal RecognitionEventArgs() { }
         public System.Speech.Recognition.RecognitionResult Result { get { throw null; } }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebuggerDisplayString ()}")]
     public sealed partial class RecognitionResult : System.Speech.Recognition.RecognizedPhrase, System.Runtime.Serialization.ISerializable
     {
         internal RecognitionResult() { }
@@ -226,7 +222,6 @@ namespace System.Speech.Recognition
         public void WriteToAudioStream(System.IO.Stream outputStream) { }
         public void WriteToWaveStream(System.IO.Stream outputStream) { }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{Text}")]
     public partial class RecognizedPhrase
     {
         internal RecognizedPhrase() { }
@@ -240,7 +235,6 @@ namespace System.Speech.Recognition
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Speech.Recognition.RecognizedWordUnit> Words { get { throw null; } }
         public System.Xml.XPath.IXPathNavigable ConstructSmlFromSemantics() { throw null; }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("Text: {Text}")]
     public partial class RecognizedWordUnit
     {
         public RecognizedWordUnit(string text, float confidence, string pronunciation, string lexicalForm, System.Speech.Recognition.DisplayAttributes displayAttributes, System.TimeSpan audioPosition, System.TimeSpan audioDuration) { }
@@ -286,14 +280,12 @@ namespace System.Speech.Recognition
         public int FirstWordIndex { get { throw null; } }
         public string Text { get { throw null; } }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{_semanticKey.DebugSummary}")]
     public partial class SemanticResultKey
     {
         public SemanticResultKey(string semanticResultKey, params System.Speech.Recognition.GrammarBuilder[] builders) { }
         public SemanticResultKey(string semanticResultKey, params string[] phrases) { }
         public System.Speech.Recognition.GrammarBuilder ToGrammarBuilder() { throw null; }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{_tag.DebugSummary}")]
     public partial class SemanticResultValue
     {
         public SemanticResultValue(object value) { }
@@ -301,7 +293,6 @@ namespace System.Speech.Recognition
         public SemanticResultValue(string phrase, object value) { }
         public System.Speech.Recognition.GrammarBuilder ToGrammarBuilder() { throw null; }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("'{_keyName}'= {Value}  -  Children = {_dictionary.Count}")]
     public sealed partial class SemanticValue : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>, System.Collections.Generic.IDictionary<string, System.Speech.Recognition.SemanticValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Speech.Recognition.SemanticValue>>, System.Collections.IEnumerable
     {
         public SemanticValue(object value) { }
@@ -491,7 +482,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         public System.Uri XmlBase { get { throw null; } set { } }
         public void WriteSrgs(System.Xml.XmlWriter srgsGrammar) { }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("SrgsElement Children:[{_items.Count}]")]
     public abstract partial class SrgsElement : System.MarshalByRefObject
     {
         protected SrgsElement() { }
@@ -512,7 +502,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         Voice = 0,
         Dtmf = 1,
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebuggerDisplayString ()}")]
     public partial class SrgsItem : System.Speech.Recognition.SrgsGrammar.SrgsElement
     {
         public SrgsItem() { }
@@ -533,7 +522,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         internal override string DebuggerDisplayString() { throw null; }
         internal override void WriteSrgs(System.Xml.XmlWriter writer) { throw null; }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebuggerDisplayString ()}")]
     public partial class SrgsNameValueTag : System.Speech.Recognition.SrgsGrammar.SrgsElement
     {
         public SrgsNameValueTag() { }
@@ -544,7 +532,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         internal override string DebuggerDisplayString() { throw null; }
         internal override void WriteSrgs(System.Xml.XmlWriter writer) { throw null; }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebuggerDisplayString ()}")]
     public partial class SrgsOneOf : System.Speech.Recognition.SrgsGrammar.SrgsElement
     {
         public SrgsOneOf() { }
@@ -561,7 +548,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         Ipa = 1,
         Ups = 2,
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("Rule={_id.ToString()} Scope={_scope.ToString()}")]
     public partial class SrgsRule
     {
         public SrgsRule(string id) { }
@@ -578,7 +564,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         public void Add(System.Speech.Recognition.SrgsGrammar.SrgsElement element) { }
     }
     [System.ComponentModel.ImmutableObjectAttribute(true)]
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebuggerDisplayString()}")]
     public partial class SrgsRuleRef : System.Speech.Recognition.SrgsGrammar.SrgsElement
     {
         public static readonly System.Speech.Recognition.SrgsGrammar.SrgsRuleRef Dictation;
@@ -610,7 +595,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         Public = 0,
         Private = 1,
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebuggerDisplayString ()}")]
     public partial class SrgsSemanticInterpretationTag : System.Speech.Recognition.SrgsGrammar.SrgsElement
     {
         public SrgsSemanticInterpretationTag() { }
@@ -619,7 +603,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         internal override string DebuggerDisplayString() { throw null; }
         internal override void WriteSrgs(System.Xml.XmlWriter writer) { throw null; }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebuggerDisplayString ()}")]
     public partial class SrgsSubset : System.Speech.Recognition.SrgsGrammar.SrgsElement
     {
         public SrgsSubset(string text) { }
@@ -629,7 +612,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         internal override string DebuggerDisplayString() { throw null; }
         internal override void WriteSrgs(System.Xml.XmlWriter writer) { throw null; }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebuggerDisplayString ()}")]
     public partial class SrgsText : System.Speech.Recognition.SrgsGrammar.SrgsElement
     {
         public SrgsText() { }
@@ -638,7 +620,6 @@ namespace System.Speech.Recognition.SrgsGrammar
         internal override string DebuggerDisplayString() { throw null; }
         internal override void WriteSrgs(System.Xml.XmlWriter writer) { throw null; }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{DebuggerDisplayString ()}")]
     public partial class SrgsToken : System.Speech.Recognition.SrgsGrammar.SrgsElement
     {
         public SrgsToken(string text) { }
@@ -657,13 +638,11 @@ namespace System.Speech.Synthesis
         public System.TimeSpan AudioPosition { get { throw null; } }
         public string Bookmark { get { throw null; } }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{_text}")]
     public partial class FilePrompt : System.Speech.Synthesis.Prompt
     {
         public FilePrompt(string path, System.Speech.Synthesis.SynthesisMediaType media) : base (default(string)) { }
         public FilePrompt(System.Uri promptFile, System.Speech.Synthesis.SynthesisMediaType media) : base (default(string)) { }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{VoiceInfo.Name} [{Enabled ? \"Enabled\" : \"Disabled\"}]")]
     public partial class InstalledVoice
     {
         internal InstalledVoice() { }
@@ -681,7 +660,6 @@ namespace System.Speech.Synthesis
         public string NextPhoneme { get { throw null; } }
         public string Phoneme { get { throw null; } }
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{_text}")]
     public partial class Prompt
     {
         public Prompt(System.Speech.Synthesis.PromptBuilder promptBuilder) { }
@@ -928,7 +906,6 @@ namespace System.Speech.Synthesis
         Female = 2,
         Neutral = 3,
     }
-//     [System.Diagnostics.DebuggerDisplayAttribute("{(_name != null ? \"'\" + _name + \"' \" : \"\") +  (_culture != null ? \" '\" + _culture.ToString () + \"' \" : \"\") + (_gender != VoiceGender.NotSet ? \" '\" + _gender.ToString () + \"' \" : \"\") + (_age != VoiceAge.NotSet ? \" '\" + _age.ToString () + \"' \" : \"\") + (_variant > 0 ? \" \" + _variant.ToString () : \"\")}")]
     public partial class VoiceInfo
     {
         internal VoiceInfo() { }
