@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             private List<IChangeToken> _expirationTokens;
             private List<IDisposable> _expirationTokenRegistrations;
-            private List<PostEvictionCallbackRegistration> _postEvictionCallbacks; // this is not really related to tokens, but was moved here to shrink typicall CacheEntry size
+            private List<PostEvictionCallbackRegistration> _postEvictionCallbacks; // this is not really related to tokens, but was moved here to shrink typical CacheEntry size
 
             internal List<IChangeToken> ExpirationTokens => _expirationTokens ??= new List<IChangeToken>();
             internal List<PostEvictionCallbackRegistration> PostEvictionCallbacks => _postEvictionCallbacks ??= new List<PostEvictionCallbackRegistration>();
