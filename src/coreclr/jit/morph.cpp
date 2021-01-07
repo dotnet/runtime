@@ -11911,9 +11911,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_MUL:
             // -a * C => a * -C, where C is constant
             // MUL(NEG(a), C) => MUL(a, NEG(C))
-            if (opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) && op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() &&
-                op2->IsCnsIntOrI() && !op2->IsIconHandle() && op2->AsIntCon()->IconValue() != 1 &&
-                op2->AsIntCon()->IconValue() != 0 && op2->AsIntCon()->IconValue() != -1 && !tree->gtOverflow())
+            if (opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) && op1->OperIs(GT_NEG) &&
+                !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() && !op2->IsIconHandle() &&
+                op2->AsIntCon()->IconValue() != 1 && op2->AsIntCon()->IconValue() != 0 &&
+                op2->AsIntCon()->IconValue() != -1 && !tree->gtOverflow())
             {
                 tree->AsOp()->gtOp1 = op1->gtGetOp1();
                 DEBUG_DESTROY_NODE(op1);
@@ -12070,9 +12071,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             // -a / C => a / -C, where C is constant
             // DIV(NEG(a), C) => DIV(a, NEG(C))
-            if (opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) && op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() &&
-                op2->IsCnsIntOrI() && !op2->IsIconHandle() && op2->AsIntCon()->IconValue() != 1 &&
-                op2->AsIntCon()->IconValue() != 0 && op2->AsIntCon()->IconValue() != -1)
+            if (opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) && op1->OperIs(GT_NEG) &&
+                !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() && !op2->IsIconHandle() &&
+                op2->AsIntCon()->IconValue() != 1 && op2->AsIntCon()->IconValue() != 0 &&
+                op2->AsIntCon()->IconValue() != -1)
             {
                 tree->AsOp()->gtOp1 = op1->gtGetOp1();
                 DEBUG_DESTROY_NODE(op1);
