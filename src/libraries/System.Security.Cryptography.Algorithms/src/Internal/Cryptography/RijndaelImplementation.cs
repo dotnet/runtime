@@ -23,6 +23,7 @@ namespace Internal.Cryptography
 
             // This class wraps Aes
             _impl = Aes.Create();
+            _impl.FeedbackSize = 128;
         }
 
         public override int BlockSize

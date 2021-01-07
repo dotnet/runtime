@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
                 Assert.Equal(128, alg.LegalBlockSizes[0].MinSize);
                 Assert.Equal(128, alg.LegalBlockSizes[0].MaxSize);
                 Assert.Equal(128, alg.BlockSize);
-                Assert.Equal(8, alg.FeedbackSize);
+                Assert.Equal(128, alg.FeedbackSize);
 
                 // Different exception since we have different supported BlockSizes than desktop
                 Assert.Throws<PlatformNotSupportedException>(() => alg.BlockSize = 192);
@@ -172,8 +172,8 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
                 alg.Padding = PaddingMode.PKCS7;
                 Assert.Equal(PaddingMode.PKCS7, alg.Padding);
 
-                alg.FeedbackSize = 128;
-                Assert.Equal(128, alg.FeedbackSize);
+                alg.FeedbackSize = 8;
+                Assert.Equal(8, alg.FeedbackSize);
             }
 
             using (var alg = Rijndael.Create())
