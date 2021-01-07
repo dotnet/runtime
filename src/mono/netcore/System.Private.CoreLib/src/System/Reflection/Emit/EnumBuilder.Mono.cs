@@ -192,11 +192,13 @@ namespace System.Reflection.Emit
             }
         }
 
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
         public Type? CreateType()
         {
             return _tb.CreateType();
         }
 
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
         public TypeInfo? CreateTypeInfo()
         {
             return _tb.CreateTypeInfo();
