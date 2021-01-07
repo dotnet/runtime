@@ -305,7 +305,7 @@ class REF : public OBJECTREF
 
 // the while (0) syntax below is to force a trailing semicolon on users of the macro
 #define VALIDATEOBJECT(obj) do {if ((obj) != NULL) (obj)->Validate();} while (0)
-#define VALIDATEOBJECTREF(objref) do { VALIDATEOBJECT(OBJECTREFToObject(objref)); } while (0)
+#define VALIDATEOBJECTREF(objref) do { Object* validateObjectRefObj = OBJECTREFToObject(objref); VALIDATEOBJECT(validateObjectRefObj); } while (0)
 
 #else   // _DEBUG_IMPL
 
