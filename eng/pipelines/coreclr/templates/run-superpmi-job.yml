@@ -22,7 +22,7 @@ parameters:
   runKind: ''                     # required -- test category
   collectionType: ''
   collectionName: ''
-  dependOnEvaluatePaths: false
+  useCheckoutBundle: false
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -38,7 +38,7 @@ jobs:
     continueOnError: ${{ parameters.continueOnError }}
     collectionType: $ {{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
 
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'

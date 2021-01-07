@@ -767,6 +767,12 @@ DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedExcept
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
 DEFINE_FIELD(RUNTIME_WRAPPED_EXCEPTION, WRAPPED_EXCEPTION,  _wrappedException)
 
+DEFINE_CLASS(CALLCONV_CDECL,                 CompilerServices,       CallConvCdecl)
+DEFINE_CLASS(CALLCONV_STDCALL,               CompilerServices,       CallConvStdcall)
+DEFINE_CLASS(CALLCONV_THISCALL,              CompilerServices,       CallConvThiscall)
+DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFastcall)
+DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
+
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
 DEFINE_FIELD_U(handle,                     SafeHandle,            m_handle)
 DEFINE_FIELD_U(_state,                     SafeHandle,            m_state)
