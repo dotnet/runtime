@@ -77,12 +77,6 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.ManifestBuilder.GetTypeName(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.Diagnostics.Tracing.NullableTypeInfo.#ctor(System.Type,System.Collections.Generic.List{System.Type})</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -120,18 +114,6 @@
       <argument>IL2075</argument>
       <property name="Scope">member</property>
       <property name="Target">M:Internal.Runtime.InteropServices.ComponentActivator.InternalGetFunctionPointer(System.Runtime.Loader.AssemblyLoadContext,System.String,System.String,System.IntPtr)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.EventSource.CreateManifestAndDescriptors(System.Type,System.String,System.Diagnostics.Tracing.EventSource,System.Diagnostics.Tracing.EventManifestOptions)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.ManifestBuilder.CreateManifestString</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

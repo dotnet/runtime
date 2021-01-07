@@ -334,8 +334,7 @@ namespace System.Diagnostics.Tracing
         }
 
 #if !ES_BUILD_STANDALONE
-        private const DynamicallyAccessedMemberTypes ManifestMemberTypes = DynamicallyAccessedMemberTypes.PublicNestedTypes
-            | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods;
+        private const DynamicallyAccessedMemberTypes ManifestMemberTypes = DynamicallyAccessedMemberTypes.All;
 #endif
 
         /// <summary>
@@ -2876,7 +2875,7 @@ namespace System.Diagnostics.Tracing
         // Use reflection to look at the attributes of a class, and generate a manifest for it (as UTF8) and
         // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
-        // then the descriptors are not creaed, and just the manifest is generated.
+        // then the descriptors are not created, and just the manifest is generated.
         private static byte[]? CreateManifestAndDescriptors(
 #if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -5451,6 +5450,18 @@ namespace System.Diagnostics.Tracing
             }
 
             // Write out the maps
+
+            // Scoping the call to enum GetFields to a local function to limit the linker suppression
+#if !ES_BUILD_STANDALONE
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Trimmer does not trim enums")]
+#endif
+            static FieldInfo[] GetEnumFields(Type localEnumType)
+            {
+                Debug.Assert(localEnumType.IsEnum);
+                return localEnumType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+            }
+
             if (mapsTab != null)
             {
                 sb.AppendLine(" <maps>");
@@ -5461,7 +5472,7 @@ namespace System.Diagnostics.Tracing
                     sb.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).AppendLine("\">");
 
                     // write out each enum value
-                    FieldInfo[] staticFields = enumType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                    FieldInfo[] staticFields = GetEnumFields(enumType);
                     bool anyValuesWritten = false;
                     foreach (FieldInfo staticField in staticFields)
                     {
@@ -5780,8 +5791,7 @@ namespace System.Diagnostics.Tracing
         {
             if (type.IsEnum)
             {
-                FieldInfo[] fields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                string typeName = GetTypeName(fields[0].FieldType);
+                string typeName = GetTypeName(type.GetEnumUnderlyingType());
                 return typeName.Replace("win:Int", "win:UInt"); // ETW requires enums to be unsigned.
             }
 
