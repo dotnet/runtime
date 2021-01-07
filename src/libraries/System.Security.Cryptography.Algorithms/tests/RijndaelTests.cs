@@ -296,10 +296,13 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
             Assert.Equal(ExpectedOutput, decrypted);
         }
 
-        [Fact]
-        public static void CfbFeedbackSizeIsRespected()
+        [Theory]
+        [InlineData(128)]
+        [InlineData(8)]
+        [InlineData(null)]
+        public static void CfbFeedbackSizeIsRespected(int? feedbackSize)
         {
-            static void Test(Rijndael alg, int? feedbackSize = null)
+            void Test(Rijndael alg)
             {
                 alg.Mode = CipherMode.CFB;
 
@@ -325,16 +328,12 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
 
             using (Rijndael alg = new RijndaelManaged())
             {
-                Test(alg, 128);
-                Test(alg, 8);
-                Test(alg, null);
+                Test(alg);
             }
 
             using (Rijndael alg = Rijndael.Create())
             {
-                Test(alg, 128);
-                Test(alg, 8);
-                Test(alg, null);
+                Test(alg);
             }
         }
 
