@@ -147,14 +147,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new ArgumentException($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
         }
 
-        switch (Mode)
+        if (!Enum.TryParse(Mode, true, out parsedAotMode))
         {
-            case "Normal": parsedAotMode = MonoAotMode.Normal; break;
-            case "Full": parsedAotMode = MonoAotMode.Full; break;
-            case "LLVMOnly": parsedAotMode = MonoAotMode.LLVMOnly; break;
-            case "AotInterp": parsedAotMode = MonoAotMode.AotInterp; break;
-            default:
-                throw new ArgumentException($"'{nameof(Mode)}' must be one of: '{nameof(MonoAotMode.Normal)}', '{nameof(MonoAotMode.Full)}', '{nameof(MonoAotMode.LLVMOnly)}', '{nameof(MonoAotMode.AotInterp)}'. Received: '{Mode}'.", nameof(Mode));
+            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(',', Enum.GetNames(typeof(MonoAotMode)))}");
+            return false;
         }
 
         switch (OutputType)
@@ -176,6 +172,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             case "ObjC": parsedAotModulesTableLanguage = MonoAotModulesTableLanguage.ObjC; break;
             default:
                 throw new ArgumentException($"'{nameof(AotModulesTableLanguage)}' must be one of: '{nameof(MonoAotModulesTableLanguage.C)}', '{nameof(MonoAotModulesTableLanguage.ObjC)}'. Received: '{AotModulesTableLanguage}'.", nameof(AotModulesTableLanguage));
+        }
+
+        if (parsedAotMode == MonoAotMode.AotInterp && string.IsNullOrEmpty(AotProfilePath))
+        {
+            throw new ArgumentException($"AOT Profile Path must be defined to run in {nameof(MonoAotMode.AotInterp)}");
         }
 
         if (!string.IsNullOrEmpty(AotModulesTablePath))

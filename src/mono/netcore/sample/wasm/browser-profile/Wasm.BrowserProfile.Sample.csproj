@@ -10,7 +10,6 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
-    <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</AppDir>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <RunAnalyzers>false</RunAnalyzers>
