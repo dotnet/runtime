@@ -101,6 +101,15 @@ To run all tests, including "outer loop" tests (which are typically slower and i
     MSBUILD_ARGS=/p:OuterLoop=true make -C src/mono/wasm/ run-browser-tests-System.AppContext
     ```
 
+
+## Kicking off outer loop tests from GitHub Interface
+
+Add the following to the comment of a PR.
+
+```
+/azp run runtime-libraries-mono outerloop
+```
+
 ### Test App Design
 TBD
 
