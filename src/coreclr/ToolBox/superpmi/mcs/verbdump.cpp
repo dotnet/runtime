@@ -10,7 +10,7 @@
 #include "methodcontextiterator.h"
 #include "errorhandling.h"
 
-int verbDump::DoWork(const char* nameOfInput, int indexCount, const int* indexes)
+int verbDump::DoWork(const char* nameOfInput, int indexCount, const int* indexes, bool simple)
 {
     LogVerbose("Dumping '%s' to console", nameOfInput);
 
@@ -23,7 +23,7 @@ int verbDump::DoWork(const char* nameOfInput, int indexCount, const int* indexes
     while (mci.MoveNext())
     {
         MethodContext* mc = mci.Current();
-        mc->dumpToConsole(mci.MethodContextNumber());
+        mc->dumpToConsole(mci.MethodContextNumber(), simple);
         dumpedCount++;
     }
 
