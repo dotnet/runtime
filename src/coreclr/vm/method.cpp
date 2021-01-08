@@ -5277,7 +5277,7 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
 #ifndef CROSSGEN_COMPILE
 
 #ifdef TARGET_WINDOWS
-FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName) const
+FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName)
 {
     CONTRACTL
     {
@@ -5298,12 +5298,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
 
     if (IsStdCall())
     {
-        if (GetModule()->IsReadyToRun())
-        {
-            // Computing if marshalling is required also computes the required stack size. We need the stack size to correctly form the
-            // name of the import pinvoke function on x86
-            ((NDirectMethodDesc*)this)->MarshalingRequired();
-        }
+        EnsureStackArgumentSize();
 
         DWORD probedEntrypointNameLength = (DWORD)(strlen(entryPointName) + 1); // 1 for null terminator
         int dstbufsize = (int)(sizeof(char) * (probedEntrypointNameLength + 10)); // 10 for stdcall mangling
@@ -5323,7 +5318,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
     return pFunc;
 }
 
-FARPROC NDirectMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName, char suffix) const
+FARPROC NDirectMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName, char suffix)
 {
     // Allocate space for a copy of the entry point name.
     DWORD entryPointWithSuffixLen = (DWORD)(strlen(entryPointName) + 1); // +1 for charset decorations
@@ -5342,7 +5337,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, 
 #endif
 
 //*******************************************************************************
-LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
+LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod)
 {
     CONTRACTL
     {
