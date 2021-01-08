@@ -1,0 +1,1273 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="PlatformNotSupported_SystemSpeech" xml:space="preserve">
+    <value>Speech is not supported on this platform.</value>
+  </data>
+  <data name="NullParamIllegal" xml:space="preserve">
+    <value>'{0}' parameter cannot be null.</value>
+  </data>
+  <data name="ArrayOfNullIllegal" xml:space="preserve">
+    <value>Array cannot contain null value.</value>
+  </data>
+  <data name="ParamsEntryNullIllegal" xml:space="preserve">
+    <value>Variable parameter list cannot contain 'null' value.</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Additional exception information unavailable.</value>
+  </data>
+  <data name="UnexpectedError" xml:space="preserve">
+    <value>Unexpected error '{0:x}'.</value>
+  </data>
+  <data name="CollectionReadOnly" xml:space="preserve">
+    <value>Collection is read-only.</value>
+  </data>
+  <data name="StringCanNotBeEmpty" xml:space="preserve">
+    <value>'{0}' cannot be an empty string.</value>
+  </data>
+  <data name="EnumInvalid" xml:space="preserve">
+    <value>'{0}' enumeration value is not valid.</value>
+  </data>
+  <data name="NotSupportedWithThisVersionOfSAPI" xml:space="preserve">
+    <value>This feature is not supported with this version of the speech platform.</value>
+  </data>
+  <data name="NotSupportedWithThisVersionOfSAPI2" xml:space="preserve">
+    <value>The property '{0}' is not supported with this version of the speech platform.</value>
+  </data>
+  <data name="NotSupportedWithThisVersionOfSAPIBaseUri" xml:space="preserve">
+    <value>'BaseUri' is not supported with this version of the speech platform.</value>
+  </data>
+  <data name="NotSupportedWithThisVersionOfSAPITagFormat" xml:space="preserve">
+    <value>This semantic interpretation type 'tag-format' is not supported with this version of the speech platform.</value>
+  </data>
+  <data name="NotSupportedWithThisVersionOfSAPICompareOption" xml:space="preserve">
+    <value>This 'CompareOption' value is not supported with this version of the speech platform.</value>
+  </data>
+  <data name="MustBeGreaterThanZero" xml:space="preserve">
+    <value>This argument must be greater than zero.</value>
+  </data>
+  <data name="InvalidXml" xml:space="preserve">
+    <value>XML content not valid.</value>
+  </data>
+  <data name="OperationAborted" xml:space="preserve">
+    <value>Operation stopped.</value>
+  </data>
+  <data name="InvariantCultureInfo" xml:space="preserve">
+    <value>'CultureInfo.InvariantCulture' is not a valid value for this operation.</value>
+  </data>
+  <data name="DuplicatedEntry" xml:space="preserve">
+    <value>Duplicated entry.</value>
+  </data>
+  <data name="StreamMustBeReadable" xml:space="preserve">
+    <value>Stream must support read operation.</value>
+  </data>
+  <data name="StreamMustBeWriteable" xml:space="preserve">
+    <value>Stream must support write operation.</value>
+  </data>
+  <data name="StreamMustBeSeekable" xml:space="preserve">
+    <value>Stream must support seek operation.</value>
+  </data>
+  <data name="StreamEndedUnexpectedly" xml:space="preserve">
+    <value>Stream ended unexpectedly.</value>
+  </data>
+  <data name="CannotReadFromDirectory" xml:space="preserve">
+    <value>'{0}' file name cannot point to a directory.</value>
+  </data>
+  <data name="UnknownMimeFormat" xml:space="preserve">
+    <value>Unknown 'MIME' format.</value>
+  </data>
+  <data name="CannotLoadResourceFromManifest" xml:space="preserve">
+    <value>Cannot load the required resource '{0}' from the manifest of assembly '{1}'.</value>
+  </data>
+  <data name="TokenInUse" xml:space="preserve">
+    <value>Token in use.  </value>
+  </data>
+  <data name="TokenDeleted" xml:space="preserve">
+    <value>Token deleted.</value>
+  </data>
+  <data name="TokenUninitialized" xml:space="preserve">
+    <value>Token uninitialized.</value>
+  </data>
+  <data name="InvalidTokenId" xml:space="preserve">
+    <value>Token ID not valid.</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>Token not found.</value>
+  </data>
+  <data name="NoBackSlash" xml:space="preserve">
+    <value>Backslashes not found in the path specified by '{0}'.</value>
+  </data>
+  <data name="InvalidRegistryEntry" xml:space="preserve">
+    <value>'{0}' string format not valid. It must contain backslashes or a percent sign.</value>
+  </data>
+  <data name="TokenCannotCreateInstance" xml:space="preserve">
+    <value>Failed to create an instance for the CLSID associated with this token.</value>
+  </data>
+  <data name="InvalidXmlFormat" xml:space="preserve">
+    <value>XML grammar format not valid. Cannot load grammar into XML Document Object Model.</value>
+  </data>
+  <data name="IncorrectAttributeValue" xml:space="preserve">
+    <value>Incorrect value '{0}' for attribute '{1}'.</value>
+  </data>
+  <data name="MissingRequiredAttribute" xml:space="preserve">
+    <value>'{1}' requires attribute '{0}'.</value>
+  </data>
+  <data name="InvalidRuleRefSelf" xml:space="preserve">
+    <value>Rule reference not valid. Uri cannot explicitly reference the same grammar file.</value>
+  </data>
+  <data name="InvalidDynamicExport" xml:space="preserve">
+    <value>'{0}' exported rule contains direct or indirect reference to a dynamic rule.</value>
+  </data>
+  <data name="InvalidToken" xml:space="preserve">
+    <value>Content of token tag is not valid.</value>
+  </data>
+  <data name="MetaNameHTTPEquiv" xml:space="preserve">
+    <value>Name and http-equiv attributes cannot be used together in metadata.</value>
+  </data>
+  <data name="EmptyRule" xml:space="preserve">
+    <value>Empty rule is not allowed.</value>
+  </data>
+  <data name="InvalidTokenString" xml:space="preserve">
+    <value>Token string cannot contain double quote character.</value>
+  </data>
+  <data name="InvalidQuotedString" xml:space="preserve">
+    <value>Double-quoted string not valid.</value>
+  </data>
+  <data name="ExportDynamicRule" xml:space="preserve">
+    <value>Dynamic rule cannot be root or public.</value>
+  </data>
+  <data name="EmptyDisplayString" xml:space="preserve">
+    <value>'Display' string cannot be empty.</value>
+  </data>
+  <data name="EmptyPronunciationString" xml:space="preserve">
+    <value>'pron' string cannot be empty.</value>
+  </data>
+  <data name="InvalidPhoneme" xml:space="preserve">
+    <value>Invalid phoneme '{0}'.</value>
+  </data>
+  <data name="MuliplePronunciationString" xml:space="preserve">
+    <value>Cannot have multiple 'pron' strings.</value>
+  </data>
+  <data name="MultipleDisplayString" xml:space="preserve">
+    <value>Cannot have multiple 'display' strings.</value>
+  </data>
+  <data name="RuleRedefinition" xml:space="preserve">
+    <value>Cannot have duplicate rule '{0}'.</value>
+  </data>
+  <data name="EmptyOneOf" xml:space="preserve">
+    <value>'one-of' must contain at least one 'item' element.</value>
+  </data>
+  <data name="InvalidGrammarOrdering" xml:space="preserve">
+    <value>'lexicon' and 'meta', 'metadata' must be defined before 'rule'.</value>
+  </data>
+  <data name="MinMaxOutOfRange" xml:space="preserve">
+    <value>Repeat count out of range. Expect 0 &lt;= min ({0}) &lt;= max ({1}) &lt; 256.</value>
+  </data>
+  <data name="InvalidExampleOrdering" xml:space="preserve">
+    <value>'example' can only be defined at the beginning of a rule.</value>
+  </data>
+  <data name="GrammarDefTwice" xml:space="preserve">
+    <value>SRGS source not valid. Cannot have multiple 'grammar' elements.</value>
+  </data>
+  <data name="UnsupportedFormat" xml:space="preserve">
+    <value>Unsupported Grammar Format.</value>
+  </data>
+  <data name="InvalidImport" xml:space="preserve">
+    <value>Rule cannot be marked as both Import and TopLevel/Active/Root.</value>
+  </data>
+  <data name="DuplicatedRuleName" xml:space="preserve">
+    <value>Duplicate rule name.</value>
+  </data>
+  <data name="RootRuleAlreadyDefined" xml:space="preserve">
+    <value>Root rule already defined.</value>
+  </data>
+  <data name="RuleNameIdConflict" xml:space="preserve">
+    <value>Name and ID conflict.</value>
+  </data>
+  <data name="RuleNotDynamic" xml:space="preserve">
+    <value>Rule must be marked dynamic.</value>
+  </data>
+  <data name="StateWithNoArcs" xml:space="preserve">
+    <value>Internal Compiler Error, State has no transition.</value>
+  </data>
+  <data name="NoTerminatingRulePath" xml:space="preserve">
+    <value>No terminating rule path.</value>
+  </data>
+  <data name="RuleRefNoUri" xml:space="preserve">
+    <value>Special RuleRef does not have URI.</value>
+  </data>
+  <data name="UnavailableProperty" xml:space="preserve">
+    <value>Must set property value before it can be read.</value>
+  </data>
+  <data name="MinGreaterThanMax" xml:space="preserve">
+    <value>'Min' value must be smaller than or equal to 'Max' value.</value>
+  </data>
+  <data name="ReqConfidenceNotSupported" xml:space="preserve">
+    <value>'Required Confidence' attribute is not supported for SrgsDocuments.</value>
+  </data>
+  <data name="SapiPropertiesAndSemantics" xml:space="preserve">
+    <value>'SrgsNameValueTag' and 'SrgsSemanticInterpretationTag' cannot be used together in an Srgs Document.</value>
+  </data>
+  <data name="InvalidAttributeDefinedTwice" xml:space="preserve">
+    <value>'{0}' attribute value of '{1}' element is defined more than once.</value>
+  </data>
+  <data name="GrammarCompilerError" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="RuleScriptNotFound" xml:space="preserve">
+    <value>'{0}' method in rule '{1}' for '{2}' is undefined.</value>
+  </data>
+  <data name="DynamicRuleNotFound" xml:space="preserve">
+    <value>The dynamic rule '{0}' is undefined. The rule must be created in 'OnInit' method.</value>
+  </data>
+  <data name="RuleScriptInvalidParameters" xml:space="preserve">
+    <value>Parameters not valid for method '{0}' in rule '{1}'.</value>
+  </data>
+  <data name="RuleScriptInvalidReturnType" xml:space="preserve">
+    <value>Return type not valid for method '{0}' in rule '{1}'.</value>
+  </data>
+  <data name="NoClassname" xml:space="preserve">
+    <value>'classname' is undefined.</value>
+  </data>
+  <data name="EmbeddedClassLibraryFailed" xml:space="preserve">
+    <value>Failed to load embedded class library '{0}'.</value>
+  </data>
+  <data name="CannotFindClass" xml:space="preserve">
+    <value>'{0}' class name not found in namespace '{1}'. Verify that the class is marked public.</value>
+  </data>
+  <data name="StrongTypedGrammarNotAGrammar" xml:space="preserve">
+    <value>Custom grammars must derive from Grammar class.</value>
+  </data>
+  <data name="NoScriptsForRules" xml:space="preserve">
+    <value>No semantic processing defined for the rules.</value>
+  </data>
+  <data name="ClassNotPublic" xml:space="preserve">
+    <value>'{0}' class must be 'public'. The grammar cannot be instantiated.</value>
+  </data>
+  <data name="MethodNotPublic" xml:space="preserve">
+    <value>'{0}' method for rule '{1}' must be 'public'. The method cannot be invoked.</value>
+  </data>
+  <data name="IncompatibleLanguageProperties" xml:space="preserve">
+    <value>Must use same .NET language on all grammars.</value>
+  </data>
+  <data name="IncompatibleNamespaceProperties" xml:space="preserve">
+    <value>Must use same namespace on all grammars.</value>
+  </data>
+  <data name="IncompatibleDebugProperties" xml:space="preserve">
+    <value>Must use same Debug settings on all grammars.</value>
+  </data>
+  <data name="CannotLoadDotNetSemanticCode" xml:space="preserve">
+    <value>Cannot load semantic interpretation script.</value>
+  </data>
+  <data name="InvalidSemanticProcessingType" xml:space="preserve">
+    <value>The 'tag-format' for grammars that include .NET semantics must be 'tag-format="properties-ms/1.0"'</value>
+  </data>
+  <data name="InvalidScriptDefinition" xml:space="preserve">
+    <value>Script attribute not valid. Unrecognized rule '{0}'.</value>
+  </data>
+  <data name="InvalidMethodName" xml:space="preserve">
+    <value>Invalid characters in method name '{0}'.</value>
+  </data>
+  <data name="ConstructorNotAllowed" xml:space="preserve">
+    <value>Method name cannot be the same as name of rule '{0}'.</value>
+  </data>
+  <data name="OverloadNotAllowed" xml:space="preserve">
+    <value>'{0}' method cannot have multiple overloads.</value>
+  </data>
+  <data name="OnInitOnPublicRule" xml:space="preserve">
+    <value>'{0}' not valid on private rule '{1}'.</value>
+  </data>
+  <data name="ArgumentMismatch" xml:space="preserve">
+    <value>'OnInit' arguments have type mismatch.</value>
+  </data>
+  <data name="CantGetPropertyFromSerializedInfo" xml:space="preserve">
+    <value>'{0}' property not supported for recognition results built from a serialized stream.</value>
+  </data>
+  <data name="CantFindAConstructor" xml:space="preserve">
+    <value>Cannot find a matching constructor in grammar '{0}' for rule '{1}.
+Possible constructors are: '{2}'.</value>
+  </data>
+  <data name="TooManyArcs" xml:space="preserve">
+    <value>Too many arcs. Maximum is 0x3FFFFF.</value>
+  </data>
+  <data name="TooManyRulesWithSemanticsGlobals" xml:space="preserve">
+    <value>Exceeded symbols tables capacity.</value>
+  </data>
+  <data name="MaxTransitionsCount" xml:space="preserve">
+    <value>Maximum transition count is reached. Transition count cannot exceed 256.</value>
+  </data>
+  <data name="UnknownElement" xml:space="preserve">
+    <value>Unrecognized element '{0}'.</value>
+  </data>
+  <data name="CircularRuleRef" xml:space="preserve">
+    <value>Circular rule reference in rule '{0}'.</value>
+  </data>
+  <data name="InvalidFlagsSet" xml:space="preserve">
+    <value>Undefined attribute flag set or import/export flags simultaneously set.</value>
+  </data>
+  <data name="RuleDefinedMultipleTimes" xml:space="preserve">
+    <value>'{0}' rule defined multiple times.</value>
+  </data>
+  <data name="RuleDefinedMultipleTimes2" xml:space="preserve">
+    <value>'{0}' rule defined in more than one file.</value>
+  </data>
+  <data name="RuleNotDefined" xml:space="preserve">
+    <value>'{0}' rule not defined in this grammar.</value>
+  </data>
+  <data name="RootNotDefined" xml:space="preserve">
+    <value>'{0}' root rule is undefined.</value>
+  </data>
+  <data name="InvalidLanguage" xml:space="preserve">
+    <value>Language not valid.</value>
+  </data>
+  <data name="InvalidRuleId" xml:space="preserve">
+    <value>'{0}' rule ID not valid.</value>
+  </data>
+  <data name="InvalidRepeatProbability" xml:space="preserve">
+    <value>'{0}' repeat probability not valid. RepeatProbability must be between 0.0 and 1.0, inclusively.</value>
+  </data>
+  <data name="InvalidConfidence" xml:space="preserve">
+    <value>confidence must be between 0.0 and 1.0, inclusively.</value>
+  </data>
+  <data name="InvalidMinRepeat" xml:space="preserve">
+    <value>'{0}' minRepeat not valid; must be greater than or equal to zero.</value>
+  </data>
+  <data name="InvalidMaxRepeat" xml:space="preserve">
+    <value>'{0}' maxRepeat not valid; must be greater than or equal to zero.</value>
+  </data>
+  <data name="InvalidWeight" xml:space="preserve">
+    <value>'{0}' weight not valid; must be greater than 0.0.</value>
+  </data>
+  <data name="InvalidName" xml:space="preserve">
+    <value>Name must be a nonempty string.</value>
+  </data>
+  <data name="InvalidValueType" xml:space="preserve">
+    <value>Value type not valid; must be of type String, Boolean, Int32, or Double.</value>
+  </data>
+  <data name="TagFormatNotSet" xml:space="preserve">
+    <value>TagFormat must be specified before adding SrgsTag elements to SrgsDocument.</value>
+  </data>
+  <data name="NoName" xml:space="preserve">
+    <value>Name must be specified.</value>
+  </data>
+  <data name="NoName1" xml:space="preserve">
+    <value>Name must be specified '{0}'.</value>
+  </data>
+  <data name="InvalidSpecialRuleRef" xml:space="preserve">
+    <value>Invalid special ruleref 'uri'. Expected: 'NULL', 'VOID', or 'GARBAGE'.</value>
+  </data>
+  <data name="InvalidRuleRef" xml:space="preserve">
+    <value>Rule reference not valid. Must specify 'uri' or 'special'.</value>
+  </data>
+  <data name="InvalidNotEmptyElement" xml:space="preserve">
+    <value>'{0}' SRGS element cannot have content.</value>
+  </data>
+  <data name="InvalidEmptyElement" xml:space="preserve">
+    <value>SRGS element cannot be empty '{0}'.</value>
+  </data>
+  <data name="InvalidEmptyRule" xml:space="preserve">
+    <value>'{0}' element cannot be empty; {0}='{1}'.</value>
+  </data>
+  <data name="UndefRuleRef" xml:space="preserve">
+    <value>'{0}' rule reference not defined in this grammar.</value>
+  </data>
+  <data name="UnsupportedLanguage" xml:space="preserve">
+    <value>Unsupported language '{0}'.</value>
+  </data>
+  <data name="UnsupportedPhoneticAlphabet" xml:space="preserve">
+    <value>Unsupported phonetic alphabet '{0}'.</value>
+  </data>
+  <data name="UnsupportedLexicon" xml:space="preserve">
+    <value>The 'lexicon' element is not supported.</value>
+  </data>
+  <data name="InvalidScriptAttribute" xml:space="preserve">
+    <value>Script attribute not valid.</value>
+  </data>
+  <data name="NoLanguageSet" xml:space="preserve">
+    <value>Must set 'language' attribute for grammars with scripts.</value>
+  </data>
+  <data name="MethodAttributeDefinedMultipeTimes" xml:space="preserve">
+    <value>Attribute 'method' in 'script' defined more than once.</value>
+  </data>
+  <data name="RuleAttributeDefinedMultipeTimes" xml:space="preserve">
+    <value>Attribute 'rule' in 'script'  defined more than once.</value>
+  </data>
+  <data name="InvalidAssemblyReferenceAttribute" xml:space="preserve">
+    <value>Unknown 'assembly reference' attribute.</value>
+  </data>
+  <data name="InvalidImportNamespaceAttribute" xml:space="preserve">
+    <value>Unknown 'import namespace' attribute.</value>
+  </data>
+  <data name="NoUriForSpecialRuleRef" xml:space="preserve">
+    <value>Special 'ruleref' cannot have a 'uri' attribute.</value>
+  </data>
+  <data name="NoAliasForSpecialRuleRef" xml:space="preserve">
+    <value>Special 'ruleref' cannot have 'semantic-key' or 'params' attributes.</value>
+  </data>
+  <data name="NoSmlData" xml:space="preserve">
+    <value>Error in SML generation.</value>
+  </data>
+  <data name="InvalidNameValueProperty" xml:space="preserve">
+    <value>Invalid type for value '{1}' in 'tag' '{0}={1}'. The value should be either a boolean, an integer, a float or a double quoted string.</value>
+  </data>
+  <data name="InvalidTagInAnEmptyItem" xml:space="preserve">
+    <value>Ambiguous construct. An 'item' having a repeat count where the minimum and maximum value are different cannot contain only tag elements.</value>
+  </data>
+  <data name="InvalidSrgs" xml:space="preserve">
+    <value>SRGS not valid: no 'grammar' element found.</value>
+  </data>
+  <data name="InvalidSrgsNamespace" xml:space="preserve">
+    <value>SRGS grammar not valid. SRGS namespace is not defined 'http://www.w3.org/2001/06/grammar'.</value>
+  </data>
+  <data name="Line" xml:space="preserve">
+    <value>Line</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="InvalidVersion" xml:space="preserve">
+    <value>Version number not valid. Expected '1.0'.</value>
+  </data>
+  <data name="InvalidTagFormat" xml:space="preserve">
+    <value>Tag format not valid. Expected format is: 'semantics-ms/1.0' or 'properties-ms/1.0'.</value>
+  </data>
+  <data name="MissingTagFormat" xml:space="preserve">
+    <value>Missing "tag-format" in the 'grammar' element. This attribute must be set in SRGS grammars containing 'tag' elements.</value>
+  </data>
+  <data name="InvalidGrammarMode" xml:space="preserve">
+    <value>Grammar mode value not valid</value>
+  </data>
+  <data name="InvalidGrammarAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'grammar' not valid.</value>
+  </data>
+  <data name="InvalidRuleAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'rule' not valid.</value>
+  </data>
+  <data name="InvalidRulerefAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'ruleref' not valid.</value>
+  </data>
+  <data name="InvalidOneOfAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'one-of' not valid.</value>
+  </data>
+  <data name="InvalidItemAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'item' not valid.</value>
+  </data>
+  <data name="InvalidTokenAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'token' not valid.</value>
+  </data>
+  <data name="InvalidItemRepeatAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'item repeat' not valid.</value>
+  </data>
+  <data name="InvalidReqConfAttribute" xml:space="preserve">
+    <value>Value not valid for 'sapi:reqconf' attribute '{0}' in 'token'.</value>
+  </data>
+  <data name="InvalidTagAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'tag' not valid.</value>
+  </data>
+  <data name="InvalidLexiconAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'Lexicon' not valid.</value>
+  </data>
+  <data name="InvalidMetaAttribute" xml:space="preserve">
+    <value>'{0}' attribute in 'Meta' not valid.</value>
+  </data>
+  <data name="InvalidItemAttribute2" xml:space="preserve">
+    <value>Attribute in 'item' not valid; 'repeat' expected.</value>
+  </data>
+  <data name="InvalidElement" xml:space="preserve">
+    <value>'{0}' element not valid.</value>
+  </data>
+  <data name="InvalidRuleScope" xml:space="preserve">
+    <value>Rule scope value not valid.</value>
+  </data>
+  <data name="InvalidDynamicSetting" xml:space="preserve">
+    <value>Rule dynamic value not valid.</value>
+  </data>
+  <data name="InvalidSubsetAttribute" xml:space="preserve">
+    <value>'{0}' attribute not valid in 'subset'.</value>
+  </data>
+  <data name="InvalidVoiceElementInPromptOutput" xml:space="preserve">
+    <value>The 'voice' element in 'prompt_output' is not valid.</value>
+  </data>
+  <data name="NoRuleId" xml:space="preserve">
+    <value>Rule without ID in 'rule'.</value>
+  </data>
+  <data name="PromptBuilderInvalideState" xml:space="preserve">
+    <value>Cannot generate SSML data: </value>
+  </data>
+  <data name="PromptBuilderStateEnded" xml:space="preserve">
+    <value>SSML data was already generated.</value>
+  </data>
+  <data name="PromptBuilderStateSentence" xml:space="preserve">
+    <value>Sentence not closed.</value>
+  </data>
+  <data name="PromptBuilderStateParagraph" xml:space="preserve">
+    <value>Paragraph not closed.</value>
+  </data>
+  <data name="PromptBuilderStateVoice" xml:space="preserve">
+    <value>Voice element not closed.</value>
+  </data>
+  <data name="PromptBuilderStateStyle" xml:space="preserve">
+    <value>Style element not closed.</value>
+  </data>
+  <data name="PromptBuilderAgeOutOfRange" xml:space="preserve">
+    <value>Age must be in the range '2' to '100'.</value>
+  </data>
+  <data name="PromptBuilderMismatchStyle" xml:space="preserve">
+    <value>'EndStyle' requires matching 'StartStyle'.</value>
+  </data>
+  <data name="PromptBuilderMismatchVoice" xml:space="preserve">
+    <value>'EndVoice' requires matching 'StartVoice'.</value>
+  </data>
+  <data name="PromptBuilderMismatchParagraph" xml:space="preserve">
+    <value>'EndParagraph' requires matching 'StartParagraph'.</value>
+  </data>
+  <data name="PromptBuilderMismatchSentence" xml:space="preserve">
+    <value>'EndSentence' requires matching 'StartSentence'.</value>
+  </data>
+  <data name="PromptBuilderNestedParagraph" xml:space="preserve">
+    <value>Cannot nest paragraph in another paragraph or sentence in SSML document.</value>
+  </data>
+  <data name="PromptBuilderNestedSentence" xml:space="preserve">
+    <value>Cannot nest sentences in SSML document.</value>
+  </data>
+  <data name="PromptBuilderInvalidAttribute" xml:space="preserve">
+    <value>Unrecognized attribute in SSML header.</value>
+  </data>
+  <data name="PromptBuilderInvalidElement" xml:space="preserve">
+    <value>Malformed SSML document. '{0}' SSML element is not valid in the context of '{1}'.</value>
+  </data>
+  <data name="PromptBuilderInvalidVariant" xml:space="preserve">
+    <value>Voice variant cannot be negative.</value>
+  </data>
+  <data name="PromptBuilderDatabaseName" xml:space="preserve">
+    <value>The path to the database must point to a local or network file.</value>
+  </data>
+  <data name="PromptAsyncOperationCancelled" xml:space="preserve">
+    <value>Async operation canceled.</value>
+  </data>
+  <data name="SynthesizerPauseResumeMismatched" xml:space="preserve">
+    <value>Synthesizer is not in 'Paused' mode.</value>
+  </data>
+  <data name="SynthesizerInvalidMediaType" xml:space="preserve">
+    <value>Media type not valid.</value>
+  </data>
+  <data name="SynthesizerUnknownMediaType" xml:space="preserve">
+    <value>Unrecognized media type.</value>
+  </data>
+  <data name="SynthesizerSpeakError" xml:space="preserve">
+    <value>Speak error '{0:x}'.</value>
+  </data>
+  <data name="SynthesizerInvalidWaveFile" xml:space="preserve">
+    <value>Wave file not valid.</value>
+  </data>
+  <data name="SynthesizerPromptInUse" xml:space="preserve">
+    <value>This prompt is already in use on a synthesizer or is being reused. </value>
+  </data>
+  <data name="SynthesizerUnknownPriority" xml:space="preserve">
+    <value>Unrecognized Priority.</value>
+  </data>
+  <data name="SynthesizerUnknownEvent" xml:space="preserve">
+    <value>Unrecognized Event.</value>
+  </data>
+  <data name="SynthesizerVoiceFailed" xml:space="preserve">
+    <value>No voice installed on the system or none available with the current security setting.</value>
+  </data>
+  <data name="SynthesizerSetVoiceNoMatch" xml:space="preserve">
+    <value>Cannot set voice. No matching voice is installed or the voice was disabled.</value>
+  </data>
+  <data name="SynthesizerNoCulture" xml:space="preserve">
+    <value>Culture must be provided.</value>
+  </data>
+  <data name="SynthesizerSyncSpeakWhilePaused" xml:space="preserve">
+    <value>Cannot perform synchronous 'Speak' operation while synthesizer is paused.</value>
+  </data>
+  <data name="SynthesizerSyncSetOutputWhilePaused" xml:space="preserve">
+    <value>The speech output device cannot be changed when the synthesizer is paused.</value>
+  </data>
+  <data name="SynthesizerNoCulture2" xml:space="preserve">
+    <value>Cannot find the Culture for a voice.</value>
+  </data>
+  <data name="SynthesizerNoSpeak" xml:space="preserve">
+    <value>SSML input not valid; cannot find 'speak' element.</value>
+  </data>
+  <data name="SynthesizerSetOutputSpeaking" xml:space="preserve">
+    <value>Cannot change synthesizer's output while speaking.</value>
+  </data>
+  <data name="InvalidSpeakAttribute" xml:space="preserve">
+    <value>'{0}' attribute in '{1}' not valid.</value>
+  </data>
+  <data name="UnsupportedAlphabet" xml:space="preserve">
+    <value>'{0}' alphabet in 'phoneme' is not supported.</value>
+  </data>
+  <data name="GrammarInvalidWeight" xml:space="preserve">
+    <value>Weight must be between 0.0 and 1.0.</value>
+  </data>
+  <data name="GrammarInvalidPriority" xml:space="preserve">
+    <value>Priority must be between -128 and 127.</value>
+  </data>
+  <data name="DictationInvalidTopic" xml:space="preserve">
+    <value>Parameter must be of the form grammar:dictation#topic.</value>
+  </data>
+  <data name="DictationTopicNotFound" xml:space="preserve">
+    <value>'{0}' dictation topic not found.</value>
+  </data>
+  <data name="RecognizerGrammarNotFound" xml:space="preserve">
+    <value>Grammar file not found.</value>
+  </data>
+  <data name="RecognizerRuleNotFound" xml:space="preserve">
+    <value>'{0}' rule in grammar file '{1}' not found or not public.</value>
+  </data>
+  <data name="RecognizerInvalidBinaryGrammar" xml:space="preserve">
+    <value>Binary grammar not valid.</value>
+  </data>
+  <data name="RecognizerRuleNotFoundStream" xml:space="preserve">
+    <value>'{0}' rule not found or not public.</value>
+  </data>
+  <data name="RecognizerNoRootRuleToActivate" xml:space="preserve">
+    <value>Grammar has no root rule. You must specify a rule to activate in the grammar constructor.</value>
+  </data>
+  <data name="RecognizerNoRootRuleToActivate1" xml:space="preserve">
+    <value>Grammar file '{0}' has no root rule. You must specify a rule to activate in the grammar constructor.</value>
+  </data>
+  <data name="RecognizerRuleActivationFailed" xml:space="preserve">
+    <value>Cannot activate rule in grammar.</value>
+  </data>
+  <data name="RecognizerAlreadyRecognizing" xml:space="preserve">
+    <value>Cannot perform this operation while the recognizer is doing recognition.</value>
+  </data>
+  <data name="RecognizerHasNoGrammar" xml:space="preserve">
+    <value>At least one grammar must be loaded before doing a recognition.</value>
+  </data>
+  <data name="NegativeTimesNotSupported" xml:space="preserve">
+    <value>Negative TimeSpan values not supported.</value>
+  </data>
+  <data name="AudioDeviceFormatError" xml:space="preserve">
+    <value>Audio format is not supported.</value>
+  </data>
+  <data name="AudioDeviceError" xml:space="preserve">
+    <value>Audio device error encountered.</value>
+  </data>
+  <data name="AudioDeviceInternalError" xml:space="preserve">
+    <value>Internal error occurred in the recognition process.</value>
+  </data>
+  <data name="RecognizerNotFound" xml:space="preserve">
+    <value>No recognizer of the required ID found.</value>
+  </data>
+  <data name="RecognizerNotEnabled" xml:space="preserve">
+    <value>Recognizer is not enabled.</value>
+  </data>
+  <data name="RecognitionNotSupported" xml:space="preserve">
+    <value>Speech Recognition is not available on this system. SAPI and Speech Recognition engines cannot be found.</value>
+  </data>
+  <data name="RecognitionNotSupportedOn64bit" xml:space="preserve">
+    <value>Speech Recognition not supported on 64-bit versions of Windows XP and Windows Server 2003. </value>
+  </data>
+  <data name="GrammarAlreadyLoaded" xml:space="preserve">
+    <value>Cannot load grammar that is already loaded.</value>
+  </data>
+  <data name="RecognizerNoInputSource" xml:space="preserve">
+    <value>No audio input is supplied to this recognizer. Use the method SetInputToDefaultAudioDevice if a microphone is connected to the system, otherwise use SetInputToWaveFile, SetInputToWaveStream or SetInputToAudioStream to perform speech recognition from pre-recorded audio.</value>
+  </data>
+  <data name="GrammarNotLoaded" xml:space="preserve">
+    <value>Grammar is not loaded into this recognizer.</value>
+  </data>
+  <data name="GrammarLoadingInProgress" xml:space="preserve">
+    <value>Grammar is being loaded into the recognizer.</value>
+  </data>
+  <data name="GrammarLoadFailed" xml:space="preserve">
+    <value>Grammar loading failed.</value>
+  </data>
+  <data name="GrammarWrongRecognizer" xml:space="preserve">
+    <value>Grammar is not loaded into this Recognizer.</value>
+  </data>
+  <data name="NotSupportedOnDictationGrammars" xml:space="preserve">
+    <value>Not supported on DictationGrammar objects.</value>
+  </data>
+  <data name="LocalFilesOnly" xml:space="preserve">
+    <value>Only supported on local files with 'file:' scheme.</value>
+  </data>
+  <data name="NotValidAudioFile" xml:space="preserve">
+    <value>'{0}' file is not a valid audio file or the audio format is not supported.</value>
+  </data>
+  <data name="NotValidAudioStream" xml:space="preserve">
+    <value>File not a valid audio stream.</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>'{0}' file not found.</value>
+  </data>
+  <data name="CannotSetPriorityOnDictation" xml:space="preserve">
+    <value>Cannot Set Priority On DictationGrammar objects.</value>
+  </data>
+  <data name="RecognizerUpdateTableTooLarge" xml:space="preserve">
+    <value>Recognizer Update table too large.</value>
+  </data>
+  <data name="MaxAlternatesInvalid" xml:space="preserve">
+    <value>MaxAlternates value must be greater than or equal to zero.</value>
+  </data>
+  <data name="RecognizerSettingGetError" xml:space="preserve">
+    <value>Error obtaining recognizer setting.</value>
+  </data>
+  <data name="RecognizerSettingUpdateError" xml:space="preserve">
+    <value>Error updating recognizer setting.</value>
+  </data>
+  <data name="RecognizerSettingNotSupported" xml:space="preserve">
+    <value>Recognizer setting not supported by recognizer.</value>
+  </data>
+  <data name="ResourceUsageOutOfRange" xml:space="preserve">
+    <value>ResourceUsage cannot be negative or greater than 100.</value>
+  </data>
+  <data name="RateOutOfRange" xml:space="preserve">
+    <value>Rate must be from -10 through 10.</value>
+  </data>
+  <data name="EndSilenceOutOfRange" xml:space="preserve">
+    <value>Property cannot be negative or greater than 100 seconds.</value>
+  </data>
+  <data name="RejectionThresholdOutOfRange" xml:space="preserve">
+    <value>RejectionThreshold must be between 0.0 and 1.0.</value>
+  </data>
+  <data name="ReferencedGrammarNotFound" xml:space="preserve">
+    <value>Cannot find grammar referenced by this grammar.</value>
+  </data>
+  <data name="SapiErrorRuleNotFound2" xml:space="preserve">
+    <value>Rule '{0}' not found in grammar '{1}'.</value>
+  </data>
+  <data name="NoAudioAvailable" xml:space="preserve">
+    <value>No audio data is available. Set the RecognizedAudio property to true on your recognizer to receive audio data.</value>
+  </data>
+  <data name="ResultNotGrammarAvailable" xml:space="preserve">
+    <value>No grammar available for deserialized result.</value>
+  </data>
+  <data name="ResultInvalidFormat" xml:space="preserve">
+    <value>Serialized format not valid.</value>
+  </data>
+  <data name="UnhandledVariant" xml:space="preserve">
+    <value>Unhandled 'VARIANT' type.</value>
+  </data>
+  <data name="DupSemanticKey" xml:space="preserve">
+    <value>Duplicated semantic key '{0}' in rule '{1}.</value>
+  </data>
+  <data name="DupSemanticValue" xml:space="preserve">
+    <value>The semantic value in rule '{0}' was already set and cannot be changed.</value>
+  </data>
+  <data name="CannotUseCustomFormat" xml:space="preserve">
+    <value>Cannot use AudioFormatTag.Custom with this constructor.</value>
+  </data>
+  <data name="NoPromptEngine" xml:space="preserve">
+    <value>No prompt engine in the system.</value>
+  </data>
+  <data name="NoPromptEngineInterface" xml:space="preserve">
+    <value>Cannot find prompt engine interface on this object.</value>
+  </data>
+  <data name="SeekNotSupported" xml:space="preserve">
+    <value>Seeking not supported on this Stream at this point.</value>
+  </data>
+  <data name="ExtraDataNotPresent" xml:space="preserve">
+    <value>Extra wave header data not present.</value>
+  </data>
+  <data name="BitsPerSampleInvalid" xml:space="preserve">
+    <value>BitsPerSample field not valid.</value>
+  </data>
+  <data name="DataBlockSizeInvalid" xml:space="preserve">
+    <value>Invalid Audio header info. Cannot calculate data block size because blockAlign or metadata size not valid.</value>
+  </data>
+  <data name="NotWholeNumberBlocks" xml:space="preserve">
+    <value>Whole number of blocks not present.</value>
+  </data>
+  <data name="BlockSignatureInvalid" xml:space="preserve">
+    <value>Metadata block signature not valid.</value>
+  </data>
+  <data name="NumberOfSamplesInvalid" xml:space="preserve">
+    <value>Number of samples in data block not valid.</value>
+  </data>
+  <data name="SapiErrorUninitialized" xml:space="preserve">
+    <value>Object is not initialized.</value>
+  </data>
+  <data name="SapiErrorAlreadyInitialized" xml:space="preserve">
+    <value>Object is already initialized.</value>
+  </data>
+  <data name="SapiErrorNotSupportedFormat" xml:space="preserve">
+    <value>Unsupported format.</value>
+  </data>
+  <data name="SapiErrorInvalidFlags" xml:space="preserve">
+    <value>Invalid flags for this operation.</value>
+  </data>
+  <data name="SapiErrorEndOfStream" xml:space="preserve">
+    <value>The operation has reached the end of the stream.</value>
+  </data>
+  <data name="SapiErrorDeviceBusy" xml:space="preserve">
+    <value>The wave device is busy.</value>
+  </data>
+  <data name="SapiErrorDeviceNotSupported" xml:space="preserve">
+    <value>The wave device is not supported.</value>
+  </data>
+  <data name="SapiErrorDeviceNotEnabled" xml:space="preserve">
+    <value>The wave device is not enabled.</value>
+  </data>
+  <data name="SapiErrorNoDriver" xml:space="preserve">
+    <value>There is no wave driver installed.</value>
+  </data>
+  <data name="SapiErrorFileMustBeUnicode" xml:space="preserve">
+    <value>The file must be Unicode.</value>
+  </data>
+  <data name="InsufficientData" xml:space="preserve">
+    <value>Insufficient data.</value>
+  </data>
+  <data name="SapiErrorInvalidPhraseID" xml:space="preserve">
+    <value>The phrase ID specified does not exist or is out of range.</value>
+  </data>
+  <data name="SapiErrorBufferTooSmall" xml:space="preserve">
+    <value>The caller provided a buffer too small to return a result.</value>
+  </data>
+  <data name="SapiErrorFormatNotSpecified" xml:space="preserve">
+    <value>Caller did not specify a format prior to opening a stream.</value>
+  </data>
+  <data name="SapiErrorAudioStopped0" xml:space="preserve">
+    <value>This method is deprecated. </value>
+  </data>
+  <data name="AudioPaused" xml:space="preserve">
+    <value>Reads on paused streams will not block, and this return code indicates that all of the data has been removed from the stream.</value>
+  </data>
+  <data name="SapiErrorRuleNotFound" xml:space="preserve">
+    <value>Rule not found in grammar '{0}'.</value>
+  </data>
+  <data name="SapiErrorTTSEngineException" xml:space="preserve">
+    <value>An exception was raised during a call to the current TTS driver.</value>
+  </data>
+  <data name="SapiErrorTTSNLPException" xml:space="preserve">
+    <value>An exception was raised during a call to an application sentence filter.</value>
+  </data>
+  <data name="SapiErrorEngineBUSY" xml:space="preserve">
+    <value>In speech recognition, the current method can not be performed while a grammar rule is active.</value>
+  </data>
+  <data name="AudioConversionEnabled" xml:space="preserve">
+    <value>The operation was successful, but only with automatic stream format conversion.</value>
+  </data>
+  <data name="NoHypothesisAvailable" xml:space="preserve">
+    <value>There is currently no hypothesis recognition available.</value>
+  </data>
+  <data name="SapiErrorCantCreate" xml:space="preserve">
+    <value>Cannot create a new object instance for the specified object category.</value>
+  </data>
+  <data name="AlreadyInLex" xml:space="preserve">
+    <value>The word, pronunciation, or POS pair being added is already in lexicon.</value>
+  </data>
+  <data name="SapiErrorNotInLex" xml:space="preserve">
+    <value>The word does not exist in the lexicon.</value>
+  </data>
+  <data name="LexNothingToSync" xml:space="preserve">
+    <value>The client is currently synced with the lexicon.</value>
+  </data>
+  <data name="SapiErrorLexVeryOutOfSync" xml:space="preserve">
+    <value>The client is excessively out of sync with the lexicon. Mismatches may not be incrementally synced.</value>
+  </data>
+  <data name="SapiErrorUndefinedForwardRuleRef" xml:space="preserve">
+    <value>A rule reference in a grammar was made to a named rule that was never defined.</value>
+  </data>
+  <data name="SapiErrorEmptyRule" xml:space="preserve">
+    <value>A non dynamic grammar rule is empty.</value>
+  </data>
+  <data name="SapiErrorGrammarCompilerInternalError" xml:space="preserve">
+    <value>The grammar compiler failed due to an internal state error.</value>
+  </data>
+  <data name="SapiErrorRuleNotDynamic" xml:space="preserve">
+    <value>An attempt was made to modify a non-dynamic rule.</value>
+  </data>
+  <data name="SapiErrorDuplicateRuleName" xml:space="preserve">
+    <value>Duplicated rule name.</value>
+  </data>
+  <data name="SapiErrorDuplicateResourceName" xml:space="preserve">
+    <value>A resource name was duplicated for a given rule.</value>
+  </data>
+  <data name="SapiErrorTooManyGrammars" xml:space="preserve">
+    <value>Too many grammars have been loaded. Number of grammars cannot exceed 1024.</value>
+  </data>
+  <data name="SapiErrorCircularReference" xml:space="preserve">
+    <value>Circular reference in import rules of grammars.</value>
+  </data>
+  <data name="SapiErrorInvalidImport" xml:space="preserve">
+    <value>A rule reference to an imported grammar cannot be resolved.</value>
+  </data>
+  <data name="SapiErrorInvalidWAVFile" xml:space="preserve">
+    <value>The format of the WAV file is not supported.</value>
+  </data>
+  <data name="RequestPending" xml:space="preserve">
+    <value>A Speech Recognizer method called with the SPRIF_ASYNC flag is being processed.</value>
+  </data>
+  <data name="SapiErrorAllWordsOptional" xml:space="preserve">
+    <value>A grammar rule was defined with a null path through the rule. </value>
+  </data>
+  <data name="SapiErrorInstanceChangeInvalid" xml:space="preserve">
+    <value>SelectEngine called while a recognition context exists, or SetInput called in the shared instance case.</value>
+  </data>
+  <data name="SapiErrorRuleNameIdConflict" xml:space="preserve">
+    <value>A rule exists with matching IDs (names) but different names (IDs). </value>
+  </data>
+  <data name="SapiErrorNoRules" xml:space="preserve">
+    <value>A grammar contains no top-level, dynamic, or exported rules.</value>
+  </data>
+  <data name="SapiErrorCircularRuleRef" xml:space="preserve">
+    <value>Rule 'A' refers to a second rule 'B' which, in turn, refers to rule 'A'. </value>
+  </data>
+  <data name="NoParseFound" xml:space="preserve">
+    <value>Parse path cannot be parsed given the currently active rules.</value>
+  </data>
+  <data name="SapiErrorInvalidHandle" xml:space="preserve">
+    <value>Invalid handle.</value>
+  </data>
+  <data name="SapiErrorRemoteCallTimedout" xml:space="preserve">
+    <value>A marshaled remote call failed to respond.</value>
+  </data>
+  <data name="SapiErrorAudioBufferOverflow" xml:space="preserve">
+    <value>Input stream is paused because the Speech Recognizer driver has not retrieved data recently.</value>
+  </data>
+  <data name="SapiErrorNoAudioData" xml:space="preserve">
+    <value>The result does not contain any audio, nor does the portion of the element chain of the result contain any audio.</value>
+  </data>
+  <data name="SapiErrorDeadAlternate" xml:space="preserve">
+    <value>This alternate is no longer a valid alternate to the result it was obtained from.</value>
+  </data>
+  <data name="SapiErrorHighLowConfidence" xml:space="preserve">
+    <value>The result does not contain any audio, nor does the portion of the element chain of the result contain any audio.</value>
+  </data>
+  <data name="SapiErrorInvalidFormatString" xml:space="preserve">
+    <value>The XML format string for this 'ruleref' is not valid. It must be a 'Guid' or 'RefClsId'.</value>
+  </data>
+  <data name="SPNotSupportedOnStreamInput" xml:space="preserve">
+    <value>The operation is not supported for stream input.</value>
+  </data>
+  <data name="SapiErrorAppLexReadOnly" xml:space="preserve">
+    <value>The operation is invalid for all but newly created application lexicons.</value>
+  </data>
+  <data name="SapiErrorNoTerminatingRulePath" xml:space="preserve">
+    <value>Terminating rule path is missing.</value>
+  </data>
+  <data name="WordExistsWithoutPronunciation" xml:space="preserve">
+    <value>The word exists but without pronunciation.</value>
+  </data>
+  <data name="SapiErrorStreamClosed" xml:space="preserve">
+    <value>Cannot perform operation on a closed stream object.</value>
+  </data>
+  <data name="SapiErrorNoMoreItems" xml:space="preserve">
+    <value>When enumerating items, the requested index is greater than the count of items.</value>
+  </data>
+  <data name="SapiErrorNotFound" xml:space="preserve">
+    <value>Cannot find the requested data item, such as a data key or value.</value>
+  </data>
+  <data name="SapiErrorInvalidAudioState" xml:space="preserve">
+    <value>Audio state passed to SetState() is invalid.</value>
+  </data>
+  <data name="SapiErrorGenericMMSYS" xml:space="preserve">
+    <value>MMSYS error occurred.</value>
+  </data>
+  <data name="SapiErrorMarshalerException" xml:space="preserve">
+    <value>An error occurred during a call to the marshaling code</value>
+  </data>
+  <data name="SapiErrorNotDynamicGrammar" xml:space="preserve">
+    <value>Attempt was made to manipulate a non-dynamic grammar.</value>
+  </data>
+  <data name="SapiErrorAmbiguousProperty" xml:space="preserve">
+    <value>Cannot add ambiguous property.</value>
+  </data>
+  <data name="SapiErrorInvalidRegistrykey" xml:space="preserve">
+    <value>The key specified is invalid.</value>
+  </data>
+  <data name="SapiErrorInvalidTokenId" xml:space="preserve">
+    <value>The token specified is invalid.</value>
+  </data>
+  <data name="SapiErrorXMLBadSyntax" xml:space="preserve">
+    <value>The XML parser failed due to bad syntax.</value>
+  </data>
+  <data name="SapiErrorXMLResourceNotFound" xml:space="preserve">
+    <value>The XML parser cannot find a required resource, such as a voice or a phonetic converter.</value>
+  </data>
+  <data name="SapiErrorTokenInUse" xml:space="preserve">
+    <value>Attempted to remove registry data from a token that is already in use elsewhere.</value>
+  </data>
+  <data name="SapiErrorTokenDeleted" xml:space="preserve">
+    <value>Cannot perform action on this object because its associated registry key was deleted.</value>
+  </data>
+  <data name="SapiErrorMultilingualNotSupported" xml:space="preserve">
+    <value>The selected voice was registered as multilingual. SAPI does not support multilingual registration. </value>
+  </data>
+  <data name="SapiErrorExportDynamicRule" xml:space="preserve">
+    <value>Exported rules cannot refer directly or indirectly to a dynamic rule.</value>
+  </data>
+  <data name="SapiErrorSTGF" xml:space="preserve">
+    <value>Error parsing the SAPI Text Grammar Format (XML grammar).</value>
+  </data>
+  <data name="SapiErrorWordFormat" xml:space="preserve">
+    <value>Incorrect word format, probably due to incorrect pronunciation string.</value>
+  </data>
+  <data name="SapiErrorStreamNotActive" xml:space="preserve">
+    <value>Methods associated with active audio stream cannot be called unless stream is active.</value>
+  </data>
+  <data name="SapiErrorEngineResponseInvalid" xml:space="preserve">
+    <value>Arguments or data supplied by the engine are in an invalid format or are inconsistent.</value>
+  </data>
+  <data name="SapiErrorSREngineException" xml:space="preserve">
+    <value>Error during a call to the current Speech Recognizer engine.</value>
+  </data>
+  <data name="SapiErrorStreamPosInvalid" xml:space="preserve">
+    <value>Stream position information supplied from engine is inconsistent.</value>
+  </data>
+  <data name="SapiErrorRecognizerInactive" xml:space="preserve">
+    <value>Operation could not be completed because the recognizer is inactive.</value>
+  </data>
+  <data name="SapiErrorRemoteCallOnWrongThread" xml:space="preserve">
+    <value>Remote call to the server was made on the wrong thread.</value>
+  </data>
+  <data name="SapiErrorRemoteProcessTerminated" xml:space="preserve">
+    <value>The remote process terminated unexpectedly.</value>
+  </data>
+  <data name="SapiErrorRemoteProcessAlreadyRunning" xml:space="preserve">
+    <value>The remote process is already running; it cannot be started a second time.</value>
+  </data>
+  <data name="SapiErrorLangIdMismatch" xml:space="preserve">
+    <value>The language for the grammar does not match the language of the speech recognizer.</value>
+  </data>
+  <data name="SapiErrorPartialParseFound" xml:space="preserve">
+    <value>A grammar-ending parse does not use all available words.</value>
+  </data>
+  <data name="SapiErrorNotTopLevelRule" xml:space="preserve">
+    <value>Only a top-level rule can be activated or deactivated.</value>
+  </data>
+  <data name="SapiErrorNoRuleActive" xml:space="preserve">
+    <value>Cannot parse until a rule is active.</value>
+  </data>
+  <data name="SapiErrorLexRequiresCookie" xml:space="preserve">
+    <value>Cannot request all words at once from a container lexicon.</value>
+  </data>
+  <data name="SapiErrorStreamUninitialized" xml:space="preserve">
+    <value>The local recognizer cannot activate a rule, dictation, or other stream until it is initialized. Call SetInput first.</value>
+  </data>
+  <data name="SapiErrorUnused0" xml:space="preserve">
+    <value>Error code not used.</value>
+  </data>
+  <data name="SapiErrorNotSupportedLang" xml:space="preserve">
+    <value>The requested language is not supported.</value>
+  </data>
+  <data name="SapiErrorVoicePaused" xml:space="preserve">
+    <value>The operation cannot be performed because the voice is currently paused.</value>
+  </data>
+  <data name="SapiErrorAudioBufferUnderflow" xml:space="preserve">
+    <value>The real-time audio device stopped returning expected data.</value>
+  </data>
+  <data name="SapiErrorAudioStoppedUnexpectedly" xml:space="preserve">
+    <value>An audio device stopped returning data from the Read method even though it is in the run state.</value>
+  </data>
+  <data name="SapiErrorNoWordPronunciation" xml:space="preserve">
+    <value>The Speech Recognizer engine is unable to add this word to a grammar. The application may need to supply an explicit pronunciation for this word.</value>
+  </data>
+  <data name="SapiErrorAlternatesWouldBeInconsistent" xml:space="preserve">
+    <value>The Speech Recognizer engine is unable to add this word to a grammar. The application may need to supply an explicit pronunciation for this word.</value>
+  </data>
+  <data name="SapiErrorNotSupportedForSharedRecognizer" xml:space="preserve">
+    <value>The method called is not supported for the shared recognizer.</value>
+  </data>
+  <data name="SapiErrorTimeOut" xml:space="preserve">
+    <value>A task could not complete because the Speech Recognizer engine had timed out.</value>
+  </data>
+  <data name="SapiErrorReenterSynchronize" xml:space="preserve">
+    <value>A Speech Recognizer engine called synchronize while inside of a synchronize call.</value>
+  </data>
+  <data name="SapiErrorStateWithNoArcs" xml:space="preserve">
+    <value>The grammar contains a node that does not have arcs.</value>
+  </data>
+  <data name="SapiErrorNotActiveSession" xml:space="preserve">
+    <value>Audio output and input are not supported for non-active console sessions.</value>
+  </data>
+  <data name="SapiErrorAlreadyDeleted" xml:space="preserve">
+    <value>The object is a stale reference and is invalid to use.</value>
+  </data>
+  <data name="SapiErrorAudioStopped" xml:space="preserve">
+    <value>Stream is stopped during read or write call.</value>
+  </data>
+  <data name="SapiErrorRecoXMLGenerationFail" xml:space="preserve">
+    <value>The Recognition Parse Tree couldn't be generated.</value>
+  </data>
+  <data name="SapiErrorSMLGenerationFail" xml:space="preserve">
+    <value>The Semantic Markup Language cannot be generated. This may be caused by an XLST template that is not formed correctly.</value>
+  </data>
+  <data name="SapiErrorNotPromptVoice" xml:space="preserve">
+    <value>The current voice is not a prompt voice.</value>
+  </data>
+  <data name="SapiErrorRootRuleAlreadyDefined" xml:space="preserve">
+    <value>There is already a root rule for this grammar.</value>
+  </data>
+  <data name="SapiErrorScriptDisallowed" xml:space="preserve">
+    <value>Support for embedded script not supported because browser security settings have disabled it.</value>
+  </data>
+  <data name="SapiErrorRemoteCallTimedOutStart" xml:space="preserve">
+    <value>A timeout occurred starting the SAPI Server.</value>
+  </data>
+  <data name="SapiErrorRemoteCallTimedOutConnect" xml:space="preserve">
+    <value>A timeout occurred obtaining the lock for starting or connecting to SAPI Server.</value>
+  </data>
+  <data name="SapiErrorSecMgrChangeNotAllowed" xml:space="preserve">
+    <value>The security manager cannot be changed while a grammar is loaded.</value>
+  </data>
+  <data name="SapiErrorCompleteButExtendable" xml:space="preserve">
+    <value>Parse is valid but could be extensible (internal use only)</value>
+  </data>
+  <data name="SapiErrorFailedToDeleteFile" xml:space="preserve">
+    <value>Tried and failed to delete an existing file.</value>
+  </data>
+  <data name="SapiErrorSharedEngineDisabled" xml:space="preserve">
+    <value>The user has chosen to disable speech from running on the machine, or the system is not set up to run speech.</value>
+  </data>
+  <data name="SapiErrorRecognizerNotFound" xml:space="preserve">
+    <value>No recognizer is installed. </value>
+  </data>
+  <data name="SapiErrorAudioNotFound" xml:space="preserve">
+    <value>No audio device is installed.</value>
+  </data>
+  <data name="SapiErrorNoVowel" xml:space="preserve">
+    <value>Word must contain a vowel.</value>
+  </data>
+  <data name="SapiErrorNotSupportedPhoneme" xml:space="preserve">
+    <value>Unknown phoneme.</value>
+  </data>
+  <data name="SapiErrorNoRulesToActivate" xml:space="preserve">
+    <value>The grammar does not have any root or top-level active rules to activate.</value>
+  </data>
+  <data name="SapiErrorNoWordEntryNotification" xml:space="preserve">
+    <value>The engine does not need SAPI word entry handles for this grammar.</value>
+  </data>
+  <data name="SapiErrorWordNeedsNormalization" xml:space="preserve">
+    <value>Must normalize word before passing to the GetPronunciations interface.</value>
+  </data>
+  <data name="SapiErrorCannotNormalize" xml:space="preserve">
+    <value>The word passed to the normalize interface cannot be normalized.</value>
+  </data>
+  <data name="LimitReached" xml:space="preserve">
+    <value>The word being normalized has generated more than the maximum number of allowed normalized results.</value>
+  </data>
+  <data name="NotSupported" xml:space="preserve">
+    <value>This combination of function call and input is not supported.</value>
+  </data>
+  <data name="SapiErrorTopicNotAdaptable" xml:space="preserve">
+    <value>This topic cannot be modified.</value>
+  </data>
+  <data name="SapiErrorPhonemeConversion" xml:space="preserve">
+    <value>Cannot convert the phonemes to the specified phonetic alphabet.</value>
+  </data>
+  <data name="SapiErrorNotSupportedForInprocRecognizer" xml:space="preserve">
+    <value>The method called is not supported for the in-process recognizer.</value>
+  </data>
+</root>
