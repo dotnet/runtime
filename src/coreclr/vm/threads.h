@@ -1137,7 +1137,7 @@ public:
         TS_StackCrawlNeeded       = 0x00200000,    // A stackcrawl is needed on this thread, such as for thread abort
                                                    // See comment for s_pWaitForStackCrawlEvent for reason.
 
-        TS_SuspendUnstarted       = 0x00400000,    // latch a user suspension on an unstarted thread
+        // unused                 = 0x00400000,
 
         // unused                 = 0x00800000,    
         TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread?
