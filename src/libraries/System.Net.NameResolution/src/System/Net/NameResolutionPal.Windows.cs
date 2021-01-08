@@ -167,10 +167,10 @@ namespace System.Net
             else if (errorCode == SocketError.TryAgain)
             {
                 // WSATRY_AGAIN indicates possible problem with reachability according to docs.
-                // However, if servers are really unreachable, we would still get IOPenfing here
+                // However, if servers are really unreachable, we would still get IOPending here
                 // and final result would be posted via overlapped IO.
                 // synchronous failure here may signal issue when GetAddrInfoExW does not work from
-                // impersonificated context.
+                // impersonated context.
                 GetAddrInfoExContext.FreeContext(context);
                 task = Task.CompletedTask;
                 return false;
