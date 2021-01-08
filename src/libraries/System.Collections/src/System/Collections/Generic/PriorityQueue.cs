@@ -513,7 +513,42 @@ namespace System.Collections.Generic
             object ICollection.SyncRoot => this;
             bool ICollection.IsSynchronized => false;
 
-            public void CopyTo(Array array, int index) => throw new NotImplementedException();
+            public void CopyTo(Array array, int arrayIndex)
+            {
+                if (array == null)
+                {
+                    throw new ArgumentNullException(nameof(array));
+                }
+
+                if (array.Rank != 1)
+                {
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
+                }
+
+                if (array.GetLowerBound(0) != 0)
+                {
+                    throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
+                }
+
+                if (arrayIndex < 0 || arrayIndex > array.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                }
+
+                if (array.Length - arrayIndex < _queue._size)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidOffLen);
+                }
+
+                try
+                {
+                    Array.Copy(_queue._nodes, 0, array, arrayIndex, _queue._size);
+                }
+                catch (ArrayTypeMismatchException)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                }
+            }
 
             public struct Enumerator : IEnumerator<(TElement element, TPriority priority)>, IEnumerator
             {
