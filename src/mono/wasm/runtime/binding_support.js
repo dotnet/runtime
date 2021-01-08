@@ -14,6 +14,7 @@ var BindingSupportLib = {
 		mono_bindings_init: function (binding_asm) {
 			this.BINDING_ASM = binding_asm;
 		},
+		mono_sab_supported: typeof SharedArrayBuffer !== "undefined",
 
 		export_functions: function (module) {
 			module ["mono_bindings_init"] = BINDING.mono_bindings_init.bind(BINDING);
@@ -39,7 +40,7 @@ var BindingSupportLib = {
 			DataView.prototype[Symbol.for("wasm type")] = 3;
 			Function.prototype[Symbol.for("wasm type")] =  4;
 			Map.prototype[Symbol.for("wasm type")] = 5;
-			if (typeof SharedArrayBuffer !== "undefined")
+			if (BINDING.mono_sab_supported)
 				SharedArrayBuffer.prototype[Symbol.for("wasm type")] =  6;
 			Int8Array.prototype[Symbol.for("wasm type")] = 10;
 			Uint8Array.prototype[Symbol.for("wasm type")] = 11;
@@ -486,6 +487,11 @@ var BindingSupportLib = {
 					return this.extract_mono_obj (js_obj);
 			}
 		},
+		has_backing_array_buffer: function (js_obj) {
+			return BINDING.mono_sab_supported
+				? js_obj.buffer instanceof ArrayBuffer || js_obj.buffer instanceof SharedArrayBuffer
+				: js_obj.buffer instanceof ArrayBuffer;
+		},
 
 		js_typed_array_to_array : function (js_obj) {
 
@@ -497,7 +503,7 @@ var BindingSupportLib = {
 			// you need to use a view. A view provides a context — that is, a data type, starting offset, 
 			// and number of elements — that turns the data into an actual typed array.
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-			if (!!(js_obj.buffer instanceof ArrayBuffer && js_obj.BYTES_PER_ELEMENT)) 
+			if (!!(this.has_backing_array_buffer(js_obj) && js_obj.BYTES_PER_ELEMENT))
 			{
 				var arrayType = js_obj[Symbol.for("wasm type")];
 				var heapBytes = this.js_typedarray_to_heap(js_obj);
@@ -523,7 +529,7 @@ var BindingSupportLib = {
 			// you need to use a view. A view provides a context — that is, a data type, starting offset, 
 			// and number of elements — that turns the data into an actual typed array.
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-			if (!!(typed_array.buffer instanceof ArrayBuffer && typed_array.BYTES_PER_ELEMENT)) 
+			if (!!(this.has_backing_array_buffer(typed_array) && typed_array.BYTES_PER_ELEMENT))
 			{
 				// Some sanity checks of what is being asked of us
 				// lets play it safe and throw an error here instead of assuming to much.
@@ -566,7 +572,7 @@ var BindingSupportLib = {
 			// you need to use a view. A view provides a context — that is, a data type, starting offset, 
 			// and number of elements — that turns the data into an actual typed array.
 			// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-			if (!!(typed_array.buffer instanceof ArrayBuffer && typed_array.BYTES_PER_ELEMENT)) 
+			if (!!(this.has_backing_array_buffer(typed_array) && typed_array.BYTES_PER_ELEMENT))
 			{
 				// Some sanity checks of what is being asked of us
 				// lets play it safe and throw an error here instead of assuming to much.
