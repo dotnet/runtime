@@ -1401,12 +1401,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTime.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemTime.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTimeAsFileTime.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemTimeAsFileTime.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTimePreciseAsFileTime.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemTimePreciseAsFileTime.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTimes.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemTimes.cs</Link>
     </Compile>

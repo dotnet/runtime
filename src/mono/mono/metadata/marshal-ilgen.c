@@ -1995,13 +1995,19 @@ gc_safe_transition_builder_cleanup (GCSafeTransitionBuilder *builder)
  * \param method if non-NULL, the pinvoke method to call
  * \param check_exceptions Whenever to check for pending exceptions after the native call
  * \param func_param the function to call is passed as a boxed IntPtr as the first parameter
+ * \param func_param_unboxed combined with \p func_param, expect the function to call as an unboxed IntPtr as the first parameter
  * \param skip_gc_trans Whenever to skip GC transitions
  *
  * generates IL code for the pinvoke wrapper, the generated code calls \p func .
  */
 static void
-emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans)
+emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags)
 {
+	gboolean aot = (flags & EMIT_NATIVE_WRAPPER_AOT) != 0;
+	gboolean check_exceptions = (flags & EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS) != 0;
+	gboolean func_param = (flags & EMIT_NATIVE_WRAPPER_FUNC_PARAM) != 0;
+	gboolean func_param_unboxed = (flags & EMIT_NATIVE_WRAPPER_FUNC_PARAM_UNBOXED) != 0;
+	gboolean skip_gc_trans = (flags & EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS) != 0;
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
 	MonoClass *klass;
@@ -2139,9 +2145,11 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	/* call the native method */
 	if (func_param) {
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
-		mono_mb_emit_op (mb, CEE_UNBOX, mono_defaults.int_class);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+		if (!func_param_unboxed) {
+			mono_mb_emit_op (mb, CEE_UNBOX, mono_defaults.int_class);
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
+		}
+		if (piinfo && (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) != 0) {
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
 		}
@@ -3006,6 +3014,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_MUL);
 			mono_mb_emit_byte (mb, CEE_PREFIX1);
 			mono_mb_emit_byte (mb, CEE_CPBLK);			
+			mono_mb_patch_branch (mb, label1);
 			break;
 		}
 

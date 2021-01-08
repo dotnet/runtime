@@ -21,12 +21,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.StartupHookProvider.ProcessStartupHooks()</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.InteropServices.Marshal.BindMoniker(System.Runtime.InteropServices.ComTypes.IMoniker,System.UInt32,System.Guid@,System.Object@)</property>
@@ -75,18 +69,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2067</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.__ComObject.CreateEventProvider(System.RuntimeType)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.ManifestBuilder.GetTypeName(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Diagnostics.Tracing.NullableTypeInfo.#ctor(System.Type,System.Collections.Generic.List{System.Type})</property>
@@ -126,24 +108,6 @@
       <argument>IL2075</argument>
       <property name="Scope">member</property>
       <property name="Target">M:Internal.Runtime.InteropServices.ComponentActivator.InternalGetFunctionPointer(System.Runtime.Loader.AssemblyLoadContext,System.String,System.String,System.IntPtr)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.EventSource.CreateManifestAndDescriptors(System.Type,System.String,System.Diagnostics.Tracing.EventSource,System.Diagnostics.Tracing.EventManifestOptions)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.ManifestBuilder.CreateManifestString</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.StartupHookProvider.CallStartupHook(System.StartupHookProvider.StartupHookNameOrPath)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

@@ -169,15 +169,27 @@
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false"
                       Condition="'$(TestTrimming)' == 'true'" />
-    <ProjectReference Include="$(MonoProjectRoot)netcore\sample\Android\AndroidSampleApp.csproj"
-                      BuildInParallel="false"
-                      Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Android'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')">
     <ProjectReference Include="$(MonoProjectRoot)netcore\sample\iOS\Program.csproj"
-                      BuildInParallel="false"
-                      Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')" />
-    <ProjectReference Include="$(MonoProjectRoot)netcore\sample\wasm\**\WasmSample.csproj"
-                      BuildInParallel="false"
-                      Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'" />
+                      BuildInParallel="false" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\**\*.Test.csproj"
+                      BuildInParallel="false" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Android'">
+    <ProjectReference Include="$(MonoProjectRoot)netcore\sample\Android\AndroidSampleApp.csproj"
+                      BuildInParallel="false" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\**\*.Test.csproj"
+                      BuildInParallel="false" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'">
+    <ProjectReference Include="$(MonoProjectRoot)netcore\sample\wasm\**\*.Sample.csproj"
+                      BuildInParallel="false" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\wasm\**\*.Test.csproj"
+                      BuildInParallel="false" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
