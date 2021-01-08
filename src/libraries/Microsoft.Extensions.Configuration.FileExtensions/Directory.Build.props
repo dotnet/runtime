@@ -1,0 +1,6 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <PackageDescription>Extension methods for configuring file-based configuration providers for Microsoft.Extensions.Configuration.</PackageDescription>
+  </PropertyGroup>
+</Project>

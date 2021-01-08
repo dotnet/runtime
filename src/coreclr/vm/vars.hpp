@@ -298,14 +298,14 @@ class REF : public OBJECTREF
 
 };
 
-// the while (0) syntax below is to force a trailing semicolon on users of the macro
-#define VALIDATEOBJECTREF(objref) do {if ((objref) != NULL) (objref).Validate();} while (0)
-#define VALIDATEOBJECT(obj) do {if ((obj) != NULL) (obj)->Validate();} while (0)
-
 #define ObjectToOBJECTREF(obj)     (OBJECTREF(obj))
 #define OBJECTREFToObject(objref)  ((objref).operator-> ())
 #define ObjectToSTRINGREF(obj)     (STRINGREF(obj))
 #define STRINGREFToObject(objref)  (*( (StringObject**) &(objref) ))
+
+// the while (0) syntax below is to force a trailing semicolon on users of the macro
+#define VALIDATEOBJECT(obj) do {if ((obj) != NULL) (obj)->Validate();} while (0)
+#define VALIDATEOBJECTREF(objref) do { Object* validateObjectRefObj = OBJECTREFToObject(objref); VALIDATEOBJECT(validateObjectRefObj); } while (0)
 
 #else   // _DEBUG_IMPL
 
@@ -399,18 +399,9 @@ extern SYSTEM_INFO g_SystemInfo;
 EXTERN OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
 EXTERN OBJECTHANDLE         g_pPreallocatedStackOverflowException;
 EXTERN OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
-EXTERN OBJECTHANDLE         g_pPreallocatedRudeThreadAbortException;
-
-// We may not be able to create a normal thread abort exception if OOM or StackOverFlow.
-// When this happens, we will use our pre-allocated thread abort exception.
-EXTERN OBJECTHANDLE         g_pPreallocatedThreadAbortException;
 
 // we use this as a dummy object to indicate free space in the handle tables -- this object is never visible to the world
 EXTERN OBJECTHANDLE         g_pPreallocatedSentinelObject;
-
-// We use this object to return a preallocated System.Exception instance when we have nothing
-// better to return.
-EXTERN OBJECTHANDLE         g_pPreallocatedBaseException;
 
 GPTR_DECL(Thread,g_pFinalizerThread);
 GPTR_DECL(Thread,g_pSuspensionThread);

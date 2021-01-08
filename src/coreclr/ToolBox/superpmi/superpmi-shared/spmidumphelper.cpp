@@ -85,13 +85,71 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(const MethodContext::Agn
     return kind + std::string(" ") + lookupDescription;
 }
 
-std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo)
+// Dump the consecutive elements of a DenseLightweightMap, which are DWORDLONG, and assumed to represent an array of handles.
+void SpmiDumpHelper::FormatHandleArray(char*& pbuf, int& sizeOfBuffer, const DenseLightWeightMap<DWORDLONG>* map, DWORD count, DWORD startIndex)
+{
+    int cch;
+
+    cch = sprintf_s(pbuf, sizeOfBuffer, "{");
+    pbuf += cch;
+    sizeOfBuffer -= cch;
+
+    const unsigned int maxHandleArrayDisplayElems = 5; // Don't display more than this.
+    const unsigned int handleArrayDisplayElems = min(maxHandleArrayDisplayElems, count);
+
+    bool first = true;
+    for (DWORD i = startIndex; i < startIndex + handleArrayDisplayElems; i++)
+    {
+        cch = sprintf_s(pbuf, sizeOfBuffer, "%s%016llX", first ? "" : " ", map->Get(i));
+        pbuf += cch;
+        sizeOfBuffer -= cch;
+
+        first = false;
+    }
+
+    if (handleArrayDisplayElems < count)
+    {
+        cch = sprintf_s(pbuf, sizeOfBuffer, " ...");
+        pbuf += cch;
+        sizeOfBuffer -= cch;
+    }
+
+    cch = sprintf_s(pbuf, sizeOfBuffer, "}");
+    pbuf += cch;
+    sizeOfBuffer -= cch;
+}
+
+void SpmiDumpHelper::FormatAgnostic_CORINFO_SIG_INST_Element(
+    char*& pbuf,
+    int& sizeOfBuffer,
+    const char* prefixStr,
+    const char* instCountPrefixStr,
+    const char* instIndexPrefixStr,
+    unsigned handleInstCount,
+    unsigned handleInstIndex,
+    const DenseLightWeightMap<DWORDLONG>* handleMap)
+{
+    int cch = sprintf_s(pbuf, sizeOfBuffer, "%s%s-%u %s-%u ", prefixStr, instCountPrefixStr, handleInstCount, instIndexPrefixStr, handleInstIndex);
+    pbuf += cch;
+    sizeOfBuffer -= cch;
+
+    FormatHandleArray(pbuf, sizeOfBuffer, handleMap, handleInstCount, handleInstIndex);
+}
+
+std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INST_Element(
+    const char* prefixStr,
+    const char* instCountPrefixStr,
+    const char* instIndexPrefixStr,
+    unsigned handleInstCount,
+    unsigned handleInstIndex,
+    const DenseLightWeightMap<DWORDLONG>* handleMap)
 {
     char buffer[MAX_BUFFER_SIZE];
-    sprintf_s(buffer, MAX_BUFFER_SIZE, "{flg-%08X na-%u cc-%u ci-%u mc-%u mi-%u args-%016llX scp-%016llX tok-%08X}",
-              sigInfo.flags, sigInfo.numArgs, sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index,
-              sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, sigInfo.args, sigInfo.scope,
-              sigInfo.token);
+    char* pbuf = buffer;
+    int sizeOfBuffer = sizeof(buffer);
+
+    FormatAgnostic_CORINFO_SIG_INST_Element(pbuf, sizeOfBuffer, prefixStr, instCountPrefixStr, instIndexPrefixStr, handleInstCount, handleInstIndex, handleMap);
+
     return std::string(buffer);
 }
 

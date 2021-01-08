@@ -103,7 +103,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45531", TestPlatforms.Browser)]
         public async Task CloseAsync_CloseDescriptionIsMaxLengthPlusOne_ThrowsArgumentException(Uri server)
         {
             string closeDescription = new string('C', CloseDescriptionMaxLength + 1);

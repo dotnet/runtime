@@ -20,7 +20,6 @@
 
 #include "argdestination.h"
 
-#define X86_INSTR_W_TEST_ESP            0x4485  // test [esp+N], eax
 #define X86_INSTR_TEST_ESP_SIB          0x24
 #define X86_INSTR_PUSH_0                0x6A    // push 00, entire instruction is 0x6A00
 #define X86_INSTR_PUSH_IMM              0x68    // push NNNN,
@@ -36,15 +35,21 @@
 #define X86_INSTR_NOP5_5                0x90    // 5th byte of 5-byte nop
 #define X86_INSTR_INT3                  0xCC    // int3
 #define X86_INSTR_HLT                   0xF4    // hlt
+#define X86_INSTR_PUSH_EAX              0x50    // push eax
 #define X86_INSTR_PUSH_EBP              0x55    // push ebp
 #define X86_INSTR_W_MOV_EBP_ESP         0xEC8B  // mov ebp, esp
 #define X86_INSTR_POP_ECX               0x59    // pop ecx
 #define X86_INSTR_RET                   0xC2    // ret imm16
 #define X86_INSTR_RETN                  0xC3    // ret
+#define X86_INSTR_XOR                   0x33    // xor
+#define X86_INSTR_w_TEST_ESP_EAX        0x0485  // test [esp], eax
+#define X86_INSTR_w_TEST_ESP_DWORD_OFFSET_EAX   0x8485      // test [esp-dwOffset], eax
 #define X86_INSTR_w_LEA_ESP_EBP_BYTE_OFFSET     0x658d      // lea esp, [ebp-bOffset]
 #define X86_INSTR_w_LEA_ESP_EBP_DWORD_OFFSET    0xa58d      // lea esp, [ebp-dwOffset]
-#define X86_INSTR_JMP_NEAR_REL32     0xE9        // near jmp rel32
-#define X86_INSTR_w_JMP_FAR_IND_IMM     0x25FF        // far jmp [addr32]
+#define X86_INSTR_w_LEA_EAX_ESP_BYTE_OFFSET     0x448d      // lea eax, [esp-bOffset]
+#define X86_INSTR_w_LEA_EAX_ESP_DWORD_OFFSET    0x848d      // lea eax, [esp-dwOffset]
+#define X86_INSTR_JMP_NEAR_REL32        0xE9    // near jmp rel32
+#define X86_INSTR_w_JMP_FAR_IND_IMM     0x25FF  // far jmp [addr32]
 
 #ifndef USE_GC_INFO_DECODER
 
@@ -3063,6 +3068,51 @@ inline unsigned SKIP_LEA_ESP_EBP(int val, PTR_CBYTE base, unsigned offset)
     return(offset + delta);
 }
 
+inline unsigned SKIP_LEA_EAX_ESP(int val, PTR_CBYTE base, unsigned offset)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef _DEBUG
+    WORD wOpcode = *(PTR_WORD)(base + offset);
+    if (CheckInstrWord(wOpcode, X86_INSTR_w_LEA_EAX_ESP_BYTE_OFFSET))
+    {
+        _ASSERTE(val == *(PTR_SBYTE)(base + offset + 3));
+        _ASSERTE(CAN_COMPRESS(val));
+    }
+    else
+    {
+        _ASSERTE(CheckInstrWord(wOpcode, X86_INSTR_w_LEA_EAX_ESP_DWORD_OFFSET));
+        _ASSERTE(val == *(PTR_INT32)(base + offset + 3));
+        _ASSERTE(!CAN_COMPRESS(val));
+    }
+#endif
+
+    unsigned delta = 3 + (CAN_COMPRESS(-val) ? 1 : 4);
+    return(offset + delta);
+}
+
+inline unsigned SKIP_HELPER_CALL(PTR_CBYTE base, unsigned offset)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    unsigned delta;
+
+    if (CheckInstrByte(base[offset], X86_INSTR_CALL_REL32))
+    {
+        delta = 5;
+    }
+    else
+    {
+#ifdef _DEBUG
+        WORD wOpcode = *(PTR_WORD)(base+offset);
+        _ASSERTE(CheckInstrWord(wOpcode, X86_INSTR_W_CALL_IND_IMM));
+#endif
+        delta = 6;
+    }
+
+    return(offset+delta);
+}
+
 unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 {
     CONTRACTL {
@@ -3075,48 +3125,138 @@ unsigned SKIP_ALLOC_FRAME(int size, PTR_CBYTE base, unsigned offset)
 
     if (size == sizeof(void*))
     {
-        // We do "push eax" instead of "sub esp,4"
-        return (SKIP_PUSH_REG(base, offset));
+        // JIT emits "push eax" instead of "sub esp,4"
+        return SKIP_PUSH_REG(base, offset);
     }
 
-    if (size >= (int)GetOsPageSize())
+    const int STACK_PROBE_PAGE_SIZE_BYTES = 4096;
+    const int STACK_PROBE_BOUNDARY_THRESHOLD_BYTES = 1024;
+
+    int lastProbedLocToFinalSp = size;
+
+    if (size < STACK_PROBE_PAGE_SIZE_BYTES)
     {
-        if (size < int(3 * GetOsPageSize()))
+        // sub esp, size
+        offset = SKIP_ARITH_REG(size, base, offset);
+    }
+    else
+    {
+        WORD wOpcode = *(PTR_WORD)(base + offset);
+
+        if (CheckInstrWord(wOpcode, X86_INSTR_w_TEST_ESP_DWORD_OFFSET_EAX))
         {
-            // add 7 bytes for one or two TEST EAX, [ESP+GetOsPageSize()]
-            offset += (size / GetOsPageSize()) * 7;
+            // In .NET 5.0 and earlier for frames that have size smaller than 0x3000 bytes
+            // JIT emits one or two 'test eax, [esp-dwOffset]' instructions before adjusting the stack pointer.
+            _ASSERTE(size < 0x3000);
+
+            // test eax, [esp-0x1000]
+            offset += 7;
+            lastProbedLocToFinalSp -= 0x1000;
+
+            if (size >= 0x2000)
+            {
+#ifdef _DEBUG
+                wOpcode = *(PTR_WORD)(base + offset);
+                _ASSERTE(CheckInstrWord(wOpcode, X86_INSTR_w_TEST_ESP_DWORD_OFFSET_EAX));
+#endif
+                //test eax, [esp-0x2000]
+                offset += 7;
+                lastProbedLocToFinalSp -= 0x1000;
+            }
+
+            // sub esp, size
+            offset = SKIP_ARITH_REG(size, base, offset);
         }
         else
         {
-            //      xor eax, eax                2
-            //      [nop]                       0-3
-            // loop:
-            //      test [esp + eax], eax       3
-            //      sub eax, 0x1000             5
-            //      cmp EAX, -size              5
-            //      jge loop                    2
-            offset += 2;
+            bool pushedStubParam = false;
 
-            // NGEN images that support rejit may have extra nops we need to skip over
-            while (offset < 5)
+            if (CheckInstrByte(base[offset], X86_INSTR_PUSH_EAX))
             {
-                if (CheckInstrByte(base[offset], X86_INSTR_NOP))
+                // push eax
+                offset = SKIP_PUSH_REG(base, offset);
+                pushedStubParam = true;
+            }
+
+            if (CheckInstrByte(base[offset], X86_INSTR_XOR))
+            {
+                // In .NET Core 3.1 and earlier for frames that have size greater than or equal to 0x3000 bytes
+                // JIT emits the following loop.
+                _ASSERTE(size >= 0x3000);
+
+                offset += 2;
+                //      xor eax, eax                2
+                //      [nop]                       0-3
+                // loop:
+                //      test [esp + eax], eax       3
+                //      sub eax, 0x1000             5
+                //      cmp eax, -size              5
+                //      jge loop                    2
+
+                // R2R images that support ReJIT may have extra nops we need to skip over.
+                while (offset < 5)
                 {
-                    offset++;
+                    if (CheckInstrByte(base[offset], X86_INSTR_NOP))
+                    {
+                        offset++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                offset += 15;
+
+                if (pushedStubParam)
+                {
+                    // pop eax
+                    offset = SKIP_POP_REG(base, offset);
+                }
+
+                // sub esp, size
+                return SKIP_ARITH_REG(size, base, offset);
+            }
+            else
+            {
+                // In .NET 5.0 and later JIT emits a call to JIT_StackProbe helper.
+
+                if (pushedStubParam)
+                {
+                    // lea eax, [esp-size+4]
+                    offset = SKIP_LEA_EAX_ESP(-size + 4, base, offset);
+                    // call JIT_StackProbe
+                    offset = SKIP_HELPER_CALL(base, offset);
+                    // pop eax
+                    offset = SKIP_POP_REG(base, offset);
+                    // sub esp, size
+                    return SKIP_ARITH_REG(size, base, offset);
                 }
                 else
                 {
-                    break;
+                    // lea eax, [esp-size]
+                    offset = SKIP_LEA_EAX_ESP(-size, base, offset);
+                    // call JIT_StackProbe
+                    offset = SKIP_HELPER_CALL(base, offset);
+                    // mov esp, eax
+                    return SKIP_MOV_REG_REG(base, offset);
                 }
             }
-            offset += 15;
         }
     }
 
-    // sub ESP, size
-    return (SKIP_ARITH_REG(size, base, offset));
-}
+    if (lastProbedLocToFinalSp + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > STACK_PROBE_PAGE_SIZE_BYTES)
+    {
+#ifdef _DEBUG
+        WORD wOpcode = *(PTR_WORD)(base + offset);
+        _ASSERTE(CheckInstrWord(wOpcode, X86_INSTR_w_TEST_ESP_EAX));
+#endif
+        // test [esp], eax
+        offset += 3;
+    }
 
+    return offset;
+}
 
 #endif // !USE_GC_INFO_DECODER
 
