@@ -20,6 +20,8 @@ namespace System.Collections.Generic
         /// </summary>
         private (TElement element, TPriority priority)[] _nodes;
 
+        private Lazy<UnorderedItemsCollection> _unorderedItems;
+
         /// <summary>
         /// The number of nodes in the heap.
         /// </summary>
@@ -46,7 +48,7 @@ namespace System.Collections.Generic
         public PriorityQueue()
         {
             _nodes = Array.Empty<(TElement, TPriority)>();
-            this.UnorderedItems = new UnorderedItemsCollection(this);
+            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
             this.Comparer = Comparer<TPriority>.Default;
         }
 
@@ -61,7 +63,7 @@ namespace System.Collections.Generic
             }
 
             _nodes = new (TElement, TPriority)[initialCapacity];
-            this.UnorderedItems = new UnorderedItemsCollection(this);
+            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
             this.Comparer = Comparer<TPriority>.Default;
         }
 
@@ -71,7 +73,7 @@ namespace System.Collections.Generic
         public PriorityQueue(IComparer<TPriority>? comparer)
         {
             _nodes = Array.Empty<(TElement, TPriority)>();
-            this.UnorderedItems = new UnorderedItemsCollection(this);
+            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
             this.Comparer = comparer ?? Comparer<TPriority>.Default;
         }
 
@@ -87,7 +89,7 @@ namespace System.Collections.Generic
             }
 
             _nodes = new (TElement, TPriority)[initialCapacity];
-            this.UnorderedItems = new UnorderedItemsCollection(this);
+            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
             this.Comparer = comparer ?? Comparer<TPriority>.Default;
         }
 
@@ -102,7 +104,7 @@ namespace System.Collections.Generic
             }
 
             _nodes = EnumerableHelpers.ToArray(items, out _size);
-            this.UnorderedItems = new UnorderedItemsCollection(this);
+            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
             this.Comparer = Comparer<TPriority>.Default;
 
             if (_size > 1)
@@ -123,7 +125,7 @@ namespace System.Collections.Generic
             }
 
             _nodes = EnumerableHelpers.ToArray(items, out _size);
-            this.UnorderedItems = new UnorderedItemsCollection(this);
+            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
             this.Comparer = comparer ?? Comparer<TPriority>.Default;
 
             if (_size > 1)
@@ -141,6 +143,11 @@ namespace System.Collections.Generic
         /// Gets the priority comparer of the priority queue.
         /// </summary>
         public IComparer<TPriority> Comparer { get; }
+
+        /// <summary>
+        /// Gets a collection that enumerates the elements of the queue.
+        /// </summary>
+        public UnorderedItemsCollection UnorderedItems => _unorderedItems.Value;
 
         /// <summary>
         /// Enqueues the specified element and associates it with the specified priority.
@@ -519,11 +526,6 @@ namespace System.Collections.Generic
 
             this.PutAt(node, nodeIndex);
         }
-
-        /// <summary>
-        /// Gets a collection that enumerates the elements of the queue.
-        /// </summary>
-        public UnorderedItemsCollection UnorderedItems { get; }
 
         public partial class UnorderedItemsCollection : IReadOnlyCollection<(TElement element, TPriority priority)>, ICollection
         {
