@@ -539,7 +539,7 @@ namespace System.Net
 
                     Task t;
                     bool success;
-                    if (NameResolutionTelemetry.Log.IsEnabled() || true)
+                    if (NameResolutionTelemetry.Log.IsEnabled())
                     {
                         success = justAddresses
                             ? TryGetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken, out t)
