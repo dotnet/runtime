@@ -73,9 +73,9 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     // Walk up the dom tree and see if any dominating block has branched on
     // exactly this tree's VN...
     //
-    BasicBlock* prevBlock   = block;
-    BasicBlock* domBlock    = block->bbIDom;
-    int         relopValue  = -1;
+    BasicBlock* prevBlock  = block;
+    BasicBlock* domBlock   = block->bbIDom;
+    int         relopValue = -1;
 
     if (domBlock == nullptr)
     {
