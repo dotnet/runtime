@@ -167,8 +167,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                throw new InvalidOperationException(
-                    "The priority queue is empty, cannot get the element with minimal priority.");
+                throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
             }
         }
 
@@ -184,8 +183,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                throw new InvalidOperationException(
-                    "The priority queue is empty, cannot dequeue an element.");
+                throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
             }
         }
 
