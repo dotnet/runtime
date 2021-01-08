@@ -12,6 +12,6 @@
 class verbDump
 {
 public:
-    static int DoWork(const char* nameofInput, int indexCount, const int* indexes);
+    static int DoWork(const char* nameofInput, int indexCount, const int* indexes, bool simple);
 };
 #endif
