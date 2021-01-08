@@ -4741,7 +4741,7 @@ namespace System
                         {
                             //  /./ or /.<eos> or /../ or /..<eos>
 
-                            // dest.Remove(i+1, dotCount + (lastSlash==0?0:1));
+                            // span.Remove(i + 1, dotCount + (lastSlash == 0 ? 0 : 1));
                             lastSlash = i + 1 + dotCount + (lastSlash == 0 ? 0 : 1);
                             span.Slice(lastSlash).CopyTo(span.Slice(i + 1));
                             span = span.Slice(0, span.Length - (lastSlash - i - 1));
