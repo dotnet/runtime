@@ -6281,55 +6281,121 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         noway_assert(uCntBytes == 0);
 
 #elif defined(TARGET_ARM64)
-        if (!useLoop)
+        int bytesToWrite = untrLclHi - untrLclLo;
+
+        const regNumber zeroSimdReg   = REG_ZERO_INIT_FRAME_SIMD;
+        bool            simdRegZeroed = false;
+
+        const regNumber addrReg = REG_ZERO_INIT_FRAME_ADDR;
+
+        if (addrReg == initReg)
         {
-            const regNumber zeroSIMDReg = REG_V16;
+            *pInitRegZeroed = false;
+        }
 
-            if (uCntBytes >= FP_REGSIZE_BYTES * 2)
+        int addrOffset = 0;
+
+        // The following invariants are held below:
+        //
+        //   1) [addrReg, #addrOffset] points at a location where next chunk of zero bytes will be written;
+        //   2) bytesToWrite specifies the number of bytes on the frame to initialize;
+        //   3) if simdRegZeroed is true then 128-bit wide zeroSimdReg contains zeroes.
+
+        const int bytesUseZeroingLoop = 192;
+
+        if (bytesToWrite >= bytesUseZeroingLoop)
+        {
+            // Generates the following code:
+            //
+            //     movi    v16.16b, #0
+            //     add     x9, fp, #(untrLclLo-32)
+            //     mov     x10, #(bytesToWrite-64)
+            //
+            // loop:
+            //     stp     q16, q16, [x9, #32]
+            //     stp     q16, q16, [x9, #64]!
+            //     subs    x10, x10, #64
+            //     bge     loop
+
+            GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, zeroSimdReg, 0, INS_OPTS_16B);
+            simdRegZeroed = true;
+
+            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo - 32, addrReg);
+            addrOffset = 32;
+
+            const regNumber countReg = REG_ZERO_INIT_FRAME_COUNT;
+
+            if (countReg == initReg)
             {
-                GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, zeroSIMDReg, 0, INS_OPTS_2D);
-
-                for (; uCntBytes >= FP_REGSIZE_BYTES * 2; uCntBytes -= FP_REGSIZE_BYTES * 2)
-                {
-                    GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSIMDReg, zeroSIMDReg, rAddr,
-                                                  2 * FP_REGSIZE_BYTES, INS_OPTS_POST_INDEX);
-                }
+                *pInitRegZeroed = false;
             }
 
-            for (; uCntBytes >= REGSIZE_BYTES * 2; uCntBytes -= REGSIZE_BYTES * 2)
-            {
-                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, rAddr, 2 * REGSIZE_BYTES,
-                                              INS_OPTS_POST_INDEX);
-            }
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, countReg, bytesToWrite - 64);
+
+            // TODO-ARM64-CQ: Consider using the DC ZVA (Data Cache Zero by Address) instruction.
+
+            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 32);
+            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 64,
+                                          INS_OPTS_PRE_INDEX);
+
+            GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, countReg, countReg, 64);
+            GetEmitter()->emitIns_J(INS_bge, NULL, -4);
+
+            bytesToWrite %= 64;
         }
         else
         {
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, rAddr, 2 * REGSIZE_BYTES,
-                                          INS_OPTS_POST_INDEX); // zero stack slots
-            GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, rCnt, rCnt, 1);
-            GetEmitter()->emitIns_J(INS_bhi, NULL, -3);
-            uCntBytes %= REGSIZE_BYTES * 2;
+            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo, addrReg);
         }
 
-        if (uCntBytes >= REGSIZE_BYTES) // check and zero the last register-sized stack slot (odd number)
+        const int simdRegPairSizeBytes = 2 * FP_REGSIZE_BYTES;
+
+        if (bytesToWrite >= simdRegPairSizeBytes)
         {
-            if ((uCntBytes - REGSIZE_BYTES) == 0)
+            // Generates the following code:
+            //
+            //     movi    v16.16b, #0
+            //     stp     q16, q16, [x9, #addrOffset]
+            //     stp     q16, q16, [x9, #(addrOffset+32)]
+            // ...
+            //     stp     q16, q16, [x9, #(addrOffset+roundDown(bytesToWrite, 32))]
+
+            if (!simdRegZeroed)
             {
-                GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_ZR, rAddr, 0);
+                GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, zeroSimdReg, 0, INS_OPTS_16B);
+                simdRegZeroed = true;
             }
-            else
+
+            for (; bytesToWrite >= simdRegPairSizeBytes; bytesToWrite -= simdRegPairSizeBytes)
             {
-                GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_ZR, rAddr, REGSIZE_BYTES, INS_OPTS_POST_INDEX);
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, addrOffset);
+                addrOffset += simdRegPairSizeBytes;
             }
-            uCntBytes -= REGSIZE_BYTES;
         }
 
-        if (uCntBytes > 0)
+        const int regPairSizeBytes = 2 * REGSIZE_BYTES;
+
+        if (bytesToWrite >= regPairSizeBytes)
         {
-            assert(uCntBytes == sizeof(int));
-            GetEmitter()->emitIns_R_R_I(INS_str, EA_4BYTE, REG_ZR, rAddr, 0);
-            uCntBytes -= sizeof(int);
+            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, addrReg, addrOffset);
+            addrOffset += regPairSizeBytes;
+            bytesToWrite -= regPairSizeBytes;
         }
+
+        if (bytesToWrite >= REGSIZE_BYTES)
+        {
+            GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_ZR, addrReg, addrOffset);
+            addrOffset += REGSIZE_BYTES;
+            bytesToWrite -= REGSIZE_BYTES;
+        }
+
+        if (bytesToWrite == sizeof(int))
+        {
+            GetEmitter()->emitIns_R_R_I(INS_str, EA_4BYTE, REG_ZR, addrReg, addrOffset);
+            bytesToWrite = 0;
+        }
+
+        assert(bytesToWrite == 0);
 #elif defined(TARGET_XARCH)
         assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
         emitter*  emit        = GetEmitter();
