@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestKind>RunOnly</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestProjectToRun>ParallelCrash.csproj</CLRTestProjectToRun>
+    <CLRTestExecutionArguments>2</CLRTestExecutionArguments>
     <CLRTestExitCode>-2146232797</CLRTestExitCode>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="ParallelCrash.cs" />
-  </ItemGroup>
 </Project>

@@ -14,32 +14,50 @@ public class ParallelCrash
 {
     private const int ThreadCount = 10;
 
-    private volatile static int _runningThreads;
+    private volatile static int s_runningThreads;
+    private static bool s_crashMainThread;
+    private static bool s_crashWorkerThreads;
 
-    public static int Main()
+    public static int Main(string[] args)
     {
-        Thread[] threadMap = new Thread[ThreadCount];
-        for (int threadIndex = 0; threadIndex < ThreadCount; threadIndex++)
+        s_crashMainThread = true;
+        s_crashWorkerThreads = true;
+        if (args.Length > 0)
         {
-            Thread thread = new Thread(new ThreadStart(CrashInParallel));
-            threadMap[threadIndex] = thread;
-            thread.Start();
+            s_crashMainThread = (args[0] != "2");
+            s_crashWorkerThreads = (args[0] != "1");
+        }
+        
+        for (int threadIndex = ThreadCount; --threadIndex >= 0;)
+        {
+            new Thread(CrashInParallel).Start();
+        }
+        if (s_crashMainThread)
+        {
+            Environment.FailFast("Parallel crash in main thread");
         }
         for (;;)
         {
-            Thread.Sleep(1000);
+            Thread.Sleep(50);
         }
         return 0;
     }
 
     private static void CrashInParallel()
     {
-        int threadIndex = ++_runningThreads;
+        int threadIndex = Interlocked.Increment(ref s_runningThreads);
         string failFastMessage = string.Format("Parallel crash in thread {0}!\n", threadIndex);
-        while (_runningThreads != ThreadCount)
+        while (s_runningThreads != ThreadCount)
         {
         }
         // Now all the worker threads should be running, fire!
-        Environment.FailFast(failFastMessage);
+        if (s_crashWorkerThreads)
+        {
+            Environment.FailFast(failFastMessage);
+        }
+        for (;;)
+        {
+            Thread.Sleep(50);
+        }
     }
 }
