@@ -3022,7 +3022,7 @@ public:
     };
 
     // Resolve the import to the NDirect target and set it on the NDirectMethodDesc.
-    static void *ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc *pMD);
+    static void* ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc* pMD);
 
     // Attempt to import the NDirect target if a GC transition is suppressed.
     static BOOL TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc* pMD, _Out_ void** ndirectTarget);
@@ -3148,7 +3148,7 @@ public:
     BOOL IsDefaultDllImportSearchPathsAttributeCached()
     {
         LIMITED_METHOD_CONTRACT;
-        return (ndirect.m_wFlags  & kDefaultDllImportSearchPathsIsCached) != 0;
+        return (ndirect.m_wFlags & kDefaultDllImportSearchPathsIsCached) != 0;
     }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()
@@ -3221,12 +3221,12 @@ public:
     //  Find the entry point name and function address
     //  based on the module and data from NDirectMethodDesc
     //
-    LPVOID FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const;
+    LPVOID FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod);
 
 #ifdef TARGET_WINDOWS
 private:
-    FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName) const;
-    FARPROC FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName, char suffix) const;
+    FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName);
+    FARPROC FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName, char suffix);
 #endif
 public:
 
@@ -3255,6 +3255,8 @@ public:
     }
 
 #if defined(TARGET_X86)
+    void EnsureStackArgumentSize();
+
     WORD GetStackArgumentSize() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
