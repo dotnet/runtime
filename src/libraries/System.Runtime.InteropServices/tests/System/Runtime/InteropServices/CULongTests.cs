@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class CULongTests
     {
-        private static bool Has64BitStorage => !PlatformDetection.Is32BitProcess && !PlatformDetection.IsWindows;
+        private static bool Has64BitStorage => !Has32BitStorage;
         private static bool Has32BitStorage => PlatformDetection.Is32BitProcess || PlatformDetection.IsWindows;
         private static bool NativeIntConstructorCanOverflow => !PlatformDetection.Is32BitProcess && Has32BitStorage;
         private static bool NativeIntConstructorCannotOverflow => !NativeIntConstructorCanOverflow;
@@ -84,6 +84,16 @@ namespace System.Runtime.InteropServices.Tests
             CULong culong = new CULong(value);
 
             Assert.Equal(expected, culong.ToString());
+        }
+
+        [Fact]
+        public unsafe void Size()
+        {
+            int size = Has32BitStorage ? 4 : 8;
+#pragma warning disable xUnit2000 // The value under test here is the sizeof expression
+            Assert.Equal(size, sizeof(CULong));
+#pragma warning restore xUnit2000
+            Assert.Equal(size, Marshal.SizeOf<CULong>());
         }
     }
 }

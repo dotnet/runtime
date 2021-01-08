@@ -106,5 +106,15 @@ namespace System.Runtime.InteropServices.Tests
 
             Assert.Equal(value.ToString(), nfloat.ToString());
         }
+
+        [Fact]
+        public unsafe void Size()
+        {
+            int size = PlatformDetection.Is32BitProcess ? 4 : 8;
+#pragma warning disable xUnit2000 // The value under test here is the sizeof expression
+            Assert.Equal(size, sizeof(NFloat));
+#pragma warning restore xUnit2000
+            Assert.Equal(size, Marshal.SizeOf<NFloat>());
+        }
     }
 }
