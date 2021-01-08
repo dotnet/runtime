@@ -119,6 +119,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetHostEntryForName)
     DllImportEntry(SystemNative_GetHostEntryForNameAsync)
     DllImportEntry(SystemNative_FreeHostEntry)
+    DllImportEntry(SystemNative_CancelGetHostEntryForNameAsync)
     DllImportEntry(SystemNative_GetNameInfo)
     DllImportEntry(SystemNative_GetDomainName)
     DllImportEntry(SystemNative_GetHostName)
