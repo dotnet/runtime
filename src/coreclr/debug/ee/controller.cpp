@@ -9054,6 +9054,23 @@ bool DebuggerDataBreakpoint::TriggerSingleStep(Thread *thread, const BYTE *ip)
         this->DisableSingleStep();
         return true;
     }
+    else if (g_pDebugger->m_isSuspendedForGarbageCollection)
+    {
+        // The debugger is not interested in Data Breakpoints during garbage collection
+        // We can safely ignore them since the Data Breakpoints are now on pinned objects
+        LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Ignoring data breakpoint while in SuspendEE() for GC \n"));
+
+        // We enabled single step in TriggerDataBreakpoint so that the ScanForTriggers
+        // would return DPOSS_USED_WITH_NO_EVENT effectively treating the data breakpoint
+        // as a debugger exception which is intended to be ignored
+        this->DisableSingleStep();
+
+        // We are done with this controller
+        Delete();
+
+        // Don't queue this object to send an event
+        return false;
+    }
     else
     {
         LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Still not safe for stopping, continue stepping\n"));
