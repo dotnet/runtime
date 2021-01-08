@@ -11998,9 +11998,9 @@ gc_heap* gc_heap::make_gc_heap (
         return 0;
 #endif //MARK_LIST
 
-#ifdef USE_REGIONS
+#if defined(USE_REGIONS) && defined(MARK_LIST)
     res->mark_list_piece_size = region_count;
-#endif
+#endif //USE_REGIONS && MARK_LIST
 
 #endif //MULTIPLE_HEAPS
 
@@ -25230,10 +25230,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
 #ifdef USE_REGIONS
 #ifdef MARK_LIST
-    uint8_t** mark_list_end = nullptr;
+    uint8_t** mark_list_index = nullptr;
     uint8_t** mark_list_next = nullptr;
     if (use_mark_list)
-        mark_list_next = get_region_mark_list (x, end, &mark_list_end);
+        mark_list_next = get_region_mark_list (x, end, &mark_list_index);
 #endif //MARK_LIST
 #else // USE_REGIONS
     assert (!marked (x));
@@ -25487,7 +25487,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 current_brick = brick_of (x);
 #if defined(USE_REGIONS) && defined(MARK_LIST)
                 if (use_mark_list)
-                    mark_list_next = get_region_mark_list(x, end, &mark_list_end);
+                    mark_list_next = get_region_mark_list(x, end, &mark_list_index);
 #endif //USE_REGIONS && MARK_LIST
                 dprintf(3,( " From %Ix to %Ix", (size_t)x, (size_t)end));
                 continue;
@@ -25551,7 +25551,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     current_brick = brick_of (x);
 #ifdef MARK_LIST
                     if (use_mark_list)
-                        mark_list_next = get_region_mark_list(x, end, &mark_list_end);
+                        mark_list_next = get_region_mark_list(x, end, &mark_list_index);
 #endif //MARK_LIST
                     dprintf (REGIONS_LOG,("h%d switching to gen%d start region %Ix to %Ix",
                         heap_number, active_old_gen_number, x, end));
@@ -39953,7 +39953,7 @@ bool GCHeap::IsPromoted(Object* object)
     else
     {
 #ifdef USE_REGIONS
-        return (gc_heap::is_in_condemned_gc (o) ? gc_heap::is_mark_set (o) : false);
+        return (o ? (gc_heap::is_in_condemned_gc(o) ? gc_heap::is_mark_set(o) : true) : true);
 #else
         gc_heap* hp = gc_heap::heap_of (o);
         return (!((o < hp->gc_high) && (o >= hp->gc_low))
