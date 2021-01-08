@@ -78,33 +78,33 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
-        [InlineData(-4567.0f, "-4567")]
-        [InlineData(-4567.89101f, "-4567.89111328125")]
-        [InlineData(0.0f, "0")]
-        [InlineData(4567.0f, "4567")]
-        [InlineData(4567.89101f, "4567.89111328125")]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
 
-        [InlineData(float.NaN, "NaN")]
-        public static void ToStringTest64(float value, string expected)
+        [InlineData(float.NaN)]
+        public static void ToStringTest64(float value)
         {
             NFloat nfloat = new NFloat(value);
 
-            Assert.Equal(expected, nfloat.ToString());
+            Assert.Equal(((double)value).ToString(), nfloat.ToString());
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
-        [InlineData(-4567.0f, "-4567")]
-        [InlineData(-4567.89101f, "-4567.891")]
-        [InlineData(0.0f, "0")]
-        [InlineData(4567.0f, "4567")]
-        [InlineData(4567.89101f, "4567.891")]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
 
-        [InlineData(float.NaN, "NaN")]
-        public static void ToStringTest32(float value, string expected)
+        [InlineData(float.NaN)]
+        public static void ToStringTest32(float value)
         {
             NFloat nfloat = new NFloat(value);
 
-            Assert.Equal(expected, nfloat.ToString());
+            Assert.Equal(value.ToString(), nfloat.ToString());
         }
     }
 }
