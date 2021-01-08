@@ -52,7 +52,6 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new NFloat(789.0f), new NFloat(789.0f), true };
             yield return new object[] { new NFloat(789.0f), new NFloat(-789.0f), false };
             yield return new object[] { new NFloat(789.0f), new NFloat(0.0f), false };
-            yield return new object[] { new NFloat(float.NaN), new NFloat(float.NaN), false };
             yield return new object[] { new NFloat(789.0f), 789.0f, false };
             yield return new object[] { new NFloat(789.0f), "789.0", false };
         }
@@ -70,7 +69,15 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(expected, f1.Equals(obj));
         }
 
-        [Theory]
+        [Fact]
+        public void NaNEqualsTest()
+        {
+            NFloat f1 = new NFloat(float.NaN);
+            NFloat f2 = new NFloat(float.NaN);
+            Assert.Equal(f1.Value == f2.Value, f1.Equals(f2));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [InlineData(-4567.0f, "-4567")]
         [InlineData(-4567.89101f, "-4567.89111328125")]
         [InlineData(0.0f, "0")]
@@ -78,7 +85,22 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(4567.89101f, "4567.89111328125")]
 
         [InlineData(float.NaN, "NaN")]
-        public static void ToStringTest(float value, string expected)
+        public static void ToStringTest64(float value, string expected)
+        {
+            NFloat nfloat = new NFloat(value);
+
+            Assert.Equal(expected, nfloat.ToString());
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData(-4567.0f, "-4567")]
+        [InlineData(-4567.89101f, "-4567.891")]
+        [InlineData(0.0f, "0")]
+        [InlineData(4567.0f, "4567")]
+        [InlineData(4567.89101f, "4567.891")]
+
+        [InlineData(float.NaN, "NaN")]
+        public static void ToStringTest32(float value, string expected)
         {
             NFloat nfloat = new NFloat(value);
 
