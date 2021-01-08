@@ -17,7 +17,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Represents an implicit heap-ordered complete d-ary tree, stored as an array.
         /// </summary>
-        private readonly List<(TElement element, TPriority priority)> nodes;
+        private readonly List<(TElement element, TPriority priority)> _nodes;
 
         private const int RootIndex = 0;
 
@@ -31,8 +31,8 @@ namespace System.Collections.Generic
         /// </summary>
         public PriorityQueue()
         {
-            this.nodes = new List<(TElement, TPriority)>();
-            this.UnorderedItems = new UnorderedItemsCollection(this.nodes);
+            _nodes = new List<(TElement, TPriority)>();
+            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
             this.Comparer = Comparer<TPriority>.Default;
         }
 
@@ -46,8 +46,8 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(initialCapacity));
             }
 
-            this.nodes = new List<(TElement, TPriority)>(initialCapacity);
-            this.UnorderedItems = new UnorderedItemsCollection(this.nodes);
+            _nodes = new List<(TElement, TPriority)>(initialCapacity);
+            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
             this.Comparer = Comparer<TPriority>.Default;
         }
 
@@ -56,8 +56,8 @@ namespace System.Collections.Generic
         /// </summary>
         public PriorityQueue(IComparer<TPriority>? comparer)
         {
-            this.nodes = new List<(TElement, TPriority)>();
-            this.UnorderedItems = new UnorderedItemsCollection(this.nodes);
+            _nodes = new List<(TElement, TPriority)>();
+            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
             this.Comparer = comparer ?? Comparer<TPriority>.Default;
         }
 
@@ -72,8 +72,8 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(initialCapacity));
             }
 
-            this.nodes = new List<(TElement, TPriority)>(initialCapacity);
-            this.UnorderedItems = new UnorderedItemsCollection(this.nodes);
+            _nodes = new List<(TElement, TPriority)>(initialCapacity);
+            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
             this.Comparer = comparer ?? Comparer<TPriority>.Default;
         }
 
@@ -87,11 +87,11 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(items));
             }
 
-            this.nodes = new List<(TElement, TPriority)>(items);
-            this.UnorderedItems = new UnorderedItemsCollection(this.nodes);
+            _nodes = new List<(TElement, TPriority)>(items);
+            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
             this.Comparer = Comparer<TPriority>.Default;
 
-            if (this.nodes.Count > 1)
+            if (_nodes.Count > 1)
             {
                 this.Heapify();
             }
@@ -108,11 +108,11 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(items));
             }
 
-            this.nodes = new List<(TElement, TPriority)>(items);
-            this.UnorderedItems = new UnorderedItemsCollection(this.nodes);
+            _nodes = new List<(TElement, TPriority)>(items);
+            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
             this.Comparer = comparer ?? Comparer<TPriority>.Default;
 
-            if (this.nodes.Count > 1)
+            if (_nodes.Count > 1)
             {
                 this.Heapify();
             }
@@ -121,7 +121,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the current amount of items in the priority queue.
         /// </summary>
-        public int Count => this.nodes.Count;
+        public int Count => _nodes.Count;
 
         /// <summary>
         /// Gets the priority comparer of the priority queue.
@@ -145,7 +145,7 @@ namespace System.Collections.Generic
 
             // Add the node at the end
             var node = (element, priority);
-            this.nodes.Add(node);
+            _nodes.Add(node);
 
             // Restore the heap order
             var lastNodeIndex = this.GetLastNodeIndex();
@@ -194,7 +194,7 @@ namespace System.Collections.Generic
         /// </returns>
         public bool TryDequeue([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
         {
-            if (this.nodes.Count == 0)
+            if (_nodes.Count == 0)
             {
                 element = default;
                 priority = default;
@@ -202,7 +202,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                (element, priority) = this.nodes[RootIndex];
+                (element, priority) = _nodes[RootIndex];
                 this.Remove(RootIndex);
                 return true;
             }
@@ -216,7 +216,7 @@ namespace System.Collections.Generic
         /// </returns>
         public bool TryPeek([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
         {
-            if (this.nodes.Count == 0)
+            if (_nodes.Count == 0)
             {
                 element = default;
                 priority = default;
@@ -224,7 +224,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                (element, priority) = this.nodes[RootIndex];
+                (element, priority) = _nodes[RootIndex];
                 return true;
             }
         }
@@ -274,7 +274,7 @@ namespace System.Collections.Generic
         /// </summary>
         public void Clear()
         {
-            this.nodes.Clear();
+            _nodes.Clear();
         }
 
         /// <summary>
@@ -288,12 +288,12 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             }
 
-            if (capacity <= this.nodes.Count)
+            if (capacity <= _nodes.Count)
             {
                 return;
             }
 
-            this.nodes.Capacity = capacity;
+            _nodes.Capacity = capacity;
         }
 
         /// <summary>
@@ -302,7 +302,7 @@ namespace System.Collections.Generic
         /// </summary>
         public void TrimExcess()
         {
-            this.nodes.TrimExcess();
+            _nodes.TrimExcess();
         }
 
         /// <summary>
@@ -314,8 +314,8 @@ namespace System.Collections.Generic
             // node and shorten the array by one.
 
             var lastNodeIndex = this.GetLastNodeIndex();
-            var lastNode = this.nodes[lastNodeIndex];
-            this.nodes.RemoveAt(lastNodeIndex);
+            var lastNode = _nodes[lastNodeIndex];
+            _nodes.RemoveAt(lastNodeIndex);
 
             // In case we wanted to remove the node that was the last one,
             // we are done.
@@ -330,7 +330,7 @@ namespace System.Collections.Generic
             // wanted to remove. After that operation, we will need
             // to restore the heap property (in general).
 
-            var nodeToRemove = this.nodes[indexOfNodeToRemove];
+            var nodeToRemove = _nodes[indexOfNodeToRemove];
 
             var relation = this.Comparer.Compare(lastNode.priority, nodeToRemove.priority);
             this.PutAt(lastNode, indexOfNodeToRemove);
@@ -351,14 +351,14 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PutAt((TElement element, TPriority priority) node, int index)
         {
-            this.nodes[index] = node;
+            _nodes[index] = node;
         }
 
         /// <summary>
         /// Gets the index of the last node in the heap.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetLastNodeIndex() => this.nodes.Count - 1;
+        private int GetLastNodeIndex() => _nodes.Count - 1;
 
         /// <summary>
         /// Gets the index of an element's parent.
@@ -387,7 +387,7 @@ namespace System.Collections.Generic
 
             for (var index = lastParentWithChildren; index >= 0; --index)
             {
-                this.MoveDown(this.nodes[index], index);
+                this.MoveDown(_nodes[index], index);
             }
         }
 
@@ -402,7 +402,7 @@ namespace System.Collections.Generic
             while (nodeIndex > 0)
             {
                 var parentIndex = this.GetParentIndex(nodeIndex);
-                var parent = this.nodes[parentIndex];
+                var parent = _nodes[parentIndex];
 
                 if (this.Comparer.Compare(node.priority, parent.priority) < 0)
                 {
@@ -428,17 +428,17 @@ namespace System.Collections.Generic
             // for this value to drop in. Similar optimization as in the insertion sort.
 
             int i;
-            while ((i = this.GetFirstChildIndex(nodeIndex)) < this.nodes.Count)
+            while ((i = this.GetFirstChildIndex(nodeIndex)) < _nodes.Count)
             {
                 // Check if the current node (pointed by 'nodeIndex') should really be extracted
                 // first, or maybe one of its children should be extracted earlier.
-                var topChild = this.nodes[i];
-                var childrenIndexesLimit = Math.Min(i + Arity, this.nodes.Count);
+                var topChild = _nodes[i];
+                var childrenIndexesLimit = Math.Min(i + Arity, _nodes.Count);
                 int topChildIndex = i;
 
                 while (++i < childrenIndexesLimit)
                 {
-                    var child = this.nodes[i];
+                    var child = _nodes[i];
                     if (this.Comparer.Compare(child.priority, topChild.priority) < 0)
                     {
                         topChild = child;
