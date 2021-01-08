@@ -1,6 +1,5 @@
-<Project>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <SkipValidatePackage>true</SkipValidatePackage>
@@ -20,11 +19,7 @@
     <NativeRuntimeAsset Include="$(MonoCrossAOTDir)$(TargetCrossRid)\**" TargetPath="tools/" />
   </ItemGroup>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-
   <Target Name="ValidateProperties" BeforeTargets="GenerateNuspec">
     <Error Condition="'$(TargetCrossRid)' == ''" Text="TargetCrossRid not set" />
   </Target>
-
 </Project>
