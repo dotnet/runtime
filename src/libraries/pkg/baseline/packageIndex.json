@@ -6250,7 +6250,7 @@
         "net45": "4.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "5.0.2"
+        "4.0.0.0": "5.0.0"
       }
     },
     "System.Text.Encoding": {
