@@ -18,7 +18,7 @@ parameters:
   condition: true
   continueOnError: false
   dependsOn: ''
-  dependOnEvaluatePaths: false
+  useCheckoutBundle: ''
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -41,12 +41,12 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
+    useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
 
     # arcade-specific parameters
     condition: and(succeeded(), ${{ parameters.condition }})
     continueOnError: ${{ parameters.continueOnError }}
     dependsOn: ${{ parameters.dependsOn }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     displayName: ${{ parameters.displayName }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}

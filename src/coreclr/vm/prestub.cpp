@@ -1557,10 +1557,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
                     pTargetMD->GetSignature(),
                     &typeContext,
                     pTargetMD,
-                    TRUE,           // fTargetHasThis
-                    TRUE,           // fStubHasThis
-                    FALSE           // fIsNDirectStub
-                    );
+                    (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
@@ -1660,14 +1657,13 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     }
 
     MetaSig msig(pTargetMD);
-
     ILStubLinker sl(pTargetMD->GetModule(),
                     pTargetMD->GetSignature(),
                     &typeContext,
                     pTargetMD,
-                    msig.HasThis(), // fTargetHasThis
-                    msig.HasThis(), // fStubHasThis
-                    FALSE           // fIsNDirectStub
+                    msig.HasThis()
+                        ? (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
+                        : (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE
                     );
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);

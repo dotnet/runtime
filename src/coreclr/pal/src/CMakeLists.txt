@@ -61,7 +61,6 @@ if(CLR_CMAKE_TARGET_OSX)
     add_definitions(-DXSTATE_SUPPORTED)
   endif()
   set(PLATFORM_SOURCES
-    arch/${PAL_ARCH_SOURCES_DIR}/activationhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/context.S
     arch/${PAL_ARCH_SOURCES_DIR}/dispatchexceptionwrapper.S
     exception/machexception.cpp

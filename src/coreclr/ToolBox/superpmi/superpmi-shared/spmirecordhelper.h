@@ -45,19 +45,49 @@ public:
                                                   LightWeightMap<key, value>* buffers);
 
     static MethodContext::Agnostic_CORINFO_SIG_INFO CreateAgnostic_CORINFO_SIG_INFO_without_buffers(
-        CORINFO_SIG_INFO& sigInfo);
+        const CORINFO_SIG_INFO& sigInfo);
+
+    static void StoreAgnostic_CORINFO_SIG_INST_HandleArray(
+        unsigned handleInstCount,
+        CORINFO_CLASS_HANDLE* handleInstArray,
+        DenseLightWeightMap<DWORDLONG>*& handleMap, // If we initialize it, the pointer gets updated.
+        /* OUT */ DWORD* handleInstCountOut,
+        /* OUT */ DWORD* handleInstIndexOut);
 
     template <typename key, typename value>
-    static MethodContext::Agnostic_CORINFO_SIG_INFO StoreAgnostic_CORINFO_SIG_INFO(CORINFO_SIG_INFO& sigInfo,
-                                                                                   LightWeightMap<key, value>* buffers);
+    static MethodContext::Agnostic_CORINFO_SIG_INFO StoreAgnostic_CORINFO_SIG_INFO(
+        const CORINFO_SIG_INFO& sigInfo,
+        LightWeightMap<key, value>* buffers,
+        DenseLightWeightMap<DWORDLONG>*& handleMap);
+
+    static DWORD ContainsHandleMap(
+        unsigned handleCount,
+        const CORINFO_CLASS_HANDLE* handleArray,
+        const DenseLightWeightMap<DWORDLONG>* handleMap);
 
     template <typename key, typename value>
     static MethodContext::Agnostic_CORINFO_SIG_INFO RestoreAgnostic_CORINFO_SIG_INFO(
-        CORINFO_SIG_INFO& sigInfo, LightWeightMap<key, value>* buffers);
+        const CORINFO_SIG_INFO& sigInfo,
+        LightWeightMap<key, value>* buffers,
+        const DenseLightWeightMap<DWORDLONG>* handleMap);
+
+    static void DeserializeCORINFO_SIG_INST_HandleArray(
+        DWORD handleInstCount,
+        DWORD handleInstIndex,
+        const DenseLightWeightMap<DWORDLONG>* handleMap,
+        /* OUT */ unsigned* handleInstCountOut,
+        /* OUT */ CORINFO_CLASS_HANDLE** handleInstArrayOut);
+
+    static void DeserializeCORINFO_SIG_INST(
+        CORINFO_SIG_INFO& sigInfoOut,
+        const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
+        const DenseLightWeightMap<DWORDLONG>* handleMap);
 
     template <typename key, typename value>
-    static CORINFO_SIG_INFO Restore_CORINFO_SIG_INFO(MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
-                                                     LightWeightMap<key, value>* buffers);
+    static CORINFO_SIG_INFO Restore_CORINFO_SIG_INFO(
+        const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
+        LightWeightMap<key, value>* buffers,
+        const DenseLightWeightMap<DWORDLONG>* handleMap);
 
     static MethodContext::Agnostic_CORINFO_LOOKUP_KIND CreateAgnostic_CORINFO_LOOKUP_KIND(
         const CORINFO_LOOKUP_KIND* pGenericLookupKind);
@@ -174,7 +204,7 @@ inline void SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(
 }
 
 inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::CreateAgnostic_CORINFO_SIG_INFO_without_buffers(
-    CORINFO_SIG_INFO& sigInfo)
+    const CORINFO_SIG_INFO& sigInfo)
 {
     MethodContext::Agnostic_CORINFO_SIG_INFO sig;
     ZeroMemory(&sig, sizeof(sig));
@@ -193,52 +223,166 @@ inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::CreateAgnosti
     return sig;
 }
 
-template <typename key, typename value>
-inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(
-    CORINFO_SIG_INFO& sigInfo, LightWeightMap<key, value>* buffers)
+inline void SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(
+    unsigned handleInstCount,
+    CORINFO_CLASS_HANDLE* handleInstArray,
+    DenseLightWeightMap<DWORDLONG>*& handleMap, // If we initialize it, the pointer gets updated.
+    /* OUT */ DWORD* handleInstCountOut,
+    /* OUT */ DWORD* handleInstIndexOut)
 {
-    MethodContext::Agnostic_CORINFO_SIG_INFO sig(CreateAgnostic_CORINFO_SIG_INFO_without_buffers(sigInfo));
-    sig.sigInst_classInst_Index =
-        buffers->AddBuffer((unsigned char*)sigInfo.sigInst.classInst, sigInfo.sigInst.classInstCount * 8);
-    sig.sigInst_methInst_Index =
-        buffers->AddBuffer((unsigned char*)sigInfo.sigInst.methInst, sigInfo.sigInst.methInstCount * 8);
-    sig.pSig_Index = (DWORD)buffers->AddBuffer((unsigned char*)sigInfo.pSig, sigInfo.cbSig);
-    return sig;
+    unsigned handleInstIndex;
+
+    if (handleInstCount > 0)
+    {
+        if (handleMap == nullptr)
+            handleMap = new DenseLightWeightMap<DWORDLONG>(); // this updates the caller
+
+        // If the we already have this array, we need to re-use it, so when we look it up on
+        // replay we get the same index. It also reduces the amount of data in the handle map,
+        // since there are typically few handle unique arrays.
+        handleInstIndex = ContainsHandleMap(handleInstCount, handleInstArray, handleMap);
+        if (handleInstIndex == (DWORD)-1)
+        {
+            handleInstIndex = handleMap->GetCount();
+            for (unsigned int i = 0; i < handleInstCount; i++)
+            {
+                handleMap->Append(CastHandle(handleInstArray[i]));
+            }
+            AssertCodeMsg(handleInstIndex + handleInstCount == handleMap->GetCount(), EXCEPTIONCODE_MC,
+                "Unexpected size of handleMap");
+        }
+    }
+    else
+    {
+        handleInstIndex = (DWORD)-1;
+    }
+
+    *handleInstCountOut = handleInstCount;
+    *handleInstIndexOut = handleInstIndex;
 }
 
 template <typename key, typename value>
-inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(
-    CORINFO_SIG_INFO& sigInfo, LightWeightMap<key, value>* buffers)
+inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(
+    const CORINFO_SIG_INFO& sigInfo,
+    LightWeightMap<key, value>* buffers,
+    DenseLightWeightMap<DWORDLONG>*& handleMap)
 {
     MethodContext::Agnostic_CORINFO_SIG_INFO sig(CreateAgnostic_CORINFO_SIG_INFO_without_buffers(sigInfo));
-    sig.sigInst_classInst_Index =
-        buffers->Contains((unsigned char*)sigInfo.sigInst.classInst, sigInfo.sigInst.classInstCount * 8);
-    sig.sigInst_methInst_Index =
-        buffers->Contains((unsigned char*)sigInfo.sigInst.methInst, sigInfo.sigInst.methInstCount * 8);
+
+    StoreAgnostic_CORINFO_SIG_INST_HandleArray(sigInfo.sigInst.classInstCount, sigInfo.sigInst.classInst, handleMap, &sig.sigInst_classInstCount, &sig.sigInst_classInst_Index);
+    StoreAgnostic_CORINFO_SIG_INST_HandleArray(sigInfo.sigInst.methInstCount, sigInfo.sigInst.methInst, handleMap, &sig.sigInst_methInstCount, &sig.sigInst_methInst_Index);
+    sig.pSig_Index = (DWORD)buffers->AddBuffer((unsigned char*)sigInfo.pSig, sigInfo.cbSig);
+
+    return sig;
+}
+
+inline DWORD SpmiRecordsHelper::ContainsHandleMap(
+    unsigned handleCount,
+    const CORINFO_CLASS_HANDLE* handleArray,
+    const DenseLightWeightMap<DWORDLONG>* handleMap)
+{
+    // Special case: no handles isn't found.
+    if (handleCount == 0)
+    {
+        return (DWORD)-1;
+    }
+
+    for (unsigned mapIndex = 0; mapIndex < handleMap->GetCount(); mapIndex++)
+    {
+        if (mapIndex + handleCount > handleMap->GetCount())
+        {
+            // The handles can't be found; it would overflow the handleMap.
+            return (DWORD)-1;
+        }
+
+        // See if the handle map starting at `mapIndex` contains all the handles we're looking for, in order.
+        bool found = true; // Assume we'll find it
+        for (unsigned handleIndex = 0; handleIndex < handleCount; handleIndex++)
+        {
+            if (handleMap->Get(mapIndex + handleIndex) != CastHandle(handleArray[handleIndex]))
+            {
+                found = false;
+                break;
+            }
+        }
+        if (found)
+        {
+            return (DWORD)mapIndex;
+        }
+    }
+    return (DWORD)-1; // not found
+}
+
+// RestoreAgnostic_CORINFO_SIG_INFO: from a CORINFO_SIG_INFO, fill out an Agnostic_CORINFO_SIG_INFO from the data already stored.
+// Don't create and store a new Agnostic_CORINFO_SIG_INFO. The buffers and indices need to be found in the existing stored data.
+// This is used when we need to create an Agnostic_CORINFO_SIG_INFO to be used as a key to look up in an existing map.
+template <typename key, typename value>
+inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(
+    const CORINFO_SIG_INFO& sigInfo,
+    LightWeightMap<key, value>* buffers,
+    const DenseLightWeightMap<DWORDLONG>* handleMap)
+{
+    MethodContext::Agnostic_CORINFO_SIG_INFO sig(CreateAgnostic_CORINFO_SIG_INFO_without_buffers(sigInfo));
+    sig.sigInst_classInst_Index = ContainsHandleMap(sigInfo.sigInst.classInstCount, sigInfo.sigInst.classInst, handleMap);
+    sig.sigInst_methInst_Index  = ContainsHandleMap(sigInfo.sigInst.methInstCount, sigInfo.sigInst.methInst, handleMap);
     sig.pSig_Index = (DWORD)buffers->Contains((unsigned char*)sigInfo.pSig, sigInfo.cbSig);
     return sig;
 }
 
+inline void SpmiRecordsHelper::DeserializeCORINFO_SIG_INST_HandleArray(
+    DWORD handleInstCount,
+    DWORD handleInstIndex,
+    const DenseLightWeightMap<DWORDLONG>* handleMap,
+    /* OUT */ unsigned* handleInstCountOut,
+    /* OUT */ CORINFO_CLASS_HANDLE** handleInstArrayOut)
+{
+    CORINFO_CLASS_HANDLE* handleInstArray;
+
+    if (handleInstCount > 0)
+    {
+        handleInstArray = new CORINFO_CLASS_HANDLE[handleInstCount]; // memory leak?
+        for (unsigned int i = 0; i < handleInstCount; i++)
+        {
+            DWORD key = handleInstIndex + i;
+            handleInstArray[i] = (CORINFO_CLASS_HANDLE)handleMap->Get(key);
+        }
+    }
+    else
+    {
+        handleInstArray = nullptr;
+    }
+
+    *handleInstCountOut = handleInstCount;
+    *handleInstArrayOut = handleInstArray;
+}
+
+inline void SpmiRecordsHelper::DeserializeCORINFO_SIG_INST(
+    CORINFO_SIG_INFO& sigInfoOut, const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo, const DenseLightWeightMap<DWORDLONG>* handleMap)
+{
+    DeserializeCORINFO_SIG_INST_HandleArray(sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index, handleMap, &sigInfoOut.sigInst.classInstCount, &sigInfoOut.sigInst.classInst);
+    DeserializeCORINFO_SIG_INST_HandleArray(sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, handleMap, &sigInfoOut.sigInst.methInstCount, &sigInfoOut.sigInst.methInst);
+}
+
 template <typename key, typename value>
-inline CORINFO_SIG_INFO SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
-                                                                    LightWeightMap<key, value>* buffers)
+inline CORINFO_SIG_INFO SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
+                                                                    LightWeightMap<key, value>* buffers,
+                                                                    const DenseLightWeightMap<DWORDLONG>* handleMap)
 {
     CORINFO_SIG_INFO sig;
-    sig.callConv               = (CorInfoCallConv)sigInfo.callConv;
-    sig.retTypeClass           = (CORINFO_CLASS_HANDLE)sigInfo.retTypeClass;
-    sig.retTypeSigClass        = (CORINFO_CLASS_HANDLE)sigInfo.retTypeSigClass;
-    sig.retType                = (CorInfoType)sigInfo.retType;
-    sig.flags                  = (unsigned)sigInfo.flags;
-    sig.numArgs                = (unsigned)sigInfo.numArgs;
-    sig.sigInst.classInstCount = (unsigned)sigInfo.sigInst_classInstCount;
-    sig.sigInst.classInst      = (CORINFO_CLASS_HANDLE*)buffers->GetBuffer(sigInfo.sigInst_classInst_Index);
-    sig.sigInst.methInstCount  = (unsigned)sigInfo.sigInst_methInstCount;
-    sig.sigInst.methInst       = (CORINFO_CLASS_HANDLE*)buffers->GetBuffer(sigInfo.sigInst_methInst_Index);
-    sig.args                   = (CORINFO_ARG_LIST_HANDLE)sigInfo.args;
-    sig.cbSig                  = (unsigned int)sigInfo.cbSig;
-    sig.pSig                   = (PCCOR_SIGNATURE)buffers->GetBuffer(sigInfo.pSig_Index);
-    sig.scope                  = (CORINFO_MODULE_HANDLE)sigInfo.scope;
-    sig.token                  = (mdToken)sigInfo.token;
+    sig.callConv        = (CorInfoCallConv)sigInfo.callConv;
+    sig.retTypeClass    = (CORINFO_CLASS_HANDLE)sigInfo.retTypeClass;
+    sig.retTypeSigClass = (CORINFO_CLASS_HANDLE)sigInfo.retTypeSigClass;
+    sig.retType         = (CorInfoType)sigInfo.retType;
+    sig.flags           = (unsigned)sigInfo.flags;
+    sig.numArgs         = (unsigned)sigInfo.numArgs;
+    sig.args            = (CORINFO_ARG_LIST_HANDLE)sigInfo.args;
+    sig.cbSig           = (unsigned int)sigInfo.cbSig;
+    sig.pSig            = (PCCOR_SIGNATURE)buffers->GetBuffer(sigInfo.pSig_Index);
+    sig.scope           = (CORINFO_MODULE_HANDLE)sigInfo.scope;
+    sig.token           = (mdToken)sigInfo.token;
+
+    DeserializeCORINFO_SIG_INST(sig, sigInfo, handleMap);
+
     return sig;
 }
 

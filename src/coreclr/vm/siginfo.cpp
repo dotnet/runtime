@@ -5248,14 +5248,7 @@ namespace
         _Out_ LPCSTR *namespaceOut,
         _Out_ LPCSTR *nameOut)
     {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            FORBID_FAULT;
-            MODE_ANY;
-        }
-        CONTRACTL_END
+        STANDARD_VM_CONTRACT;
 
         IMDInternalImport *pInternalImport = pModule->GetMDImport();
         if (TypeFromToken(token) == mdtTypeDef)
@@ -5277,7 +5270,47 @@ namespace
 
         return S_OK;
     }
+
+    HRESULT GetNameOfTypeRefOrDef(
+        _In_ DynamicResolver *pResolver,
+        _In_ mdToken token,
+        _Out_ LPCSTR *namespaceOut,
+        _Out_ LPCSTR *nameOut)
+    {
+        STANDARD_VM_CONTRACT;
+
+        TypeHandle type;
+        MethodDesc* pMD;
+        FieldDesc* pFD;
+
+        pResolver->ResolveToken(token, &type, &pMD, &pFD);
+
+        _ASSERTE(!type.IsNull());
+
+        *nameOut = type.GetMethodTable()->GetFullyQualifiedNameInfo(namespaceOut);
+
+        return S_OK;
+    }
+
+    HRESULT GetNameOfTypeRefOrDef(
+        _In_ CORINFO_MODULE_HANDLE pModule,
+        _In_ mdToken token,
+        _Out_ LPCSTR *namespaceOut,
+        _Out_ LPCSTR *nameOut)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (IsDynamicScope(pModule))
+        {
+            return GetNameOfTypeRefOrDef(GetDynamicResolver(pModule), token, namespaceOut, nameOut);
+        }
+        else
+        {
+            return GetNameOfTypeRefOrDef(GetModule(pModule), token, namespaceOut, nameOut);
+        }
+    }
 }
+
 
 //----------------------------------------------------------
 // Returns the unmanaged calling convention.
@@ -5285,26 +5318,36 @@ namespace
 /*static*/
 HRESULT
 MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
-    _In_ Module *pModule,
+    _In_ CORINFO_MODULE_HANDLE pModule,
     _In_ PCCOR_SIGNATURE pSig,
     _In_ ULONG cSig,
     _Out_ CorUnmanagedCallingConvention *callConvOut,
+    _Out_ bool* suppressGCTransitionOut,
     _Out_ UINT *errorResID)
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(callConvOut != NULL);
+        PRECONDITION(suppressGCTransitionOut != NULL);
         PRECONDITION(errorResID != NULL);
     }
     CONTRACTL_END
 
+    *suppressGCTransitionOut = false;
+    HRESULT hr;
+
     // Instantiations aren't relevant here
-    MetaSig msig(pSig, cSig, pModule, NULL);
-    PCCOR_SIGNATURE pWalk = msig.m_pRetType.GetPtr();
+    SigPointer sigPtr(pSig, cSig);
+    ULONG sigCallConv = 0;
+    IfFailRet(sigPtr.GetCallingConvInfo(&sigCallConv)); // call conv
+    if (sigCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        IfFailRet(sigPtr.GetData(NULL)); // type param count
+    }
+    IfFailRet(sigPtr.GetData(NULL)); // arg count
+
+    PCCOR_SIGNATURE pWalk = sigPtr.GetPtr();
     _ASSERTE(pWalk <= pSig + cSig);
 
     *callConvOut = (CorUnmanagedCallingConvention)0;
@@ -5335,6 +5378,12 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 
         if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
             continue;
+
+        if (::strcmp(typeName, CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION) == 0)
+        {
+            *suppressGCTransitionOut = true;
+            continue;
+        }
 
         const struct {
             LPCSTR name;

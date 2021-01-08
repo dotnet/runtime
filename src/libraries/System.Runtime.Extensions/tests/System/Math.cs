@@ -441,6 +441,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Abs_NInt()
+        {
+            Assert.Equal((nint)3, Math.Abs((nint)3));
+            Assert.Equal((nint)0, Math.Abs((nint)0));
+            Assert.Equal((nint)3, Math.Abs((nint)(-3)));
+            Assert.Throws<OverflowException>(() => Math.Abs(nint.MinValue));
+        }
+
+        [Fact]
         public static void Abs_SByte()
         {
             Assert.Equal((sbyte)3, Math.Abs((sbyte)3));
@@ -1113,6 +1122,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Max_NInt()
+        {
+            Assert.Equal((nint)3, Math.Max((nint)(-2), (nint)3));
+            Assert.Equal(nint.MaxValue, Math.Max(nint.MinValue, nint.MaxValue));
+        }
+
+        [Fact]
         public static void Max_SByte()
         {
             Assert.Equal((sbyte)3, Math.Max((sbyte)(-2), (sbyte)3));
@@ -1161,6 +1177,13 @@ namespace System.Tests
         {
             Assert.Equal((ulong)3, Math.Max((ulong)2, (ulong)3));
             Assert.Equal(ulong.MaxValue, Math.Max(ulong.MinValue, ulong.MaxValue));
+        }
+
+        [Fact]
+        public static void Max_NUInt()
+        {
+            Assert.Equal((nuint)3, Math.Max((nuint)2, (nuint)3));
+            Assert.Equal(nuint.MaxValue, Math.Max(nuint.MinValue, nuint.MaxValue));
         }
 
         [Fact]
@@ -1222,6 +1245,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Min_NInt()
+        {
+            Assert.Equal((nint)(-2), Math.Min((nint)3, (nint)(-2)));
+            Assert.Equal(nint.MinValue, Math.Min(nint.MinValue, nint.MaxValue));
+        }
+
+        [Fact]
         public static void Min_SByte()
         {
             Assert.Equal((sbyte)(-2), Math.Min((sbyte)3, (sbyte)(-2)));
@@ -1270,6 +1300,13 @@ namespace System.Tests
         {
             Assert.Equal((ulong)2, Math.Min((ulong)3, (ulong)2));
             Assert.Equal(ulong.MinValue, Math.Min(ulong.MinValue, ulong.MaxValue));
+        }
+
+        [Fact]
+        public static void Min_NUInt()
+        {
+            Assert.Equal((nuint)2, Math.Min((nuint)3, (nuint)2));
+            Assert.Equal(nuint.MinValue, Math.Min(nuint.MinValue, nuint.MaxValue));
         }
 
         public static IEnumerable<object[]> Pow_TestData
@@ -1521,6 +1558,14 @@ namespace System.Tests
             Assert.Equal(0, Math.Sign(0));
             Assert.Equal(-1, Math.Sign(-3));
             Assert.Equal(1, Math.Sign(3));
+        }
+
+        [Fact]
+        public static void Sign_NInt()
+        {
+            Assert.Equal(0, Math.Sign((nint)0));
+            Assert.Equal(-1, Math.Sign((nint)(-3)));
+            Assert.Equal(1, Math.Sign((nint)3));
         }
 
         [Fact]
@@ -2388,6 +2433,21 @@ namespace System.Tests
             Assert.Equal(expected, Math.Clamp(value, min, max));
         }
 
+
+        [Theory]
+        [MemberData(nameof(Clamp_SignedInt_TestData))]
+        public static void Clamp_NInt(int value, int min, int max, int expected)
+        {
+            Assert.Equal((nint)expected, Math.Clamp((nint)value, (nint)min, (nint)max));
+        }
+
+        [Theory]
+        [MemberData(nameof(Clamp_UnsignedInt_TestData))]
+        public static void Clamp_NUInt(uint value, uint min, uint max, uint expected)
+        {
+            Assert.Equal((nuint)expected, Math.Clamp((nuint)value, (nuint)min, (nuint)max));
+        }
+
         [Theory]
         [MemberData(nameof(Clamp_SignedInt_TestData))]
         [InlineData(double.NegativeInfinity, double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
@@ -2876,7 +2936,7 @@ namespace System.Tests
             Assert.Equal(-3, Math.Round(-3.0));
             Assert.Equal( 4, Math.Round( 3.5));
             Assert.Equal(-4, Math.Round(-3.5));
-            
+
             Assert.Equal( 0, Math.Round( 0.5, MidpointRounding.ToZero));
             Assert.Equal( 0, Math.Round( 0.5, MidpointRounding.ToZero));
             Assert.Equal( 1, Math.Round( 1.0, MidpointRounding.ToZero));
@@ -2925,7 +2985,7 @@ namespace System.Tests
             Assert.Equal(-3, MathF.Round(-3.0f));
             Assert.Equal( 4, MathF.Round( 3.5f));
             Assert.Equal(-4, MathF.Round(-3.5f));
-            
+
             Assert.Equal( 0, MathF.Round( 0.5f, MidpointRounding.ToZero));
             Assert.Equal( 0, MathF.Round( 0.5f, MidpointRounding.ToZero));
             Assert.Equal( 1, MathF.Round( 1.0f, MidpointRounding.ToZero));

@@ -15,4 +15,8 @@
   <ItemGroup Condition="'$(TargetOS)' == 'iOS'">
     <ProjectReference Include="Microsoft.NET.Runtime.iOS.Sample.Mono\Microsoft.NET.Runtime.iOS.Sample.Mono.pkgproj" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
+    <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
+  </ItemGroup>
 </Project>
