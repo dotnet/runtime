@@ -6461,8 +6461,12 @@
       }
     },
     "System.Speech": {
+      "BaselineVersion": "6.0.0",
       "InboxOn": {
         "net45": "4.0.0.0"
+      },
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "6.0.0"
       }
     },
     "System.Text.Encoding": {

@@ -1857,15 +1857,7 @@ WORD MyICJI::getRelocTypeHint(void* target)
 //
 DWORD MyICJI::getExpectedTargetArchitecture()
 {
-#if defined(TARGET_X86)
-    return IMAGE_FILE_MACHINE_I386;
-#elif defined(TARGET_AMD64)
-    return IMAGE_FILE_MACHINE_AMD64;
-#elif defined(TARGET_ARM)
-    return IMAGE_FILE_MACHINE_ARMNT;
-#elif defined(TARGET_ARM64)
-    return IMAGE_FILE_MACHINE_ARM64;
-#else
-    return IMAGE_FILE_MACHINE_UNKNOWN;
-#endif
+    jitInstance->mc->cr->AddCall("getExpectedTargetArchitecture");
+    DWORD result = jitInstance->mc->repGetExpectedTargetArchitecture();
+    return result;
 }

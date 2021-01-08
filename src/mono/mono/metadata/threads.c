@@ -999,7 +999,9 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	thread->abort_state_handle = 0;
 
 	thread->abort_exc = NULL;
+#ifndef ENABLE_NETCORE
 	thread->current_appcontext = NULL;
+#endif
 
 	LOCK_THREAD (thread);
 
@@ -5039,7 +5041,11 @@ mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 off
 	if (static_type == SPECIAL_STATIC_OFFSET_TYPE_THREAD) {
 		return get_thread_static_data (thread, offset);
 	} else {
+#ifndef ENABLE_NETCORE
 		return get_context_static_data (thread->current_appcontext, offset);
+#else
+		g_assert_not_reached ();
+#endif
 	}
 }
 
