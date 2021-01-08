@@ -285,12 +285,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\DateTime.Unix.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\DateTime.Windows.CoreCLR.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
