@@ -195,18 +195,16 @@ namespace System.Collections.Generic
         /// </returns>
         public bool TryDequeue([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
         {
-            if (_size == 0)
-            {
-                element = default;
-                priority = default;
-                return false;
-            }
-            else
+            if (_size != 0)
             {
                 (element, priority) = _nodes[RootIndex];
                 Remove(RootIndex);
                 return true;
             }
+
+            element = default;
+            priority = default;
+            return false;
         }
 
         /// <summary>
@@ -217,17 +215,15 @@ namespace System.Collections.Generic
         /// </returns>
         public bool TryPeek([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
         {
-            if (_size == 0)
-            {
-                element = default;
-                priority = default;
-                return false;
-            }
-            else
+            if (_size != 0)
             {
                 (element, priority) = _nodes[RootIndex];
                 return true;
             }
+
+            element = default;
+            priority = default;
+            return false;
         }
 
         /// <summary>
