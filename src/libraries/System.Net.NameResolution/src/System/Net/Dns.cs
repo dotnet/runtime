@@ -544,6 +544,7 @@ namespace System.Net
                         success = justAddresses
                             ? TryGetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken, out t)
                             : TryGetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken, out t);
+
                     }
                     else
                     {
@@ -583,30 +584,38 @@ namespace System.Net
             }
         }
 
-        private static  bool TryGetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken, out Task t)
+        private static bool TryGetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken, out Task t)
              where T : class
         {
-            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
-
-            try
+            if (NameResolutionPal.TryGetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken, out Task task))
             {
-                if (NameResolutionPal.TryGetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken, out t))
-                {
-                    t.ContinueWith((resultTask) => {
-                        NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: resultTask.IsCompletedSuccessfully);
-                    }, cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                //return new Tuple<bool, Task>(true, (Task)InternalGetAddrInfoWithTelemetryAsync(task, hostName));
+                t  = InternalGetAddrInfoWithTelemetryAsync(task, hostName);
+                return true;
+            }
 
-                    return true;
-                }
-            }
-            catch
-            {
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
-                throw;
-            }
+            // If resolution even did not start don't bother with telemetry.
+            // We will retry on thread-pool.
 
             t = Task.CompletedTask;
             return false;
+
+            static async Task<T> InternalGetAddrInfoWithTelemetryAsync(Task task, string hostName)
+            {
+                ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+                T? result = null;
+                try
+                {
+                    result = await ((Task<T>)task).ConfigureAwait(false);
+                    return result;
+                }
+                finally
+                {
+                    NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: result is not null);
+                }
+
+                return result;
+            }
         }
 
         private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object arg) =>
