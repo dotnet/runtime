@@ -74,7 +74,8 @@ namespace System.Collections.Generic
         {
             if (initialCapacity < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(initialCapacity));
+                throw new ArgumentOutOfRangeException(
+                    nameof(initialCapacity), initialCapacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             _nodes = new (TElement, TPriority)[initialCapacity];
@@ -293,7 +294,8 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(capacity));
+                throw new ArgumentOutOfRangeException(
+                    nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (capacity <= _size)
