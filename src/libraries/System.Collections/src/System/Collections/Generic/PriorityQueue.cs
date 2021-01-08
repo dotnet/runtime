@@ -107,7 +107,7 @@ namespace System.Collections.Generic
 
             if (_size > 1)
             {
-                this.Heapify();
+                Heapify();
             }
         }
 
@@ -141,7 +141,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(priority));
             }
 
-            this.EnsureEnoughCapacityBeforeAddingNode();
+            EnsureEnoughCapacityBeforeAddingNode();
 
             // Add the node at the end
             var node = (element, priority);
@@ -150,8 +150,8 @@ namespace System.Collections.Generic
             _version++;
 
             // Restore the heap order
-            int lastNodeIndex = this.GetLastNodeIndex();
-            this.MoveUp(node, lastNodeIndex);
+            int lastNodeIndex = GetLastNodeIndex();
+            MoveUp(node, lastNodeIndex);
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace System.Collections.Generic
         /// <exception cref="InvalidOperationException">The queue is empty.</exception>
         public TElement Peek()
         {
-            if (this.TryPeek(out TElement? element, out TPriority? priority))
+            if (TryPeek(out TElement? element, out TPriority? priority))
             {
                 return element;
             }
@@ -177,7 +177,7 @@ namespace System.Collections.Generic
         /// <exception cref="InvalidOperationException">The queue is empty.</exception>
         public TElement Dequeue()
         {
-            if (this.TryDequeue(out TElement? element, out TPriority? priority))
+            if (TryDequeue(out TElement? element, out TPriority? priority))
             {
                 return element;
             }
@@ -205,7 +205,7 @@ namespace System.Collections.Generic
             else
             {
                 (element, priority) = _nodes[RootIndex];
-                this.Remove(RootIndex);
+                Remove(RootIndex);
                 return true;
             }
         }
@@ -251,7 +251,7 @@ namespace System.Collections.Generic
 
             foreach (var (element, priority) in items)
             {
-                this.Enqueue(element, priority);
+                Enqueue(element, priority);
             }
         }
 
@@ -267,7 +267,7 @@ namespace System.Collections.Generic
 
             foreach (var element in elements)
             {
-                this.Enqueue(element, priority);
+                Enqueue(element, priority);
             }
         }
 
@@ -301,7 +301,7 @@ namespace System.Collections.Generic
                 return;
             }
 
-            this.SetCapacity(capacity);
+            SetCapacity(capacity);
         }
 
         /// <summary>
@@ -327,7 +327,7 @@ namespace System.Collections.Generic
                 {
                     newCapacity = _nodes.Length + MinimumGrow;
                 }
-                this.SetCapacity(newCapacity);
+                SetCapacity(newCapacity);
             }
         }
 
@@ -354,7 +354,7 @@ namespace System.Collections.Generic
             // The idea is to replace the specified node by the very last
             // node and shorten the array by one.
 
-            int lastNodeIndex = this.GetLastNodeIndex();
+            int lastNodeIndex = GetLastNodeIndex();
             var lastNode = _nodes[lastNodeIndex];
             _size--;
             _version++;
@@ -375,15 +375,15 @@ namespace System.Collections.Generic
             var nodeToRemove = _nodes[indexOfNodeToRemove];
 
             int relation = this.Comparer.Compare(lastNode.priority, nodeToRemove.priority);
-            this.PutAt(lastNode, indexOfNodeToRemove);
+            PutAt(lastNode, indexOfNodeToRemove);
 
             if (relation < 0)
             {
-                this.MoveUp(lastNode, indexOfNodeToRemove);
+                MoveUp(lastNode, indexOfNodeToRemove);
             }
             else
             {
-                this.MoveDown(lastNode, indexOfNodeToRemove);
+                MoveDown(lastNode, indexOfNodeToRemove);
             }
         }
 
@@ -424,12 +424,12 @@ namespace System.Collections.Generic
             // only for higher nodes, starting from the first node that has children.
             // It is the parent of the very last element in the array.
 
-            int lastNodeIndex = this.GetLastNodeIndex();
-            int lastParentWithChildren = this.GetParentIndex(lastNodeIndex);
+            int lastNodeIndex = GetLastNodeIndex();
+            int lastParentWithChildren = GetParentIndex(lastNodeIndex);
 
             for (int index = lastParentWithChildren; index >= 0; --index)
             {
-                this.MoveDown(_nodes[index], index);
+                MoveDown(_nodes[index], index);
             }
         }
 
@@ -443,12 +443,12 @@ namespace System.Collections.Generic
 
             while (nodeIndex > 0)
             {
-                int parentIndex = this.GetParentIndex(nodeIndex);
+                int parentIndex = GetParentIndex(nodeIndex);
                 var parent = _nodes[parentIndex];
 
                 if (this.Comparer.Compare(node.priority, parent.priority) < 0)
                 {
-                    this.PutAt(parent, nodeIndex);
+                    PutAt(parent, nodeIndex);
                     nodeIndex = parentIndex;
                 }
                 else
@@ -457,7 +457,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            this.PutAt(node, nodeIndex);
+            PutAt(node, nodeIndex);
         }
 
         /// <summary>
@@ -470,7 +470,7 @@ namespace System.Collections.Generic
             // for this value to drop in. Similar optimization as in the insertion sort.
 
             int i;
-            while ((i = this.GetFirstChildIndex(nodeIndex)) < _size)
+            while ((i = GetFirstChildIndex(nodeIndex)) < _size)
             {
                 // Check if the current node (pointed by 'nodeIndex') should really be extracted
                 // first, or maybe one of its children should be extracted earlier.
@@ -497,11 +497,11 @@ namespace System.Collections.Generic
 
                 // Move the top child up by one node and now investigate the
                 // node that was considered to be the top child (recursive).
-                this.PutAt(topChild, nodeIndex);
+                PutAt(topChild, nodeIndex);
                 nodeIndex = topChildIndex;
             }
 
-            this.PutAt(node, nodeIndex);
+            PutAt(node, nodeIndex);
         }
 
         public partial class UnorderedItemsCollection : IReadOnlyCollection<(TElement element, TPriority priority)>, ICollection
@@ -627,13 +627,13 @@ namespace System.Collections.Generic
             }
 
             public Enumerator GetEnumerator()
-                => new Enumerator(this._queue);
+                => new Enumerator(_queue);
 
             IEnumerator<(TElement element, TPriority priority)> IEnumerable<(TElement element, TPriority priority)>.GetEnumerator()
-                => new Enumerator(this._queue);
+                => new Enumerator(_queue);
 
             IEnumerator IEnumerable.GetEnumerator()
-                => new Enumerator(this._queue);
+                => new Enumerator(_queue);
         }
     }
 }
