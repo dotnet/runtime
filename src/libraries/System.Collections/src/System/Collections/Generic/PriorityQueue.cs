@@ -46,35 +46,24 @@ namespace System.Collections.Generic
         /// Creates an empty priority queue.
         /// </summary>
         public PriorityQueue()
+            : this(initialCapacity: 0, comparer: null)
         {
-            _nodes = Array.Empty<(TElement, TPriority)>();
-            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
-            this.Comparer = Comparer<TPriority>.Default;
         }
 
         /// <summary>
         /// Creates an empty priority queue with the specified initial capacity for its underlying array.
         /// </summary>
         public PriorityQueue(int initialCapacity)
+            : this(initialCapacity, comparer: null)
         {
-            if (initialCapacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(initialCapacity));
-            }
-
-            _nodes = new (TElement, TPriority)[initialCapacity];
-            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
-            this.Comparer = Comparer<TPriority>.Default;
         }
 
         /// <summary>
         /// Creates an empty priority queue with the specified priority comparer.
         /// </summary>
         public PriorityQueue(IComparer<TPriority>? comparer)
+            : this(initialCapacity: 0, comparer)
         {
-            _nodes = Array.Empty<(TElement, TPriority)>();
-            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
-            this.Comparer = comparer ?? Comparer<TPriority>.Default;
         }
 
         /// <summary>
@@ -97,20 +86,8 @@ namespace System.Collections.Generic
         /// Creates a priority queue populated with the specified elements and priorities.
         /// </summary>
         public PriorityQueue(IEnumerable<(TElement element, TPriority priority)> items)
+            : this(items, comparer: null)
         {
-            if (items is null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
-
-            _nodes = EnumerableHelpers.ToArray(items, out _size);
-            _unorderedItems = new Lazy<UnorderedItemsCollection>(() => new UnorderedItemsCollection(this));
-            this.Comparer = Comparer<TPriority>.Default;
-
-            if (_size > 1)
-            {
-                this.Heapify();
-            }
         }
 
         /// <summary>
