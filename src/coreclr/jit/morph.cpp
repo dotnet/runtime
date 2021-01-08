@@ -2833,8 +2833,8 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             noway_assert(call->gtCallArgs->GetNode()->TypeGet() == TYP_I_IMPL ||
                          call->gtCallArgs->GetNode()->TypeGet() == TYP_BYREF ||
-                         call->gtCallArgs->GetNode()->gtOper == GT_NOP); // the arg was already morphed to a register
-                                                                         // (fgMorph called twice)
+                         call->gtCallArgs->GetNode()->gtOper ==
+                             GT_NOP); // the arg was already morphed to a register (fgMorph called twice)
             maxRegArgs = 1;
         }
         else
@@ -9090,8 +9090,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                                  // copy-back).
     unsigned             retValTmpNum = BAD_VAR_NUM;
     CORINFO_CLASS_HANDLE structHnd    = nullptr;
-    if (call->HasRetBufArg() && call->gtCallLateArgs == nullptr) // Don't do this if we're re-morphing (which will make
-                                                                 // late args non-null).
+    if (call->HasRetBufArg() &&
+        call->gtCallLateArgs == nullptr) // Don't do this if we're re-morphing (which will make late args non-null).
     {
         // We're enforcing the invariant that return buffers pointers (at least for
         // struct return types containing GC pointers) are never pointers into the heap.
