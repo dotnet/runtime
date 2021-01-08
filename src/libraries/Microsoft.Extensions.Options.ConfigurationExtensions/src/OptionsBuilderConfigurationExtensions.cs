@@ -68,6 +68,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 IConfiguration section = GetConfigurationSectionOrRoot(config, configSectionPath);
                 section.Bind(opts, configureBinder);
             });
+            optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>>(serviceProvider =>
+            {
+                var config = serviceProvider.GetRequiredService<IConfiguration>();
+                IConfiguration section = GetConfigurationSectionOrRoot(config, configSectionPath);
+                return new ConfigurationChangeTokenSource<TOptions>(optionsBuilder.Name, section);
+            });
+
             return optionsBuilder;
 
             static IConfiguration GetConfigurationSectionOrRoot(IConfiguration config,
