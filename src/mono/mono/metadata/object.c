@@ -1255,10 +1255,12 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 				mono_custom_attrs_free (ainfo);
 				return SPECIAL_STATIC_THREAD;
 			}
+#ifndef ENABLE_NETCORE
 			else if (strcmp (klass_name, "ContextStaticAttribute") == 0) {
 				mono_custom_attrs_free (ainfo);
 				return SPECIAL_STATIC_CONTEXT;
 			}
+#endif
 		}
 	}
 	mono_custom_attrs_free (ainfo);
