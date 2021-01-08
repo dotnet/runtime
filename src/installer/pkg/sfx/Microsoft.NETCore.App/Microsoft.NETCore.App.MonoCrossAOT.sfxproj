@@ -11,10 +11,6 @@
     <SharedFrameworkHostFileNameOverride>monocrossaot</SharedFrameworkHostFileNameOverride>
     <RuntimeIdentifiers>linux-x64;osx-x64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
-    <GetSharedFrameworkFilesForReadyToRunDependsOn>
-        AddRuntimeFilesToPackage;
-        AddFrameworkFilesToPackage
-    </GetSharedFrameworkFilesForReadyToRunDependsOn>
     <PublishReadyToRun>false</PublishReadyToRun>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
@@ -23,12 +19,6 @@
   <ItemGroup>
     <NativeRuntimeAsset Include="$(MonoCrossAOTDir)$(TargetCrossRid)\**" TargetPath="tools/" />
   </ItemGroup>
-
-  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
-  </Target>
-
-  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
-  </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />

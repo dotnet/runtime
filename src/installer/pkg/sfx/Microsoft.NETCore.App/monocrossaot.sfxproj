@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildMonoCrossAllTargets">
-  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildMonoCrossAllTargets">
 
   <PropertyGroup>
     <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">android-x64;android-arm64;android-x86;android-arm</MonoAotTargets>
