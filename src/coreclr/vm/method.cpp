@@ -5385,6 +5385,26 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod)
     return reinterpret_cast<LPVOID>(pFunc);
 #endif
 }
+
+#if defined(TARGET_X86)
+//*******************************************************************************
+void NDirectMethodDesc::EnsureStackArgumentSize()
+{
+    STANDARD_VM_CONTRACT;
+
+    if (ndirect.m_cbStackArgumentSize == 0xFFFF)
+    {
+        // Marshalling required check sets the stack size as side-effect when marshalling is not required.
+        if (MarshalingRequired())
+        {
+            // Generating interop stub sets the stack size as side-effect in all cases
+            MethodDesc* pStubMD;
+            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES, &pStubMD);
+        }
+    }
+}
+#endif
+
 #endif // CROSSGEN_COMPILE
 
 #if !defined(CROSSGEN_COMPILE)
@@ -5416,22 +5436,6 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
     // All NDirect calls all through the NDirect target, so if it's updated, then we won't go into
     // NDirectImportThunk().  In fact, backpatching the import thunk glue leads to race conditions.
     SetNDirectTarget((LPVOID)target);
-}
-
-void NDirectMethodDesc::EnsureStackArgumentSize()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (ndirect.m_cbStackArgumentSize == 0xFFFF)
-    {
-        // Marshalling required check sets the stack size as side-effect when marshalling is not required.
-        if (MarshalingRequired())
-        {
-            // Generating interop stub sets the stack size as side-effect in all cases
-            MethodDesc* pStubMD;
-            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES, &pStubMD);
-        }
-    }
 }
 #endif // !CROSSGEN_COMPILE
 
