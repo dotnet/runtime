@@ -17,11 +17,12 @@ using Xunit;
 
 namespace SampleSynthesisTests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No SAPI on Nano
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // No SAPI on Nano or Server Core
     public class SynthesizeRecognizeTests : FileCleanupTestBase
     {
         // Our Windows 7 and Windows 8.1 queues seem to have no recognizers installed
-        public static bool HasInstalledRecognizers => PlatformDetection.IsNotWindowsNanoServer && SpeechRecognitionEngine.InstalledRecognizers().Count > 0;
+        public static bool HasInstalledRecognizers => PlatformDetection.IsNotWindowsNanoNorServerCore &&
+                                                      SpeechRecognitionEngine.InstalledRecognizers().Count > 0;
 
         [ConditionalFact(nameof(HasInstalledRecognizers))]
         public void SpeechSynthesizerToSpeechRecognitionEngine()
