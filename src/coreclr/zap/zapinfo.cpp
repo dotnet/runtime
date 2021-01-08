@@ -1041,6 +1041,7 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
     {
         if (pgoResults->m_ftn == ftnHnd)
             break;
+        pgoResults = pgoResults->m_next;
     }
 
     if (pgoResults == nullptr)
@@ -1101,7 +1102,7 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
             return E_FAIL;
         }
 
-        ProfileDataResults* pgoResults = new ProfileDataResults(ftnHnd);
+        pgoResults = new ProfileDataResults(ftnHnd);
         pgoResults->m_next = m_pgoResults;
         m_pgoResults = pgoResults;
 
@@ -1121,6 +1122,7 @@ HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
             blockCountSchema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
             blockCountSchema.ILOffset = blockCounts[iSchema].ILOffset;
             blockCountSchema.Offset = (BYTE *)&blockCounts[iSchema].ExecutionCount - (BYTE*)blockCounts;
+            pgoResults->m_schema.Append(blockCountSchema);
         }
         pgoResults->m_hr = S_OK;
     }
