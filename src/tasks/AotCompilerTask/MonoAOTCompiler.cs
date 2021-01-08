@@ -174,11 +174,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 throw new ArgumentException($"'{nameof(AotModulesTableLanguage)}' must be one of: '{nameof(MonoAotModulesTableLanguage.C)}', '{nameof(MonoAotModulesTableLanguage.ObjC)}'. Received: '{AotModulesTableLanguage}'.", nameof(AotModulesTableLanguage));
         }
 
-        if (parsedAotMode == MonoAotMode.AotInterp && string.IsNullOrEmpty(AotProfilePath))
-        {
-            throw new ArgumentException($"AOT Profile Path must be defined to run in {nameof(MonoAotMode.AotInterp)}");
-        }
-
         if (!string.IsNullOrEmpty(AotModulesTablePath))
         {
             GenerateAotModulesTable(Assemblies, Profilers);
