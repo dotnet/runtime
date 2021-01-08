@@ -27,6 +27,12 @@
     <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(ArchiveTests)' == 'true'">
+    <RunScriptCommand>
+      $HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run $(AssemblyName).dll
+    </RunScriptCommand>
+  </PropertyGroup>
+
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
@@ -54,23 +60,10 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
 
-  <Target Name="PrepareRunScript" BeforeTargets="CopySampleAppToHelixTestDir" Condition="'$(ArchiveTests)' == 'true'" >
-    <PropertyGroup>
-      <RunScriptCommand>
-        $HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run $(AssemblyName).dll
-      </RunScriptCommand>
-    </PropertyGroup>
-
-    <MSBuild Projects ="$(RepoRoot)eng/testing/tests.targets"
-        Condition="'$(ArchiveTests)' == 'true'" 
-        Properties="OutDir=$(AppBundleDir);RunScriptInputPath=$(RepoRoot)eng/testing/WasmRunnerTemplate.sh;InstallerTasksAssemblyPath=$(RepoRoot)artifacts/obj/installer.tasks/Debug/netstandard2.0/installer.tasks.dll;RunScriptCommand=$(RunScriptCommand)" 
-        Targets="GenerateRunScript" />
-  </Target>
-
   <Target Name="CopySampleAppToHelixTestDir" 
           Condition="'$(ArchiveTests)' == 'true'" 
           AfterTargets="Build"
-          DependsOnTargets="Publish" >
+          DependsOnTargets="GenerateRunScript;Publish" >
     <PropertyGroup>
       <!-- Helix properties -->
       <!-- AnyCPU as Platform-->
@@ -84,5 +77,6 @@
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
   </Target>
 
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
+  <Import Condition="'$(ArchiveTests)' == 'true'" Project="$(RepoRoot)eng/testing/tests.targets" />
+  <Import Condition="'$(ArchiveTests)' != 'true'" Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>
