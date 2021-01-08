@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tracing
         internal static NativeRuntimeEventSource Log = new NativeRuntimeEventSource();
 
         // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as can't make a constructor partial.
+        // as you can't make a constructor partial.
         private NativeRuntimeEventSource(int _) { }
 
         /// <summary>

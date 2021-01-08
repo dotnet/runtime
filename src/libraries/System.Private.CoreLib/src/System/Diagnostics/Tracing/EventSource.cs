@@ -187,7 +187,7 @@ namespace Microsoft.Diagnostics.Tracing
 namespace System.Diagnostics.Tracing
 {
     [AttributeUsage(AttributeTargets.Class)]
-    public sealed class EventSourceAutoGenerateAttribute : Attribute
+    internal sealed class EventSourceAutoGenerateAttribute : Attribute
     {
     }
 

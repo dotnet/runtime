@@ -78,7 +78,7 @@ namespace System.Threading
         }
 
         // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as can't make a constructor partial.
+        // as you can't make a constructor partial.
         private PortableThreadPoolEventSource(int _) { }
 
         [NonEvent]
