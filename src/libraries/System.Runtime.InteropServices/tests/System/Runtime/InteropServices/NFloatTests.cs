@@ -47,26 +47,27 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(double.MaxValue, value.Value);
         }
 
-        [Theory]
-        [InlineData(789.0f, 789.0f, true)]
-        [InlineData(789.0f, -789.0f, false)]
-        [InlineData(789.0f, 0.0f, false)]
-        [InlineData(float.NaN, float.NaN, true)]
-        [InlineData(789.0f, 789.0, false)]
-        [InlineData(789.0f, "789", false)]
-        public static void EqualsTest(float f1, object obj, bool expected)
+        public static IEnumerable<object[]> EqualsData()
         {
-            if (obj is float f)
+            yield return new object[] { new NFloat(789.0f), new NFloat(789.0f), true };
+            yield return new object[] { new NFloat(789.0f), new NFloat(-789.0f), false };
+            yield return new object[] { new NFloat(789.0f), new NFloat(0.0f), false };
+            yield return new object[] { new NFloat(float.NaN), new NFloat(float.NaN), false };
+            yield return new object[] { new NFloat(789.0f), 789.0f, false };
+            yield return new object[] { new NFloat(789.0f), "789.0", false };
+        }
+
+        [Theory]
+        [MemberData(nameof(EqualsData))]
+        public void EqualsTest(NFloat f1, object obj, bool expected)
+        {
+            if (obj is NFloat f2)
             {
-                NFloat f2 = new NFloat(f);
-                Assert.Equal(expected, new NFloat(f1).Equals((object)f2));
-                Assert.Equal(expected, new NFloat(f1).Equals(f2));
-                Assert.Equal(expected, new NFloat(f1).GetHashCode().Equals(f2.GetHashCode()));
+                Assert.Equal(expected, f1.Equals((object)f2));
+                Assert.Equal(expected, f1.Equals(f2));
+                Assert.Equal(expected, f1.GetHashCode().Equals(f2.GetHashCode()));
             }
-            else
-            {
-                Assert.Equal(expected, new NFloat(f1).Equals(obj));
-            }
+            Assert.Equal(expected, f1.Equals(obj));
         }
 
         [Theory]

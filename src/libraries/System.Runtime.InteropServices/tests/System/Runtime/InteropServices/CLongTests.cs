@@ -52,29 +52,29 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(largeValue, value.Value);
         }
 
-        [Theory]
-        [InlineData(789, 789, true)]
-        [InlineData(789, -789, false)]
-        [InlineData(789, 0, false)]
-        [InlineData(0, 0, true)]
-        [InlineData(-789, -789, true)]
-        [InlineData(-789, 789, false)]
-        [InlineData(789, null, false)]
-        [InlineData(789, "789", false)]
-        [InlineData(789, (long)789, false)]
-        public static void EqualsTest(int i1, object obj, bool expected)
+        public static IEnumerable<object[]> EqualsData()
         {
-            if (obj is int i)
+            yield return new object[] { new CLong(789), new CLong(789), true };
+            yield return new object[] { new CLong(789), new CLong(-789), false };
+            yield return new object[] { new CLong(789), new CLong(0), false };
+            yield return new object[] { new CLong(0), new CLong(0), true };
+            yield return new object[] { new CLong(-789), new CLong(-789), true };
+            yield return new object[] { new CLong(-789), new CLong(789), false };
+            yield return new object[] { new CLong(789), null, false };
+            yield return new object[] { new CLong(789), "789", false };
+            yield return new object[] { new CLong(789), 789, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(EqualsData))]
+        public void EqualsTest(CLong clong, object obj, bool expected)
+        {
+            if (obj is CLong clong2)
             {
-                CLong i2 = new CLong(i);
-                Assert.Equal(expected, new CLong(i1).Equals((object)i2));
-                Assert.Equal(expected, new CLong(i1).Equals(i2));
-                Assert.Equal(expected, new CLong(i1).GetHashCode().Equals(i2.GetHashCode()));
+                Assert.Equal(expected, clong.Equals(clong2));
+                Assert.Equal(expected, clong.GetHashCode().Equals(clong2.GetHashCode()));
             }
-            else
-            {
-                Assert.Equal(expected, new CLong(i1).Equals(obj));
-            }
+            Assert.Equal(expected, clong.Equals(obj));
         }
 
         [Theory]

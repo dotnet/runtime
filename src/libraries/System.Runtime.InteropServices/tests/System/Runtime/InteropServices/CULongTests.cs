@@ -52,27 +52,28 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(largeValue, value.Value);
         }
 
-        [Theory]
-        [InlineData(789, 789, true)]
-        [InlineData(789, 0, false)]
-        [InlineData(0, 0, true)]
-        [InlineData(789, null, false)]
-        [InlineData(789, "789", false)]
-        [InlineData(789, (long)789, false)]
-        public static void EqualsTest(uint i1, object obj, bool expected)
+        public static IEnumerable<object[]> EqualsData()
         {
-            if (obj is uint i)
-            {
-                CULong i2 = new CULong(i);
-                Assert.Equal(expected, new CULong(i1).Equals((object)i2));
-                Assert.Equal(expected, new CULong(i1).Equals(i2));
-                Assert.Equal(expected, new CULong(i1).GetHashCode().Equals(i2.GetHashCode()));
-            }
-            else
-            {
-                Assert.Equal(expected, new CULong(i1).Equals(obj));
-            }
+            yield return new object[] { new CULong(789), new CULong(789), true };
+            yield return new object[] { new CULong(789), new CULong(0), false };
+            yield return new object[] { new CULong(0), new CULong(0), true };
+            yield return new object[] { new CULong(789), null, false };
+            yield return new object[] { new CULong(789), "789", false };
+            yield return new object[] { new CULong(789), 789u, false };
         }
+
+        [Theory]
+        [MemberData(nameof(EqualsData))]
+        public void EqualsTest(CULong culong, object obj, bool expected)
+        {
+            if (obj is CULong culong2)
+            {
+                Assert.Equal(expected, culong.Equals(culong2));
+                Assert.Equal(expected, culong.GetHashCode().Equals(culong2.GetHashCode()));
+            }
+            Assert.Equal(expected, culong.Equals(obj));
+        }
+
 
         [Theory]
         [InlineData(0, "0")]
