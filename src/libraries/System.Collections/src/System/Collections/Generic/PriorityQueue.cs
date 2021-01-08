@@ -150,7 +150,7 @@ namespace System.Collections.Generic
             _version++;
 
             // Restore the heap order
-            var lastNodeIndex = this.GetLastNodeIndex();
+            int lastNodeIndex = this.GetLastNodeIndex();
             this.MoveUp(node, lastNodeIndex);
         }
 
@@ -160,7 +160,7 @@ namespace System.Collections.Generic
         /// <exception cref="InvalidOperationException">The queue is empty.</exception>
         public TElement Peek()
         {
-            if (this.TryPeek(out var element, out var priority))
+            if (this.TryPeek(out TElement? element, out TPriority? priority))
             {
                 return element;
             }
@@ -177,7 +177,7 @@ namespace System.Collections.Generic
         /// <exception cref="InvalidOperationException">The queue is empty.</exception>
         public TElement Dequeue()
         {
-            if (this.TryDequeue(out var element, out var priority))
+            if (this.TryDequeue(out TElement? element, out TPriority? priority))
             {
                 return element;
             }
@@ -354,7 +354,7 @@ namespace System.Collections.Generic
             // The idea is to replace the specified node by the very last
             // node and shorten the array by one.
 
-            var lastNodeIndex = this.GetLastNodeIndex();
+            int lastNodeIndex = this.GetLastNodeIndex();
             var lastNode = _nodes[lastNodeIndex];
             _size--;
             _version++;
@@ -374,7 +374,7 @@ namespace System.Collections.Generic
 
             var nodeToRemove = _nodes[indexOfNodeToRemove];
 
-            var relation = this.Comparer.Compare(lastNode.priority, nodeToRemove.priority);
+            int relation = this.Comparer.Compare(lastNode.priority, nodeToRemove.priority);
             this.PutAt(lastNode, indexOfNodeToRemove);
 
             if (relation < 0)
@@ -424,10 +424,10 @@ namespace System.Collections.Generic
             // only for higher nodes, starting from the first node that has children.
             // It is the parent of the very last element in the array.
 
-            var lastNodeIndex = this.GetLastNodeIndex();
-            var lastParentWithChildren = this.GetParentIndex(lastNodeIndex);
+            int lastNodeIndex = this.GetLastNodeIndex();
+            int lastParentWithChildren = this.GetParentIndex(lastNodeIndex);
 
-            for (var index = lastParentWithChildren; index >= 0; --index)
+            for (int index = lastParentWithChildren; index >= 0; --index)
             {
                 this.MoveDown(_nodes[index], index);
             }
@@ -443,7 +443,7 @@ namespace System.Collections.Generic
 
             while (nodeIndex > 0)
             {
-                var parentIndex = this.GetParentIndex(nodeIndex);
+                int parentIndex = this.GetParentIndex(nodeIndex);
                 var parent = _nodes[parentIndex];
 
                 if (this.Comparer.Compare(node.priority, parent.priority) < 0)
@@ -475,7 +475,7 @@ namespace System.Collections.Generic
                 // Check if the current node (pointed by 'nodeIndex') should really be extracted
                 // first, or maybe one of its children should be extracted earlier.
                 var topChild = _nodes[i];
-                var childrenIndexesLimit = Math.Min(i + Arity, _size);
+                int childrenIndexesLimit = Math.Min(i + Arity, _size);
                 int topChildIndex = i;
 
                 while (++i < childrenIndexesLimit)
