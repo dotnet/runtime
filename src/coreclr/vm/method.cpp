@@ -5417,6 +5417,22 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
     // NDirectImportThunk().  In fact, backpatching the import thunk glue leads to race conditions.
     SetNDirectTarget((LPVOID)target);
 }
+
+void NDirectMethodDesc::EnsureStackArgumentSize()
+{
+    STANDARD_VM_CONTRACT;
+
+    if (ndirect.m_cbStackArgumentSize == 0xFFFF)
+    {
+        // Marshalling required check sets the stack size as side-effect when marshalling is not required.
+        if (MarshalingRequired())
+        {
+            // Generating interop stub sets the stack size as side-effect in all cases
+            MethodDesc* pStubMD;
+            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES, &pStubMD);
+        }
+    }
+}
 #endif // !CROSSGEN_COMPILE
 
 //*******************************************************************************

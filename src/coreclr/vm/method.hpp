@@ -3255,16 +3255,7 @@ public:
     }
 
 #if defined(TARGET_X86)
-    void EnsureStackArgumentSize()
-    {
-        STANDARD_VM_CONTRACT;
-
-        if (ndirect.m_cbStackArgumentSize == 0xFFFF)
-        {
-            // Computing if marshalling is required also computes the required stack size.
-            MarshalingRequired();
-        }
-    }
+    void EnsureStackArgumentSize();
 
     WORD GetStackArgumentSize() const
     {
