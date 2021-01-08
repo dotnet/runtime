@@ -1112,9 +1112,7 @@ public:
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
 #endif // FEATURE_HIJACK
 
-        TS_BlockGCForSO           = 0x00000100,    // If a thread does not have enough stack, WaitUntilGCComplete may fail.
-                                                   // Either GC suspension will wait until the thread has cleared this bit,
-                                                   // Or the current thread is going to spin if GC has suspended all threads.
+        // unused                 = 0x00000100,
         TS_Background             = 0x00000200,    // Thread is a background thread
         TS_Unstarted              = 0x00000400,    // Thread has never been started
         TS_Dead                   = 0x00000800,    // Thread is dead
