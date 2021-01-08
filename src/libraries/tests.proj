@@ -167,12 +167,20 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.Tests/Microsoft.Extensions.DependencyInjection.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.UnmanagedMemoryStream/tests/System.IO.UnmanagedMemoryStream.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections/tests/System.Collections.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets/tests/System.Net.WebSockets.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors/tests/System.Numerics.Vectors.Tests.csproj" />
 
     <!-- ArgumentNull_Generic Arg_ParamName_Name, type - https://github.com/dotnet/runtime/issues/46709 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Bcl.AsyncInterfaces/tests/Microsoft.Bcl.AsyncInterfaces.Tests.csproj" />
 
     <!-- Attempting to JIT compile method - https://github.com/dotnet/runtime/issues/46708 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition.Registration/tests/System.ComponentModel.Composition.Registration.Tests.csproj" />
+
+    <!-- invalid index into function table - https://github.com/dotnet/runtime/issues/46731 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj" />
+
+    <!-- IOCompressionBrotli_PlatformNotSupported -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli/tests/System.IO.Compression.Brotli.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
