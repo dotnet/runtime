@@ -59,7 +59,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="other">An <see cref="NFloat"/> value to compare to this instance.</param>
         /// <returns><c>true</c> if <paramref name="other"/> has the same value as this instance; otherwise, <c>false</c>.</returns>
-        public bool Equals(NFloat other) => _value == other._value;
+        public bool Equals(NFloat other) => _value.Equals(other._value);
 
         /// <summary>
         /// Returns the hash code for this instance.

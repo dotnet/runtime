@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             NFloat f1 = new NFloat(float.NaN);
             NFloat f2 = new NFloat(float.NaN);
-            Assert.Equal(f1.Value == f2.Value, f1.Equals(f2));
+            Assert.Equal(f1.Value.Equals(f2.Value), f1.Equals(f2));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
