@@ -303,4 +303,10 @@
   <data name="MapCsvFileOption" xml:space="preserve">
     <value>Generate a CSV formatted map file</value>
   </data>
+  <data name="DisableOptimizationsOption" xml:space="preserve">
+    <value>Disable optimizations to simplify debugging</value>
+  </data>
+  <data name="WarningOverridingOptimize" xml:space="preserve">
+    <value>Warning: -Od overrides other optimization options</value>
+  </data>
 </root>
