@@ -40,7 +40,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Specifies the arity of the d-ary heap, which here is quaternary.
         /// </summary>
-        private const int Arity = 4;
+        private const uint Arity = 4;
 
         /// <summary>
         /// Creates an empty priority queue.
@@ -402,13 +402,13 @@ namespace System.Collections.Generic
         /// Gets the index of an element's parent.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetParentIndex(int index) => (index - 1) / Arity;
+        private int GetParentIndex(int index) => (int)((index - 1) / Arity);
 
         /// <summary>
         /// Gets the index of the first child of an element.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetFirstChildIndex(int index) => Arity * index + 1;
+        private int GetFirstChildIndex(int index) => (int)(Arity * index + 1);
 
         /// <summary>
         /// Converts an unordered list into a heap.
@@ -471,7 +471,7 @@ namespace System.Collections.Generic
                 // Check if the current node (pointed by 'nodeIndex') should really be extracted
                 // first, or maybe one of its children should be extracted earlier.
                 var topChild = _nodes[i];
-                int childrenIndexesLimit = Math.Min(i + Arity, _size);
+                int childrenIndexesLimit = (int)Math.Min(i + Arity, _size);
                 int topChildIndex = i;
 
                 while (++i < childrenIndexesLimit)
