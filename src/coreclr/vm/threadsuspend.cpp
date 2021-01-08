@@ -2110,9 +2110,7 @@ void Thread::RareDisablePreemptiveGC()
 #endif // PROFILING_SUPPORTED
 
                 DWORD status = S_OK;
-                SetThreadStateNC(TSNC_WaitUntilGCFinished);
                 status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
-                ResetThreadStateNC(TSNC_WaitUntilGCFinished);
 
                 if (status == (DWORD)COR_E_STACKOVERFLOW)
                 {
@@ -2137,13 +2135,12 @@ void Thread::RareDisablePreemptiveGC()
                         break;
                     }
                 }
+
                 if (!GCHeapUtilities::IsGCInProgress())
                 {
                     if (HasThreadState(TS_StackCrawlNeeded))
                     {
-                        SetThreadStateNC(TSNC_WaitUntilGCFinished);
                         ThreadStore::WaitForStackCrawlEvent();
-                        ResetThreadStateNC(TSNC_WaitUntilGCFinished);
                     }
                 }
 
