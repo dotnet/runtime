@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -17,7 +18,20 @@ namespace System.Collections.Generic
         /// <summary>
         /// Represents an implicit heap-ordered complete d-ary tree, stored as an array.
         /// </summary>
-        private readonly List<(TElement element, TPriority priority)> _nodes;
+        private (TElement element, TPriority priority)[] _nodes;
+
+        /// <summary>
+        /// The number of nodes in the heap.
+        /// </summary>
+        private int _size;
+
+        /// <summary>
+        /// Used to keep enumerator in sync with the collection.
+        /// </summary>
+        private int _version;
+
+        private const int MinimumGrow = 4;
+        private const int GrowFactor = 200; // double each time
 
         private const int RootIndex = 0;
 
@@ -31,8 +45,8 @@ namespace System.Collections.Generic
         /// </summary>
         public PriorityQueue()
         {
-            _nodes = new List<(TElement, TPriority)>();
-            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
+            _nodes = Array.Empty<(TElement, TPriority)>();
+            this.UnorderedItems = new UnorderedItemsCollection(this);
             this.Comparer = Comparer<TPriority>.Default;
         }
 
@@ -46,8 +60,8 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(initialCapacity));
             }
 
-            _nodes = new List<(TElement, TPriority)>(initialCapacity);
-            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
+            _nodes = new (TElement, TPriority)[initialCapacity];
+            this.UnorderedItems = new UnorderedItemsCollection(this);
             this.Comparer = Comparer<TPriority>.Default;
         }
 
@@ -56,8 +70,8 @@ namespace System.Collections.Generic
         /// </summary>
         public PriorityQueue(IComparer<TPriority>? comparer)
         {
-            _nodes = new List<(TElement, TPriority)>();
-            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
+            _nodes = Array.Empty<(TElement, TPriority)>();
+            this.UnorderedItems = new UnorderedItemsCollection(this);
             this.Comparer = comparer ?? Comparer<TPriority>.Default;
         }
 
@@ -72,8 +86,8 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(initialCapacity));
             }
 
-            _nodes = new List<(TElement, TPriority)>(initialCapacity);
-            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
+            _nodes = new (TElement, TPriority)[initialCapacity];
+            this.UnorderedItems = new UnorderedItemsCollection(this);
             this.Comparer = comparer ?? Comparer<TPriority>.Default;
         }
 
@@ -87,11 +101,11 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(items));
             }
 
-            _nodes = new List<(TElement, TPriority)>(items);
-            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
+            _nodes = EnumerableHelpers.ToArray(items, out _size);
+            this.UnorderedItems = new UnorderedItemsCollection(this);
             this.Comparer = Comparer<TPriority>.Default;
 
-            if (_nodes.Count > 1)
+            if (_size > 1)
             {
                 this.Heapify();
             }
@@ -108,11 +122,11 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(items));
             }
 
-            _nodes = new List<(TElement, TPriority)>(items);
-            this.UnorderedItems = new UnorderedItemsCollection(_nodes);
+            _nodes = EnumerableHelpers.ToArray(items, out _size);
+            this.UnorderedItems = new UnorderedItemsCollection(this);
             this.Comparer = comparer ?? Comparer<TPriority>.Default;
 
-            if (_nodes.Count > 1)
+            if (_size > 1)
             {
                 this.Heapify();
             }
@@ -121,7 +135,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the current amount of items in the priority queue.
         /// </summary>
-        public int Count => _nodes.Count;
+        public int Count => _size;
 
         /// <summary>
         /// Gets the priority comparer of the priority queue.
@@ -143,9 +157,13 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(priority));
             }
 
+            this.EnsureEnoughCapacityBeforeAddingNode();
+
             // Add the node at the end
             var node = (element, priority);
-            _nodes.Add(node);
+            _nodes[_size] = node;
+            _size++;
+            _version++;
 
             // Restore the heap order
             var lastNodeIndex = this.GetLastNodeIndex();
@@ -194,7 +212,7 @@ namespace System.Collections.Generic
         /// </returns>
         public bool TryDequeue([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
         {
-            if (_nodes.Count == 0)
+            if (_size == 0)
             {
                 element = default;
                 priority = default;
@@ -216,7 +234,7 @@ namespace System.Collections.Generic
         /// </returns>
         public bool TryPeek([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
         {
-            if (_nodes.Count == 0)
+            if (_size == 0)
             {
                 element = default;
                 priority = default;
@@ -274,7 +292,13 @@ namespace System.Collections.Generic
         /// </summary>
         public void Clear()
         {
-            _nodes.Clear();
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<(TElement, TPriority)>())
+            {
+                // Clear the elements so that the gc can reclaim the references
+                Array.Clear(_nodes, 0, _size);
+            }
+            _size = 0;
+            _version++;
         }
 
         /// <summary>
@@ -288,12 +312,12 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             }
 
-            if (capacity <= _nodes.Count)
+            if (capacity <= _size)
             {
                 return;
             }
 
-            _nodes.Capacity = capacity;
+            this.SetCapacity(capacity);
         }
 
         /// <summary>
@@ -302,7 +326,40 @@ namespace System.Collections.Generic
         /// </summary>
         public void TrimExcess()
         {
-            _nodes.TrimExcess();
+            int threshold = (int)(((double)_nodes.Length) * 0.9);
+            if (_size < threshold)
+            {
+                Array.Resize(ref _nodes, _size);
+                _version++;
+            }
+        }
+
+        private void EnsureEnoughCapacityBeforeAddingNode()
+        {
+            if (_size == _nodes.Length)
+            {
+                int newCapacity = (int)((long)_nodes.Length * (long)GrowFactor / 100);
+                if (newCapacity < _nodes.Length + MinimumGrow)
+                {
+                    newCapacity = _nodes.Length + MinimumGrow;
+                }
+                this.SetCapacity(newCapacity);
+            }
+        }
+
+        /// <summary>
+        /// Grows or shrinks the array holding nodes. Capacity must be >= _size.
+        /// </summary>
+        private void SetCapacity(int capacity)
+        {
+            var newArray = new (TElement, TPriority)[capacity];
+
+            if (_size > 0)
+            {
+                Array.Copy(_nodes, 0, newArray, 0, _size);
+            }
+
+            _nodes = newArray;
         }
 
         /// <summary>
@@ -315,7 +372,8 @@ namespace System.Collections.Generic
 
             var lastNodeIndex = this.GetLastNodeIndex();
             var lastNode = _nodes[lastNodeIndex];
-            _nodes.RemoveAt(lastNodeIndex);
+            _size--;
+            _version++;
 
             // In case we wanted to remove the node that was the last one,
             // we are done.
@@ -358,7 +416,7 @@ namespace System.Collections.Generic
         /// Gets the index of the last node in the heap.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetLastNodeIndex() => _nodes.Count - 1;
+        private int GetLastNodeIndex() => _size - 1;
 
         /// <summary>
         /// Gets the index of an element's parent.
@@ -428,12 +486,12 @@ namespace System.Collections.Generic
             // for this value to drop in. Similar optimization as in the insertion sort.
 
             int i;
-            while ((i = this.GetFirstChildIndex(nodeIndex)) < _nodes.Count)
+            while ((i = this.GetFirstChildIndex(nodeIndex)) < _size)
             {
                 // Check if the current node (pointed by 'nodeIndex') should really be extracted
                 // first, or maybe one of its children should be extracted earlier.
                 var topChild = _nodes[i];
-                var childrenIndexesLimit = Math.Min(i + Arity, _nodes.Count);
+                var childrenIndexesLimit = Math.Min(i + Arity, _size);
                 int topChildIndex = i;
 
                 while (++i < childrenIndexesLimit)
@@ -469,14 +527,14 @@ namespace System.Collections.Generic
 
         public partial class UnorderedItemsCollection : IReadOnlyCollection<(TElement element, TPriority priority)>, ICollection
         {
-            private readonly IReadOnlyCollection<(TElement element, TPriority priority)> items;
+            private readonly PriorityQueue<TElement, TPriority> _queue;
 
-            public UnorderedItemsCollection(IReadOnlyCollection<(TElement element, TPriority priority)> items)
+            public UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue)
             {
-                this.items = items;
+                _queue = queue;
             }
 
-            public int Count => this.items.Count;
+            public int Count => _queue._size;
             object ICollection.SyncRoot => this;
             bool ICollection.IsSynchronized => false;
 
@@ -484,31 +542,119 @@ namespace System.Collections.Generic
 
             public struct Enumerator : IEnumerator<(TElement element, TPriority priority)>, IEnumerator
             {
-                private readonly IEnumerator<(TElement element, TPriority priority)> enumerator;
+                private readonly PriorityQueue<TElement, TPriority> _queue;
+                private readonly int _version;
 
-                internal Enumerator(System.Collections.Generic.IEnumerator<(TElement element, TPriority priority)> enumerator)
+                private int _index;
+                private (TElement element, TPriority priority)? _currentElement;
+
+                private const int FirstCallToEnumerator = -2;
+                private const int EndOfEnumeration = -1;
+
+                internal Enumerator(PriorityQueue<TElement, TPriority> queue)
                 {
-                    this.enumerator = enumerator;
+                    _queue = queue;
+                    _version = queue._version;
+                    _index = FirstCallToEnumerator;
+                    _currentElement = default;
                 }
 
-                (TElement element, TPriority priority) IEnumerator<(TElement element, TPriority priority)>.Current
-                    => this.enumerator.Current;
+                public void Dispose()
+                {
+                    _index = EndOfEnumeration;
+                }
 
-                object IEnumerator.Current => this.enumerator.Current;
+                public bool MoveNext()
+                {
+                    bool advancedEnumerator;
 
-                void IDisposable.Dispose() => this.enumerator.Dispose();
-                bool IEnumerator.MoveNext() => this.enumerator.MoveNext();
-                void IEnumerator.Reset() => this.enumerator.Reset();
+                    if (_version != _queue._version)
+                    {
+                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    }
+
+                    if (_index == FirstCallToEnumerator)
+                    {
+                        _index = 0;
+                        advancedEnumerator = (_queue._size > 0);
+
+                        if (advancedEnumerator)
+                        {
+                            _currentElement = _queue._nodes[_index];
+                        }
+                        else
+                        {
+                            _index = EndOfEnumeration;
+                        }
+
+                        return advancedEnumerator;
+                    }
+
+                    if (_index == EndOfEnumeration)
+                    {
+                        return false;
+                    }
+
+                    _index++;
+                    advancedEnumerator = (_index < _queue._size);
+
+                    if (advancedEnumerator)
+                    {
+                        _currentElement = _queue._nodes[_index];
+                    }
+                    else
+                    {
+                        _currentElement = default;
+                    }
+
+                    return advancedEnumerator;
+                }
+
+                public (TElement element, TPriority priority) Current
+                {
+                    get
+                    {
+                        if (_index < 0)
+                        {
+                            ThrowEnumerationNotStartedOrEnded();
+                        }
+                        return _currentElement!.Value;
+                    }
+                }
+
+                private void ThrowEnumerationNotStartedOrEnded()
+                {
+                    Debug.Assert(_index == FirstCallToEnumerator || _index == EndOfEnumeration);
+
+                    string message = _index == FirstCallToEnumerator
+                        ? SR.InvalidOperation_EnumNotStarted
+                        : SR.InvalidOperation_EnumEnded;
+
+                    throw new InvalidOperationException(message);
+                }
+
+                object IEnumerator.Current => this.Current;
+
+                void IEnumerator.Reset()
+                {
+                    if (_version != _queue._version)
+                    {
+                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    }
+
+                    _index = FirstCallToEnumerator;
+                    _currentElement = default;
+                }
             }
 
             public Enumerator GetEnumerator()
-                => new Enumerator(this.items.GetEnumerator());
+                => new Enumerator(this._queue);
 
             IEnumerator<(TElement element, TPriority priority)> IEnumerable<(TElement element, TPriority priority)>.GetEnumerator()
-                => new Enumerator(this.items.GetEnumerator());
+                => new Enumerator(this._queue);
 
             IEnumerator IEnumerable.GetEnumerator()
-                => new Enumerator(this.items.GetEnumerator());
+                => new Enumerator(this._queue);
         }
     }
 }

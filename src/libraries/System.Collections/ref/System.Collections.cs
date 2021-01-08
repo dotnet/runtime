@@ -403,7 +403,7 @@ namespace System.Collections.Generic
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
         public partial class UnorderedItemsCollection : System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)>, System.Collections.Generic.IReadOnlyCollection<(TElement element, TPriority priority)>, System.Collections.ICollection, System.Collections.IEnumerable
         {
-            public UnorderedItemsCollection(IReadOnlyCollection<(TElement element, TPriority priority)> items) { }
+            public UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue) { }
             public int Count { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
@@ -414,10 +414,11 @@ namespace System.Collections.Generic
             public partial struct Enumerator : System.Collections.Generic.IEnumerator<(TElement element, TPriority priority)>, System.Collections.IEnumerator, System.IDisposable
             {
                 (TElement element, TPriority priority) IEnumerator<(TElement element, TPriority priority)>.Current { get { throw null; } }
+                public void Dispose() { }
+                public bool MoveNext() { throw null; }
+                public (TElement element, TPriority priority) Current { get { throw null; } }
                 object System.Collections.IEnumerator.Current { get { throw null; } }
-                bool System.Collections.IEnumerator.MoveNext() { throw null; }
                 void System.Collections.IEnumerator.Reset() { }
-                void System.IDisposable.Dispose() { }
             }
         }
     }
