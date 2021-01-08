@@ -587,10 +587,11 @@ namespace System.Net
         private static bool TryGetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken, out Task t)
              where T : class
         {
+            ValueStopwatch stopwatch = ValueStopwatch.StartNew();
             if (NameResolutionPal.TryGetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken, out Task task))
             {
                 //return new Tuple<bool, Task>(true, (Task)InternalGetAddrInfoWithTelemetryAsync(task, hostName));
-                t  = InternalGetAddrInfoWithTelemetryAsync(task, hostName);
+                t  = InternalGetAddrInfoWithTelemetryAsync(task, hostName, stopwatch);
                 return true;
             }
 
@@ -600,9 +601,9 @@ namespace System.Net
             t = Task.CompletedTask;
             return false;
 
-            static async Task<T> InternalGetAddrInfoWithTelemetryAsync(Task task, string hostName)
+            static async Task<T> InternalGetAddrInfoWithTelemetryAsync(Task task, string hostName, ValueStopwatch stopwatch)
             {
-                ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+                _  = NameResolutionTelemetry.Log.BeforeResolution(hostName);
                 T? result = null;
                 try
                 {
