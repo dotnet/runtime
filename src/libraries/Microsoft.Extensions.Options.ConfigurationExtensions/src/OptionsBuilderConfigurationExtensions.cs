@@ -65,12 +65,18 @@ namespace Microsoft.Extensions.DependencyInjection
 
             optionsBuilder.Configure<IConfiguration>((opts, config) =>
             {
-                IConfiguration section = string.Equals("", configSectionPath, StringComparison.OrdinalIgnoreCase)
-                    ? config
-                    : config.GetSection(configSectionPath);
+                IConfiguration section = GetConfigurationSectionOrRoot(config, configSectionPath);
                 section.Bind(opts, configureBinder);
             });
             return optionsBuilder;
+
+            static IConfiguration GetConfigurationSectionOrRoot(IConfiguration config,
+                string configSectionPath)
+            {
+                return string.Equals("", configSectionPath, StringComparison.OrdinalIgnoreCase)
+                    ? config
+                    : config.GetSection(configSectionPath);
+            }
         }
     }
 }
