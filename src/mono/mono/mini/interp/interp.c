@@ -362,6 +362,7 @@ clear_resume_state (ThreadContext *context)
 	g_assert (context->exc_gchandle);
 	mono_gchandle_free_internal (context->exc_gchandle);
 	context->exc_gchandle = 0;
+	context->safepoint_frame = NULL;
 }
 
 /*
@@ -420,12 +421,27 @@ interp_free_context (gpointer ctx)
 		set_context (NULL);
 	}
 
+	context->safepoint_frame = NULL;
+
 	mono_vfree (context->stack_start, INTERP_STACK_SIZE, MONO_MEM_ACCOUNT_INTERP_STACK);
 	/* Prevent interp_mark_stack from trying to scan the data_stack, before freeing it */
 	context->stack_start = NULL;
 	mono_compiler_barrier ();
 	frame_data_allocator_free (&context->data_stack);
 	g_free (context);
+}
+
+static void
+context_set_safepoint_frame (ThreadContext *context, InterpFrame *frame)
+{
+	g_assert (!context->has_resume_state);
+	context->safepoint_frame = frame;
+}
+
+static void
+context_clear_safepoint_frame (ThreadContext *context)
+{
+	context->safepoint_frame = NULL;
 }
 
 void
@@ -2014,6 +2030,7 @@ interp_entry (InterpEntryData *data)
 	context->stack_pointer = (guchar*)sp;
 
 	g_assert (!context->has_resume_state);
+	g_assert (!context->safepoint_frame);
 
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
@@ -5218,9 +5235,11 @@ call:
 		MINT_IN_CASE(MINT_SAFEPOINT)
 			/* Do synchronous checking of abort requests */
 			EXCEPTION_CHECKPOINT;
+			context_set_safepoint_frame (context, frame);
 			/* Poll safepoint */
 			mono_threads_safepoint ();
 			++ip;
+			context_clear_safepoint_frame (context);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLDA_UNSAFE) {
 			sp[-1].data.p = (char*)sp [-1].data.o + ip [1];
@@ -7574,20 +7593,36 @@ interp_metadata_update_init (MonoError *error)
 		mono_error_set_execution_engine (error, "Interpreter inlining must be turned off for metadata updates");
 }
 
-static void
-interp_invalidate_transformed (MonoDomain *domain)
-{
-	gboolean need_stw_restart = FALSE;
 #ifdef ENABLE_METADATA_UPDATE
-	need_stw_restart = TRUE;
+static void
+metadata_update_backup_frames (MonoDomain *domain, MonoThreadInfo *info, InterpFrame *frame)
+{
+	while (frame) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, copy imethod for method=%s", info, mono_method_full_name (frame->imethod->method, 1));
+		copy_imethod_for_frame (domain, frame);
+		frame = frame->parent;
+	}
+}
 
-	mono_gc_stop_world ();
+static void
+metadata_update_prepare_to_invalidate (MonoDomain *domain)
+{
 	/* (1) make a copy of imethod for every interpframe that is on the stack,
 	 * so we do not invalidate currently running methods */
 
 	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
-		if (!info)
+		if (!info || !info->jit_data)
 			continue;
+
+		ThreadContext *context = (ThreadContext*)info->jit_data->interp_context;
+
+		/* If the thread was in the interpreter and hit a safepoint
+		 * opcode and suspended, backup the frames since the last lmf.
+		 */
+		if (context && context->safepoint_frame) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, has safepoint frame %p", info, context->safepoint_frame);
+			metadata_update_backup_frames (domain, info, context->safepoint_frame);
+		}
 
 		MonoLMF *lmf = info->jit_data->lmf;
 		while (lmf) {
@@ -7595,11 +7630,7 @@ interp_invalidate_transformed (MonoDomain *domain)
 				MonoLMFExt *ext = (MonoLMFExt *) lmf;
 				if (ext->kind == MONO_LMFEXT_INTERP_EXIT || ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX) {
 					InterpFrame *frame = ext->interp_exit_data;
-					while (frame) {
-						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, copy imethod for method=%s", info, mono_method_full_name (frame->imethod->method, 1));
-						copy_imethod_for_frame (domain, frame);
-						frame = frame->parent;
-					}
+					metadata_update_backup_frames (domain, info, frame);
 				}
 			}
 			lmf = (MonoLMF *)(((gsize) lmf->previous_lmf) & ~3);
@@ -7607,6 +7638,18 @@ interp_invalidate_transformed (MonoDomain *domain)
 	} FOREACH_THREAD_END
 
 	/* (2) invalidate all the registered imethods */
+}
+#endif
+
+
+static void
+interp_invalidate_transformed (MonoDomain *domain)
+{
+	gboolean need_stw_restart = FALSE;
+#ifdef ENABLE_METADATA_UPDATE
+	need_stw_restart = TRUE;
+	mono_gc_stop_world ();
+	metadata_update_prepare_to_invalidate (domain);
 #endif
 	MonoJitDomainInfo *info = domain_jit_info (domain);
 	mono_domain_jit_code_hash_lock (domain);
