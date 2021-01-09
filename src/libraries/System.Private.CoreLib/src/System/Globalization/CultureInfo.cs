@@ -170,6 +170,7 @@ namespace System.Globalization
 
             // Get our data providing record
             CultureData? cultureData = CultureData.GetCultureData(name, useUserOverride);
+
             if (cultureData == null)
             {
                 throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
@@ -196,6 +197,7 @@ namespace System.Globalization
             {
                 return null;
             }
+
             return new CultureInfo(cultureData);
         }
 
@@ -329,6 +331,7 @@ namespace System.Globalization
             {
                 return culture;
             }
+
             return new CultureInfo(culture._cultureData.SpecificCultureName);
         }
 
@@ -1091,6 +1094,7 @@ namespace System.Globalization
                     return result;
                 }
             }
+
             result = CreateCultureInfoNoThrow(name, useUserOverride: false) ??
                 throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
             result._isReadOnly = true;
