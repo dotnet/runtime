@@ -116,8 +116,7 @@ static bool OpenLibrary()
     return libssl != NULL;
 }
 
-__attribute__((constructor))
-static void InitializeOpenSSLShim()
+void InitializeOpenSSLShim(void)
 {
     if (!OpenLibrary())
     {
