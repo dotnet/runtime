@@ -69,7 +69,7 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        private async Task OutputTabsAsync()
+        protected virtual async Task OutputTabsAsync()
         {
             if (_tabsPending)
             {
@@ -192,6 +192,11 @@ namespace System.CodeDom.Compiler
         public void WriteLineNoTabs(string? s)
         {
             _writer.WriteLine(s);
+        }
+
+        public Task WriteLineNoTabsAsync(string? s)
+        {
+            return _writer.WriteLineAsync(s);
         }
 
         public override void WriteLine(string? s)

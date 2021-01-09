@@ -5160,6 +5160,7 @@ namespace System.CodeDom.Compiler
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync() => throw null;
         protected virtual void OutputTabs() { }
+        protected virtual System.Threading.Tasks.Task OutputTabsAsync() => throw null;
         public override void Write(bool value) { }
         public override void Write(char value) { }
         public override void Write(char[]? buffer) { }
@@ -5195,6 +5196,7 @@ namespace System.CodeDom.Compiler
         [System.CLSCompliantAttribute(false)]
         public override void WriteLine(uint value) { }
         public void WriteLineNoTabs(string? s) { }
+        public System.Threading.Tasks.Task WriteLineNoTabsAsync(string? s) => throw null;
         public override System.Threading.Tasks.Task WriteLineAsync() => throw null;
         public override System.Threading.Tasks.Task WriteLineAsync(char value) => throw null;
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) => throw null;
