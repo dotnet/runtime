@@ -13566,7 +13566,6 @@ void Compiler::fgComputeBlockAndEdgeWeights()
     JITDUMP("*************** In fgComputeBlockAndEdgeWeights()\n");
 
     const bool usingProfileWeights = fgIsUsingProfileWeights();
-    const bool isOptimizing        = opts.OptimizationEnabled();
 
     fgModified             = false;
     fgHaveValidEdgeWeights = false;
@@ -13591,14 +13590,7 @@ void Compiler::fgComputeBlockAndEdgeWeights()
         JITDUMP(" -- no profile data, so using default called count\n");
     }
 
-    if (usingProfileWeights && isOptimizing)
-    {
-        fgComputeEdgeWeights();
-    }
-    else
-    {
-        JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
-    }
+    fgComputeEdgeWeights();
 }
 
 //-------------------------------------------------------------
@@ -13805,6 +13797,15 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
 
 void Compiler::fgComputeEdgeWeights()
 {
+    const bool isOptimizing        = opts.OptimizationEnabled();
+    const bool usingProfileWeights = fgIsUsingProfileWeights();
+
+    if (!isOptimizing || !usingProfileWeights)
+    {
+        JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
+        return;
+    }
+
     BasicBlock*          bSrc;
     BasicBlock*          bDst;
     flowList*            edge;
