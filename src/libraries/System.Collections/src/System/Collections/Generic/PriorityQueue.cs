@@ -231,7 +231,32 @@ namespace System.Collections.Generic
         /// </summary>
         public TElement EnqueueDequeue(TElement element, TPriority priority)
         {
-            throw new NotImplementedException();
+            if (element is null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
+            if (priority is null)
+            {
+                throw new ArgumentNullException(nameof(priority));
+            }
+
+            var root = _nodes[RootIndex];
+
+            if (this.Comparer.Compare(priority, root.priority) < 0)
+            {
+                return element;
+            }
+            else
+            {
+                var newRoot = (element, priority);
+                _nodes[RootIndex] = newRoot;
+
+                MoveDown(newRoot, RootIndex);
+                _version++;
+
+                return root.element;
+            }
         }
 
         /// <summary>
