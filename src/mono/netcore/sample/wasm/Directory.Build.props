@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <Configuration>Release</Configuration>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <OutputType>Exe</OutputType>
+
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.props"/>
+
+  <PropertyGroup>
+    <OutputPath>bin</OutputPath>
+    <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
+  </PropertyGroup>
+
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.props" />
+</Project>
