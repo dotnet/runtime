@@ -2749,7 +2749,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
-        // When that is the case, we have the build the custom assemblies on a member by hand.
+        // When that is the case, we have to build the custom assemblies on a member by hand.
         internal static bool IsCustomAttributeDefinedHelper(
             MemberInfo member,
             Type attributeType,
@@ -2759,7 +2759,7 @@ namespace System.Diagnostics.Tracing
             // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
             if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
             {
-                // Let the runtime to the work for us, since we can execute code in this context.
+                // Let the runtime do the work for us, since we can execute code in this context.
                 return member.IsDefined(attributeType, inherit: false);
             }
 
@@ -2789,7 +2789,7 @@ namespace System.Diagnostics.Tracing
             // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
             if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
             {
-                // Let the runtime to the work for us, since we can execute code in this context.
+                // Let the runtime do the work for us, since we can execute code in this context.
                 return member.GetCustomAttribute(attributeType, inherit: false);
             }
 
