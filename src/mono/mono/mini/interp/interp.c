@@ -362,7 +362,6 @@ clear_resume_state (ThreadContext *context)
 	g_assert (context->exc_gchandle);
 	mono_gchandle_free_internal (context->exc_gchandle);
 	context->exc_gchandle = 0;
-	context->safepoint_frame = NULL;
 }
 
 /*
@@ -5235,11 +5234,13 @@ call:
 		MINT_IN_CASE(MINT_SAFEPOINT)
 			/* Do synchronous checking of abort requests */
 			EXCEPTION_CHECKPOINT;
-			context_set_safepoint_frame (context, frame);
-			/* Poll safepoint */
-			mono_threads_safepoint ();
+			if (G_UNLIKELY (mono_polling_required)) {
+				context_set_safepoint_frame (context, frame);
+				/* Poll safepoint */
+				mono_threads_safepoint ();
+				context_clear_safepoint_frame (context);
+			}
 			++ip;
-			context_clear_safepoint_frame (context);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLDA_UNSAFE) {
 			sp[-1].data.p = (char*)sp [-1].data.o + ip [1];
