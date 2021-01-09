@@ -794,22 +794,11 @@ MulticoreJitRecorder::WriteMulticoreJitProfiler(PTP_CALLBACK_INSTANCE pInstance,
     {
         THROWS;
         GC_TRIGGERS;
+        CAN_TAKE_LOCK;
     } CONTRACTL_END;
 
-    // Avoid saving after MulticoreJitRecorder is deleted, and saving twice
-    if (! CloseTimer())
-    {
-        return;
-    }
-
-    MulticoreJitRecorder * pRecorder = (MulticoreJitRecorder *) pvContext;
-
-    if (pRecorder != NULL)
-    {
-        {
-            pRecorder->StopProfile(false);
-        }
-    }
+    MulticoreJitManager * pManager = (MulticoreJitManager *) pvContext;
+    pManager->WriteMulticoreJitProfiler();
 }
 
 #endif // !TARGET_UNIX
@@ -836,7 +825,8 @@ void MulticoreJitRecorder::PreRecordFirstMethod()
 
 #ifndef TARGET_UNIX
         // Using the same threadpool timer used by UsageLog to write out profile when running under Appx or CoreCLR.
-        s_delayedWriteTimer = CreateThreadpoolTimer(WriteMulticoreJitProfiler, this, NULL);
+        MulticoreJitManager & manager = m_pDomain->GetMulticoreJitManager();
+        s_delayedWriteTimer = CreateThreadpoolTimer(MulticoreJitRecorder::WriteMulticoreJitProfiler, &manager, NULL);
 
         if (s_delayedWriteTimer != NULL)
         {
@@ -1396,7 +1386,7 @@ MulticoreJitManager::~MulticoreJitManager()
 }
 
 
-// Threading: proected by m_playerLock
+// Threading: protected by m_playerLock
 
 void MulticoreJitManager::RecordModuleLoad(Module * pModule, FileLoadLevel loadLevel)
 {
@@ -1424,7 +1414,7 @@ void MulticoreJitManager::RecordModuleLoad(Module * pModule, FileLoadLevel loadL
 
 
 // Call back from MethodDesc::MakeJitWorker for
-// Threading: proected by m_playerLock
+// Threading: protected by m_playerLock
 
 MulticoreJitCodeInfo MulticoreJitManager::RequestMethodCode(MethodDesc * pMethod)
 {
@@ -1448,7 +1438,7 @@ MulticoreJitCodeInfo MulticoreJitManager::RequestMethodCode(MethodDesc * pMethod
 
 
 // Call back from MethodDesc::MakeJitWorker for
-// Threading: proected by m_playerLock
+// Threading: protected by m_playerLock
 
 void MulticoreJitManager::RecordMethodJit(MethodDesc * pMethod)
 {
@@ -1507,6 +1497,30 @@ void MulticoreJitManager::StopProfileAll()
         }
     }
 }
+
+#ifndef TARGET_UNIX
+void MulticoreJitManager::WriteMulticoreJitProfiler()
+{
+    CONTRACTL
+    {
+        THROWS;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    CrstHolder hold(& m_playerLock);
+
+    // Avoid saving after MulticoreJitRecorder is deleted, and saving twice
+    if (!MulticoreJitRecorder::CloseTimer())
+    {
+        return;
+    }
+    if (m_pMulticoreJitRecorder != NULL)
+    {
+        m_pMulticoreJitRecorder->StopProfile(false);
+    }
+}
+#endif // !TARGET_UNIX
 
 // static
 // Stop all multicore Jitting in the current process, called from ProfilingAPIUtility::LoadProfiler
