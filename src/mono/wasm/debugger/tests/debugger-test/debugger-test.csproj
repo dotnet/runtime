@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ExtraFileForPublish Include="debugger-driver.html" />
-    <ExtraFileForPublish Include="other.js" />
-    <ExtraFileForPublish Include="runtime-debugger.js" />
+    <WasmExtraFileForPublish Include="debugger-driver.html" />
+    <WasmExtraFileForPublish Include="other.js" />
+    <WasmExtraFileForPublish Include="runtime-debugger.js" />
 
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" Private="true"/>
@@ -34,7 +34,7 @@
 
       <WasmAssembliesToBundle Include="$(_JavaScriptDllPath)" />
 
-      <ExtraFileForPublish Include="@(ReferenceCopyLocalPaths)" />
+      <WasmExtraFileForPublish Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ExtraFileForPublish)" DestinationFolder="$(AppDir)" />

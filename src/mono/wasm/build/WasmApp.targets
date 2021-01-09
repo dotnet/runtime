@@ -10,6 +10,10 @@
       - WasmBuildDir    - Directory where build artifacts are stored.
       - WasmBuildNative - Whenever to build the native executable. Defaults to false.
       - WasmNativeStrip - Whenever to strip the native executable. Defaults to true.
+
+      Public items:
+      - WasmExtraFilesToDeploy - Files to copy to $(WasmBuildDir).
+                                 (relative path can be set via %(TargetPath) metadata)
   -->
 
   <PropertyGroup>
@@ -91,6 +95,7 @@
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       IcuDataFileName="$(WasmIcuDataFileName)"
       RemoteSources="@(WasmRemoteSources)"
+      ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       DebugLevel="$(WasmDebugLevel)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
