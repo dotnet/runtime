@@ -105,7 +105,7 @@
       <_managedAppAssemblies Include="$(WasmAppDir)managed\*.dll"/>
     </ItemGroup>
     <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
-    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip -q %(_managedAppAssemblies.Identity)" />
   </Target>
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp" Condition="'$(WasmBuildNative)' == 'true'">
