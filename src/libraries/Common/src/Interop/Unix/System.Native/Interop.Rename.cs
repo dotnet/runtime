@@ -8,6 +8,16 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        ///<summary>Flags to call to Rename</summary>
+        [Flags] internal enum RenameFlags : int {
+            ///<summary>no flags set</summary>
+            None = 0,
+            ///<summary>Replace newPath if it exists</summary>
+            Replace = 1,
+            ///<summary>Rename is operating on a directory; that is, called from Directory.Move</summary>
+            Directory = 2,
+        }
+
         /// <summary>
         /// Renames a file, moving to the correct destination if necessary. There are many edge cases to this call, check man 2 rename for more info
         /// </summary>
@@ -19,6 +29,6 @@ internal static partial class Interop
         /// </returns>
         /// <remarks>clobber may be implemented in terms of stat() depending on platform; not all races can be eliminated</remarks>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Rename", SetLastError = true)]
-        internal static extern int Rename(string oldPath, string newPath, int flags);
+        internal static extern int Rename(string oldPath, string newPath, RenameFlags flags);
     }
 }

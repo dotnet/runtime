@@ -1003,7 +1003,7 @@ int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize
 
 // Potential issue: renaming a file onto another link to itself can decrease the total link count of the file.
 // We could only fix this if there were a way to ask the filesystem if two dnodes were identical, but there isn't.
-static int32_t RenameOnEexist(int32_t oldResult, struct stat *targetBuf, const char *oldPath, const char *newPath)
+static int32_t RenameToSelf(int32_t oldResult, struct stat *targetBuf, const char *oldPath, const char *newPath)
 {
     struct stat oldBuf;
     struct stat newBuf;
@@ -1031,7 +1031,7 @@ static int32_t RenameOnEexist(int32_t oldResult, struct stat *targetBuf, const c
 int32_t SystemNative_Rename(const char* oldPath, const char* newPath, int32_t flags)
 {
     int32_t result;
-    if (flags & 1)
+    if (flags & Rename_Overwrite)
     {
         while ((result = rename(oldPath, newPath)) < 0 && errno == EINTR);
     }
@@ -1049,14 +1049,14 @@ int32_t SystemNative_Rename(const char* oldPath, const char* newPath, int32_t fl
             else if (errno == EEXIST)
             {
                 // But renameat2 returns EEXIST on renaming a file onto itself. Check that.
-                result = RenameOnEexist(result, NULL, oldPath, newPath);
+                result = RenameToSelf(result, NULL, oldPath, newPath);
                 if (result != EINTR)
                 {
                     return result;
                 }
             }
             // Documentation says EINVAL is returned if the filesystem doesn't support it. We also check the standard codes for this.
-            else if (errno != EINTR && errno != EINVAL && errno != ENOSYS && errno != ENOTSUP && errno != EOPNOTSUPP
+            else if (errno != EINTR && errno != EINVAL && errno != ENOSYS && errno != ENOTSUP
 #ifdef ENOTSUPP
                  && errno != ENOTSUPP
 #endif
@@ -1069,7 +1069,7 @@ int32_t SystemNative_Rename(const char* oldPath, const char* newPath, int32_t fl
 #endif
         do {
             result = -1; // Keeps compiler happy.
-            if (!(flags & 2))
+            if (!(flags & Rename_Directory))
             {
                 result = link(oldPath, newPath);
                 if (result >= 0)
@@ -1078,7 +1078,7 @@ int32_t SystemNative_Rename(const char* oldPath, const char* newPath, int32_t fl
                     return result;
                 }
             }
-            if ((flags & 2) // Directory.Move
+            if ((flags & Rename_Directory) // Directory.Move
                     || errno == EPERM || errno == EACCES  // Permissions might not allow creating hard links even if a copy would work
                     || errno == EOPNOTSUPP  // Links aren't supported by the source file system
                     || errno == EMLINK // Too many hard links to the source file
@@ -1095,7 +1095,7 @@ int32_t SystemNative_Rename(const char* oldPath, const char* newPath, int32_t fl
                     if (lstat(newPath, &newBuf) == 0)
                     {
                         errno = EEXIST;
-                        result = RenameOnEexist(-1, &newBuf, oldPath, newPath);
+                        result = RenameToSelf(-1, &newBuf, oldPath, newPath);
                     }
                     else if (errno != EINTR && errno != EIO) // We should allow EIO to raise. Everything else, rename is fair game.
                     {
@@ -1105,7 +1105,7 @@ int32_t SystemNative_Rename(const char* oldPath, const char* newPath, int32_t fl
             }
             else if (errno == EEXIST)
             {
-                result = RenameOnEexist(result, NULL, oldPath, newPath);
+                result = RenameToSelf(result, NULL, oldPath, newPath);
             }
         } while (errno == EINTR);
     }

@@ -42,14 +42,14 @@ namespace System.IO
             if (destBackupFullPath != null)
             {
                 // We're backing up the destination file to the backup file. If it exists, it will be removed if possible.
-                if (Interop.Sys.Rename(destFullPath, destBackupFullPath, 1) < 0)
+                if (Interop.Sys.Rename(destFullPath, destBackupFullPath, Interop.Sys.RenameFlags.Replace) < 0)
                 {
                     Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
                     if (errno.Error == Interop.Error.EXDEV ||      // rename fails across devices / mount points
                         errno.Error == Interop.Error.EACCES ||
                         errno.Error == Interop.Error.EPERM ||      // permissions might not allow renaming even if a copy would work
                         errno.Error == Interop.Error.EMLINK)       // too many hard links to the source file
-                   {
+                    {
                         // Destination file could not be renamed. Copy it.
                         CopyFile(destFullPath, destBackupFullPath, true);
                         if (Interop.Sys.Unlink(destBackupFullPath) != 0)
@@ -82,7 +82,7 @@ namespace System.IO
             }
 
             // Finally, rename the source to the destination, overwriting the destination.
-            Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath, 1));
+            Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath, Interop.Sys.RenameFlags.Replace));
         }
 
         public static void MoveFile(string sourceFullPath, string destFullPath)
@@ -101,7 +101,8 @@ namespace System.IO
 
             // Note that the test is actually in native code, and the only thing managed code does
             // is check fo EXDEV and call CopyFile.
-            if (Interop.Sys.Rename(sourceFullPath, destFullPath, overwrite ? 1 : 0) < 0)
+            if (Interop.Sys.Rename(sourceFullPath, destFullPath, overwrite
+                    ? Interop.Sys.RenameFlags.Replace : Interop.Sys.RenameFlags.None) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.EXDEV) // rename fails across devices / mount points
@@ -285,7 +286,10 @@ namespace System.IO
                 destFullPath = Path.TrimEndingDirectorySeparator(destFullPath);
             }
 
-            if (Interop.Sys.Rename(sourceFullPath, destFullPath, 2) < 0)
+            // Calling Directory.Exists here has an inherent TOCTOU problem.
+            // To avoid this, Interop.Sys.Rename uses an OS method that doesn't allow for overwriting
+            // the destination if one is available on the target platform.
+            if (Interop.Sys.Rename(sourceFullPath, destFullPath, Interop.Sys.RenameFlags.Directory) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)

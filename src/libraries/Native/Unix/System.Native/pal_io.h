@@ -621,6 +621,8 @@ PALEXPORT int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSiz
  */
 PALEXPORT int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize);
 
+enum { Rename_Overwrite = 1, Rename_Directory = 2 }; /* Not using enum type in native code to avoid potential porting issues. */
+
 /**
  * Renames a file, moving to the correct destination if necessary. There are many edge cases to this call, check man 2
  * rename for more info
