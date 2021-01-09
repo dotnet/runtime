@@ -2258,7 +2258,7 @@ void CodeGen::genGenerateMachineCode()
 
     GetEmitter()->emitJumpDistBind();
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     /* Perform alignment adjustments */
 
     GetEmitter()->emitLoopAlignAdjustments();

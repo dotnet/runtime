@@ -250,7 +250,10 @@ struct insGroup
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
     unsigned short igFlags;   // see IGF_xxx below
     unsigned short igSize;    // # of bytes of code in this group
-    insGroup*      igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
+
+#if FEATURE_LOOP_ALIGN
+    insGroup* igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
+#endif
 
 #define IGF_GC_VARS 0x0001    // new set of live GC ref variables
 #define IGF_BYREF_REGS 0x0002 // new set of live by-ref registers
@@ -1370,7 +1373,7 @@ protected:
                                   // hot to cold and cold to hot jumps)
     };
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     struct instrDescAlign : instrDesc
     {
         instrDescAlign* idaNext; // next align in the group/method
@@ -1755,7 +1758,7 @@ private:
     instrDescJmp* emitJumpLast;       // last of local jumps in method
     void          emitJumpDistBind(); // Bind all the local jumps in method
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     instrDescAlign* emitCurIGAlignList;                                 // list of align instructions in current IG
     unsigned        emitLastInnerLoopStartIgNum;                        // Start IG of last inner loop
     unsigned        emitLastInnerLoopEndIgNum;                          // End IG of last inner loop
@@ -1764,6 +1767,7 @@ private:
     instrDescAlign* emitAlignLast;                                      // last align instruction in method
     unsigned getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize); // Get the smallest loop size
     void emitLoopAlignment();
+    bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool displayAlignmentDetails));
@@ -2009,7 +2013,7 @@ private:
         return (instrDescCGCA*)emitAllocAnyInstr(sizeof(instrDescCGCA), attr);
     }
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     instrDescAlign* emitAllocInstrAlign()
     {
 #if EMITTER_STATS
@@ -2544,7 +2548,7 @@ inline emitter::instrDescJmp* emitter::emitNewInstrJmp()
     return emitAllocInstrJmp();
 }
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
 inline emitter::instrDescAlign* emitter::emitNewInstrAlign()
 {
     instrDescAlign* newInstr = emitAllocInstrAlign();

@@ -223,7 +223,7 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
                                                                            // intrinsic classes
 #endif                                                                     // defined(DEBUG)
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
 #else
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 0)

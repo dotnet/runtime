@@ -7388,7 +7388,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
     switch (idOp)
     {
         case ID_OP_NONE:
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
             if (id->idIns() == INS_align)
             {
                 return sizeof(instrDescAlign);
@@ -13814,8 +13814,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
+#endif
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     // Only compensate over-estimated instructions if emitCurIG is before
     // the last IG that needs alignment.
     if (emitCurIG->igNum <= emitLastAlignedIgNum)
@@ -13852,6 +13853,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 #endif
 
+#ifdef DEBUG
     if (emitComp->compDebugBreak)
     {
         // set JitEmitPrintRefRegs=1 will print out emitThisGCrefRegs and emitThisByrefRegs

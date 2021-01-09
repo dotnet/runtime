@@ -2586,7 +2586,7 @@ NO_MORE_LOOPS:
 
 void Compiler::optIdentifyLoopsForAlignment()
 {
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     if (codeGen->ShouldAlignLoops())
     {
         for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
@@ -3792,7 +3792,7 @@ void Compiler::optUnrollLoops()
 #endif
         }
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
         for (block = head->bbNext;; block = block->bbNext)
         {
             if (block->isLoopAlign())
@@ -8032,7 +8032,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
 {
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     // If this is the inner most loop, reset the LOOP_ALIGN flag
     // because a loop having call will not likely to benefit from
     // alignment

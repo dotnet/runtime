@@ -641,7 +641,7 @@ void emitter::emitGenIG(insGroup* ig)
 
     assert(emitCurIGjmpList == nullptr);
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     assert(emitCurIGAlignList == nullptr);
 #endif
 
@@ -831,7 +831,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     }
 #endif
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     // Did we have any align instructions in this group?
     if (emitCurIGAlignList)
     {
@@ -996,7 +996,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitCurIGfreeBase = nullptr;
     emitIGbuffSize    = 0;
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     emitLastAlignedIgNum        = 0;
     emitLastInnerLoopStartIgNum = 0;
     emitLastInnerLoopEndIgNum   = 0;
@@ -1037,7 +1037,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitNoGCIG     = false;
     emitForceNewIG = false;
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
     /* We don't have any align instructions */
 
     emitAlignList = emitAlignLast = nullptr;
@@ -3735,7 +3735,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
         // It is fatal to under-estimate the instruction size, except for alignment instructions
         noway_assert(estimatedSize >= actualSize);
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
         // Should never over-estimate align instruction or any instruction before the last align instruction of a method
         assert(id->idIns() != INS_align && emitCurIG->igNum > emitLastAlignedIgNum);
 #endif
@@ -4610,7 +4610,7 @@ AGAIN:
 #endif // DEBUG
 }
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
 
 //-----------------------------------------------------------------------------
 // emitLoopAlignment: Insert an align instruction at the end of emitCurIG and
@@ -4634,6 +4634,16 @@ void emitter::emitLoopAlignment()
 
     JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u.\n", emitComp->opts.compJitAlignLoopBoundary,
             emitComp->compMethodID, emitCurIG->igNum);
+}
+
+//-----------------------------------------------------------------------------
+//  emitEndsWithAlignInstr: Checks if current IG ends with loop align instruction.
+//
+//  Returns:  true if current IG ends with align instruciton.
+//
+bool emitter::emitEndsWithAlignInstr()
+{
+    return emitCurIG->isLoopAlign();
 }
 
 //-----------------------------------------------------------------------------
@@ -7762,10 +7772,13 @@ void emitter::emitInitIG(insGroup* ig)
        sure we act the same in non-DEBUG builds.
     */
 
-    ig->igSize         = 0;
-    ig->igGCregs       = RBM_NONE;
-    ig->igInsCnt       = 0;
+    ig->igSize   = 0;
+    ig->igGCregs = RBM_NONE;
+    ig->igInsCnt = 0;
+
+#if FEATURE_LOOP_ALIGN
     ig->igLoopBackEdge = nullptr;
+#endif
 }
 
 /*****************************************************************************

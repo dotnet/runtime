@@ -349,11 +349,13 @@ void CodeGen::genCodeForBBlist()
             needLabel = true;
         }
 
-        if (GetEmitter()->emitCurIG->isLoopAlign())
+#if FEATURE_LOOP_ALIGN
+        if (GetEmitter()->emitEndsWithAlignInstr())
         {
             // we had better be planning on starting a new IG
             assert(needLabel);
         }
+#endif
 
         if (needLabel)
         {
@@ -745,7 +747,7 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_COND:
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
                 // This is the last place where we operate on blocks and after this, we operate
                 // on IG. Hence, if we know that the destination of "block" is the first block
                 // of a loop and needs alignment (it has BBF_LOOP_ALIGN), then "block" represents
@@ -766,7 +768,7 @@ void CodeGen::genCodeForBBlist()
                 break;
         }
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
 
         // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
         // then need to add align instruction in current "block". Also mark the
