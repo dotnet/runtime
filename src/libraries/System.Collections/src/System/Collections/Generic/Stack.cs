@@ -72,7 +72,7 @@ namespace System.Collections.Generic
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                Array.Clear(_array, 0, _size); // Don't need to doc this but we clear the   elements so that the gc can reclaim the references.
+                Array.Clear(_array, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
             }
             _size = 0;
             _version++;

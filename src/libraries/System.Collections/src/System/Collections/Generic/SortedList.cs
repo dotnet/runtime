@@ -116,7 +116,7 @@ namespace System.Collections.Generic
         // Constructs a new sorted dictionary with a given IComparer
         // implementation and a given initial capacity. The sorted list is
         // initially empty, but will have room for the given number of elements
-        // before any re-allocations are required. The elements of the sorted list
+        // before any reallocations are required. The elements of the sorted list
         // are ordered according to the given IComparer implementation. If
         // comparer is null, the elements are compared to each other using
         // the IComparable interface, which in that case must be implemented
@@ -404,7 +404,7 @@ namespace System.Collections.Generic
         {
             // clear does not change the capacity
             version++;
-            // Don't need to doc this but we clear the elements so that the gc can reclaim  the references.
+            // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
             {
                 Array.Clear(keys, 0, _size);
