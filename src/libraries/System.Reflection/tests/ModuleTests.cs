@@ -82,61 +82,21 @@ namespace System.Reflection.Tests
         [Fact]
         public void FilterTypeName_DelegateFiltersExpectedTypes()
         {
-            Assert.NotNull(Module.FilterTypeName);
-            Assert.Same(Module.FilterTypeName, Module.FilterTypeName);
-            Assert.NotSame(Module.FilterTypeName, Module.FilterTypeNameIgnoreCase);
-
-            Assert.Throws<InvalidFilterCriteriaException>(() => Module.FilterTypeName(GetType(), null));
-            Assert.Throws<InvalidFilterCriteriaException>(() => Module.FilterTypeName(GetType(), new object()));
-
             Assert.Empty(typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "out*"));
             Assert.Equal(2, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "OutsideMod*").Length);
             Assert.Empty(typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "outsidemoduletest"));
             Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "OutsideModuleTest").Length);
             Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "InsideModuleTest").Length);
-
-            Assert.True(Module.FilterTypeName(typeof(string), "String"));
-            Assert.True(Module.FilterTypeName(typeof(string), "*"));
-            Assert.True(Module.FilterTypeName(typeof(string), "S*"));
-            Assert.True(Module.FilterTypeName(typeof(string), "Strin*"));
-            Assert.True(Module.FilterTypeName(typeof(string), "String"));
-            Assert.True(Module.FilterTypeName(typeof(string), "String*"));
-
-            Assert.False(Module.FilterTypeName(typeof(string), ""));
-            Assert.False(Module.FilterTypeName(typeof(string), "S"));
-            Assert.False(Module.FilterTypeName(typeof(string), " String"));
-            Assert.False(Module.FilterTypeName(typeof(string), "String "));
-            Assert.False(Module.FilterTypeName(typeof(string), "Strings"));
         }
 
         [Fact]
         public void FilterTypeNameIgnoreCase_DelegateFiltersExpectedTypes()
         {
-            Assert.NotNull(Module.FilterTypeNameIgnoreCase);
-            Assert.Same(Module.FilterTypeNameIgnoreCase, Module.FilterTypeNameIgnoreCase);
-            Assert.NotSame(Module.FilterTypeNameIgnoreCase, Module.FilterTypeName);
-
-            Assert.Throws<InvalidFilterCriteriaException>(() => Module.FilterTypeName(GetType(), null));
-            Assert.Throws<InvalidFilterCriteriaException>(() => Module.FilterTypeName(GetType(), new object()));
-
             Assert.Equal(2, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "outsidemod*").Length);
             Assert.Equal(2, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "Outsidemod*").Length);
             Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "ouTsidemoduLeTest").Length);
             Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "OutsideModuleTest").Length);
             Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "insiDemoduLeTest").Length);
-
-            Assert.True(Module.FilterTypeNameIgnoreCase(typeof(string), "string"));
-            Assert.True(Module.FilterTypeNameIgnoreCase(typeof(string), "*"));
-            Assert.True(Module.FilterTypeNameIgnoreCase(typeof(string), "s*"));
-            Assert.True(Module.FilterTypeNameIgnoreCase(typeof(string), "stRIn*"));
-            Assert.True(Module.FilterTypeNameIgnoreCase(typeof(string), "sTrInG"));
-            Assert.True(Module.FilterTypeNameIgnoreCase(typeof(string), "STRING*"));
-
-            Assert.False(Module.FilterTypeNameIgnoreCase(typeof(string), ""));
-            Assert.False(Module.FilterTypeNameIgnoreCase(typeof(string), "s"));
-            Assert.False(Module.FilterTypeNameIgnoreCase(typeof(string), " string"));
-            Assert.False(Module.FilterTypeNameIgnoreCase(typeof(string), "string "));
-            Assert.False(Module.FilterTypeNameIgnoreCase(typeof(string), "strings"));
         }
     }
 }
