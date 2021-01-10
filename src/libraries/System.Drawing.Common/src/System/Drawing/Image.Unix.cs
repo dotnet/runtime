@@ -409,6 +409,9 @@ namespace System.Drawing
                 status = Gdip.GdipGetPropertySize(nativeImage, out propsSize, out propNums);
                 Gdip.CheckStatus(status);
 
+                if (propsSize == 0 || propNums == 0)
+                    return Array.Empty<PropertyItem>();
+
                 items = new PropertyItem[propNums];
 
                 if (propNums == 0)
