@@ -41,17 +41,20 @@
 #define DS_EXIT_BLOCKING_PAL_SECTION
 #endif
 
+#ifndef __cplusplus
 #undef ep_rt_object_alloc
 #define ep_rt_object_alloc(obj_type) ((obj_type *)calloc(1, sizeof(obj_type)))
 
-static
-inline
-void
-ep_rt_object_free (void *ptr)
-{
-	if (ptr)
-		free (ptr);
-}
+#undef ep_rt_object_free
+#define ep_rt_object_free(obj_ptr) do { if (obj_ptr) free (obj_ptr); } while(0)
+#else
+#include <new>
+#undef ep_rt_object_alloc
+#define ep_rt_object_alloc(obj_type) (new (std::nothrow) obj_type())
+
+#undef ep_rt_object_free
+#define ep_rt_object_free(obj_ptr) do { if (obj_ptr) delete obj_ptr; } while(0)
+#endif
 #endif /* !FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL */
 
 /*
