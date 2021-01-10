@@ -356,9 +356,9 @@ namespace System
             int p = DecimalPrecision;
             while ((d.Mid | d.High) != 0)
             {
-                p = UInt32ToDecChars(buffer, p, decimal.DecDivMod1E9(ref d), 9);
+                p = UInt32ToDecChars(buffer.Slice(0, p), decimal.DecDivMod1E9(ref d), 9);
             }
-            p = UInt32ToDecChars(buffer, p, d.Low, 0);
+            p = UInt32ToDecChars(buffer.Slice(0, p), d.Low, 0);
 
             int i = DecimalPrecision - p;
 
@@ -1180,7 +1180,7 @@ namespace System
             }
 
             Span<byte> buffer = number.Digits;
-            int p = UInt32ToDecChars(buffer, Int32Precision, (uint)value, 0);
+            int p = UInt32ToDecChars(buffer.Slice(0, Int32Precision), (uint)value, 0);
 
             int i = Int32Precision - p;
 
@@ -1213,7 +1213,7 @@ namespace System
             string result = string.FastAllocateString(bufferLength);
             Span<char> buffer = new Span<char>(ref result.GetRawStringData(), bufferLength);
 
-            int p = UInt32ToDecChars(buffer, bufferLength, (uint)(-value), digits);
+            int p = UInt32ToDecChars(buffer.Slice(0, bufferLength), (uint)(-value), digits);
             Debug.Assert(p == sNegative.Length);
 
             for (int i = sNegative.Length - 1; i >= 0; i--)
@@ -1241,7 +1241,7 @@ namespace System
 
             charsWritten = bufferLength;
 
-            int p = UInt32ToDecChars(destination, bufferLength, (uint)(-value), digits);
+            int p = UInt32ToDecChars(destination.Slice(0, bufferLength), (uint)(-value), digits);
             Debug.Assert(p == sNegative.Length);
 
             for (int i = sNegative.Length - 1; i >= 0; i--)
@@ -1306,7 +1306,7 @@ namespace System
             number.IsNegative = false;
 
             Span<byte> buffer = number.Digits;
-            int p = UInt32ToDecChars(buffer, UInt32Precision, value, 0);
+            int p = UInt32ToDecChars(buffer.Slice(0, UInt32Precision), value, 0);
 
             int i = UInt32Precision - p;
 
@@ -1321,24 +1321,26 @@ namespace System
             number.CheckConsistency();
         }
 
-        internal static int UInt32ToDecChars(Span<byte> buffer, int bufferEndIndex, uint value, int digits)
+        internal static int UInt32ToDecChars(Span<byte> buffer, uint value, int digits)
         {
-            while (--digits >= 0 || value != 0)
+            int bufferEndIndex = buffer.Length;
+            while ((--digits >= 0 || value != 0) && /* Only to elide bounds check */ (uint)(--bufferEndIndex) < (uint)buffer.Length)
             {
                 uint remainder;
                 (value, remainder) = Math.DivRem(value, 10);
-                buffer[--bufferEndIndex] = (byte)(remainder + '0');
+                buffer[bufferEndIndex] = (byte)(remainder + '0');
             }
             return bufferEndIndex;
         }
 
-        internal static int UInt32ToDecChars(Span<char> buffer, int bufferEndIndex, uint value, int digits)
+        internal static int UInt32ToDecChars(Span<char> buffer, uint value, int digits)
         {
-            while (--digits >= 0 || value != 0)
+            int bufferEndIndex = buffer.Length;
+            while (--digits >= 0 || value != 0 && /* Only to elide bounds check */ (uint)(--bufferEndIndex) < (uint)buffer.Length)
             {
                 uint remainder;
                 (value, remainder) = Math.DivRem(value, 10);
-                buffer[--bufferEndIndex] = (char)(remainder + '0');
+                buffer[bufferEndIndex] = (char)(remainder + '0');
             }
             return bufferEndIndex;
         }
@@ -1379,7 +1381,7 @@ namespace System
             string result = string.FastAllocateString(bufferLength);
             Span<char> buffer = new Span<char>(ref result.GetRawStringData(), bufferLength);
 
-            int p = UInt32ToDecChars(buffer, bufferLength, value, digits);
+            int p = UInt32ToDecChars(buffer.Slice(0, bufferLength), value, digits);
             Debug.Assert(p == 0);
 
             return result;
@@ -1409,7 +1411,7 @@ namespace System
             }
             else
             {
-                p = UInt32ToDecChars(destination, p, value, digits);
+                p = UInt32ToDecChars(destination.Slice(0, p), value, digits);
             }
             Debug.Assert(p == 0);
 
@@ -1429,8 +1431,8 @@ namespace System
             Span<byte> buffer = number.Digits;
             int p = Int64Precision;
             while (High32(value) != 0)
-                p = UInt32ToDecChars(buffer, p, Int64DivMod1E9(ref value), 9);
-            p = UInt32ToDecChars(buffer, p, Low32(value), 0);
+                p = UInt32ToDecChars(buffer.Slice(0, p), Int64DivMod1E9(ref value), 9);
+            p = UInt32ToDecChars(buffer.Slice(0, p), Low32(value), 0);
 
             int i = Int64Precision - p;
 
@@ -1470,10 +1472,10 @@ namespace System
             int p = bufferLength;
             while (High32(value) != 0)
             {
-                p = UInt32ToDecChars(buffer, p, Int64DivMod1E9(ref value), 9);
+                p = UInt32ToDecChars(buffer.Slice(0, p), Int64DivMod1E9(ref value), 9);
                 digits -= 9;
             }
-            p = UInt32ToDecChars(buffer, p, Low32(value), digits);
+            p = UInt32ToDecChars(buffer.Slice(0, p), Low32(value), digits);
             Debug.Assert(p == sNegative.Length);
 
             for (int i = sNegative.Length - 1; i >= 0; i--)
@@ -1508,10 +1510,10 @@ namespace System
             int p = bufferLength;
             while (High32(value) != 0)
             {
-                p = UInt32ToDecChars(destination, p, Int64DivMod1E9(ref value), 9);
+                p = UInt32ToDecChars(destination.Slice(0, p), Int64DivMod1E9(ref value), 9);
                 digits -= 9;
             }
-            p = UInt32ToDecChars(destination, p, Low32(value), digits);
+            p = UInt32ToDecChars(destination.Slice(0, p), Low32(value), digits);
             Debug.Assert(p == sNegative.Length);
 
             for (int i = sNegative.Length - 1; i >= 0; i--)
@@ -1579,8 +1581,8 @@ namespace System
             int p = UInt64Precision;
 
             while (High32(value) != 0)
-                p = UInt32ToDecChars(buffer, p, Int64DivMod1E9(ref value), 9);
-            p = UInt32ToDecChars(buffer, p, Low32(value), 0);
+                p = UInt32ToDecChars(buffer.Slice(0, p), Int64DivMod1E9(ref value), 9);
+            p = UInt32ToDecChars(buffer.Slice(0, p), Low32(value), 0);
 
             int i = UInt64Precision - p;
 
@@ -1614,10 +1616,10 @@ namespace System
             int p = bufferLength;
             while (High32(value) != 0)
             {
-                p = UInt32ToDecChars(buffer, p, Int64DivMod1E9(ref value), 9);
+                p = UInt32ToDecChars(buffer.Slice(0, p), Int64DivMod1E9(ref value), 9);
                 digits -= 9;
             }
-            p = UInt32ToDecChars(buffer, p, Low32(value), digits);
+            p = UInt32ToDecChars(buffer.Slice(0, p), Low32(value), digits);
             Debug.Assert(p == 0);
 
             return result;
@@ -1640,10 +1642,10 @@ namespace System
             int p = bufferLength;
             while (High32(value) != 0)
             {
-                p = UInt32ToDecChars(destination, p, Int64DivMod1E9(ref value), 9);
+                p = UInt32ToDecChars(destination.Slice(0, p), Int64DivMod1E9(ref value), 9);
                 digits -= 9;
             }
-            p = UInt32ToDecChars(destination, p, Low32(value), digits);
+            p = UInt32ToDecChars(destination.Slice(0, p), Low32(value), digits);
             Debug.Assert(p == 0);
 
             return true;
@@ -2396,7 +2398,7 @@ namespace System
             }
 
             Span<char> digits = stackalloc char[MaxUInt32DecDigits];
-            int p = UInt32ToDecChars(digits, MaxUInt32DecDigits, (uint)value, minDigits);
+            int p = UInt32ToDecChars(digits.Slice(0, MaxUInt32DecDigits), (uint)value, minDigits);
             digits = digits.Slice(p);
             digits.CopyTo(sb.AppendSpan(digits.Length));
         }
