@@ -109,7 +109,6 @@ namespace System.Drawing.Tests
             Assert.Throws<NullReferenceException>(() => new Bitmap(null, "name"));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(typeof(Bitmap), "")]
         [InlineData(typeof(Bitmap), "bitmap_173x183_indexed_8bit.bmp")]
