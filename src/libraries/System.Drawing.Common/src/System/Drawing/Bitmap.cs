@@ -59,6 +59,10 @@ namespace System.Drawing
 
         private static Stream GetResourceStream(Type type, string resource)
         {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
             if (resource == null)
             {
                 throw new ArgumentNullException(nameof(resource));

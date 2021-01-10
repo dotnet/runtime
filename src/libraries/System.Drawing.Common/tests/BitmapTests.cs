@@ -104,9 +104,9 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Ctor_NullType_ThrowsNullReferenceException()
+        public void Ctor_NullType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new Bitmap(null, "name"));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("type", () => new Bitmap(null, "name"));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
