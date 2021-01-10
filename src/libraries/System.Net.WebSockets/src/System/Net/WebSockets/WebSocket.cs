@@ -137,29 +137,30 @@ namespace System.Net.WebSockets
         [UnsupportedOSPlatform("browser")]
         public static WebSocket CreateFromStream(Stream stream, bool isServer, string? subProtocol, TimeSpan keepAliveInterval)
         {
-            if (stream == null)
+            return CreateFromStream(stream, new WebSocketCreationOptions
             {
+                IsServer = isServer,
+                SubProtocol = subProtocol,
+                KeepAliveInterval = keepAliveInterval
+            });
+        }
+
+        /// <summary>Creates a <see cref="WebSocket"/> that operates on a <see cref="Stream"/> representing a web socket connection.</summary>
+        /// <param name="stream">The <see cref="Stream"/> for the connection.</param>
+        /// <param name="options">The options with which the websocket must be created.</param>
+        [UnsupportedOSPlatform("browser")]
+        public static WebSocket CreateFromStream(Stream stream, WebSocketCreationOptions options)
+        {
+            if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
-            }
+
+            if (options is null)
+                throw new ArgumentNullException(nameof(options));
 
             if (!stream.CanRead || !stream.CanWrite)
-            {
                 throw new ArgumentException(!stream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(stream));
-            }
 
-            if (subProtocol != null)
-            {
-                WebSocketValidate.ValidateSubprotocol(subProtocol);
-            }
-
-            if (keepAliveInterval != Timeout.InfiniteTimeSpan && keepAliveInterval < TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall,
-                    0));
-            }
-
-            return ManagedWebSocket.CreateFromConnectedStream(stream, isServer, subProtocol, keepAliveInterval);
+            return ManagedWebSocket.CreateFromConnectedStream(stream, options);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -190,18 +191,6 @@ namespace System.Net.WebSockets
                 throw new ArgumentException(!innerStream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(innerStream));
             }
 
-            if (subProtocol != null)
-            {
-                WebSocketValidate.ValidateSubprotocol(subProtocol);
-            }
-
-            if (keepAliveInterval != Timeout.InfiniteTimeSpan && keepAliveInterval < TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall,
-                    0));
-            }
-
             if (receiveBufferSize <= 0 || sendBufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(
@@ -213,7 +202,12 @@ namespace System.Net.WebSockets
             // Ignore useZeroMaskingKey. ManagedWebSocket doesn't currently support that debugging option.
             // Ignore internalBuffer. ManagedWebSocket uses its own small buffer for headers/control messages.
 
-            return ManagedWebSocket.CreateFromConnectedStream(innerStream, false, subProtocol, keepAliveInterval);
+            return ManagedWebSocket.CreateFromConnectedStream(innerStream, new WebSocketCreationOptions
+            {
+                IsServer = false,
+                KeepAliveInterval = keepAliveInterval,
+                SubProtocol = subProtocol
+            });
         }
     }
 }

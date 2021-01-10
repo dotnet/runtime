@@ -31,6 +31,8 @@ namespace System.Net.WebSockets
         public static System.Net.WebSockets.WebSocket CreateClientWebSocket(System.IO.Stream innerStream, string? subProtocol, int receiveBufferSize, int sendBufferSize, System.TimeSpan keepAliveInterval, bool useZeroMaskingKey, System.ArraySegment<byte> internalBuffer) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, bool isServer, string? subProtocol, System.TimeSpan keepAliveInterval) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, WebSocketCreationOptions options) { throw null; }
         public static System.ArraySegment<byte> CreateServerBuffer(int receiveBufferSize) { throw null; }
         public abstract void Dispose();
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -132,5 +134,21 @@ namespace System.Net.WebSockets
         CloseReceived = 4,
         Closed = 5,
         Aborted = 6,
+    }
+
+    public sealed class WebSocketCreationOptions
+    {
+        public bool IsServer { get; set; }
+        public string? SubProtocol { get; set; }
+        public TimeSpan KeepAliveInterval { get; set; }
+        public WebSocketDeflateOptions? DeflateOptions { get; set; }
+    }
+
+    public sealed class WebSocketDeflateOptions
+    {
+        public int ClientMaxWindowBits { get; set; }
+        public bool ClientContextTakeover { get; set; }
+        public int ServerMaxWindowBits { get; set; }
+        public bool ServerContextTakeover { get; set; }
     }
 }

@@ -29,14 +29,11 @@ namespace System.Net.WebSockets
     {
         /// <summary>Creates a <see cref="ManagedWebSocket"/> from a <see cref="Stream"/> connected to a websocket endpoint.</summary>
         /// <param name="stream">The connected Stream.</param>
-        /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
-        /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
-        /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
+        /// <param name="options">The options with which the websocket must be created.</param>
         /// <returns>The created <see cref="ManagedWebSocket"/> instance.</returns>
-        public static ManagedWebSocket CreateFromConnectedStream(
-            Stream stream, bool isServer, string? subprotocol, TimeSpan keepAliveInterval)
+        public static ManagedWebSocket CreateFromConnectedStream(Stream stream, WebSocketCreationOptions options)
         {
-            return new ManagedWebSocket(stream, isServer, subprotocol, keepAliveInterval);
+            return new ManagedWebSocket(stream, options);
         }
 
         /// <summary>Thread-safe random number generator used to generate masks for each send.</summary>
@@ -153,12 +150,7 @@ namespace System.Net.WebSockets
         /// </summary>
         private object ReceiveAsyncLock => _utf8TextState; // some object, as we're simply lock'ing on it
 
-        /// <summary>Initializes the websocket.</summary>
-        /// <param name="stream">The connected Stream.</param>
-        /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
-        /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
-        /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
-        private ManagedWebSocket(Stream stream, bool isServer, string? subprotocol, TimeSpan keepAliveInterval)
+        private ManagedWebSocket(Stream stream, WebSocketCreationOptions options)
         {
             Debug.Assert(StateUpdateLock != null, $"Expected {nameof(StateUpdateLock)} to be non-null");
             Debug.Assert(ReceiveAsyncLock != null, $"Expected {nameof(ReceiveAsyncLock)} to be non-null");
@@ -167,11 +159,10 @@ namespace System.Net.WebSockets
             Debug.Assert(stream != null, $"Expected non-null stream");
             Debug.Assert(stream.CanRead, $"Expected readable stream");
             Debug.Assert(stream.CanWrite, $"Expected writeable stream");
-            Debug.Assert(keepAliveInterval == Timeout.InfiniteTimeSpan || keepAliveInterval >= TimeSpan.Zero, $"Invalid keepalive interval: {keepAliveInterval}");
 
             _stream = stream;
-            _isServer = isServer;
-            _subprotocol = subprotocol;
+            _isServer = options.IsServer;
+            _subprotocol = options.SubProtocol;
 
             // Create a buffer just large enough to handle received packet headers (at most 14 bytes) and
             // control payloads (at most 125 bytes).  Message payloads are read directly into the buffer
@@ -201,7 +192,7 @@ namespace System.Net.WebSockets
             // Now that we're opened, initiate the keep alive timer to send periodic pings.
             // We use a weak reference from the timer to the web socket to avoid a cycle
             // that could keep the web socket rooted in erroneous cases.
-            if (keepAliveInterval > TimeSpan.Zero)
+            if (options.KeepAliveInterval > TimeSpan.Zero)
             {
                 _keepAliveTimer = new Timer(static s =>
                 {
@@ -210,7 +201,7 @@ namespace System.Net.WebSockets
                     {
                         thisRef.SendKeepAliveFrameAsync();
                     }
-                }, new WeakReference<ManagedWebSocket>(this), keepAliveInterval, keepAliveInterval);
+                }, new WeakReference<ManagedWebSocket>(this), options.KeepAliveInterval, options.KeepAliveInterval);
             }
         }
 
