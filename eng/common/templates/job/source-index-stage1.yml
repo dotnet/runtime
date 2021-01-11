@@ -3,6 +3,7 @@ parameters:
   sourceIndexPackageVersion: 1.0.0-beta5
   sourceIndexPackageSource: https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json
   sourceIndexBuildCommand: powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "eng/common/build.ps1 -restore -build -binarylog -ci"
+  preSteps: []
   binlogPath: artifacts/log/Debug/Build.binlog
   pool:
     vmImage: vs2017-win2016
