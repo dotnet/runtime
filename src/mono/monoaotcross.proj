@@ -1,4 +1,8 @@
-<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="BuildMonoCrossAllTargets">
+<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildMonoCrossAllTargets">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- OS name is case sensitive! -->
     <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
