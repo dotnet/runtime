@@ -26,10 +26,9 @@ jobs:
     - ${{ preStep }}
 
   - task: UseDotNet@2
-    displayName: Use .NET Core sdk 3.1
+    displayName: Use .NET Core sdk
     inputs:
-      packageType: sdk
-      version: 3.1.x
+      useGlobalJson: true
 
   - script: |
       dotnet tool install BinLogToSln --version $(SourceIndexPackageVersion) --add-source $(SourceIndexPackageSource) --tool-path .source-index/tools
