@@ -200,17 +200,4 @@
     <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
   </Target>
 
-  <Target Name="RebuildWasmAppBuilder">
-    <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-         Targets="Restore"/>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug"
-         Targets="Build;Publish"/>
-  </Target>
 </Project>
