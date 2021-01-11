@@ -199,7 +199,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        internal void AttachTokens() => _tokens?.AttachTokens();
+        internal void AttachTokens() => _tokens?.AttachTokens(this);
 
         private static void ExpirationTokensExpired(object obj)
         {
