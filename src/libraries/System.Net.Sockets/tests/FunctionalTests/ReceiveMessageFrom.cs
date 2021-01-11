@@ -3,11 +3,58 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public class ReceiveMessageFrom
+    public abstract class ReceiveMessageFrom<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    {
+        protected ReceiveMessageFrom(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReceiveSentMessages_Success(bool ipv4)
+        {
+            const int DatagramSize = 256;
+            const int DatagramsToSend = 16;
+
+            IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            using Socket receiver = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using Socket sender = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+
+            receiver.SetSocketOption(ipv4 ? SocketOptionLevel.IP : SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
+            ConfigureNonBlocking(sender);
+            ConfigureNonBlocking(receiver);
+
+            receiver.BindToAnonymousPort(address);
+            sender.BindToAnonymousPort(address);
+
+            byte[] sendBuffer = new byte[DatagramSize];
+            byte[] receiveBuffer = new byte[DatagramSize];
+            Random rnd = new Random(0);
+
+            IPEndPoint remoteEp = new IPEndPoint(ipv4 ? IPAddress.Any : IPAddress.IPv6Any, 0);
+
+            for (int i = 0; i < DatagramsToSend; i++)
+            {
+                rnd.NextBytes(sendBuffer);
+                sender.SendTo(sendBuffer, receiver.LocalEndPoint);
+
+                SocketReceiveMessageFromResult result = await ReceiveMessageFromAsync(receiver, receiveBuffer, remoteEp);
+                IPPacketInformation packetInformation = result.PacketInformation;
+
+                Assert.Equal(DatagramSize, result.ReceivedBytes);
+                Assert.Equal(Fletcher32.Checksum(sendBuffer), Fletcher32.Checksum(receiveBuffer));
+                Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
+                Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
+            }
+        }
+    }
+
+    public class ReceiveMessageFrom_Old
     {
         [OuterLoop]
         [Theory]
@@ -202,5 +249,50 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, saea.ReceiveMessageFromPacketInfo.Address);
             }
         }
+    }
+
+    public sealed class ReceiveMessageFrom_Sync : ReceiveMessageFrom<SocketHelperArraySync>
+    {
+        public ReceiveMessageFrom_Sync(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ReceiveMessageFrom_SyncForceNonBlocking : ReceiveMessageFrom<SocketHelperSyncForceNonBlocking>
+    {
+        public ReceiveMessageFrom_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ReceiveMessageFrom_Apm : ReceiveMessageFrom<SocketHelperApm>
+    {
+        public ReceiveMessageFrom_Apm(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ReceiveMessageFrom_Task : ReceiveMessageFrom<SocketHelperTask>
+    {
+        public ReceiveMessageFrom_Task(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ReceiveMessageFrom_Eap : ReceiveMessageFrom<SocketHelperEap>
+    {
+        public ReceiveMessageFrom_Eap(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ReceiveMessageFrom_SpanSync : ReceiveMessageFrom<SocketHelperSpanSync>
+    {
+        public ReceiveMessageFrom_SpanSync(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ReceiveMessageFrom_SpanSyncForceNonBlocking : ReceiveMessageFrom<SocketHelperSpanSyncForceNonBlocking>
+    {
+        public ReceiveMessageFrom_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ReceiveMessageFrom_MemoryArrayTask : ReceiveMessageFrom<SocketHelperMemoryArrayTask>
+    {
+        public ReceiveMessageFrom_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class ReceiveMessageFrom_MemoryNativeTask : ReceiveMessageFrom<SocketHelperMemoryNativeTask>
+    {
+        public ReceiveMessageFrom_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
     }
 }
