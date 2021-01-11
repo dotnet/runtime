@@ -5,3 +5,6 @@ jobs:
 - template: /eng/common/templates/job/source-index-stage1.yml
   parameters:
     sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
+    preSteps:
+    - script: |
+        rename dotnet.cmd dotnet.cmd.go-away

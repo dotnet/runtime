@@ -21,6 +21,9 @@ jobs:
 
   pool: ${{ parameters.pool }}
   steps:
+  - ${{ each preStep in parameters.preSteps }}:
+    - ${{ preStep }}
+
   - task: UseDotNet@2
     displayName: Use .NET Core sdk 3.1
     inputs:
