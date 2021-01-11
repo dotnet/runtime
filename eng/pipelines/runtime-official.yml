@@ -130,7 +130,6 @@ stages:
       buildConfig: release
       platforms:
       - Android_x64
-      jobParameters:
 
   #
   # Build Mono release Android AOT cross-compiler
