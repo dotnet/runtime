@@ -441,6 +441,9 @@
 /* Some VES is available at runtime */
 #cmakedefine ENABLE_ILGEN 1
 
+/* Disable non-blittable marshalling */
+#cmakedefine DISABLE_NONBLITTABLE
+
 /* Disable SIMD intrinsics related optimizations. */
 #cmakedefine DISABLE_SIMD 1
 
