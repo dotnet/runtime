@@ -198,7 +198,7 @@ namespace System.IO.Packaging.Tests
                 () => Package.Open(temp, FileMode.Open, FileAccess.Read, FileShare.Read));
 
             // Package should not have held a stream open on the file; if it did, this operation will
-            // throw IOException (unless the finalizer will run, and it will not do so deterministically)
+            // throw IOException (unless the finalizer runs first, and it will not do so deterministically)
             File.Move(temp, GetTestFilePath());
         }
 
