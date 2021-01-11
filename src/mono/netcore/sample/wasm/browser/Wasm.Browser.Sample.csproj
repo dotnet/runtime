@@ -15,6 +15,14 @@
     <AppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</AppDir>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <RunAnalyzers>false</RunAnalyzers>
+    <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+    <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+    <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+    <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)\browser\</HelixArchiveRunOnlyAppsDir>
+    <TestArchiveTestsDir>$(HelixArchiveRunOnlyAppsDir)</TestArchiveTestsDir>
+    <TestProjectName>$(AssemblyName)</TestProjectName>
+    <OutDir>$(MSBuildProjectDirectory)\bin\browser-wasm\</OutDir> 
+    <MobileTestsSkipLinkImport>true</MobileTestsSkipLinkImport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
@@ -36,9 +44,11 @@
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
+  <Import Condition="'$(ArchiveTests)' == 'true'" Project="$(RepoRoot)eng\testing\tests.targets" />
+
+  <Target Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
-        <WasmAppDir>$(AppDir)</WasmAppDir>
+        <WasmAppDir>$(OutDir)\AppBundle\</WasmAppDir>
         <WasmBuildDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmBuildDir>
         <WasmMainJSPath>runtime.js</WasmMainJSPath>
         <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
@@ -49,7 +59,7 @@
   </Target>
 
   <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
-    <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(AppDir)" />
+    <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(OutDir)\AppBundle" />
   </Target>
 
   <ItemGroup>
@@ -59,35 +69,5 @@
     </Content>
   </ItemGroup>
 
-  <Target Name="PrepareRunScript" BeforeTargets="CopySampleAppToHelixTestDir" Condition="'$(ArchiveTests)' == 'true'" >
-    <PropertyGroup>
-      <RunScriptCommand>
-        $HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --browser=Chrome  --html-file=index.html --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- WasmSample.dll --testing
-      </RunScriptCommand>
-    </PropertyGroup>
-
-    <MSBuild Projects="$(RepoRoot)eng/testing/tests.targets"
-        Condition="'$(ArchiveTests)' == 'true'" 
-        Properties="OutDir=$(AppDir);RunScriptInputPath=$(RepoRoot)eng/testing/WasmRunnerTemplate.sh;InstallerTasksAssemblyPath=$(RepoRoot)artifacts/obj/installer.tasks/Debug/netstandard2.0/installer.tasks.dll;RunScriptCommand=$(RunScriptCommand)" 
-        Targets="GenerateRunScript" />
-  </Target>
-
-  <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
-          AfterTargets="Build" 
-          DependsOnTargets="Publish">
-    <PropertyGroup>
-      <!-- Helix properties -->
-      <!-- AnyCPU as Platform-->
-      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
-      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
-      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/browser/</HelixArchiveRunOnlyAppsDir>
-      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
-    </PropertyGroup>
-    <ZipDirectory SourceDirectory="$(AppDir)" DestinationFile="$(ZippedApp)" />
-    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
-  </Target>
-
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
+  <Import Condition="'$(ArchiveTests)' != 'true'" Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>

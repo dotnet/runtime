@@ -16,6 +16,14 @@
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <RunAnalyzers>false</RunAnalyzers>
     <JSEngine>V8</JSEngine>
+    <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+    <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+    <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+    <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)\console\</HelixArchiveRunOnlyAppsDir>
+    <TestArchiveTestsDir>$(HelixArchiveRunOnlyAppsDir)</TestArchiveTestsDir>
+    <TestProjectName>$(AssemblyName)</TestProjectName>
+    <OutDir>$(MSBuildProjectDirectory)\bin\browser-wasm\</OutDir> 
+    <MobileTestsSkipLinkImport>true</MobileTestsSkipLinkImport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
@@ -25,12 +33,6 @@
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     <DebuggerSupport>false</DebuggerSupport>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(ArchiveTests)' == 'true'">
-    <RunScriptCommand>
-      $HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run $(AssemblyName).dll
-    </RunScriptCommand>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
@@ -43,9 +45,11 @@
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
+  <Import Condition="'$(ArchiveTests)' == 'true'" Project="$(RepoRoot)eng\testing\tests.targets" />
+
+  <Target Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
-      <WasmAppDir>$(AppBundleDir)</WasmAppDir>
+      <WasmAppDir>$(OutDir)\AppBundle\</WasmAppDir>
       <WasmBuildDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmBuildDir>
       <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
@@ -60,23 +64,5 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
 
-  <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
-          AfterTargets="Build"
-          DependsOnTargets="GenerateRunScript;Publish" >
-    <PropertyGroup>
-      <!-- Helix properties -->
-      <!-- AnyCPU as Platform-->
-      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
-      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
-      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/console/</HelixArchiveRunOnlyAppsDir>
-      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
-    </PropertyGroup>
-    <ZipDirectory SourceDirectory="$(AppBundleDir)" DestinationFile="$(ZippedApp)" />
-    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
-  </Target>
-
-  <Import Condition="'$(ArchiveTests)' == 'true'" Project="$(RepoRoot)eng/testing/tests.targets" />
   <Import Condition="'$(ArchiveTests)' != 'true'" Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>

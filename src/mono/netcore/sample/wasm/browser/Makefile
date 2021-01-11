@@ -26,5 +26,5 @@ run:
 		echo "The tool dotnet-serve could not be found. Install with: $(DOTNET) tool install --global dotnet-serve"; \
 		exit 1; \
 	else  \
-		$(DOTNET) serve -d bin/$(CONFIG)/AppBundle -p 8000; \
+		$(DOTNET) serve -d bin/browser-wasm/AppBundle -p 8000; \
 	fi
