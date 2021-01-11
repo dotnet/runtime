@@ -147,7 +147,9 @@ public:
     }
 
     // Get next offset to shuffle. There has to be at least one offset left.
-    UINT16 GetNextOfs()
+    // For register arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
+    // For stack arguments it returns stack offset in bytes with negative sign.
+    int GetNextOfs()
     {
         int index;
 
@@ -157,7 +159,9 @@ public:
         EEClass* eeClass = m_argLocDesc->m_eeClass;
         if (m_argLocDesc->m_eeClass != 0)
         {
-            return GetNextOfsInStruct();
+            index = GetNextOfsInStruct();
+            _ASSERT((index & ShuffleEntry::REGMASK) != 0);
+            return index;
         }
 #endif // UNIX_AMD64_ABI
 
@@ -167,7 +171,7 @@ public:
             index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
             m_currentFloatRegIndex++;
 
-            return (UINT16)index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+            return index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
         }
 
         // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
@@ -177,7 +181,7 @@ public:
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 
-            return (UINT16)index | ShuffleEntry::REGMASK;
+            return index | ShuffleEntry::REGMASK;
         }
 
         // If we get here we must have at least one stack slot left to shuffle (this method should only be called
@@ -185,7 +189,6 @@ public:
         if (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize)
         {            
             const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
-            _ASSERTE((byteIndex % TARGET_POINTER_SIZE) == 0);
             index = byteIndex / TARGET_POINTER_SIZE;
             m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
@@ -195,7 +198,7 @@ public:
                 COMPlusThrow(kNotSupportedException);
             }
 
-            return (UINT16)index;
+            return -(int)byteIndex;
         }
 
         // There are no more offsets to get, the caller should not have called us
@@ -264,13 +267,39 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
 
         // Locate the next slot to shuffle in the source and destination and encode the transfer into a
         // shuffle entry.
-        entry.srcofs = iteratorSrc.GetNextOfs();
-        entry.dstofs = iteratorDst.GetNextOfs();
+        const int srcOffset = iteratorSrc.GetNextOfs();
+        const int dstOffset = iteratorDst.GetNextOfs();
 
         // Only emit this entry if it's not a no-op (i.e. the source and destination locations are
         // different).
-        if (entry.srcofs != entry.dstofs)
+        if (srcOffset != dstOffset)
         {
+            if (srcOffset <= 0)
+            {
+                // It was a stack byte offset.
+                const unsigned srcStackByteOffset = -srcOffset;
+                _ASSERT(((srcStackByteOffset % TARGET_POINTER_SIZE) == 0) && "NYI: does not support shuffling of such args");
+                entry.srcofs = (UINT16)(srcStackByteOffset / TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                _ASSERT((srcOffset & ShuffleEntry::REGMASK) != 0);
+                entry.srcofs = (UINT16)srcOffset;
+            }
+
+            if (dstOffset <= 0)
+            {
+                // It was a stack byte offset.
+                const unsigned dstStackByteOffset = -dstOffset;
+                _ASSERT((dstStackByteOffset % TARGET_POINTER_SIZE) == 0 && "NYI: does not support shuffling of such args");
+                entry.dstofs = (UINT16)(dstStackByteOffset / TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                _ASSERT((dstOffset & ShuffleEntry::REGMASK) != 0);
+                entry.dstofs = (UINT16)dstOffset;
+            }
+
             if (shuffleType == ShuffleComputationType::InstantiatingStub)
             {
                 // Instantiating Stub shuffles only support general register to register moves. More complex cases are handled by IL stubs
@@ -283,6 +312,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     return FALSE;
                 }
             }
+
             pShuffleEntryArray->Append(entry);
         }
     }
