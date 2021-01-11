@@ -14,10 +14,13 @@ namespace DllImportGenerator.IntegrationTests
         public static partial char ReturnUIntAsUnicode(uint input);
 
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", CharSet = CharSet.Unicode)]
-        public static partial void ReturnUIntAsRefUnicode(uint input, ref char res);
+        public static partial void ReturnUIntAsUnicode_Ref(uint input, ref char res);
 
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", CharSet = CharSet.Unicode)]
-        public static partial void ReturnUIntAsOutUnicode(uint input, out char res);
+        public static partial void ReturnUIntAsUnicode_Out(uint input, out char res);
+
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", CharSet = CharSet.Unicode)]
+        public static partial void ReturnUIntAsUnicode_In(uint input, in char res);
 
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", CharSet = CharSet.None)]
         [return: MarshalAs(UnmanagedType.U2)]
@@ -53,13 +56,18 @@ namespace DllImportGenerator.IntegrationTests
         {
             Assert.Equal(expected, NativeExportsNE.ReturnUIntAsUnicode(value));
 
-            char result = '\u0000';
-            NativeExportsNE.ReturnUIntAsRefUnicode(value, ref result);
+            char initial = '\u0000';
+            char result = initial;
+            NativeExportsNE.ReturnUIntAsUnicode_Ref(value, ref result);
             Assert.Equal(expected, result);
 
-            result = '\u0000';
-            NativeExportsNE.ReturnUIntAsOutUnicode(value, out result);
+            result = initial;
+            NativeExportsNE.ReturnUIntAsUnicode_Out(value, out result);
             Assert.Equal(expected, result);
+
+            result = initial;
+            NativeExportsNE.ReturnUIntAsUnicode_In(value, in result);
+            Assert.Equal(initial, result); // Should not be updated when using 'in'
         }
 
         [Theory]

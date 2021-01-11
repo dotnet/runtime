@@ -20,6 +20,12 @@ namespace NativeExports
             return AllocateHandleCore();
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "alloc_handle_out")]
+        public static void AllocateHandleOut(nint* handle)
+        {
+            *handle = AllocateHandleCore();
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "release_handle")]
         public static byte ReleaseHandle(nint handle)
         {

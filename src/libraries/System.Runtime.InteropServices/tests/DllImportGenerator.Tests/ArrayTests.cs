@@ -26,11 +26,21 @@ namespace DllImportGenerator.IntegrationTests
             [return:MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
             public static partial int[] CreateRange(int start, int end, out int numValues);
 
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
+            public static partial void CreateRange_Out(int start, int end, out int numValues, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] out int[] res);
+
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
             public static partial int SumStringLengths([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] strArray);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings")]
-            public static partial void ReverseStrings([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1)] ref string[] strArray, out int numElements);
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_replace")]
+            public static partial void ReverseStrings_Ref([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1)] ref string[] strArray, out int numElements);
+
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_return")]
+            [return: MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1)]
+            public static partial string[] ReverseStrings_Return([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] strArray, out int numElements);
+
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_out")]
+            public static partial void ReverseStrings_Out([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] strArray, out int numElements, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1)] out string[] res);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
             [return:MarshalAs(UnmanagedType.LPArray, SizeConst = sizeof(long))]
@@ -88,16 +98,24 @@ namespace DllImportGenerator.IntegrationTests
         public void ArraysReturnedFromNative()
         {
             int start = 5;
-
             int end = 20;
 
-            Assert.Equal(Enumerable.Range(start, end - start), NativeExportsNE.Arrays.CreateRange(start, end, out _));
+            IEnumerable<int> expected = Enumerable.Range(start, end - start);
+            Assert.Equal(expected, NativeExportsNE.Arrays.CreateRange(start, end, out _));
+
+            int[] res;
+            NativeExportsNE.Arrays.CreateRange_Out(start, end, out _, out res);
+            Assert.Equal(expected, res);
         }
 
         [Fact]
         public void NullArrayReturnedFromNative()
         {
             Assert.Null(NativeExportsNE.Arrays.CreateRange(1, 0, out _));
+
+            int[] res;
+            NativeExportsNE.Arrays.CreateRange_Out(1, 0, out _, out res);
+            Assert.Null(res);
         }
 
         private static string[] GetStringArray()
@@ -131,18 +149,41 @@ namespace DllImportGenerator.IntegrationTests
         {
             var strings = GetStringArray();
             var expectedStrings = strings.Select(s => ReverseChars(s)).ToArray();
-            NativeExportsNE.Arrays.ReverseStrings(ref strings, out _);
+            NativeExportsNE.Arrays.ReverseStrings_Ref(ref strings, out _);
             
             Assert.Equal((IEnumerable<string>)expectedStrings, strings);
+        }
+
+        [Fact]
+        public void ReturnArrayWithElementMarshalling()
+        {
+            var strings = GetStringArray();
+            var expectedStrings = strings.Select(s => ReverseChars(s)).ToArray();
+            Assert.Equal(expectedStrings, NativeExportsNE.Arrays.ReverseStrings_Return(strings, out _));
+
+            string[] res;
+            NativeExportsNE.Arrays.ReverseStrings_Out(strings, out _, out res);
+            Assert.Equal(expectedStrings, res);
         }
 
         [Fact]
         public void ByRefNullArrayWithElementMarshalling()
         {
             string[] strings = null;
-            NativeExportsNE.Arrays.ReverseStrings(ref strings, out _);
+            NativeExportsNE.Arrays.ReverseStrings_Ref(ref strings, out _);
             
             Assert.Null(strings);
+        }
+
+        [Fact]
+        public void ReturnNullArrayWithElementMarshalling()
+        {
+            string[] strings = null;
+            Assert.Null(NativeExportsNE.Arrays.ReverseStrings_Return(strings, out _));
+
+            string[] res;
+            NativeExportsNE.Arrays.ReverseStrings_Out(strings, out _, out res);
+            Assert.Null(res);
         }
 
         [Fact]

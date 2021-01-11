@@ -51,21 +51,13 @@ namespace NativeExports
         [UnmanagedCallersOnly(EntryPoint = "create_range_array")]
         public static int* CreateRange(int start, int end, int* numValues)
         {
-            if (start >= end)
-            {
-                *numValues = 0;
-                return null;
-            }
+            return CreateRangeImpl(start, end, numValues);
+        }
 
-            *numValues = end - start;
-
-            int* retVal = (int*)Marshal.AllocCoTaskMem(sizeof(int) * (*numValues));
-            for (int i = start; i < end; i++)
-            {
-                retVal[i - start] = i;
-            }
-
-            return retVal;
+        [UnmanagedCallersOnly(EntryPoint = "create_range_array_out")]
+        public static void CreateRangeAsOut(int start, int end, int* numValues, int** res)
+        {
+            *res = CreateRangeImpl(start, end, numValues);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "fill_range_array")]
@@ -110,24 +102,24 @@ namespace NativeExports
             return length;
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "reverse_strings")]
-        public static void ReverseStrings(ushort*** strArray, int* numValues)
+        [UnmanagedCallersOnly(EntryPoint = "reverse_strings_return")]
+        public static ushort** ReverseStrings(ushort** strArray, int* numValues)
         {
-            if (*strArray == null)
-            {
-                *numValues = 0;
-                return;
-            }
-            List<IntPtr> newStrings = new List<IntPtr>();
-            for (int i = 0; (nint)(*strArray)[i] != 0; i++)
-            {
-                newStrings.Add((IntPtr)Strings.Reverse((*strArray)[i]));
-            }
-            newStrings.Add(IntPtr.Zero);
+            return ReverseStringsImpl(strArray, numValues);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "reverse_strings_out")]
+        public static void ReverseStringsAsOut(ushort** strArray, int* numValues, ushort*** res)
+        {
+            *res = ReverseStringsImpl(strArray, numValues);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "reverse_strings_replace")]
+        public static void ReverseStringsReplace(ushort*** strArray, int* numValues)
+        {
+            ushort** res = ReverseStringsImpl(*strArray, numValues);
             Marshal.FreeCoTaskMem((IntPtr)(*strArray));
-            *strArray = (ushort**)Marshal.AllocCoTaskMem(sizeof(ushort*) * newStrings.Count);
-            CollectionsMarshal.AsSpan(newStrings).CopyTo(new Span<IntPtr>((IntPtr*)(*strArray), newStrings.Count));
-            *numValues = newStrings.Count;
+            *strArray = res;
         }
 
         [UnmanagedCallersOnly(EntryPoint = "get_long_bytes")]
@@ -139,7 +131,7 @@ namespace NativeExports
             MemoryMarshal.Write(new Span<byte>(bytes, NumBytesInLong), ref l);
             return bytes;
         }
-        
+
         [UnmanagedCallersOnly(EntryPoint = "append_int_to_array")]
         public static void Append(int** values, int numOriginalValues, int newValue)
         {
@@ -160,6 +152,46 @@ namespace NativeExports
                 result &= managed.b1 && managed.b2 && managed.b3;
             }
             return result ? 1 : 0;
+        }
+
+        private static int* CreateRangeImpl(int start, int end, int* numValues)
+        {
+            if (start >= end)
+            {
+                *numValues = 0;
+                return null;
+            }
+
+            *numValues = end - start;
+
+            int* retVal = (int*)Marshal.AllocCoTaskMem(sizeof(int) * (*numValues));
+            for (int i = start; i < end; i++)
+            {
+                retVal[i - start] = i;
+            }
+
+            return retVal;
+        }
+
+        private static ushort** ReverseStringsImpl(ushort** strArray, int* numValues)
+        {
+            if (strArray == null)
+            {
+                *numValues = 0;
+                return null;
+            }
+
+            List<IntPtr> newStrings = new List<IntPtr>();
+            for (int i = 0; (nint)strArray[i] != 0; i++)
+            {
+                newStrings.Add((IntPtr)Strings.Reverse(strArray[i]));
+            }
+            newStrings.Add(IntPtr.Zero);
+
+            ushort** res = (ushort**)Marshal.AllocCoTaskMem(sizeof(ushort*) * newStrings.Count);
+            CollectionsMarshal.AsSpan(newStrings).CopyTo(new Span<IntPtr>((IntPtr*)(res), newStrings.Count));
+            *numValues = newStrings.Count;
+            return res;
         }
     }
 }

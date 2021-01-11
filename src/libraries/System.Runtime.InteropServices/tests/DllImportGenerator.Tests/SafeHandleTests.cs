@@ -23,6 +23,9 @@ namespace DllImportGenerator.IntegrationTests
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle")]
         public static partial NativeExportsSafeHandle AllocateHandle();
 
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle_out")]
+        public static partial void AllocateHandle(out NativeExportsSafeHandle handle);
+
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "release_handle")]
         [return:MarshalAs(UnmanagedType.I1)]
         private static partial bool ReleaseHandle(nint handle);
@@ -50,6 +53,16 @@ namespace DllImportGenerator.IntegrationTests
         {
             using NativeExportsNE.NativeExportsSafeHandle handle = NativeExportsNE.AllocateHandle();
             Assert.True(NativeExportsNE.IsHandleAlive(handle));
+        }
+
+        [Fact]
+        public void ByRefOut_CreatesSafeHandle()
+        {
+            NativeExportsNE.NativeExportsSafeHandle handle;
+            NativeExportsNE.AllocateHandle(out handle);
+            Assert.False(handle.IsClosed);
+            Assert.False(handle.IsInvalid);
+            handle.Dispose();
         }
 
         [Fact]

@@ -11,6 +11,9 @@ namespace DllImportGenerator.IntegrationTests
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_byref")]
         public static partial void DoubleIntFieldsByRef(ref IntFields result);
 
+        [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_byref")]
+        public static partial void DoubleIntFieldsByRefIn(in IntFields result);
+
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_refreturn")]
         public static partial void DoubleIntFieldsRefReturn(
             IntFields input,
@@ -60,6 +63,12 @@ namespace DllImportGenerator.IntegrationTests
                 input = initial;
                 NativeExportsNE.DoubleIntFieldsByRef(ref input);
                 Assert.Equal(expected, input);
+            }
+
+            {
+                input = initial;
+                NativeExportsNE.DoubleIntFieldsByRefIn(in input);
+                Assert.Equal(expected, input); // Updated even when passed with in keyword (matches built-in system)
             }
         }
     }
