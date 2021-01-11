@@ -120,6 +120,8 @@ HRESULT ReJITProfiler::Shutdown()
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock)
 {
+    SHUTDOWNGUARD();
+
     return S_OK;
 }
 
@@ -235,12 +237,16 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
+    SHUTDOWNGUARD();
+
     FunctionSeen(functionId);
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITInlining(FunctionID callerId, FunctionID calleeId, BOOL* pfShouldInline)
 {
+    SHUTDOWNGUARD();
+
     AddInlining(callerId, calleeId);
     *pfShouldInline = TRUE;
 
@@ -250,6 +256,8 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITInlining(FunctionID callerId, Functi
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCachedFunctionSearchFinished(FunctionID functionId, COR_PRF_JIT_CACHE result)
 {
+    SHUTDOWNGUARD();
+
     if (result == COR_PRF_CACHED_FUNCTION_FOUND)
     {
         // FunctionSeen will return true if it's a method we're tracking, and false otherwise
@@ -294,6 +302,8 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCachedFunctionSearchFinished(Functio
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITCompilationStarted(FunctionID functionId, ReJITID rejitId, BOOL fIsSafeToBlock)
 {
+    SHUTDOWNGUARD();
+
     INFO(L"Saw a ReJIT for function " << GetFunctionIDName(functionId));
     _rejits++;
     return S_OK;
@@ -301,6 +311,8 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITCompilationStarted(FunctionID func
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, mdMethodDef methodId, ICorProfilerFunctionControl* pFunctionControl)
 {
+    SHUTDOWNGUARD();
+
     INFO(L"Starting to build IL for method " << GetFunctionIDName(GetFunctionIDFromToken(moduleId, methodId)));
     COMPtrHolder<IUnknown> pUnk;
     HRESULT hr = _profInfo10->GetModuleMetaData(moduleId, ofWrite, IID_IMetaDataEmit2, &pUnk);
@@ -373,6 +385,8 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITCompilationFinished(FunctionID functionId, ReJITID rejitId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
+    SHUTDOWNGUARD();
+
     ULONG rejitIDsCount;
     HRESULT hr = pCorProfilerInfo->GetReJITIDs(functionId, 0, &rejitIDsCount, NULL);
     if (FAILED(hr))
@@ -394,6 +408,8 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITCompilationFinished(FunctionID fun
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITError(ModuleID moduleId, mdMethodDef methodId, FunctionID functionId, HRESULT hrStatus)
 {
+    SHUTDOWNGUARD();
+
     _failures++;
 
     FAIL(L"ReJIT error reported hr=" << std::hex << hrStatus);

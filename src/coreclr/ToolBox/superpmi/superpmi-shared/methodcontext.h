@@ -16,6 +16,9 @@
 #include "errorhandling.h"
 #include "hash.h"
 
+// Helper function for dumping.
+const char* toString(CorInfoType cit);
+
 #define METHOD_IDENTITY_INFO_SIZE 0x10000 // We assume that the METHOD_IDENTITY_INFO_SIZE will not exceed 64KB
 
 class MethodContext
@@ -123,7 +126,7 @@ public:
         DWORD     pMethodSpec_Index;
         DWORD     cbMethodSpec;
     };
-    struct GetArgTypeValue
+    struct Agnostic_GetArgType_Key
     {
         DWORD     flags;
         DWORD     numArgs;
@@ -134,7 +137,7 @@ public:
         DWORDLONG scope;
         DWORDLONG args;
     };
-    struct GetArgClassValue
+    struct Agnostic_GetArgClass_Key
     {
         DWORD     sigInst_classInstCount;
         DWORD     sigInst_classInst_Index;
@@ -613,8 +616,11 @@ public:
     unsigned int saveToFile(HANDLE hFile);
     unsigned int calculateFileSize();
     unsigned int calculateRawFileSize();
-    void dumpToConsole(int mcNumber = -1); // if mcNumber is not -1, display the method context number before the dumped
-                                           // info
+
+    // dumpToConsole: If mcNumber is not -1, display the method context number before the dumped info.
+    // If simple is `true`, don't display the function name/arguments in the header.
+    void dumpToConsole(int mcNumber = -1, bool simple = false);
+
     int dumpStatToBuffer(char* buff, int len);
     static int dumpStatTitleToBuffer(char* buff, int len);
     int methodSize;
@@ -872,7 +878,7 @@ public:
                        CORINFO_CLASS_HANDLE*   vcTypeRet,
                        CorInfoTypeWithMod      result,
                        DWORD                   exception);
-    void dmpGetArgType(const GetArgTypeValue& key, const Agnostic_GetArgType_Value& value);
+    void dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agnostic_GetArgType_Value& value);
     CorInfoTypeWithMod repGetArgType(CORINFO_SIG_INFO*       sig,
                                      CORINFO_ARG_LIST_HANDLE args,
                                      CORINFO_CLASS_HANDLE*   vcTypeRet,
@@ -890,7 +896,7 @@ public:
                         CORINFO_ARG_LIST_HANDLE args,
                         CORINFO_CLASS_HANDLE    result,
                         DWORD                   exceptionCode);
-    void dmpGetArgClass(const GetArgClassValue& key, const Agnostic_GetArgClass_Value& value);
+    void dmpGetArgClass(const Agnostic_GetArgClass_Key& key, const Agnostic_GetArgClass_Value& value);
     CORINFO_CLASS_HANDLE repGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, DWORD* exceptionCode);
 
     void recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoHFAElemType result);
@@ -1276,6 +1282,10 @@ public:
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
 
+    void recGetExpectedTargetArchitecture(DWORD result);
+    void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
+    DWORD repGetExpectedTargetArchitecture();
+
     void recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result);
     void dmpIsValidToken(DLD key, DWORD value);
     bool repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
@@ -1332,6 +1342,8 @@ public:
     void recGetStringConfigValue(const WCHAR* name, const WCHAR* result);
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const WCHAR* repGetStringConfigValue(const WCHAR* name);
+
+    void dmpSigInstHandleMap(DWORD key, DWORDLONG value);
 
     struct Environment
     {
@@ -1500,6 +1512,7 @@ enum mcPackets
     Packet_GetPInvokeUnmanagedTarget                     = 82, // Retired 2/18/2020
     Packet_GetProfilingHandle                            = 83,
     Packet_GetRelocTypeHint                              = 84,
+    Packet_GetExpectedTargetArchitecture                 = 183, // Added 12/18/2020
     Packet_GetSecurityPrologHelper                       = 85, // Retired 2/18/2020
     Packet_GetSharedCCtorHelper                          = 86,
     Packet_GetTailCallCopyArgsThunk                      = 87, // Retired 4/27/2020
@@ -1541,6 +1554,7 @@ enum mcPackets
     Packet_SatisfiesClassConstraints                     = 110,
     Packet_SatisfiesMethodConstraints                    = 111,
     Packet_ShouldEnforceCallvirtRestriction              = 112, // Retired 2/18/2020
+    Packet_SigInstHandleMap                              = 184,
 
     PacketCR_AddressMap                        = 113,
     PacketCR_AllocGCInfo                       = 114,

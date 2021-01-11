@@ -3697,22 +3697,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
             _ASSERTE(nativeStackSize >= TARGET_POINTER_SIZE);
             nativeStackSize -= TARGET_POINTER_SIZE;
         }
-#else // TARGET_X86
-        //
-        // The algorithm to compute nativeStackSize on the fly is x86-specific.
-        // Recompute the correct size for other platforms from the stub signature.
-        //
-        if (SF_IsForwardStub(dwStubFlags))
-        {
-            // It would be nice to compute the correct value for forward stubs too.
-            // The value is only used in MarshalNative::NumParamBytes right now,
-            // and changing what MarshalNative::NumParamBytes returns is
-            // a potential breaking change.
-        }
-        else
-        {
-            // native stack size is updated in code:ILStubState.SwapStubSignatures
-        }
 #endif // TARGET_X86
 
         if (!FitsInU2(nativeStackSize))
@@ -5109,7 +5093,7 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
     MethodDesc* pStubMD = NULL;
 
-    if (!pNMD->IsVarArgs())
+    if (!pNMD->IsVarArgs() || SF_IsForNumParamBytes(dwStubFlags))
     {
         if (pNMD->IsClassConstructorTriggeredByILStub())
         {
@@ -5118,7 +5102,7 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
         pStubMD = CreateCLRToNativeILStub(
             pSigInfo,
-            dwStubFlags,
+            dwStubFlags & ~NDIRECTSTUB_FL_FOR_NUMPARAMBYTES,
             pNMD);
     }
 
@@ -5218,6 +5202,9 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
 
         *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
     }
+
+    if (SF_IsForNumParamBytes(dwStubFlags))
+        return NULL;
 
     if (*ppStubMD)
     {

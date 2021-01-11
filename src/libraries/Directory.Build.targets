@@ -256,13 +256,6 @@
     </When>
   </Choose>
 
-  <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
-        This is required to show all the files corresponding to all target frameworks in VS. -->
-  <ItemGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' or '$(DesignTimeBuild)' == 'true'">
-    <None Include="$(MSBuildProjectDirectory)\**\*.cs"
-          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
-  </ItemGroup>
-
   <PropertyGroup>
     <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and ($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')))">true</SkipLocalsInit>
   </PropertyGroup>

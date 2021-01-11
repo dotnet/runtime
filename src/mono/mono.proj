@@ -8,6 +8,7 @@
       - MonoAOTEnableLLVM - enable LLVM for an AOT-only Mono
       - MonoAOTLLVMDir - [optional] the directory where LLVM is located, for an AOT-only Mono
       - MonoVerboseBuild - enable verbose build
+      - MonoMetadataUpdate - enable experimental method body replacement code
   -->
 
   <PropertyGroup>
@@ -302,6 +303,12 @@
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
 
+    <!-- Experimental features -->
+    <ItemGroup Condition="'$(MonoMetadataUpdate)' == 'true'">
+      <!-- FIXME: Add sanity check that the interpreter is enabled -->
+      <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE=1" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCFLAGS, ' ')"</_MonoCFLAGSOption>
       <_MonoCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCXXFLAGS, ' ')"</_MonoCXXFLAGSOption>
@@ -403,6 +410,9 @@
       <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
+      <!-- Experimental features -->
+      <!-- FIXME: Add sanity check that the interpreter is enabled -->
+      <MonoAOTCMakeArgs Condition="'$(MonoMetadataUpdate)' == 'true'" Include="-DENABLE_METADATA_UPDATE=1" />
 
       <!-- Select generator platform for VS generator -->
       <MonoAOTCMakeArgs Condition="'$(OS)' == 'Windows_NT' and '$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x64'" Include="-A x64" />
