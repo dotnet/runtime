@@ -77,8 +77,6 @@ class ShuffleIterator
     int m_currentFloatRegIndex;
     // Current byte stack index (relative to the ArgLocDesc::m_byteStackIndex)
     int m_currentByteStackIndex;
-    // Current stack slot index (relative to the ArgLocDesc::m_idxStack)
-    int m_currentStackSlotIndex;
 
 #if defined(UNIX_AMD64_ABI)
     // Get next shuffle offset for struct passed in registers. There has to be at least one offset left.
@@ -136,15 +134,13 @@ public:
 #endif
         m_currentGenRegIndex(0),
         m_currentFloatRegIndex(0),
-        m_currentByteStackIndex(0),
-        m_currentStackSlotIndex(0)
+        m_currentByteStackIndex(0)
     {
     }
 
     // Check if there are more offsets to shuffle
     bool HasNextOfs()
     {
-        _ASSERTE((m_currentStackSlotIndex < m_argLocDesc->m_cStack) == (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize));
         return (m_currentGenRegIndex < m_argLocDesc->m_cGenReg) ||
                (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg) ||
                (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize);
@@ -186,14 +182,11 @@ public:
 
         // If we get here we must have at least one stack slot left to shuffle (this method should only be called
         // when AnythingToShuffle(pArg) == true).
-        _ASSERTE((m_currentByteStackIndex < m_argLocDesc->m_byteStackSize) == (m_currentStackSlotIndex < m_argLocDesc->m_cStack));
         if (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize)
         {            
             const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
             _ASSERTE((byteIndex % TARGET_POINTER_SIZE) == 0);
             index = byteIndex / TARGET_POINTER_SIZE;
-            _ASSERTE((m_argLocDesc->m_idxStack + m_currentStackSlotIndex) == index);
-            m_currentStackSlotIndex++;
             m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
             // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.

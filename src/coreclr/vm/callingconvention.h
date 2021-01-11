@@ -39,9 +39,6 @@ struct ArgLocDesc
     int     m_idxGenReg;          // First general register used (or -1)
     int     m_cGenReg;            // Count of general registers used (or 0)
 
-    int     m_idxStack;           // First stack slot used (or -1)
-    int     m_cStack;             // Count of stack slots used (or 0)
-
     int     m_byteStackIndex;     // Stack offset in bytes (or -1)
     int     m_byteStackSize;      // Stack size in bytes
 
@@ -88,8 +85,6 @@ struct ArgLocDesc
         m_cFloatReg = 0;
         m_idxGenReg = -1;
         m_cGenReg = 0;
-        m_idxStack = -1;
-        m_cStack = 0;
         m_byteStackIndex = -1;
         m_byteStackSize = 0;
 #if defined(TARGET_ARM)
@@ -621,11 +616,8 @@ public:
         }
         else
         {
-            pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
-            pLoc->m_cStack = cSlots;
             pLoc->m_byteStackSize = GetArgSize();
             pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
-            _ASSERTE(pLoc->m_byteStackIndex / TARGET_POINTER_SIZE == pLoc->m_idxStack);
         }
     }
 #endif
@@ -661,20 +653,14 @@ public:
             else
             {
                 pLoc->m_cGenReg = 4 - pLoc->m_idxGenReg;
-                pLoc->m_cStack = cSlots - pLoc->m_cGenReg;
-                pLoc->m_idxStack = 0;
                 pLoc->m_byteStackIndex = 0;
                 pLoc->m_byteStackSize = byteArgSize - pLoc->m_cGenReg * TARGET_POINTER_SIZE;
             }
         }
         else
         {
-            pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
-            pLoc->m_cStack = cSlots;
-
             pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
             pLoc->m_byteStackSize = byteArgSize;
-            _ASSERTE(pLoc->m_byteStackIndex / TARGET_POINTER_SIZE == pLoc->m_idxStack);
         }
     }
 #endif // TARGET_ARM
@@ -733,11 +719,8 @@ public:
         }
         else
         {
-            pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
-            pLoc->m_cStack = cSlots;
             pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
             pLoc->m_byteStackSize = byteArgSize;
-            _ASSERTE(pLoc->m_byteStackIndex / TARGET_POINTER_SIZE == pLoc->m_idxStack);
         }
     }
 #endif // TARGET_ARM64
@@ -793,16 +776,13 @@ public:
         }
         else
         {
-            pLoc->m_idxStack = TransitionBlock::GetStackArgumentIndexFromOffset(argOffset);
             pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
             int argSizeInBytes;
             if (IsArgPassedByRef())
                 argSizeInBytes = TARGET_POINTER_SIZE;
             else
                 argSizeInBytes = GetArgSize();
-            pLoc->m_cStack = (argSizeInBytes + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
             pLoc->m_byteStackSize = argSizeInBytes;
-            _ASSERTE(pLoc->m_byteStackIndex / TARGET_POINTER_SIZE == pLoc->m_idxStack);
         }
     }
 #endif // TARGET_AMD64
