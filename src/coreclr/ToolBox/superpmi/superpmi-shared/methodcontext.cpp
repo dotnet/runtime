@@ -5168,13 +5168,13 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
         agnosticSchema[i].Count = (*pSchema)[i].Count;
         agnosticSchema[i].Other = (*pSchema)[i].Other;
     }
-    value.schema_index = AllocPgoInstrumentationBySchema->AddBuffer((unsigned char*)agnosticSchema, sizeof(Agnostic_PgoInstrumentationSchema) * (*pCountSchemaItems));
+    value.schema_index = GetPgoInstrumentationResults->AddBuffer((unsigned char*)agnosticSchema, sizeof(Agnostic_PgoInstrumentationSchema) * (*pCountSchemaItems));
     free(agnosticSchema);
 
     // This isn't strictly accurate, but I think it'll do
     size_t bufSize = maxOffset + 16;
 
-    value.data_index = AllocPgoInstrumentationBySchema->AddBuffer((unsigned char*)*pInstrumentationData, (unsigned)bufSize);
+    value.data_index = GetPgoInstrumentationResults->AddBuffer((unsigned char*)*pInstrumentationData, (unsigned)bufSize);
     value.dataByteCount = (unsigned)bufSize;
     value.result  = (DWORD)result;
 
@@ -5184,7 +5184,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
 {
     printf("GetMethodBlockCounts key ftn-%016llX, value schemaCnt-%u profileBufSize-%u", key, value.schemaCount, value.dataByteCount);
     Agnostic_PgoInstrumentationSchema* pBuf =
-        (Agnostic_PgoInstrumentationSchema*)AllocPgoInstrumentationBySchema->GetBuffer(value.schema_index);
+        (Agnostic_PgoInstrumentationSchema*)GetPgoInstrumentationResults->GetBuffer(value.schema_index);
 
     for (UINT32 i = 0; i < value.schemaCount; i++)
     {

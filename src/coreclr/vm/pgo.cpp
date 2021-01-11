@@ -664,7 +664,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     else
     {
         LoaderAllocatorPgoManager *laPgoManagerThis = (LoaderAllocatorPgoManager *)this;
-        CrstHolder (&laPgoManagerThis->m_lock);
+        CrstHolder lock(&laPgoManagerThis->m_lock);
 
         HeaderList* existingData = laPgoManagerThis->m_pgoDataLookup.Lookup(pMD);
         if (existingData != NULL)
@@ -813,7 +813,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, SArray
     else
     {
         LoaderAllocatorPgoManager *laPgoManagerThis = (LoaderAllocatorPgoManager *)this;
-        CrstHolder (&laPgoManagerThis->m_lock);
+        CrstHolder lock(&laPgoManagerThis->m_lock);
         found = laPgoManagerThis->m_pgoDataLookup.Lookup(pMD);
     }
 
