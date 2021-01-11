@@ -2,3 +2,4 @@
 **/bin
 **/obj
 *.binlog
+BenchmarkDotNet.Artifacts
