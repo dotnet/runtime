@@ -2,19 +2,12 @@
   <PropertyGroup>
     <RunAOTCompilation>false</RunAOTCompilation>
     <WasmModeSpecificPath>\interpreter\browser\</WasmModeSpecificPath>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
     <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
 
-  <Target Name="PrepareForWasmBuild">
-    <PropertyGroup>
-      <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
-      <WasmMainJSPath>runtime.js</WasmMainJSPath>
-      <WasmMainAssemblyPath>$(PublishDir)$(AssemblyName).dll</WasmMainAssemblyPath>
-    </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
-      <WasmExtraFilesToDeploy Include="index.html" />
-    </ItemGroup>
-  </Target>
 </Project>

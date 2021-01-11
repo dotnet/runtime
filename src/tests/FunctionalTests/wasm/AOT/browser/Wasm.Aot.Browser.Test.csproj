@@ -2,28 +2,10 @@
   <PropertyGroup>
     <RunAOTCompilation>true</RunAOTCompilation>
     <WasmModeSpecificPath>\aot\browser\</WasmModeSpecificPath>
-    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
   </PropertyGroup>
 
-  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
-    <PropertyGroup>
-        <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
-        <WasmBuildDir>$(PublishDir)</WasmBuildDir>
-        <WasmMainJSPath>runtime.js</WasmMainJSPath>
-        <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
-    </PropertyGroup>
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
-      <ExtraFilesToDeploy Include="index.html" />
-    </ItemGroup>
-  </Target>
-
   <ItemGroup>
-    <Compile Include="Program.cs" />
     <WasmExtraFilesToDeploy Include="index.html" />
   </ItemGroup>
-
-  <Import Project="..\..\common.targets" />
-
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
 </Project>

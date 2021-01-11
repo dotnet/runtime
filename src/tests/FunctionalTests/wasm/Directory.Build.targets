@@ -2,6 +2,10 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, '$(MSBuildThisFileDirectory)..'))" />
   <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.targets" />
 
+  <PropertyGroup>
+    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
   <Target Name="CopySampleAppToHelixTestDir" AfterTargets="Build" DependsOnTargets="Publish">
     <PropertyGroup>
       <!-- Helix properties -->
@@ -14,5 +18,16 @@
     </PropertyGroup>
     <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
+  </Target>
+
+  <Target Name="PrepareForWasmBuild">
+    <PropertyGroup>
+      <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
+      <WasmBuildDir>$(PublishDir)</WasmBuildDir>
+      <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
+    </ItemGroup>
   </Target>
 </Project>

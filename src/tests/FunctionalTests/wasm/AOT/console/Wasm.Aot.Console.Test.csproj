@@ -2,20 +2,7 @@
   <PropertyGroup>
     <RunAOTCompilation>true</RunAOTCompilation>
     <WasmModeSpecificPath>\aot\console\</WasmModeSpecificPath>
-    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+    <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
   </PropertyGroup>
-
-  <Target Name="PrepareForWasmBuild">
-    <PropertyGroup>
-      <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
-      <WasmBuildDir>$(PublishDir)</WasmBuildDir>
-      <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
-      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
-      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-    </PropertyGroup>
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
-    </ItemGroup>
-  </Target>
-
- </Project>
+</Project>
