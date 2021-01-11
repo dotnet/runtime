@@ -9270,9 +9270,16 @@ size_t gc_heap::sort_mark_list()
         total_ephemeral_size += ephemeral_size;
         total_mark_list_size += (hp->mark_list_index - hp->mark_list);
 #ifdef USE_REGIONS
-        // REGIONS TODO: iterate through the ephemeral regions to get a tighter bound
-        low = min (low, lowest_address);
-        high = max (high, highest_address);
+        // iterate through the ephemeral regions to get a tighter bound
+        for (int gen_num = settings.condemned_generation; gen_num >= 0; gen_num--)
+        {
+            generation* gen = generation_of (gen_num);
+            for (heap_segment* seg = generation_start_segment (gen); seg != nullptr; seg = heap_segment_next (seg))
+            {
+                low = min (low, heap_segment_mem (seg));
+                high = max (high, heap_segment_allocated (seg));
+            }
+        }
 #else //USE_REGIONS
         low = min (low, hp->gc_low);
         high = max (high, heap_segment_allocated (hp->ephemeral_heap_segment));
@@ -28363,7 +28370,14 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
                 {
                     current_heap_segment = heap_segment_next_rw (current_heap_segment);
                     current_brick = brick_of (heap_segment_mem (current_heap_segment));
-                    end_brick = brick_of (heap_segment_allocated (current_heap_segment)-1);
+                    end_brick = brick_of (heap_segment_allocated (current_heap_segment) - 1);
+                    if (heap_segment_mem (current_heap_segment) == heap_segment_allocated (current_heap_segment))
+                    {
+                        // the case of an empty region / segment - make sure
+                        // we don't relocate anything, but go to the next region / segment
+                        assert (current_brick == end_brick);
+                        current_brick++;
+                    }
                     continue;
                 }
                 else
@@ -29286,6 +29300,13 @@ void gc_heap::compact_phase (int condemned_gen_number,
                     if (args.check_gennum_p)
                     {
                         args.src_gennum = ((current_heap_segment == ephemeral_heap_segment) ? -1 : 2);
+                    }
+                    if (heap_segment_mem (current_heap_segment) == heap_segment_allocated (current_heap_segment))
+                    {
+                        // the case of an empty region / segment - make sure
+                        // we don't compact anything, but go to the next region / segment
+                        assert (current_brick == end_brick);
+                        current_brick++;
                     }
                     continue;
                 }
