@@ -9269,8 +9269,14 @@ size_t gc_heap::sort_mark_list()
         size_t ephemeral_size = heap_segment_allocated (hp->ephemeral_heap_segment) - hp->gc_low;
         total_ephemeral_size += ephemeral_size;
         total_mark_list_size += (hp->mark_list_index - hp->mark_list);
+#ifdef USE_REGIONS
+        // REGIONS TODO: iterate through the ephemeral regions to get a tighter bound
+        low = min (low, lowest_address);
+        high = max (high, highest_address);
+#else //USE_REGIONS
         low = min (low, hp->gc_low);
         high = max (high, heap_segment_allocated (hp->ephemeral_heap_segment));
+#endif //USE_REGIONS
     }
 
     // give up if the mark list size is unreasonably large
@@ -24851,7 +24857,18 @@ void gc_heap::process_last_np_surv_region (generation* consing_gen,
         }
         else
         {
-            assert (!settings.promotion);
+            if (settings.promotion)
+            {
+                assert(next_plan_gen_num == 0);
+                next_region = get_new_region (0);
+                generation_plan_start_segment (generation_of (next_plan_gen_num)) = next_region;
+                dprintf (REGIONS_LOG, ("h%d getting a new region for gen0 plan start seg to %Ix",
+                    heap_number, heap_segment_mem (next_region)));
+            }
+            else
+            {
+                assert(!"ran out of regions for non promotion case??");
+            }
         }
     }
 }
