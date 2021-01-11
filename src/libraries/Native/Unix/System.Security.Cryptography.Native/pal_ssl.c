@@ -644,45 +644,40 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 // This function generates key pair and creates simple certificate.
 static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
 {
-    RSA* rsa = CryptoNative_RsaCreate();
+    EVP_PKEY* rsaPkey = CryptoNative_RsaGenerateKey(2048);
     ASN1_TIME* time = ASN1_TIME_new();
-    BIGNUM* bn = BN_new();
-    BN_set_word(bn, RSA_F4);
-    X509_NAME * asnName;
-    unsigned char * name = (unsigned char*)"localhost";
+    X509_NAME* asnName;
+    unsigned char* name = (unsigned char*)"localhost";
 
     int ret = 0;
 
-    if (rsa != NULL && CryptoNative_RsaGenerateKeyEx(rsa, 2048, bn) == 1)
+    if (rsaPkey != NULL)
     {
+        // Fetch the key without upref (will get downref'd/freed by rsaPkey).
+        // Then add it to evp (which will upref it, preventing rsaPkey from erasing it)
+        RSA* rsa = EVP_PKEY_get0_RSA(rsaPkey);
+
         if (CryptoNative_EvpPkeySetRsa(evp, rsa) == 1)
         {
-            rsa = NULL;
+            X509_set_pubkey(cert, evp);
+
+            asnName = X509_get_subject_name(cert);
+            X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+
+            asnName =  X509_get_issuer_name(cert);
+            X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+
+            ASN1_TIME_set(time, 0);
+            X509_set1_notBefore(cert, time);
+            X509_set1_notAfter(cert, time);
+
+            ret = X509_sign(cert, evp, EVP_sha256());
         }
-
-        X509_set_pubkey(cert, evp);
-
-        asnName = X509_get_subject_name(cert);
-        X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
-
-        asnName =  X509_get_issuer_name(cert);
-        X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
-
-        ASN1_TIME_set(time, 0);
-        X509_set1_notBefore(cert, time);
-        X509_set1_notAfter(cert, time);
-
-        ret = X509_sign(cert, evp, EVP_sha256());
     }
 
-    if (bn != NULL)
+    if (rsaPkey != NULL)
     {
-        BN_free(bn);
-    }
-
-    if (rsa != NULL)
-    {
-        RSA_free(rsa);
+        EVP_PKEY_free(rsaPkey);
     }
 
     if (time != NULL)

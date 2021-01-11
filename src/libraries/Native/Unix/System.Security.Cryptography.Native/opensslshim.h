@@ -147,7 +147,6 @@ void RSA_get0_crt_params(const RSA* rsa, const BIGNUM** dmp1, const BIGNUM** dmq
 void RSA_get0_factors(const RSA* rsa, const BIGNUM** p, const BIGNUM** q);
 void RSA_get0_key(const RSA* rsa, const BIGNUM** n, const BIGNUM** e, const BIGNUM** d);
 int32_t RSA_meth_get_flags(const RSA_METHOD* meth);
-const RSA_METHOD* RSA_PKCS1_OpenSSL(void);
 int32_t RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* iqmp);
 int32_t RSA_set0_factors(RSA* rsa, BIGNUM* p, BIGNUM* q);
 int32_t RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d);
@@ -251,7 +250,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(d2i_PKCS12_fp) \
     REQUIRED_FUNCTION(d2i_PKCS7) \
     REQUIRED_FUNCTION(d2i_PKCS7_bio) \
-    REQUIRED_FUNCTION(d2i_RSAPublicKey) \
+    REQUIRED_FUNCTION(d2i_PKCS8_PRIV_KEY_INFO) \
+    REQUIRED_FUNCTION(d2i_PUBKEY) \
     REQUIRED_FUNCTION(d2i_X509) \
     REQUIRED_FUNCTION(d2i_X509_bio) \
     REQUIRED_FUNCTION(d2i_X509_CRL) \
@@ -362,20 +362,38 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
     REQUIRED_FUNCTION(EVP_MD_size) \
+    REQUIRED_FUNCTION(EVP_PKCS82PKEY) \
+    REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_free) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
+    REQUIRED_FUNCTION(EVP_PKEY_CTX_new_id) \
+    REQUIRED_FUNCTION(EVP_PKEY_base_id) \
+    REQUIRED_FUNCTION(EVP_PKEY_bits) \
+    REQUIRED_FUNCTION(EVP_PKEY_check) \
+    REQUIRED_FUNCTION(EVP_PKEY_decrypt) \
+    REQUIRED_FUNCTION(EVP_PKEY_decrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_set_peer) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive) \
+    REQUIRED_FUNCTION(EVP_PKEY_encrypt) \
+    REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
+    REQUIRED_FUNCTION(EVP_PKEY_get0_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_RSA) \
+    REQUIRED_FUNCTION(EVP_PKEY_keygen) \
+    REQUIRED_FUNCTION(EVP_PKEY_keygen_init) \
     REQUIRED_FUNCTION(EVP_PKEY_new) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_EC_KEY) \
+    REQUIRED_FUNCTION(EVP_PKEY_sign) \
+    REQUIRED_FUNCTION(EVP_PKEY_sign_init) \
+    REQUIRED_FUNCTION(EVP_PKEY_size) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_RSA) \
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
+    REQUIRED_FUNCTION(EVP_PKEY_verify) \
+    REQUIRED_FUNCTION(EVP_PKEY_verify_init) \
     REQUIRED_FUNCTION(EVP_rc2_cbc) \
     REQUIRED_FUNCTION(EVP_rc2_ecb) \
     REQUIRED_FUNCTION(EVP_sha1) \
@@ -397,6 +415,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(i2d_OCSP_REQUEST) \
     REQUIRED_FUNCTION(i2d_OCSP_RESPONSE) \
     REQUIRED_FUNCTION(i2d_PKCS7) \
+    REQUIRED_FUNCTION(i2d_RSAPrivateKey_bio) \
+    REQUIRED_FUNCTION(i2d_RSAPublicKey_bio) \
     REQUIRED_FUNCTION(i2d_X509) \
     REQUIRED_FUNCTION(i2d_X509_PUBKEY) \
     REQUIRED_FUNCTION(OBJ_ln2nid) \
@@ -441,6 +461,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(PKCS12_parse) \
     REQUIRED_FUNCTION(PKCS7_sign) \
     REQUIRED_FUNCTION(PKCS7_free) \
+    REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
     REQUIRED_FUNCTION(RAND_bytes) \
     REQUIRED_FUNCTION(RAND_poll) \
     REQUIRED_FUNCTION(RSA_check_key) \
@@ -451,20 +472,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     FALLBACK_FUNCTION(RSA_get0_factors) \
     FALLBACK_FUNCTION(RSA_get0_key) \
     FALLBACK_FUNCTION(RSA_meth_get_flags) \
-    REQUIRED_FUNCTION(RSA_new) \
-    RENAMED_FUNCTION(RSA_PKCS1_OpenSSL, RSA_PKCS1_SSLeay) \
-    REQUIRED_FUNCTION(RSA_private_decrypt) \
-    REQUIRED_FUNCTION(RSA_private_encrypt) \
-    REQUIRED_FUNCTION(RSA_public_decrypt) \
-    REQUIRED_FUNCTION(RSA_public_encrypt) \
-    FALLBACK_FUNCTION(RSA_set0_crt_params) \
-    FALLBACK_FUNCTION(RSA_set0_factors) \
-    FALLBACK_FUNCTION(RSA_set0_key) \
-    REQUIRED_FUNCTION(RSA_set_method) \
-    REQUIRED_FUNCTION(RSA_sign) \
-    REQUIRED_FUNCTION(RSA_size) \
+    REQUIRED_FUNCTION(RSA_pkey_ctx_ctrl) \
     REQUIRED_FUNCTION(RSA_up_ref) \
-    REQUIRED_FUNCTION(RSA_verify) \
     LIGHTUP_FUNCTION(SSL_CIPHER_find) \
     REQUIRED_FUNCTION(SSL_CIPHER_get_bits) \
     REQUIRED_FUNCTION(SSL_CIPHER_get_id) \
@@ -661,7 +670,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define d2i_PKCS12_fp d2i_PKCS12_fp_ptr
 #define d2i_PKCS7 d2i_PKCS7_ptr
 #define d2i_PKCS7_bio d2i_PKCS7_bio_ptr
-#define d2i_RSAPublicKey d2i_RSAPublicKey_ptr
+#define d2i_PKCS8_PRIV_KEY_INFO d2i_PKCS8_PRIV_KEY_INFO_ptr
+#define d2i_PUBKEY d2i_PUBKEY_ptr
 #define d2i_X509 d2i_X509_ptr
 #define d2i_X509_bio d2i_X509_bio_ptr
 #define d2i_X509_CRL d2i_X509_CRL_ptr
@@ -772,20 +782,38 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
 #define EVP_MD_size EVP_MD_size_ptr
+#define EVP_PKCS82PKEY EVP_PKCS82PKEY_ptr
+#define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
 #define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
+#define EVP_PKEY_CTX_new_id EVP_PKEY_CTX_new_id_ptr
+#define EVP_PKEY_base_id EVP_PKEY_base_id_ptr
+#define EVP_PKEY_bits EVP_PKEY_bits_ptr
+#define EVP_PKEY_check EVP_PKEY_check_ptr
+#define EVP_PKEY_decrypt EVP_PKEY_decrypt_ptr
+#define EVP_PKEY_decrypt_init EVP_PKEY_decrypt_init_ptr
 #define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr
 #define EVP_PKEY_derive_init EVP_PKEY_derive_init_ptr
 #define EVP_PKEY_derive EVP_PKEY_derive_ptr
+#define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
+#define EVP_PKEY_encrypt_init EVP_PKEY_encrypt_init_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
+#define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
 #define EVP_PKEY_get1_RSA EVP_PKEY_get1_RSA_ptr
+#define EVP_PKEY_keygen EVP_PKEY_keygen_ptr
+#define EVP_PKEY_keygen_init EVP_PKEY_keygen_init_ptr
 #define EVP_PKEY_new EVP_PKEY_new_ptr
 #define EVP_PKEY_set1_DSA EVP_PKEY_set1_DSA_ptr
 #define EVP_PKEY_set1_EC_KEY EVP_PKEY_set1_EC_KEY_ptr
 #define EVP_PKEY_set1_RSA EVP_PKEY_set1_RSA_ptr
+#define EVP_PKEY_sign EVP_PKEY_sign_ptr
+#define EVP_PKEY_sign_init EVP_PKEY_sign_init_ptr
+#define EVP_PKEY_size EVP_PKEY_size_ptr
 #define EVP_PKEY_up_ref EVP_PKEY_up_ref_ptr
+#define EVP_PKEY_verify EVP_PKEY_verify_ptr
+#define EVP_PKEY_verify_init EVP_PKEY_verify_init_ptr
 #define EVP_rc2_cbc EVP_rc2_cbc_ptr
 #define EVP_rc2_ecb EVP_rc2_ecb_ptr
 #define EVP_sha1 EVP_sha1_ptr
@@ -807,6 +835,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define i2d_OCSP_REQUEST i2d_OCSP_REQUEST_ptr
 #define i2d_OCSP_RESPONSE i2d_OCSP_RESPONSE_ptr
 #define i2d_PKCS7 i2d_PKCS7_ptr
+#define i2d_RSAPrivateKey_bio i2d_RSAPrivateKey_bio_ptr
+#define i2d_RSAPublicKey_bio i2d_RSAPublicKey_bio_ptr
 #define i2d_X509 i2d_X509_ptr
 #define i2d_X509_PUBKEY i2d_X509_PUBKEY_ptr
 #define OBJ_ln2nid OBJ_ln2nid_ptr
@@ -851,6 +881,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define PKCS12_parse PKCS12_parse_ptr
 #define PKCS7_sign PKCS7_sign_ptr
 #define PKCS7_free PKCS7_free_ptr
+#define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
 #define RAND_bytes RAND_bytes_ptr
 #define RAND_poll RAND_poll_ptr
 #define RSA_check_key RSA_check_key_ptr
@@ -861,20 +892,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_get0_key RSA_get0_key_ptr
 #define RSA_get_method RSA_get_method_ptr
 #define RSA_meth_get_flags RSA_meth_get_flags_ptr
-#define RSA_new RSA_new_ptr
-#define RSA_PKCS1_OpenSSL RSA_PKCS1_OpenSSL_ptr
-#define RSA_private_decrypt RSA_private_decrypt_ptr
-#define RSA_private_encrypt RSA_private_encrypt_ptr
-#define RSA_public_decrypt RSA_public_decrypt_ptr
-#define RSA_public_encrypt RSA_public_encrypt_ptr
-#define RSA_set0_crt_params RSA_set0_crt_params_ptr
-#define RSA_set0_factors RSA_set0_factors_ptr
-#define RSA_set0_key RSA_set0_key_ptr
-#define RSA_set_method RSA_set_method_ptr
-#define RSA_sign RSA_sign_ptr
-#define RSA_size RSA_size_ptr
+#define RSA_pkey_ctx_ctrl RSA_pkey_ctx_ctrl_ptr
 #define RSA_up_ref RSA_up_ref_ptr
-#define RSA_verify RSA_verify_ptr
 #define sk_free OPENSSL_sk_free_ptr
 #define sk_new_null OPENSSL_sk_new_null_ptr
 #define sk_num OPENSSL_sk_num_ptr
@@ -1113,7 +1132,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // Restore the old names for RENAMED_FUNCTION functions.
 #define EVP_MD_CTX_free EVP_MD_CTX_destroy
 #define EVP_MD_CTX_new EVP_MD_CTX_create
-#define RSA_PKCS1_OpenSSL RSA_PKCS1_SSLeay
 #define OPENSSL_sk_free sk_free
 #define OPENSSL_sk_new_null sk_new_null
 #define OPENSSL_sk_num sk_num

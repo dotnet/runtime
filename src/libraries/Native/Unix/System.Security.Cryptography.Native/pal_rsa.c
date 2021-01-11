@@ -4,49 +4,63 @@
 #include "pal_rsa.h"
 #include "pal_utilities.h"
 
-RSA* CryptoNative_RsaCreate()
+EVP_PKEY* CryptoNative_DecodeRsaSpki(const uint8_t* buf, int32_t len)
 {
-    return RSA_new();
-}
-
-int32_t CryptoNative_RsaUpRef(RSA* rsa)
-{
-    return RSA_up_ref(rsa);
-}
-
-void CryptoNative_RsaDestroy(RSA* rsa)
-{
-    if (rsa != NULL)
+    if (buf == NULL || len <= 0)
     {
-        RSA_free(rsa);
+        assert(false);
+        return NULL;
     }
+
+    return d2i_PUBKEY(NULL, &buf, len);
 }
 
-RSA* CryptoNative_DecodeRsaPublicKey(const uint8_t* buf, int32_t len)
+static int CheckRsaPrivateKey(EVP_PKEY* pkey)
 {
-    if (!buf || !len)
+    if (EVP_PKEY_get0_RSA(pkey) == NULL)
+    {
+        return 0;
+    }
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    int ret = EVP_PKEY_check(ctx);
+    EVP_PKEY_CTX_free(ctx);
+    return ret;
+}
+
+EVP_PKEY* CryptoNative_DecodeRsaPkcs8(const uint8_t* buf, int32_t len)
+{
+    if (buf == NULL || len <= 0)
+    {
+        assert(false);
+        return NULL;
+    }
+
+    PKCS8_PRIV_KEY_INFO* p8info = d2i_PKCS8_PRIV_KEY_INFO(NULL, &buf, len);
+
+    if (p8info == NULL)
     {
         return NULL;
     }
 
-    return d2i_RSAPublicKey(NULL, &buf, len);
-}
+    EVP_PKEY* pkey = EVP_PKCS82PKEY(p8info);
 
-static int GetOpenSslPadding(RsaPadding padding)
-{
-    assert(padding == Pkcs1 || padding == OaepSHA1 || padding == NoPadding);
+    PKCS8_PRIV_KEY_INFO_free(p8info);
 
-    switch (padding)
+    // Check that it's a valid RSA key
+    if (pkey != NULL && CheckRsaPrivateKey(pkey) != 1)
     {
-        case Pkcs1:
-            return RSA_PKCS1_PADDING;
-        case OaepSHA1:
-            return RSA_PKCS1_OAEP_PADDING;
-        case NoPadding:
-            return RSA_NO_PADDING;
+        EVP_PKEY_free(pkey);
+        return NULL;
     }
 
-    return RSA_NO_PADDING;
+    return pkey;
 }
 
 static int HasNoPrivateKey(RSA* rsa)
@@ -103,300 +117,411 @@ static int HasNoPrivateKey(RSA* rsa)
     return 0;
 }
 
-int32_t
-CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
+int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
+                                const uint8_t* data,
+                                int32_t dataLen,
+                                RsaPadding padding,
+                                const EVP_MD* digest,
+                                uint8_t* destination)
 {
-    int openSslPadding = GetOpenSslPadding(padding);
-    return RSA_public_encrypt(flen, from, to, rsa, openSslPadding);
-}
+    const int UsageError = -2;
+    const int OpenSslError = -1;
 
-int32_t
-CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
-{
-    if (HasNoPrivateKey(rsa))
+    if (pkey == NULL || data == NULL || destination == NULL)
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-        return -1;
+        return UsageError;
     }
 
-    int openSslPadding = GetOpenSslPadding(padding);
-    return RSA_private_decrypt(flen, from, to, rsa, openSslPadding);
-}
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
-int32_t CryptoNative_RsaSignPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
-{
-    if (HasNoPrivateKey(rsa))
+    if (ctx == NULL)
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_ENCRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-        return -1;
+        return OpenSslError;
     }
 
-    return RSA_private_encrypt(flen, from, to, rsa, RSA_NO_PADDING);
-}
+    int ret = OpenSslError;
 
-int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
-{
-    return RSA_public_decrypt(flen, from, to, rsa, RSA_NO_PADDING);
-}
-
-int32_t CryptoNative_RsaSize(RSA* rsa)
-{
-    return RSA_size(rsa);
-}
-
-int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM* e)
-{
-    return RSA_generate_key_ex(rsa, bits, e, NULL);
-}
-
-int32_t
-CryptoNative_RsaSign(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa)
-{
-    if (siglen == NULL)
+    if (EVP_PKEY_encrypt_init(ctx) <= 0)
     {
-        assert(false);
-        return 0;
+        goto done;
     }
 
-    *siglen = 0;
-
-    if (HasNoPrivateKey(rsa))
+    if (padding == Pkcs1)
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_SIGN, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-        return 0;
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+        {
+            goto done;
+        }
+    }
+    else if (padding == OaepOrPss)
+    {
+        if (digest == NULL)
+        {
+            ret = UsageError;
+            goto done;
+        }
+
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
+        {
+            goto done;
+        }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        ret = UsageError;
+        goto done;
     }
 
-    // Shared pointer to the metadata about the message digest algorithm
-    const EVP_MD* digest = EVP_get_digestbynid(type);
+    size_t written;
 
-    // If the digest itself isn't known then RSA_R_UNKNOWN_ALGORITHM_TYPE will get reported, but
-    // we have to check that the digest size matches what we expect.
-    if (digest != NULL && mlen != EVP_MD_size(digest))
+    if (EVP_PKEY_encrypt(ctx, destination, &written, data, Int32ToSizeT(dataLen)) > 0)
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_SIGN, RSA_R_INVALID_MESSAGE_LENGTH, __FILE__, __LINE__);
-        return 0;
+        ret = SizeTToInt32(written);
     }
 
-    unsigned int unsignedSigLen = 0;
-    int32_t ret = RSA_sign(type, m, Int32ToUint32(mlen), sigret, &unsignedSigLen, rsa);
-    assert(unsignedSigLen <= INT32_MAX);
-    *siglen = (int32_t)unsignedSigLen;
+done:
+    EVP_PKEY_CTX_free(ctx);
     return ret;
 }
 
-int32_t
-CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
+int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
+                                const uint8_t* data,
+                                int32_t dataLen,
+                                RsaPadding padding,
+                                const EVP_MD* digest,
+                                uint8_t* destination)
 {
-    return RSA_verify(type, m, Int32ToUint32(mlen), sigbuf, Int32ToUint32(siglen), rsa);
-}
+    const int WrongSize = -3;
+    const int UsageError = -2;
+    const int OpenSslError = -1;
 
-int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
-                                      const BIGNUM** n,
-                                      const BIGNUM** e,
-                                      const BIGNUM** d,
-                                      const BIGNUM** p,
-                                      const BIGNUM** dmp1,
-                                      const BIGNUM** q,
-                                      const BIGNUM** dmq1,
-                                      const BIGNUM** iqmp)
-{
-    if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
+    if (pkey == NULL || data == NULL || destination == NULL)
     {
-        assert(false);
-
-        // since these parameters are 'out' parameters in managed code, ensure they are initialized
-        if (n)
-            *n = NULL;
-        if (e)
-            *e = NULL;
-        if (d)
-            *d = NULL;
-        if (p)
-            *p = NULL;
-        if (dmp1)
-            *dmp1 = NULL;
-        if (q)
-            *q = NULL;
-        if (dmq1)
-            *dmq1 = NULL;
-        if (iqmp)
-            *iqmp = NULL;
-
-        return 0;
+        return UsageError;
     }
 
-    RSA_get0_key(rsa, n, e, d);
-    RSA_get0_factors(rsa, p, q);
-    RSA_get0_crt_params(rsa, dmp1, dmq1, iqmp);
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
-    return 1;
-}
-
-static BIGNUM* MakeBignum(uint8_t* buffer, int32_t bufferLength)
-{
-    if (buffer && bufferLength)
+    if (ctx == NULL)
     {
-        return BN_bin2bn(buffer, bufferLength, NULL);
+        return OpenSslError;
     }
 
-    return NULL;
-}
+    int expectedSize = EVP_PKEY_size(pkey);
 
-static int32_t ValidatePrivateRsaParameters(BIGNUM* bnN,
-                                            BIGNUM* bnE,
-                                            BIGNUM* bnD,
-                                            BIGNUM* bnP,
-                                            BIGNUM* bnQ,
-                                            BIGNUM* bnDmp1,
-                                            BIGNUM* bnDmq1,
-                                            BIGNUM* bnIqmp)
-{
-    if (!bnN || !bnE || !bnD || !bnP || !bnQ ||
-        !bnDmp1 || !bnDmq1 || !bnIqmp)
+    if (dataLen != expectedSize)
     {
-        assert(false);
-        return 0;
+        return WrongSize;
     }
 
-    // This is shared and should not be freed.
-    const RSA_METHOD* openssl_method = RSA_PKCS1_OpenSSL();
+    int ret = OpenSslError;
 
-    RSA* rsa = RSA_new();
-
-    if (!rsa)
+    if (EVP_PKEY_decrypt_init(ctx) <= 0)
     {
-        return 0;
+        goto done;
     }
 
-    // RSA_check_key only works when it has access to the
-    // internal values of the RSA*. If the process
-    // has changed the default ENGINE, the function
-    // may fail. For purposes of validation, we always
-    // do it using the openssl methods.
-    if (!RSA_set_method(rsa, openssl_method))
+    if (padding == Pkcs1)
     {
-        RSA_free(rsa);
-        return 0;
-    }
-
-    BIGNUM* bnNdup = BN_dup(bnN);
-    BIGNUM* bnEdup = BN_dup(bnE);
-    BIGNUM* bnDdup = BN_dup(bnD);
-
-    if (!RSA_set0_key(rsa, bnNdup, bnEdup, bnDdup))
-    {
-        BN_free(bnNdup);
-        BN_free(bnEdup);
-        BN_clear_free(bnDdup);
-        RSA_free(rsa);
-        return 0;
-    }
-
-    BIGNUM* bnPdup = BN_dup(bnP);
-    BIGNUM* bnQdup = BN_dup(bnQ);
-
-    if (!RSA_set0_factors(rsa, bnPdup, bnQdup))
-    {
-        BN_clear_free(bnPdup);
-        BN_clear_free(bnQdup);
-        RSA_free(rsa);
-        return 0;
-    }
-
-    BIGNUM* bnDmp1dup = BN_dup(bnDmp1);
-    BIGNUM* bnDmq1dup = BN_dup(bnDmq1);
-    BIGNUM* bnIqmpdup = BN_dup(bnIqmp);
-
-    if (!RSA_set0_crt_params(rsa, bnDmp1dup, bnDmq1dup, bnIqmpdup))
-    {
-        BN_clear_free(bnDmp1dup);
-        BN_clear_free(bnDmq1dup);
-        BN_clear_free(bnIqmpdup);
-        RSA_free(rsa);
-        return 0;
-    }
-
-    if (RSA_check_key(rsa) != 1)
-    {
-        RSA_free(rsa);
-        return 0;
-    }
-
-    RSA_free(rsa);
-    return 1;
-}
-
-int32_t CryptoNative_SetRsaParameters(RSA* rsa,
-                                      uint8_t* n,
-                                      int32_t nLength,
-                                      uint8_t* e,
-                                      int32_t eLength,
-                                      uint8_t* d,
-                                      int32_t dLength,
-                                      uint8_t* p,
-                                      int32_t pLength,
-                                      uint8_t* dmp1,
-                                      int32_t dmp1Length,
-                                      uint8_t* q,
-                                      int32_t qLength,
-                                      uint8_t* dmq1,
-                                      int32_t dmq1Length,
-                                      uint8_t* iqmp,
-                                      int32_t iqmpLength)
-{
-    if (!rsa)
-    {
-        assert(false);
-        return 0;
-    }
-
-    BIGNUM* bnN = MakeBignum(n, nLength);
-    BIGNUM* bnE = MakeBignum(e, eLength);
-    BIGNUM* bnD = MakeBignum(d, dLength);
-
-    if (!RSA_set0_key(rsa, bnN, bnE, bnD))
-    {
-        // BN_free handles NULL input
-        BN_free(bnN);
-        BN_free(bnE);
-        BN_free(bnD);
-        return 0;
-    }
-
-    if (bnD != NULL)
-    {
-        BIGNUM* bnP = MakeBignum(p, pLength);
-        BIGNUM* bnQ = MakeBignum(q, qLength);
-        BIGNUM* bnDmp1 = MakeBignum(dmp1, dmp1Length);
-        BIGNUM* bnDmq1 = MakeBignum(dmq1, dmq1Length);
-        BIGNUM* bnIqmp = MakeBignum(iqmp, iqmpLength);
-
-        if (!ValidatePrivateRsaParameters(bnN,
-                                          bnE,
-                                          bnD,
-                                          bnP,
-                                          bnQ,
-                                          bnDmp1,
-                                          bnDmq1,
-                                          bnIqmp)
-            || !RSA_set0_factors(rsa, bnP, bnQ))
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
         {
-            BN_free(bnP);
-            BN_free(bnQ);
-            BN_free(bnDmp1);
-            BN_free(bnDmq1);
-            BN_free(bnIqmp);
-            return 0;
+            goto done;
+        }
+    }
+    else if (padding == OaepOrPss)
+    {
+        if (digest == NULL)
+        {
+            ret = UsageError;
+            goto done;
         }
 
-        if (!RSA_set0_crt_params(rsa, bnDmp1, bnDmq1, bnIqmp))
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
         {
-            BN_free(bnDmp1);
-            BN_free(bnDmq1);
-            BN_free(bnIqmp);
-            return 0;
+            goto done;
+        }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        ret = UsageError;
+        goto done;
+    }
+
+    // This check may no longer be needed on OpenSSL 3.0
+    {
+        RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+        if (rsa == NULL || HasNoPrivateKey(rsa))
+        {
+            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+            ret = -1;
+            goto done;
         }
     }
 
-    return 1;
+    size_t written;
+
+    if (EVP_PKEY_decrypt(ctx, destination, &written, data, Int32ToSizeT(dataLen)) > 0)
+    {
+        ret = SizeTToInt32(written);
+    }
+
+done:
+    EVP_PKEY_CTX_free(ctx);
+    return ret;
+}
+
+EVP_PKEY* CryptoNative_RsaGenerateKey(int32_t keySize)
+{
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
+
+    if (ctx == NULL)
+    {
+        return NULL;
+    }
+
+    EVP_PKEY* pkey = NULL;
+    int success = 1;
+    success = success && (1 == EVP_PKEY_keygen_init(ctx));
+    success = success && (1 == EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, keySize));
+    success = success && (1 == EVP_PKEY_keygen(ctx, &pkey));
+
+    if (pkey != NULL && !success)
+    {
+        EVP_PKEY_free(pkey);
+        pkey = NULL;
+    }
+
+    EVP_PKEY_CTX_free(ctx);
+    return pkey;
+}
+
+int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
+                                 RsaPadding padding,
+                                 const EVP_MD* digest,
+                                 const uint8_t* hash,
+                                 int32_t hashLen,
+                                 uint8_t* dest,
+                                 int32_t* sigLen)
+{
+    if (sigLen == NULL)
+    {
+        assert(false);
+        return -1;
+    }
+
+    *sigLen = 0;
+
+    if (pkey == NULL || digest == NULL || hash == NULL || hashLen < 0 || dest == NULL)
+    {
+        return -1;
+    }
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    int ret = 0;
+
+    if (EVP_PKEY_sign_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    if (padding == Pkcs1)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+        {
+            goto done;
+        }
+    }
+    else if (padding == OaepOrPss)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, RSA_PSS_SALTLEN_DIGEST) <= 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        // Usage error: unknown padding.
+        ret = -1;
+        goto done;
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+    {
+        goto done;
+    }
+
+    // This check may no longer be needed on OpenSSL 3.0
+    {
+        RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+        if (rsa == NULL || HasNoPrivateKey(rsa))
+        {
+            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+            ret = 0;
+            goto done;
+        }
+    }
+
+    size_t written;
+
+    if (EVP_PKEY_sign(ctx, dest, &written, hash, Int32ToSizeT(hashLen)) > 0)
+    {
+        ret = 1;
+        *sigLen = SizeTToInt32(written);
+    }
+
+done:
+    EVP_PKEY_CTX_free(ctx);
+    return ret;
+}
+
+int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
+                                   RsaPadding padding,
+                                   const EVP_MD* digest,
+                                   const uint8_t* hash,
+                                   int32_t hashLen,
+                                   uint8_t* signature,
+                                   int32_t sigLen)
+{
+    const int UsageError = INT_MIN;
+
+    if (pkey == NULL || digest == NULL || hash == NULL || hashLen < 0 || signature == NULL || sigLen < 0)
+    {
+        return UsageError;
+    }
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if (ctx == NULL)
+    {
+        return -1;
+    }
+
+    int ret = 0;
+
+    if (EVP_PKEY_verify_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    if (padding == Pkcs1)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+        {
+            goto done;
+        }
+    }
+    else if (padding == OaepOrPss)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, RSA_PSS_SALTLEN_DIGEST) <= 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        // Usage error: unknown padding.
+        ret = UsageError;
+        goto done;
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+    {
+        goto done;
+    }
+
+    // EVP_PKEY_verify is not consistent on whether a mis-sized hash is an error or just a mismatch.
+    // Normalize to mismatch.
+    if (hashLen != EVP_MD_size(digest))
+    {
+        ret = 0;
+        goto done;
+    }
+
+    ret = EVP_PKEY_verify(ctx, signature, Int32ToSizeT(sigLen), hash, Int32ToSizeT(hashLen));
+
+done:
+    EVP_PKEY_CTX_free(ctx);
+    return ret;
+}
+
+BIO* CryptoNative_ExportRSAPublicKey(EVP_PKEY* pkey)
+{
+    BIO* bio = BIO_new(BIO_s_mem());
+
+    if (bio == NULL)
+    {
+        return NULL;
+    }
+
+    // get0 means not upreffed, don't free.
+    RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+    if (rsa == NULL || i2d_RSAPublicKey_bio(bio, rsa) <= 0)
+    {
+        BIO_free(bio);
+        return NULL;
+    }
+
+    return bio;
+}
+
+BIO* CryptoNative_ExportRSAPrivateKey(EVP_PKEY* pkey)
+{
+    BIO* bio = BIO_new(BIO_s_mem());
+
+    if (bio == NULL)
+    {
+        return NULL;
+    }
+
+    // get0 means not upreffed, don't free.
+    RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+    if (rsa == NULL || HasNoPrivateKey(rsa) || i2d_RSAPrivateKey_bio(bio, rsa) <= 0)
+    {
+        BIO_free(bio);
+        return NULL;
+    }
+
+    return bio;
 }

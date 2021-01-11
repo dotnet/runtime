@@ -380,8 +380,6 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs"
