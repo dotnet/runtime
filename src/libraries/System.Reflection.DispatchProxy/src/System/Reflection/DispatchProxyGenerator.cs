@@ -63,8 +63,8 @@ namespace System.Reflection
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
         internal static object CreateProxyInstance(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type baseType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
+            Type interfaceType)
         {
             Debug.Assert(baseType != null);
             Debug.Assert(interfaceType != null);
@@ -75,8 +75,8 @@ namespace System.Reflection
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private static Type GetProxyType(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type baseType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
+            Type interfaceType)
         {
             lock (s_baseTypeAndInterfaceToGeneratedProxyType)
             {
@@ -101,8 +101,8 @@ namespace System.Reflection
             Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces will be preserved as well. See https://github.com/mono/linker/issues/1731")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private static Type GenerateProxyType(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type baseType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
+            Type interfaceType)
         {
             // Parameter validation is deferred until the point we need to create the proxy.
             // This prevents unnecessary overhead revalidating cached proxy types.
@@ -230,9 +230,12 @@ namespace System.Reflection
                     return _ignoresAccessChecksToAttributeConstructor;
                 }
             }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+                Justification = "Only the parameterless ctor is referenced on proxyBaseType. Other members can be trimmed if unused.")]
             public ProxyBuilder CreateProxy(
                 string name,
-                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type proxyBaseType)
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyBaseType)
             {
                 int nextId = Interlocked.Increment(ref _typeId);
                 TypeBuilder tb = _mb.DefineType(name + "_" + nextId, TypeAttributes.Public, proxyBaseType);
@@ -294,14 +297,14 @@ namespace System.Reflection
 
             private readonly ProxyAssembly _assembly;
             private readonly TypeBuilder _tb;
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             private readonly Type _proxyBaseType;
             private readonly List<FieldBuilder> _fields;
 
             internal ProxyBuilder(
                 ProxyAssembly assembly,
                 TypeBuilder tb,
-                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type proxyBaseType)
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyBaseType)
             {
                 _assembly = assembly;
                 _tb = tb;
@@ -347,7 +350,9 @@ namespace System.Reflection
                 return _tb.CreateType()!;
             }
 
-            internal void AddInterfaceImpl([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type iface)
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+                Justification = "If an interface member is unused, and trimmed, DispatchProxy won't implement it, which won't cause problems.")]
+            internal void AddInterfaceImpl(Type iface)
             {
                 // If necessary, generate an attribute to permit visibility
                 // to internal types.
