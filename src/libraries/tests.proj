@@ -166,6 +166,7 @@
 
     <!-- AOT Compilation failed + memory access out of bounds - https://github.com/dotnet/runtime/issues/46700 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.Tests/Microsoft.Extensions.DependencyInjection.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection/tests/DI.External.Tests/Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.UnmanagedMemoryStream/tests/System.IO.UnmanagedMemoryStream.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections/tests/System.Collections.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets/tests/System.Net.WebSockets.Tests.csproj" />
