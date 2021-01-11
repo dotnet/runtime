@@ -66,6 +66,8 @@ typedef int __ptrace_request;
 #include <asm/ptrace.h>
 #endif  // HAVE_PT_REGS
 
+#endif // !HAVE_MACH_EXCEPTIONS
+
 #ifdef HOST_AMD64
 #define ASSIGN_CONTROL_REGS \
         ASSIGN_REG(Rbp)     \
@@ -174,6 +176,8 @@ typedef int __ptrace_request;
 #define ASSIGN_ALL_REGS     \
         ASSIGN_CONTROL_REGS \
         ASSIGN_INTEGER_REGS \
+
+#if !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function:
@@ -401,6 +405,8 @@ CONTEXT_SetThreadContext(
      return ret;
 }
 
+#endif // !HAVE_MACH_EXCEPTIONS
+
 /*++
 Function :
     CONTEXTToNativeContext
@@ -473,6 +479,15 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             FPREG_Xmm(native, i) = lpContext->FltSave.XmmRegisters[i];
         }
 #elif defined(HOST_ARM64)
+#ifdef TARGET_OSX
+        _STRUCT_ARM_NEON_STATE64* fp = GetNativeSigSimdContext(native);
+        fp->__fpsr = lpContext->Fpsr;
+        fp->__fpcr = lpContext->Fpcr;
+        for (int i = 0; i < 32; i++)
+        {
+            *(NEON128*) &fp->__v[i] = lpContext->V[i];
+        }
+#else // TARGET_OSX
         fpsimd_context* fp = GetNativeSigSimdContext(native);
         if (fp)
         {
@@ -483,6 +498,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->vregs[i] = lpContext->V[i];
             }
         }
+#endif // TARGET_OSX
 #elif defined(HOST_ARM)
         VfpSigFrame* fp = GetNativeSigSimdContext(native);
         if (fp)
@@ -598,6 +614,15 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->FltSave.XmmRegisters[i] = FPREG_Xmm(native, i);
         }
 #elif defined(HOST_ARM64)
+#ifdef TARGET_OSX
+        const _STRUCT_ARM_NEON_STATE64* fp = GetConstNativeSigSimdContext(native);
+        lpContext->Fpsr = fp->__fpsr;
+        lpContext->Fpcr = fp->__fpcr;
+        for (int i = 0; i < 32; i++)
+        {
+            lpContext->V[i] = *(NEON128*) &fp->__v[i];
+        }
+#else // TARGET_OSX
         const fpsimd_context* fp = GetConstNativeSigSimdContext(native);
         if (fp)
         {
@@ -608,6 +633,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->V[i] = *(NEON128*) &fp->vregs[i];
             }
         }
+#endif // TARGET_OSX
 #elif defined(HOST_ARM)
         const VfpSigFrame* fp = GetConstNativeSigSimdContext(native);
         if (fp)
@@ -647,6 +673,8 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     }
 #endif // HOST_AMD64
 }
+
+#if !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function :

@@ -429,12 +429,13 @@ ds_ipc_accept (
 	if (!success) {
 		if (callback)
 			callback ("Failed to GetOverlappedResults for NamedPipe server", GetLastError());
-		ep_raise_error ();
+		// close the pipe (cleanup and reset below)
+		CloseHandle (ipc->pipe);
+	} else {
+		// create new IpcStream using handle (passes ownership to pStream)
+		stream = ipc_stream_alloc (ipc->pipe, DS_IPC_CONNECTION_MODE_LISTEN);
+		ep_raise_error_if_nok (stream != NULL);
 	}
-
-	// create new IpcStream using handle and reset the Server object so it can listen again
-	stream = ipc_stream_alloc (ipc->pipe, DS_IPC_CONNECTION_MODE_LISTEN);
-	ep_raise_error_if_nok (stream != NULL);
 
 	// reset the server
 	ipc->pipe = INVALID_HANDLE_VALUE;
@@ -637,6 +638,7 @@ ipc_stream_read_func (
 				DS_EXIT_BLOCKING_PAL_SECTION;
 			}
 		}
+		// error is unrecoverable, so return as such
 	}
 
 	*bytes_read = (uint32_t)read;
@@ -690,7 +692,7 @@ ipc_stream_write_func (
 						ipc_stream->pipe,   // pipe
 						overlap,            // overlapped
 						&written,           // out actual number of bytes written
-						true) != FALSE;         // block until async IO completes
+						true) != FALSE;     // block until async IO completes
 				} else {
 					// We either timed out or something else went wrong.
 					// For any error, attempt to cancel IO and ensure the cancel happened
@@ -707,6 +709,7 @@ ipc_stream_write_func (
 				DS_EXIT_BLOCKING_PAL_SECTION;
 			}
 		}
+		// error is unrecoverable, so return as such
 	}
 
 	*bytes_written = (uint32_t)written;

@@ -1,7 +1,9 @@
 project(System.Security.Cryptography.Native.Apple C)
 
-find_library(COREFOUNDATION_LIBRARY CoreFoundation)
-find_library(SECURITY_LIBRARY Security)
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_cryptography_apple_libs(NATIVE_LIBS_EXTRA)
 
 set(NATIVECRYPTO_SOURCES
     pal_digest.c
@@ -40,14 +42,14 @@ endif()
 add_library(System.Security.Cryptography.Native.Apple-Static
     STATIC
     ${NATIVECRYPTO_SOURCES}
+    entrypoints.c
 )
 
 set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Apple CLEAN_DIRECT_OUTPUT 1)
 
 if (GEN_SHARED_LIB)
     target_link_libraries(System.Security.Cryptography.Native.Apple
-        ${COREFOUNDATION_LIBRARY}
-        ${SECURITY_LIBRARY}
+        ${NATIVE_LIBS_EXTRA}
     )
 endif()
 

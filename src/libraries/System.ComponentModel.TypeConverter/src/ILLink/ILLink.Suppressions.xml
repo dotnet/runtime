@@ -159,12 +159,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Drawing.ColorTable.FillWithProperties(System.Collections.Generic.Dictionary{System.String,System.Drawing.Color},System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2072</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.LicenseManager.ValidateInternalRecursive(System.ComponentModel.LicenseContext,System.Type,System.Object,System.Boolean,System.ComponentModel.License@,System.String@)</property>

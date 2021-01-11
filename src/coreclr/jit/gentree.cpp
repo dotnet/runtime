@@ -17759,7 +17759,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             GenTreeCall* call = tree->AsCall();
             if (call->gtFlags & CORINFO_FLG_JIT_INTRINSIC)
             {
-                if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Array_Clone)
+                NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+                if ((ni == NI_System_Array_Clone) || (ni == NI_System_Object_MemberwiseClone))
                 {
                     objClass = gtGetClassHandle(call->gtCallThisArg->GetNode(), pIsExact, pIsNonNull);
                     break;

@@ -807,47 +807,24 @@ namespace System.Xml.Linq
 
         internal static string GetStringValue(object value)
         {
-            string? s = value as string;
-            if (s != null)
+            string? s = value switch
             {
-                return s;
-            }
-            else if (value is double)
-            {
-                s = XmlConvert.ToString((double)value);
-            }
-            else if (value is float)
-            {
-                s = XmlConvert.ToString((float)value);
-            }
-            else if (value is decimal)
-            {
-                s = XmlConvert.ToString((decimal)value);
-            }
-            else if (value is bool)
-            {
-                s = XmlConvert.ToString((bool)value);
-            }
-            else if (value is DateTime)
-            {
-                s = XmlConvert.ToString((DateTime) value, XmlDateTimeSerializationMode.RoundtripKind);
-            }
-            else if (value is DateTimeOffset)
-            {
-                s = XmlConvert.ToString((DateTimeOffset)value);
-            }
-            else if (value is TimeSpan)
-            {
-                s = XmlConvert.ToString((TimeSpan)value);
-            }
-            else if (value is XObject)
-            {
-                throw new ArgumentException(SR.Argument_XObjectValue);
-            }
-            else
-            {
-                s = value.ToString();
-            }
+                string stringValue => stringValue,
+                int intValue => XmlConvert.ToString(intValue),
+                double doubleValue => XmlConvert.ToString(doubleValue),
+                long longValue => XmlConvert.ToString(longValue),
+                float floatValue => XmlConvert.ToString(floatValue),
+                decimal decimalValue => XmlConvert.ToString(decimalValue),
+                short shortValue => XmlConvert.ToString(shortValue),
+                sbyte sbyteValue => XmlConvert.ToString(sbyteValue),
+                bool boolValue => XmlConvert.ToString(boolValue),
+                DateTime dtValue => XmlConvert.ToString(dtValue, XmlDateTimeSerializationMode.RoundtripKind),
+                DateTimeOffset dtoValue => XmlConvert.ToString(dtoValue),
+                TimeSpan tsValue => XmlConvert.ToString(tsValue),
+                XObject => throw new ArgumentException(SR.Argument_XObjectValue),
+                _ => value.ToString()
+            };
+
             if (s == null) throw new ArgumentException(SR.Argument_ConvertToString);
             return s;
         }

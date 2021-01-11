@@ -9775,8 +9775,10 @@ CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 
 namespace
 {
-    CorInfoCallConvExtension getUnmanagedCallConvForSig(Module* mod, PCCOR_SIGNATURE pSig, DWORD cbSig, bool* pSuppressGCTransition)
+    CorInfoCallConvExtension getUnmanagedCallConvForSig(CORINFO_MODULE_HANDLE mod, PCCOR_SIGNATURE pSig, DWORD cbSig, bool* pSuppressGCTransition)
     {
+        STANDARD_VM_CONTRACT;
+
         SigParser parser(pSig, cbSig);
         ULONG rawCallConv;
         if (FAILED(parser.GetCallingConv(&rawCallConv)))
@@ -9800,7 +9802,8 @@ namespace
         {
             CorUnmanagedCallingConvention callConvMaybe;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, &errorResID);
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
+
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 
@@ -9823,6 +9826,8 @@ namespace
 
     CorInfoCallConvExtension getUnmanagedCallConvForMethod(MethodDesc* pMD, bool* pSuppressGCTransition)
     {
+        STANDARD_VM_CONTRACT;
+
         ULONG methodCallConv;
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
@@ -9904,7 +9909,7 @@ namespace
         }
         else
         {
-            return getUnmanagedCallConvForSig(pMD->GetModule(), pSig, cbSig, pSuppressGCTransition);
+            return getUnmanagedCallConvForSig(GetScopeHandle(pMD->GetModule()), pSig, cbSig, pSuppressGCTransition);
         }
     }
 }
@@ -9939,7 +9944,7 @@ CorInfoCallConvExtension CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
     else
     {
         _ASSERTE(callSiteSig != nullptr);
-        callConv = getUnmanagedCallConvForSig(GetModule(callSiteSig->scope), callSiteSig->pSig, callSiteSig->cbSig, pSuppressGCTransition);
+        callConv = getUnmanagedCallConvForSig(callSiteSig->scope, callSiteSig->pSig, callSiteSig->cbSig, pSuppressGCTransition);
     }
 
     EE_TO_JIT_TRANSITION();
@@ -13023,22 +13028,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     _ASSERTE(!!ftn->IsStatic() == ((methodInfo.args.callConv & CORINFO_CALLCONV_HASTHIS) == 0));
 
     flags = GetCompileFlags(ftn, flags, &methodInfo);
-
-#ifdef FEATURE_TIERED_COMPILATION
-    // Clearing all tier flags and mark as optimized if the reverse P/Invoke
-    // flag is used and the function is eligible.
-    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE)
-        && ftn->IsEligibleForTieredCompilation())
-    {
-        _ASSERTE(config->GetCallerGCMode() != CallerGCMode::Coop);
-
-        // Clear all possible states.
-        flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-        flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-
-        config->SetJitSwitchedToOptimized();
-    }
-#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef _DEBUG
     if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION))

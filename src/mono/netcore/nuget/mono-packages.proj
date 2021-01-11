@@ -1,5 +1,7 @@
-<Project>
-  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
+  <PropertyGroup>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
+  </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android'">
     <ProjectReference Include="Microsoft.NET.Runtime.Android.Sample.Mono\Microsoft.NET.Runtime.Android.Sample.Mono.pkgproj" />
@@ -14,9 +16,7 @@
     <ProjectReference Include="Microsoft.NET.Runtime.iOS.Sample.Mono\Microsoft.NET.Runtime.iOS.Sample.Mono.pkgproj" />
   </ItemGroup>
 
-  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
-
-  <!-- Ordering matters! Overwriting the Pack target which should just invoke Build. -->
-  <Target Name="Pack" DependsOnTargets="Build">
-  </Target>
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
+    <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
+  </ItemGroup>
 </Project>
