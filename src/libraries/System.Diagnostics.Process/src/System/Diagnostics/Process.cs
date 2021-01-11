@@ -122,7 +122,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.Associated);
                 return GetOrOpenProcessHandle();
             }
@@ -136,11 +135,7 @@ namespace System.Diagnostics
         /// <internalonly/>
         private bool Associated
         {
-            get
-            {
-                CheckDisposed();
-                return _haveProcessId || _haveProcessHandle;
-            }
+            get { return _haveProcessId || _haveProcessHandle; }
         }
 
         /// <devdoc>
@@ -153,7 +148,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.BasePriority;
             }
@@ -170,7 +164,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.Exited);
                 return _exitCode;
             }
@@ -244,7 +237,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveId);
                 return _processId;
             }
@@ -260,7 +252,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.Associated);
                 return _machineName;
             }
@@ -328,7 +319,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PoolNonPagedBytes;
             }
@@ -350,7 +340,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PageFileBytes;
             }
@@ -361,7 +350,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PageFileBytes);
             }
@@ -372,7 +360,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PoolPagedBytes;
             }
@@ -383,7 +370,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PoolPagedBytes);
             }
@@ -394,7 +380,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PageFileBytesPeak;
             }
@@ -405,7 +390,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PageFileBytesPeak);
             }
@@ -415,7 +399,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.WorkingSetPeak;
             }
@@ -426,7 +409,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.WorkingSetPeak);
             }
@@ -436,7 +418,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.VirtualBytesPeak;
             }
@@ -447,7 +428,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.VirtualBytesPeak);
             }
@@ -517,7 +497,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.PrivateBytes;
             }
@@ -528,7 +507,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PrivateBytes);
             }
@@ -544,7 +522,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.ProcessName;
             }
@@ -581,7 +558,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.SessionId;
             }
@@ -657,7 +633,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 EnsureHandleCountPopulated();
                 return _processInfo!.HandleCount;
@@ -670,7 +645,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.VirtualBytes;
             }
@@ -681,7 +655,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.VirtualBytes);
             }
@@ -797,7 +770,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return _processInfo!.WorkingSet;
             }
@@ -808,7 +780,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.WorkingSet);
             }
@@ -1203,10 +1174,7 @@ namespace System.Diagnostics
             if (!_haveProcessHandle)
             {
                 //Cannot open a new process handle if the object has been disposed, since finalization has been suppressed.
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().Name);
-                }
+                CheckDisposed();
 
                 SetProcessHandle(GetProcessHandle());
             }
@@ -1277,10 +1245,7 @@ namespace System.Diagnostics
             }
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            CheckDisposed();
 
             SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
 
@@ -1679,7 +1644,6 @@ namespace System.Diagnostics
 
         internal void OutputReadNotifyUser(string? data)
         {
-            CheckDisposed();
             // To avoid race between remove handler and raising the event
             DataReceivedEventHandler? outputDataReceived = OutputDataReceived;
             if (outputDataReceived != null)
@@ -1699,7 +1663,6 @@ namespace System.Diagnostics
 
         internal void ErrorReadNotifyUser(string? data)
         {
-            CheckDisposed();
             // To avoid race between remove handler and raising the event
             DataReceivedEventHandler? errorDataReceived = ErrorDataReceived;
             if (errorDataReceived != null)

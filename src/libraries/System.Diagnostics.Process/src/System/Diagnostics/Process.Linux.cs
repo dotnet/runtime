@@ -55,7 +55,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 return BootTimeToDateTime(TicksToTimeSpan(GetStat().starttime));
             }
         }
