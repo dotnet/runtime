@@ -21,6 +21,9 @@ jobs:
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
+    ${{ if eq(parameters.useCheckoutBundle, true) }}:
+      dependsOn: checkout
+
     # Compute job name from template parameters
     name: ${{ format('mono_{0}_offsets', parameters.osGroup) }}
     displayName: ${{ format('Mono {0} AOT offsets', parameters.osGroup) }}
