@@ -22,19 +22,19 @@ namespace TestIntLimits
         static int CheckMulNeg()
         {
             bool fail = false;
-            if (Mul1_1(3) != -7 * 3)
+            if (MulNeg7(3) != -7 * 3)
             {
                 fail = true;
             }
 
-            if (Mul1_2(100) != 0)
+            if (MulNeg0(100) != 0)
             {
                 fail = true;
             }
 
             try
             {
-                Mul1_3(2);
+                MulNegIntMin(2);
             }
             catch
             {
@@ -44,7 +44,7 @@ namespace TestIntLimits
 
             try
             {
-                Mul1_4(1);
+                CheckedMulNenIntMin(1);
                 fail = true;
             }
             catch
@@ -52,7 +52,7 @@ namespace TestIntLimits
 
             try
             {
-                Mul1_4(0);
+                CheckedMulNenIntMin(0);
 
             }
             catch
@@ -60,22 +60,22 @@ namespace TestIntLimits
                 fail = true;
             }
 
-            if (Mul1_5(1) != -int.MaxValue)
+            if (NegMulIntMaxValue(1) != -int.MaxValue)
             {
                 fail = true;
             }
-            if (Mul1_5(0) != 0)
+            if (NegMulIntMaxValue(0) != 0)
             {
                 fail = true;
             }
-            if (Mul1_5(-1) != int.MaxValue)
+            if (NegMulIntMaxValue(-1) != int.MaxValue)
             {
                 fail = true;
             }
 
             try
             {
-                Mul1_6(int.MinValue);
+                CheckedMulNeg0(int.MinValue);
                 fail = true;
             }
             catch
@@ -91,16 +91,16 @@ namespace TestIntLimits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Mul1_1(int a) => -a * 7;
+        static int MulNeg7(int a) => -a * 7;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Mul1_2(int a) => -a * 0;
+        static int MulNeg0(int a) => -a * 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Mul1_3(int a) => -a * int.MinValue;
+        static int MulNegIntMin(int a) => -a * int.MinValue;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Mul1_4(int a)
+        static int CheckedMulNenIntMin(int a)
         {
             checked
             {
@@ -109,10 +109,10 @@ namespace TestIntLimits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Mul1_5(int a) => -(a * int.MaxValue);
+        static int NegMulIntMaxValue(int a) => -(a * int.MaxValue);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Mul1_6(int a)
+        static int CheckedMulNeg0(int a)
         {
             checked
             {
@@ -124,14 +124,14 @@ namespace TestIntLimits
         static int CheckNegMul()
         {
             bool fail = false;
-            if (Mul2_1(3) != -7 * 3)
+            if (NegMul7(3) != -7 * 3)
             {
                 fail = true;
             }
 
             try
             {
-                Mul2_2(100);
+                NegMulIntMinValue(100);
             }
             catch
             {
@@ -141,7 +141,7 @@ namespace TestIntLimits
 
             try
             {
-                Mul2_3(1);
+                CheckedNegMulIntMinValue(1);
                 fail = true;
             }
             catch
@@ -149,7 +149,7 @@ namespace TestIntLimits
 
             try
             {
-                Mul2_3(0);
+                CheckedNegMulIntMinValue(0);
 
             }
             catch
@@ -166,13 +166,13 @@ namespace TestIntLimits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Mul2_1(int a) => -(a * 7);
+        static int NegMul7(int a) => -(a * 7);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Mul2_2(int a) => -(a * int.MinValue);
+        static int NegMulIntMinValue(int a) => -(a * int.MinValue);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Mul2_3(int a)
+        static int CheckedNegMulIntMinValue(int a)
         {
             checked
             {
@@ -185,24 +185,24 @@ namespace TestIntLimits
         {
             bool fail = false;
 
-            if (Div1_1(110) != -10)
+            if (DivNeg11(110) != -10)
             {
                 fail = true;
             }
 
-            if (Div1_2(100000000000) != -100000000)
+            if (LongDivNeg1000(100000000000) != -100000000)
             {
                 fail = true;
             }
 
             try
             {
-                Div1_3(1);
-                Div1_3(int.MinValue);
-                Div1_4(1);
-                Div1_4(long.MinValue);
-                Div1_5(int.MinValue);
-                Div1_6(long.MinValue);
+                DivNegIntMinValue(1);
+                DivNegIntMinValue(int.MinValue);
+                LongDivNegLongMinValue(1);
+                LongDivNegLongMinValue(long.MinValue);
+                DivNeg1(int.MinValue);
+                LongDivNeg1(long.MinValue);
             }
             catch
             {
@@ -218,46 +218,46 @@ namespace TestIntLimits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Div1_1(int a) => -a / 11;
+        static int DivNeg11(int a) => -a / 11;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div1_2(long a) => -a / 1000;
+        static long LongDivNeg1000(long a) => -a / 1000;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div1_3(int a) => -a / int.MinValue;
+        static int DivNegIntMinValue(int a) => -a / int.MinValue;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div1_4(long a) => -a / long.MinValue;
+        static long LongDivNegLongMinValue(long a) => -a / long.MinValue;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div1_5(int a) => -a / 1;
+        static int DivNeg1(int a) => -a / 1;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div1_6(long a) => -a / 1;
+        static long LongDivNeg1(long a) => -a / 1;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int CheckNegDiv()
         {
             bool fail = false;
 
-            if (Div2_1(110) != -10)
+            if (NegDiv11(110) != -10)
             {
                 fail = true;
             }
 
-            if (Div2_2(100000000000) != -100000000)
+            if (LongNegDiv1000(100000000000) != -100000000)
             {
                 fail = true;
             }
 
             try
             {
-                Div2_3(1);
-                Div2_3(int.MinValue);
-                Div2_4(1);
-                Div2_4(long.MinValue);
-                Div2_5(int.MinValue);
-                Div2_6(long.MinValue);
+                NegDivIntMinValue(1);
+                NegDivIntMinValue(int.MinValue);
+                LongNegDivLongMinValue(1);
+                LongNegDivLongMinValue(long.MinValue);
+                NegDiv1(int.MinValue);
+                LongNegDiv1(long.MinValue);
             }
             catch
             {
@@ -266,7 +266,7 @@ namespace TestIntLimits
 
             try
             {
-                Div2_7(int.MinValue);
+                NegDivMinus1(int.MinValue);
                 fail = true;
             }
             catch
@@ -274,7 +274,7 @@ namespace TestIntLimits
 
             try
             {
-                Div2_8(long.MinValue);
+                LongNegDivMinus1(long.MinValue);
                 fail = true;
             }
             catch
@@ -289,28 +289,28 @@ namespace TestIntLimits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Div2_1(int a) => -(a / 11);
+        static int NegDiv11(int a) => -(a / 11);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div2_2(long a) => -(a / 1000);
+        static long LongNegDiv1000(long a) => -(a / 1000);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Div2_3(int a) => -(a / int.MinValue);
+        static int NegDivIntMinValue(int a) => -(a / int.MinValue);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div2_4(long a) => -(a / long.MinValue);
+        static long LongNegDivLongMinValue(long a) => -(a / long.MinValue);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div2_5(int a) => -(a / 1);
+        static int NegDiv1(int a) => -(a / 1);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div2_6(long a) => -(a / 1);
+        static long LongNegDiv1(long a) => -(a / 1);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div2_7(int a) => -(a / -1);
+        static int NegDivMinus1(int a) => -(a / -1);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long Div2_8(long a) => -(a / -1);
+        static long LongNegDivMinus1(long a) => -(a / -1);
 
         static int Main()
         {
