@@ -451,12 +451,42 @@ namespace System.Net.Sockets.Tests
                 return bytesReceived;
             }
         }
+
         public override async Task<int> SendAsync(Socket s, ArraySegment<byte> buffer)
         {
             using (var m = new NativeMemoryManager(buffer.Count))
             {
                 buffer.AsSpan().CopyTo(m.Memory.Span);
                 return await s.SendAsync(m.Memory, SocketFlags.None).ConfigureAwait(false);
+            }
+        }
+
+        public override async Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint)
+        {
+            using (var m = new NativeMemoryManager(buffer.Count))
+            {
+                buffer.AsSpan().CopyTo(m.Memory.Span);
+                return await s.SendToAsync(m.Memory, SocketFlags.None, endPoint).ConfigureAwait(false);
+            }
+        }
+
+        public override async Task<SocketReceiveFromResult> ReceiveFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint)
+        {
+            using (var m = new NativeMemoryManager(buffer.Count))
+            {
+                SocketReceiveFromResult result = await s.ReceiveFromAsync(m.Memory, SocketFlags.None, endPoint).ConfigureAwait(false);
+                m.Memory.Span.Slice(0, result.ReceivedBytes).CopyTo(buffer.AsSpan());
+                return result;
+            }
+        }
+
+        public override async Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint)
+        {
+            using (var m = new NativeMemoryManager(buffer.Count))
+            {
+                SocketReceiveMessageFromResult result = await s.ReceiveMessageFromAsync(m.Memory, SocketFlags.None, endPoint).ConfigureAwait(false);
+                m.Memory.Span.Slice(0, result.ReceivedBytes).CopyTo(buffer.AsSpan());
+                return result;
             }
         }
     }
