@@ -208,25 +208,31 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        public async Task PostEvictionCallbacksGetInvokedWhenMemoryCacheEntriesExpireWithAnActiveChangeToken()
+        public void PostEvictionCallbacksGetInvokedWhenMemoryCacheEntriesExpireWithAnActiveChangeToken()
         {
             using var cache = new MemoryCache(new MemoryCacheOptions());
             var key = new object();
 
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            var tcs = new TaskCompletionSource<object>();
+            var cts = new CancellationTokenSource();
+            var callbackInvoked = new ManualResetEvent(false);
 
             cache.Set(key, new object(), new MemoryCacheEntryOptions
             {
                 ExpirationTokens = { new CancellationChangeToken(cts.Token) },
-                PostEvictionCallbacks = { new PostEvictionCallbackRegistration {
-                    EvictionCallback = (key, value, reason, state) => tcs.TrySetResult(new object()) } },
+                PostEvictionCallbacks =
+                {
+                    new PostEvictionCallbackRegistration()
+                    {
+                        EvictionCallback = (key, value, reason, state) => ((ManualResetEvent)state).Set(),
+                        State = callbackInvoked
+                    }
+                }
             });
 
             Assert.True(cache.TryGetValue(key, out _));
 
-            await tcs.Task.TimeoutAfter(TimeSpan.FromSeconds(10));
-
+            cts.Cancel();
+            Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(10)));
             Assert.False(cache.TryGetValue(key, out _));
         }
 
