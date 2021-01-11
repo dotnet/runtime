@@ -126,6 +126,7 @@ struct _StaticDataFreeList {
 	StaticDataFreeList *next;
 	guint32 offset;
 	guint32 size;
+	gint32 align;
 };
 
 typedef struct {
@@ -998,7 +999,9 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	thread->abort_state_handle = 0;
 
 	thread->abort_exc = NULL;
+#ifndef ENABLE_NETCORE
 	thread->current_appcontext = NULL;
+#endif
 
 	LOCK_THREAD (thread);
 
@@ -1321,6 +1324,29 @@ start_wrapper (gpointer data)
 	g_assert_not_reached ();
 }
 
+static void
+throw_thread_start_exception (guint32 error_code, MonoError *error)
+{
+	ERROR_DECL (method_error);
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, throw_method)
+
+	throw_method = mono_class_get_method_from_name_checked (mono_defaults.thread_class, "ThrowThreadStartException", 1, 0, method_error);
+	mono_error_assert_ok (method_error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, throw_method)
+	g_assert (throw_method);
+
+	char *msg = g_strdup_printf ("0x%x", error_code);
+	MonoException *ex = mono_get_exception_execution_engine (msg);
+	g_free (msg);
+
+	gpointer args [1];
+	args [0] = ex;
+
+	mono_runtime_invoke_checked (throw_method, NULL, args, error);
+}
+
 /*
  * create_thread:
  *
@@ -1403,7 +1429,12 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 		mono_threads_lock ();
 		mono_g_hash_table_remove (threads_starting_up, thread);
 		mono_threads_unlock ();
+
+#ifdef ENABLE_NETCORE
+		throw_thread_start_exception (mono_w32error_get_last(), error);
+#else
 		mono_error_set_execution_engine (error, "Couldn't create thread. Error 0x%x", mono_w32error_get_last());
+#endif
 		/* ref is not going to be decremented in start_wrapper_internal */
 		mono_atomic_dec_i32 (&start_info->ref);
 		ret = FALSE;
@@ -4904,12 +4935,12 @@ alloc_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 }
 
 static StaticDataFreeList*
-search_slot_in_freelist (StaticDataInfo *static_data, guint32 size, guint32 align)
+search_slot_in_freelist (StaticDataInfo *static_data, guint32 size, gint32 align)
 {
 	StaticDataFreeList* prev = NULL;
 	StaticDataFreeList* tmp = static_data->freelist;
 	while (tmp) {
-		if (tmp->size == size) {
+		if (tmp->size == size && tmp->align == align) {
 			if (prev)
 				prev->next = tmp->next;
 			else
@@ -5010,7 +5041,11 @@ mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 off
 	if (static_type == SPECIAL_STATIC_OFFSET_TYPE_THREAD) {
 		return get_thread_static_data (thread, offset);
 	} else {
+#ifndef ENABLE_NETCORE
 		return get_context_static_data (thread->current_appcontext, offset);
+#else
+		g_assert_not_reached ();
+#endif
 	}
 }
 
@@ -5067,7 +5102,7 @@ free_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 }
 
 static void
-do_free_special_slot (guint32 offset, guint32 size)
+do_free_special_slot (guint32 offset, guint32 size, gint32 align)
 {
 	guint32 static_type = ACCESS_SPECIAL_STATIC_OFFSET (offset, type);
 	MonoBitSet **sets;
@@ -5100,6 +5135,7 @@ do_free_special_slot (guint32 offset, guint32 size)
 
 		item->offset = offset;
 		item->size = size;
+		item->align = align;
 
 		item->next = info->freelist;
 		info->freelist = item;
@@ -5114,7 +5150,7 @@ do_free_special (gpointer key, gpointer value, gpointer data)
 	gint32 align;
 	guint32 size;
 	size = mono_type_size (field->type, &align);
-	do_free_special_slot (offset, size);
+	do_free_special_slot (offset, size, align);
 }
 
 void

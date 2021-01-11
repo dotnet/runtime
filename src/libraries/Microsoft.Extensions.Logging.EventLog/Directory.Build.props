@@ -1,0 +1,6 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <PackageDescription>Windows Event Log logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
+  </PropertyGroup>
+</Project>

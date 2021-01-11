@@ -48,7 +48,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             );
         }
 
-
         internal override Expression UnmarshalFromRef(Expression value)
         {
             // value == IntPtr.Zero ? null : Marshal.GetObjectForIUnknown(value);

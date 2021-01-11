@@ -743,7 +743,7 @@ namespace System.Net.Http
 
                 _recvBuffer.Discard(bytesRead);
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace($"Received frame {frameType} of length {payloadLength}.");
                 }
@@ -808,6 +808,9 @@ namespace System.Net.Http
                 _recvBuffer.Discard(processLength);
                 headersLength -= processLength;
             }
+
+            // Reset decoder state. Require because one decoder instance is reused to decode headers and trailers.
+            _headerDecoder.Reset();
         }
 
         private static ReadOnlySpan<byte> StatusHeaderNameBytes => new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };

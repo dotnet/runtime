@@ -12,18 +12,12 @@
 #include "mono/utils/mono-path.h"
 #include "mono/metadata/native-library.h"
 
-extern const void* gPalGlobalizationNative[];
-
 enum {
     func_flag_end_of_array = 0x01,
     func_flag_has_signature = 0x02,
     func_flag_unreferenced = 0x04, // Suppress unused fcall check
     func_flag_qcall = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
 };
-
-#if defined(NO_GLOBALIZATION_SHIM) || !defined(ENABLE_NETCORE)
-const void* gPalGlobalizationNative[] = { (void*)func_flag_end_of_array };
-#endif
 
 static const MonoQCallDef c_qcalls[] =
 {

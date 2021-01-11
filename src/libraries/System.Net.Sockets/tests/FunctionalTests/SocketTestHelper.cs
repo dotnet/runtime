@@ -41,6 +41,7 @@ namespace System.Net.Sockets.Tests
         public virtual bool SupportsAcceptIntoExistingSocket => true;
         public virtual bool SupportsAcceptReceive => false;
         public virtual void Listen(Socket s, int backlog) { s.Listen(backlog); }
+        public virtual void ConfigureNonBlocking(Socket s) { }
     }
 
     public class SocketHelperArraySync : SocketHelperBase
@@ -91,6 +92,7 @@ namespace System.Net.Sockets.Tests
             s.Listen(backlog);
             s.ForceNonBlocking(true);
         }
+        public override void ConfigureNonBlocking(Socket s) => s.ForceNonBlocking(true);
     }
 
     public sealed class SocketHelperApm : SocketHelperBase
@@ -345,6 +347,7 @@ namespace System.Net.Sockets.Tests
         public bool SupportsAcceptIntoExistingSocket => _socketHelper.SupportsAcceptIntoExistingSocket;
         public bool SupportsAcceptReceive => _socketHelper.SupportsAcceptReceive;
         public void Listen(Socket s, int backlog) => _socketHelper.Listen(s, backlog);
+        public void ConfigureNonBlocking(Socket s) => _socketHelper.ConfigureNonBlocking(s);
     }
 
     public class SocketHelperSpanSync : SocketHelperArraySync
@@ -364,6 +367,7 @@ namespace System.Net.Sockets.Tests
             Task.Run(() => { s.ForceNonBlocking(true); Socket accepted = s.Accept(); accepted.ForceNonBlocking(true); return accepted; });
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             Task.Run(() => { s.ForceNonBlocking(true); s.Connect(endPoint); });
+        public override void ConfigureNonBlocking(Socket s) => s.ForceNonBlocking(true);
     }
 
     public sealed class SocketHelperMemoryArrayTask : SocketHelperTask

@@ -67,11 +67,18 @@ typedef enum {
 	MONO_ICALL_FLAGS_NONE = 0,
 	MONO_ICALL_FLAGS_FOREIGN = 1 << 1,
 	MONO_ICALL_FLAGS_USES_HANDLES = 1 << 2,
-	MONO_ICALL_FLAGS_COOPERATIVE = 1 << 3
+	MONO_ICALL_FLAGS_COOPERATIVE = 1 << 3,
+	MONO_ICALL_FLAGS_NO_WRAPPER = 1 << 4
 } MonoInternalCallFlags;
 
 gconstpointer
 mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_missing, guint32 *flags);
+
+void
+mono_dangerous_add_internal_call_coop (const char *name, const void* method);
+
+void
+mono_dangerous_add_internal_call_no_wrapper (const char *name, const void* method);
 
 gboolean
 mono_is_missing_icall_addr (gconstpointer addr);

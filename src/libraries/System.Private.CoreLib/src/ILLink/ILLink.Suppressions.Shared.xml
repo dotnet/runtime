@@ -9,7 +9,7 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2026</argument>
+      <argument>IL2072</argument>
       <property name="Scope">member</property>
       <property name="Target">M:Internal.Runtime.InteropServices.ComponentActivator.InternalGetFunctionPointer(System.Runtime.Loader.AssemblyLoadContext,System.String,System.String,System.IntPtr)</property>
     </attribute>
@@ -18,78 +18,6 @@
       <argument>IL2026</argument>
       <property name="Scope">member</property>
       <property name="Target">M:Internal.Runtime.InteropServices.IsolatedComponentLoadContext.Load(System.Reflection.AssemblyName)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Delegate.#ctor(System.Object,System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Delegate.#ctor(System.Type,System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Associates.AssignAssociates(System.Int32,System.RuntimeType,System.RuntimeType)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.CustomAttribute.FilterCustomAttributeRecord(System.Reflection.MetadataToken,System.Reflection.MetadataImport@,System.Reflection.RuntimeModule,System.Reflection.MetadataToken,System.RuntimeType,System.Boolean,System.RuntimeType.ListBuilder{System.Object}@,System.RuntimeType@,System.IRuntimeMethodInfo@,System.Boolean@)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.CustomAttribute.GetAttributeUsage(System.RuntimeType)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.ModuleBuilder.GetGenericMethodBaseDefinition(System.Reflection.MethodBase)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.ModuleBuilder.GetTypeNoLock(System.String,System.Boolean,System.Boolean)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.ModuleBuilder.GetTypeToken(System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.RuntimeExceptionHandlingClause.get_CatchType</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.RuntimeModule.ResolveLiteralField(System.Int32,System.Type[],System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.StartupHookProvider.CallStartupHook(System.StartupHookProvider.StartupHookNameOrPath)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.TypeNameParser.ResolveType(System.Reflection.Assembly,System.String[],System.Func{System.Reflection.Assembly,System.String,System.Boolean,System.Type},System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -108,48 +36,6 @@
       <argument>IL2050</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.InteropServices.Marshal.MkParseDisplayName(System.Runtime.InteropServices.ComTypes.IBindCtx,System.String,System.UInt32@,System.Runtime.InteropServices.ComTypes.IMoniker@)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.TypeBuilder.DefineDefaultConstructorNoLock(System.Reflection.MethodAttributes)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.TypeBuilder.GetConstructor(System.Type,System.Reflection.ConstructorInfo)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.TypeBuilder.GetField(System.Type,System.Reflection.FieldInfo)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.TypeBuilder.GetMethod(System.Type,System.Reflection.MethodInfo)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.TypeBuilderInstantiation.Substitute(System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.SignatureTypeExtensions.TryMakeGenericType(System.Type,System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.RuntimeTypeHandle.GetTypeHelper(System.Type,System.Type[],System.IntPtr,System.Int32)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -177,45 +63,9 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2059</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.RuntimeConstructorInfo.Invoke(System.Object,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
       <property name="Target">T:System.Resources.ResourceReader</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2064</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.EnumBuilder.#ctor(System.String,System.Type,System.Reflection.TypeAttributes,System.Reflection.Emit.ModuleBuilder)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2065</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.CustomAttribute.AddCustomAttributes(System.RuntimeType.ListBuilder{System.Object}@,System.Reflection.RuntimeModule,System.Int32,System.RuntimeType,System.Boolean,System.RuntimeType.ListBuilder{System.Object})</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2067</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.__ComObject.CreateEventProvider(System.RuntimeType)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2067</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.ConstructorBuilder.#ctor(System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type[],System.Reflection.Emit.ModuleBuilder,System.Reflection.Emit.TypeBuilder)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.ManifestBuilder.GetTypeName(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -228,18 +78,6 @@
       <argument>IL2070</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Diagnostics.Tracing.TypeAnalysis.#ctor(System.Type,System.Diagnostics.Tracing.EventDataAttribute,System.Collections.Generic.List{System.Type})</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.RuntimeAssembly.AddPublicNestedTypes(System.Type,System.Collections.Generic.List{System.Type},System.Collections.Generic.List{System.Exception})</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.RuntimeType.GetMethodBase(System.RuntimeType,System.RuntimeMethodHandleInternal)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -273,78 +111,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Attribute.GetParentDefinition(System.Reflection.EventInfo)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Attribute.GetParentDefinition(System.Reflection.PropertyInfo,System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.StackTrace.TryResolveStateMachineMethod(System.Reflection.MethodBase@,System.Type@)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.EventSource.CreateManifestAndDescriptors(System.Type,System.String,System.Diagnostics.Tracing.EventSource,System.Diagnostics.Tracing.EventManifestOptions)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.ManifestBuilder.CreateManifestString</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.CustomAttributeData.#ctor(System.Reflection.RuntimeModule,System.Reflection.MetadataToken,System.Reflection.ConstArray@)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.CustomAttributeData.Init(System.Object)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.TypeBuilder.DefineDefaultConstructorNoLock(System.Reflection.MethodAttributes)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.RuntimeModule.GetMethodInternal(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.RuntimeModule.ResolveLiteralField(System.Int32,System.Type[],System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.StartupHookProvider.CallStartupHook(System.StartupHookProvider.StartupHookNameOrPath)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.TypeNameParser.ResolveType(System.Reflection.Assembly,System.String[],System.Func{System.Reflection.Assembly,System.String,System.Boolean,System.Type},System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2077</argument>
       <property name="Scope">member</property>
       <property name="Target">M:Internal.Runtime.InteropServices.ComActivator.BasicClassFactory.CreateInstance(System.Object,System.Guid@,System.IntPtr@)</property>
@@ -360,30 +126,6 @@
       <argument>IL2080</argument>
       <property name="Scope">member</property>
       <property name="Target">T:System.Resources.ResourceReader</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2082</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.TypeBuilder.DefineConstructorNoLock(System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type[],System.Type[][],System.Type[][])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2082</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.TypeBuilder.DefineMethodNoLock(System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Type[],System.Type[],System.Type[][],System.Type[][])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2082</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Emit.TypeBuilder.DefinePInvokeMethodHelper(System.String,System.String,System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Type[],System.Type[],System.Type[][],System.Type[][],System.Runtime.InteropServices.CallingConvention,System.Runtime.InteropServices.CharSet)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2085</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.RuntimeType.ForwardCallToInvokeMember(System.String,System.Reflection.BindingFlags,System.Object,System.Object[],System.Boolean[],System.Int32[],System.Type[],System.Type)</property>
     </attribute>
   </assembly>
 </linker>

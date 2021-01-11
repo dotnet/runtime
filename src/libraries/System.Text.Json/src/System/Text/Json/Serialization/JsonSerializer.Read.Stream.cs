@@ -233,7 +233,7 @@ namespace System.Text.Json
             state.ReadAhead = !isFinalBlock;
             state.BytesConsumed = 0;
 
-            TValue value = ReadCore<TValue>(converterBase, ref reader, options, ref state);
+            TValue? value = ReadCore<TValue>(converterBase, ref reader, options, ref state);
 
             readerState = reader.CurrentState;
             return value!;

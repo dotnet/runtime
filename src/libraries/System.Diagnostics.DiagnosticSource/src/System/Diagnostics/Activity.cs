@@ -833,7 +833,8 @@ namespace System.Diagnostics
             // The version (00-fe) is used to indicate that this is a WC3 ID.
             return id.Length == 55 &&
                    ('0' <= id[0] && id[0] <= '9' || 'a' <= id[0] && id[0] <= 'f') &&
-                   ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
+                   ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'f') &&
+                   (id[0] != 'f' || id[1] != 'f');
         }
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
@@ -1017,7 +1018,7 @@ namespace System.Diagnostics
                 }
             }
 
-            activity.StartTimeUtc = startTime == default ? DateTime.UtcNow : startTime.UtcDateTime;
+            activity.StartTimeUtc = startTime == default ? GetUtcNow() : startTime.UtcDateTime;
 
             activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
 

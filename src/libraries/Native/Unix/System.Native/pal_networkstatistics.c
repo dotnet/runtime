@@ -3,6 +3,12 @@
 
 #include "pal_config.h"
 
+#include "pal_errno.h"
+#include "pal_networkstatistics.h"
+
+#include <stdlib.h>
+#include <errno.h>
+
 // These functions are only used for platforms which support
 // using sysctl to gather protocol statistics information.
 // Currently, this is all keyed off of whether the include tcp_var.h
@@ -11,13 +17,9 @@
 #if HAVE_NETINET_TCP_VAR_H
 
 #include "pal_utilities.h"
-#include "pal_networkstatistics.h"
-#include "pal_errno.h"
 #include "pal_tcpstate.h"
 #include "pal_safecrt.h"
 
-#include <stdlib.h>
-#include <errno.h>
 #include <sys/socket.h>
 #if HAVE_IOS_NET_ROUTE_H
 #include "ios/net/route.h"
@@ -689,5 +691,82 @@ int32_t SystemNative_GetNumRoutes()
     free(buffer);
 #endif // HAVE_RT_MSGHDR2
     return count;
+}
+#else
+int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetEstimatedTcpConnectionCount(void)
+{
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount)
+{
+    (void)infos;
+    (void)infoCount;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetEstimatedUdpListenerCount(void)
+{
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount)
+{
+    (void)infos;
+    (void)infoCount;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats)
+{
+    (void)interfaceName;
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetNumRoutes(void)
+{
+    errno = ENOTSUP;
+    return -1;
 }
 #endif // HAVE_NETINET_TCP_VAR_H

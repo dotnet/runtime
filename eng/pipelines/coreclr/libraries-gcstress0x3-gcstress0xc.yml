@@ -1,7 +1,5 @@
 trigger: none
 
-pr: none
-
 # This pipeline currently has too many failures to be enabled by schedule.
 # schedules:
 # - cron: "0 10 * * 6"
@@ -11,11 +9,15 @@ pr: none
 #     - master
 #   always: true
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 jobs:
 #
 # Checkout repository
 #
-- template: /eng/pipelines/common/checkout-job.yml
+- ${{ if eq(variables.useCheckoutBundle, true) }}:
+  - template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Build CoreCLR checked and libraries Release

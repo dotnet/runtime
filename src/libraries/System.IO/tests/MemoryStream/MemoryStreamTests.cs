@@ -1,23 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace System.IO.Tests
 {
     public class MemoryStreamTests : StandaloneStreamConformanceTests
     {
-        protected override Stream CreateReadOnlyStreamCore(byte[] initialData) =>
-            new MemoryStream(initialData ?? Array.Empty<byte>(), writable: false);
+        protected override Task<Stream> CreateReadOnlyStreamCore(byte[] initialData) =>
+            Task.FromResult<Stream>(new MemoryStream(initialData ?? Array.Empty<byte>(), writable: false));
 
-        protected override Stream CreateReadWriteStreamCore(byte[] initialData) =>
-            initialData != null ? new MemoryStream(initialData) :
-            new MemoryStream();
+        protected override Task<Stream> CreateReadWriteStreamCore(byte[] initialData) =>
+            Task.FromResult<Stream>(
+                initialData != null ? new MemoryStream(initialData) :
+                new MemoryStream());
 
-        protected override Stream CreateWriteOnlyStreamCore(byte[] initialData) =>
-            null;
+        protected override Task<Stream> CreateWriteOnlyStreamCore(byte[] initialData) =>
+            Task.FromResult<Stream>(null);
 
         [Fact]
         public static void MemoryStream_WriteToTests()

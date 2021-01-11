@@ -137,7 +137,6 @@ namespace System.ComponentModel.DataAnnotations
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            // TODO-NULLABLE: null validationContext isn't supported (GetObjectValidationErrors will throw), remove that check
             if (validationContext != null && instance != validationContext.ObjectInstance)
             {
                 throw new ArgumentException(SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));

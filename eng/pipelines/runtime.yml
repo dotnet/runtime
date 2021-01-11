@@ -52,81 +52,10 @@ variables:
 
 jobs:
 #
-# Checkout repository
+# Checkout repository and evaluate paths
 #
-- template: /eng/pipelines/common/checkout-job.yml
-  parameters:
-    paths:
-    - subset: coreclr
-      include:
-      - src/libraries/System.Private.CoreLib/*
-      - src/libraries/Native/Unix/System.Globalization.Native/*
-      - src/libraries/Native/Unix/Common/*
-      exclude:
-      - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
-      - docs/*
-      - src/installer/*
-      - src/mono/*
-      - src/libraries/*
-      - eng/pipelines/installer/*
-      - eng/pipelines/mono/*
-      - eng/pipelines/libraries/*
-    - subset: mono
-      include:
-      - src/libraries/System.Private.CoreLib/*
-      - src/libraries/Native/Unix/System.Globalization.Native/*
-      - src/libraries/Native/Unix/Common/*
-      exclude:
-      - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
-      - docs/*
-      - src/installer/*
-      - src/coreclr/*
-      - src/libraries/*
-      - eng/pipelines/installer/*
-      - eng/pipelines/coreclr/*
-      - eng/pipelines/libraries/*
-    - subset: libraries
-      exclude:
-      - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
-      - docs/*
-      - src/installer/*
-      - src/mono/*
-      - src/coreclr/*
-      - eng/pipelines/coreclr/*
-      - eng/pipelines/mono/*
-      - eng/pipelines/installer/*
-    - subset: runtimetests
-      include:
-      - src/tests/*
-      - src/coreclr/tests/*
-    - subset: installer
-      include:
-      - docs/manpages/*
-      exclude:
-      - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
-      - docs/*
-      - src/coreclr/*
-      - src/mono/*
-      - src/libraries/*
-      - eng/pipelines/coreclr/*
-      - eng/pipelines/mono/*
-      - eng/pipelines/libraries/*
+- ${{ if eq(variables.useCheckoutBundle, true) }}:
+  - template: /eng/pipelines/common/checkout-and-evaluate-paths.yml
 
 #
 # Build CoreCLR checked
@@ -271,7 +200,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -292,7 +221,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -320,7 +249,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
       condition: >-
         or(
@@ -354,8 +283,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_arm64
-    - Android_x64
-    - iOS_x64
+    # - iOS_x64 moved to staging pipeline, restore when stable
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -365,8 +293,8 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-      timeoutInMinutes: 120
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      timeoutInMinutes: 180
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -423,44 +351,6 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
-# Build the whole product using Mono for Android and run runtime tests with Android emulator
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - Android_x64
-    variables:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: pr/dotnet/runtime/$(Build.SourceBranch)
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: ci/dotnet/runtime/$(Build.SourceBranch)
-      - name: timeoutPerTestInMinutes
-        value: 60
-      - name: timeoutPerTestCollectionInMinutes
-        value: 300
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_RuntimeTests
-      buildArgs: -s mono+libs -c $(_BuildConfig)
-      timeoutInMinutes: 300
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-
-#
 # Build Mono and Installer on LLVMJIT mode
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -473,7 +363,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMJIT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
         or(
@@ -493,7 +383,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMJIT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
         or(
@@ -516,7 +406,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMAOT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
         or(
@@ -535,7 +425,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMAOT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
         or(
@@ -559,7 +449,7 @@ jobs:
     - Linux_arm64
     # - Linux_musl_arm64
     - windows_x64
-    # - windows_x86
+    - windows_x86
     # - windows_arm
     # - windows_arm64
     jobParameters:
@@ -582,7 +472,7 @@ jobs:
     - Linux_x64
     # - Linux_musl_arm64
     - windows_x64
-    # - windows_x86
+    - windows_x86
     # - windows_arm
     # - windows_arm64
     jobParameters:

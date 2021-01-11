@@ -33,7 +33,7 @@ For another small walkthrough see [Dogfooding .NET SDK](https://github.com/dotne
 
 At this point, you can create a new 'Hello World' program in the standard way.
 
-```bat
+```cmd
 mkdir HelloWorld
 cd HelloWorld
 dotnet new console
@@ -57,7 +57,7 @@ For Windows you will want `win-x64`, for macOS `osx-x64` and `linux-x64` for Lin
 Now is the time to publish. The publish step will trigger restore and build. You can iterate on build by calling `dotnet build` as
 needed.
 
-```bat
+```cmd
 dotnet publish
 ```
 
@@ -106,11 +106,11 @@ deploy your new bits. In a lot of cases it is easiest to just copy everything fr
 
 You can build just the .NET Library part of the build by doing (debug, for release add 'release' qualifier)
 (on Linux / OSX us ./build.sh)
-```bat
+```cmd
     .\build skiptests skipnative
 ```
 Which builds System.Private.CoreLib.dll if you modify C# code. If you wish to only compile the coreclr.dll you can do
- ```bat
+ ```cmd
     .\build skiptests skipmscorlib
 ```
 Note that this technique does not work on .NET Apps that have not been published (that is you have not created

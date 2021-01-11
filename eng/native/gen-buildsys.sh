@@ -7,10 +7,9 @@ scriptroot="$( cd -P "$( dirname "$0" )" && pwd )"
 
 if [[ "$#" -lt 4 ]]; then
   echo "Usage..."
-  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to tryrun.cmake directory> <path to intermediate directory> <Architecture> <compiler> <compiler major version> <compiler minor version> [build flavor] [ninja] [scan-build] [cmakeargs]"
+  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <compiler> <compiler major version> <compiler minor version> [build flavor] [ninja] [scan-build] [cmakeargs]"
   echo "Specify the path to the top level CMake file."
   echo "Specify the path that the build system files are generated in."
-  echo "Specify the path to the directory with tryrun.cmake file."
   echo "Specify the target architecture."
   echo "Specify the name of compiler (clang or gcc)."
   echo "Specify the major version of compiler."
@@ -22,11 +21,10 @@ if [[ "$#" -lt 4 ]]; then
   exit 1
 fi
 
-tryrun_dir="$2"
-build_arch="$4"
-compiler="$5"
-majorVersion="$6"
-minorVersion="$7"
+build_arch="$3"
+compiler="$4"
+majorVersion="$5"
+minorVersion="$6"
 
 source "$scriptroot/init-compiler.sh" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
 
@@ -42,8 +40,8 @@ scan_build=OFF
 generator="Unix Makefiles"
 __UnprocessedCMakeArgs=""
 
-for i in "${@:8}"; do
-    upperI="$(echo "$i" | awk '{print toupper($0)}')"
+for i in "${@:7}"; do
+    upperI="$(echo "$i" | tr "[:lower:]" "[:upper:]")"
     case "$upperI" in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO.
       DEBUG | CHECKED | RELEASE | RELWITHDEBINFO)
@@ -73,9 +71,7 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     TARGET_BUILD_ARCH="$build_arch"
     export TARGET_BUILD_ARCH
 
-    if [[ -n "$tryrun_dir" ]]; then
-        cmake_extra_defines="$cmake_extra_defines -C $tryrun_dir/tryrun.cmake"
-    fi
+    cmake_extra_defines="$cmake_extra_defines -C $scriptroot/tryrun.cmake"
 
     if [[ "$platform" == "Darwin" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
@@ -88,7 +84,10 @@ if [[ "$build_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
-cmake_command=$(command -v cmake)
+if ! cmake_command=$(command -v cmake); then
+    echo "CMake was not found in PATH."
+    exit 1
+fi
 
 if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
@@ -99,7 +98,7 @@ if [[ "$build_arch" == "wasm" ]]; then
 fi
 
 # We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options
-pushd "$3"
+pushd "$2"
 
 # Include CMAKE_USER_MAKE_RULES_OVERRIDE as uninitialized since it will hold its value in the CMake cache otherwise can cause issues when branch switching
 $cmake_command \

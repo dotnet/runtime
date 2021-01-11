@@ -449,7 +449,7 @@ namespace System.Diagnostics.Tests
         {
             const string expectedSignal = "Signal";
             const string successResponse = "Success";
-            const int timeout = 5 * 1000;
+            const int timeout = 30 * 1000; // 30 seconds, to allow for very slow machines
 
             using Process p = CreateProcessPortable(RemotelyInvokable.WriteLineReadLine);
             p.StartInfo.RedirectStandardInput = true;
@@ -639,14 +639,15 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task WaitAsyncForProcess()
         {
-            Process p = CreateSleepProcess(WaitInMS);
-            p.Start();
+            Process p = CreateDefaultProcess();
 
             Task processTask = p.WaitForExitAsync();
-            Task delayTask = Task.Delay(WaitInMS * 2);
+            Assert.False(p.HasExited);
+            Assert.False(processTask.IsCompleted);
 
-            Task result = await Task.WhenAny(processTask, delayTask);
-            Assert.Equal(processTask, result);
+            p.Kill();
+            await processTask;
+
             Assert.True(p.HasExited);
         }
 

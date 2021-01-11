@@ -78,7 +78,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
     <PackageReference Include="xunit" Version="$(XUnitVersion)" />
-    <PackageReference Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" GeneratePathProperty="True" />
+    <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" GeneratePathProperty="True" />
     <PackageReference Include="xunit.runner.utility" Version="$(XUnitVersion)" />
   </ItemGroup>
 
@@ -89,7 +89,7 @@
     <ItemGroup>
       <ReferenceCopyLocalPaths Include="$(PkgMicrosoft_DotNet_XunitConsoleRunner)\tools\$(XUnitRunnerTargetFramework)\*.*">
         <Private>false</Private>
-        <NuGetPackageId>$(MicrosoftDotNetXUnitConsoleRunnerPackage)</NuGetPackageId>
+        <NuGetPackageId>Microsoft.DotNet.XUnitConsoleRunner</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftDotNetXUnitConsoleRunnerVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>

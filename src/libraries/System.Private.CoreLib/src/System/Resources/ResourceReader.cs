@@ -27,26 +27,16 @@ namespace System.Resources
     // default file format.
     //
 
-    internal struct ResourceLocator
+    internal readonly struct ResourceLocator
     {
-        internal object? _value;  // Can be null.
-        internal int _dataPos;
-
         internal ResourceLocator(int dataPos, object? value)
         {
-            _dataPos = dataPos;
-            _value = value;
+            DataPosition = dataPos;
+            Value = value;
         }
 
-        internal int DataPosition => _dataPos;
-
-        // Allows adding in profiling data in a future version, or a special
-        // resource profiling build.  We could also use WeakReference.
-        internal object? Value
-        {
-            get => _value;
-            set => _value = value;
-        }
+        internal int DataPosition { get; }
+        internal object? Value { get; }
 
         internal static bool CanCache(ResourceTypeCode value)
         {
@@ -800,8 +790,12 @@ namespace System.Resources
             // Read RuntimeResourceSet header
             // Do file version check
             int version = _store.ReadInt32();
-            if (version != RuntimeResourceSet.Version && version != 1)
-                throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, RuntimeResourceSet.Version, version));
+
+            // File format version number
+            const int CurrentVersion = 2;
+
+            if (version != CurrentVersion && version != 1)
+                throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, CurrentVersion, version));
             _version = version;
 
             _numResources = _store.ReadInt32();

@@ -6,10 +6,6 @@
   <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
-    <!-- Used to determine if we should build some packages only once across multiple official build legs.
-         For offline builds we still set OfficialBuildId but we need to build all the packages for a single
-         leg only, so we also take DotNetBuildFromSource  into account. -->
-    <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' and '$(OfficialBuildId)' != '' and '$(DotNetBuildFromSource)' != 'true'">true</BuildingAnOfficialBuildLeg>
     <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
 
@@ -38,12 +34,5 @@
 
     <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <!-- SuppressFinalPackageVersion on private packages by default -->
-    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Private'))">true</SuppressFinalPackageVersion>
-  </PropertyGroup>
-
-  <Import Project="$(RepoRoot)eng\native\naming.props" />
 
 </Project>

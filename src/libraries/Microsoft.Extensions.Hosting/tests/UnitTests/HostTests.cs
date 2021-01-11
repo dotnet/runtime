@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -20,12 +21,24 @@ namespace Microsoft.Extensions.Hosting.Tests
     public partial class HostTests
     {
         [Fact]
+        public async Task StopAsyncWithCancellation()
+        {
+            var builder = new HostBuilder();
+            using var host = builder.Build();
+            await host.StartAsync();
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+            Assert.True(cts.Token.IsCancellationRequested);
+            await host.StopAsync(cts.Token);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_IncludesContentRootByDefault()
         {
             var expected = Directory.GetCurrentDirectory();
             var builder = Host.CreateDefaultBuilder();
-            var host = builder.Build();
+            using var host = builder.Build();
             var config = host.Services.GetRequiredService<IConfiguration>();
             Assert.Equal(expected, config["ContentRoot"]);
             var env = host.Services.GetRequiredService<IHostEnvironment>();
@@ -38,7 +51,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             var expected = Directory.GetParent(Directory.GetCurrentDirectory()).FullName; // It must exist
             var builder = Host.CreateDefaultBuilder(new string[] { "--contentroot", expected });
-            var host = builder.Build();
+            using var host = builder.Build();
             var env = host.Services.GetRequiredService<IHostEnvironment>();
             Assert.Equal(expected, env.ContentRootPath);
         }
@@ -48,7 +61,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         public void CreateDefaultBuilder_RegistersEventSourceLogger()
         {
             var listener = new TestEventListener();
-            var host = Host.CreateDefaultBuilder()
+            using var host = Host.CreateDefaultBuilder()
                 .Build();
 
             var logger = host.Services.GetRequiredService<ILogger<HostTests>>();
@@ -89,7 +102,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 }
             });
             var loggerProvider = new ScopeDelegateLoggerProvider(logger);
-            var host = Host.CreateDefaultBuilder()
+            using var host = Host.CreateDefaultBuilder()
                 .ConfigureLogging(logging =>
                 {
                     logging.AddProvider(loggerProvider);
@@ -103,7 +116,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateDefaultBuilder_EnablesScopeValidation()
         {
-            var host = Host.CreateDefaultBuilder()
+            using var host = Host.CreateDefaultBuilder()
                 .UseEnvironment(Environments.Development)
                 .ConfigureServices(serices =>
                 {
@@ -144,7 +157,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var dynamicConfigMessage1 = SaveRandomConfig();
 
-            var host = Host.CreateDefaultBuilder()
+            using var host = Host.CreateDefaultBuilder()
                 .UseContentRoot(Path.GetDirectoryName(appSettingsPath))
                 .ConfigureHostConfiguration(builder =>
                 {
@@ -178,7 +191,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var dynamicConfigMessage1 = SaveRandomConfig();
 
-            var host = Host.CreateDefaultBuilder()
+            using var host = Host.CreateDefaultBuilder()
                 .UseContentRoot(Path.GetDirectoryName(appSettingsPath))
                 .ConfigureHostConfiguration(builder =>
                 {
@@ -249,6 +262,24 @@ namespace Microsoft.Extensions.Hosting.Tests
             await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
             Assert.NotEqual(dynamicSecretMessage1, dynamicSecretMessage2); // Messages are different.
             Assert.Equal(dynamicSecretMessage2, config["Hello"]);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public void CreateDefaultBuilder_RespectShutdownTimeout()
+        {
+            var notDefaultTimeoutSeconds = 99;
+            Assert.True(notDefaultTimeoutSeconds != new HostOptions().ShutdownTimeout.TotalSeconds, "Test value must be not equal to default");
+            var host = Host.CreateDefaultBuilder().ConfigureHostConfiguration(configBuilder =>
+            {
+                configBuilder.AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new KeyValuePair<string, string>("SHUTDOWNTIMEOUTSECONDS", notDefaultTimeoutSeconds.ToString())
+                });
+            }).Build();
+
+            var hostOptions = host.Services.GetRequiredService<IOptions<HostOptions>>();
+            Assert.Equal(notDefaultTimeoutSeconds, hostOptions.Value.ShutdownTimeout.TotalSeconds);
         }
 
         internal class ServiceA { }

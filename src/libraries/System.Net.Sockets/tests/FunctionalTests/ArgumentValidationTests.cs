@@ -505,7 +505,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void AcceptAsync_NullAsyncEventArgs_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().AcceptAsync(null));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().AcceptAsync((SocketAsyncEventArgs)null));
         }
 
         [Fact]
@@ -537,7 +537,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectAsync_NullAsyncEventArgs_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ConnectAsync(null));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().ConnectAsync((SocketAsyncEventArgs)null));
         }
 
         [Fact]

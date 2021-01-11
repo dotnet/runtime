@@ -12,7 +12,8 @@ variables:
   - template: variables.yml
 
 jobs:
-  - template: /eng/pipelines/common/checkout-job.yml
+  - ${{ if eq(variables.useCheckoutBundle, true) }}:
+    - template: /eng/pipelines/common/checkout-job.yml
 
   #
   # CoreCLR Build

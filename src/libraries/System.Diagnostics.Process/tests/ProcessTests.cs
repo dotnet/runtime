@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -147,7 +148,8 @@ namespace System.Diagnostics.Tests
                 BeginInvokeDelegate = (d, args) =>
                 {
                     Assert.Null(beginInvokeTask);
-                    beginInvokeTask = Task.Run(() => d.DynamicInvoke(args));
+                    beginInvokeTask = new Task(() => d.DynamicInvoke(args));
+                    beginInvokeTask.Start(TaskScheduler.Default);
                     return beginInvokeTask;
                 }
             };
@@ -1133,7 +1135,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/27615
+        [Fact]
         public void GetProcessesByName_ProcessName_ReturnsExpected()
         {
             // Get the current process using its name
@@ -1555,15 +1557,16 @@ namespace System.Diagnostics.Tests
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
         }
-        
-        [Fact]
-        [OuterLoop]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+
+        [ConditionalFact(typeof(PlatformDetection),
+            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
+            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
+        [OuterLoop("Pops UI")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
         {
             const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath));
+            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
 
             using (Process process = Process.Start(ExePath))
             {
@@ -1590,21 +1593,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        [OuterLoop]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+        [ConditionalFact(typeof(PlatformDetection),
+            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
+            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
+        [OuterLoop("Pops UI")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
         {
             const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath));
+            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
 
-            using (Process process = Process.Start(ExePath))
+            using (Process process = Process.Start(new ProcessStartInfo(ExePath)))
             {
                 try
                 {
-                    Assert.Equal(string.Empty, process.MainWindowTitle);
-
                     for (int attempt = 0; attempt < 50; ++attempt)
                     {
                         process.Refresh();
@@ -1624,6 +1626,76 @@ namespace System.Diagnostics.Tests
                     Assert.True(process.WaitForExit(WaitInMS));
                 }
             }
+        }
+
+        [Fact]
+        public void RefreshResetsAllRefreshableFields()
+        {
+            // testing Process.Responding using a real unresponsive process would be very hard to do properly
+            // instead of this, we just test the implementation to ensure that #36768 is not coming back
+            var process = new Process();
+
+            VerifyPrivateFieldsValues(process, shouldHaveDefaultValues: true);
+
+            SetPrivateFieldsToNonDefaultValues(process);
+
+            VerifyPrivateFieldsValues(process, shouldHaveDefaultValues: false);
+
+            process.Refresh();
+
+            VerifyPrivateFieldsValues(process, shouldHaveDefaultValues: true);
+
+            static void VerifyPrivateFieldsValues(Process process, bool shouldHaveDefaultValues)
+            {
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_exited"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveWorkingSetLimits"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveProcessorAffinity"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_havePriorityClass"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveExitTime"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_havePriorityBoostEnabled"));
+
+                Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_processInfo"));
+                Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_threads"));
+                Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_modules"));
+
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_mainWindowTitle"));
+                    Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_signaled"));
+                    Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveMainWindow"));
+                    Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveResponding"));
+                }
+            }
+
+            static void SetPrivateFieldsToNonDefaultValues(Process process)
+            {
+                SetPrivateFieldValue(process, "_exited", true);
+                SetPrivateFieldValue(process, "_haveWorkingSetLimits", true);
+                SetPrivateFieldValue(process, "_haveProcessorAffinity", true);
+                SetPrivateFieldValue(process, "_havePriorityClass", true);
+                SetPrivateFieldValue(process, "_haveExitTime", true);
+                SetPrivateFieldValue(process, "_havePriorityBoostEnabled", true);
+
+                SetPrivateFieldValue(process, "_processInfo", typeof(Process).Assembly.GetType("System.Diagnostics.ProcessInfo").GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>()).Invoke(null));
+                SetPrivateFieldValue(process, "_threads", new ProcessThreadCollection(Array.Empty<ProcessThread>()));
+                SetPrivateFieldValue(process, "_modules",  new ProcessModuleCollection(Array.Empty<ProcessModule>()));
+
+                if (OperatingSystem.IsWindows())
+                {
+                    SetPrivateFieldValue(process, "_signaled", true);
+                    SetPrivateFieldValue(process, "_haveMainWindow", true);
+                    SetPrivateFieldValue(process, "_mainWindowTitle", "notNull");
+                    SetPrivateFieldValue(process, "_haveResponding", true);
+                }
+            }
+
+            static object GetPrivateFieldValue(Process process, string fieldName) => typeof(Process)
+                .GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(process);
+
+            static void SetPrivateFieldValue(Process process, string fieldName, object value) => typeof(Process)
+                .GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(process, value);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1877,6 +1949,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<Win32Exception>(() => Process.Start("exe", string.Empty, new SecureString(), "thisDomain"));
         }
 
+        [OuterLoop("May take many seconds the first time it's run")]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Starting process with authentication not supported on Unix
         public void Process_StartWithInvalidUserNamePassword()
@@ -1964,23 +2037,27 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void LongProcessNamesAreSupported()
         {
-            // Alpine implements sleep as a symlink to the busybox executable.
-            // If we rename it, the program will no longer sleep.
-            if (PlatformDetection.IsAlpine)
+            string sleepPath;
+            if (OperatingSystem.IsLinux())
             {
-                return;
+                // On some distros sleep is implemented using a script/symlink, which causes this test to fail.
+                // Instead of using sleep directly, we wrap it with a script.
+                sleepPath = GetTestFilePath();
+                File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
+                ChMod(sleepPath, "744");
             }
-
-            string programPath = GetProgramPath("sleep");
-
-            if (programPath == null)
+            else
             {
-                return;
+                sleepPath = GetProgramPath("sleep");
+                if (sleepPath == null)
+                {
+                    return;
+                }
             }
 
             const string LongProcessName = "123456789012345678901234567890";
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
-            File.Copy(programPath, sleepCommandPathFileName);
+            File.Copy(sleepPath, sleepCommandPathFileName);
 
             using (Process px = Process.Start(sleepCommandPathFileName, "600"))
             {

@@ -16,6 +16,7 @@ parameters:
   condition: ''
   continueOnError: false
   dependsOn: ''
+  useCheckoutBundle: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -32,7 +33,7 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - ${{ if ne(parameters.stagedBuild, true) }}:
+      - ${{ if eq(parameters.useCheckoutBundle, true) }}:
         - checkout
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
@@ -102,6 +103,8 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    - template: /eng/pipelines/common/checkout-step.yml
+      parameters:
+        useBundle: ${{ parameters.useCheckoutBundle }}
 
     - ${{ parameters.steps }}

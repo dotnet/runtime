@@ -1,140 +1,80 @@
-<Project>
+<Project InitialTargets="SetupFilesToSign">
 
   <PropertyGroup>
     <!--
       Windows arm/arm64 jobs don't have MSIs to sign. Keep it simple: allow not finding any matches
       here and rely on overall signing validation.
+
+      During post build signing, there are no packages to sign during SignFinalPackages.
     -->
-    <AllowEmptySignList Condition="'$(SignFinalPackages)' != 'true'">true</AllowEmptySignList>
+    <AllowEmptySignList>true</AllowEmptySignList>
   </PropertyGroup>
 
-  <!-- Get artifact locations to sign. -->
-  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
-
-  <!-- We need  this to be inside a target to workaround: https://github.com/microsoft/msbuild/issues/5445 -->
-  <Target Name="PrepareItemsToSign" BeforeTargets="Sign">
-
-    <ItemGroup>
-      <!--
-        Replace the default items to sign with the specific set we want. This allows the build to call
-        Arcade's Sign.proj multiple times for different sets of files as the build progresses.
-      -->
-      <ItemsToSign Remove="@(ItemsToSign)" />
-
-      <!-- Find bundle artifacts, which need multiple stages to fully sign. -->
-      <BundleInstallerEngineArtifact Include="$(ArtifactsPackagesDir)**/*engine.exe" />
-      <BundleInstallerExeArtifact Include="$(ArtifactsPackagesDir)**/*.exe" />
-
-      <!-- apphost and comhost template files are not signed, by design. -->
-      <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
-
-      <!-- Third-party components which should be signed.  -->
-      <FileSignInfo Include="Newtonsoft.Json.dll" CertificateName="3PartySHA2" />
-      <FileSignInfo Include="Mono.Cecil.dll" CertificateName="3PartySHA2" />
-      <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
-      <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
-      <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">
-      <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.dll" />
-      <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.exe" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(SignBinaries)' == 'true'">
-      <!-- Sign CoreCLR. -->
-      <ItemsToSign Include="$(CoreCLRSharedFrameworkDir)*.dll" />
-      <ItemsToSign Include="$(CoreCLRSharedFrameworkDir)*.exe" />
-
-      <ItemsToSign Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
-
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)crossgen2.exe" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.DependencyAnalysisFramework.dll" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.ReadyToRun.dll" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.TypeSystem.ReadyToRun.dll" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)jitinterface_$(TargetArchitecture).dll" />
-
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_win_x86_$(TargetArchitecture).dll" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_win_arm_$(TargetArchitecture).dll" />
-      <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjit_unix_arm_$(TargetArchitecture).dll" />
-      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_win_x64_$(TargetArchitecture).dll" />
-      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_win_arm64_$(TargetArchitecture).dll" />
-      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_unix_x64_$(TargetArchitecture).dll" />
-      <ItemsToSign Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)clrjit_unix_arm64_$(TargetArchitecture).dll" />
-
-      <ItemsToSign Include="@(CoreCLRCrossTargetItemsToSign)" />
-
-      <FileSignInfo Include="mscordaccore.dll" CertificateName="MicrosoftSHA2" />
-
-      <!-- Sign api-ms-win-core-xstate-l2-1-0 binary as it is only catalog signed in the current SDK. -->
-      <ItemsToSign
-        Condition="'$(Configuration)' == 'Release' and '$(TargetArchitecture)' == 'x86'"
-        Include="$(CoreCLRArtifactsPath)Redist\ucrt\DLLs\$(TargetArchitecture)\api-ms-win-core-xstate-l2-1-0.dll" />
-
-      <!-- Sign libraries. -->
-      <ItemsToSign Include="$(LibrariesNativeArtifactsPath)*.dll" />
-      <ItemsToSign Include="$(LibrariesSharedFrameworkRefArtifactsPath)*.dll" />
-      <!-- Most runtime artifacts will be crossgenned, so sign them post-crossgen. mscorlib isn't. -->
-      <ItemsToSign Include="$(LibrariesSharedFrameworkBinArtifactsPath)mscorlib.dll" />
-
-      <!-- Sign the host. -->
-      <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/hostfxr.dll" />
-      <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/hostpolicy.dll" />
-      <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/dotnet.exe" />
-      <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/ijwhost.dll" />
-      <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/nethost.dll" />
-
-      <!-- Sign managed libraries in installer subset. -->
-      <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.NET.HostModel/**/*.dll" />
-    </ItemGroup>
-
-    <!-- Sign ready-to-run binaries after crossgen is applied. -->
-    <ItemGroup Condition="'$(SignR2RBinaries)' == 'true'">
-      <ItemsToSign Include="$(CrossGenRootPath)**/*.dll" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(SignMsiFiles)' == 'true'">
-      <ItemsToSign Include="$(ArtifactsPackagesDir)**/*.msi" />
-      <ItemsToSign Include="$(ArtifactsPackagesDir)**/*.cab" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(SignBurnEngineFiles)' == 'true'">
-      <ItemsToSign Include="@(BundleInstallerEngineArtifact)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(SignBurnBundleFiles)' == 'true'">
-      <!-- Sign the bundles, now that the engine is reattached. Avoid re-signing the engine. -->
-      <ItemsToSign
-        Include="@(BundleInstallerExeArtifact)"
-        Exclude="@(BundleInstallerEngineArtifact)" />
-      <!-- Note: wixstdba is internal to the engine bundle and does not get signed. -->
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(SignFinalPackages)' == 'true'">
-      <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
-      <ItemsToSign Include="$(DownloadDirectory)**\*.nupkg" Exclude="@(DownloadedSymbolPackages)" />
-
-      <!-- The cross OS diagnostics symbol packages need to be signed as they are the only packages
-      that have a specific version of assets that are only meant to be indexed in symbol servers.
-      Since only *symbols.nupkg get indexed, and installer doesn't produce these, we need to glob them for signing. -->
-      <ItemsToSign Include="$(DownloadDirectory)**\*CrossOsDiag*.symbols.nupkg" />
-
-      <ItemsToSign Include="$(DownloadDirectory)**\*.deb" />
-      <ItemsToSign Include="$(DownloadDirectory)**\*.rpm" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ItemsToSign Update="@(ItemsToSign)" Authenticode="$(CertificateId)" />
-    </ItemGroup>
-
-  </Target>
-
   <ItemGroup>
+    <!--
+      Replace the default items to sign with the specific set we want. This allows the build to call
+      Arcade's Sign.proj multiple times for different sets of files as the build progresses.
+    -->
+    <ItemsToSign Remove="@(ItemsToSign)" />
+
+    <!-- apphost and comhost template files are not signed, by design. -->
+    <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
+
+    <!-- Third-party components which should be signed.  -->
+    <FileSignInfo Include="Newtonsoft.Json.dll" CertificateName="3PartySHA2" />
+    <FileSignInfo Include="Mono.Cecil.dll" CertificateName="3PartySHA2" />
+    <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
+    <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
+    <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
+
+    <FileSignInfo Include="mscordaccore.dll" CertificateName="MicrosoftSHA2" />
+
+    <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
+         other feeds (in fact, that have identical identity to their non-symbol variant) -->
+    <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
+    <DownloadedSymbolPackagesWithoutPaths Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" />
+    <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" />
+
     <FileExtensionSignInfo Include=".msi" CertificateName="Microsoft400" />
     <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
+  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true' and '$(PostBuildSign)' == 'true'">
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.msi" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.exe" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.nupkg" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.zip" />
+
+    <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
+    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" />
+  </ItemGroup>
+
+  <Target Name="SetupFilesToSign">
+    <!-- Ensure that we don't miss the DAC or DBI with the globbing below -->
+    <PropertyGroup Condition="'$(SignDiagnostics)' == 'true' or '$(SignDiagnosticsPackages)' == 'true'">
+      <AllowEmptySignList>false</AllowEmptySignList>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(SignDiagnostics)' == 'true'">
+      <ItemsToSign Include="$(DiagnosticsFilesRoot)\**\mscordaccore*.dll" />
+      <ItemsToSign Include="$(DiagnosticsFilesRoot)\**\mscordbi.dll" />
+      <!--
+        The DAC should be signed with the SHA2 cert (both long and short name).
+        We already add the short-name DAC above, so add the long-name DAC here.
+      -->
+      <DacFileSignInfo Include="@(ItemsToSign->'%(FileName)%(Extension)')"
+                    Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore'))" />
+      <FileSignInfo Include="@(DacFileSignInfo->ClearMetadata()->Distinct())"
+                    Exclude="mscordaccore.dll"
+                    CertificateName="MicrosoftSHA2" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(SignDiagnosticsPackages)' == 'true'">
+      <!-- The cross OS diagnostics symbol packages need to be signed as they are the only packages
+      that have a specific version of assets that are only meant to be indexed in symbol servers.
+      Since only *symbols.nupkg get indexed, and installer doesn't produce these, we need to glob them for signing. -->
+      <ItemsToSign Include="$(PackagesFolder)\**\*CrossOsDiag*.nupkg" />
+    </ItemGroup>
+  </Target>
 
 </Project>

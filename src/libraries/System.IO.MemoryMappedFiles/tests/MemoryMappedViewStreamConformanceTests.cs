@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO.Tests;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -10,15 +11,15 @@ namespace System.IO.MemoryMappedFiles.Tests
     {
         protected override bool CanSetLength => false;
 
-        protected override Stream CreateReadOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Read);
-        protected override Stream CreateReadWriteStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.ReadWrite);
-        protected override Stream CreateWriteOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Write);
+        protected override Task<Stream> CreateReadOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Read);
+        protected override Task<Stream> CreateReadWriteStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.ReadWrite);
+        protected override Task<Stream> CreateWriteOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Write);
 
         protected abstract MemoryMappedFile CreateFile(int length);
 
-        private MemoryMappedViewStream CreateStream(byte[] initialData, FileAccess access)
+        private Task<Stream> CreateStream(byte[] initialData, FileAccess access)
         {
-            MemoryMappedViewStream stream = null;
+            Stream stream = null;
 
             if (initialData is not null)
             {
@@ -40,7 +41,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 }
             }
 
-            return stream;
+            return Task.FromResult(stream);
         }
     }
 

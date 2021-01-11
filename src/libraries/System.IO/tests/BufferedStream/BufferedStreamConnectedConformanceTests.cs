@@ -9,15 +9,16 @@ namespace System.IO.Tests
     {
         private const int BufferSize = 4;
 
-        protected override Stream CreateReadOnlyStreamCore(byte[] initialData) =>
-            new BufferedStream(new MemoryStream(initialData ?? Array.Empty<byte>(), writable: false), BufferSize);
+        protected override Task<Stream> CreateReadOnlyStreamCore(byte[] initialData) =>
+            Task.FromResult<Stream>(new BufferedStream(new MemoryStream(initialData ?? Array.Empty<byte>(), writable: false), BufferSize));
 
-        protected override Stream CreateReadWriteStreamCore(byte[] initialData) =>
-            initialData != null ? new BufferedStream(new MemoryStream(initialData), BufferSize) :
-            new BufferedStream(new MemoryStream(), BufferSize);
+        protected override Task<Stream> CreateReadWriteStreamCore(byte[] initialData) =>
+            Task.FromResult<Stream>(
+                initialData != null ? new BufferedStream(new MemoryStream(initialData), BufferSize) :
+                new BufferedStream(new MemoryStream(), BufferSize));
 
-        protected override Stream CreateWriteOnlyStreamCore(byte[] initialData) =>
-            null;
+        protected override Task<Stream> CreateWriteOnlyStreamCore(byte[] initialData) =>
+            Task.FromResult<Stream>(null);
     }
 
     public class BufferedStreamConnectedConformanceTests : WrappingConnectedStreamConformanceTests

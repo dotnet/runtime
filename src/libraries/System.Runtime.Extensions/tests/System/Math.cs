@@ -4,6 +4,7 @@
 using Xunit;
 using Xunit.Sdk;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0
 
@@ -437,6 +438,15 @@ namespace System.Tests
             Assert.Equal(0L, Math.Abs(0L));
             Assert.Equal(3L, Math.Abs(-3L));
             Assert.Throws<OverflowException>(() => Math.Abs(long.MinValue));
+        }
+
+        [Fact]
+        public static void Abs_NInt()
+        {
+            Assert.Equal((nint)3, Math.Abs((nint)3));
+            Assert.Equal((nint)0, Math.Abs((nint)0));
+            Assert.Equal((nint)3, Math.Abs((nint)(-3)));
+            Assert.Throws<OverflowException>(() => Math.Abs(nint.MinValue));
         }
 
         [Fact]
@@ -1112,6 +1122,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Max_NInt()
+        {
+            Assert.Equal((nint)3, Math.Max((nint)(-2), (nint)3));
+            Assert.Equal(nint.MaxValue, Math.Max(nint.MinValue, nint.MaxValue));
+        }
+
+        [Fact]
         public static void Max_SByte()
         {
             Assert.Equal((sbyte)3, Math.Max((sbyte)(-2), (sbyte)3));
@@ -1160,6 +1177,13 @@ namespace System.Tests
         {
             Assert.Equal((ulong)3, Math.Max((ulong)2, (ulong)3));
             Assert.Equal(ulong.MaxValue, Math.Max(ulong.MinValue, ulong.MaxValue));
+        }
+
+        [Fact]
+        public static void Max_NUInt()
+        {
+            Assert.Equal((nuint)3, Math.Max((nuint)2, (nuint)3));
+            Assert.Equal(nuint.MaxValue, Math.Max(nuint.MinValue, nuint.MaxValue));
         }
 
         [Fact]
@@ -1221,6 +1245,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Min_NInt()
+        {
+            Assert.Equal((nint)(-2), Math.Min((nint)3, (nint)(-2)));
+            Assert.Equal(nint.MinValue, Math.Min(nint.MinValue, nint.MaxValue));
+        }
+
+        [Fact]
         public static void Min_SByte()
         {
             Assert.Equal((sbyte)(-2), Math.Min((sbyte)3, (sbyte)(-2)));
@@ -1269,6 +1300,13 @@ namespace System.Tests
         {
             Assert.Equal((ulong)2, Math.Min((ulong)3, (ulong)2));
             Assert.Equal(ulong.MinValue, Math.Min(ulong.MinValue, ulong.MaxValue));
+        }
+
+        [Fact]
+        public static void Min_NUInt()
+        {
+            Assert.Equal((nuint)2, Math.Min((nuint)3, (nuint)2));
+            Assert.Equal(nuint.MinValue, Math.Min(nuint.MinValue, nuint.MaxValue));
         }
 
         public static IEnumerable<object[]> Pow_TestData
@@ -1520,6 +1558,14 @@ namespace System.Tests
             Assert.Equal(0, Math.Sign(0));
             Assert.Equal(-1, Math.Sign(-3));
             Assert.Equal(1, Math.Sign(3));
+        }
+
+        [Fact]
+        public static void Sign_NInt()
+        {
+            Assert.Equal(0, Math.Sign((nint)0));
+            Assert.Equal(-1, Math.Sign((nint)(-3)));
+            Assert.Equal(1, Math.Sign((nint)3));
         }
 
         [Fact]
@@ -1802,34 +1848,276 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(1073741, 2147483647, 2000, 1647)]
-        [InlineData(6, 13952, 2000, 1952)]
-        [InlineData(0, 0, 2000, 0)]
-        [InlineData(-7, -14032, 2000, -32)]
-        [InlineData(-1073741, -2147483648, 2000, -1648)]
-        [InlineData(-1073741, 2147483647, -2000, 1647)]
-        [InlineData(-6, 13952, -2000, 1952)]
-        public static void DivRem(int quotient, int dividend, int divisor, int expectedRemainder)
+        [InlineData(sbyte.MaxValue, sbyte.MaxValue, 1, 0)]
+        [InlineData(sbyte.MaxValue, 1, sbyte.MaxValue, 0)]
+        [InlineData(sbyte.MaxValue, 2, 63, 1)]
+        [InlineData(sbyte.MaxValue, -1, -127, 0)]
+        [InlineData(11, 22, 0, 11)]
+        [InlineData(80, 22, 3, 14)]
+        [InlineData(80, -22, -3, 14)]
+        [InlineData(-80, 22, -3, -14)]
+        [InlineData(-80, -22, 3, -14)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0, sbyte.MaxValue, 0, 0)]
+        [InlineData(sbyte.MinValue, sbyte.MaxValue, -1, -1)]
+        [InlineData(sbyte.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemSByte(sbyte dividend, sbyte divisor, sbyte expectedQuotient, sbyte expectedRemainder)
         {
-            int remainder;
-            Assert.Equal(quotient, Math.DivRem(dividend, divisor, out remainder));
-            Assert.Equal(expectedRemainder, remainder);
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
         }
 
         [Theory]
-        [InlineData(4611686018427387L, 9223372036854775807L, 2000L, 1807L)]
-        [InlineData(4611686018427387L, -9223372036854775808L, -2000L, -1808L)]
-        [InlineData(-4611686018427387L, 9223372036854775807L, -2000L, 1807L)]
-        [InlineData(-4611686018427387L, -9223372036854775808L, 2000L, -1808L)]
-        [InlineData(6L, 13952L, 2000L, 1952L)]
-        [InlineData(0L, 0L, 2000L, 0L)]
-        [InlineData(-7L, -14032L, 2000L, -32L)]
-        [InlineData(-6L, 13952L, -2000L, 1952L)]
-        public static void DivRemLong(long quotient, long dividend, long divisor, long expectedRemainder)
+        [InlineData(byte.MaxValue, byte.MaxValue, 1, 0)]
+        [InlineData(byte.MaxValue, 1, byte.MaxValue, 0)]
+        [InlineData(byte.MaxValue, 2, 127, 1)]
+        [InlineData(52, 5, 10, 2)]
+        [InlineData(100, 33, 3, 1)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0, byte.MaxValue, 0, 0)]
+        [InlineData(250, 50, 5, 0)]
+        [InlineData(byte.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemByte(byte dividend, byte divisor, byte expectedQuotient, byte expectedRemainder)
         {
-            long remainder;
-            Assert.Equal(quotient, Math.DivRem(dividend, divisor, out remainder));
-            Assert.Equal(expectedRemainder, remainder);
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(short.MaxValue, short.MaxValue, 1, 0)]
+        [InlineData(short.MaxValue, 1, short.MaxValue, 0)]
+        [InlineData(short.MaxValue, 2, 16383, 1)]
+        [InlineData(short.MaxValue, -1, -32767, 0)]
+        [InlineData(12345, 22424, 0, 12345)]
+        [InlineData(300, 22, 13, 14)]
+        [InlineData(300, -22, -13, 14)]
+        [InlineData(-300, 22, -13, -14)]
+        [InlineData(-300, -22, 13, -14)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0, short.MaxValue, 0, 0)]
+        [InlineData(short.MinValue, short.MaxValue, -1, -1)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(short.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemInt16(short dividend, short divisor, short expectedQuotient, short expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(ushort.MaxValue, ushort.MaxValue, 1, 0)]
+        [InlineData(ushort.MaxValue, 1, ushort.MaxValue, 0)]
+        [InlineData(ushort.MaxValue, 2, 32767, 1)]
+        [InlineData(12345, 42424, 0, 12345)]
+        [InlineData(51474, 31474, 1, 20000)]
+        [InlineData(10000, 333, 30, 10)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0, ushort.MaxValue, 0, 0)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(ushort.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemUInt16(ushort dividend, ushort divisor, ushort expectedQuotient, ushort expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(2147483647, 2000, 1073741, 1647)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(0, 2000, 0, 0)]
+        [InlineData(-14032, 2000, -7, -32)]
+        [InlineData(-2147483648, 2000, -1073741, -1648)]
+        [InlineData(2147483647, -2000, -1073741, 1647)]
+        [InlineData(13952, -2000, -6, 1952)]
+        [InlineData(13952, 0, 0, 0)]
+        [InlineData(int.MaxValue, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemInt32(int dividend, int divisor, int expectedQuotient, int expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor, out int remainder));
+            }
+            else
+            {
+                Assert.Equal(expectedQuotient, Math.DivRem(dividend, divisor, out int remainder));
+                Assert.Equal(expectedRemainder, remainder);
+
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+            if (IntPtr.Size == 4)
+            {
+                DivRemNativeInt(dividend, divisor, expectedQuotient, expectedRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(uint.MaxValue, uint.MaxValue, 1, 0)]
+        [InlineData(uint.MaxValue, 1, uint.MaxValue, 0)]
+        [InlineData(uint.MaxValue, 2, 2147483647, 1)]
+        [InlineData(123456789, 4242424242, 0, 123456789)]
+        [InlineData(514748364, 3147483647, 0, 514748364)]
+        [InlineData(1000000, 333, 3003, 1)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0UL, uint.MaxValue, 0, 0)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(uint.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemUInt32(uint dividend, uint divisor, uint expectedQuotient, uint expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+            if (IntPtr.Size == 4)
+            {
+                DivRemNativeUInt(dividend, divisor, expectedQuotient, expectedRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(9223372036854775807L, 2000L, 4611686018427387L, 1807L)]
+        [InlineData(-9223372036854775808L, -2000L, 4611686018427387L, -1808L)]
+        [InlineData(9223372036854775807L, -2000L, -4611686018427387L, 1807L)]
+        [InlineData(-9223372036854775808L, 2000L, -4611686018427387L, -1808L)]
+        [InlineData(13952L, 2000L, 6L, 1952L)]
+        [InlineData(0L, 2000L, 0L, 0L)]
+        [InlineData(-14032L, 2000L, -7L, -32L)]
+        [InlineData(13952L, -2000L, -6L, 1952L)]
+        [InlineData(long.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemInt64(long dividend, long divisor, long expectedQuotient, long expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor, out long remainder));
+            }
+            else
+            {
+                Assert.Equal(expectedQuotient, Math.DivRem(dividend, divisor, out long remainder));
+                Assert.Equal(expectedRemainder, remainder);
+
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+            if (IntPtr.Size == 8)
+            {
+                DivRemNativeInt((nint)dividend, (nint)divisor, (nint)expectedQuotient, (nint)expectedRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(ulong.MaxValue, ulong.MaxValue, 1, 0)]
+        [InlineData(ulong.MaxValue, 1, ulong.MaxValue, 0)]
+        [InlineData(ulong.MaxValue, 2, 9223372036854775807, 1)]
+        [InlineData(123456789, 4242424242, 0, 123456789)]
+        [InlineData(5147483647, 3147483647, 1, 2000000000)]
+        [InlineData(1000000, 333, 3003, 1)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0UL, ulong.MaxValue, 0, 0)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(ulong.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemUInt64(ulong dividend, ulong divisor, ulong expectedQuotient, ulong expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+            if (IntPtr.Size == 8)
+            {
+                DivRemNativeUInt((nuint)dividend, (nuint)divisor, (nuint)expectedQuotient, (nuint)expectedRemainder);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DivRemNativeInt(nint dividend, nint divisor, nint expectedQuotient, nint expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DivRemNativeUInt(nuint dividend, nuint divisor, nuint expectedQuotient, nuint expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
         }
 
         public static IEnumerable<object[]> Clamp_UnsignedInt_TestData()
@@ -2143,6 +2431,21 @@ namespace System.Tests
         public static void Clamp_ULong(ulong value, ulong min, ulong max, ulong expected)
         {
             Assert.Equal(expected, Math.Clamp(value, min, max));
+        }
+
+
+        [Theory]
+        [MemberData(nameof(Clamp_SignedInt_TestData))]
+        public static void Clamp_NInt(int value, int min, int max, int expected)
+        {
+            Assert.Equal((nint)expected, Math.Clamp((nint)value, (nint)min, (nint)max));
+        }
+
+        [Theory]
+        [MemberData(nameof(Clamp_UnsignedInt_TestData))]
+        public static void Clamp_NUInt(uint value, uint min, uint max, uint expected)
+        {
+            Assert.Equal((nuint)expected, Math.Clamp((nuint)value, (nuint)min, (nuint)max));
         }
 
         [Theory]
@@ -2633,7 +2936,7 @@ namespace System.Tests
             Assert.Equal(-3, Math.Round(-3.0));
             Assert.Equal( 4, Math.Round( 3.5));
             Assert.Equal(-4, Math.Round(-3.5));
-            
+
             Assert.Equal( 0, Math.Round( 0.5, MidpointRounding.ToZero));
             Assert.Equal( 0, Math.Round( 0.5, MidpointRounding.ToZero));
             Assert.Equal( 1, Math.Round( 1.0, MidpointRounding.ToZero));
@@ -2682,7 +2985,7 @@ namespace System.Tests
             Assert.Equal(-3, MathF.Round(-3.0f));
             Assert.Equal( 4, MathF.Round( 3.5f));
             Assert.Equal(-4, MathF.Round(-3.5f));
-            
+
             Assert.Equal( 0, MathF.Round( 0.5f, MidpointRounding.ToZero));
             Assert.Equal( 0, MathF.Round( 0.5f, MidpointRounding.ToZero));
             Assert.Equal( 1, MathF.Round( 1.0f, MidpointRounding.ToZero));

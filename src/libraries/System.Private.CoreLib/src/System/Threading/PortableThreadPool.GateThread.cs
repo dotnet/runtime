@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -44,10 +43,7 @@ namespace System.Threading
                     {
                         Thread.Sleep(GateThreadDelayMs);
 
-                        if (ThreadPool.EnableWorkerTracking &&
-                            PortableThreadPoolEventSource.Log.IsEnabled(
-                                EventLevel.Verbose,
-                                PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
+                        if (ThreadPool.EnableWorkerTracking && PortableThreadPoolEventSource.Log.IsEnabled())
                         {
                             PortableThreadPoolEventSource.Log.ThreadPoolWorkingThreadCount(
                                 (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
@@ -172,11 +168,13 @@ namespace System.Threading
                 bool created = false;
                 try
                 {
+                    // Thread pool threads must start in the default execution context without transferring the context, so
+                    // using UnsafeStart() instead of Start()
                     Thread gateThread = new Thread(GateThreadStart, SmallStackSizeBytes);
                     gateThread.IsThreadPoolThread = true;
                     gateThread.IsBackground = true;
                     gateThread.Name = ".NET ThreadPool Gate";
-                    gateThread.Start();
+                    gateThread.UnsafeStart();
                     created = true;
                 }
                 finally

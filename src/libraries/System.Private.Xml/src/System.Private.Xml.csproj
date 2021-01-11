@@ -2,13 +2,11 @@
   <PropertyGroup>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs" Link="Common\System\StringBuilderCache.cs" />
-    <Compile Include="$(CommonPath)System\Marvin.cs" Link="Common\System\Marvin.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
     <Compile Include="System\Xml\BinaryXml\BinXmlToken.cs" />
@@ -248,11 +246,6 @@
     <Compile Include="System\Xml\Cache\XPathNode.cs" />
     <Compile Include="System\Xml\Cache\XPathNodeHelper.cs" />
     <Compile Include="System\Xml\Cache\XPathNodeInfoAtom.cs" />
-    <Compile Include="System\Xml\Cache\Shape.cs" />
-    <Compile Include="System\Xml\Cache\ShapeGenerator.cs" />
-    <Compile Include="System\Xml\Cache\XPathDocumentView.cs" />
-    <Compile Include="System\Xml\Cache\XPathNodeView.cs" />
-    <Compile Include="System\Xml\Cache\XPathNodeViewPropertyDescriptor.cs" />
     <Compile Include="System\Xml\Resolvers\XmlKnownDtds.cs" />
     <Compile Include="System\Xml\Resolvers\XmlPreloadedResolver.cs" />
     <Compile Include="System\Xml\Resolvers\XmlPreloadedResolverAsync.cs" />
@@ -563,7 +556,6 @@
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />

@@ -85,6 +85,23 @@ namespace System
             return value;
         }
 
+        /// <summary>Returns the absolute value of a native signed integer.</summary>
+        /// <param name="value">A number that is greater than <see cref="IntPtr.MinValue" />, but less than or equal to <see cref="IntPtr.MaxValue" />.</param>
+        /// <returns>A native signed integer, x, such that 0 ≤ x ≤ <see cref="IntPtr.MaxValue" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint Abs(nint value)
+        {
+            if (value < 0)
+            {
+                value = -value;
+                if (value < 0)
+                {
+                    ThrowAbsOverflow();
+                }
+            }
+            return value;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static sbyte Abs(sbyte value)
@@ -271,18 +288,129 @@ namespace System
             return div;
         }
 
-        internal static uint DivRem(uint a, uint b, out uint result)
+        /// <summary>Produces the quotient and the remainder of two signed 8-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (sbyte Quotient, sbyte Remainder) DivRem(sbyte left, sbyte right)
         {
-            uint div = a / b;
-            result = a - (div * b);
-            return div;
+            sbyte quotient = (sbyte)(left / right);
+            return (quotient, (sbyte)(left - (quotient * right)));
         }
 
-        internal static ulong DivRem(ulong a, ulong b, out ulong result)
+        /// <summary>Produces the quotient and the remainder of two unsigned 8-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (byte Quotient, byte Remainder) DivRem(byte left, byte right)
         {
-            ulong div = a / b;
-            result = a - (div * b);
-            return div;
+            byte quotient = (byte)(left / right);
+            return (quotient, (byte)(left - (quotient * right)));
+        }
+
+        /// <summary>Produces the quotient and the remainder of two signed 16-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (short Quotient, short Remainder) DivRem(short left, short right)
+        {
+            short quotient = (short)(left / right);
+            return (quotient, (short)(left - (quotient * right)));
+        }
+
+        /// <summary>Produces the quotient and the remainder of two unsigned 16-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (ushort Quotient, ushort Remainder) DivRem(ushort left, ushort right)
+        {
+            ushort quotient = (ushort)(left / right);
+            return (quotient, (ushort)(left - (quotient * right)));
+        }
+
+        /// <summary>Produces the quotient and the remainder of two signed 32-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (int Quotient, int Remainder) DivRem(int left, int right)
+        {
+            int quotient = left / right;
+            return (quotient, left - (quotient * right));
+        }
+
+        /// <summary>Produces the quotient and the remainder of two unsigned 32-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (uint Quotient, uint Remainder) DivRem(uint left, uint right)
+        {
+            uint quotient = left / right;
+            return (quotient, left - (quotient * right));
+        }
+
+        /// <summary>Produces the quotient and the remainder of two signed 64-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (long Quotient, long Remainder) DivRem(long left, long right)
+        {
+            long quotient = left / right;
+            return (quotient, left - (quotient * right));
+        }
+
+        /// <summary>Produces the quotient and the remainder of two unsigned 64-bit numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right)
+        {
+            ulong quotient = left / right;
+            return (quotient, left - (quotient * right));
+        }
+
+        /// <summary>Produces the quotient and the remainder of two signed native-size numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (nint Quotient, nint Remainder) DivRem(nint left, nint right)
+        {
+            nint quotient = left / right;
+            return (quotient, left - (quotient * right));
+        }
+
+        /// <summary>Produces the quotient and the remainder of two unsigned native-size numbers.</summary>
+        /// <param name="left">The dividend.</param>
+        /// <param name="right">The divisor.</param>
+        /// <returns>The quotient and the remainder of the specified numbers.</returns>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (nuint Quotient, nuint Remainder) DivRem(nuint left, nuint right)
+        {
+            nuint quotient = left / right;
+            return (quotient, left - (quotient * right));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -411,6 +539,41 @@ namespace System
             return value;
         }
 
+        /// <summary>Returns <paramref name="value" /> clamped to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</summary>
+        /// <param name="value">The value to be clamped.</param>
+        /// <param name="min">The lower bound of the result.</param>
+        /// <param name="max">The upper bound of the result.</param>
+        /// <returns>
+        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="min" /> if <paramref name="value" /> &lt; <paramref name="min" />.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="max" /> if <paramref name="max" /> &lt; <paramref name="value" />.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint Clamp(nint value, nint min, nint max)
+        {
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
+
+            if (value < min)
+            {
+                return min;
+            }
+            else if (value > max)
+            {
+                return max;
+            }
+
+            return value;
+        }
+
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static sbyte Clamp(sbyte value, sbyte min, sbyte max)
@@ -497,6 +660,42 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static ulong Clamp(ulong value, ulong min, ulong max)
+        {
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
+
+            if (value < min)
+            {
+                return min;
+            }
+            else if (value > max)
+            {
+                return max;
+            }
+
+            return value;
+        }
+
+        /// <summary>Returns <paramref name="value" /> clamped to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</summary>
+        /// <param name="value">The value to be clamped.</param>
+        /// <param name="min">The lower bound of the result.</param>
+        /// <param name="max">The upper bound of the result.</param>
+        /// <returns>
+        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="min" /> if <paramref name="value" /> &lt; <paramref name="min" />.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="max" /> if <paramref name="max" /> &lt; <paramref name="value" />.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static nuint Clamp(nuint value, nuint min, nuint max)
         {
             if (min > max)
             {
@@ -649,6 +848,16 @@ namespace System
             return (val1 >= val2) ? val1 : val2;
         }
 
+        /// <summary>Returns the larger of two native signed integers.</summary>
+        /// <param name="val1">The first of two native signed integers to compare.</param>
+        /// <param name="val2">The second of two native signed integers to compare.</param>
+        /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is larger.</returns>
+        [NonVersionable]
+        public static nint Max(nint val1, nint val2)
+        {
+            return (val1 >= val2) ? val1 : val2;
+        }
+
         [CLSCompliant(false)]
         [NonVersionable]
         public static sbyte Max(sbyte val1, sbyte val2)
@@ -695,6 +904,17 @@ namespace System
         [CLSCompliant(false)]
         [NonVersionable]
         public static ulong Max(ulong val1, ulong val2)
+        {
+            return (val1 >= val2) ? val1 : val2;
+        }
+
+        /// <summary>Returns the larger of two native unsigned integers.</summary>
+        /// <param name="val1">The first of two native unsigned integers to compare.</param>
+        /// <param name="val2">The second of two native unsigned integers to compare.</param>
+        /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is larger.</returns>
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static nuint Max(nuint val1, nuint val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
@@ -770,6 +990,16 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        /// <summary>Returns the smaller of two native signed integers.</summary>
+        /// <param name="val1">The first of two native signed integers to compare.</param>
+        /// <param name="val2">The second of two native signed integers to compare.</param>
+        /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is smaller.</returns>
+        [NonVersionable]
+        public static nint Min(nint val1, nint val2)
+        {
+            return (val1 <= val2) ? val1 : val2;
+        }
+
         [CLSCompliant(false)]
         [NonVersionable]
         public static sbyte Min(sbyte val1, sbyte val2)
@@ -811,6 +1041,17 @@ namespace System
         [CLSCompliant(false)]
         [NonVersionable]
         public static ulong Min(ulong val1, ulong val2)
+        {
+            return (val1 <= val2) ? val1 : val2;
+        }
+
+        /// <summary>Returns the smaller of two native unsigned integers.</summary>
+        /// <param name="val1">The first of two native unsigned integers to compare.</param>
+        /// <param name="val2">The second of two native unsigned integers to compare.</param>
+        /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is smaller.</returns>
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static nuint Min(nuint val1, nuint val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
@@ -1052,6 +1293,15 @@ namespace System
         public static int Sign(long value)
         {
             return unchecked((int)(value >> 63 | (long)((ulong)-value >> 63)));
+        }
+
+        public static int Sign(nint value)
+        {
+#if TARGET_64BIT
+            return unchecked((int)(value >> 63 | (long)((ulong)-value >> 63)));
+#else
+            return unchecked((int)(value >> 31) | (int)((uint)-value >> 31));
+#endif
         }
 
         [CLSCompliant(false)]

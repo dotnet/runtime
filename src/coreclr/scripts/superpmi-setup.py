@@ -23,12 +23,12 @@
 # 4.  Lastly, it sets the pipeline variables.
 
 # Below are the helix queues it sets depending on the OS/architecture:
-# | Arch  | windows       | Linux                                                                                                                                |
-# |-------|------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-# | x86   | Windows.10.Amd64 | -                                                                                                                                    |
-# | x64   | Windows.10.Amd64 | Ubuntu.1804.Amd64                                                                                                                    |
-# | arm   | -                | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
-# | arm64 | Windows.10.Arm64 | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855 |
+# | Arch  | windows              | Linux                                                                                                                                |
+# |-------|----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+# | x86   | Windows.10.Amd64.X86 |                                                                                                                                      |
+# | x64   | Windows.10.Amd64.X86 | Ubuntu.1804.Amd64                                                                                                                    |
+# | arm   | -                    | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
+# | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855 |
 ################################################################################
 ################################################################################
 
@@ -38,7 +38,7 @@ import shutil
 import subprocess
 import tempfile
 
-from os import listdir, path, walk
+from os import linesep, listdir, path, walk
 from os.path import isfile, join, getsize
 from coreclr_arguments import *
 
@@ -56,7 +56,7 @@ parser.add_argument("-input_directory", help="directory containing assemblies fo
 parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
 native_binaries_to_ignore = [
-    "clrcompression.dll",
+    "System.IO.Compression.Native.dll",
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",
@@ -89,7 +89,7 @@ native_binaries_to_ignore = [
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
 ]
-
+MAX_FILES_COUNT = 1500
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -206,7 +206,7 @@ def first_fit(sorted_by_size, max_size):
         if file_size < max_size:
             for p_index in partitions:
                 total_in_curr_par = sum(n for _, n in partitions[p_index])
-                if (total_in_curr_par + file_size) < max_size:
+                if (((total_in_curr_par + file_size) < max_size) and (len(partitions[p_index]) < MAX_FILES_COUNT)):
                     partitions[p_index].append(curr_file)
                     found_bucket = True
                     break
@@ -217,7 +217,7 @@ def first_fit(sorted_by_size, max_size):
     total_size = 0
     for p_index in partitions:
         partition_size = sum(n for _, n in partitions[p_index])
-        print("Partition {0}: {1} bytes.".format(p_index, partition_size))
+        print("Partition {0}: {1} files with {2} bytes.".format(p_index, len(partitions[p_index]), partition_size))
         total_size += partition_size
     print("Total {0} partitions with {1} bytes.".format(str(len(partitions)), total_size))
 
@@ -282,7 +282,7 @@ def copy_files(src_path, dst_path, file_names):
 
     print('### Copying below files to {0}:'.format(dst_path))
     print('')
-    print(file_names)
+    print(os.linesep.join(file_names))
     for f in file_names:
         # Create same structure in dst so we don't clobber same files names present in different directories
         dst_path_of_file = f.replace(src_path, dst_path)
@@ -345,7 +345,7 @@ def main(main_args):
     creator = ""
     ci = True
     if is_windows:
-        helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64"
+        helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86"
     else:
         if arch == "arm":
             helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
@@ -381,7 +381,8 @@ def main(main_args):
 
     # payload
     input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
-    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size)
+    exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
+    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory)
 
     # Set variables
     print('Setting pipeline variables:')

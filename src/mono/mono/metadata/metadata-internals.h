@@ -268,6 +268,7 @@ typedef struct {
 	GHashTable *native_wrapper_aot_check_cache;
 
 	GHashTable *native_func_wrapper_aot_cache;
+	GHashTable *native_func_wrapper_indirect_cache; /* Indexed by MonoMethodSignature. Protected by the marshal lock */
 	GHashTable *remoting_invoke_cache;
 	GHashTable *synchronized_cache;
 	GHashTable *unbox_wrapper_cache;
@@ -1181,6 +1182,9 @@ mono_type_is_valid_generic_argument (MonoType *type);
 
 MonoAssemblyContextKind
 mono_asmctx_get_kind (const MonoAssemblyContext *ctx);
+
+void
+mono_metadata_get_class_guid (MonoClass* klass, uint8_t* guid, MonoError *error);
 
 #define MONO_CLASS_IS_INTERFACE_INTERNAL(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_INTERFACE) || mono_type_is_generic_parameter (m_class_get_byval_arg (c)))
 

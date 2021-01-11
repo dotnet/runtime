@@ -1,8 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <VersionProp>AppHostVersion</VersionProp>
-    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
+    <PackageDescription>Provides the .NET app bootstrapper intended for use in the application directory</PackageDescription>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildProjectName).props" />
+  <ItemGroup>
+    <NativeBinary Include="$(DotNetHostBinDir)/apphost$(ExeSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
+    <NativeBinary Include="$(DotNetHostBinDir)/hostfxr.h" />
+    <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <NativeBinary Include="$(DotNetHostBinDir)/comhost.dll" />
+    <NativeBinary Include="$(DotNetHostBinDir)/ijwhost.dll" />
+    <NativeBinary Include="$(DotNetHostBinDir)/ijwhost.lib" />
+    <!-- The libnethost.lib is a static library for the nethost scenario.
+        The symbols file is also shipped to enable users to fully debug
+        binaries that link against the static version. -->
+    <NativeBinary Include="$(DotNetHostBinDir)/libnethost.lib" />
+    <NativeBinary Include="$(DotNetHostBinDir)/PDB/libnethost.pdb" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <File Include="@(NativeBinary)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsNative>true</IsNative>
+    </File>
+  </ItemGroup>
 </Project>
