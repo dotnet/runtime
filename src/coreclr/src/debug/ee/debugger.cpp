@@ -11421,14 +11421,21 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         {
             // DISPOSE an object handle
             OBJECTHANDLE objectHandle = pEvent->DisposeHandle.vmObjectHandle.GetRawPtr();
+            CorDebugHandleType handleType = pEvent->DisposeHandle.handleType;
 
-            if (pEvent->DisposeHandle.fStrong == TRUE)
+            switch (handleType)
             {
+            case HANDLE_STRONG:
                 DestroyStrongHandle(objectHandle);
-            }
-            else
-            {
+                break;
+            case HANDLE_WEAK_TRACK_RESURRECTION:
                 DestroyLongWeakHandle(objectHandle);
+                break;
+            case HANDLE_PINNED:
+                DestroyPinningHandle(objectHandle);
+                break;
+            default:
+                pEvent->hr = E_INVALIDARG;
             }
             break;
         }
