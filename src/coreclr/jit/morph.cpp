@@ -11909,18 +11909,20 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             return fgMorphCast(tree);
 
         case GT_MUL:
-            // -a * C => a * -C, where C is constant
-            // MUL(NEG(a), C) => MUL(a, NEG(C))
-            if (opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) && op1->OperIs(GT_NEG) &&
-                !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() && !op2->IsIconHandle() &&
-                op2->AsIntCon()->IconValue() != 1 && op2->AsIntCon()->IconValue() != 0 &&
-                op2->AsIntCon()->IconValue() != -1 && !tree->gtOverflow())
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase && !tree->gtOverflow())
             {
-                tree->AsOp()->gtOp1 = op1->gtGetOp1();
-                DEBUG_DESTROY_NODE(op1);
-                tree->AsOp()->gtOp2 = gtNewIconNode(-op2->AsIntCon()->IconValue(), op2->TypeGet());
-                DEBUG_DESTROY_NODE(op2);
-                return fgMorphSmpOp(tree, mac);
+                // MUL(NEG(a), C) => MUL(a, NEG(C))
+                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
+                    !op2->IsIconHandle())
+                {
+                    GenTree* newOp1   = op1->gtGetOp1();
+                    GenTree* newConst = gtNewIconNode(-op2->AsIntCon()->IconValue(), op2->TypeGet());
+                    DEBUG_DESTROY_NODE(op1);
+                    DEBUG_DESTROY_NODE(op2);
+                    tree->AsOp()->gtOp1 = newOp1;
+                    tree->AsOp()->gtOp2 = newConst;
+                    return fgMorphSmpOp(tree, mac);
+                }
             }
 
 #ifndef TARGET_64BIT
@@ -12069,18 +12071,22 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 return fgMorphSmpOp(tree, mac);
             }
 
-            // -a / C => a / -C, where C is constant
-            // DIV(NEG(a), C) => DIV(a, NEG(C))
-            if (opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) && op1->OperIs(GT_NEG) &&
-                !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() && !op2->IsIconHandle() &&
-                op2->AsIntCon()->IconValue() != 1 && op2->AsIntCon()->IconValue() != 0 &&
-                op2->AsIntCon()->IconValue() != -1)
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase)
             {
-                tree->AsOp()->gtOp1 = op1->gtGetOp1();
-                DEBUG_DESTROY_NODE(op1);
-                tree->AsOp()->gtOp2 = gtNewIconNode(-op2->AsIntCon()->IconValue(), op2->TypeGet());
-                DEBUG_DESTROY_NODE(op2);
-                return fgMorphSmpOp(tree, mac);
+                // DIV(NEG(a), C) => DIV(a, NEG(C))
+                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
+                    !op2->IsIconHandle())
+                {
+                    ssize_t op2Value = op2->AsIntCon()->IconValue();
+                    if (op2Value != 1 && op2Value != -1) // Div must throw exception for int(long).MinValue / -1.
+                    {
+                        tree->AsOp()->gtOp1 = op1->gtGetOp1();
+                        DEBUG_DESTROY_NODE(op1);
+                        tree->AsOp()->gtOp2 = gtNewIconNode(-op2Value, op2->TypeGet());
+                        DEBUG_DESTROY_NODE(op2);
+                        return fgMorphSmpOp(tree, mac);
+                    }
+                }
             }
 
 #ifndef TARGET_64BIT
@@ -13948,23 +13954,31 @@ DONE_MORPHING_CHILDREN:
             }
 
             // Distribute negation over simple multiplication/division expressions
-            if (op1->OperIs(GT_MUL) || op1->OperIs(GT_DIV))
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase && tree->OperIs(GT_NEG) &&
+                op1->OperIs(GT_MUL, GT_DIV))
             {
-                if (!op1->AsOp()->gtOp1->IsCnsIntOrI() && op1->AsOp()->gtOp2->IsCnsIntOrI())
+                GenTreeOp* mulOrDiv = op1->AsOp();
+                GenTree*   op1op1   = mulOrDiv->gtGetOp1();
+                GenTree*   op1op2   = mulOrDiv->gtGetOp2();
+
+                if (!op1op1->IsCnsIntOrI() && op1op2->IsCnsIntOrI() && !op1op2->IsIconHandle())
                 {
-                    // -(a * C) => a * -C
-                    // -(a / C) => a / -C
-                    oper = op1->gtOper;
-                    tree->SetOper(op1->gtOper);
-                    GenTree* newOp1 = op1->AsOp()->gtOp1; // a
-                    GenTree* newOp2 = op1->AsOp()->gtOp2; // C
-                    newOp2->AsIntCon()->SetIconValue(-newOp2->AsIntCon()->IconValue());
+                    // NEG(MUL(a, C)) => MUL(a, -C)
+                    // NEG(DIV(a, C)) => DIV(a, -C), except when C = {-1, 1}
+                    ssize_t constVal = op1op2->AsIntCon()->IconValue();
+                    if ((mulOrDiv->OperIs(GT_DIV) && (constVal != -1) && (constVal != 1)) ||
+                        (mulOrDiv->OperIs(GT_MUL) && !mulOrDiv->gtOverflow()))
+                    {
+                        GenTree* newOp1 = op1op1;                                      // a
+                        GenTree* newOp2 = gtNewIconNode(-constVal, op1op2->TypeGet()); // -C
+                        mulOrDiv->gtOp1 = newOp1;
+                        mulOrDiv->gtOp2 = newOp2;
 
-                    // Only need to destroy op1 since op2 will be null already
-                    DEBUG_DESTROY_NODE(op1);
+                        DEBUG_DESTROY_NODE(tree);
+                        DEBUG_DESTROY_NODE(op1op2);
 
-                    tree->AsOp()->gtOp1 = op1 = newOp1;
-                    tree->AsOp()->gtOp2 = op2 = newOp2;
+                        return mulOrDiv;
+                    }
                 }
             }
 
