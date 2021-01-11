@@ -11,16 +11,11 @@
 //
 PhaseStatus Compiler::optRedundantBranches()
 {
-    // We attempt this "bottom up" so walk the flow graph in postorder.
-    //
     bool madeChanges = false;
 
-    for (unsigned i = fgDomBBcount; i > 0; --i)
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-        BasicBlock* const block = fgBBInvPostOrder[i];
-
-        // Upstream phases like optOptimizeBools may remove blocks
-        // that are referenced in bbInvPosOrder.
+        // Skip over any removed blocks.
         //
         if ((block->bbFlags & BBF_REMOVED) != 0)
         {
@@ -33,6 +28,13 @@ PhaseStatus Compiler::optRedundantBranches()
         {
             madeChanges |= optRedundantBranch(block);
         }
+    }
+
+    // Reset visited flags, in case we set any.
+    //
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        block->bbFlags &= ~BBF_VISITED;
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -122,8 +124,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
                     BasicBlock* const trueSuccessor  = domBlock->bbJumpDest;
                     BasicBlock* const falseSuccessor = domBlock->bbNext;
-                    const bool        trueReaches    = fgReachable(trueSuccessor, block);
-                    const bool        falseReaches   = fgReachable(falseSuccessor, block);
+                    const bool        trueReaches    = optReachable(trueSuccessor, block);
+                    const bool        falseReaches   = optReachable(falseSuccessor, block);
 
                     if (trueReaches && falseReaches)
                     {
@@ -317,11 +319,6 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // * It's possible for a pred to be reachable from both paths out of domBlock;
     // if so, we can't jump thread that pred.
     //
-    // * It's also possible for us to think a pred is reachable from both paths
-    // when it no longer is; we use fgReachable which was computed upstream and
-    // is not updated as flow is refined. So it may overstate reachability.
-    // To try and mitigate that, we have the main branch loop work in postorder.
-    //
     // * It's also possible that a pred can't branch directly to a successor as
     // it might violate EH region constraints. Since this causes the same issues
     // as an ambiguous pred we'll just classify these as ambiguous too.
@@ -369,9 +366,9 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         }
 
         const bool isTruePred =
-            ((predBlock == domBlock) && (trueSuccessor == block)) || fgReachable(trueSuccessor, predBlock);
+            ((predBlock == domBlock) && (trueSuccessor == block)) || optReachable(trueSuccessor, predBlock);
         const bool isFalsePred =
-            ((predBlock == domBlock) && (falseSuccessor == block)) || fgReachable(falseSuccessor, predBlock);
+            ((predBlock == domBlock) && (falseSuccessor == block)) || optReachable(falseSuccessor, predBlock);
 
         if (isTruePred == isFalsePred)
         {
@@ -474,9 +471,9 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         BasicBlock* const predBlock = pred->getBlock();
 
         const bool isTruePred =
-            ((predBlock == domBlock) && (trueSuccessor == block)) || fgReachable(trueSuccessor, predBlock);
+            ((predBlock == domBlock) && (trueSuccessor == block)) || optReachable(trueSuccessor, predBlock);
         const bool isFalsePred =
-            ((predBlock == domBlock) && (falseSuccessor == block)) || fgReachable(falseSuccessor, predBlock);
+            ((predBlock == domBlock) && (falseSuccessor == block)) || optReachable(falseSuccessor, predBlock);
 
         if (isTruePred == isFalsePred)
         {
@@ -530,7 +527,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
             assert(predBlock->bbNext != block);
             if (isTruePred)
             {
-                assert(!fgReachable(falseSuccessor, predBlock));
+                assert(!optReachable(falseSuccessor, predBlock));
                 JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
                         " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                         predBlock->bbNum, block->bbNum, predBlock->bbNum, trueTarget->bbNum);
@@ -558,4 +555,62 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     //
     fgModified = true;
     return true;
+}
+
+//------------------------------------------------------------------------
+// optReachable: see if there's a path from one block to another,
+//   including paths involving EH flow.
+//
+// Arguments:
+//    fromBlock - staring block
+//    toBlock   - ending block
+//
+// Returns:
+//    true if there is a path, false if there is no path
+//
+// Notes:
+//    Like fgReachable, but computed on demand (and so accurate given
+//    the current flow graph), and also consders paths involving EH.
+//
+//    This may overstate "true" reachability in methods where there are
+//    finallies with multiple continuations.
+//
+bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock)
+{
+    if (fromBlock == toBlock)
+    {
+        return true;
+    }
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        block->bbFlags &= ~BBF_VISITED;
+    }
+
+    ArrayStack<BasicBlock*> stack(getAllocator(CMK_Reachability));
+    stack.Push(fromBlock);
+
+    while (!stack.Empty())
+    {
+        BasicBlock* const nextBlock = stack.Pop();
+        nextBlock->bbFlags |= BBF_VISITED;
+        assert(nextBlock != toBlock);
+
+        for (BasicBlock* succ : nextBlock->GetAllSuccs(this))
+        {
+            if (succ == toBlock)
+            {
+                return true;
+            }
+
+            if ((succ->bbFlags & BBF_VISITED) != 0)
+            {
+                continue;
+            }
+
+            stack.Push(succ);
+        }
+    }
+
+    return false;
 }
