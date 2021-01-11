@@ -232,7 +232,9 @@ namespace ILCompiler
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
         private bool _generatePdbFile;
+        private string _pdbPath;
         private bool _generatePerfMapFile;
+        private string _perfMapPath;
 
         private ProfileDataManager _profileData;
         private ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
@@ -260,7 +262,9 @@ namespace ILCompiler
             bool generateMapFile,
             bool generateMapCsvFile,
             bool generatePdbFile,
+            string pdbPath,
             bool generatePerfMapFile,
+            string perfMapPath,
             int parallelism,
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
@@ -282,7 +286,9 @@ namespace ILCompiler
             _generateMapFile = generateMapFile;
             _generateMapCsvFile = generateMapCsvFile;
             _generatePdbFile = generatePdbFile;
+            _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
+            _perfMapPath = perfMapPath;
             _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
@@ -321,7 +327,9 @@ namespace ILCompiler
                     generateMapFile: _generateMapFile,
                     generateMapCsvFile: _generateMapCsvFile,
                     generatePdbFile: _generatePdbFile,
+                    pdbPath: _pdbPath,
                     generatePerfMapFile: _generatePerfMapFile,
+                    perfMapPath: _perfMapPath,
                     _customPESectionAlignment);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
@@ -395,7 +403,9 @@ namespace ILCompiler
                 generateMapFile: false,
                 generateMapCsvFile: false,
                 generatePdbFile: false,
+                pdbPath: _pdbPath,
                 generatePerfMapFile: false,
+                perfMapPath: _perfMapPath,
                 customPESectionAlignment: 0);
         }
 

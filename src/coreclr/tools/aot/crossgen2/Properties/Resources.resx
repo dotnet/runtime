@@ -315,4 +315,10 @@
   <data name="PerfMapFileOption" xml:space="preserve">
     <value>Generate PerfMap symbol information file for use by PerfInfo</value>
   </data>
+  <data name="PdbFilePathOption" xml:space="preserve">
+    <value>Explicit specification of the output PDB file path</value>
+  </data>
+  <data name="PerfMapFilePathOption" xml:space="preserve">
+    <value>Explicit specification of the PerfMap file path</value>
+  </data>
 </root>

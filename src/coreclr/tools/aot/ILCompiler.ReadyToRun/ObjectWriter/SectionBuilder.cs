@@ -478,7 +478,7 @@ namespace ILCompiler.PEWriter
             if (mapFileBuilder != null)
             {
                 MapFileNode node = new MapFileNode(sectionIndex, alignedOffset, objectData.Data.Length, name);
-                mapFileBuilder.AddNode(node);
+                mapFileBuilder.AddNode(node, objectData.DefinedSymbols[0]);
                 if (objectData.Relocs != null)
                 {
                     foreach (Relocation reloc in objectData.Relocs)

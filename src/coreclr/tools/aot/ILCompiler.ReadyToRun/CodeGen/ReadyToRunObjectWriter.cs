@@ -11,6 +11,7 @@ using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Diagnostics;
 using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
@@ -70,16 +71,25 @@ namespace ILCompiler.DependencyAnalysis
         private bool _generatePdbFile;
 
         /// <summary>
+        /// Explicit specification of the output PDB path
+        /// </summary>
+        private string _pdbPath;
+
+        /// <summary>
         /// True when the map file builder should emit a PerfMap file
         /// </summary>
         private bool _generatePerfMapFile;
+
+        /// <summary>
+        /// Explicit specification of the output PerfMap path
+        /// </summary>
+        private string _perfMapPath;
 
         /// <summary>
         /// If non-zero, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB.
         /// This is used to support loading via large pages on Linux.
         /// </summary>
         private readonly int _customPESectionAlignment;
-
 
 #if DEBUG
         private struct NodeInfo
@@ -107,7 +117,9 @@ namespace ILCompiler.DependencyAnalysis
             bool generateMapFile,
             bool generateMapCsvFile,
             bool generatePdbFile,
+            string pdbPath,
             bool generatePerfMapFile,
+            string perfMapPath,
             int customPESectionAlignment)
         {
             _objectFilePath = objectFilePath;
@@ -118,9 +130,11 @@ namespace ILCompiler.DependencyAnalysis
             _generateMapFile = generateMapFile;
             _generateMapCsvFile = generateMapCsvFile;
             _generatePdbFile = generatePdbFile;
+            _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
+            _perfMapPath = perfMapPath;
             
-            if (generateMapFile || generateMapCsvFile)
+            if (generateMapFile || generateMapCsvFile || generatePdbFile || generatePerfMapFile)
             {
                 _mapFileBuilder = new MapFileBuilder();
             }
@@ -232,6 +246,11 @@ namespace ILCompiler.DependencyAnalysis
 
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, _mapFileBuilder);
                     lastWrittenObjectNode = node;
+
+                    if ((_generatePdbFile || _generatePerfMapFile) && node is MethodWithGCInfo methodNode)
+                    {
+                        _mapFileBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
+                    }
                 }
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
@@ -285,6 +304,26 @@ namespace ILCompiler.DependencyAnalysis
                         string nodeStatsCsvFileName = Path.ChangeExtension(_objectFilePath, ".nodestats.csv");
                         string mapCsvFileName = Path.ChangeExtension(_objectFilePath, ".map.csv");
                         _mapFileBuilder.SaveCsv(nodeStatsCsvFileName, mapCsvFileName);
+                    }
+
+                    if (_generatePdbFile)
+                    {
+                        string path = _pdbPath;
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            path = Path.GetDirectoryName(_objectFilePath);
+                        }
+                        _mapFileBuilder.SavePdb(path, _objectFilePath);
+                    }
+
+                    if (_generatePerfMapFile)
+                    {
+                        string path = _perfMapPath;
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            path = Path.ChangeExtension(_objectFilePath, ".perf.map");
+                        }
+                        _mapFileBuilder.SavePerfMap(path);
                     }
                 }
 
@@ -353,7 +392,9 @@ namespace ILCompiler.DependencyAnalysis
             bool generateMapFile,
             bool generateMapCsvFile,
             bool generatePdbFile,
+            string pdbPath,
             bool generatePerfMapFile,
+            string perfMapPath,
             int customPESectionAlignment)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
@@ -365,7 +406,9 @@ namespace ILCompiler.DependencyAnalysis
                 generateMapFile: generateMapFile,
                 generateMapCsvFile: generateMapCsvFile,
                 generatePdbFile: generatePdbFile,
+                pdbPath: pdbPath,
                 generatePerfMapFile: generatePerfMapFile,
+                perfMapPath: perfMapPath,
                 customPESectionAlignment);
             objectWriter.EmitPortableExecutable();
         }

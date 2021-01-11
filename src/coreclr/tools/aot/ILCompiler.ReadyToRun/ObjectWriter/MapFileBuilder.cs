@@ -8,7 +8,16 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
+using System.Text;
+
+using Internal.JitInterface;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
+using ILCompiler.Diagnostics;
 
 namespace ILCompiler.PEWriter
 {
@@ -130,6 +139,9 @@ namespace ILCompiler.PEWriter
         private readonly List<MapFileSymbol> _symbols;
         private readonly List<Section> _sections;
 
+        private readonly Dictionary<ISymbolDefinitionNode, MapFileNode> _nodeSymbolMap;
+        private readonly Dictionary<ISymbolDefinitionNode, MethodWithGCInfo> _methodSymbolMap;
+
         private readonly Dictionary<RelocType, int> _relocCounts;
 
         private long _fileSize;
@@ -140,12 +152,16 @@ namespace ILCompiler.PEWriter
             _symbols = new List<MapFileSymbol>();
             _sections = new List<Section>();
 
+            _nodeSymbolMap = new Dictionary<ISymbolDefinitionNode, MapFileNode>();
+            _methodSymbolMap = new Dictionary<ISymbolDefinitionNode, MethodWithGCInfo>();
+
             _relocCounts = new Dictionary<RelocType, int>();
         }
 
-        public void AddNode(MapFileNode node)
+        public void AddNode(MapFileNode node, ISymbolDefinitionNode symbol)
         {
             _nodes.Add(node);
+            _nodeSymbolMap.Add(symbol, node);
         }
 
         public void AddRelocation(MapFileNode node, RelocType relocType)
@@ -163,6 +179,11 @@ namespace ILCompiler.PEWriter
         public void AddSection(Section section)
         {
             _sections.Add(section);
+        }
+
+        public void AddMethod(MethodWithGCInfo method, ISymbolDefinitionNode symbol)
+        {
+            _methodSymbolMap.Add(symbol, method);
         }
 
         public void SetFileSize(long fileSize)
@@ -203,6 +224,20 @@ namespace ILCompiler.PEWriter
             {
                 WriteMapCsv(mapCsvWriter);
             }
+        }
+
+        public void SavePdb(string pdbPath, string dllFileName)
+        {
+            Console.WriteLine("Emitting PDB file: {0}", pdbPath);
+
+            new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, EnumerateMethods());
+        }
+
+        public void SavePerfMap(string perfMapFileName)
+        {
+            Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
+
+            PerfMapWriter.Write(perfMapFileName, EnumerateMethods());
         }
 
         private void WriteHeader(StreamWriter writer)
@@ -411,5 +446,55 @@ namespace ILCompiler.PEWriter
             writer.WriteLine(title);
             writer.WriteLine(new string('-', title.Length));
         }
+
+        private IEnumerable<MethodInfo> EnumerateMethods()
+        {
+            DebugNameFormatter nameFormatter = new DebugNameFormatter();
+            TypeNameFormatter typeNameFormatter = new TypeString();
+            HashSet<MethodDesc> emittedMethods = new HashSet<MethodDesc>();
+            foreach (KeyValuePair<ISymbolDefinitionNode, MethodWithGCInfo> symbolMethodPair in _methodSymbolMap)
+            {
+                EcmaMethod ecmaMethod = symbolMethodPair.Value.Method.GetTypicalMethodDefinition() as EcmaMethod;
+                if (ecmaMethod != null && emittedMethods.Add(ecmaMethod))
+                {
+                    MethodInfo methodInfo = new MethodInfo();
+                    methodInfo.MethodToken = (uint)MetadataTokens.GetToken(ecmaMethod.Handle);
+                    methodInfo.AssemblyName = ecmaMethod.Module.Assembly.GetName().Name;
+                    methodInfo.Name = FormatMethodName(symbolMethodPair.Value.Method, typeNameFormatter);
+                    MapFileNode node = _nodeSymbolMap[symbolMethodPair.Key];
+                    Section section = _sections[node.SectionIndex];
+                    methodInfo.HotRVA = (uint)(section.RVAWhenPlaced + node.Offset);
+                    methodInfo.HotLength = (uint)node.Length;
+                    methodInfo.ColdRVA = 0;
+                    methodInfo.ColdLength = 0;
+                    yield return methodInfo;
+                }
+            }
+        }
+
+        private string FormatMethodName(MethodDesc method, TypeNameFormatter typeNameFormatter)
+        {
+            StringBuilder output = new StringBuilder();
+            if (!method.Signature.ReturnType.IsVoid)
+            {
+                output.Append(typeNameFormatter.FormatName(method.Signature.ReturnType));
+                output.Append(" ");
+            }
+            output.Append(typeNameFormatter.FormatName(method.OwningType));
+            output.Append("::");
+            output.Append(method.Name);
+            output.Append("(");
+            for (int paramIndex = 0; paramIndex < method.Signature.Length; paramIndex++)
+            {
+                if (paramIndex != 0)
+                {
+                    output.Append(", ");
+                }
+                output.Append(typeNameFormatter.FormatName(method.Signature[paramIndex]));
+            }
+            output.Append(")");
+            return output.ToString();
+        }
     }
 }
+;

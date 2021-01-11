@@ -25,7 +25,9 @@ namespace ILCompiler
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
         private bool _generatePdbFile;
+        private string _pdbPath;
         private bool _generatePerfMapFile;
+        private string _perfMapPath;
         private int _parallelism;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
@@ -135,15 +137,17 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UsePdbFile(bool generatePdbFile)
+        public ReadyToRunCodegenCompilationBuilder UsePdbFile(bool generatePdbFile, string pdbPath)
         {
             _generatePdbFile = generatePdbFile;
+            _pdbPath = pdbPath;
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile)
+        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath)
         {
             _generatePerfMapFile = generatePerfMapFile;
+            _perfMapPath = perfMapPath;
             return this;
         }
 
@@ -263,7 +267,9 @@ namespace ILCompiler
                 generateMapFile: _generateMapFile,
                 generateMapCsvFile: _generateMapCsvFile,
                 generatePdbFile: _generatePdbFile,
+                pdbPath: _pdbPath,
                 generatePerfMapFile: _generatePerfMapFile,
+                perfMapPath: _perfMapPath,
                 _parallelism,
                 _profileData,
                 _r2rMethodLayoutAlgorithm,
