@@ -125,7 +125,9 @@ then
     then
       break
     fi
+
     echo EXECUTION $ilasm_count OF ILASM - FAILED with $ERRORLEVEL
+
     if [ $ilasm_count -eq 3 ]
     then
       break
@@ -135,6 +137,7 @@ then
   done
 
   if [ $ERRORLEVEL -ne 0 ]
+  then
     exit 1
   fi
 fi
