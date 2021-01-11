@@ -6,6 +6,7 @@ namespace Mono.Linker.Tests.Cases.FeatureSettings
 {
 	[SetupLinkerSubstitutionFile ("FeatureSubstitutions.xml")]
 	[SetupLinkerArgument ("--feature", "OptionalFeature", "false")]
+	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	public class FeatureSubstitutions
 	{
 		[Kept]

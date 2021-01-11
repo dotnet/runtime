@@ -17,6 +17,7 @@ namespace Mono.Linker.Steps
 	public class RemoveUnreachableBlocksStep : BaseStep
 	{
 		Dictionary<MethodDefinition, Instruction> constExprMethods;
+		bool constExprMethodsAdded;
 		MethodDefinition IntPtrSize, UIntPtrSize;
 
 		protected override void Process ()
@@ -24,19 +25,12 @@ namespace Mono.Linker.Steps
 			var assemblies = Context.Annotations.GetAssemblies ().ToArray ();
 
 			constExprMethods = new Dictionary<MethodDefinition, Instruction> ();
-			foreach (var assembly in assemblies) {
-				FindConstantExpressionsMethods (assembly.MainModule.Types);
-			}
 
-			if (constExprMethods.Count == 0)
-				return;
-
-			int constExprMethodsCount;
 			do {
 				//
 				// Body rewriting can produce more methods with constant expression
 				//
-				constExprMethodsCount = constExprMethods.Count;
+				constExprMethodsAdded = false;
 
 				foreach (var assembly in assemblies) {
 					if (Annotations.GetAction (assembly) != AssemblyAction.Link)
@@ -44,54 +38,40 @@ namespace Mono.Linker.Steps
 
 					RewriteBodies (assembly.MainModule.Types);
 				}
-			} while (constExprMethodsCount < constExprMethods.Count);
+			} while (constExprMethodsAdded);
 		}
 
-		void FindConstantExpressionsMethods (Collection<TypeDefinition> types)
+		bool TryGetConstantResultInstructionForMethod (MethodDefinition method, out Instruction constantResultInstruction)
 		{
-			foreach (var type in types) {
-				if (type.IsInterface)
-					continue;
+			if (constExprMethods.TryGetValue (method, out constantResultInstruction))
+				return constantResultInstruction != null;
 
-				if (!type.HasMethods)
-					continue;
+			constantResultInstruction = GetConstantResultInstructionForMethod (method);
+			constExprMethods.Add (method, constantResultInstruction);
 
-				foreach (var method in type.Methods) {
-					if (!method.HasBody)
-						continue;
+			return constantResultInstruction != null;
+		}
 
-					if (method.ReturnType.MetadataType == MetadataType.Void)
-						continue;
+		Instruction GetConstantResultInstructionForMethod (MethodDefinition method)
+		{
+			if (!method.HasBody)
+				return null;
 
-					switch (Annotations.GetAction (method)) {
-					case MethodAction.ConvertToThrow:
-						continue;
-					case MethodAction.ConvertToStub:
-						var instruction = CodeRewriterStep.CreateConstantResultInstruction (Context, method);
-						if (instruction != null)
-							constExprMethods[method] = instruction;
+			if (method.ReturnType.MetadataType == MetadataType.Void)
+				return null;
 
-						continue;
-					}
+			if (method.IsIntrinsic () || method.NoInlining)
+				return null;
 
-					if (method.IsIntrinsic () || method.NoInlining)
-						continue;
+			if (!Context.IsOptimizationEnabled (CodeOptimizations.IPConstantPropagation, method))
+				return null;
 
-					if (constExprMethods.ContainsKey (method))
-						continue;
-
-					if (!Context.IsOptimizationEnabled (CodeOptimizations.IPConstantPropagation, method))
-						continue;
-
-					var analyzer = new ConstantExpressionMethodAnalyzer (method);
-					if (analyzer.Analyze ()) {
-						constExprMethods[method] = analyzer.Result;
-					}
-				}
-
-				if (type.HasNestedTypes)
-					FindConstantExpressionsMethods (type.NestedTypes);
+			var analyzer = new ConstantExpressionMethodAnalyzer (Context, method);
+			if (analyzer.Analyze ()) {
+				return analyzer.Result;
 			}
+
+			return null;
 		}
 
 		void RewriteBodies (Collection<TypeDefinition> types)
@@ -115,7 +95,6 @@ namespace Mono.Linker.Steps
 					case MetadataType.FunctionPointer:
 						continue;
 					}
-
 					RewriteBody (method);
 				}
 
@@ -148,12 +127,15 @@ namespace Mono.Linker.Steps
 			if (method.ReturnType.MetadataType == MetadataType.Void)
 				return;
 
-			//
-			// Re-run the analyzer in case body change rewrote it to constant expression
-			//
-			var analyzer = new ConstantExpressionMethodAnalyzer (method, reducer.FoldedInstructions);
-			if (analyzer.Analyze ()) {
-				constExprMethods[method] = analyzer.Result;
+			if (!constExprMethods.TryGetValue (method, out var constInstruction) || constInstruction == null) {
+				//
+				// Re-run the analyzer in case body change rewrote it to constant expression
+				//
+				var analyzer = new ConstantExpressionMethodAnalyzer (Context, method, reducer.FoldedInstructions);
+				if (analyzer.Analyze ()) {
+					constExprMethods[method] = analyzer.Result;
+					constExprMethodsAdded = true;
+				}
 			}
 		}
 
@@ -172,9 +154,6 @@ namespace Mono.Linker.Steps
 					var target = (MethodReference) instr.Operand;
 					var md = target.Resolve ();
 					if (md == null)
-						break;
-
-					if (!constExprMethods.TryGetValue (md, out targetResult))
 						break;
 
 					if (md.CallingConvention == MethodCallingConvention.VarArg)
@@ -208,8 +187,12 @@ namespace Mono.Linker.Steps
 							break;
 					}
 
+					if (!TryGetConstantResultInstructionForMethod (md, out targetResult))
+						break;
+
 					reducer.Rewrite (i, targetResult);
 					changed = true;
+
 					break;
 
 				case Code.Ldsfld:
@@ -244,7 +227,7 @@ namespace Mono.Linker.Steps
 						sizeOfImpl = (IntPtrSize ??= FindSizeMethod (operand.Resolve ()));
 					}
 
-					if (sizeOfImpl != null && constExprMethods.TryGetValue (sizeOfImpl, out targetResult)) {
+					if (sizeOfImpl != null && TryGetConstantResultInstructionForMethod (sizeOfImpl, out targetResult)) {
 						reducer.Rewrite (i, targetResult);
 						changed = true;
 					}
@@ -1042,14 +1025,16 @@ namespace Mono.Linker.Steps
 
 		struct ConstantExpressionMethodAnalyzer
 		{
+			readonly LinkContext context;
 			readonly MethodDefinition method;
 			readonly Collection<Instruction> instructions;
 
 			Stack<Instruction> stack_instr;
 			Dictionary<int, Instruction> locals;
 
-			public ConstantExpressionMethodAnalyzer (MethodDefinition method)
+			public ConstantExpressionMethodAnalyzer (LinkContext context, MethodDefinition method)
 			{
+				this.context = context;
 				this.method = method;
 				instructions = method.Body.Instructions;
 				stack_instr = null;
@@ -1057,19 +1042,24 @@ namespace Mono.Linker.Steps
 				Result = null;
 			}
 
-			public ConstantExpressionMethodAnalyzer (MethodDefinition method, Collection<Instruction> instructions)
+			public ConstantExpressionMethodAnalyzer (LinkContext context, MethodDefinition method, Collection<Instruction> instructions)
+				: this (context, method)
 			{
-				this.method = method;
 				this.instructions = instructions;
-				stack_instr = null;
-				locals = null;
-				Result = null;
 			}
 
 			public Instruction Result { get; private set; }
 
 			public bool Analyze ()
 			{
+				switch (context.Annotations.GetAction (method)) {
+				case MethodAction.ConvertToThrow:
+					return false;
+				case MethodAction.ConvertToStub:
+					Result = CodeRewriterStep.CreateConstantResultInstruction (context, method);
+					return Result != null;
+				}
+
 				var body = method.Body;
 				if (body.HasExceptionHandlers)
 					return false;
