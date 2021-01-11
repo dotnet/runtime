@@ -688,7 +688,8 @@ public:
         pLoc->Init();
 
         const bool isValueType = (m_argType == ELEMENT_TYPE_VALUETYPE);
-        unsigned byteArgSize = StackElemSize(GetArgSize(), isValueType);
+        unsigned byteArgSize = StackElemSize(GetArgSize(), isValueType, m_argTypeHandle.IsFloatHfa());
+
 
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
@@ -1460,7 +1461,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         break;
     }
     const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
-    const int cbArg = StackElemSize(argSize, isValueType);
+    const int cbArg = StackElemSize(argSize, isValueType, thValueType.IsFloatHfa());
     if (cFPRegs>0 && !this->IsVarArg())
     {
         if (cFPRegs + m_idxFPReg <= 8)
@@ -1767,8 +1768,11 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         stackElemSize = TARGET_POINTER_SIZE;
 #endif // UNIX_AMD64_ABI
 #else // TARGET_AMD64
-        const bool isValueType = (GetArgType() == ELEMENT_TYPE_VALUETYPE);
-        stackElemSize = StackElemSize(GetArgSize(), isValueType);
+
+        TypeHandle thValueType;
+        const CorElementType argType = GetArgType(&thValueType);
+        const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
+        stackElemSize = StackElemSize(GetArgSize(), isValueType, thValueType.IsFloatHfa());
 #if defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
         if (IsArgPassedByRef())
             stackElemSize = TARGET_POINTER_SIZE;

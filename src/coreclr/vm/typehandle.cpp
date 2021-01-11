@@ -434,6 +434,16 @@ CorInfoHFAElemType TypeHandle::GetHFAType() const
     return CORINFO_HFA_ELEM_NONE;
 }
 
+bool TypeHandle::IsFloatHfa() const
+{
+    WRAPPER_NO_CONTRACT;
+    if (IsNull() || !IsHFA())
+    {
+        return false;
+    }
+    return (GetHFAType() == CORINFO_HFA_ELEM_FLOAT);
+}
+
 
 #ifdef FEATURE_64BIT_ALIGNMENT
 bool TypeHandle::RequiresAlign8() const

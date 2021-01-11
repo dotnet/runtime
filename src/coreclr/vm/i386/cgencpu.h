@@ -102,7 +102,7 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 // Parameter size
 //**********************************************************************
 
-inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false  /* unused */)
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
     typedef INT32 StackElemType;
     const unsigned stackSlotSize = sizeof(StackElemType);

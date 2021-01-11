@@ -2875,7 +2875,8 @@ void MarshalInfo::SetupArgumentSizes()
 
     const unsigned targetPointerSize = TARGET_POINTER_SIZE;
     const bool pointerIsValueType = false;
-    _ASSERTE(targetPointerSize == StackElemSize(TARGET_POINTER_SIZE, pointerIsValueType));
+    const bool pointerIsFloatHfa = false;
+    _ASSERTE(targetPointerSize == StackElemSize(TARGET_POINTER_SIZE, pointerIsValueType, pointerIsFloatHfa));
 
     if (m_byref)
     {
@@ -2883,7 +2884,9 @@ void MarshalInfo::SetupArgumentSizes()
     }
     else
     {
-        m_nativeArgSize = StackElemSize(GetNativeSize(m_type), IsValueClass(m_type));
+        const bool isValueType = IsValueClass(m_type);
+        const bool isFloatHfa = isValueType && (m_pMT->GetHFAType() == CORINFO_HFA_ELEM_FLOAT);
+        m_nativeArgSize = StackElemSize(GetNativeSize(m_type), isValueType, isFloatHfa);
     }
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE

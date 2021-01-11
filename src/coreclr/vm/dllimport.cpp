@@ -3231,7 +3231,7 @@ BOOL NDirect::MarshalingRequired(
                 if (i > 0)
                 {
                     const bool isValueType = true;
-                    dwStackSize += StackElemSize(hndArgType.GetSize(), isValueType);
+                    dwStackSize += StackElemSize(hndArgType.GetSize(), isValueType, hndArgType.IsFloatHfa());
                 }
                 break;
             }
@@ -3252,7 +3252,8 @@ BOOL NDirect::MarshalingRequired(
                     if (i > 0)
                     {
                         const bool isValueType = false;
-                        dwStackSize += StackElemSize(CorTypeInfo::Size(type), isValueType);
+                        const bool isFloatHfa = false;
+                        dwStackSize += StackElemSize(CorTypeInfo::Size(type), isValueType, isFloatHfa);
                     }
                 }
                 else

@@ -145,7 +145,7 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 // Parameter size
 //**********************************************************************
 
-inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false)
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
     typedef INT64 StackElemType;
     const unsigned stackSlotSize = sizeof(StackElemType);

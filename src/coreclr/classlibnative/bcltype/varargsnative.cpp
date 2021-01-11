@@ -115,7 +115,8 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
 
     // Always skip over the varargs_cookie.
     const bool isValueType = false;
-    data->ArgPtr += StackElemSize(sizeof(LPVOID), isValueType);
+    const bool isFloatHfa = false;
+    data->ArgPtr += StackElemSize(sizeof(LPVOID), isValueType, isFloatHfa);
 #endif
 }
 
@@ -142,7 +143,8 @@ void AdvanceArgPtr(VARARGS *data)
         TypeHandle thValueType;
         const unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule, &typeContext, &thValueType);
         const bool isValueType = (!thValueType.IsNull() && thValueType.IsValueType());
-        unsigned cbArg = StackElemSize(cbRaw, isValueType);
+        const bool isFloatHfa = false;
+        unsigned cbArg = StackElemSize(cbRaw, isValueType, isFloatHfa);
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         if (ArgIterator::IsVarArgPassedByRef(cbRaw))
             cbArg = sizeof(void*);
@@ -268,7 +270,8 @@ VarArgsNative::Init2,
             TypeHandle thValueType;
             unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext, &thValueType);
             const bool isValueType = (!thValueType.IsNull() && thValueType.IsValueType());
-            unsigned cbArg = StackElemSize(cbRaw, isValueType);
+            const bool isFloatHfa = false;
+            unsigned cbArg = StackElemSize(cbRaw, isValueType, isFloatHfa);
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
             if (ArgIterator::IsVarArgPassedByRef(cbRaw))
                 cbArg = sizeof(void*);
@@ -425,7 +428,8 @@ FCIMPL3(void, VarArgsNative::GetNextArg2, VARARGS* _this, void * value, ReflectC
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
-    size = StackElemSize(size, isValueType);
+    const bool isFloatHfa = false;
+    size = StackElemSize(size, isValueType, isFloatHfa);
     AdjustArgPtrForAlignment(_this, size);
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -478,7 +482,8 @@ VarArgsNative::GetNextArgHelper(
     TypeHandle thValueType;
     const unsigned cbRaw = data->SigPtr.SizeOf(data->ArgCookie->pModule,&typeContext, &thValueType);
     const bool isValueType = (!thValueType.IsNull() && thValueType.IsValueType());
-    unsigned cbArg = StackElemSize(cbRaw, isValueType);
+    const bool isFloatHfa = false;
+    unsigned cbArg = StackElemSize(cbRaw, isValueType, isFloatHfa);
     AdjustArgPtrForAlignment(data, cbArg);
 
     // Get a pointer to the beginning of the argument.

@@ -99,7 +99,7 @@ EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 // Parameter size
 //**********************************************************************
 
-inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false)
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
     typedef INT32 StackElemType;
     const unsigned stackSlotSize = sizeof(StackElemType);
