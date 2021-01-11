@@ -173,6 +173,7 @@
     </ItemGroup>
   </Target>
 
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.props" Condition="'$(TargetOS)' == 'Browser'" />
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>

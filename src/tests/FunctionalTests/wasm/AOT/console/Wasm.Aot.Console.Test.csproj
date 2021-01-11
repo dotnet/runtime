@@ -2,16 +2,15 @@
   <PropertyGroup>
     <RunAOTCompilation>true</RunAOTCompilation>
     <WasmModeSpecificPath>\aot\console\</WasmModeSpecificPath>
+    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
 
-  <Import Project="..\..\common.props" />
-
-  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
+  <Target Name="PrepareForWasmBuild">
     <PropertyGroup>
-      <WasmAppDir>$(AppDir)</WasmAppDir>
+      <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
       <WasmBuildDir>$(PublishDir)</WasmBuildDir>
-      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
+      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
     <ItemGroup>
@@ -19,11 +18,4 @@
     </ItemGroup>
   </Target>
 
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-  </ItemGroup>
-
-  <Import Project="..\..\common.targets" />
-
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
-</Project>
+ </Project>

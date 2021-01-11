@@ -22,10 +22,6 @@
     <WasmNativeStrip>true</WasmNativeStrip>
   </PropertyGroup>
 
-  <PropertyGroup>
-      <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative</WasmBuildAppDependsOn>
-  </PropertyGroup>
-
   <Target Name="WasmBuildApp" AfterTargets="Publish" />
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">

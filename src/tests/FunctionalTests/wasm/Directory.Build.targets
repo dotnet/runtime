@@ -1,4 +1,6 @@
 <Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, '$(MSBuildThisFileDirectory)..'))" />
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.targets" />
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
@@ -9,8 +11,8 @@
     </ItemGroup>
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
-  
-  <Target Name="CopySampleAppToHelixTestDir" AfterTargets="Build" DependsOnTargets="Publish" >
+
+  <Target Name="CopySampleAppToHelixTestDir" AfterTargets="Build" DependsOnTargets="Publish">
     <PropertyGroup>
       <!-- Helix properties -->
       <!-- AnyCPU as Platform-->
@@ -20,8 +22,7 @@
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)$(WasmModeSpecificPath)/</HelixArchiveRunOnlyAppsDir>
       <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
     </PropertyGroup>
-    <ZipDirectory SourceDirectory="$(AppDir)" DestinationFile="$(ZippedApp)" />
+    <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
   </Target>
-  
 </Project>
