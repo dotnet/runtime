@@ -5,5 +5,5 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
-  </PropertyGroup>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$(MonoProjectRoot)wasm\emsdk</EMSDK_PATH>  </PropertyGroup>
 </Project>
