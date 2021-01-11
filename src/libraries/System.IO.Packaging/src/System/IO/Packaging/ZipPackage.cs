@@ -287,6 +287,11 @@ namespace System.IO.Packaging
                     zipArchive.Dispose();
                 }
 
+                if (_containerStream != null)
+                {
+                    _containerStream.Dispose();
+                }
+
                 throw;
             }
 
