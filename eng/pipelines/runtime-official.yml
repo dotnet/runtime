@@ -42,6 +42,11 @@ stages:
   jobs:
 
   #
+  # Source Index Build
+  #
+  - template: ./source-index.yml
+
+  #
   # Build CoreCLR
   #
   - template: /eng/pipelines/common/platform-matrix.yml

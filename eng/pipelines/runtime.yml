@@ -51,6 +51,12 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 jobs:
+
+#
+# Source Index Build
+#
+- template: ./source-index.yml
+
 #
 # Checkout repository and evaluate paths
 #
