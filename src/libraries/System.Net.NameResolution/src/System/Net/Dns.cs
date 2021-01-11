@@ -533,25 +533,25 @@ namespace System.Net
 
                     // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
                     // instead of calling the synchronous version in the ThreadPool.
-                    // If it fails, we will fall-back to ThreadPool as well.
+                    // If it fails, we will fall back to ThreadPool as well.
 
                     ValidateHostName(hostName);
 
-                    Task t;
-                    bool success;
+                    Task? t;
                     if (NameResolutionTelemetry.Log.IsEnabled())
                     {
-                        success = justAddresses
-                            ? TryGetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken, out t)
-                            : TryGetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken, out t);
+                        t = justAddresses
+                            ? GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
+                            : GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken);
 
                     }
                     else
                     {
-                        success = NameResolutionPal.TryGetAddrInfoAsync(hostName, justAddresses, family, cancellationToken, out t);
+                        t = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, family, cancellationToken);
                     }
 
-                    if (success)
+                    // If async resolution started, return task to user. otherwise fall back to sync API on threadpool.
+                    if (t != null)
                     {
                         return t;
                     }
@@ -584,22 +584,20 @@ namespace System.Net
             }
         }
 
-        private static bool TryGetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken, out Task t)
+        private static Task<T>? GetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
              where T : class
         {
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
-            if (NameResolutionPal.TryGetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken, out Task task))
+            Task? task = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken);
+
+            if (task != null)
             {
-                //return new Tuple<bool, Task>(true, (Task)InternalGetAddrInfoWithTelemetryAsync(task, hostName));
-                t  = InternalGetAddrInfoWithTelemetryAsync(task, hostName, stopwatch);
-                return true;
+                return InternalGetAddrInfoWithTelemetryAsync(task, hostName, stopwatch);
             }
 
             // If resolution even did not start don't bother with telemetry.
             // We will retry on thread-pool.
-
-            t = Task.CompletedTask;
-            return false;
+            return null;
 
             static async Task<T> InternalGetAddrInfoWithTelemetryAsync(Task task, string hostName, ValueStopwatch stopwatch)
             {
@@ -614,8 +612,6 @@ namespace System.Net
                 {
                     NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: result is not null);
                 }
-
-                return result;
             }
         }
 
