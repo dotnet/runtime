@@ -196,7 +196,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 if (options.PreserveExistingScope)
                 {
-                    throw new Exception(); // todo
+                    throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
                 }
 
                 options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = configureHandler());
@@ -240,7 +240,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 if (options.PreserveExistingScope)
                 {
-                    throw new Exception(); // todo
+                    throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
                 }
 
                 options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = configureHandler(b.Services));
@@ -278,7 +278,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 if (options.PreserveExistingScope)
                 {
-                    throw new Exception(); // todo
+                    throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
                 }
 
                 options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = b.Services.GetRequiredService<THandler>());
@@ -625,12 +625,12 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 if (options.SuppressHandlerScope)
                 {
-                    throw new Exception(); // todo
+                    throw new InvalidOperationException(SR.PreserveExistingScope_SuppressHandlerScope_BothTrueIsInvalid);
                 }
 
                 if (options._primaryHandlerChanged)
                 {
-                    throw new Exception(); // todo
+                    throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
                 }
 
                 options.PreserveExistingScope = preserveExistingScope;

@@ -112,7 +112,12 @@ namespace Microsoft.Extensions.Http
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
             if (options.PreserveExistingScope)
             {
-                throw new Exception(); // todo
+                string message = SR.Format(
+                    SR.PreserveExistingScope_CannotUseWithFactory,
+                    options.PreserveExistingScope,
+                    nameof(IHttpClientFactory),
+                    nameof(IScopedHttpClientFactory));
+                throw new InvalidOperationException(message);
             }
 
             return CreateClient(name, null);
@@ -142,7 +147,12 @@ namespace Microsoft.Extensions.Http
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
             if (options.PreserveExistingScope)
             {
-                throw new Exception(); // todo
+                string message = SR.Format(
+                    SR.PreserveExistingScope_CannotUseWithFactory,
+                    options.PreserveExistingScope,
+                    nameof(IHttpMessageHandlerFactory),
+                    nameof(IScopedHttpMessageHandlerFactory));
+                throw new InvalidOperationException(message);
             }
 
             return CreateHandler(name, null);
@@ -261,7 +271,7 @@ namespace Microsoft.Extensions.Http
 
             if (options.PreserveExistingScope && options.SuppressHandlerScope)
             {
-                throw new Exception(); // todo
+                throw new InvalidOperationException(SR.PreserveExistingScope_SuppressHandlerScope_BothTrueIsInvalid);
             }
 
             // fast track if no one accessed primary handler config
@@ -291,19 +301,10 @@ namespace Microsoft.Extensions.Http
 
             if (options.PreserveExistingScope && builder.PrimaryHandlerExposed)
             {
-                throw new Exception(); // todo
+                throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
             }
 
-            if (!options.PreserveExistingScope || options.SuppressHandlerScope || builder.PrimaryHandlerExposed)
-            {
-                var topHandlerInner = builder.Build();
-
-                // Wrap the handler so we can ensure the inner handler outlives the outer handler.
-                handler = new LifetimeTrackingHttpMessageHandler(topHandlerInner);
-                isPrimary = false;
-                topHandler = null;
-            }
-            else
+            if (options.PreserveExistingScope)
             {
                 // to stop dispose on primary handler when the chain is disposed
                 handler = new LifetimeTrackingHttpMessageHandler(new HttpClientHandler());
@@ -311,6 +312,15 @@ namespace Microsoft.Extensions.Http
 
                 // Wrap the handler so we can ensure the inner handler outlives the outer handler.
                 topHandler = new LifetimeTrackingHttpMessageHandler(builder.Build(handler));
+            }
+            else
+            {
+                var topHandlerInner = builder.Build();
+
+                // Wrap the handler so we can ensure the inner handler outlives the outer handler.
+                handler = new LifetimeTrackingHttpMessageHandler(topHandlerInner);
+                isPrimary = false;
+                topHandler = null;
             }
 
             // Note that we can't start the timer here. That would introduce a very very subtle race condition
@@ -352,7 +362,7 @@ namespace Microsoft.Extensions.Http
 
             if (builder.PrimaryHandlerExposed)
             {
-                throw new InvalidOperationException("primary handler exposed after first chain build");
+                throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
             }
 
             return new LifetimeTrackingHttpMessageHandler(builder.Build(primaryHandler));

@@ -134,4 +134,16 @@
   <data name="HandlerLifetime_InvalidValue" xml:space="preserve">
     <value>The handler lifetime must be at least 1 second.</value>
   </data>
+  <data name="PreserveExistingScope_CannotUseWithFactory" xml:space="preserve">
+    <value>The configuration with 'PreserveExistingScope'={0} cannot be used with '{1}'. Use '{2}' instead.</value>
+    <comment>0 = true -OR- false
+1 = IHttpClientFactory/IHttpMessageHandlerFactory -OR- IScopedHttpClientFactory/IScopedHttpMessageHandlerFactory
+2 = IScopedHttpClientFactory/IScopedHttpMessageHandlerFactory -OR- IHttpClientFactory/IHttpMessageHandlerFactory</comment>
+  </data>
+  <data name="PreserveExistingScope_SuppressHandlerScope_BothTrueIsInvalid" xml:space="preserve">
+    <value>The configuration with both 'PreserveExistingScope'=true and 'SuppressHandlerScope'=true is invalid.</value>
+  </data>
+  <data name="PreserveExistingScope_CannotChangePrimaryHandler" xml:space="preserve">
+    <value>Cannot change PrimaryHandler for the configuration with 'PreserveExistingScope'=true.</value>
+  </data>
 </root>

@@ -32,9 +32,18 @@ namespace Microsoft.Extensions.Http
             }
 
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
-            if (!options.PreserveExistingScope || options.SuppressHandlerScope)
+            if (!options.PreserveExistingScope)
             {
-                throw new Exception(); //todo
+                string message = SR.Format(
+                    SR.PreserveExistingScope_CannotUseWithFactory,
+                    options.PreserveExistingScope,
+                    nameof(IScopedHttpClientFactory),
+                    nameof(IHttpClientFactory));
+                throw new InvalidOperationException(message);
+            }
+            if (options.SuppressHandlerScope)
+            {
+                throw new InvalidOperationException(SR.PreserveExistingScope_SuppressHandlerScope_BothTrueIsInvalid);
             }
 
             HttpMessageHandler handler = CreateHandler(name);
@@ -55,9 +64,18 @@ namespace Microsoft.Extensions.Http
             }
 
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
-            if (!options.PreserveExistingScope || options.SuppressHandlerScope)
+            if (!options.PreserveExistingScope)
             {
-                throw new Exception(); //todo
+                string message = SR.Format(
+                    SR.PreserveExistingScope_CannotUseWithFactory,
+                    options.PreserveExistingScope,
+                    nameof(IScopedHttpMessageHandlerFactory),
+                    nameof(IHttpMessageHandlerFactory));
+                throw new InvalidOperationException(message);
+            }
+            if (options.SuppressHandlerScope)
+            {
+                throw new InvalidOperationException(SR.PreserveExistingScope_SuppressHandlerScope_BothTrueIsInvalid);
             }
 
             // thread safety of the `valueFactory` param for GetOrAdd is handled by _factory.CreateHandler

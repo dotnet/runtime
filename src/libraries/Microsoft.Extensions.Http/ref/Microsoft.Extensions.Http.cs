@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RedactLoggedHeaders(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Collections.Generic.IEnumerable<string> redactedLoggedHeaderNames) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RedactLoggedHeaders(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<string, bool> shouldRedactHeaderValue) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder SetHandlerLifetime(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.TimeSpan handlerLifetime) { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder PreserveExistingScope(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, bool preserveExistingScope) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder SetPreserveExistingScope(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, bool preserveExistingScope) { throw null; }
     }
     public static partial class HttpClientFactoryServiceCollectionExtensions
     {
@@ -119,6 +119,10 @@ namespace System.Net.Http
         System.Net.Http.HttpClient CreateClient(string name);
     }
     public partial interface IHttpMessageHandlerFactory
+    {
+        System.Net.Http.HttpMessageHandler CreateHandler(string name);
+    }
+    public partial interface IScopedHttpMessageHandlerFactory
     {
         System.Net.Http.HttpMessageHandler CreateHandler(string name);
     }

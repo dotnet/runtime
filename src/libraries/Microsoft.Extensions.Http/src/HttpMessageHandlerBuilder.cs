@@ -67,12 +67,12 @@ namespace Microsoft.Extensions.Http
         {
             if (primaryHandler == null)
             {
-                throw new NullReferenceException("Primary Handler is null");
+                throw new ArgumentNullException(nameof(primaryHandler));
             }
 
             if (PrimaryHandlerExposed)
             {
-                throw new InvalidOperationException("Cannot supply primary handler because it was changed");
+                throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
             }
 
             return CreateHandlerPipeline(primaryHandler, AdditionalHandlers);
