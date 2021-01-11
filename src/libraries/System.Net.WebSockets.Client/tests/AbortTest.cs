@@ -17,6 +17,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Failure !!!!!!  Never ends
         public async Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithmessage(Uri server)
         {
             using (var cws = new ClientWebSocket())

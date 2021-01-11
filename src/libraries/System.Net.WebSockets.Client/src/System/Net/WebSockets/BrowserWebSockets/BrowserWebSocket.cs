@@ -56,9 +56,11 @@ namespace System.Net.WebSockets
             Created = 0,
             Connecting = 1,
             Connected = 2,
-            Disposed = 3
+            Disposed = 3,
+            Aborted = 4
         }
 
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="System.Net.WebSockets.BrowserWebSocket"/> class.
@@ -78,7 +80,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (_innerWebSocket != null && !_innerWebSocket.IsDisposed)
+                if (_innerWebSocket != null && !_innerWebSocket.IsDisposed && _state != (int)InternalState.Aborted)
                 {
                     return ReadyStateToDotNetState((int)_innerWebSocket.GetObjectProperty("readyState"));
                 }
@@ -86,6 +88,8 @@ namespace System.Net.WebSockets
                 {
                     InternalState.Created => WebSocketState.None,
                     InternalState.Connecting => WebSocketState.Connecting,
+                    InternalState.Aborted => WebSocketState.Aborted,
+                    InternalState.Disposed => WebSocketState.Closed,
                     _ => WebSocketState.Closed
                 };
             }
@@ -163,8 +167,9 @@ namespace System.Net.WebSockets
                         _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
                         _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
                         NativeCleanup();
-                        if ((InternalState)_state == InternalState.Connecting)
+                        if ((InternalState)_state == InternalState.Connecting || (InternalState)_state == InternalState.Aborted)
                         {
+                            _state = (int)InternalState.Disposed;
                             if (cancellationToken.IsCancellationRequested)
                             {
                                 tcsConnect.TrySetCanceled(cancellationToken);
@@ -176,7 +181,7 @@ namespace System.Net.WebSockets
                         }
                         else
                         {
-                            _tcsClose?.SetResult();
+                            _tcsClose?.TrySetResult();
                         }
                     }
                 };
@@ -227,7 +232,7 @@ namespace System.Net.WebSockets
                     case OperationCanceledException:
                         throw;
                     default:
-                        throw new WebSocketException(SR.net_webstatus_ConnectFailure, wse);
+                        throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, wse);
                 }
             }
             finally
@@ -318,23 +323,27 @@ namespace System.Net.WebSockets
 
         public override void Dispose()
         {
-            int priorState = Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
-            if (priorState == (int)InternalState.Disposed)
+            if (!_disposed)
             {
-                // No cleanup required.
-                return;
+                if (_state < (int)InternalState.Aborted) {
+                    Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
+                }
+                _disposed = true;
+
+                if (!_cts.IsCancellationRequested)
+                {
+                    // registered by the CancellationTokenSource cts in the connect method
+                    _cts.Cancel(false);
+                    _cts.Dispose();
+                }
+
+                _writeBuffer?.Dispose();
+                _receiveMessageQueue.Writer.TryComplete();
+
+                NativeCleanup();
+
+                _innerWebSocket?.Dispose();
             }
-
-            // registered by the CancellationTokenSource cts in the connect method
-            _cts.Cancel(false);
-            _cts.Dispose();
-
-            _writeBuffer?.Dispose();
-            _receiveMessageQueue.Writer.Complete();
-
-            NativeCleanup();
-
-            _innerWebSocket?.Dispose();
         }
 
         // This method is registered by the CancellationTokenSource cts in the connect method
@@ -423,6 +432,18 @@ namespace System.Net.WebSockets
             return Task.CompletedTask;
         }
 
+        // This method is registered by the CancellationTokenSource in the receive async method
+        private async void CancelRequest()
+        {
+            int prevState = Interlocked.Exchange(ref _state, (int)InternalState.Aborted);
+            _receiveMessageQueue.Writer.TryComplete();
+            if (prevState == (int)InternalState.Connected || prevState == (int)InternalState.Connecting)
+            {
+                await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, SR.net_WebSockets_Connection_Aborted, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
+            }
+
+        }
+
         /// <summary>
         /// Receives data on <see cref="System.Net.WebSockets.ClientWebSocket"/> as an asynchronous operation.
         /// </summary>
@@ -431,22 +452,38 @@ namespace System.Net.WebSockets
         /// <param name="cancellationToken">Cancellation token.</param>
         public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
-            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
-            ThrowIfDisposed();
-            ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseSent);
-            _bufferedPayload ??= await _receiveMessageQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+            CancellationTokenSource _receiveCTS = new CancellationTokenSource();
+            CancellationTokenRegistration receiveRegistration = cancellationToken.Register(cts => ((CancellationTokenSource)cts!).Cancel(), _receiveCTS);
+            _receiveCTS.Token.Register(s => ((BrowserWebSocket)s!).CancelRequest(), this);
 
             try
             {
-                bool endOfMessage = _bufferedPayload.BufferPayload(buffer, out WebSocketReceiveResult receiveResult);
+                WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
+
+                ThrowIfDisposed();
+                ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseSent);
+                _bufferedPayload ??= await _receiveMessageQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                bool endOfMessage = _bufferedPayload!.BufferPayload(buffer, out WebSocketReceiveResult receiveResult);
                 if (endOfMessage)
                     _bufferedPayload = null;
                 return receiveResult;
             }
             catch (Exception exc)
             {
-                throw new WebSocketException(WebSocketError.NativeError, exc);
+                switch (exc)
+                {
+                    case OperationCanceledException:
+                        return await Task.FromException<WebSocketReceiveResult>(exc).ConfigureAwait(continueOnCapturedContext: true);
+                    case ChannelClosedException:
+                        return await Task.FromException<WebSocketReceiveResult>(new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, State, "Open, CloseSent"))).ConfigureAwait(continueOnCapturedContext: true);
+                    default:
+                        return await Task.FromException<WebSocketReceiveResult>(new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, State, "Open, CloseSent"))).ConfigureAwait(continueOnCapturedContext: true);
+                }
+            }
+            finally
+            {
+                receiveRegistration.Unregister();
             }
         }
 
@@ -455,12 +492,14 @@ namespace System.Net.WebSockets
         /// </summary>
         public override void Abort()
         {
-            if (_state == (int)InternalState.Disposed)
+            if (_state != (int)InternalState.Disposed)
             {
-                return;
+                if (Interlocked.Exchange(ref _state, (int)InternalState.Aborted) != (int)InternalState.Aborted)
+                {
+                    _cts.Cancel(true);
+                    _tcsClose?.TrySetResult();
+                }
             }
-            _state = (int)WebSocketState.Aborted;
-            Dispose();
         }
 
         public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
