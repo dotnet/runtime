@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-
     <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
   </PropertyGroup>
@@ -16,8 +14,4 @@
     </ItemGroup>
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
-
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-  </ItemGroup>
 </Project>

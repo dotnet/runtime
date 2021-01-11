@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <WasmMainJSPath>runtime.js</WasmMainJSPath>
   </PropertyGroup>
@@ -16,7 +15,6 @@
   </Target>
 
   <ItemGroup>
-    <Compile Include="Program.cs" />
     <WasmExtraFilesToDeploy Include="index.html" />
   </ItemGroup>
 </Project>
