@@ -1789,6 +1789,9 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
 
 #endif // TARGET_X86
 
+    // arg stack size is rounded to the pointer size on all platforms.
+    nSizeOfArgStack = (int)ALIGN_UP(nSizeOfArgStack, TARGET_POINTER_SIZE);
+
     // Cache the result
     m_nSizeOfArgStack = nSizeOfArgStack;
     m_dwFlags |= SIZE_OF_ARG_STACK_COMPUTED;
