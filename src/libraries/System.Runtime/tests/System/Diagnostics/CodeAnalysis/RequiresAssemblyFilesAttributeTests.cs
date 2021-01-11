@@ -37,7 +37,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
             var attr = new RequiresAssemblyFilesAttribute(Url = url);
 
             Assert.Null(attr.Message);
-            Assert.Equal()
+            Assert.Equal(url, attr.Url);
         }
 
         [Theory]
@@ -54,8 +54,8 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         {
             var attr = new RequiresAssemblyFilesAttribute(Message = message, Url = url);
 
-            Assert.Equal(attr.Message = message);
-            Assert.Equal(attr.Url = url);
+            Assert.Equal(message, attr.Message);
+            Assert.Equal(ur, attr.Url);
         }
     }
 }
