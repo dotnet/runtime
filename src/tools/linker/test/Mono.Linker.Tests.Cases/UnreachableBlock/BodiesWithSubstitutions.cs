@@ -40,6 +40,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 			ConstantFromNewAssembly.Test ();
 			ConstantSubstitutionsFromNewAssembly.Test ();
+			TestSubstitutionCollision ();
 		}
 
 		[Kept]
@@ -246,5 +247,36 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 					Reached ();
 			}
 		}
+
+		[Kept]
+		static bool CollisionProperty {
+			[Kept]
+			[ExpectBodyModified]
+			get {
+				// Need to call something with constant value to force processing of this method
+				_ = Property;
+				return true;
+			} // Substitution will set this to false
+		}
+
+		// This tests that if there's a method (get_CollisionProperty) which itself is constant
+		// and substitution changes its return value, the branch removal reacts to the substituted value
+		// and not the value from the method's body.
+		// This should ideally never happen, but still.
+		// In the original code this test would be order dependent. Depending if TestSubstitutionsCollision
+		// was processed before CollisionProperty, it would either propagate true or false.
+		[Kept]
+		[ExpectBodyModified]
+		static void TestSubstitutionCollision ()
+		{
+			if (CollisionProperty)
+				Collision_NeverReached ();
+			else
+				Collision_Reached ();
+		}
+
+		[Kept]
+		static void Collision_Reached () { }
+		static void Collision_NeverReached () { }
 	}
 }
