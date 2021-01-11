@@ -20,6 +20,8 @@ static ds_rt_port_array_t _ds_port_array = { 0 };
 // allows us to track which connections have sent their ResumeRuntime commands
 static DiagnosticsPort *_ds_current_port = NULL;
 
+static const uint32_t _ds_default_poll_handle_array_size = 16;
+
 static
 inline
 bool
@@ -339,7 +341,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 
 	DS_RT_DECLARE_LOCAL_IPC_POLL_HANDLE_ARRAY (ipc_poll_handles);
 
-	ds_rt_ipc_poll_handle_array_init (&ipc_poll_handles);
+	ds_rt_ipc_poll_handle_array_init_capacity (&ipc_poll_handles, _ds_default_poll_handle_array_size);
 	ep_raise_error_if_nok (ds_rt_ipc_poll_handle_array_is_valid (&ipc_poll_handles));
 
 	while (!stream) {
