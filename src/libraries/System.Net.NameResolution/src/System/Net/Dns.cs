@@ -592,14 +592,14 @@ namespace System.Net
 
             if (task != null)
             {
-                return InternalGetAddrInfoWithTelemetryAsync(task, hostName, stopwatch);
+                return CompleteAsync(task, hostName, stopwatch);
             }
 
             // If resolution even did not start don't bother with telemetry.
             // We will retry on thread-pool.
             return null;
 
-            static async Task<T> InternalGetAddrInfoWithTelemetryAsync(Task task, string hostName, ValueStopwatch stopwatch)
+            static async Task<T> CompleteAsync(Task task, string hostName, ValueStopwatch stopwatch)
             {
                 _  = NameResolutionTelemetry.Log.BeforeResolution(hostName);
                 T? result = null;
