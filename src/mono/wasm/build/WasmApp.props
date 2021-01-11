@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
 
     <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative</WasmBuildAppDependsOn>
   </PropertyGroup>

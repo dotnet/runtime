@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
+  <PropertyGroup>
+    <Platform>AnyCPU</Platform>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
+  </PropertyGroup>
+</Project>

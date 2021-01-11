@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
-  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.props" />
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
