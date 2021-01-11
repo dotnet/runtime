@@ -60,7 +60,7 @@ int __cdecl main(int argc, char* argv[])
     }
     if (o.actionDump)
     {
-        exitCode = verbDump::DoWork(o.nameOfFile1, o.indexCount, o.indexes, o.simple);
+        exitCode = verbDump::DoWork(o.nameOfFile1, o.indexCount, o.indexes);
     }
     if (o.actionFracture)
     {
