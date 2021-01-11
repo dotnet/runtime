@@ -4,9 +4,9 @@ variables:
 - name: isFullMatrix
   value: ${{ and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
 
-# We only run evaluate paths on runtime and runtime-staging pipelines on PRs
-- name: dependOnEvaluatePaths
-  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging')) }}
+# We only use checkout bundle on PRs
+- name: useCheckoutBundle
+  value: ${{ eq(variables['Build.Reason'], 'PullRequest') }}
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release

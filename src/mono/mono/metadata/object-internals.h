@@ -594,7 +594,9 @@ struct _MonoInternalThread {
 	gsize debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
 	gpointer *static_data;
 	struct _MonoThreadInfo *thread_info;
+#ifndef ENABLE_NETCORE
 	MonoAppContext *current_appcontext;
+#endif
 	MonoThread *root_domain_thread;
 	MonoObject *_serialized_principal;
 	int _serialized_principal_version;

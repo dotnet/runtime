@@ -16,7 +16,7 @@ parameters:
   condition: true
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
-  dependOnEvaluatePaths: false
+  useCheckoutBundle: false
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
   helixQueues: ''
@@ -40,8 +40,8 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-      dependsOn: evaluate_paths
+    ${{ if eq(parameters.useCheckoutBundle, true) }}:
+      dependsOn: checkout
 
     variables:
       - name: _osParameter
@@ -75,9 +75,9 @@ jobs:
         - ${{ variable }}
 
     steps:
-    - checkout: self
-      clean: true
-      fetchDepth: $(checkoutFetchDepth)
+    - template: /eng/pipelines/common/checkout-step.yml
+      parameters:
+        useBundle: ${{ parameters.useCheckoutBundle }}
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml

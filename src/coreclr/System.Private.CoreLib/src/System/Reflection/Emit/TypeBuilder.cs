@@ -1881,6 +1881,7 @@ namespace System.Reflection.Emit
 
         #region Create Type
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public TypeInfo? CreateTypeInfo()
         {
             lock (SyncRoot)
@@ -1889,6 +1890,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type? CreateType()
         {
             lock (SyncRoot)
@@ -1897,6 +1899,9 @@ namespace System.Reflection.Emit
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? CreateTypeNoLock()
         {
             if (IsCreated())

@@ -9775,8 +9775,10 @@ CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 
 namespace
 {
-    CorInfoCallConvExtension getUnmanagedCallConvForSig(Module* mod, PCCOR_SIGNATURE pSig, DWORD cbSig, bool* pSuppressGCTransition)
+    CorInfoCallConvExtension getUnmanagedCallConvForSig(CORINFO_MODULE_HANDLE mod, PCCOR_SIGNATURE pSig, DWORD cbSig, bool* pSuppressGCTransition)
     {
+        STANDARD_VM_CONTRACT;
+
         SigParser parser(pSig, cbSig);
         ULONG rawCallConv;
         if (FAILED(parser.GetCallingConv(&rawCallConv)))
@@ -9800,7 +9802,8 @@ namespace
         {
             CorUnmanagedCallingConvention callConvMaybe;
             UINT errorResID;
-            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, &errorResID);
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
+
             if (FAILED(hr))
                 COMPlusThrowHR(hr, errorResID);
 
@@ -9823,6 +9826,8 @@ namespace
 
     CorInfoCallConvExtension getUnmanagedCallConvForMethod(MethodDesc* pMD, bool* pSuppressGCTransition)
     {
+        STANDARD_VM_CONTRACT;
+
         ULONG methodCallConv;
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
@@ -9904,7 +9909,7 @@ namespace
         }
         else
         {
-            return getUnmanagedCallConvForSig(pMD->GetModule(), pSig, cbSig, pSuppressGCTransition);
+            return getUnmanagedCallConvForSig(GetScopeHandle(pMD->GetModule()), pSig, cbSig, pSuppressGCTransition);
         }
     }
 }
@@ -9939,7 +9944,7 @@ CorInfoCallConvExtension CEEInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
     else
     {
         _ASSERTE(callSiteSig != nullptr);
-        callConv = getUnmanagedCallConvForSig(GetModule(callSiteSig->scope), callSiteSig->pSig, callSiteSig->cbSig, pSuppressGCTransition);
+        callConv = getUnmanagedCallConvForSig(callSiteSig->scope, callSiteSig->pSig, callSiteSig->cbSig, pSuppressGCTransition);
     }
 
     EE_TO_JIT_TRANSITION();
