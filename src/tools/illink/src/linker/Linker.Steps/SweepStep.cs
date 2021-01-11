@@ -223,6 +223,10 @@ namespace Mono.Linker.Steps
 			if (main.HasModuleReferences)
 				SweepCollectionMetadata (main.ModuleReferences);
 
+			if (main.EntryPoint != null && !Annotations.IsMarked (main.EntryPoint)) {
+				main.EntryPoint = null;
+			}
+
 			SweepTypeForwarders (assembly);
 
 			SweepAssemblyReferences (assembly);
