@@ -2,12 +2,12 @@
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences" Condition="@(RuntimePack->Count()) != 0">
     <ItemGroup>
       <RuntimePack>
         <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
-    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
+    <Message Text="RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 </Project>
