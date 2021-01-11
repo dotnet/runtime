@@ -636,9 +636,9 @@ public:
         int cSlots = (GetArgSize() + 3) / 4;
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / TARGET_POINTER_SIZE;
-            _ASSERTE(byteArgSize / TARGET_POINTER_SIZE == cSlots);
-            pLoc->m_cFloatReg = byteArgSize / TARGET_POINTER_SIZE;
+            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / FLOAT_REGISTER_SIZE;
+            _ASSERTE(byteArgSize / FLOAT_REGISTER_SIZE == cSlots);
+            pLoc->m_cFloatReg = byteArgSize / FLOAT_REGISTER_SIZE;
             return;
         }
 
@@ -679,8 +679,7 @@ public:
 
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
-            // Dividing by 16 as size of each register in FloatArgumentRegisters is 16 bytes.
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 16;
+            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / FLOAT_REGISTER_SIZE;
 
             if (!m_argTypeHandle.IsNull() && m_argTypeHandle.IsHFA())
             {
@@ -752,8 +751,7 @@ public:
 #if defined(UNIX_AMD64_ABI)
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
-            // Dividing by 16 as size of each register in FloatArgumentRegisters is 16 bytes.
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 16;
+            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / FLOAT_REGISTER_SIZE;
             pLoc->m_cFloatReg = 1;
         }
         else 

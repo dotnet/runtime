@@ -58,6 +58,8 @@ extern PCODE GetPreStubEntryPoint();
 #define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
 #define CALLDESCR_RETBUFFARGREG                 1   // CallDescrWorker has RetBuffArg parameter that's separate from arg regs
 
+#define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
+
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
@@ -87,6 +89,7 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
     if (!isValueType)
     {
         // No padding/alignment for primitive types.
+        _ASSERTE((((parmSize & (parmSize - 1)) == 0));
         return parmSize;
     }
     if (isFloatHfa)

@@ -95,6 +95,8 @@ EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 // Offset of pc register
 #define PC_REG_RELATIVE_OFFSET 4
 
+#define FLOAT_REGISTER_SIZE 4 // each register in FloatArgumentRegisters is 4 bytes.
+
 //**********************************************************************
 // Parameter size
 //**********************************************************************
