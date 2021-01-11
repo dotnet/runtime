@@ -83,6 +83,19 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatHfa)
 {
+#if defined(OSX_ARM64_ABI)
+    if (!isValueType)
+    {
+        // No padding/alignment for primitive types.
+        return parmSize;
+    }
+    if (isFloatHfa)
+    {
+        // float hfa is not considered a struct type and passed with 4-byte alignment.
+        return sizeof(float);
+    }
+#endif
+
     typedef INT64 StackElemType;
     const unsigned stackSlotSize = sizeof(StackElemType);
     // The next expression assumes STACK_ELEM_SIZE is a power of 2.
