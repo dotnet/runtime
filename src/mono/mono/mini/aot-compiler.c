@@ -4114,6 +4114,18 @@ add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index, gboo
 		g_ptr_array_add (acfg->methods, method);
 		g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
 		acfg->nmethods = acfg->methods->len + 1;
+
+		while (acfg->nmethods >= acfg->cfgs_size) {
+			MonoCompile **new_cfgs;
+			int new_size;
+
+			new_size = acfg->cfgs_size ? acfg->cfgs_size * 2 : 128;
+			new_cfgs = g_new0 (MonoCompile*, new_size);
+			memcpy (new_cfgs, acfg->cfgs, sizeof (MonoCompile*) * acfg->cfgs_size);
+			g_free (acfg->cfgs);
+			acfg->cfgs = new_cfgs;
+			acfg->cfgs_size = new_size;
+		}
 	}
 
 	if (method->wrapper_type || extra) {
@@ -9150,17 +9162,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	//printf ("Compile:           %s\n", mono_method_full_name (method, TRUE));
 
-	while (index >= acfg->cfgs_size) {
-		MonoCompile **new_cfgs;
-		int new_size;
-
-		new_size = acfg->cfgs_size * 2;
-		new_cfgs = g_new0 (MonoCompile*, new_size);
-		memcpy (new_cfgs, acfg->cfgs, sizeof (MonoCompile*) * acfg->cfgs_size);
-		g_free (acfg->cfgs);
-		acfg->cfgs = new_cfgs;
-		acfg->cfgs_size = new_size;
-	}
 	acfg->cfgs [index] = cfg;
 
 	g_hash_table_insert (acfg->method_to_cfg, cfg->orig_method, cfg);
@@ -14028,9 +14029,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		for (l = acfg->profile_data; l; l = l->next)
 			add_profile_instances (acfg, (ProfileData*)l->data);
 	}
-
-	acfg->cfgs_size = acfg->methods->len + 32;
-	acfg->cfgs = g_new0 (MonoCompile*, acfg->cfgs_size);
 
 	/* PLT offset 0 is reserved for the PLT trampoline */
 	acfg->plt_offset = 1;

@@ -11,6 +11,7 @@
 #include "ep-session-provider.h"
 #include "fstream.h"
 #include "typestring.h"
+#include "win32threadpool.h"
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) (sizeof(expr) / sizeof ((expr) [0]))
@@ -1522,6 +1523,15 @@ ep_rt_config_value_get_circular_mb (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeCircularMB);
+}
+
+static
+inline
+bool
+ep_rt_config_value_get_use_portable_thread_pool (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return ThreadpoolMgr::UsePortableThreadPool ();
 }
 
 /*

@@ -2105,7 +2105,10 @@ WORD interceptor_ICJI::getRelocTypeHint(void* target)
 //
 DWORD interceptor_ICJI::getExpectedTargetArchitecture()
 {
-    return original_ICorJitInfo->getExpectedTargetArchitecture();
+    mc->cr->AddCall("getExpectedTargetArchitecture");
+    DWORD result = original_ICorJitInfo->getExpectedTargetArchitecture();
+    mc->recGetExpectedTargetArchitecture(result);
+    return result;
 }
 
 bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)

@@ -14,14 +14,39 @@ namespace System
         {
             get
             {
+                long fileTime;
+                s_pfnGetSystemTimeAsFileTime(&fileTime);
+
                 if (s_systemSupportsLeapSeconds)
                 {
                     FullSystemTime time;
-                    GetSystemTimeWithLeapSecondsHandling(&time);
+
+                    if (Interop.Kernel32.FileTimeToSystemTime(&fileTime, &time.systemTime) != Interop.BOOL.FALSE)
+                    {
+                        // to keep the time precision
+                        time.hundredNanoSecond = fileTime % 10000; // 10000 is the number of 100-nano seconds per Millisecond
+                    }
+                    else
+                    {
+                        Interop.Kernel32.GetSystemTime(&time.systemTime);
+                        time.hundredNanoSecond = 0;
+                    }
+
+                    if (time.systemTime.Second > 59)
+                    {
+                        // we have a leap second, force it to last second in the minute as DateTime doesn't account for leap seconds in its calculation.
+                        // we use the maxvalue from the milliseconds and the 100-nano seconds to avoid reporting two out of order 59 seconds
+                        time.systemTime.Second = 59;
+                        time.systemTime.Milliseconds = 999;
+                        time.hundredNanoSecond = 9999;
+                    }
+
                     return CreateDateTimeFromSystemTime(in time);
                 }
-
-                return new DateTime(((ulong)(GetSystemTimeAsFileTime() + FileTimeOffset)) | KindUtc);
+                else
+                {
+                    return new DateTime(((ulong)(fileTime + FileTimeOffset)) | KindUtc);
+                }
             }
         }
 
@@ -30,23 +55,42 @@ namespace System
             DateTime dt = new DateTime(year, month, day);
             FullSystemTime time = new FullSystemTime(year, month, dt.DayOfWeek, day, hour, minute, second);
 
-            return kind switch
+            if (kind != DateTimeKind.Utc)
             {
-                DateTimeKind.Local => ValidateSystemTime(&time.systemTime, localTime: true),
-                DateTimeKind.Utc => ValidateSystemTime(&time.systemTime, localTime: false),
-                _ => ValidateSystemTime(&time.systemTime, localTime: true) || ValidateSystemTime(&time.systemTime, localTime: false),
-            };
+                Interop.Kernel32.SYSTEMTIME st;
+                if (Interop.Kernel32.TzSpecificLocalTimeToSystemTime(IntPtr.Zero, &time.systemTime, &st) != Interop.BOOL.FALSE)
+                    return true;
+            }
+
+            if (kind != DateTimeKind.Local)
+            {
+                long ft;
+                if (Interop.Kernel32.SystemTimeToFileTime(&time.systemTime, &ft) != Interop.BOOL.FALSE)
+                    return true;
+            }
+
+            return false;
         }
 
         private static unsafe DateTime FromFileTimeLeapSecondsAware(long fileTime)
         {
             FullSystemTime time;
-            if (FileTimeToSystemTime(fileTime, &time))
+            if (Interop.Kernel32.FileTimeToSystemTime(&fileTime, &time.systemTime) == Interop.BOOL.FALSE)
             {
-                return CreateDateTimeFromSystemTime(in time);
+                throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_DateTimeBadTicks);
             }
 
-            throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_DateTimeBadTicks);
+            // to keep the time precision
+            time.hundredNanoSecond = fileTime % TicksPerMillisecond;
+            if (time.systemTime.Second > 59)
+            {
+                // we have a leap second, force it to last second in the minute as DateTime doesn't account for leap seconds in its calculation.
+                // we use the maxvalue from the milliseconds and the 100-nano seconds to avoid reporting two out of order 59 seconds
+                time.systemTime.Second = 59;
+                time.systemTime.Milliseconds = 999;
+                time.hundredNanoSecond = 9999;
+            }
+            return CreateDateTimeFromSystemTime(in time);
         }
 
         private static unsafe long ToFileTimeLeapSecondsAware(long ticks)
@@ -54,12 +98,12 @@ namespace System
             FullSystemTime time = new FullSystemTime(ticks);
             long fileTime;
 
-            if (SystemTimeToFileTime(&time.systemTime, &fileTime))
+            if (Interop.Kernel32.SystemTimeToFileTime(&time.systemTime, &fileTime) == Interop.BOOL.FALSE)
             {
-                return fileTime + ticks % TicksPerMillisecond;
+                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_FileTimeInvalid);
             }
 
-            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_FileTimeInvalid);
+            return fileTime + ticks % TicksPerMillisecond;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -111,12 +155,14 @@ namespace System
             }
         }
 
-#if !CORECLR
-        internal static readonly bool s_systemSupportsPreciseSystemTime = SystemSupportsPreciseSystemTime();
+        private static unsafe readonly delegate* unmanaged[SuppressGCTransition]<long*, void> s_pfnGetSystemTimeAsFileTime = GetGetSystemTimeAsFileTimeFnPtr();
 
-        private static unsafe bool SystemSupportsPreciseSystemTime()
+        private static unsafe delegate* unmanaged[SuppressGCTransition]<long*, void> GetGetSystemTimeAsFileTimeFnPtr()
         {
-            if (Environment.IsWindows8OrAbove)
+            IntPtr kernel32Lib = NativeLibrary.Load("kernel32.dll", typeof(DateTime).Assembly, DllImportSearchPath.System32);
+            IntPtr pfnGetSystemTime = NativeLibrary.GetExport(kernel32Lib, "GetSystemTimeAsFileTime");
+
+            if (NativeLibrary.TryGetExport(kernel32Lib, "GetSystemTimePreciseAsFileTime", out IntPtr pfnGetSystemTimePrecise))
             {
                 // GetSystemTimePreciseAsFileTime exists and we'd like to use it.  However, on
                 // misconfigured systems, it's possible for the "precise" time to be inaccurate:
@@ -127,88 +173,23 @@ namespace System
                 // when we better understand what's causing the drift and the issue is no longer
                 // a problem or can be better worked around on all targeted OSes.
 
-                long systemTimeResult;
-                Interop.Kernel32.GetSystemTimeAsFileTime(&systemTimeResult);
-
-                long preciseSystemTimeResult;
-                Interop.Kernel32.GetSystemTimePreciseAsFileTime(&preciseSystemTimeResult);
-
-                return Math.Abs(preciseSystemTimeResult - systemTimeResult) <= 100 * TicksPerMillisecond;
-            }
-
-            return false;
-        }
-
-        private static unsafe bool ValidateSystemTime(Interop.Kernel32.SYSTEMTIME* time, bool localTime)
-        {
-            if (localTime)
-            {
-                Interop.Kernel32.SYSTEMTIME st;
-                return Interop.Kernel32.TzSpecificLocalTimeToSystemTime(IntPtr.Zero, time, &st) != Interop.BOOL.FALSE;
-            }
-            else
-            {
-                long timestamp;
-                return Interop.Kernel32.SystemTimeToFileTime(time, &timestamp) != Interop.BOOL.FALSE;
-            }
-        }
-
-        private static unsafe bool FileTimeToSystemTime(long fileTime, FullSystemTime* time)
-        {
-            if (Interop.Kernel32.FileTimeToSystemTime(&fileTime, &time->systemTime) != Interop.BOOL.FALSE)
-            {
-                // to keep the time precision
-                time->hundredNanoSecond = fileTime % TicksPerMillisecond;
-                if (time->systemTime.Second > 59)
+                // Retry this check several times to reduce chance of false negatives due to thread being rescheduled
+                // at wrong time.
+                for (int i = 0; i < 10; i++)
                 {
-                    // we have a leap second, force it to last second in the minute as DateTime doesn't account for leap seconds in its calculation.
-                    // we use the maxvalue from the milliseconds and the 100-nano seconds to avoid reporting two out of order 59 seconds
-                    time->systemTime.Second = 59;
-                    time->systemTime.Milliseconds = 999;
-                    time->hundredNanoSecond = 9999;
-                }
-                return true;
-            }
-            return false;
-        }
+                    long systemTimeResult, preciseSystemTimeResult;
+                    ((delegate* unmanaged[SuppressGCTransition]<long*, void>)pfnGetSystemTime)(&systemTimeResult);
+                    ((delegate* unmanaged[SuppressGCTransition]<long*, void>)pfnGetSystemTimePrecise)(&preciseSystemTimeResult);
 
-        private static unsafe void GetSystemTimeWithLeapSecondsHandling(FullSystemTime* time)
-        {
-            if (!FileTimeToSystemTime(GetSystemTimeAsFileTime(), time))
-            {
-                Interop.Kernel32.GetSystemTime(&time->systemTime);
-                time->hundredNanoSecond = 0;
-                if (time->systemTime.Second > 59)
-                {
-                    // we have a leap second, force it to last second in the minute as DateTime doesn't account for leap seconds in its calculation.
-                    // we use the maxvalue from the milliseconds and the 100-nano seconds to avoid reporting two out of order 59 seconds
-                    time->systemTime.Second = 59;
-                    time->systemTime.Milliseconds = 999;
-                    time->hundredNanoSecond = 9999;
+                    if (Math.Abs(preciseSystemTimeResult - systemTimeResult) <= 100 * TicksPerMillisecond)
+                    {
+                        pfnGetSystemTime = pfnGetSystemTimePrecise; // use the precise version
+                        break;
+                    }
                 }
             }
+
+            return (delegate* unmanaged[SuppressGCTransition]<long*, void>)pfnGetSystemTime;
         }
-
-        private static unsafe bool SystemTimeToFileTime(Interop.Kernel32.SYSTEMTIME* time, long* fileTime)
-        {
-            return Interop.Kernel32.SystemTimeToFileTime(time, fileTime) != Interop.BOOL.FALSE;
-        }
-
-        private static unsafe long GetSystemTimeAsFileTime()
-        {
-            long timestamp;
-
-            if (s_systemSupportsPreciseSystemTime)
-            {
-                Interop.Kernel32.GetSystemTimePreciseAsFileTime(&timestamp);
-            }
-            else
-            {
-                Interop.Kernel32.GetSystemTimeAsFileTime(&timestamp);
-            }
-
-            return timestamp;
-        }
-#endif
     }
 }
