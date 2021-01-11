@@ -35,7 +35,7 @@
 
   <!-- Define test projects and companions -->
   <PropertyGroup>
-    <IsTestProject>false</IsTestProject>
+    <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
     <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
 
     <IsTestSupportProject>false</IsTestSupportProject>
