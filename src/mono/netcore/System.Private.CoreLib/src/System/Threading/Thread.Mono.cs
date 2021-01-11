@@ -34,9 +34,6 @@ namespace System.Threading
         private IntPtr debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
         private UIntPtr static_data; /* GC-tracked */
         private IntPtr runtime_thread_info;
-        /* current System.Runtime.Remoting.Contexts.Context instance
-           keep as an object to avoid triggering its class constructor when not needed */
-        private object? current_appcontext;
         private object? root_domain_thread;
         internal byte[]? _serialized_principal;
         internal int _serialized_principal_version;

@@ -3205,10 +3205,14 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (exc && *exc)
 		return NULL;
 
-	if (sig->ret->type != MONO_TYPE_VOID && info->ret_box_class)
-		return mono_value_box_checked (domain, info->ret_box_class, retval, error);
-	else
-		return *(MonoObject**)retval;
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		if (info->ret_box_class)
+			return mono_value_box_checked (domain, info->ret_box_class, retval, error);
+		else
+			return *(MonoObject**)retval;
+	} else {
+		return NULL;
+	}
 }
 
 /**

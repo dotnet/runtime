@@ -389,7 +389,7 @@ var MonoSupportLib = {
 				throw new Error ("capacity >= 1");
 
 			capacity = capacity | 0;
-				
+
 			var capacityBytes = capacity * 4;
 			if ((offset % 4) !== 0)
 				throw new Error ("Unaligned offset");
@@ -399,7 +399,7 @@ var MonoSupportLib = {
 			var result = Object.create (this._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
 			result.__offset32 = (offset / 4) | 0;
-			result.__count = capacity;	
+			result.__count = capacity;
 			result.length = capacity;
 			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
 			result.__ownsAllocation = false;
@@ -424,7 +424,7 @@ var MonoSupportLib = {
 			} else {
 				var index = this._mono_wasm_claim_scratch_index ();
 				var buffer = this._scratch_root_buffer;
-					
+
 				result = Object.create (this._mono_wasm_root_prototype);
 				result.__buffer = buffer;
 				result.__index = index;

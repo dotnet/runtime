@@ -66,8 +66,13 @@
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
 
+#ifndef ENABLE_NETCORE
 #define GET_APPCONTEXT() (mono_thread_internal_current ()->current_appcontext)
 #define SET_APPCONTEXT(x) MONO_OBJECT_SETREF_INTERNAL (mono_thread_internal_current (), current_appcontext, (x))
+#else
+#define GET_APPCONTEXT() NULL
+#define SET_APPCONTEXT(x)
+#endif
 
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;

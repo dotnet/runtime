@@ -171,11 +171,15 @@ HRESULT EventPipeWritingProfiler::Shutdown()
 
 HRESULT EventPipeWritingProfiler::JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock)
 {
+    SHUTDOWNGUARD();
+
     return FunctionSeen(functionId);
 }
 
 HRESULT STDMETHODCALLTYPE EventPipeWritingProfiler::JITCachedFunctionSearchFinished(FunctionID functionId, COR_PRF_JIT_CACHE result)
 {
+    SHUTDOWNGUARD();
+
     if (result == COR_PRF_CACHED_FUNCTION_FOUND)
     {
         return FunctionSeen(functionId);
@@ -187,6 +191,8 @@ HRESULT STDMETHODCALLTYPE EventPipeWritingProfiler::JITCachedFunctionSearchFinis
 
 HRESULT EventPipeWritingProfiler::FunctionSeen(FunctionID functionID)
 {
+    SHUTDOWNGUARD();
+
     String functionName = GetFunctionIDName(functionID);
     if (functionName == WCHAR("TriggerMethod"))
     {
