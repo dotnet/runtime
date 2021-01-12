@@ -206,7 +206,7 @@ class LoaderAllocatorPgoManager : public PgoManager
 
     public:
     LoaderAllocatorPgoManager() :
-        m_lock(CrstLeafLock, CRST_DEFAULT)
+        m_lock(CrstPgoData, CRST_DEFAULT)
     {}
 
     virtual ~LoaderAllocatorPgoManager(){}
