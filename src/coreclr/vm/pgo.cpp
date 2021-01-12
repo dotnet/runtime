@@ -149,8 +149,81 @@ void PgoManager::VerifyAddress(void* address)
     // TODO Insert an assert to check that an address is a valid pgo address
 }
 
+class SArrayByteWriterFunctor
+{
+    SArray<uint8_t>& m_byteData;
+public:
+    SArrayByteWriterFunctor(SArray<uint8_t>& byteData) :
+        m_byteData(byteData)
+    {}
+
+    bool operator()(uint8_t data) const
+    {
+        m_byteData.Append(data);
+        return true;
+    }
+};
+
+class SchemaWriterFunctor
+{
+
+public:
+    StackSArray<uint8_t> byteData;
+    StackSArray<TypeHandle> typeHandlesEncountered;
+private:
+    const PgoManager::HeaderList *pgoData;
+    SArrayByteWriterFunctor byteWriter;
+public:
+    SchemaAndDataWriter<SArrayByteWriterFunctor> writer;
+
+    SchemaWriterFunctor(PgoManager::HeaderList *pgoData) :
+        pgoData(pgoData),
+        byteWriter(byteData),
+        writer(byteWriter, pgoData->header.GetData())
+    {}
+
+    bool operator()(const ICorJitInfo::PgoInstrumentationSchema &schema)
+    {
+        if (!writer.AppendSchema(schema))
+            return false;
+
+        if (!writer.AppendDataFromLastSchema())
+            return false;
+        for (int32_t iEntry = 0; iEntry < schema.Count; iEntry++)
+        {
+            size_t entryOffset = schema.Offset + iEntry * InstrumentationKindToSize(schema.InstrumentationKind);
+
+            if ((schema.InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask) == ICorJitInfo::PgoInstrumentationKind::TypeHandle)
+            {
+                TypeHandle th = *(TypeHandle*)(pgoData->header.GetData() + entryOffset);
+                if (!th.IsNull())
+                {
+                    typeHandlesEncountered.Append(th);
+                }
+            }
+        }
+        return true;
+    }
+};
+
 void PgoManager::WritePgoData()
 {
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
+    {
+        EnumeratePGOHeaders([](HeaderList *pgoData)
+        {
+            SchemaWriterFunctor schemaWriter(pgoData);
+            if (ReadInstrumentationSchemaWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, schemaWriter))
+            {
+                if (!schemaWriter.writer.Finish())
+                    return false;
+                ETW::MethodLog::LogMethodInstrumentationData(pgoData->header.method, schemaWriter.byteData.GetCount(), schemaWriter.byteData.GetElements(), schemaWriter.typeHandlesEncountered.GetElements(), schemaWriter.typeHandlesEncountered.GetCount());
+            }
+
+            return true;
+        });
+    }
+
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) == 0)
     {
         return;
@@ -205,7 +278,7 @@ void PgoManager::WritePgoData()
         uint8_t* data = pgoData->header.GetData();
 
         unsigned lastOffset  = 0;
-        if (!ReadInstrumentationDataWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, [data, pgoDataFile] (const ICorJitInfo::PgoInstrumentationSchema &schema)
+        if (!ReadInstrumentationSchemaWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, [data, pgoDataFile] (const ICorJitInfo::PgoInstrumentationSchema &schema)
         {
             fprintf(pgoDataFile, s_RecordString, schema.InstrumentationKind, schema.ILOffset, schema.Count, schema.Other);
             for (int32_t iEntry = 0; iEntry < schema.Count; iEntry++)
@@ -577,7 +650,7 @@ HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::
 {
     // Determine size of compressed schema representation
     size_t headerSize = headerInitialSize;
-    if (!WriteInstrumentationToBytes(pSchema, countSchemaItems, [&headerSize](uint8_t byte) { headerSize = headerSize + 1; return true; }))
+    if (!WriteInstrumentationSchemaToBytes(pSchema, countSchemaItems, [&headerSize](uint8_t byte) { headerSize = headerSize + 1; return true; }))
     {
         return E_NOTIMPL;
     }
@@ -729,7 +802,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJit
             Header *found = s_textFormatPgoData.Lookup(CodeAndMethodHash(codehash, methodhash));
             if (found != NULL)
             {
-                if (ReadInstrumentationDataWithLayoutIntoSArray(found->GetData(), found->countsOffset, found->countsOffset, pSchema))
+                if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->GetData(), found->countsOffset, found->countsOffset, pSchema))
                 {
                     EX_TRY
                     {
@@ -822,7 +895,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, SArray
         return E_NOTIMPL;
     }
 
-    if (ReadInstrumentationDataWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, found->header.countsOffset, pSchema))
+    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, found->header.countsOffset, pSchema))
     {
         *pInstrumentationData = found->header.GetData();
         return S_OK;

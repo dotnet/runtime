@@ -9,6 +9,8 @@ using ILCompiler.IBC;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using Microsoft.Pgo;
+
 namespace ILCompiler
 {
     [Flags]
@@ -35,13 +37,14 @@ namespace ILCompiler
 
     public class MethodProfileData
     {
-        public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, double exclusiveWeight, Dictionary<MethodDesc, int> callWeights, uint scenarioMask)
+        public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, double exclusiveWeight, Dictionary<MethodDesc, int> callWeights, uint scenarioMask, PgoSchemaElem[] schemaData)
         {
             Method = method;
             Flags = flags;
             ScenarioMask = scenarioMask;
             ExclusiveWeight = exclusiveWeight;
             CallWeights = callWeights;
+            SchemaData = schemaData;
         }
 
         public readonly MethodDesc Method;
@@ -49,6 +52,7 @@ namespace ILCompiler
         public readonly uint ScenarioMask;
         public readonly double ExclusiveWeight;
         public readonly Dictionary<MethodDesc, int> CallWeights;
+        public readonly PgoSchemaElem[] SchemaData;
     }
 
     public abstract class ProfileData
@@ -178,6 +182,8 @@ namespace ILCompiler
             if (profileData.PartialNGen)
                 partialNgen = true;
 
+            PgoSchemaElem[][] schemaElemMergerArray = new PgoSchemaElem[2][];
+
             foreach (MethodProfileData data in profileData.GetAllMethodProfileData())
             {
                 MethodProfileData dataToMerge;
@@ -203,7 +209,20 @@ namespace ILCompiler
                             }
                         }
                     }
-                    mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, data.ExclusiveWeight + dataToMerge.ExclusiveWeight, mergedCallWeights, dataToMerge.ScenarioMask | data.ScenarioMask);
+
+                    var mergedSchemaData = data.SchemaData;
+                    if (mergedSchemaData == null)
+                    {
+                        mergedSchemaData = dataToMerge.SchemaData;
+                    }
+                    else
+                    {
+                        // Actually merge
+                        schemaElemMergerArray[0] = dataToMerge.SchemaData;
+                        schemaElemMergerArray[1] = data.SchemaData;
+                        mergedSchemaData = PgoProcessor.Merge<TypeSystemEntityOrUnknown>(schemaElemMergerArray);
+                    }
+                    mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, data.ExclusiveWeight + dataToMerge.ExclusiveWeight, mergedCallWeights, dataToMerge.ScenarioMask | data.ScenarioMask, mergedSchemaData);
                 }
                 else
                 {
