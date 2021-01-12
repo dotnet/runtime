@@ -1,15 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <MonoForceInterpreter>true</MonoForceInterpreter>
     <RunAOTCompilation>false</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <WasmMainAssemblyPath>$(PublishDir)Wasm.Interpreter.Console.Test.dll</WasmMainAssemblyPath>
     <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
+
+  <Target Name="SetMainAssemblyPath" BeforeTargets="Publish">
+    <PropertyGroup>
+      <WasmMainAssemblyPath>$(PublishDir)Wasm.Interpreter.Console.Test.dll</WasmMainAssemblyPath>
+    </PropertyGroup>
+  </Target>
 </Project>

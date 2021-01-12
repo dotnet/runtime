@@ -12,7 +12,8 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+    <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+    <RunScriptCommand Condition="'$(IsFunctionalTest)' == 'true'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --expected-exit-code $(ExpectedExitCode) --  $(RunTestsJSArguments) --run $(AssemblyName).dll --testing</RunScriptCommand>
     <EventSourceSupport>false</EventSourceSupport>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
@@ -189,7 +190,7 @@
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmBuildDir>$(PublishDir)</WasmBuildDir>
       <WasmMainAssemblyPath Condition="'$(WasmMainAssemblyPath)' == ''">$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
-      <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>

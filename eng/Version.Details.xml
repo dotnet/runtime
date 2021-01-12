@@ -94,9 +94,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.9.0-preview-20201201-01">
+    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.5.0-preview-20191115-01">
       <Uri>https://github.com/microsoft/vstest</Uri>
-      <Sha>140434f7109d357d0158ade9e5164a4861513965</Sha>
+      <Sha>ca24ad0d8b48021ddbe98e4d688bb7e31c7b7eaf</Sha>
     </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.21057.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -202,13 +202,13 @@
       <Uri>https://github.com/mono/linker</Uri>
       <Sha>696987329669e0bf28684b6c63692cdf0b1acb84</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.20630.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21062.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>71ee4e865578cc9202508d8ae6c14c7c9ecee935</Sha>
+      <Sha>4d738c83e755fb71d22f17bbba901b22a7962d65</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.20630.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.21062.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>71ee4e865578cc9202508d8ae6c14c7c9ecee935</Sha>
+      <Sha>4d738c83e755fb71d22f17bbba901b22a7962d65</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
