@@ -136,7 +136,7 @@ public:
     ULONG repSetEHcount();
 
     void recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause);
-    void dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE2& value);
+    void dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE& value);
     void repSetEHinfo(unsigned EHnumber,
                       ULONG*   flags,
                       ULONG*   tryOffset,

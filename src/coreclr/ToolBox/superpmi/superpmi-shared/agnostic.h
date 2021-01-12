@@ -748,39 +748,10 @@ struct Agnostic_SetPatchpointInfo
     DWORD     index;
 };
 
-struct Agnostic_CORINFO_EH_CLAUSE2
-{
-    DWORD Flags;
-    DWORD TryOffset;
-    DWORD TryLength;
-    DWORD HandlerOffset;
-    DWORD HandlerLength;
-    DWORD ClassToken; // one view of symetric union
-};
-
-struct Agnostic_CORINFO_SIG_INFO2
-{
-    DWORD     callConv;
-    DWORDLONG retTypeClass;
-    DWORDLONG retTypeSigClass;
-    DWORD     retType;
-    DWORD     flags;
-    DWORD     numArgs;
-    DWORD     sigInst_classInstCount;
-    DWORD     sigInst_classInst_Index;
-    DWORD     sigInst_methInstCount;
-    DWORD     sigInst_methInst_Index;
-    DWORDLONG args;
-    DWORD     pSig_Index;
-    DWORD     cbSig;
-    DWORDLONG scope;
-    DWORD     token;
-};
-
 struct Agnostic_RecordCallSite
 {
-    Agnostic_CORINFO_SIG_INFO2 callSig;
-    DWORDLONG                  methodHandle;
+    Agnostic_CORINFO_SIG_INFO callSig;
+    DWORDLONG                 methodHandle;
 };
 
 #pragma pack(pop)

@@ -525,9 +525,9 @@ ULONG CompileResult::repSetEHcount()
 void CompileResult::recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause)
 {
     if (SetEHinfo == nullptr)
-        SetEHinfo = new LightWeightMap<DWORD, Agnostic_CORINFO_EH_CLAUSE2>();
+        SetEHinfo = new LightWeightMap<DWORD, Agnostic_CORINFO_EH_CLAUSE>();
 
-    Agnostic_CORINFO_EH_CLAUSE2 value;
+    Agnostic_CORINFO_EH_CLAUSE value;
     value.Flags         = (DWORD)clause->Flags;
     value.TryOffset     = (DWORD)clause->TryOffset;
     value.TryLength     = (DWORD)clause->TryLength;
@@ -537,7 +537,7 @@ void CompileResult::recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* cla
 
     SetEHinfo->Add((DWORD)EHnumber, value);
 }
-void CompileResult::dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE2& value)
+void CompileResult::dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE& value)
 {
     printf("SetEHinfo key %u, value flg-%u to-%u tl-%u ho-%u hl-%u", key, value.Flags, value.TryOffset, value.TryLength,
            value.HandlerOffset, value.HandlerLength);
@@ -559,7 +559,7 @@ void CompileResult::repSetEHinfo(unsigned EHnumber,
                                  ULONG*   handlerLength,
                                  ULONG*   classToken)
 {
-    Agnostic_CORINFO_EH_CLAUSE2 value;
+    Agnostic_CORINFO_EH_CLAUSE value;
     value = SetEHinfo->Get(EHnumber);
 
     *flags         = (ULONG)value.Flags;
