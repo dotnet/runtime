@@ -54,203 +54,6 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public class ReceiveMessageFrom_Old
-    {
-        [OuterLoop]
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Success(bool forceNonBlocking)
-        {
-            if (Socket.OSSupportsIPv4)
-            {
-                using (Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
-                {
-                    int port = receiver.BindToAnonymousPort(IPAddress.Loopback);
-                    receiver.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
-
-                    receiver.ForceNonBlocking(forceNonBlocking);
-
-                    Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                    sender.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-
-                    sender.ForceNonBlocking(forceNonBlocking);
-
-                    sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, port));
-
-                    IPPacketInformation packetInformation;
-                    SocketFlags flags = SocketFlags.None;
-                    EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
-
-                    int len = receiver.ReceiveMessageFrom(new byte[1024], 0, 1024, ref flags, ref remoteEP, out packetInformation);
-
-                    Assert.Equal(1024, len);
-                    Assert.Equal(sender.LocalEndPoint, remoteEP);
-                    Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
-
-                    sender.Dispose();
-                }
-            }
-        }
-
-        [OuterLoop]
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Success_IPv6(bool forceNonBlocking)
-        {
-            if (Socket.OSSupportsIPv6)
-            {
-                using (Socket receiver = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
-                {
-                    int port = receiver.BindToAnonymousPort(IPAddress.IPv6Loopback);
-                    receiver.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
-
-                    receiver.ForceNonBlocking(forceNonBlocking);
-
-                    Socket sender = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-                    sender.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
-
-                    sender.ForceNonBlocking(forceNonBlocking);
-
-                    sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.IPv6Loopback, port));
-
-                    IPPacketInformation packetInformation;
-                    SocketFlags flags = SocketFlags.None;
-                    EndPoint remoteEP = new IPEndPoint(IPAddress.IPv6Any, 0);
-
-                    int len = receiver.ReceiveMessageFrom(new byte[1024], 0, 1024, ref flags, ref remoteEP, out packetInformation);
-
-                    Assert.Equal(1024, len);
-                    Assert.Equal(sender.LocalEndPoint, remoteEP);
-                    Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
-
-                    sender.Dispose();
-                }
-            }
-        }
-
-        [OuterLoop]
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Success_APM(bool ipv4)
-        {
-            AddressFamily family;
-            IPAddress loopback, any;
-            SocketOptionLevel level;
-            if (ipv4)
-            {
-                if (!Socket.OSSupportsIPv4) return;
-                family = AddressFamily.InterNetwork;
-                loopback = IPAddress.Loopback;
-                any = IPAddress.Any;
-                level = SocketOptionLevel.IP;
-            }
-            else
-            {
-                if (!Socket.OSSupportsIPv6) return;
-                family = AddressFamily.InterNetworkV6;
-                loopback = IPAddress.IPv6Loopback;
-                any = IPAddress.IPv6Any;
-                level = SocketOptionLevel.IPv6;
-            }
-
-            using (var receiver = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
-            using (var sender = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
-            {
-                int port = receiver.BindToAnonymousPort(loopback);
-                receiver.SetSocketOption(level, SocketOptionName.PacketInformation, true);
-                sender.Bind(new IPEndPoint(loopback, 0));
-
-                sender.SendTo(new byte[1024], new IPEndPoint(loopback, port));
-
-                IPPacketInformation packetInformation;
-                SocketFlags flags = SocketFlags.None;
-                EndPoint remoteEP = new IPEndPoint(any, 0);
-
-                IAsyncResult ar = receiver.BeginReceiveMessageFrom(new byte[1024], 0, 1024, flags, ref remoteEP, null, null);
-                int len = receiver.EndReceiveMessageFrom(ar, ref flags, ref remoteEP, out packetInformation);
-
-                Assert.Equal(1024, len);
-                Assert.Equal(sender.LocalEndPoint, remoteEP);
-                Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
-            }
-        }
-
-        [OuterLoop]
-        [Theory]
-        [InlineData(false, 0)]
-        [InlineData(false, 1)]
-        [InlineData(false, 2)]
-        [InlineData(true, 0)]
-        [InlineData(true, 1)]
-        [InlineData(true, 2)]
-        public void Success_EventArgs(bool ipv4, int bufferMode)
-        {
-            AddressFamily family;
-            IPAddress loopback, any;
-            SocketOptionLevel level;
-            if (ipv4)
-            {
-                if (!Socket.OSSupportsIPv4) return;
-                family = AddressFamily.InterNetwork;
-                loopback = IPAddress.Loopback;
-                any = IPAddress.Any;
-                level = SocketOptionLevel.IP;
-            }
-            else
-            {
-                if (!Socket.OSSupportsIPv6) return;
-                family = AddressFamily.InterNetworkV6;
-                loopback = IPAddress.IPv6Loopback;
-                any = IPAddress.IPv6Any;
-                level = SocketOptionLevel.IPv6;
-            }
-
-            using (var receiver = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
-            using (var sender = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
-            using (var saea = new SocketAsyncEventArgs())
-            {
-                int port = receiver.BindToAnonymousPort(loopback);
-                receiver.SetSocketOption(level, SocketOptionName.PacketInformation, true);
-                sender.Bind(new IPEndPoint(loopback, 0));
-
-                saea.RemoteEndPoint = new IPEndPoint(any, 0);
-                switch (bufferMode)
-                {
-                    case 0: // single buffer
-                        saea.SetBuffer(new byte[1024], 0, 1024);
-                        break;
-                    case 1: // single buffer in buffer list
-                        saea.BufferList = new List<ArraySegment<byte>>
-                        {
-                            new ArraySegment<byte>(new byte[1024])
-                        };
-                        break;
-                    case 2: // multiple buffers in buffer list
-                        saea.BufferList = new List<ArraySegment<byte>>
-                        {
-                            new ArraySegment<byte>(new byte[512]),
-                            new ArraySegment<byte>(new byte[512])
-                        };
-                        break;
-                }
-
-                var mres = new ManualResetEventSlim();
-                saea.Completed += delegate { mres.Set(); };
-
-                bool pending = receiver.ReceiveMessageFromAsync(saea);
-                sender.SendTo(new byte[1024], new IPEndPoint(loopback, port));
-                if (pending) Assert.True(mres.Wait(30000), "Expected operation to complete within timeout");
-
-                Assert.Equal(1024, saea.BytesTransferred);
-                Assert.Equal(sender.LocalEndPoint, saea.RemoteEndPoint);
-                Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, saea.ReceiveMessageFromPacketInfo.Address);
-            }
-        }
-    }
-
     public sealed class ReceiveMessageFrom_Sync : ReceiveMessageFrom<SocketHelperArraySync>
     {
         public ReceiveMessageFrom_Sync(ITestOutputHelper output) : base(output) { }
@@ -274,6 +77,81 @@ namespace System.Net.Sockets.Tests
     public sealed class ReceiveMessageFrom_Eap : ReceiveMessageFrom<SocketHelperEap>
     {
         public ReceiveMessageFrom_Eap(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ReceiveSentMessages_ReuseEventArgs_Success(bool ipv4)
+        {
+            const int DatagramsToSend = 30;
+            const int TimeoutMs = 30_000;
+
+            AddressFamily family;
+            IPAddress loopback, any;
+            SocketOptionLevel level;
+            if (ipv4)
+            {
+                family = AddressFamily.InterNetwork;
+                loopback = IPAddress.Loopback;
+                any = IPAddress.Any;
+                level = SocketOptionLevel.IP;
+            }
+            else
+            {
+                family = AddressFamily.InterNetworkV6;
+                loopback = IPAddress.IPv6Loopback;
+                any = IPAddress.IPv6Any;
+                level = SocketOptionLevel.IPv6;
+            }
+
+            using var receiver = new Socket(family, SocketType.Dgram, ProtocolType.Udp);
+            using var sender = new Socket(family, SocketType.Dgram, ProtocolType.Udp);
+            using var saea = new SocketAsyncEventArgs();
+            var completed = new ManualResetEventSlim();
+            saea.Completed += delegate { completed.Set(); };
+
+            int port = receiver.BindToAnonymousPort(loopback);
+            receiver.SetSocketOption(level, SocketOptionName.PacketInformation, true);
+            sender.Bind(new IPEndPoint(loopback, 0));
+            saea.RemoteEndPoint = new IPEndPoint(any, 0);
+
+            for (int i = 0; i < DatagramsToSend; i++)
+            {
+                // apply bufferMode=0 two times, then bufferMode=1 two times etc.
+                int bufferMode = i / 2 % 3;
+                switch (bufferMode)
+                {
+                    case 0: // single buffer
+                        saea.BufferList = null;
+                        saea.SetBuffer(new byte[1024], 0, 1024);
+                        break;
+                    case 1: // single buffer in buffer list
+                        saea.SetBuffer(default);
+                        saea.BufferList = new List<ArraySegment<byte>>
+                        {
+                            new ArraySegment<byte>(new byte[1024])
+                        };
+                        break;
+                    case 2: // multiple buffers in buffer list
+                        saea.SetBuffer(default);
+                        saea.BufferList = new List<ArraySegment<byte>>
+                        {
+                            new ArraySegment<byte>(new byte[512]),
+                            new ArraySegment<byte>(new byte[512])
+                        };
+                        break;
+                }
+
+                bool pending = receiver.ReceiveMessageFromAsync(saea);
+                sender.SendTo(new byte[1024], new IPEndPoint(loopback, port));
+                if (pending) Assert.True(completed.Wait(TimeoutMs), "Expected operation to complete within timeout");
+                completed.Reset();
+
+                Assert.Equal(1024, saea.BytesTransferred);
+                Assert.Equal(sender.LocalEndPoint, saea.RemoteEndPoint);
+                Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, saea.ReceiveMessageFromPacketInfo.Address);
+            }   
+        }
     }
 
     public sealed class ReceiveMessageFrom_SpanSync : ReceiveMessageFrom<SocketHelperSpanSync>
