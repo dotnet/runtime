@@ -826,7 +826,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 184
+// Highest packet number: 185
 // *************************************************************************************
 enum mcPackets
 {
@@ -1014,6 +1014,7 @@ enum mcPackets
     PacketCR_RecordCallSite                    = 146, // Retired 9/13/2020
     PacketCR_RecordCallSiteWithSignature       = 179, // Added 9/13/2020
     PacketCR_RecordCallSiteWithoutSignature    = 180, // Added 9/13/2020
+    PacketCR_CrSigInstHandleMap                = 185,
 };
 
 #endif

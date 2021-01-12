@@ -195,6 +195,8 @@ public:
     bool fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO* pCallSig);
     bool fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE* pMethodHandle);
 
+    void dmpCrSigInstHandleMap(DWORD key, DWORDLONG value);
+
     DOUBLE    secondsToCompile;
     ULONGLONG clockCyclesToCompile;
 
