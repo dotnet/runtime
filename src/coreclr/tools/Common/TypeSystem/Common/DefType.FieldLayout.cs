@@ -161,6 +161,18 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsZeroSized
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
+                {
+                    ComputeInstanceLayout(InstanceLayoutKind.TypeOnly);
+                }
+                return _instanceByteCountUnaligned == _instanceByteAlignment;
+            }
+        }
+
         /// <summary>
         /// The type has stable Abi layout
         /// </summary>
