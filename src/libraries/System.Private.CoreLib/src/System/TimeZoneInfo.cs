@@ -41,7 +41,9 @@ namespace System
         private readonly string _id;
         private readonly string? _displayName;
         private readonly string? _standardDisplayName;
+        private readonly string? _standardAbbrevName;
         private readonly string? _daylightDisplayName;
+        private readonly string? _daylightAbbrevName;
         private readonly TimeSpan _baseUtcOffset;
         private readonly bool _supportsDaylightSavingTime;
         private readonly AdjustmentRule[]? _adjustmentRules;
@@ -1859,11 +1861,12 @@ namespace System
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, bool dstDisabled, out TimeZoneInfo? value, out Exception? e, CachedData cachedData)
         {
             TimeZoneInfoResult result;
-
+            Internal.Console.Write($"ID {id} DST DISABLED {dstDisabled}\n");
             result = TryGetTimeZoneFromLocalMachine(id, out TimeZoneInfo? match, out e);
 
             if (result == TimeZoneInfoResult.Success)
             {
+                Internal.Console.Write("TZ SUCCESS\n");
                 cachedData._systemTimeZones ??= new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase)
                 {
                     { UtcId, s_utcTimeZone }
@@ -1883,6 +1886,7 @@ namespace System
                 }
                 else
                 {
+                    // Internal.Console.Write($"CREATE TZ WITH DST {match._daylightDisplayName!}");
                     value = new TimeZoneInfo(match!._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
                                           match._daylightDisplayName, match._adjustmentRules, disableDaylightSavingTime: false);
                 }
