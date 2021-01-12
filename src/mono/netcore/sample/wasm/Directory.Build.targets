@@ -5,15 +5,6 @@
     <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
-    <!-- Runtime feature defaults to trim unnecessary code -->
-    <EventSourceSupport>false</EventSourceSupport>
-    <UseSystemResourceKeys>true</UseSystemResourceKeys>
-    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
-    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-    <DebuggerSupport>false</DebuggerSupport>
-  </PropertyGroup>
-
   <Target Name="PrepareForWasmBuild">
     <PropertyGroup>
       <WasmBuildDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmBuildDir>
