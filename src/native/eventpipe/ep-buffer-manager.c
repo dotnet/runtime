@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_BUFFER_MANAGER_GETTER_SETTER
@@ -581,8 +580,12 @@ buffer_manager_move_next_event_any_thread (
 	EventPipeBuffer *buffer;
 	EventPipeEventInstance *next_event;
 
-	ep_rt_buffer_list_array_iterator_t buffer_list_array_iterator = ep_rt_buffer_list_array_iterator_begin (&buffer_list_array);
-	ep_rt_buffer_array_iterator_t buffer_array_iterator = ep_rt_buffer_array_iterator_begin (&buffer_array);
+	ep_rt_buffer_list_array_iterator_t buffer_list_array_iterator;
+	buffer_list_array_iterator = ep_rt_buffer_list_array_iterator_begin (&buffer_list_array);
+
+	ep_rt_buffer_array_iterator_t buffer_array_iterator;
+	buffer_array_iterator = ep_rt_buffer_array_iterator_begin (&buffer_array);
+
 	while (!ep_rt_buffer_array_iterator_end (&buffer_array, &buffer_array_iterator) && !ep_rt_buffer_list_array_iterator_end (&buffer_list_array, &buffer_list_array_iterator)) {
 
 		buffer_list = ep_rt_buffer_list_array_iterator_value (&buffer_list_array_iterator);
@@ -1011,16 +1014,14 @@ ep_buffer_manager_suspend_write_event (
 			EventPipeThread *thread = ep_thread_session_state_get_thread (ep_rt_thread_session_state_list_iterator_value (&thread_session_state_list_iterator));
 			ep_rt_thread_array_append (&thread_array, thread);
 			ep_rt_thread_session_state_list_iterator_next (&thread_session_state_list_iterator);
-
-			// Once EventPipeSession::SuspendWriteEvent completes, we shouldn't have any
-			// in progress writes left.
-			EP_ASSERT (ep_thread_get_session_write_in_progress (thread) != session_index);
 		}
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1);
 
 	// Iterate through all the threads, forcing them to relinquish any buffers stored in
 	// EventPipeThread's write buffer and prevent storing new ones.
-	ep_rt_thread_array_iterator_t thread_array_iterator = ep_rt_thread_array_iterator_begin (&thread_array);
+	ep_rt_thread_array_iterator_t thread_array_iterator;
+	thread_array_iterator = ep_rt_thread_array_iterator_begin (&thread_array);
+
 	while (!ep_rt_thread_array_iterator_end (&thread_array, &thread_array_iterator)) {
 		EventPipeThread *thread = ep_rt_thread_array_iterator_value (&thread_array_iterator);
 		EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section2)
@@ -1202,14 +1203,17 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 				while (!ep_rt_thread_session_state_list_iterator_end (&buffer_manager->thread_session_state_list, &thread_session_state_list_iterator)) {
 					EventPipeThreadSessionState * session_state = ep_rt_thread_session_state_list_iterator_value (&thread_session_state_list_iterator);
 					uint32_t thread_sequence_number = 0;
-					ep_rt_thread_sequence_number_map_lookup (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), session_state, &thread_sequence_number);
+					bool exists = ep_rt_thread_sequence_number_map_lookup (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), session_state, &thread_sequence_number);
 					uint32_t last_read_sequence_number = ep_thread_session_state_get_buffer_list (session_state)->last_read_sequence_number;
 					// Sequence numbers can overflow so we can't use a direct last_read > sequence_number comparison
 					// If a thread is able to drop more than 0x80000000 events in between sequence points then we will
 					// miscategorize it, but that seems unlikely.
 					uint32_t last_read_delta = last_read_sequence_number - thread_sequence_number;
-					if (0 < last_read_delta && last_read_delta < 0x80000000)
-						ep_rt_thread_sequence_number_map_add (ep_sequence_point_get_thread_sequence_numbers_ref (sequence_point), session_state, last_read_sequence_number);
+					if (0 < last_read_delta && last_read_delta < 0x80000000) {
+						ep_rt_thread_sequence_number_map_add_or_replace (ep_sequence_point_get_thread_sequence_numbers_ref (sequence_point), session_state, last_read_sequence_number);
+						if (!exists)
+							ep_thread_addref (ep_thread_holder_get_thread (ep_thread_session_state_get_thread_holder_ref (session_state)));
+					}
 					ep_rt_thread_session_state_list_iterator_next (&thread_session_state_list_iterator);
 				}
 			EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
@@ -1297,7 +1301,9 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
 
 	// remove and delete the session state
-	ep_rt_thread_session_state_array_iterator_t thread_session_states_to_remove_iterator = ep_rt_thread_session_state_array_iterator_begin (&thread_session_states_to_remove);
+	ep_rt_thread_session_state_array_iterator_t thread_session_states_to_remove_iterator;
+	thread_session_states_to_remove_iterator = ep_rt_thread_session_state_array_iterator_begin (&thread_session_states_to_remove);
+
 	while (!ep_rt_thread_session_state_array_iterator_end (&thread_session_states_to_remove, &thread_session_states_to_remove_iterator)) {
 		EventPipeThreadSessionState *thread_session_state = ep_rt_thread_session_state_array_iterator_value (&thread_session_states_to_remove_iterator);
 

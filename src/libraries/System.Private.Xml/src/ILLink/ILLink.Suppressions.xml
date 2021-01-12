@@ -33,12 +33,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2057</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILStorageMethods.#ctor(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.ReflectionXmlSerializationReader.GetSetMemberValueDelegate(System.Object,System.String)</property>
@@ -149,43 +143,7 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILConstructors.GetConstructor(System.Type,System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILConstructors.GetConstructor(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILMethods.GetMethod(System.Type,System.String,System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILMethods.GetMethod(System.Type,System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Xsl.Runtime.EarlyBoundInfo.#ctor(System.String,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.Runtime.XsltMethods.GetMethod(System.Type,System.String,System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.Runtime.XsltMethods.GetMethod(System.Type,System.String)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -365,12 +323,6 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.IlGen.IteratorDescriptor.PushValue</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Xsl.IlGen.XmlILModule.BakeMethods</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -390,12 +342,6 @@
       <argument>IL2080</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.XmlSerializationWriterILGen.WriteText(System.Xml.Serialization.SourceInfo,System.Xml.Serialization.TextAccessor)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2080</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILStorageMethods.#ctor(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

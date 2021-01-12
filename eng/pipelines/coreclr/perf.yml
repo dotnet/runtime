@@ -18,14 +18,16 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
-  
-pr: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
 
 jobs:
 #
 # Checkout repository
 #
-- template: /eng/pipelines/common/checkout-job.yml
+- ${{ if eq(variables.useCheckoutBundle, true) }}:
+  - template: /eng/pipelines/common/checkout-job.yml
 
 # build coreclr and libraries
 - template: /eng/pipelines/common/platform-matrix.yml

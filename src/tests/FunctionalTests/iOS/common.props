@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>$(AssemblyBinDirOutputPath)</OutputPath>
+    <DebugType>Portable</DebugType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetOS>iOS</TargetOS>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)\runtimes\ios-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <RuntimeIdentifier>ios-$(TargetArchitecture)</RuntimeIdentifier>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode>
+  </PropertyGroup>
+</Project>

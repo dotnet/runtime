@@ -15,6 +15,7 @@ parameters:
   container: ''
   steps: []
   dependsOn: []
+  useCheckoutBundle: false
   variables: {}
   name: ''
   displayName: ''
@@ -117,7 +118,8 @@ jobs:
         - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
-      - checkout
+      - ${{ if eq(parameters.useCheckoutBundle, true) }}:
+        - checkout
       - ${{ parameters.dependsOn }}
       workspace:
         clean: all
@@ -126,7 +128,9 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
       steps:
-      - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+      - template: /eng/pipelines/common/checkout-step.yml
+        parameters:
+          useBundle: ${{ parameters.useCheckoutBundle }}
 
       - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml

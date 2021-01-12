@@ -166,14 +166,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (!_canWrite)
             {
-                throw new InvalidOperationException("Writing is not allowed on stream.");
+                throw new InvalidOperationException(SR.net_quic_writing_notallowed);
             }
 
             lock (_sync)
             {
                 if (_sendState == SendState.Aborted)
                 {
-                    throw new OperationCanceledException("Sending has already been aborted on the stream");
+                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
                 }
             }
 
@@ -222,7 +222,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!_canRead)
             {
-                throw new InvalidOperationException("Reading is not allowed on stream.");
+                throw new InvalidOperationException(SR.net_quic_reading_notallowed);
             }
 
             if (NetEventSource.Log.IsEnabled())

@@ -22,6 +22,7 @@ endif()
 add_library(System.Net.Security.Native-Static
     STATIC
     ${NATIVEGSS_SOURCES}
+    entrypoints.c
 )
 
 set_target_properties(System.Net.Security.Native-Static PROPERTIES OUTPUT_NAME System.Net.Security.Native CLEAN_DIRECT_OUTPUT 1)
@@ -30,6 +31,17 @@ if (GEN_SHARED_LIB)
     target_link_libraries(System.Net.Security.Native
         ${NATIVE_LIBS_EXTRA}
     )
+
+    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+        add_custom_command(TARGET System.Net.Security.Native POST_BUILD
+            COMMENT "Verifying System.Net.Security.Native entry points against entrypoints.c "
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                $<TARGET_FILE:System.Net.Security.Native>
+                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                ${CMAKE_NM}
+            VERBATIM
+        )
+    endif()
 
     install_with_stripped_symbols (System.Net.Security.Native PROGRAMS .)
 endif()

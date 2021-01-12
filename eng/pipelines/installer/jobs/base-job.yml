@@ -13,6 +13,7 @@ parameters:
   buildSteps: []
   dependsOn: []
   dependsOnGlobalBuild: false
+  useCheckoutBundle: false
   globalBuildSuffix: ''
   variables: []
   name: ''
@@ -294,7 +295,8 @@ jobs:
       value: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
 
   dependsOn:
-  - checkout
+  - ${{ if eq(parameters.useCheckoutBundle, true) }}:
+    - checkout
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
@@ -346,7 +348,9 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+  - template: /eng/pipelines/common/checkout-step.yml
+    parameters:
+      useBundle: ${{ parameters.useCheckoutBundle }}
 
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml

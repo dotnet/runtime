@@ -318,7 +318,7 @@ namespace System.Xml
         public bool PreserveWhitespace { get { throw null; } set { } }
         public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { throw null; } }
         public System.Xml.Schema.XmlSchemaSet Schemas { get { throw null; } set { } }
-        public virtual System.Xml.XmlResolver XmlResolver { set { } }
+        public virtual System.Xml.XmlResolver? XmlResolver { set { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanged { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanging { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeInserted { add { } remove { } }

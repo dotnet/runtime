@@ -3,9 +3,7 @@
 
 namespace System.Security
 {
-    // SecurityCriticalAttribute
-    //  Indicates that the decorated code or assembly performs security critical operations (e.g. Assert, "unsafe", LinkDemand, etc.)
-    //  The attribute can be placed on most targets, except on arguments/return values.
+    // Has no effect in .NET Core
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Struct |

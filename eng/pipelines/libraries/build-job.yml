@@ -24,6 +24,7 @@ parameters:
   preBuildSteps: []
   container: ''
   condition: true
+  useCheckoutBundle: false
   shouldContinueOnError: false
   variables: {}
   pool: ''
@@ -50,6 +51,7 @@ jobs:
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
+      useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
       pool: ${{ parameters.pool }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
       testScope: ${{ parameters.testScope }}

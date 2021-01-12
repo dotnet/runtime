@@ -31,6 +31,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/class-init.h>
@@ -864,7 +865,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	error_init (error);
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
+	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
 	nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
 	class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 	/*g_print ("methodref: 0x%x 0x%x %s\n", class, nindex,
@@ -1073,7 +1074,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if (used_context) *used_context = FALSE;
 
-	if (idx > image->tables [MONO_TABLE_METHOD].rows) {
+	if (mono_metadata_table_bounds_check (image, MONO_TABLE_METHOD, idx)) {
 		mono_error_set_bad_image (error, image, "Bad method token 0x%08x (out of bounds).", token);
 		return NULL;
 	}
@@ -2017,6 +2018,26 @@ mono_method_has_no_body (MonoMethod *method)
 		(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 }
 
+#ifdef ENABLE_METADATA_UPDATE
+static gpointer
+get_method_update_rva (MonoImage *image_base, uint32_t idx)
+{
+	gpointer loc = NULL;
+	uint32_t cur = mono_metadata_update_get_thread_generation ();
+	GList *ptr = image_base->delta_image;
+	/* Go through all the updates that the current thread can see and see
+	 * if they updated the method.  Keep the latest visible update */
+	for (; ptr != NULL; ptr = ptr->next) {
+		MonoImage *image_delta = (MonoImage*) ptr->data;
+		if (image_delta->generation > cur)
+			break;
+		if (image_delta->method_table_update)
+			loc = g_hash_table_lookup (image_delta->method_table_update, GUINT_TO_POINTER (idx));
+	}
+	return loc;
+}
+#endif
+
 // FIXME Replace all internal callers of mono_method_get_header_checked with
 // mono_method_get_header_internal; the difference is in error initialization.
 MonoMethodHeader*
@@ -2025,7 +2046,7 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	int idx;
 	guint32 rva;
 	MonoImage* img;
-	gpointer loc;
+	gpointer loc = NULL;
 	MonoGenericContainer *container;
 
 	error_init (error);
@@ -2070,12 +2091,27 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	 */
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
-	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
 
-	if (!mono_verifier_verify_method_header (img, rva, error))
-		return NULL;
+#ifdef ENABLE_METADATA_UPDATE
+	/* EnC case */
+	if (G_UNLIKELY (img->method_table_update)) {
+		/* pre-computed rva pointer into delta IL image */
+		uint32_t gen = GPOINTER_TO_UINT (g_hash_table_lookup (img->method_table_update, GUINT_TO_POINTER (idx)));
+		if (G_UNLIKELY (gen > 0)) {
+			loc = get_method_update_rva (img, idx);
+		}
+	}
+#endif
 
-	loc = mono_image_rva_map (img, rva);
+	if (!loc) {
+		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+
+		if (!mono_verifier_verify_method_header (img, rva, error))
+			return NULL;
+
+		loc = mono_image_rva_map (img, rva);
+	}
+
 	if (!loc) {
 		mono_error_set_bad_image (error, img, "Method has zero rva");
 		return NULL;

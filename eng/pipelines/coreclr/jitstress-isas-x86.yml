@@ -1,7 +1,5 @@
 trigger: none
 
-pr: none
-
 schedules:
 - cron: "30 19 * * 6"
   displayName: Sat at 11:30 AM (UTC-8:00)
@@ -10,11 +8,15 @@ schedules:
     - master
   always: true
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 jobs:
 #
 # Checkout repository
 #
-- template: /eng/pipelines/common/checkout-job.yml
+- ${{ if eq(variables.useCheckoutBundle, true) }}:
+  - template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

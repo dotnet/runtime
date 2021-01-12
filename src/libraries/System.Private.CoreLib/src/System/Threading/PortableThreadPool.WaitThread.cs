@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -37,7 +36,7 @@ namespace System.Threading
         /// <param name="handle">A description of the requested registration.</param>
         internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
-            if (PortableThreadPoolEventSource.Log.IsEnabled(EventLevel.Verbose, PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
+            if (PortableThreadPoolEventSource.Log.IsEnabled())
             {
                 PortableThreadPoolEventSource.Log.ThreadPoolIOEnqueue(handle);
             }
@@ -76,7 +75,7 @@ namespace System.Threading
 
         internal static void CompleteWait(RegisteredWaitHandle handle, bool timedOut)
         {
-            if (PortableThreadPoolEventSource.Log.IsEnabled(EventLevel.Verbose, PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
+            if (PortableThreadPoolEventSource.Log.IsEnabled())
             {
                 PortableThreadPoolEventSource.Log.ThreadPoolIODequeue(handle);
             }
@@ -184,11 +183,14 @@ namespace System.Threading
             public WaitThread()
             {
                 _waitHandles[0] = _changeHandlesEvent.SafeWaitHandle;
+
+                // Thread pool threads must start in the default execution context without transferring the context, so
+                // using UnsafeStart() instead of Start()
                 Thread waitThread = new Thread(WaitThreadStart, SmallStackSizeBytes);
                 waitThread.IsThreadPoolThread = true;
                 waitThread.IsBackground = true;
                 waitThread.Name = ".NET ThreadPool Wait";
-                waitThread.Start();
+                waitThread.UnsafeStart();
             }
 
             /// <summary>
