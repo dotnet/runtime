@@ -1307,13 +1307,13 @@ namespace Internal.JitInterface
         CORJIT_FLAG_BBINSTR = 29, // Collect basic block profile information
         CORJIT_FLAG_BBOPT = 30, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED = 31, // All methods have an EBP frame
-        CORJIT_FLAG_ALIGN_LOOPS = 32, // add NOPs before loops to align them at 16 byte boundaries
+        CORJIT_FLAG_UNUSED8 = 32,
         CORJIT_FLAG_PUBLISH_SECRET_PARAM = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
-        CORJIT_FLAG_UNUSED8 = 34,
+        CORJIT_FLAG_UNUSED9 = 34,
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        CORJIT_FLAG_UNUSED9 = 38,
+        CORJIT_FLAG_UNUSED10 = 38,
         CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
