@@ -1,9 +1,6 @@
 <Project>
   <PropertyGroup>
     <Configuration>Release</Configuration>
-    <TargetArchitecture>wasm</TargetArchitecture>
-    <TargetOS>Browser</TargetOS>
-    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <OutputType>Exe</OutputType>
 
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
