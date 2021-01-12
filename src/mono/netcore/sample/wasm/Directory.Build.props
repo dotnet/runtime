@@ -17,5 +17,6 @@
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
   </PropertyGroup>
 
+  <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
   <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
 </Project>
