@@ -197,5 +197,19 @@ internal partial class Interop
             internal const int WTS_SESSION_UNLOCK = 0x8;
             internal const int WTS_SESSION_REMOTE_CONTROL = 0x9;
         }
+
+        internal partial class ServiceNotifyMask
+        {
+            internal const int SERVICE_NOTIFY_STOPPED = 0x00000001;
+            internal const int SERVICE_NOTIFY_START_PENDING = 0x00000002;
+            internal const int SERVICE_NOTIFY_STOP_PENDING = 0x00000004;
+            internal const int SERVICE_NOTIFY_RUNNING = 0x00000008;
+            internal const int SERVICE_NOTIFY_CONTINUE_PENDING = 0x00000010;
+            internal const int SERVICE_NOTIFY_PAUSE_PENDING = 0x00000020;
+            internal const int SERVICE_NOTIFY_PAUSED = 0x00000040;
+            internal const int SERVICE_NOTIFY_CREATED = 0x00000080;
+            internal const int SERVICE_NOTIFY_DELETED = 0x00000100;
+            internal const int SERVICE_NOTIFY_DELETE_PENDING = 0x00000200;
+        }
     }
 }

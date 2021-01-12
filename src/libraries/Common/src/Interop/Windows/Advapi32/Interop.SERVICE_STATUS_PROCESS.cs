@@ -1,0 +1,24 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Runtime.InteropServices;
+
+internal partial class Interop
+{
+    internal partial class Advapi32
+    {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct SERVICE_STATUS_PROCESS
+        {
+            public int serviceType;
+            public int currentState;
+            public int controlsAccepted;
+            public int win32ExitCode;
+            public int serviceSpecificExitCode;
+            public int checkPoint;
+            public int waitHint;
+            public int processId;
+            public int serviceFlags;
+        }
+    }
+}

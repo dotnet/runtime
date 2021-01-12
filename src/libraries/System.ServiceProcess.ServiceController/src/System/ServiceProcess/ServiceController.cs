@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 namespace System.ServiceProcess
 {
@@ -943,7 +942,7 @@ namespace System.ServiceProcess
         /// <param name="desiredStatus">The status for which to wait.</param>
         public void WaitForStatus(ServiceControllerStatus desiredStatus)
         {
-            WaitForStatus(desiredStatus, TimeSpan.MaxValue);
+            WaitForStatus(desiredStatus, 0xFFFFFFFF);
         }
 
         /// <summary>
@@ -953,19 +952,55 @@ namespace System.ServiceProcess
         /// <param name="timeout">Wait for specific timeout</param>
         public void WaitForStatus(ServiceControllerStatus desiredStatus, TimeSpan timeout)
         {
-            if (!Enum.IsDefined(typeof(ServiceControllerStatus), desiredStatus))
-                throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(desiredStatus), (int)desiredStatus, typeof(ServiceControllerStatus)));
-
-            DateTime start = DateTime.UtcNow;
-            Refresh();
-            while (Status != desiredStatus)
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > uint.MaxValue)
             {
-                if (DateTime.UtcNow - start > timeout)
-                    throw new System.ServiceProcess.TimeoutException(SR.Format(SR.Timeout, ServiceName));
-
-                Thread.Sleep(250);
-                Refresh();
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
+
+            WaitForStatus(desiredStatus, (uint)totalMilliseconds);
+        }
+
+        private void WaitForStatus(ServiceControllerStatus desiredStatus, uint millisecondsTimeout)
+        {
+            int notifyMask = desiredStatus switch
+            {
+                ServiceControllerStatus.ContinuePending => Interop.Advapi32.ServiceNotifyMask.SERVICE_NOTIFY_CONTINUE_PENDING,
+                ServiceControllerStatus.Paused => Interop.Advapi32.ServiceNotifyMask.SERVICE_NOTIFY_PAUSED,
+                ServiceControllerStatus.PausePending => Interop.Advapi32.ServiceNotifyMask.SERVICE_NOTIFY_PAUSE_PENDING,
+                ServiceControllerStatus.Running => Interop.Advapi32.ServiceNotifyMask.SERVICE_NOTIFY_RUNNING,
+                ServiceControllerStatus.StartPending => Interop.Advapi32.ServiceNotifyMask.SERVICE_NOTIFY_START_PENDING,
+                ServiceControllerStatus.Stopped => Interop.Advapi32.ServiceNotifyMask.SERVICE_NOTIFY_STOPPED,
+                ServiceControllerStatus.StopPending => Interop.Advapi32.ServiceNotifyMask.SERVICE_NOTIFY_STOP_PENDING,
+                _ => throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(desiredStatus), (int)desiredStatus, typeof(ServiceControllerStatus))),
+            };
+
+            using var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_QUERY_STATUS);
+
+            var notify = new Interop.Advapi32.SERVICE_NOTIFY
+            {
+                version = Interop.Advapi32.SERVICE_NOTIFY_STATUS_CHANGE,
+                notifyCallback = &OnServiceStatusChange,
+            };
+
+            int error = Interop.Advapi32.NotifyServiceStatusChange(serviceHandle, notifyMask, notify);
+            if (error != Interop.Errors.ERROR_SUCCESS)
+            {
+                throw new Win32Exception(error);
+            }
+
+            uint status = Interop.Kernel32.SleepEx(millisecondsTimeout, true);
+            if (status == 0)
+            {
+                throw new System.ServiceProcess.TimeoutException(SR.Format(SR.Timeout, ServiceName));
+            }
+
+            Refresh();
+        }
+
+        [UnmanagedCallersOnly]
+        private static void OnServiceStatusChange(IntPtr parameter)
+        {
         }
     }
 }

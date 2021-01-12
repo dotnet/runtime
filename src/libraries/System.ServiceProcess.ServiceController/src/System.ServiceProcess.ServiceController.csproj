@@ -33,6 +33,8 @@
              Link="Common\Interop\Windows\Interop.GetServiceDisplayName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetServiceKeyName.cs"
              Link="Common\Interop\Windows\Interop.GetServiceKeyName.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.NotifyServiceStatusChange.cs"
+             Link="Common\Interop\Windows\Interop.NotifyServiceStatusChange.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenSCManager.cs"
              Link="Common\Interop\Windows\Interop.OpenSCManager.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenService.cs"
@@ -49,8 +51,12 @@
              Link="Common\Interop\Windows\Interop.ENUM_SERVICE_STATUS_PROCESS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.QUERY_SERVICE_CONFIG.cs"
              Link="Common\Interop\Windows\Interop.QUERY_SERVICE_CONFIG.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SERVICE_NOTIFY.cs"
+             Link="Common\Interop\Windows\Interop.SERVICE_NOTIFY.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SERVICE_STATUS.cs"
              Link="Common\Interop\Windows\Interop.SERVICE_STATUS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SERVICE_STATUS_PROCESS.cs"
+             Link="Common\Interop\Windows\Interop.SERVICE_STATUS_PROCESS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SERVICE_TABLE_ENTRY.cs"
              Link="Common\Interop\Windows\Interop.SERVICE_TABLE_ENTRY.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SetServiceStatus.cs"
@@ -61,6 +67,8 @@
              Link="Common\Interop\Windows\Interop.RegisterServiceCtrlHandlerEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.StartServiceCtrlDispatcher.cs"
              Link="Common\Interop\Windows\Interop.StartServiceCtrlDispatcher.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SleepEx.cs"
+             Link="Common\Interop\Windows\Interop.SleepEx.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeServiceHandle.cs" />
     <Compile Include="System\ServiceProcess\PowerBroadcastStatus.cs" />
     <Compile Include="System\ServiceProcess\ServiceBase.cs" />
