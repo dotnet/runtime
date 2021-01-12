@@ -5046,6 +5046,10 @@ public:
     // Convert a BYTE which represents the VM's CorInfoGCtype to the JIT's var_types
     var_types getJitGCType(BYTE gcType);
 
+    // Returns true if the provided type should be treated as a primitive type
+    // for the unmanaged calling conventions.
+    bool isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd);
+
     enum structPassingKind
     {
         SPK_Unknown,       // Invalid value, never returned
@@ -8047,6 +8051,21 @@ private:
 #endif
     }
 
+    bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        return info.compCompHnd->isIntrinsicType(clsHnd);
+    }
+
+    const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
+    {
+        return info.compCompHnd->getClassNameFromMetadata(cls, namespaceName);
+    }
+
+    CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
+    {
+        return info.compCompHnd->getTypeInstantiationArgument(cls, index);
+    }
+
 #ifdef FEATURE_SIMD
 
     // Should we support SIMD intrinsics?
@@ -8263,21 +8282,6 @@ private:
             return strcmp(namespaceName, "System.Numerics") == 0;
         }
         return false;
-    }
-
-    bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
-    {
-        return info.compCompHnd->isIntrinsicType(clsHnd);
-    }
-
-    const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
-    {
-        return info.compCompHnd->getClassNameFromMetadata(cls, namespaceName);
-    }
-
-    CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
-    {
-        return info.compCompHnd->getTypeInstantiationArgument(cls, index);
     }
 
     bool isSIMDClass(typeInfo* pTypeInfo)
