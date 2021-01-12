@@ -45,7 +45,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 return TicksToTimeSpan(GetStat().stime);
             }
         }
