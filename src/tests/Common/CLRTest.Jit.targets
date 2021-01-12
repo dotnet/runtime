@@ -132,6 +132,8 @@ then
     then
       break
     fi
+
+    ((ilasm_count++))
     echo Trying again
     sleep 10
   done
