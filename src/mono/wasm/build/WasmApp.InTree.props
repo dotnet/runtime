@@ -1,4 +1,6 @@
 <Project>
+  <!-- This depends on the root Directory.Build.props imported this file -->
+
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
   <PropertyGroup>
     <Platform>AnyCPU</Platform>

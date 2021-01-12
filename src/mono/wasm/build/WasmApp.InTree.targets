@@ -1,4 +1,6 @@
 <Project>
+  <!-- This depends on the root Directory.Build.targets imported this file -->
+
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
