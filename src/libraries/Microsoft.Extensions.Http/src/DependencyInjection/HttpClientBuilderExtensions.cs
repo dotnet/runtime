@@ -362,22 +362,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient<TClient>(s =>
             {
-                string name = builder.Name;
-
-                var optionsMonitor = s.GetRequiredService<IOptionsMonitor<HttpClientFactoryOptions>>();
-                var options = optionsMonitor.Get(name);
-
-                HttpClient httpClient;
-                if (options.PreserveExistingScope)
-                {
-                    IScopedHttpClientFactory scopedFactory = s.GetRequiredService<IScopedHttpClientFactory>();
-                    httpClient = scopedFactory.CreateClient(name);
-                }
-                else
-                {
-                    IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                    httpClient = httpClientFactory.CreateClient(builder.Name);
-                }
+                HttpClient httpClient = s.GetRequiredHttpClient(builder.Name);
 
                 ITypedHttpClientFactory<TClient> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TClient>>();
                 return typedClientFactory.CreateClient(httpClient);
@@ -439,8 +424,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient<TClient>(s =>
             {
-                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
+                HttpClient httpClient = s.GetRequiredHttpClient(builder.Name);
 
                 ITypedHttpClientFactory<TImplementation> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TImplementation>>();
                 return typedClientFactory.CreateClient(httpClient);
@@ -493,8 +477,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient<TClient>(s =>
             {
-                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
+                HttpClient httpClient = s.GetRequiredHttpClient(builder.Name);
 
                 return factory(httpClient);
             });
@@ -556,8 +539,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient<TClient>(s =>
             {
-                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
+                HttpClient httpClient = s.GetRequiredHttpClient(builder.Name);
 
                 return factory(httpClient, s);
             });
@@ -732,6 +714,23 @@ namespace Microsoft.Extensions.DependencyInjection
             if (validateSingleType)
             {
                 registry.NamedClientRegistrations[name] = type;
+            }
+        }
+
+        private static HttpClient GetRequiredHttpClient(this IServiceProvider s, string name)
+        {
+            var optionsMonitor = s.GetRequiredService<IOptionsMonitor<HttpClientFactoryOptions>>();
+            var options = optionsMonitor.Get(name);
+
+            if (options.PreserveExistingScope)
+            {
+                IScopedHttpClientFactory scopedFactory = s.GetRequiredService<IScopedHttpClientFactory>();
+                return scopedFactory.CreateClient(name);
+            }
+            else
+            {
+                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
+                return httpClientFactory.CreateClient(name);
             }
         }
     }

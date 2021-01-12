@@ -97,8 +97,8 @@ namespace Microsoft.Extensions.Http
 
             _logger = loggerFactory.CreateLogger<DefaultHttpClientFactory>();
 
-            // case-sensitive because named options is.
-            _activeHandlers = new Dictionary<string, ActiveHandlerTrackingEntry>();
+            // same comparer as for named options.
+            _activeHandlers = new Dictionary<string, ActiveHandlerTrackingEntry>(StringComparer.Ordinal);
 
             _expiredHandlers = new ConcurrentQueue<ExpiredHandlerTrackingEntry>();
             _expiryCallback = ExpiryTimer_Tick;
@@ -225,7 +225,7 @@ namespace Microsoft.Extensions.Http
             return topHandler;
         }
 
-        internal CreateEntryResult CreateHandlerEntry(string name, IServiceProvider? scopedServices)
+        private HandlerEntryData CreateHandlerEntry(string name, IServiceProvider? scopedServices)
         {
             Debug.Assert(messageHandlerLock.IsWriteLockHeld);
 
@@ -235,11 +235,10 @@ namespace Microsoft.Extensions.Http
                 return CreateHandlerEntryInManualScope(name);
             }
 
-            return CreateHandlerEntryInternal(name, scopedServices, null, options);
+            return CreateHandlerEntryCore(name, scopedServices, null, options);
         }
 
-        // Internal for tests
-        internal CreateEntryResult CreateHandlerEntryInManualScope(string name)
+        private HandlerEntryData CreateHandlerEntryInManualScope(string name)
         {
             Debug.Assert(messageHandlerLock.IsWriteLockHeld);
 
@@ -255,7 +254,7 @@ namespace Microsoft.Extensions.Http
 
             try
             {
-                return CreateHandlerEntryInternal(name, services, scope, options);
+                return CreateHandlerEntryCore(name, services, scope, options);
             }
             catch
             {
@@ -265,7 +264,7 @@ namespace Microsoft.Extensions.Http
             }
         }
 
-        private CreateEntryResult CreateHandlerEntryInternal(string name, IServiceProvider services, IServiceScope? scope, HttpClientFactoryOptions options)
+        private HandlerEntryData CreateHandlerEntryCore(string name, IServiceProvider services, IServiceScope? scope, HttpClientFactoryOptions options)
         {
             Debug.Assert(messageHandlerLock.IsWriteLockHeld);
 
@@ -279,21 +278,13 @@ namespace Microsoft.Extensions.Http
             {
                 var primaryHandler = new LifetimeTrackingHttpMessageHandler(new HttpClientHandler());
                 var activeEntry = new ActiveHandlerTrackingEntry(name, primaryHandler, true, scope, options.HandlerLifetime);
-                return new CreateEntryResult(activeEntry);
+                return new HandlerEntryData(activeEntry);
             }
 
             HttpMessageHandlerBuilder builder = services.GetRequiredService<HttpMessageHandlerBuilder>();
             builder.Name = name;
 
-            // This is similar to the initialization pattern in:
-            // https://github.com/aspnet/Hosting/blob/e892ed8bbdcd25a0dafc1850033398dc57f65fe1/src/Microsoft.AspNetCore.Hosting/Internal/WebHost.cs#L188
-            Action<HttpMessageHandlerBuilder> configure = Configure;
-            for (int i = _filters.Length - 1; i >= 0; i--)
-            {
-                configure = _filters[i].Configure(configure);
-            }
-
-            configure(builder);
+            ConfigureBuilder(builder, options);
 
             LifetimeTrackingHttpMessageHandler handler;
             bool isPrimary;
@@ -331,18 +322,10 @@ namespace Microsoft.Extensions.Http
             // timer) and then dispose it without ever creating a client. That would be bad. It's unlikely
             // this would happen, but we want to be sure.
             var entry = new ActiveHandlerTrackingEntry(name, handler, isPrimary, scope, options.HandlerLifetime);
-            return new CreateEntryResult(entry, topHandler);
-
-            void Configure(HttpMessageHandlerBuilder b)
-            {
-                for (int i = 0; i < options.HttpMessageHandlerBuilderActions.Count; i++)
-                {
-                    options.HttpMessageHandlerBuilderActions[i](b);
-                }
-            }
+            return new HandlerEntryData(entry, topHandler);
         }
 
-        internal LifetimeTrackingHttpMessageHandler BuildTopHandler(string name, HttpMessageHandler primaryHandler, IServiceProvider? scopedServices)
+        private LifetimeTrackingHttpMessageHandler BuildTopHandler(string name, HttpMessageHandler primaryHandler, IServiceProvider? scopedServices)
         {
             Debug.Assert(messageHandlerLock.IsWriteLockHeld);
 
@@ -352,13 +335,7 @@ namespace Microsoft.Extensions.Http
             builder.Name = name;
 
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
-            Action<HttpMessageHandlerBuilder> configure = Configure;
-            for (int i = _filters.Length - 1; i >= 0; i--)
-            {
-                configure = _filters[i].Configure(configure);
-            }
-
-            configure(builder);
+            ConfigureBuilder(builder, options);
 
             if (builder.PrimaryHandlerExposed)
             {
@@ -366,6 +343,19 @@ namespace Microsoft.Extensions.Http
             }
 
             return new LifetimeTrackingHttpMessageHandler(builder.Build(primaryHandler));
+        }
+
+        private void ConfigureBuilder(HttpMessageHandlerBuilder builder, HttpClientFactoryOptions options)
+        {
+            // This is similar to the initialization pattern in:
+            // https://github.com/aspnet/Hosting/blob/e892ed8bbdcd25a0dafc1850033398dc57f65fe1/src/Microsoft.AspNetCore.Hosting/Internal/WebHost.cs#L188
+            Action<HttpMessageHandlerBuilder> configure = Configure;
+            for (int i = _filters.Length - 1; i >= 0; i--)
+            {
+                configure = _filters[i].Configure(configure);
+            }
+
+            configure(builder);
 
             void Configure(HttpMessageHandlerBuilder b)
             {
@@ -566,22 +556,20 @@ namespace Microsoft.Extensions.Http
             }
         }
 
-        internal class CreateEntryResult
+        private class HandlerEntryData
         {
             public ActiveHandlerTrackingEntry Entry { get; }
             public LifetimeTrackingHttpMessageHandler? TopHandler { get; }
 
-            public CreateEntryResult(ActiveHandlerTrackingEntry entry) : this(entry, null)
+            public HandlerEntryData(ActiveHandlerTrackingEntry entry) : this(entry, null)
             {
             }
 
-            public CreateEntryResult(ActiveHandlerTrackingEntry entry, LifetimeTrackingHttpMessageHandler? topHandler)
+            public HandlerEntryData(ActiveHandlerTrackingEntry entry, LifetimeTrackingHttpMessageHandler? topHandler)
             {
                 Entry = entry;
                 TopHandler = topHandler;
             }
         }
-
-
     }
 }

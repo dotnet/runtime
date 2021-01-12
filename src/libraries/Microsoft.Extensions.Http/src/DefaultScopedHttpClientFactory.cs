@@ -10,16 +10,17 @@ namespace Microsoft.Extensions.Http
 {
     internal class DefaultScopedHttpClientFactory : IScopedHttpClientFactory, IScopedHttpMessageHandlerFactory
     {
-        private DefaultHttpClientFactory _factory;
+        // internal for tests
+        internal DefaultHttpClientFactory _singletonFactory;
         private IServiceProvider _services;
         private IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
 
-        // cache for creating a chain only once per scope
-        private ConcurrentDictionary<string, HttpMessageHandler> _cache = new ConcurrentDictionary<string, HttpMessageHandler>();
+        // cache for creating a chain only once per scope. same comparer as for named options.
+        private ConcurrentDictionary<string, HttpMessageHandler> _cache = new ConcurrentDictionary<string, HttpMessageHandler>(StringComparer.Ordinal);
 
         public DefaultScopedHttpClientFactory(DefaultHttpClientFactory factory, IServiceProvider services, IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor)
         {
-            _factory = factory;
+            _singletonFactory = factory;
             _services = services;
             _optionsMonitor = optionsMonitor;
         }
@@ -79,7 +80,7 @@ namespace Microsoft.Extensions.Http
             }
 
             // thread safety of the `valueFactory` param for GetOrAdd is handled by _factory.CreateHandler
-            return _cache.GetOrAdd(name, s => _factory.CreateHandler(s, _services));
+            return _cache.GetOrAdd(name, s => _singletonFactory.CreateHandler(s, _services));
         }
     }
 }

@@ -38,7 +38,9 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<DefaultHttpClientFactory>();
             services.TryAddSingleton<IHttpClientFactory>(serviceProvider => serviceProvider.GetRequiredService<DefaultHttpClientFactory>());
             services.TryAddSingleton<IHttpMessageHandlerFactory>(serviceProvider => serviceProvider.GetRequiredService<DefaultHttpClientFactory>());
-            services.TryAddScoped<IScopedHttpClientFactory, DefaultScopedHttpClientFactory>();
+            services.TryAddScoped<DefaultScopedHttpClientFactory>();
+            services.TryAddScoped<IScopedHttpClientFactory>(serviceProvider => serviceProvider.GetRequiredService<DefaultScopedHttpClientFactory>());
+            services.TryAddScoped<IScopedHttpMessageHandlerFactory>(serviceProvider => serviceProvider.GetRequiredService<DefaultScopedHttpClientFactory>());
 
             //
             // Typed Clients

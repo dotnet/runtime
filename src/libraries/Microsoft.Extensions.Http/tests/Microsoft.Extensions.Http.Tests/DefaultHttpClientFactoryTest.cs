@@ -232,7 +232,8 @@ namespace Microsoft.Extensions.Http
             });
 
             // Act
-            var handler = (HttpMessageHandler)factory.CreateHandlerEntryInManualScope("github").Entry.Handler;
+            var client = factory.CreateClient("github");
+            HttpMessageHandler handler = factory._activeHandlers["github"].Handler;
 
             // Assert
             //
