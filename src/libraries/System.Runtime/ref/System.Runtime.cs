@@ -2781,6 +2781,7 @@ namespace System
         public static int Sign(sbyte value) { throw null; }
         public static int Sign(float value) { throw null; }
         public static double Sin(double a) { throw null; }
+        public static (double Sin, double Cos) SinCos(double x) { throw null; }
         public static double Sinh(double value) { throw null; }
         public static double Sqrt(double d) { throw null; }
         public static double Tan(double a) { throw null; }
@@ -2829,6 +2830,7 @@ namespace System
         public static float ScaleB(float x, int n) { throw null; }
         public static int Sign(float x) { throw null; }
         public static float Sin(float x) { throw null; }
+        public static (float Sin, float Cos) SinCos(float x) { throw null; }
         public static float Sinh(float x) { throw null; }
         public static float Sqrt(float x) { throw null; }
         public static float Tan(float x) { throw null; }
@@ -4277,7 +4279,7 @@ namespace System
         public virtual System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public virtual System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.MemberTypes type, System.Reflection.BindingFlags bindingAttr) { throw null; }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Reflection.MemberInfo[] GetMembers() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public abstract System.Reflection.MemberInfo[] GetMembers(System.Reflection.BindingFlags bindingAttr);

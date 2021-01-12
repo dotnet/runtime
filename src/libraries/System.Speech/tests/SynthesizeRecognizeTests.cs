@@ -56,7 +56,7 @@ namespace SampleSynthesisTests
         }
 
         [ConditionalFact(nameof(HasInstalledRecognizers))]
-        public void SpeechRecognizerInvalidInput()
+        public void SpeechRecognitionEngineInvalidInput()
         {
             using var ms = new MemoryStream();
             ms.WriteByte(1);
@@ -68,7 +68,7 @@ namespace SampleSynthesisTests
         }
 
         [ConditionalFact(nameof(HasInstalledRecognizers))]
-        public void SpeechRecognizerProperties()
+        public void SpeechRecognitionEngineProperties()
         {
             using (var rec = new SpeechRecognitionEngine())
             {

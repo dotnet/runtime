@@ -602,6 +602,22 @@ _rt_coreclr_hash_map_add (
 	return hash_map->table->AddNoThrow (typename HASH_MAP_TYPE::table_type_t::element_t (key, value));
 }
 
+template<typename HASH_MAP_TYPE, typename KEY_TYPE, typename VALUE_TYPE>
+static
+inline
+bool
+_rt_coreclr_hash_map_add_or_replace (
+	HASH_MAP_TYPE *hash_map,
+	KEY_TYPE key,
+	VALUE_TYPE value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (HASH_MAP_TYPE::table_type_t::s_NoThrow);
+	EP_ASSERT (hash_map != NULL && hash_map->table != NULL);
+
+	return hash_map->table->AddOrReplaceNoThrow (typename HASH_MAP_TYPE::table_type_t::element_t (key, value));
+}
+
 template<typename HASH_MAP_TYPE>
 static
 inline
@@ -956,7 +972,7 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 #define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
-#define EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+#define EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)) \
 	{ \
 		STATIC_CONTRACT_NOTHROW; \
@@ -993,8 +1009,16 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_hash_map_is_valid<hash_map_type>(hash_map); \
 	}
 
+#define EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add_or_replace) (hash_map_type *hash_map, key_type key, value_type value) \
+	{ \
+		STATIC_CONTRACT_NOTHROW; \
+		return _rt_coreclr_hash_map_add_or_replace<hash_map_type, key_type, value_type>(hash_map, key, value); \
+	} \
+
 #define EP_RT_DEFINE_HASH_MAP_REMOVE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove) (hash_map_type *hash_map, const key_type key) \
 	{ \
 		STATIC_CONTRACT_NOTHROW; \
@@ -1163,24 +1187,6 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
-
-static
-inline
-EventPipeThreadHolder *
-thread_holder_alloc_func (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-	return ep_thread_holder_alloc (ep_thread_alloc());
-}
-
-static
-inline
-void
-thread_holder_free_func (EventPipeThreadHolder * thread_holder)
-{
-	STATIC_CONTRACT_NOTHROW;
-	ep_thread_holder_free (thread_holder);
-}
 
 static
 void
@@ -2551,6 +2557,30 @@ ep_rt_diagnostics_command_line_get (void)
  * Thread.
  */
 
+static
+inline
+EventPipeThreadHolder *
+thread_holder_alloc_func (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EventPipeThreadHolder *instance = ep_thread_holder_alloc (ep_thread_alloc());
+	if (instance)
+		ep_thread_register (ep_thread_holder_get_thread (instance));
+	return instance;
+}
+
+static
+inline
+void
+thread_holder_free_func (EventPipeThreadHolder * thread_holder)
+{
+	STATIC_CONTRACT_NOTHROW;
+	if (thread_holder) {
+		ep_thread_unregister (ep_thread_holder_get_thread (thread_holder));
+		ep_thread_holder_free (thread_holder);
+	}
+}
+
 class EventPipeCoreCLRThreadHolderTLS {
 public:
 	EventPipeCoreCLRThreadHolderTLS ()
@@ -2563,7 +2593,7 @@ public:
 		STATIC_CONTRACT_NOTHROW;
 
 		if (m_threadHolder) {
-			ep_thread_holder_free (m_threadHolder);
+			thread_holder_free_func (m_threadHolder);
 			m_threadHolder = NULL;
 		}
 	}
@@ -2574,15 +2604,16 @@ public:
 		return g_threadHolderTLS.m_threadHolder;
 	}
 
-	static inline void setThreadHolder (EventPipeThreadHolder *threadHolder)
+	static inline EventPipeThreadHolder * createThreadHolder ()
 	{
 		STATIC_CONTRACT_NOTHROW;
 
 		if (g_threadHolderTLS.m_threadHolder) {
-			ep_thread_holder_free (g_threadHolderTLS.m_threadHolder);
+			thread_holder_free_func (g_threadHolderTLS.m_threadHolder);
 			g_threadHolderTLS.m_threadHolder = NULL;
 		}
-		g_threadHolderTLS.m_threadHolder = threadHolder;
+		g_threadHolderTLS.m_threadHolder = thread_holder_alloc_func ();
+		return g_threadHolderTLS.m_threadHolder;
 	}
 
 private:
@@ -2623,10 +2654,9 @@ ep_rt_thread_get_or_create (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	EventPipeThreadHolder *thread_holder = EventPipeCoreCLRThreadHolderTLS::getThreadHolder ();
-	if (!thread_holder) {
-		thread_holder = thread_holder_alloc_func ();
-		EventPipeCoreCLRThreadHolderTLS::setThreadHolder (thread_holder);
-	}
+	if (!thread_holder)
+		thread_holder = EventPipeCoreCLRThreadHolderTLS::createThreadHolder ();
+
 	return ep_thread_holder_get_thread (thread_holder);
 }
 
