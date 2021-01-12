@@ -1331,7 +1331,7 @@ namespace System.Diagnostics
                 }
             }
 
-            // Note: Some customers use this GetEnumerator dynamically to avoid allocations.
+            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
             public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
             IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -1413,7 +1413,7 @@ namespace System.Diagnostics
                 }
             }
 
-            // Note: Some customers use this GetEnumerator dynamically to avoid allocations.
+            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
             public Enumerator<KeyValuePair<string, string?>> GetEnumerator() => new Enumerator<KeyValuePair<string, string?>>(_first);
             IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -1549,7 +1549,7 @@ namespace System.Diagnostics
                 }
             }
 
-            // Note: Some customers use this GetEnumerator dynamically to avoid allocations.
+            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
             public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
             IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -1570,7 +1570,7 @@ namespace System.Diagnostics
             }
         }
 
-        // Note: Some customers use this Enumerator dynamically to avoid allocations.
+        // Note: Some consumers use this Enumerator dynamically to avoid allocations.
         private struct Enumerator<T> : IEnumerator<T>
         {
             private LinkedListNode<T>? _nextNode;
