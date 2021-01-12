@@ -13825,6 +13825,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         assert(diff >= 0);
         if (diff != 0)
         {
+
+#ifdef DEBUG
             // should never over-estimate align instruction
             assert(id->idIns() != INS_align);
             JITDUMP("Added over-estimation compensation: %d\n", diff);
@@ -13834,6 +13836,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 emitDispInsAddr(dst);
                 printf("\t\t  ;; NOP compensation instructions of %d bytes.\n", diff);
             }
+#endif
 
             dst = emitOutputNOP(dst, diff);
 
