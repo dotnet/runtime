@@ -9,6 +9,7 @@
       - MonoAOTLLVMDir - [optional] the directory where LLVM is located, for an AOT-only Mono
       - MonoVerboseBuild - enable verbose build
       - MonoMetadataUpdate - enable experimental method body replacement code
+      - MonoThreadSuspend - coop,hybrid,preemptive - default thread suspend mode
   -->
 
   <PropertyGroup>
@@ -45,6 +46,10 @@
     <MonoCCompiler Condition="$(MonoCCompiler.StartsWith('-'))">$(MonoCCompiler.TrimStart('-'))</MonoCCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
+    <!-- default thread suspend for specific platforms -->
+    <MonoThreadSuspend Condition="'$(TargetswatchOS)' == 'true'">coop</MonoThreadSuspend>
+    <!-- default thread suspend for all platforms -->
+    <MonoThreadSuspend Condition="'$(MonoThreadSuspend)' == ''">hybrid</MonoThreadSuspend>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
@@ -124,6 +129,7 @@
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_LIBDIR=lib"/>
       <_MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
       <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)" />
+      <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
     </ItemGroup>
 
     <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
@@ -414,7 +420,10 @@
       <!-- FIXME: Add sanity check that the interpreter is enabled -->
       <MonoAOTCMakeArgs Condition="'$(MonoMetadataUpdate)' == 'true'" Include="-DENABLE_METADATA_UPDATE=1" />
 
-      <!-- Select generator platform for VS generator -->
+      <!-- thread suspend -->
+      <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
+ 
+     <!-- Select generator platform for VS generator -->
       <MonoAOTCMakeArgs Condition="'$(OS)' == 'Windows_NT' and '$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x64'" Include="-A x64" />
       <MonoAOTCMakeArgs Condition="'$(OS)' == 'Windows_NT' and '$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x86'" Include="-A Win32" />
       <MonoAOTCMakeArgs Condition="'$(OS)' == 'Windows_NT' and '$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'arm'" Include="-A ARM" />
