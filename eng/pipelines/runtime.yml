@@ -499,7 +499,8 @@ jobs:
       monoCrossAOTTargetOS: Android
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
