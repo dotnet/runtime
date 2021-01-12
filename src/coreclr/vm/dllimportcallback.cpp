@@ -709,8 +709,9 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
         if (returnType.GetMethodTable()->IsIntrinsicType())
         {
             LPCUTF8 pszNamespace;
-            returnType.GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
-            if (strcmp(pszNamespace, g_InteropServicesNS) == 0)
+            LPCUTF8 pszTypeName = returnType.GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
+            if ((strcmp(pszNamespace, g_InteropServicesNS) == 0)
+                && (strcmp(pszTypeName, "CLong") == 0 || strcmp(pszTypeName, "CULong") == 0 || strcmp(pszTypeName, "NFloat") == 0))
             {
                 // We have one of the intrinsic native exchange types.
                 // As a result, we don't have a return buffer.
