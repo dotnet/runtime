@@ -39,6 +39,8 @@ namespace System.Diagnostics
         private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
         private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
 #pragma warning restore CA1825
+        internal static readonly Random s_random = new Random();
+
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
@@ -1657,15 +1659,22 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Sets the bytes in 'outBytes' to be random values.   outBytes.Length must be less than or equal to 16
+        /// Sets the bytes in 'outBytes' to be random values. outBytes.Length must be either 8 or 16 bytes.
         /// </summary>
         /// <param name="outBytes"></param>
         internal static unsafe void SetToRandomBytes(Span<byte> outBytes)
         {
-            Debug.Assert(outBytes.Length <= sizeof(Guid));     // Guid is 16 bytes, and so is TraceId
-            Guid guid = Guid.NewGuid();
-            ReadOnlySpan<byte> guidBytes = new ReadOnlySpan<byte>(&guid, sizeof(Guid));
-            guidBytes.Slice(0, outBytes.Length).CopyTo(outBytes);
+            Debug.Assert(outBytes.Length == 16 || outBytes.Length == 8);
+            Random r = Activity.s_random;
+
+            Unsafe.WriteUnaligned(ref outBytes[0],  r.Next());
+            Unsafe.WriteUnaligned(ref outBytes[4],  r.Next());
+
+            if (outBytes.Length >= 16)
+            {
+                Unsafe.WriteUnaligned(ref outBytes[8],  r.Next());
+                Unsafe.WriteUnaligned(ref outBytes[12], r.Next());
+            }
         }
 
         /// <summary>
