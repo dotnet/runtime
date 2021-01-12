@@ -311,6 +311,8 @@ common_sources = \
 	metadata.c		\
 	metadata-verify.c	\
 	metadata-internals.h	\
+	metadata-update.h	\
+	metadata-update.c	\
 	method-builder.h 	\
 	method-builder-internals.h 	\
 	method-builder.c 	\

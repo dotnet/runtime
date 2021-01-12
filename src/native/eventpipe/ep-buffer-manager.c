@@ -1203,14 +1203,17 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 				while (!ep_rt_thread_session_state_list_iterator_end (&buffer_manager->thread_session_state_list, &thread_session_state_list_iterator)) {
 					EventPipeThreadSessionState * session_state = ep_rt_thread_session_state_list_iterator_value (&thread_session_state_list_iterator);
 					uint32_t thread_sequence_number = 0;
-					ep_rt_thread_sequence_number_map_lookup (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), session_state, &thread_sequence_number);
+					bool exists = ep_rt_thread_sequence_number_map_lookup (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), session_state, &thread_sequence_number);
 					uint32_t last_read_sequence_number = ep_thread_session_state_get_buffer_list (session_state)->last_read_sequence_number;
 					// Sequence numbers can overflow so we can't use a direct last_read > sequence_number comparison
 					// If a thread is able to drop more than 0x80000000 events in between sequence points then we will
 					// miscategorize it, but that seems unlikely.
 					uint32_t last_read_delta = last_read_sequence_number - thread_sequence_number;
-					if (0 < last_read_delta && last_read_delta < 0x80000000)
-						ep_rt_thread_sequence_number_map_add (ep_sequence_point_get_thread_sequence_numbers_ref (sequence_point), session_state, last_read_sequence_number);
+					if (0 < last_read_delta && last_read_delta < 0x80000000) {
+						ep_rt_thread_sequence_number_map_add_or_replace (ep_sequence_point_get_thread_sequence_numbers_ref (sequence_point), session_state, last_read_sequence_number);
+						if (!exists)
+							ep_thread_addref (ep_thread_holder_get_thread (ep_thread_session_state_get_thread_holder_ref (session_state)));
+					}
 					ep_rt_thread_session_state_list_iterator_next (&thread_session_state_list_iterator);
 				}
 			EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)

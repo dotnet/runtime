@@ -24,6 +24,7 @@
 #include "class-internals.h"
 #include "metadata-internals.h"
 #include "reflection-internals.h"
+#include "metadata-update.h"
 #include "verify-internals.h"
 #include "class.h"
 #include "marshal.h"
@@ -989,6 +990,35 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 	return size;
 }
 
+#ifdef ENABLE_METADATA_UPDATE
+/* returns true if given index is not in bounds with provided table/index pair */
+gboolean
+mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index)
+{
+	if (G_LIKELY (token_index <= image->tables [table_index].rows))
+		return FALSE;
+
+	GList *list = image->delta_image;
+	MonoImage *dmeta;
+	MonoTableInfo *table;
+	int ridx;
+
+	uint32_t exposed_gen = mono_metadata_update_get_thread_generation ();
+	do {
+		if (!list)
+			return TRUE;
+		dmeta = list->data;
+		if (dmeta->generation > exposed_gen)
+			return TRUE;
+		list = list->next;
+		table = &dmeta->tables [table_index];
+		ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (table_index, token_index + 1)) - 1;
+	} while (ridx < 0 || ridx >= table->rows);
+
+	return FALSE;
+}
+#endif
+
 /**
  * mono_metadata_compute_table_bases:
  * \param meta metadata context to compute table values
@@ -1045,6 +1075,62 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
 	return mono_metadata_locate (meta, token >> 24, token & 0xffffff);
 }
 
+
+
+typedef MonoStreamHeader* (*MetadataHeapGetterFunc) (MonoImage*);
+
+#ifdef ENABLE_METADATA_UPDATE
+static MonoStreamHeader *
+get_string_heap (MonoImage *image)
+{
+	return &image->heap_strings;
+}
+
+static MonoStreamHeader *
+get_user_string_heap (MonoImage *image)
+{
+	return &image->heap_us;
+}
+
+static MonoStreamHeader *
+get_blob_heap (MonoImage *image)
+{
+	return &image->heap_blob;
+}
+
+static gboolean
+mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, guint32 orig_index, MonoImage **image_out, guint32 *index_out)
+{
+	g_assert (image_out);
+	g_assert (index_out);
+	MonoStreamHeader *heap = get_heap (base_image);
+	g_assert (orig_index >= heap->size && base_image->delta_image);
+
+	*image_out = base_image;
+	*index_out = orig_index;
+
+	guint32 prev_size = heap->size;
+
+	uint32_t current_gen = mono_metadata_update_get_thread_generation ();
+	GList *cur;
+	for (cur = base_image->delta_image; cur; cur = cur->next) {
+		*image_out = (MonoImage*)cur->data;
+		heap = get_heap (*image_out);
+
+		if ((*image_out)->generation > current_gen)
+			return FALSE;
+
+		/* FIXME: for non-minimal deltas we should just look in the last published image. */
+		if (G_LIKELY ((*image_out)->minimal_delta))
+			*index_out -= prev_size;
+		if (*index_out < heap->size)
+			break;
+		prev_size = heap->size;
+	}
+	return (cur != NULL);
+}
+#endif
+
 /**
  * mono_metadata_string_heap:
  * \param meta metadata context
@@ -1054,7 +1140,18 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
 const char *
 mono_metadata_string_heap (MonoImage *meta, guint32 index)
 {
-	g_assert (index < meta->heap_strings.size);
+#ifdef ENABLE_METADATA_UPDATE
+	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->delta_image)) {
+		MonoImage *dmeta;
+		guint32 dindex;
+		gboolean ok = mono_delta_heap_lookup (meta, &get_string_heap, index, &dmeta, &dindex);
+		g_assertf (ok, "Could not find token=0x%08x in string heap of assembly=%s and its delta images", index, meta && meta->name ? meta->name : "unknown image");
+		meta = dmeta;
+		index = dindex;
+	}
+#endif
+
+	g_assertf (index < meta->heap_strings.size, " index = 0x%08x size = 0x%08x meta=%s ", index, meta->heap_strings.size, meta && meta->name ? meta->name : "unknown image" );
 	g_return_val_if_fail (index < meta->heap_strings.size, "");
 	return meta->heap_strings.data + index;
 }
@@ -1080,7 +1177,24 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 		}
 		return img->sheap.data + index;
 	}
-	else if (G_UNLIKELY (!(index < meta->heap_strings.size))) {
+
+#ifdef ENABLE_METADATA_UPDATE
+	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->delta_image)) {
+		MonoImage *dmeta;
+		guint32 dindex;
+		gboolean ok = mono_delta_heap_lookup (meta, &get_string_heap, index, &dmeta, &dindex);
+		if (G_UNLIKELY (!ok)) {
+			const char *image_name = meta && meta->name ? meta->name : "unknown image";
+			mono_error_set_bad_image_by_name (error, image_name, "string heap index %ud out bounds %u: %s, also checked delta images", index, meta->heap_strings.size, image_name);
+				
+			return NULL;
+		}
+		meta = dmeta;
+		index = dindex;
+	}
+#endif
+
+	if (G_UNLIKELY (!(index < meta->heap_strings.size))) {
 		const char *image_name = meta && meta->name ? meta->name : "unknown image";
 		mono_error_set_bad_image_by_name (error, image_name, "string heap index %ud out bounds %u: %s", index, meta->heap_strings.size, image_name);
 		return NULL;
@@ -1097,6 +1211,16 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 const char *
 mono_metadata_user_string (MonoImage *meta, guint32 index)
 {
+#ifdef ENABLE_METADATA_UPDATE
+	if (G_UNLIKELY (index >= meta->heap_us.size && meta->delta_image)) {
+		MonoImage *dmeta;
+		guint32 dindex;
+		gboolean ok = mono_delta_heap_lookup (meta, &get_user_string_heap, index, &dmeta, &dindex);
+		g_assertf (ok, "Could not find token=0x%08x in user string heap of assembly=%s and its delta images", index, meta && meta->name ? meta->name : "unknown image");
+		meta = dmeta;
+		index = dindex;
+	}
+#endif
 	g_assert (index < meta->heap_us.size);
 	g_return_val_if_fail (index < meta->heap_us.size, "");
 	return meta->heap_us.data + index;
@@ -1116,6 +1240,16 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 	 * assertion is hit, consider updating caller to use
 	 * mono_metadata_blob_heap_null_ok and handling a null return value. */
 	g_assert (!(index == 0 && meta->heap_blob.size == 0));
+#ifdef ENABLE_METADATA_UPDATE
+	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->delta_image)) {
+		MonoImage *dmeta;
+		guint32 dindex;
+		gboolean ok = mono_delta_heap_lookup (meta, &get_blob_heap, index, &dmeta, &dindex);
+		g_assertf (ok, "Could not find token=0x%08x in blob heap of assembly=%s and its delta images", index, meta && meta->name ? meta->name : "unknown image");
+		meta = dmeta;
+		index = dindex;
+	}
+#endif
 	g_assert (index < meta->heap_blob.size);
 	return meta->heap_blob.data + index;
 }
@@ -1161,6 +1295,20 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 	}
 	if (G_UNLIKELY (index == 0 && meta->heap_blob.size == 0))
 		return NULL;
+#ifdef ENABLE_METADATA_UPDATE
+	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->delta_image)) {
+		MonoImage *dmeta;
+		guint32 dindex;
+		gboolean ok = mono_delta_heap_lookup (meta, &get_blob_heap, index, &dmeta, &dindex);
+		if (G_UNLIKELY(!ok)) {
+			const char *image_name = meta && meta->name ? meta->name : "unknown image";
+			mono_error_set_bad_image_by_name (error, image_name, "Could not find token=0x%08x in blob heap of assembly=%s and its delta images", index, image_name);
+			return NULL;
+		}
+		meta = dmeta;
+		index = dindex;
+	}
+#endif
 	if (G_UNLIKELY (!(index < meta->heap_blob.size))) {
 		const char *image_name = meta && meta->name ? meta->name : "unknown image";
 		mono_error_set_bad_image_by_name (error, image_name, "blob heap index %u out of bounds %u: %s", index, meta->heap_blob.size, image_name);
@@ -1178,6 +1326,7 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 const char *
 mono_metadata_guid_heap (MonoImage *meta, guint32 index)
 {
+	/* EnC TODO: lookup in MonoImage:delta_image_last.  Unlike the other heaps, the GUID heaps are always full in every delta, even in minimal delta images. */
 	--index;
 	index *= 16; /* adjust for guid size and 1-based index */
 	g_return_val_if_fail (index < meta->heap_guid.size, "");
@@ -1201,6 +1350,17 @@ dword_align (const unsigned char *ptr)
  */
 void
 mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
+{
+	mono_image_effective_table (&t, &idx);
+
+	mono_metadata_decode_row_raw (t, idx, res, res_size);
+}
+
+/**
+ * same as mono_metadata_decode_row, but ignores potential delta images
+ */
+void
+mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
@@ -1246,10 +1406,12 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 gboolean
 mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t, int idx, guint32 *res, int res_size, MonoError *error)
 {
+	const char *image_name = image && image->name ? image->name : "unknown image";
+
+	mono_image_effective_table (&t, &idx);
+
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
-
-	const char *image_name = image && image->name ? image->name : "unknown image";
 
 	if (G_UNLIKELY (! (idx < t->rows && idx >= 0))) {
 		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows: %s", idx, t->rows, image_name);
@@ -1320,10 +1482,13 @@ mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const M
 guint32
 mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 {
-	guint32 bitfield = t->size_bitfield;
 	int i;
 	const char *data;
 	int n;
+
+	mono_image_effective_table (&t, &idx);
+
+	guint32 bitfield = t->size_bitfield;
 	
 	g_assert (idx < t->rows);
 	g_assert (col < mono_metadata_table_count (bitfield));
@@ -1836,6 +2001,10 @@ mono_metadata_init (void)
 	mono_counters_register ("ImgSet Cache Hit", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_cache_hit);
 	mono_counters_register ("ImgSet Cache Miss", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_cache_miss);
 	mono_counters_register ("ImgSet Count", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_count);
+
+#ifdef ENABLE_METADATA_UPDATE
+	mono_metadata_update_init ();
+#endif
 }
 
 /**
@@ -1847,6 +2016,9 @@ mono_metadata_init (void)
 void
 mono_metadata_cleanup (void)
 {
+#ifdef ENABLE_METADATA_UPDATE
+	mono_metadata_update_cleanup ();
+#endif
 	g_hash_table_destroy (type_cache);
 	type_cache = NULL;
 	g_ptr_array_free (image_sets, TRUE);
@@ -4503,12 +4675,12 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	}
 
 	if (local_var_sig_tok) {
-		int idx = (local_var_sig_tok & 0xffffff)-1;
-		if (idx >= t->rows || idx < 0) {
-			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%8x", idx);
+		int idx = mono_metadata_token_index (local_var_sig_tok) - 1;
+		if (mono_metadata_table_bounds_check (m, MONO_TABLE_STANDALONESIG, idx)) {
+			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%08x", idx);
 			goto fail;
 		}
-		mono_metadata_decode_row (t, idx, cols, 1);
+		mono_metadata_decode_row (t, idx, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
 
 		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], error))
 			goto fail;
