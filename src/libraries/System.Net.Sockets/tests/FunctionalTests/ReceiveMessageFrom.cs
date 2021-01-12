@@ -47,7 +47,7 @@ namespace System.Net.Sockets.Tests
                 IPPacketInformation packetInformation = result.PacketInformation;
 
                 Assert.Equal(DatagramSize, result.ReceivedBytes);
-                Assert.Equal(Fletcher32.Checksum(sendBuffer), Fletcher32.Checksum(receiveBuffer));
+                AssertExtensions.SequenceEqual(sendBuffer, receiveBuffer);
                 Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
                 Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
             }

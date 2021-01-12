@@ -61,7 +61,5 @@ namespace System.Net.Sockets.Tests
             fletcher32.Add(bytes, offset, count);
             return fletcher32.Sum;
         }
-
-        public static uint Checksum(byte[] bytes) => Checksum(bytes, 0, bytes.Length);
     }
 }
