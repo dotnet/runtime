@@ -17,6 +17,8 @@ namespace System.Numerics
         private const int DecimalScaleFactorMask = 0x00FF0000;
         private const int DecimalSignMask = unchecked((int)0x80000000);
 
+        internal const int StackallocUInt32Limit = 64;
+
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
         internal readonly int _sign; // Do not rename (binary serialization)
@@ -475,34 +477,87 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The absolute value of the number</param>
         /// <param name="negative">The bool indicating the sign of the value.</param>
-        internal BigInteger(uint[] value, bool negative)
+        /// <param name="transfersOwnership">true if the BigInteger may assume ownership of the provided <paramref name="value"/>; otherwise, false.</param>
+        internal BigInteger(uint[] value, bool negative, bool transfersOwnership)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            Debug.Assert(value != null);
 
             int len;
 
-            // Try to conserve space as much as possible by checking for wasted leading uint[] entries
-            // sometimes the uint[] has leading zeros from bit manipulation operations & and ^
+            // Try to conserve space as much as possible by checking for wasted leading uint entries
+            // (sometimes the uint[] has leading zeros from bit manipulation operations & and ^).
             for (len = value.Length; len > 0 && value[len - 1] == 0; len--);
 
             if (len == 0)
+            {
                 this = s_bnZeroInt;
+            }
             // Values like (Int32.MaxValue+1) are stored as "0x80000000" and as such cannot be packed into _sign
             else if (len == 1 && value[0] < kuMaskHighBit)
             {
                 _sign = (negative ? -(int)value[0] : (int)value[0]);
                 _bits = null;
-                // Although Int32.MinValue fits in _sign, we represent this case differently for negate
-                if (_sign == int.MinValue)
+                if (_sign == int.MinValue) // although Int32.MinValue fits in _sign, we represent this case differently for negate
+                {
                     this = s_bnMinInt;
+                }
             }
             else
             {
                 _sign = negative ? -1 : +1;
-                _bits = new uint[len];
-                Array.Copy(value, _bits, len);
+                if (transfersOwnership && value.Length == len)
+                {
+                    _bits = value;
+                }
+                else
+                {
+                    _bits = new uint[len];
+                    Array.Copy(value, _bits, len);
+                }
             }
+
+            AssertValid();
+        }
+
+        /// <summary>
+        /// Constructor used during bit manipulation and arithmetic.
+        /// When possible the span will be packed into _sign to conserve space.
+        /// </summary>
+        /// <param name="value">The absolute value of the number</param>
+        /// <param name="negative">The bool indicating the sign of the value.</param>
+        private BigInteger(Span<uint> value, bool negative)
+        {
+            // Try to conserve space as much as possible by checking for wasted leading uint entries
+            // (sometimes the span has leading zeros from bit manipulation operations & and ^).
+            if (!value.IsEmpty && value[^1] == 0)
+            {
+                int len = value.Length - 1;
+                while (len > 0 && value[len - 1] == 0)
+                {
+                    len--;
+                }
+                value = value.Slice(0, len);
+            }
+
+            if (value.IsEmpty)
+            {
+                this = s_bnZeroInt;
+            }
+            else if (value.Length == 1 && value[0] < kuMaskHighBit) // values like (Int32.MaxValue+1) are stored as "0x80000000" and as such cannot be packed into _sign
+            {
+                _sign = negative ? -(int)value[0] : (int)value[0];
+                _bits = null;
+                if (_sign == int.MinValue) // although Int32.MinValue fits in _sign, we represent this case differently for negate
+                {
+                    this = s_bnMinInt;
+                }
+            }
+            else
+            {
+                _sign = negative ? -1 : +1;
+                _bits = value.ToArray();
+            }
+
             AssertValid();
         }
 
@@ -764,7 +819,7 @@ namespace System.Numerics
                 uint[] bits = BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), out rest);
 
                 remainder = dividend._sign < 0 ? -1 * rest : rest;
-                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0), transfersOwnership: true);
             }
 
             Debug.Assert(divisor._bits != null);
@@ -779,8 +834,8 @@ namespace System.Numerics
                 uint[] rest;
                 uint[] bits = BigIntegerCalculator.Divide(dividend._bits, divisor._bits, out rest);
 
-                remainder = new BigInteger(rest, dividend._sign < 0);
-                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+                remainder = new BigInteger(rest, dividend._sign < 0, transfersOwnership: true);
+                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0), transfersOwnership: true);
             }
         }
 
@@ -844,7 +899,7 @@ namespace System.Numerics
                 Debug.Assert(right._bits != null);
                 return left._sign != 0
                     ? BigIntegerCalculator.Gcd(right._bits, NumericsHelpers.Abs(left._sign))
-                    : new BigInteger(right._bits, false);
+                    : new BigInteger(right._bits, negative: false, transfersOwnership: false);
             }
 
             if (trivialRight)
@@ -852,7 +907,7 @@ namespace System.Numerics
                 Debug.Assert(left._bits != null);
                 return right._sign != 0
                     ? BigIntegerCalculator.Gcd(left._bits, NumericsHelpers.Abs(right._sign))
-                    : new BigInteger(left._bits, false);
+                    : new BigInteger(left._bits, negative: false, transfersOwnership: false);
             }
 
             Debug.Assert(left._bits != null && right._bits != null);
@@ -889,7 +944,7 @@ namespace System.Numerics
             }
 
             uint[] bits = BigIntegerCalculator.Gcd(leftBits, rightBits);
-            return new BigInteger(bits, false);
+            return new BigInteger(bits, negative: false, transfersOwnership: true);
         }
 
         public static BigInteger Max(BigInteger left, BigInteger right)
@@ -935,7 +990,7 @@ namespace System.Numerics
                               trivialExponent ? BigIntegerCalculator.Pow(value._bits!, NumericsHelpers.Abs(exponent._sign), modulus._bits!) :
                               BigIntegerCalculator.Pow(value._bits!, exponent._bits!, modulus._bits!);
 
-                return new BigInteger(bits, value._sign < 0 && !exponent.IsEven);
+                return new BigInteger(bits, value._sign < 0 && !exponent.IsEven, transfersOwnership: true);
             }
         }
 
@@ -967,7 +1022,7 @@ namespace System.Numerics
                         ? BigIntegerCalculator.Pow(NumericsHelpers.Abs(value._sign), NumericsHelpers.Abs(exponent))
                         : BigIntegerCalculator.Pow(value._bits!, NumericsHelpers.Abs(exponent));
 
-            return new BigInteger(bits, value._sign < 0 && (exponent & 1) != 0);
+            return new BigInteger(bits, value._sign < 0 && (exponent & 1) != 0, transfersOwnership: true);
         }
 
         public override int GetHashCode()
@@ -1412,26 +1467,40 @@ namespace System.Numerics
 
         /// <summary>
         /// Return the value of this BigInteger as a little-endian twos-complement
-        /// uint array, using the fewest number of uints possible. If the value is zero,
-        /// return an array of one uint whose element is 0.
+        /// uint span, using the fewest number of uints possible. If the value is zero,
+        /// return a span of one uint whose element is 0.
         /// </summary>
-        /// <returns></returns>
-        private uint[] ToUInt32Array()
+        private Span<uint> ToUInt32Span(Span<uint> scratch)
         {
-            if (_bits == null && _sign == 0)
-                return new uint[] { 0 };
+            Debug.Assert(!scratch.IsEmpty);
 
-            uint[] dwords;
+            if (_bits == null && _sign == 0)
+            {
+                scratch[0] = 0;
+                return scratch.Slice(0, 1);
+            }
+
+            Span<uint> dwords = scratch;
+            bool dwordsIsScratch = true;
             uint highDWord;
 
             if (_bits == null)
             {
-                dwords = new uint[] { unchecked((uint)_sign) };
+                dwords[0] = unchecked((uint)_sign);
+                dwords = dwords.Slice(0, 1);
                 highDWord = (_sign < 0) ? uint.MaxValue : 0;
             }
             else if (_sign == -1)
             {
-                dwords = (uint[])_bits.Clone();
+                if (dwords.Length >= _bits.Length)
+                {
+                    _bits.AsSpan().CopyTo(dwords);
+                    dwords = dwords.Slice(0, _bits.Length);
+                }
+                else
+                {
+                    dwords = (uint[])_bits.Clone();
+                }
                 NumericsHelpers.DangerousMakeTwosComplement(dwords);  // Mutates dwords
                 highDWord = uint.MaxValue;
             }
@@ -1439,22 +1508,37 @@ namespace System.Numerics
             {
                 dwords = _bits;
                 highDWord = 0;
+                dwordsIsScratch = false;
             }
 
-            // Find highest significant byte
+            // Find highest significant byte and ensure high bit is 0 if positive, 1 if negative
             int msb;
-            for (msb = dwords.Length - 1; msb > 0; msb--)
-            {
-                if (dwords[msb] != highDWord) break;
-            }
-            // Ensure high bit is 0 if positive, 1 if negative
+            for (msb = dwords.Length - 1; msb > 0 && dwords[msb] == highDWord; msb--);
             bool needExtraByte = (dwords[msb] & 0x80000000) != (highDWord & 0x80000000);
 
-            uint[] trimmed = new uint[msb + 1 + (needExtraByte ? 1 : 0)];
-            Array.Copy(dwords, trimmed, msb + 1);
+            int length = msb + 1 + (needExtraByte ? 1 : 0);
+            bool copyDwordsToScratch = true;
+            if (length <= scratch.Length)
+            {
+                scratch = scratch.Slice(0, length);
+                copyDwordsToScratch = !dwordsIsScratch;
+            }
+            else
+            {
+                scratch = new uint[length];
+            }
 
-            if (needExtraByte) trimmed[trimmed.Length - 1] = highDWord;
-            return trimmed;
+            if (copyDwordsToScratch)
+            {
+                dwords.Slice(0, msb + 1).CopyTo(scratch);
+            }
+
+            if (needExtraByte)
+            {
+                scratch[^1] = highDWord;
+            }
+
+            return scratch;
         }
 
         public override string ToString()
@@ -1496,14 +1580,14 @@ namespace System.Numerics
             {
                 Debug.Assert(rightBits != null);
                 uint[] bits = BigIntegerCalculator.Add(rightBits, NumericsHelpers.Abs(leftSign));
-                return new BigInteger(bits, leftSign < 0);
+                return new BigInteger(bits, leftSign < 0, transfersOwnership: true);
             }
 
             if (trivialRight)
             {
                 Debug.Assert(leftBits != null);
                 uint[] bits = BigIntegerCalculator.Add(leftBits, NumericsHelpers.Abs(rightSign));
-                return new BigInteger(bits, leftSign < 0);
+                return new BigInteger(bits, leftSign < 0, transfersOwnership: true);
             }
 
             Debug.Assert(leftBits != null && rightBits != null);
@@ -1511,12 +1595,12 @@ namespace System.Numerics
             if (leftBits.Length < rightBits.Length)
             {
                 uint[] bits = BigIntegerCalculator.Add(rightBits, leftBits);
-                return new BigInteger(bits, leftSign < 0);
+                return new BigInteger(bits, leftSign < 0, transfersOwnership: true);
             }
             else
             {
                 uint[] bits = BigIntegerCalculator.Add(leftBits, rightBits);
-                return new BigInteger(bits, leftSign < 0);
+                return new BigInteger(bits, leftSign < 0, transfersOwnership: true);
             }
         }
 
@@ -1544,14 +1628,14 @@ namespace System.Numerics
             {
                 Debug.Assert(rightBits != null);
                 uint[] bits = BigIntegerCalculator.Subtract(rightBits, NumericsHelpers.Abs(leftSign));
-                return new BigInteger(bits, leftSign >= 0);
+                return new BigInteger(bits, leftSign >= 0, transfersOwnership: true);
             }
 
             if (trivialRight)
             {
                 Debug.Assert(leftBits != null);
                 uint[] bits = BigIntegerCalculator.Subtract(leftBits, NumericsHelpers.Abs(rightSign));
-                return new BigInteger(bits, leftSign < 0);
+                return new BigInteger(bits, leftSign < 0, transfersOwnership: true);
             }
 
             Debug.Assert(leftBits != null && rightBits != null);
@@ -1559,12 +1643,12 @@ namespace System.Numerics
             if (BigIntegerCalculator.Compare(leftBits, rightBits) < 0)
             {
                 uint[] bits = BigIntegerCalculator.Subtract(rightBits, leftBits);
-                return new BigInteger(bits, leftSign >= 0);
+                return new BigInteger(bits, leftSign >= 0, transfersOwnership: true);
             }
             else
             {
                 uint[] bits = BigIntegerCalculator.Subtract(leftBits, rightBits);
-                return new BigInteger(bits, leftSign < 0);
+                return new BigInteger(bits, leftSign < 0, transfersOwnership: true);
             }
         }
 
@@ -1821,8 +1905,8 @@ namespace System.Numerics
                 return left._sign & right._sign;
             }
 
-            uint[] x = left.ToUInt32Array();
-            uint[] y = right.ToUInt32Array();
+            Span<uint> x = left.ToUInt32Span(stackalloc uint[StackallocUInt32Limit / 2]);
+            Span<uint> y = right.ToUInt32Span(stackalloc uint[StackallocUInt32Limit / 2]);
             uint[] z = new uint[Math.Max(x.Length, y.Length)];
             uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
             uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
@@ -1848,8 +1932,8 @@ namespace System.Numerics
                 return left._sign | right._sign;
             }
 
-            uint[] x = left.ToUInt32Array();
-            uint[] y = right.ToUInt32Array();
+            Span<uint> x = left.ToUInt32Span(stackalloc uint[StackallocUInt32Limit / 2]);
+            Span<uint> y = right.ToUInt32Span(stackalloc uint[StackallocUInt32Limit / 2]);
             uint[] z = new uint[Math.Max(x.Length, y.Length)];
             uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
             uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
@@ -1870,8 +1954,8 @@ namespace System.Numerics
                 return left._sign ^ right._sign;
             }
 
-            uint[] x = left.ToUInt32Array();
-            uint[] y = right.ToUInt32Array();
+            Span<uint> x = left.ToUInt32Span(stackalloc uint[StackallocUInt32Limit / 2]);
+            Span<uint> y = right.ToUInt32Span(stackalloc uint[StackallocUInt32Limit / 2]);
             uint[] z = new uint[Math.Max(x.Length, y.Length)];
             uint xExtend = (left._sign < 0) ? uint.MaxValue : 0;
             uint yExtend = (right._sign < 0) ? uint.MaxValue : 0;
@@ -1888,22 +1972,40 @@ namespace System.Numerics
 
         public static BigInteger operator <<(BigInteger value, int shift)
         {
-            if (shift == 0) return value;
-            else if (shift == int.MinValue) return ((value >> int.MaxValue) >> 1);
-            else if (shift < 0) return value >> -shift;
+            if (shift == 0)
+                return value;
 
-            int digitShift = shift / kcbitUint;
-            int smallShift = shift - (digitShift * kcbitUint);
+            if (shift == int.MinValue)
+                return (value >> int.MaxValue) >> 1;
 
-            uint[] xd; int xl; bool negx;
-            negx = GetPartsForBitManipulation(ref value, out xd, out xl);
+            if (shift < 0)
+                return value >> -shift;
 
-            int zl = xl + digitShift + 1;
-            uint[] zd = new uint[zl];
+            (int digitShift, int smallShift) = Math.DivRem(shift, kcbitUint);
+
+            Span<uint> xd = stackalloc uint[1];
+            bool negx = GetPartsForBitManipulation(ref value, ref xd);
+
+            int zl = xd.Length + digitShift + 1;
+            uint[]? zdArray = null;
+            Span<uint> zd = stackalloc uint[0];
+            if (zl <= StackallocUInt32Limit)
+            {
+                zd = stackalloc uint[StackallocUInt32Limit].Slice(0, zl);
+                if (digitShift != 0)
+                {
+                    zd.Slice(0, digitShift).Clear();
+                    zd[^1] = 0;
+                }
+            }
+            else
+            {
+                zd = zdArray = new uint[zl];
+            }
 
             if (smallShift == 0)
             {
-                for (int i = 0; i < xl; i++)
+                for (int i = 0; i < xd.Length; i++)
                 {
                     zd[i + digitShift] = xd[i];
                 }
@@ -1913,7 +2015,7 @@ namespace System.Numerics
                 int carryShift = kcbitUint - smallShift;
                 uint carry = 0;
                 int i;
-                for (i = 0; i < xl; i++)
+                for (i = 0; i < xd.Length; i++)
                 {
                     uint rot = xd[i];
                     zd[i + digitShift] = rot << smallShift | carry;
@@ -1921,40 +2023,67 @@ namespace System.Numerics
                 }
                 zd[i + digitShift] = carry;
             }
-            return new BigInteger(zd, negx);
+
+            return zdArray is null ?
+                new BigInteger(zd, negx) :
+                new BigInteger(zdArray, negx, transfersOwnership: true);
         }
 
         public static BigInteger operator >>(BigInteger value, int shift)
         {
-            if (shift == 0) return value;
-            else if (shift == int.MinValue) return ((value << int.MaxValue) << 1);
-            else if (shift < 0) return value << -shift;
+            if (shift == 0)
+                return value;
 
-            int digitShift = shift / kcbitUint;
-            int smallShift = shift - (digitShift * kcbitUint);
+            if (shift == int.MinValue)
+                return value << int.MaxValue << 1;
 
-            uint[] xd; int xl; bool negx;
-            negx = GetPartsForBitManipulation(ref value, out xd, out xl);
+            if (shift < 0)
+                return value << -shift;
+
+            (int digitShift, int smallShift) = Math.DivRem(shift, kcbitUint);
+
+            Span<uint> stackallocedXd = stackalloc uint[1];
+            Span<uint> xd = stackallocedXd;
+            bool negx = GetPartsForBitManipulation(ref value, ref xd);
 
             if (negx)
             {
-                if (shift >= (kcbitUint * xl))
+                if (shift >= (kcbitUint * xd.Length))
                 {
                     return MinusOne;
                 }
-                uint[] temp = new uint[xl];
-                Array.Copy(xd /* sourceArray */, 0 /* sourceIndex */, temp /* destinationArray */, 0 /* destinationIndex */, xl /* length */);  // Make a copy of immutable value._bits
-                xd = temp;
+
+                if (xd != stackallocedXd)
+                {
+                    // make a copy of the part extracted from GetPartsForBitManipulation
+                    if (xd.Length <= StackallocUInt32Limit)
+                    {
+                        stackallocedXd = stackalloc uint[StackallocUInt32Limit].Slice(0, xd.Length);
+                        xd.CopyTo(stackallocedXd);
+                        xd = stackallocedXd;
+                    }
+                    else
+                    {
+                        xd = xd.ToArray();
+                    }
+                }
+
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
             }
 
-            int zl = xl - digitShift;
-            if (zl < 0) zl = 0;
-            uint[] zd = new uint[zl];
+            int zl = xd.Length - digitShift;
+            uint[]? zdArray = null;
+            Span<uint> zd = stackalloc uint[0];
+            if (zl > 0)
+            {
+                zd = zl <= StackallocUInt32Limit ?
+                    stackalloc uint[StackallocUInt32Limit].Slice(0, zl) :
+                    zdArray = new uint[zl];
+            }
 
             if (smallShift == 0)
             {
-                for (int i = xl - 1; i >= digitShift; i--)
+                for (int i = xd.Length - 1; i >= digitShift; i--)
                 {
                     zd[i - digitShift] = xd[i];
                 }
@@ -1963,10 +2092,10 @@ namespace System.Numerics
             {
                 int carryShift = kcbitUint - smallShift;
                 uint carry = 0;
-                for (int i = xl - 1; i >= digitShift; i--)
+                for (int i = xd.Length - 1; i >= digitShift; i--)
                 {
                     uint rot = xd[i];
-                    if (negx && i == xl - 1)
+                    if (negx && i == xd.Length - 1)
                         // Sign-extend the first shift for negative ints then let the carry propagate
                         zd[i - digitShift] = (rot >> smallShift) | (0xFFFFFFFF << carryShift);
                     else
@@ -1978,7 +2107,10 @@ namespace System.Numerics
             {
                 NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
             }
-            return new BigInteger(zd, negx);
+
+            return zdArray is null ?
+                new BigInteger(zd, negx) :
+                new BigInteger(zdArray, negx, transfersOwnership: true);
         }
 
         public static BigInteger operator ~(BigInteger value)
@@ -2035,14 +2167,14 @@ namespace System.Numerics
             {
                 Debug.Assert(right._bits != null);
                 uint[] bits = BigIntegerCalculator.Multiply(right._bits, NumericsHelpers.Abs(left._sign));
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0), transfersOwnership: true);
             }
 
             if (trivialRight)
             {
                 Debug.Assert(left._bits != null);
                 uint[] bits = BigIntegerCalculator.Multiply(left._bits, NumericsHelpers.Abs(right._sign));
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0), transfersOwnership: true);
             }
 
             Debug.Assert(left._bits != null && right._bits != null);
@@ -2050,18 +2182,18 @@ namespace System.Numerics
             if (left._bits == right._bits)
             {
                 uint[] bits = BigIntegerCalculator.Square(left._bits);
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0), transfersOwnership: true);
             }
 
             if (left._bits.Length < right._bits.Length)
             {
                 uint[] bits = BigIntegerCalculator.Multiply(right._bits, left._bits);
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0), transfersOwnership: true);
             }
             else
             {
                 uint[] bits = BigIntegerCalculator.Multiply(left._bits, right._bits);
-                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
+                return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0), transfersOwnership: true);
             }
         }
 
@@ -2089,7 +2221,7 @@ namespace System.Numerics
             {
                 Debug.Assert(dividend._bits != null);
                 uint[] bits = BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign));
-                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0), transfersOwnership: true);
             }
 
             Debug.Assert(dividend._bits != null && divisor._bits != null);
@@ -2101,7 +2233,7 @@ namespace System.Numerics
             else
             {
                 uint[] bits = BigIntegerCalculator.Divide(dividend._bits, divisor._bits);
-                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
+                return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0), transfersOwnership: true);
             }
         }
 
@@ -2139,7 +2271,7 @@ namespace System.Numerics
                 return dividend;
             }
             uint[] bits = BigIntegerCalculator.Remainder(dividend._bits, divisor._bits);
-            return new BigInteger(bits, dividend._sign < 0);
+            return new BigInteger(bits, dividend._sign < 0, transfersOwnership: true);
         }
 
         public static bool operator <(BigInteger left, BigInteger right)
@@ -2358,32 +2490,23 @@ namespace System.Numerics
         /// </summary>
         /// <param name="x"></param>
         /// <param name="xd">
-        /// The UInt32 array containing the entire big integer in "large" (denormalized) form.
+        /// The UInt32 span containing the entire big integer in "large" (denormalized) form.
         /// E.g., the number one (1) and negative one (-1) are both stored as 0x00000001
         /// BigInteger values Int32.MinValue &lt; x &lt;= Int32.MaxValue are converted to this
-        /// format for convenience.
+        /// format for convenience. Expecting to be passed a writeable span of length 1.
         /// </param>
-        /// <param name="xl">The length of xd.</param>
         /// <returns>True for negative numbers.</returns>
-        private static bool GetPartsForBitManipulation(ref BigInteger x, out uint[] xd, out int xl)
+        private static bool GetPartsForBitManipulation(ref BigInteger x, ref Span<uint> xd)
         {
+            Debug.Assert(xd.Length == 1);
+
             if (x._bits == null)
             {
-                if (x._sign < 0)
-                {
-                    xd = new uint[] { (uint)-x._sign };
-                }
-                else
-                {
-                    xd = new uint[] { (uint)x._sign };
-                }
-
-                xl = 1;
+                xd[0] = (uint)(x._sign < 0 ? -x._sign : x._sign);
             }
             else
             {
                 xd = x._bits;
-                xl = x._bits.Length;
             }
 
             return x._sign < 0;
