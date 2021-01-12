@@ -343,8 +343,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // block, eg a catch return, and so we won't see either path reachable.
     // We'll handle those as ambiguous as well.
     //
-    // * It's also possible that the pred is a switch; we could handle that
-    // but don't, currently.
+    // * It's also possible that the pred is a switch; we will treat switch
+    // preds as ambiguous as well.
     //
     // For true preds and false preds we can reroute flow. It may turn out that
     // one of the preds falls through to block. We would prefer not to introduce
@@ -373,12 +373,13 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         BasicBlock* const predBlock = pred->getBlock();
         numPreds++;
 
-        // We don't do switch updates, yet.
+        // Treat switch preds as ambiguous for now.
         //
         if (predBlock->bbJumpKind == BBJ_SWITCH)
         {
-            JITDUMP(FMT_BB " has switch pred " FMT_BB ", not optimizing\n", block->bbNum, predBlock->bbNum);
-            return false;
+            JITDUMP(FMT_BB " is a switch pred\n", predBlock->bbNum);
+            numAmbiguousPreds++;
+            continue;
         }
 
         const bool isTruePred =
@@ -491,6 +492,13 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
         BasicBlock* const predBlock = pred->getBlock();
+
+        if (predBlock->bbJumpKind == BBJ_SWITCH)
+        {
+            // Skip over switch preds, they will continue to flow to block.
+            //
+            continue;
+        }
 
         const bool isTruePred =
             ((predBlock == domBlock) && (trueSuccessor == block)) || optReachable(trueSuccessor, predBlock);
