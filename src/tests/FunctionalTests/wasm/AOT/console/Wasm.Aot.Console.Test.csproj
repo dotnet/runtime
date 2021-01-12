@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RunAOTCompilation>true</RunAOTCompilation>
-    <WasmModeSpecificPath>\aot\console\</WasmModeSpecificPath>
+    <WasmCopyAppZipToHelixTestDir>true</WasmCopyAppZipToHelixTestDir>
+    <WasmHelixTestAppRelativeDir>\aot\console\</WasmHelixTestAppRelativeDir>
     <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
   </PropertyGroup>

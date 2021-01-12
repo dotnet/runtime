@@ -14,21 +14,4 @@
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
     </ItemGroup>
   </Target>
-
-  <Target Name="CopySampleAppToHelixTestDir"
-          Condition="'$(ArchiveTests)' == 'true'"
-          AfterTargets="Build"
-          DependsOnTargets="Publish">
-    <PropertyGroup>
-      <!-- Helix properties -->
-      <!-- AnyCPU as Platform-->
-      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
-      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
-      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/$(MSBuildProjectName)/</HelixArchiveRunOnlyAppsDir>
-      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
-    </PropertyGroup>
-    <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
-    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
-  </Target>
 </Project>

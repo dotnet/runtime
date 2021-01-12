@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RunAOTCompilation>false</RunAOTCompilation>
-    <WasmModeSpecificPath>\interpreter\browser\</WasmModeSpecificPath>
+    <WasmCopyAppZipToHelixTestDir>true</WasmCopyAppZipToHelixTestDir>
+    <WasmHelixTestAppRelativeDir>\interpreter\browser\</WasmHelixTestAppRelativeDir>
     <WasmMainJSPath>runtime.js</WasmMainJSPath>
     <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>

@@ -26,4 +26,22 @@
          Properties="Configuration=Debug"
          Targets="Build;Publish"/>
   </Target>
+
+  <Target Name="CopyAppZipToHelixTestDir"
+          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish">
+    <PropertyGroup>
+      <WasmHelixTestAppRelativeDir Condition="'$(WasmHelixTestAppRelativeDir)' == ''">$(MSBuildProjectName)</WasmHelixTestAppRelativeDir>
+      <!-- Helix properties -->
+      <!-- AnyCPU as Platform-->
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/$(WasmHelixTestAppRelativeDir)/</HelixArchiveRunOnlyAppsDir>
+      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
+    </PropertyGroup>
+    <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
+    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
+  </Target>
 </Project>
