@@ -1268,7 +1268,7 @@ Possible constructors are: '{2}'.</value>
     <value>The user has chosen to disable speech from running on the machine, or the system is not set up to run speech.</value>
   </data>
   <data name="SapiErrorRecognizerNotFound" xml:space="preserve">
-    <value>No recognizer is installed. </value>
+    <value>No recognizer is installed.</value>
   </data>
   <data name="SapiErrorAudioNotFound" xml:space="preserve">
     <value>No audio device is installed.</value>
