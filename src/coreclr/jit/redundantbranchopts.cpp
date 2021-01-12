@@ -11,6 +11,14 @@
 //
 PhaseStatus Compiler::optRedundantBranches()
 {
+
+#if DEBUG
+    if (verbose)
+    {
+        fgDispBasicBlocks(verboseTrees);
+    }
+#endif // DEBUG
+
     bool madeChanges = false;
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
@@ -36,6 +44,13 @@ PhaseStatus Compiler::optRedundantBranches()
     {
         block->bbFlags &= ~BBF_VISITED;
     }
+
+#if DEBUG
+    if (verbose && madeChanges)
+    {
+        fgDispBasicBlocks(verboseTrees);
+    }
+#endif // DEBUG
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -86,11 +101,6 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
     while (domBlock != nullptr)
     {
-        if (prevBlock == block)
-        {
-            JITDUMP("\nChecking " FMT_BB " for redundancy\n", block->bbNum);
-        }
-
         // Check the current dominator
         //
         if (domBlock->bbJumpKind == BBJ_COND)
@@ -117,7 +127,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
-                    JITDUMP(FMT_BB " has dominating relop with same liberal VN:\n", domBlock->bbNum);
+                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with same liberal VN:\n", domBlock->bbNum,
+                            block->bbNum);
                     DISPTREE(domCmpTree);
                     JITDUMP(" Redundant compare; current relop:\n");
                     DISPTREE(tree);
@@ -164,8 +175,12 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     {
                         // No apparent path from the dominating BB.
                         //
-                        // If domBlock or block is in an EH handler we may fail to find a path.
-                        // Just ignore those cases.
+                        // We should rarely see this given that optReachable is returning
+                        // up to date results, but as we optimize we create unreachable blocks,
+                        // and that can lead to cases where we can't find paths. That means we may be
+                        // optimizing code that is now unreachable, but attempts to fix or avoid
+                        // doing that lead to more complications, and it isn't that common.
+                        // So we just tolerate it.
                         //
                         // No point in looking further up the tree.
                         //
@@ -254,10 +269,11 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     //
     if (domBlock != block->bbIDom)
     {
+        JITDUMP(" -- not idom, so no threading\n");
         return false;
     }
 
-    JITDUMP("Both successors of IDom " FMT_BB " reach " FMT_BB " -- attemting jump threading\n", domBlock->bbNum,
+    JITDUMP("Both successors of IDom " FMT_BB " reach " FMT_BB " -- attempting jump threading\n", domBlock->bbNum,
             block->bbNum);
 
     // Since flow is going to bypass block, make sure there
@@ -373,6 +389,12 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
         if (isTruePred == isFalsePred)
         {
             // Either both reach, or neither reaches.
+            //
+            // We should rarely see (false,false) given that optReachable is returning
+            // up to date results, but as we optimize we create unreachable blocks,
+            // and that can lead to cases where we can't find paths. That means we may be
+            // optimizing code that is now unreachable, but attempts to fix or avoid doing that
+            // lead to more complications, and it isn't that common. So we tolerate it.
             //
             JITDUMP(FMT_BB " is an ambiguous pred\n", predBlock->bbNum);
             numAmbiguousPreds++;
@@ -570,7 +592,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
 //
 // Notes:
 //    Like fgReachable, but computed on demand (and so accurate given
-//    the current flow graph), and also consders paths involving EH.
+//    the current flow graph), and also considers paths involving EH.
 //
 //    This may overstate "true" reachability in methods where there are
 //    finallies with multiple continuations.
