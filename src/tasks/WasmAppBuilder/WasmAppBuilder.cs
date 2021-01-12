@@ -238,7 +238,7 @@ public class WasmAppBuilder : Task
 
         if (ExtraFilesToDeploy != null)
         {
-            foreach (ITaskItem2 item in ExtraFilesToDeploy!)
+            foreach (ITaskItem item in ExtraFilesToDeploy!)
             {
                 string src = item.ItemSpec;
 
