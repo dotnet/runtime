@@ -34,7 +34,7 @@ namespace SampleSynthesisTests
             {
                 using (SpeechRecognizer recognizer = new SpeechRecognizer())
                 {
-                    RecognizerState _ = recognizer.State; // force initialization
+                    _ = recognizer.State; // force initialization
                 }
             }
             catch (Exception ex) when (ex is PlatformNotSupportedException || ex is InvalidOperationException)
