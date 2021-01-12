@@ -17,8 +17,8 @@ using Xunit;
 
 namespace SampleSynthesisTests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // No SAPI on Nano or Server Core
-    [SkipOnMono("No SAPI on Mono")]
+ //   [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // No SAPI on Nano or Server Core
+ //   [SkipOnMono("No SAPI on Mono")]
     public static class SpeechRecognizerTests
     {
         private static bool RecognizerInstalledAndEnabled()
@@ -42,16 +42,15 @@ namespace SampleSynthesisTests
                 // PlatformNotSupportedException : No recognizer is installed.
                 // PlatformNotSupportedException : The user has chosen to disable speech from running on the machine, or the system is not set up to run speech.
                 // InvalidOperationException : No audio device is installed.
-                //return false;
-                // TEMPORARY -- to see error messages
-                return true;
+                return false;
             }
 
             return true;
         }
 
-        [ConditionalFact(nameof(RecognizerInstalledAndEnabled))]
-        [OuterLoop] // Pops UI
+     //   [ConditionalFact(nameof(RecognizerInstalledAndEnabled))]
+     // TEMPORARY   [OuterLoop] // Pops UI
+        [Fact]
         public static void SpeechRecognizer()
         {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
