@@ -23,6 +23,8 @@ namespace System
         private const string TimeZoneEnvironmentVariable = "TZ";
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
         private const string FallbackCultureName = "en-US";
+        private readonly string? _standardAbbrevName;
+        private readonly string? _daylightAbbrevName;
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {

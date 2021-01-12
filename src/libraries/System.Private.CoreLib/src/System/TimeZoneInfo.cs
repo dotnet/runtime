@@ -41,9 +41,7 @@ namespace System
         private readonly string _id;
         private readonly string? _displayName;
         private readonly string? _standardDisplayName;
-        private readonly string? _standardAbbrevName;
         private readonly string? _daylightDisplayName;
-        private readonly string? _daylightAbbrevName;
         private readonly TimeSpan _baseUtcOffset;
         private readonly bool _supportsDaylightSavingTime;
         private readonly AdjustmentRule[]? _adjustmentRules;
