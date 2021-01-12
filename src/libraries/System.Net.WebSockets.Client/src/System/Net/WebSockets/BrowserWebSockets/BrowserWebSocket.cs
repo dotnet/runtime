@@ -56,8 +56,9 @@ namespace System.Net.WebSockets
             Created = 0,
             Connecting = 1,
             Connected = 2,
-            Disposed = 3,
-            Aborted = 4
+            CloseSent = 3,
+            Disposed = 4,
+            Aborted = 5,
         }
 
         private bool _disposed;
@@ -90,6 +91,7 @@ namespace System.Net.WebSockets
                     InternalState.Connecting => WebSocketState.Connecting,
                     InternalState.Aborted => WebSocketState.Aborted,
                     InternalState.Disposed => WebSocketState.Closed,
+                    InternalState.CloseSent => WebSocketState.CloseSent,
                     _ => WebSocketState.Closed
                 };
             }
@@ -326,7 +328,7 @@ namespace System.Net.WebSockets
             if (!_disposed)
             {
                 if (_state < (int)InternalState.Aborted) {
-                    Interlocked.Exchange(ref _state, (int)InternalState.Disposed);
+                    _state = (int)InternalState.Disposed;
                 }
                 _disposed = true;
 
@@ -529,6 +531,8 @@ namespace System.Net.WebSockets
                 _innerWebSocketCloseStatus = closeStatus;
                 _innerWebSocketCloseStatusDescription = statusDescription;
                 _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
+                if (_state != (int)InternalState.Connecting)
+                    _state = (int)InternalState.CloseSent;
                 return _tcsClose.Task;
             }
             catch (Exception exc)
