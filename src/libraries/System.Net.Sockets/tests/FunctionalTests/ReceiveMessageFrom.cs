@@ -79,9 +79,13 @@ namespace System.Net.Sockets.Tests
         public ReceiveMessageFrom_Eap(ITestOutputHelper output) : base(output) { }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void ReceiveSentMessages_ReuseEventArgs_Success(bool ipv4)
+        [InlineData(false, 0)]
+        [InlineData(false, 1)]
+        [InlineData(false, 2)]
+        [InlineData(true, 0)]
+        [InlineData(true, 1)]
+        [InlineData(true, 2)]
+        public void ReceiveSentMessages_ReuseEventArgs_Success(bool ipv4, int bufferMode)
         {
             const int DatagramsToSend = 30;
             const int TimeoutMs = 30_000;
@@ -117,23 +121,18 @@ namespace System.Net.Sockets.Tests
 
             for (int i = 0; i < DatagramsToSend; i++)
             {
-                // apply bufferMode=0 two times, then bufferMode=1 two times etc.
-                int bufferMode = i / 2 % 3;
                 switch (bufferMode)
                 {
                     case 0: // single buffer
-                        saea.BufferList = null;
                         saea.SetBuffer(new byte[1024], 0, 1024);
                         break;
                     case 1: // single buffer in buffer list
-                        saea.SetBuffer(default);
                         saea.BufferList = new List<ArraySegment<byte>>
                         {
                             new ArraySegment<byte>(new byte[1024])
                         };
                         break;
                     case 2: // multiple buffers in buffer list
-                        saea.SetBuffer(default);
                         saea.BufferList = new List<ArraySegment<byte>>
                         {
                             new ArraySegment<byte>(new byte[512]),
