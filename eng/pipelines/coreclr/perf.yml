@@ -19,6 +19,9 @@ trigger:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
+pr:
+  -master
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
