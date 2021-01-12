@@ -14,7 +14,6 @@ var BindingSupportLib = {
 		mono_bindings_init: function (binding_asm) {
 			this.BINDING_ASM = binding_asm;
 		},
-		mono_sab_supported: typeof SharedArrayBuffer !== "undefined",
 
 		export_functions: function (module) {
 			module ["mono_bindings_init"] = BINDING.mono_bindings_init.bind(BINDING);
@@ -40,7 +39,7 @@ var BindingSupportLib = {
 			DataView.prototype[Symbol.for("wasm type")] = 3;
 			Function.prototype[Symbol.for("wasm type")] =  4;
 			Map.prototype[Symbol.for("wasm type")] = 5;
-			if (BINDING.mono_sab_supported)
+			if (typeof SharedArrayBuffer !== 'undefined')
 				SharedArrayBuffer.prototype[Symbol.for("wasm type")] =  6;
 			Int8Array.prototype[Symbol.for("wasm type")] = 10;
 			Uint8Array.prototype[Symbol.for("wasm type")] = 11;
@@ -488,7 +487,7 @@ var BindingSupportLib = {
 			}
 		},
 		has_backing_array_buffer: function (js_obj) {
-			return BINDING.mono_sab_supported
+			return typeof SharedArrayBuffer !== 'undefined'
 				? js_obj.buffer instanceof ArrayBuffer || js_obj.buffer instanceof SharedArrayBuffer
 				: js_obj.buffer instanceof ArrayBuffer;
 		},

@@ -6367,6 +6367,8 @@ protected:
 
     void optFindNaturalLoops();
 
+    void optIdentifyLoopsForAlignment();
+
     // Ensures that all the loops in the loop nest rooted at "loopInd" (an index into the loop table) are 'canonical' --
     // each loop has a unique "top."  Returns "true" iff the flowgraph has been modified.
     bool optCanonicalizeLoopNest(unsigned char loopInd);
@@ -9035,6 +9037,43 @@ public:
                               // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
         bool dspGCtbls;       // Display the GC tables
 #endif
+
+// Default numbers used to perform loop alignment. All the numbers are choosen
+// based on experimenting with various benchmarks.
+
+// Default minimum loop block weight required to enable loop alignment.
+#define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 4
+
+// By default a loop will be aligned at 32B address boundary to get better
+// performance as per architecture manuals.
+#define DEFAULT_ALIGN_LOOP_BOUNDARY 0x20
+
+// For non-adaptive loop alignment, by default, only align a loop whose size is
+// at most 3 times the alignment block size. If the loop is bigger than that, it is most
+// likely complicated enough that loop alignment will not impact performance.
+#define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
+
+#ifdef DEBUG
+        // Loop alignment variables
+
+        // If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.
+        bool compJitAlignLoopForJcc;
+#endif
+        // For non-adaptive alignment, minimum loop size (in bytes) for which alignment will be done.
+        unsigned short compJitAlignLoopMaxCodeSize;
+
+        // Minimum weight needed for the first block of a loop to make it a candidate for alignment.
+        unsigned short compJitAlignLoopMinBlockWeight;
+
+        // For non-adaptive alignment, address boundary (power of 2) at which loop alignment should
+        // be done. By default, 32B.
+        unsigned short compJitAlignLoopBoundary;
+
+        // Padding limit to align a loop.
+        unsigned short compJitAlignPaddingLimit;
+
+        // If set, perform adaptive loop alignment that limits number of padding based on loop size.
+        bool compJitAlignLoopAdaptive;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler

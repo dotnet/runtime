@@ -1609,7 +1609,21 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
     jitInstance->mc->cr->AddCall("allocMem");
 
     // TODO-Cleanup: Could hot block size be ever 0?
-    *hotCodeBlock = jitInstance->mc->cr->allocateMemory(hotCodeSize);
+    size_t codeAlignment      = sizeof(void*);
+    size_t hotCodeAlignedSize = static_cast<size_t>(hotCodeSize);
+
+    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+         codeAlignment = 32;
+    }
+    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    {
+         codeAlignment = 16;
+    }
+    hotCodeAlignedSize = ALIGN_UP_SPMI(hotCodeAlignedSize, codeAlignment);
+    hotCodeAlignedSize = hotCodeAlignedSize + (codeAlignment - sizeof(void*));
+    *hotCodeBlock      = jitInstance->mc->cr->allocateMemory(hotCodeAlignedSize);
+    *hotCodeBlock      = ALIGN_UP_SPMI(*hotCodeBlock, codeAlignment);
 
     if (coldCodeSize > 0)
         *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);

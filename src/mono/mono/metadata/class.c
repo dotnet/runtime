@@ -197,7 +197,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		break;
 	}
 
-	if (idx > image->tables [MONO_TABLE_ASSEMBLYREF].rows) {
+	if (mono_metadata_table_bounds_check (image, MONO_TABLE_ASSEMBLYREF, idx)) {
 		mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
 		return NULL;
 	}
