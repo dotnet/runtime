@@ -437,13 +437,15 @@ namespace System.Net.WebSockets
         // This method is registered by the CancellationTokenSource in the receive async method
         private async void CancelRequest()
         {
-            int prevState = Interlocked.Exchange(ref _state, (int)InternalState.Aborted);
+            int prevState = _state;
+            _state = (int)InternalState.Aborted;
             _receiveMessageQueue.Writer.TryComplete();
             if (prevState == (int)InternalState.Connected || prevState == (int)InternalState.Connecting)
             {
+                if (prevState == (int)InternalState.Connecting)
+                    _state = (int)InternalState.CloseSent;
                 await CloseAsyncCore(WebSocketCloseStatus.NormalClosure, SR.net_WebSockets_Connection_Aborted, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
             }
-
         }
 
         /// <summary>
@@ -454,6 +456,11 @@ namespace System.Net.WebSockets
         /// <param name="cancellationToken">Cancellation token.</param>
         public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return await Task.FromException<WebSocketReceiveResult>(new OperationCanceledException()).ConfigureAwait(continueOnCapturedContext: true);
+            }
 
             CancellationTokenSource _receiveCTS = new CancellationTokenSource();
             CancellationTokenRegistration receiveRegistration = cancellationToken.Register(cts => ((CancellationTokenSource)cts!).Cancel(), _receiveCTS);
@@ -496,7 +503,13 @@ namespace System.Net.WebSockets
         {
             if (_state != (int)InternalState.Disposed)
             {
-                if (Interlocked.Exchange(ref _state, (int)InternalState.Aborted) != (int)InternalState.Aborted)
+                int prevState = _state;
+                if (prevState != (int)InternalState.Connecting)
+                {
+                    _state = (int)InternalState.Aborted;
+                }
+
+                if (prevState < (int)InternalState.Aborted)
                 {
                     _cts.Cancel(true);
                     _tcsClose?.TrySetResult();
@@ -519,7 +532,6 @@ namespace System.Net.WebSockets
             {
                 return Task.FromException(exc);
             }
-
             return CloseAsyncCore(closeStatus, statusDescription, cancellationToken);
         }
 
@@ -531,8 +543,6 @@ namespace System.Net.WebSockets
                 _innerWebSocketCloseStatus = closeStatus;
                 _innerWebSocketCloseStatusDescription = statusDescription;
                 _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
-                if (_state != (int)InternalState.Connecting)
-                    _state = (int)InternalState.CloseSent;
                 return _tcsClose.Task;
             }
             catch (Exception exc)
