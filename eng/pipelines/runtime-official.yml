@@ -136,7 +136,7 @@ stages:
   #
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
       runtimeFlavor: mono
       buildConfig: release
       platforms:
