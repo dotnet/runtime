@@ -130,6 +130,28 @@ namespace System.Net.Sockets.Tests
     public sealed class Disconnect_CancellableTask : Disconnect<SocketHelperCancellableTask>
     {
         public Disconnect_CancellableTask(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Disconnect_Precanceled_ThrowsOperationCanceledException(bool reuseSocket)
+        {
+            IPEndPoint loopback = new IPEndPoint(IPAddress.Loopback, 0);
+            using (var server1 = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, loopback))
+            {
+                using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    await ConnectAsync(client, server1.EndPoint);
+                    Assert.True(client.Connected);
+
+                    CancellationTokenSource precanceledSource = new CancellationTokenSource();
+                    precanceledSource.Cancel();
+
+                    OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.DisconnectAsync(reuseSocket, precanceledSource.Token));
+                    Assert.Equal(precanceledSource.Token, oce.CancellationToken);
+                }
+            }
+        }
     }
 
     public sealed class Disconnect_Eap : Disconnect<SocketHelperEap>
