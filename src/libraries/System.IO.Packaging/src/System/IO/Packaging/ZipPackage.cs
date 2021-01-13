@@ -282,15 +282,8 @@ namespace System.IO.Packaging
             }
             catch
             {
-                if (zipArchive != null)
-                {
-                    zipArchive.Dispose();
-                }
-
-                if (_containerStream != null)
-                {
-                    _containerStream.Dispose();
-                }
+                zipArchive?.Dispose();
+                _containerStream?.Dispose();
 
                 throw;
             }

@@ -184,14 +184,13 @@ namespace System.IO.Packaging.Tests
         [Fact]
         public void PackageOpen_Open_InvalidContent_Throws()
         {
-            var temp = GetTempFileInfoWithExtension(".docx").FullName;
+            string temp = GetTempFileInfoWithExtension(".docx").FullName;
 
             using (FileStream fs = File.OpenWrite(temp))
             {
                 byte[] bytes = File.ReadAllBytes("plain.docx");
+                bytes.AsSpan(500, 500).Clear(); // garble it
                 fs.Write(bytes, 0, bytes.Length);
-                fs.Seek(500, SeekOrigin.Begin);
-                fs.Write(new byte[500], 0, 500); // garble it
             }
 
             AssertExtensions.ThrowsAny<InvalidDataException, ArgumentOutOfRangeException>(
