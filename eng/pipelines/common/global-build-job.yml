@@ -92,7 +92,7 @@ jobs:
         displayName: Download AOT offset files
         inputs:
           artifact: Mono_Offsets_Android
-          path: '$(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles'
+          path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO

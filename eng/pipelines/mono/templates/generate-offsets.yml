@@ -77,12 +77,12 @@ jobs:
       inputs:
         sourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/'
         contents: '**/offsets-*.h'
-        targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles/'
+        targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles/'
 
     - task: PublishPipelineArtifact@1
       displayName: Upload offset files
       inputs:
-        targetPath: '$(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles'
+        targetPath: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
         artifactName: 'Mono_Offsets_$(osGroup)'
 
     # Publish Logs
