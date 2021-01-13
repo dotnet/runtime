@@ -18,7 +18,7 @@ extern "C" void start_runtime_thunk_stub();
 class bootstrap_thunk
 {
 private:
-    DWORD           m_rgCode[4];
+    std::uint32_t         m_rgCode[4];
     std::uintptr_t        m_pBootstrapCode;
 
     pal::dll_t       m_dll;            // pal::dll_t of this module
