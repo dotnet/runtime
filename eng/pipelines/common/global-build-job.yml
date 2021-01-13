@@ -41,7 +41,7 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if and(ne(parameters.useCheckoutBundle, true),eq(parameters.dependsOn,'') }}:
+    ${{ if and(ne(parameters.useCheckoutBundle, true),ne(parameters.dependsOn,'')) }}:
       dependsOn: ${{ parameters.dependsOn }}
 
     ${{ if eq(parameters.useCheckoutBundle, true) }}:
