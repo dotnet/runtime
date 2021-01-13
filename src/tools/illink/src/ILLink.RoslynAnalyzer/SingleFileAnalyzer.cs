@@ -28,7 +28,8 @@ namespace ILLink.RoslynAnalyzer
 				Resources.ResourceManager, typeof (Resources)),
 			DiagnosticCategory.SingleFile,
 			DiagnosticSeverity.Warning,
-			isEnabledByDefault: true);
+			isEnabledByDefault: true,
+			helpLinkUri: "https://docs.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3000");
 
 		private static readonly DiagnosticDescriptor GetFilesRule = new DiagnosticDescriptor (
 			IL3001,
@@ -38,7 +39,8 @@ namespace ILLink.RoslynAnalyzer
 				Resources.ResourceManager, typeof (Resources)),
 			DiagnosticCategory.SingleFile,
 			DiagnosticSeverity.Warning,
-			isEnabledByDefault: true);
+			isEnabledByDefault: true,
+			helpLinkUri: "https://docs.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3001");
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (LocationRule, GetFilesRule);
 
