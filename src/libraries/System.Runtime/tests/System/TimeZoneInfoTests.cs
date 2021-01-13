@@ -81,53 +81,27 @@ namespace System.Tests
             Assert.NotNull(utc.ToString());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
-        public static void BrowserDayLightNames()
-        {            
-            //  Due to ICU size limitations, full daylight names are not included. 
-            //  daylight name abbreviations, if available, are used instead.
-            TimeZoneInfo pacific = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
-            Assert.Equal("PDT", pacific.DaylightName);
-            TimeZoneInfo sydney = TimeZoneInfo.FindSystemTimeZoneById(s_strSydney);
-            Assert.Equal("AEDT", sydney.DaylightName);
-            TimeZoneInfo perth = TimeZoneInfo.FindSystemTimeZoneById(s_strPerth);
-            Assert.Equal("AWDT", perth.DaylightName);
-            Assert.Equal("CEST", s_amsterdamTz.DaylightName);
-            TimeZoneInfo moscow = TimeZoneInfo.FindSystemTimeZoneById(s_strRussian);
-            Assert.Equal("MSD", moscow.DaylightName);
-            Assert.Equal("WEST", s_LisbonTz.DaylightName);
-            Assert.Equal("NDT", s_NewfoundlandTz.DaylightName);
-
-            //  No IANA daylight name abbreviations available, default to 
-            //  UTC offset. 
-            TimeZoneInfo iran = TimeZoneInfo.FindSystemTimeZoneById(s_strIran);
-            Assert.Equal("+0430", iran.DaylightName);
-            Assert.Equal("-02", s_catamarcaTz.DaylightName);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
-        public static void BrowserStandardNames()
+        //  Due to ICU size limitations, full daylight/standard names are not included.
+        //  name abbreviations, if available, are used instead
+        public static TheoryData<TimeZoneInfo, string, string, string> GetBrowser_TimeZoneNamesTestData()
         {
-            //  Due to ICU size limitations, full standard names are not included. 
-            //  standard name abbreviations, if available, are used instead.
-            TimeZoneInfo pacific = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
-            Assert.Equal("PST", pacific.StandardName);
-            TimeZoneInfo sydney = TimeZoneInfo.FindSystemTimeZoneById(s_strSydney);
-            Assert.Equal("AEST", sydney.StandardName);
-            TimeZoneInfo perth = TimeZoneInfo.FindSystemTimeZoneById(s_strPerth);
-            Assert.Equal("AWST", perth.StandardName);
-            Assert.Equal("CET", s_amsterdamTz.StandardName);
-            TimeZoneInfo moscow = TimeZoneInfo.FindSystemTimeZoneById(s_strRussian);
-            Assert.Equal("MSK", moscow.StandardName);
-            Assert.Equal("WET", s_LisbonTz.StandardName);
-            Assert.Equal("NST", s_NewfoundlandTz.StandardName);
+            return new TheoryData<TimeZoneInfo, string, string, string>
+            {
+                { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) PST", "PST", "PDT" },
+                { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) AEST", "AEST", "AEDT" },
+                { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) AWST", "AWST", "AWDT" },
+                { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) +0330", "+0330", "+0430" },
 
-            //  No IANA standard name abbreviations available, default to 
-            //  UTC offset. 
-            TimeZoneInfo iran = TimeZoneInfo.FindSystemTimeZoneById(s_strIran);
-            Assert.Equal("-03", s_catamarcaTz.StandardName);
-            Assert.Equal("+0330", iran.StandardName);
+                { s_NewfoundlandTz, "(UTC-03:30) NST", "NST", "NDT" },
+                { s_catamarcaTz, "(UTC-03:00) -03", "-03", "-02" }
+            };
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [MemberData(nameof(GetBrowser_TimeZoneNamesTestData))]
+        public static void Browser_TimeZoneNames(TimeZoneInfo tzi, string displayName, string standardName, string daylightName)
+            => Assert.Equal($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}",
+                            $"DisplayName: {displayName}, StandardName: {standardName}, DaylightName: {daylightName}");
 
         [Fact]
         public static void ConvertTime()
@@ -2317,8 +2291,8 @@ namespace System.Tests
                 if (tzi.Id != "UTC")
                 {
                     Assert.False(string.IsNullOrWhiteSpace(tzi.StandardName));
-                    Console.WriteLine($"DISPLAY NAME {tzi.DisplayName}");
-                    Assert.Matches(@"^\(UTC(\+|-)[0-9]{2}:[0-9]{2}\)( \S.*)*", tzi.DisplayName);
+                    Assert.Matches(@"^\(UTC(\+|-)[0-9]{2}:[0-9]{2}\) \S.*", tzi.DisplayName);
+
                     // see https://github.com/dotnet/corefx/pull/33204#issuecomment-438782500
                     if (PlatformDetection.IsNotWindowsNanoServer && !PlatformDetection.IsWindows7)
                     {
@@ -2326,7 +2300,6 @@ namespace System.Tests
                         TimeSpan ts = TimeSpan.Parse(offset);
                         if (tzi.BaseUtcOffset != ts && tzi.Id.IndexOf("Morocco", StringComparison.Ordinal) >= 0)
                         {
-                            Console.WriteLine(tzi.BaseUtcOffset);
                             // Windows data can report display name with UTC+01:00 offset which is not matching the actual BaseUtcOffset.
                             // We special case this in the test to avoid the test failures like:
                             //      01:00 != 00:00:00, dn:(UTC+01:00) Casablanca, sn:Morocco Standard Time
