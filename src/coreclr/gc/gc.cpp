@@ -9266,21 +9266,23 @@ size_t gc_heap::sort_mark_list()
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap* hp = g_heaps[i];
-        size_t ephemeral_size = heap_segment_allocated (hp->ephemeral_heap_segment) - hp->gc_low;
-        total_ephemeral_size += ephemeral_size;
         total_mark_list_size += (hp->mark_list_index - hp->mark_list);
 #ifdef USE_REGIONS
         // iterate through the ephemeral regions to get a tighter bound
         for (int gen_num = settings.condemned_generation; gen_num >= 0; gen_num--)
         {
-            generation* gen = generation_of (gen_num);
+            generation* gen = hp->generation_of (gen_num);
             for (heap_segment* seg = generation_start_segment (gen); seg != nullptr; seg = heap_segment_next (seg))
             {
+                size_t ephemeral_size = heap_segment_allocated (seg) - heap_segment_mem (seg);
+                total_ephemeral_size += ephemeral_size;
                 low = min (low, heap_segment_mem (seg));
                 high = max (high, heap_segment_allocated (seg));
             }
         }
 #else //USE_REGIONS
+        size_t ephemeral_size = heap_segment_allocated(hp->ephemeral_heap_segment) - hp->gc_low;
+        total_ephemeral_size += ephemeral_size;
         low = min (low, hp->gc_low);
         high = max (high, heap_segment_allocated (hp->ephemeral_heap_segment));
 #endif //USE_REGIONS
@@ -9310,6 +9312,7 @@ size_t gc_heap::sort_mark_list()
     for (ptrdiff_t i = 0; i < item_count; i++)
     {
         uint8_t* item = mark_list[i];
+        assert (low <= item && item < high);
         mark_list_copy[i] = item;
     }
 #endif // _DEBUG || WRITE_SORT_DATA
@@ -12310,10 +12313,14 @@ gc_heap::init_gc_heap (int  h_number)
 #ifdef USE_REGIONS
 #ifdef STRESS_REGIONS
     pinning_handles_for_alloc = new (nothrow) (OBJECTHANDLE[PINNING_HANDLE_INITIAL_LENGTH]);
+
+    gc_heap::disable_preemptive(TRUE);
     for (int i = 0; i < PINNING_HANDLE_INITIAL_LENGTH; i++)
     {
         pinning_handles_for_alloc[i] = g_gcGlobalHandleStore->CreateHandleOfType (0, HNDTYPE_PINNED);
     }
+    gc_heap::enable_preemptive();
+
     ph_index_per_heap = 0;
     pinning_seg_interval = 2;
     num_gen0_segs = 0;
@@ -14747,7 +14754,9 @@ BOOL gc_heap::soh_try_fit (int gen_number,
 #ifdef USE_REGIONS
                 if (can_allocate)
                 {
-#ifdef STRESS_REGIONS
+                    // disable for GC in coreclr, as we run into an assert there because
+                    // we cannot legally create an OBJECTREF where the object isn't baked.
+#if defined(STRESS_REGIONS) && defined(BUILD_AS_STANDALONE)
                     uint8_t* res = acontext->alloc_ptr;
                     heap_segment* seg = ephemeral_heap_segment;
                     size_t region_size = get_region_size (seg);
@@ -14768,7 +14777,7 @@ BOOL gc_heap::soh_try_fit (int gen_number,
                             ph_index_per_heap = 0;
                         }
                     }
-#endif //STRESS_REGIONS
+#endif //STRESS_REGIONS && BUILD_AS_STANDALONE
                     break;
                 }
 
@@ -24868,6 +24877,12 @@ void gc_heap::process_last_np_surv_region (generation* consing_gen,
             {
                 assert(next_plan_gen_num == 0);
                 next_region = get_new_region (0);
+
+                generation_allocation_segment (consing_gen) = next_region;
+                generation_allocation_pointer (consing_gen) = heap_segment_mem (next_region);
+                generation_allocation_context_start_region (consing_gen) = generation_allocation_pointer (consing_gen);
+                generation_allocation_limit (consing_gen) = generation_allocation_pointer (consing_gen);
+
                 generation_plan_start_segment (generation_of (next_plan_gen_num)) = next_region;
                 dprintf (REGIONS_LOG, ("h%d getting a new region for gen0 plan start seg to %Ix",
                     heap_number, heap_segment_mem (next_region)));
@@ -26845,6 +26860,10 @@ void gc_heap::fix_generation_bounds (int condemned_gen_number,
 #ifndef _DEBUG
     UNREFERENCED_PARAMETER(consing_gen);
 #endif //_DEBUG
+
+#ifdef USE_REGIONS
+    verify_generations_and_regions();
+#endif //USE_REGIONS
 
     int gen_number = condemned_gen_number;
     dprintf (2, ("---- thread regions gen%d GC ----", gen_number));
@@ -38783,6 +38802,53 @@ void gc_heap::verify_partial()
     }
 }
 #endif //BACKGROUND_GC
+
+#ifdef USE_REGIONS
+void gc_heap::verify_generations_and_regions()
+{
+    // For each generation, verify that
+    //
+    // 1) it has at least one region.
+    // 2) the tail region is the same as the last region if we following the list of regions
+    // in that generation.
+    for (int i = 0; i < total_generation_count; i++)
+    {
+        generation* gen = generation_of(i);
+        int num_regions_in_gen = 0;
+        heap_segment* seg_in_gen = heap_segment_rw(generation_start_segment(gen));
+        heap_segment* prev_region_in_gen = 0;
+        heap_segment* tail_region = generation_tail_region(gen);
+
+        while (seg_in_gen)
+        {
+            prev_region_in_gen = seg_in_gen;
+            num_regions_in_gen++;
+            // an insane number of regions likely means a circular list
+            if (num_regions_in_gen > (1000 * 1000))
+            {
+                dprintf(REGIONS_LOG, ("h%d gen%d has %d regions!!", heap_number, i, num_regions_in_gen));
+                FATAL_GC_ERROR();
+            }
+            seg_in_gen = heap_segment_next(seg_in_gen);
+        }
+
+        if (num_regions_in_gen == 0)
+        {
+            dprintf(REGIONS_LOG, ("h%d gen%d has no regions!!", heap_number, i));
+            FATAL_GC_ERROR();
+        }
+
+        if (tail_region != prev_region_in_gen)
+        {
+            dprintf(REGIONS_LOG, ("h%d gen%d tail region is %Ix, diff from last region %Ix!!",
+                heap_number, i,
+                heap_segment_mem(tail_region),
+                heap_segment_mem(prev_region_in_gen)));
+            FATAL_GC_ERROR();
+        }
+    }
+}
+#endif //USE_REGIONS
 
 #ifdef VERIFY_HEAP
 void
