@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Http
         /// </summary>
         public abstract HttpMessageHandler PrimaryHandler { get; set; }
 
-        internal virtual bool PrimaryHandlerExposed { get; } // TODO: api compat wouldn't allow abstract here
+        internal virtual bool PrimaryHandlerChanged { get; }
 
         /// <summary>
         /// Gets a list of additional <see cref="DelegatingHandler"/> instances used to configure an
@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Http
                 throw new ArgumentNullException(nameof(primaryHandler));
             }
 
-            if (PrimaryHandlerExposed)
+            if (PrimaryHandlerChanged)
             {
                 throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
             }

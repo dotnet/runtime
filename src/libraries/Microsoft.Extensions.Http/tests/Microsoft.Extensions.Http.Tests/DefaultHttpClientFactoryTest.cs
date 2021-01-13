@@ -233,7 +233,7 @@ namespace Microsoft.Extensions.Http
 
             // Act
             var client = factory.CreateClient("github");
-            HttpMessageHandler handler = factory._activeHandlers["github"].Handler;
+            HttpMessageHandler handler = factory.GetActiveEntry("github").Handler;
 
             // Assert
             //
@@ -264,7 +264,8 @@ namespace Microsoft.Extensions.Http
             var client1 = factory.CreateClient("github");
 
             // Assert - 1
-            var activeEntry1 = Assert.Single(factory._activeHandlers).Value;
+            Assert.Equal(1, factory.GetActiveEntryCount());
+            var activeEntry1 = factory.GetActiveEntry("github");
             Assert.Equal("github", activeEntry1.Name);
             Assert.Equal(TimeSpan.FromMinutes(2), activeEntry1.Lifetime);
             Assert.NotNull(activeEntry1.Handler);
@@ -275,7 +276,7 @@ namespace Microsoft.Extensions.Http
             await expiryTask;
 
             // Assert - 2
-            Assert.Empty(factory._activeHandlers);
+            Assert.Equal(0, factory.GetActiveEntryCount());
             Assert.True(factory.CleanupTimerStarted.IsSet, "Cleanup timer started");
 
             var expiredEntry1 = Assert.Single(factory._expiredHandlers);
@@ -285,7 +286,8 @@ namespace Microsoft.Extensions.Http
             var client2 = factory.CreateClient("github");
 
             // Assert - 3
-            var activeEntry2 = Assert.Single(factory._activeHandlers).Value;
+            Assert.Equal(1, factory.GetActiveEntryCount());
+            var activeEntry2 = factory.GetActiveEntry("github");
             Assert.Equal("github", activeEntry1.Name);
             Assert.Equal(TimeSpan.FromMinutes(2), activeEntry1.Lifetime);
             Assert.NotNull(activeEntry1.Handler);
@@ -307,7 +309,8 @@ namespace Microsoft.Extensions.Http
             var client1 = factory.CreateClient("github");
 
             // Assert - 1
-            var activeEntry1 = Assert.Single(factory._activeHandlers).Value;
+            Assert.Equal(1, factory.GetActiveEntryCount());
+            var activeEntry1 = factory.GetActiveEntry("github");
             Assert.Equal("github", activeEntry1.Name);
             Assert.Equal(TimeSpan.FromMinutes(2), activeEntry1.Lifetime);
             Assert.NotNull(activeEntry1.Handler);
@@ -316,7 +319,9 @@ namespace Microsoft.Extensions.Http
             var client2 = factory.CreateClient("github");
 
             // Assert - 2
-            Assert.Same(activeEntry1, Assert.Single(factory._activeHandlers).Value);
+            Assert.Equal(1, factory.GetActiveEntryCount());
+            var activeEntry2 = factory.GetActiveEntry("github");
+            Assert.Same(activeEntry1, activeEntry2);
 
             // Act - 3 - Now simulate the timer triggering to complete the expiry.
             var (completionSource, expiryTask) = factory.ActiveEntryState[activeEntry1];
@@ -324,7 +329,7 @@ namespace Microsoft.Extensions.Http
             await expiryTask;
 
             // Assert - 3
-            Assert.Empty(factory._activeHandlers);
+            Assert.Equal(0, factory.GetActiveEntryCount());
             Assert.True(factory.CleanupTimerStarted.IsSet, "Cleanup timer started");
 
             var expiredEntry1 = Assert.Single(factory._expiredHandlers);
@@ -334,12 +339,13 @@ namespace Microsoft.Extensions.Http
             var client3 = factory.CreateClient("github");
 
             // Assert - 4
-            var activeEntry2 = Assert.Single(factory._activeHandlers).Value;
-            Assert.Equal("github", activeEntry1.Name);
-            Assert.Equal(TimeSpan.FromMinutes(2), activeEntry1.Lifetime);
-            Assert.NotNull(activeEntry1.Handler);
-            Assert.NotSame(activeEntry1, activeEntry2);
-            Assert.NotSame(activeEntry1.Handler, activeEntry2.Handler);
+            Assert.Equal(1, factory.GetActiveEntryCount());
+            var activeEntry3 = factory.GetActiveEntry("github");
+            Assert.Equal("github", activeEntry3.Name);
+            Assert.Equal(TimeSpan.FromMinutes(2), activeEntry3.Lifetime);
+            Assert.NotNull(activeEntry3.Handler);
+            Assert.NotSame(activeEntry1, activeEntry3);
+            Assert.NotSame(activeEntry1.Handler, activeEntry3.Handler);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]

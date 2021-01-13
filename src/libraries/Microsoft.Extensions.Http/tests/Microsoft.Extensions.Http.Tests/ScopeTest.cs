@@ -727,7 +727,8 @@ namespace Microsoft.Extensions.Http
 
         private LifetimeTrackingHttpMessageHandler GetHandlerFromFactory(DefaultHttpClientFactory factory, string name)
         {
-            var entry = factory._activeHandlers[name];
+            var entry = factory.GetActiveEntry(name);
+            Assert.NotNull(entry);
             Assert.False(entry.IsPrimary);
             return entry.Handler;
         }
@@ -737,8 +738,8 @@ namespace Microsoft.Extensions.Http
 
         private LifetimeTrackingHttpMessageHandler GetHandlerFromFactory(DefaultScopedHttpClientFactory factory, string name)
         {
-            var activeHandlers = factory._singletonFactory._activeHandlers;
-            if (activeHandlers.TryGetValue(name, out var entry))
+            var entry = factory._singletonFactory.GetActiveEntry(name);
+            if (entry != null)
             {
                 Assert.True(entry.IsPrimary);
                 return entry.Handler;
@@ -829,7 +830,8 @@ namespace Microsoft.Extensions.Http
 
                 lock (ActiveEntryState)
                 {
-                    if (!_activeHandlers.TryGetValue(name, out var entry))
+                    var entry = GetActiveEntry(name);
+                    if (entry == null)
                     {
                         t = Task.CompletedTask;
                     }

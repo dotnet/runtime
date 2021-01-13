@@ -44,10 +44,8 @@ namespace Microsoft.Extensions.Http
         //
         // Using ReaderWriterLockSlim for synchronization to ensure that only one instance of HttpMessageHandler is created
         // for each name.
-        //
-        // internal for tests
-        internal readonly Dictionary<string, ActiveHandlerTrackingEntry> _activeHandlers;
-        private ReaderWriterLockSlim messageHandlerLock = new ReaderWriterLockSlim();
+        private readonly Dictionary<string, ActiveHandlerTrackingEntry> _activeHandlers;
+        private readonly ReaderWriterLockSlim messageHandlerLock = new ReaderWriterLockSlim();
 
         // Collection of 'expired' but not yet disposed handlers.
         //
@@ -178,10 +176,13 @@ namespace Microsoft.Extensions.Http
                     {
                         messageHandlerLock.EnterWriteLock();
 
-                        var createEntryResult = CreateHandlerEntry(name, services);
-                        entry = createEntryResult.Entry;
-                        topHandler = createEntryResult.TopHandler;
-                        _activeHandlers.Add(name, entry);
+                        if (!_activeHandlers.TryGetValue(name, out entry))
+                        {
+                            var createEntryResult = CreateHandlerEntry(name, services);
+                            entry = createEntryResult.Entry;
+                            topHandler = createEntryResult.TopHandler;
+                            _activeHandlers.Add(name, entry);
+                        }
                     }
                     finally
                     {
@@ -290,7 +291,7 @@ namespace Microsoft.Extensions.Http
             bool isPrimary;
             LifetimeTrackingHttpMessageHandler topHandler;
 
-            if (options.PreserveExistingScope && builder.PrimaryHandlerExposed)
+            if (options.PreserveExistingScope && builder.PrimaryHandlerChanged)
             {
                 throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
             }
@@ -337,7 +338,7 @@ namespace Microsoft.Extensions.Http
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
             ConfigureBuilder(builder, options);
 
-            if (builder.PrimaryHandlerExposed)
+            if (builder.PrimaryHandlerChanged)
             {
                 throw new InvalidOperationException(SR.PreserveExistingScope_CannotChangePrimaryHandler);
             }
@@ -501,6 +502,40 @@ namespace Microsoft.Extensions.Http
             if (!_expiredHandlers.IsEmpty)
             {
                 StartCleanupTimer();
+            }
+        }
+
+        // internal for tests
+        internal ActiveHandlerTrackingEntry? GetActiveEntry(string name)
+        {
+            messageHandlerLock.EnterReadLock();
+
+            try
+            {
+                if (_activeHandlers.TryGetValue(name, out var entry))
+                {
+                    return entry;
+                }
+                return null;
+            }
+            finally
+            {
+                messageHandlerLock.ExitReadLock();
+            }
+        }
+
+        // internal for tests
+        internal int GetActiveEntryCount()
+        {
+            messageHandlerLock.EnterReadLock();
+
+            try
+            {
+                return _activeHandlers.Count;
+            }
+            finally
+            {
+                messageHandlerLock.ExitReadLock();
             }
         }
 
