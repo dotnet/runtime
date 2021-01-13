@@ -5,6 +5,10 @@
       </method>
       <method signature="System.Boolean get_CollisionProperty()" body="stub" value="false">
       </method>
+      <method signature="System.Boolean get_NoInliningProperty()" body="stub" value="false">
+      </method>
+      <method signature="System.Boolean get_IntrinsicProperty()" body="stub" value="false">
+      </method>
     </type>
     <type fullname="Mono.Linker.Tests.Cases.UnreachableBlock.BodiesWithSubstitutions/ClassWithField">
       <field name="SField" value="9"/>

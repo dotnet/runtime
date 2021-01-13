@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		"LibWithConstantSubstitution.dll",
 		new[] { "Dependencies/LibWithConstantSubstitution.cs" },
 		resources: new object[] { "Dependencies/LibWithConstantSubstitution.xml" })]
+	[KeptModuleReference ("unknown")]
 	public class BodiesWithSubstitutions
 	{
 		static class ClassWithField
@@ -41,6 +42,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			ConstantFromNewAssembly.Test ();
 			ConstantSubstitutionsFromNewAssembly.Test ();
 			TestSubstitutionCollision ();
+			TestSubstitutionOnNoInlining ();
+			TestSubstitutionOnIntrinsic ();
+			TestMethodWithoutBody ();
 		}
 
 		[Kept]
@@ -278,5 +282,64 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		static void Collision_Reached () { }
 		static void Collision_NeverReached () { }
+
+		[Kept]
+		static bool NoInliningProperty {
+			[Kept]
+			[ExpectBodyModified]
+			[MethodImpl (MethodImplOptions.NoInlining)]
+			get { return true; }
+		}
+
+		[Kept]
+		[ExpectBodyModified]
+		static void TestSubstitutionOnNoInlining ()
+		{
+			if (NoInliningProperty)
+				NoInlining_NeverReached ();
+			else
+				NoInlining_Reached ();
+		}
+
+		[Kept]
+		static void NoInlining_Reached () { }
+		static void NoInlining_NeverReached () { }
+
+		[Kept]
+		static bool IntrinsicProperty {
+			[Kept]
+			[ExpectBodyModified]
+			[Intrinsic]
+			[KeptAttributeAttribute (typeof (IntrinsicAttribute))]
+			get { return true; }
+		}
+
+		[Kept]
+		[ExpectBodyModified]
+		static void TestSubstitutionOnIntrinsic ()
+		{
+			if (IntrinsicProperty)
+				Intrinsic_NeverReached ();
+			else
+				Intrinsic_Reached ();
+		}
+
+		[Kept]
+		static void Intrinsic_Reached () { }
+		static void Intrinsic_NeverReached () { }
+
+		[Kept]
+		[System.Runtime.InteropServices.DllImport ("unknown")]
+		static extern int PInvokeMethod ();
+
+		[Kept]
+		static void TestMethodWithoutBody ()
+		{
+			if (PInvokeMethod () == 0)
+				MethodWithoutBody_Reached ();
+		}
+
+		[Kept]
+		static void MethodWithoutBody_Reached () { }
 	}
 }
