@@ -57,6 +57,11 @@ public:
     {
         return dummy;
     }
+
+    virtual long GetWidthAsLong()
+    {
+        return (long)width;
+    }
 };
 
 
@@ -83,4 +88,9 @@ extern "C" DLL_EXPORT IntWrapper STDMETHODCALLTYPE GetHeightAsIntFromManaged(C* 
 extern "C" DLL_EXPORT E STDMETHODCALLTYPE GetEFromManaged(C* c)
 {
     return c->GetE();
+}
+
+extern "C" DLL_EXPORT long STDMETHODCALLTYPE GetWidthAsLongFromManaged(C* c)
+{
+    return c->GetWidthAsLong();
 }

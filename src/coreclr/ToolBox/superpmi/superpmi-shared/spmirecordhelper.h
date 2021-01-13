@@ -15,36 +15,36 @@
 class SpmiRecordsHelper
 {
 public:
-    static MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin CreateAgnostic_CORINFO_RESOLVED_TOKENin(
+    static Agnostic_CORINFO_RESOLVED_TOKENin CreateAgnostic_CORINFO_RESOLVED_TOKENin(
         CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
-    static MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(
+    static Agnostic_CORINFO_RESOLVED_TOKENout CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(
         CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     template <typename key, typename value>
-    static MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout StoreAgnostic_CORINFO_RESOLVED_TOKENout(
+    static Agnostic_CORINFO_RESOLVED_TOKENout StoreAgnostic_CORINFO_RESOLVED_TOKENout(
         CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers);
 
     template <typename key, typename value>
-    static MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout RestoreAgnostic_CORINFO_RESOLVED_TOKENout(
+    static Agnostic_CORINFO_RESOLVED_TOKENout RestoreAgnostic_CORINFO_RESOLVED_TOKENout(
         CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers);
 
     template <typename key, typename value>
-    static MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN StoreAgnostic_CORINFO_RESOLVED_TOKEN(
+    static Agnostic_CORINFO_RESOLVED_TOKEN StoreAgnostic_CORINFO_RESOLVED_TOKEN(
         CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers);
 
     template <typename key, typename value>
-    static MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN RestoreAgnostic_CORINFO_RESOLVED_TOKEN(
+    static Agnostic_CORINFO_RESOLVED_TOKEN RestoreAgnostic_CORINFO_RESOLVED_TOKEN(
         CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers);
 
     // Restore the out values in the first argument from the second.
     // Can't just return whole CORINFO_RESOLVED_TOKEN because [in] values in it are important too.
     template <typename key, typename value>
     static void Restore_CORINFO_RESOLVED_TOKENout(CORINFO_RESOLVED_TOKEN*                            pResolvedToken,
-                                                  MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout& token,
+                                                  Agnostic_CORINFO_RESOLVED_TOKENout& token,
                                                   LightWeightMap<key, value>* buffers);
 
-    static MethodContext::Agnostic_CORINFO_SIG_INFO CreateAgnostic_CORINFO_SIG_INFO_without_buffers(
+    static Agnostic_CORINFO_SIG_INFO CreateAgnostic_CORINFO_SIG_INFO_without_buffers(
         const CORINFO_SIG_INFO& sigInfo);
 
     static void StoreAgnostic_CORINFO_SIG_INST_HandleArray(
@@ -55,7 +55,7 @@ public:
         /* OUT */ DWORD* handleInstIndexOut);
 
     template <typename key, typename value>
-    static MethodContext::Agnostic_CORINFO_SIG_INFO StoreAgnostic_CORINFO_SIG_INFO(
+    static Agnostic_CORINFO_SIG_INFO StoreAgnostic_CORINFO_SIG_INFO(
         const CORINFO_SIG_INFO& sigInfo,
         LightWeightMap<key, value>* buffers,
         DenseLightWeightMap<DWORDLONG>*& handleMap);
@@ -66,7 +66,7 @@ public:
         const DenseLightWeightMap<DWORDLONG>* handleMap);
 
     template <typename key, typename value>
-    static MethodContext::Agnostic_CORINFO_SIG_INFO RestoreAgnostic_CORINFO_SIG_INFO(
+    static Agnostic_CORINFO_SIG_INFO RestoreAgnostic_CORINFO_SIG_INFO(
         const CORINFO_SIG_INFO& sigInfo,
         LightWeightMap<key, value>* buffers,
         const DenseLightWeightMap<DWORDLONG>* handleMap);
@@ -80,39 +80,39 @@ public:
 
     static void DeserializeCORINFO_SIG_INST(
         CORINFO_SIG_INFO& sigInfoOut,
-        const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
+        const Agnostic_CORINFO_SIG_INFO& sigInfo,
         const DenseLightWeightMap<DWORDLONG>* handleMap);
 
     template <typename key, typename value>
     static CORINFO_SIG_INFO Restore_CORINFO_SIG_INFO(
-        const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
+        const Agnostic_CORINFO_SIG_INFO& sigInfo,
         LightWeightMap<key, value>* buffers,
         const DenseLightWeightMap<DWORDLONG>* handleMap);
 
-    static MethodContext::Agnostic_CORINFO_LOOKUP_KIND CreateAgnostic_CORINFO_LOOKUP_KIND(
+    static Agnostic_CORINFO_LOOKUP_KIND CreateAgnostic_CORINFO_LOOKUP_KIND(
         const CORINFO_LOOKUP_KIND* pGenericLookupKind);
 
-    static CORINFO_LOOKUP_KIND RestoreCORINFO_LOOKUP_KIND(MethodContext::Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
+    static CORINFO_LOOKUP_KIND RestoreCORINFO_LOOKUP_KIND(Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
 
-    static MethodContext::Agnostic_CORINFO_CONST_LOOKUP StoreAgnostic_CORINFO_CONST_LOOKUP(
+    static Agnostic_CORINFO_CONST_LOOKUP StoreAgnostic_CORINFO_CONST_LOOKUP(
         CORINFO_CONST_LOOKUP* pLookup);
 
-    static CORINFO_CONST_LOOKUP RestoreCORINFO_CONST_LOOKUP(MethodContext::Agnostic_CORINFO_CONST_LOOKUP& lookup);
+    static CORINFO_CONST_LOOKUP RestoreCORINFO_CONST_LOOKUP(Agnostic_CORINFO_CONST_LOOKUP& lookup);
 
-    static MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP StoreAgnostic_CORINFO_RUNTIME_LOOKUP(
+    static Agnostic_CORINFO_RUNTIME_LOOKUP StoreAgnostic_CORINFO_RUNTIME_LOOKUP(
         CORINFO_RUNTIME_LOOKUP* pLookup);
 
-    static CORINFO_RUNTIME_LOOKUP RestoreCORINFO_RUNTIME_LOOKUP(MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP& Lookup);
+    static CORINFO_RUNTIME_LOOKUP RestoreCORINFO_RUNTIME_LOOKUP(Agnostic_CORINFO_RUNTIME_LOOKUP& Lookup);
 
-    static MethodContext::Agnostic_CORINFO_LOOKUP StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup);
+    static Agnostic_CORINFO_LOOKUP StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup);
 
-    static CORINFO_LOOKUP RestoreCORINFO_LOOKUP(MethodContext::Agnostic_CORINFO_LOOKUP& agnosticLookup);
+    static CORINFO_LOOKUP RestoreCORINFO_LOOKUP(Agnostic_CORINFO_LOOKUP& agnosticLookup);
 };
 
-inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(
+inline Agnostic_CORINFO_RESOLVED_TOKENin SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(
     CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
-    MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin tokenIn;
+    Agnostic_CORINFO_RESOLVED_TOKENin tokenIn;
     ZeroMemory(&tokenIn, sizeof(tokenIn));
     tokenIn.tokenContext = CastHandle(pResolvedToken->tokenContext);
     tokenIn.tokenScope   = CastHandle(pResolvedToken->tokenScope);
@@ -121,10 +121,10 @@ inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin SpmiRecordsHelper::Creat
     return tokenIn;
 }
 
-inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::
+inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::
     CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
-    MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
+    Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
     ZeroMemory(&tokenOut, sizeof(tokenOut));
     tokenOut.hClass  = CastHandle(pResolvedToken->hClass);
     tokenOut.hMethod = CastHandle(pResolvedToken->hMethod);
@@ -140,10 +140,10 @@ inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::
 }
 
 template <typename key, typename value>
-inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(
+inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(
     CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers)
 {
-    MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout tokenOut(
+    Agnostic_CORINFO_RESOLVED_TOKENout tokenOut(
         CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(pResolvedToken));
 
     tokenOut.pTypeSpec_Index =
@@ -155,10 +155,10 @@ inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::Stor
 }
 
 template <typename key, typename value>
-inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKENout(
+inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKENout(
     CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers)
 {
-    MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout tokenOut(
+    Agnostic_CORINFO_RESOLVED_TOKENout tokenOut(
         CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(pResolvedToken));
     tokenOut.pTypeSpec_Index =
         (DWORD)buffers->Contains((unsigned char*)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
@@ -168,20 +168,20 @@ inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::Rest
 }
 
 template <typename key, typename value>
-inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(
+inline Agnostic_CORINFO_RESOLVED_TOKEN SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(
     CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers)
 {
-    MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN token;
+    Agnostic_CORINFO_RESOLVED_TOKEN token;
     token.inValue  = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
     token.outValue = StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, buffers);
     return token;
 }
 
 template <typename key, typename value>
-inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(
+inline Agnostic_CORINFO_RESOLVED_TOKEN SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(
     CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers)
 {
-    MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN token;
+    Agnostic_CORINFO_RESOLVED_TOKEN token;
     ZeroMemory(&token, sizeof(token));
     token.inValue  = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
     token.outValue = RestoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, buffers);
@@ -191,7 +191,7 @@ inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN SpmiRecordsHelper::Restore
 template <typename key, typename value>
 inline void SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(
     CORINFO_RESOLVED_TOKEN*                            pResolvedToken,
-    MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut,
+    Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut,
     LightWeightMap<key, value>* buffers)
 {
     pResolvedToken->hClass       = (CORINFO_CLASS_HANDLE)tokenOut.hClass;
@@ -203,10 +203,10 @@ inline void SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(
     pResolvedToken->cbMethodSpec = (ULONG)tokenOut.cbMethodSpec;
 }
 
-inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::CreateAgnostic_CORINFO_SIG_INFO_without_buffers(
+inline Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::CreateAgnostic_CORINFO_SIG_INFO_without_buffers(
     const CORINFO_SIG_INFO& sigInfo)
 {
-    MethodContext::Agnostic_CORINFO_SIG_INFO sig;
+    Agnostic_CORINFO_SIG_INFO sig;
     ZeroMemory(&sig, sizeof(sig));
     sig.callConv               = (DWORD)sigInfo.callConv;
     sig.retTypeClass           = CastHandle(sigInfo.retTypeClass);
@@ -262,12 +262,12 @@ inline void SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(
 }
 
 template <typename key, typename value>
-inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(
+inline Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(
     const CORINFO_SIG_INFO& sigInfo,
     LightWeightMap<key, value>* buffers,
     DenseLightWeightMap<DWORDLONG>*& handleMap)
 {
-    MethodContext::Agnostic_CORINFO_SIG_INFO sig(CreateAgnostic_CORINFO_SIG_INFO_without_buffers(sigInfo));
+    Agnostic_CORINFO_SIG_INFO sig(CreateAgnostic_CORINFO_SIG_INFO_without_buffers(sigInfo));
 
     StoreAgnostic_CORINFO_SIG_INST_HandleArray(sigInfo.sigInst.classInstCount, sigInfo.sigInst.classInst, handleMap, &sig.sigInst_classInstCount, &sig.sigInst_classInst_Index);
     StoreAgnostic_CORINFO_SIG_INST_HandleArray(sigInfo.sigInst.methInstCount, sigInfo.sigInst.methInst, handleMap, &sig.sigInst_methInstCount, &sig.sigInst_methInst_Index);
@@ -317,12 +317,12 @@ inline DWORD SpmiRecordsHelper::ContainsHandleMap(
 // Don't create and store a new Agnostic_CORINFO_SIG_INFO. The buffers and indices need to be found in the existing stored data.
 // This is used when we need to create an Agnostic_CORINFO_SIG_INFO to be used as a key to look up in an existing map.
 template <typename key, typename value>
-inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(
+inline Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(
     const CORINFO_SIG_INFO& sigInfo,
     LightWeightMap<key, value>* buffers,
     const DenseLightWeightMap<DWORDLONG>* handleMap)
 {
-    MethodContext::Agnostic_CORINFO_SIG_INFO sig(CreateAgnostic_CORINFO_SIG_INFO_without_buffers(sigInfo));
+    Agnostic_CORINFO_SIG_INFO sig(CreateAgnostic_CORINFO_SIG_INFO_without_buffers(sigInfo));
     sig.sigInst_classInst_Index = ContainsHandleMap(sigInfo.sigInst.classInstCount, sigInfo.sigInst.classInst, handleMap);
     sig.sigInst_methInst_Index  = ContainsHandleMap(sigInfo.sigInst.methInstCount, sigInfo.sigInst.methInst, handleMap);
     sig.pSig_Index = (DWORD)buffers->Contains((unsigned char*)sigInfo.pSig, sigInfo.cbSig);
@@ -357,14 +357,14 @@ inline void SpmiRecordsHelper::DeserializeCORINFO_SIG_INST_HandleArray(
 }
 
 inline void SpmiRecordsHelper::DeserializeCORINFO_SIG_INST(
-    CORINFO_SIG_INFO& sigInfoOut, const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo, const DenseLightWeightMap<DWORDLONG>* handleMap)
+    CORINFO_SIG_INFO& sigInfoOut, const Agnostic_CORINFO_SIG_INFO& sigInfo, const DenseLightWeightMap<DWORDLONG>* handleMap)
 {
     DeserializeCORINFO_SIG_INST_HandleArray(sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index, handleMap, &sigInfoOut.sigInst.classInstCount, &sigInfoOut.sigInst.classInst);
     DeserializeCORINFO_SIG_INST_HandleArray(sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, handleMap, &sigInfoOut.sigInst.methInstCount, &sigInfoOut.sigInst.methInst);
 }
 
 template <typename key, typename value>
-inline CORINFO_SIG_INFO SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
+inline CORINFO_SIG_INFO SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(const Agnostic_CORINFO_SIG_INFO& sigInfo,
                                                                     LightWeightMap<key, value>* buffers,
                                                                     const DenseLightWeightMap<DWORDLONG>* handleMap)
 {
@@ -386,10 +386,10 @@ inline CORINFO_SIG_INFO SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(const Method
     return sig;
 }
 
-inline MethodContext::Agnostic_CORINFO_LOOKUP_KIND SpmiRecordsHelper::CreateAgnostic_CORINFO_LOOKUP_KIND(
+inline Agnostic_CORINFO_LOOKUP_KIND SpmiRecordsHelper::CreateAgnostic_CORINFO_LOOKUP_KIND(
     const CORINFO_LOOKUP_KIND* pGenericLookupKind)
 {
-    MethodContext::Agnostic_CORINFO_LOOKUP_KIND genericLookupKind;
+    Agnostic_CORINFO_LOOKUP_KIND genericLookupKind;
     ZeroMemory(&genericLookupKind, sizeof(genericLookupKind));
     if (pGenericLookupKind != nullptr)
     {
@@ -402,7 +402,7 @@ inline MethodContext::Agnostic_CORINFO_LOOKUP_KIND SpmiRecordsHelper::CreateAgno
 }
 
 inline CORINFO_LOOKUP_KIND SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(
-    MethodContext::Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
+    Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
 {
     CORINFO_LOOKUP_KIND genericLookupKind;
     genericLookupKind.needsRuntimeLookup = lookupKind.needsRuntimeLookup != 0;
@@ -412,10 +412,10 @@ inline CORINFO_LOOKUP_KIND SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(
     return genericLookupKind;
 }
 
-inline MethodContext::Agnostic_CORINFO_CONST_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(
+inline Agnostic_CORINFO_CONST_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(
     CORINFO_CONST_LOOKUP* pLookup)
 {
-    MethodContext::Agnostic_CORINFO_CONST_LOOKUP constLookup;
+    Agnostic_CORINFO_CONST_LOOKUP constLookup;
     ZeroMemory(&constLookup, sizeof(constLookup));
     constLookup.accessType = (DWORD)pLookup->accessType;
     constLookup.handle     = CastHandle(pLookup->handle);
@@ -423,7 +423,7 @@ inline MethodContext::Agnostic_CORINFO_CONST_LOOKUP SpmiRecordsHelper::StoreAgno
 }
 
 inline CORINFO_CONST_LOOKUP SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(
-    MethodContext::Agnostic_CORINFO_CONST_LOOKUP& lookup)
+    Agnostic_CORINFO_CONST_LOOKUP& lookup)
 {
     CORINFO_CONST_LOOKUP constLookup;
     constLookup.accessType = (InfoAccessType)lookup.accessType;
@@ -431,10 +431,10 @@ inline CORINFO_CONST_LOOKUP SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(
     return constLookup;
 }
 
-inline MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_RUNTIME_LOOKUP(
+inline Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_RUNTIME_LOOKUP(
     CORINFO_RUNTIME_LOOKUP* pLookup)
 {
-    MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup;
+    Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup;
     ZeroMemory(&runtimeLookup, sizeof(runtimeLookup));
     runtimeLookup.signature            = CastPointer(pLookup->signature);
     runtimeLookup.helper               = (DWORD)pLookup->helper;
@@ -450,7 +450,7 @@ inline MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAg
 }
 
 inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
-    MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
+    Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
 {
     CORINFO_RUNTIME_LOOKUP runtimeLookup;
     runtimeLookup.signature            = (LPVOID)lookup.signature;
@@ -466,9 +466,9 @@ inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
     return CORINFO_RUNTIME_LOOKUP();
 }
 
-inline MethodContext::Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup)
+inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup)
 {
-    MethodContext::Agnostic_CORINFO_LOOKUP lookup;
+    Agnostic_CORINFO_LOOKUP lookup;
     ZeroMemory(&lookup, sizeof(lookup));
     lookup.lookupKind = CreateAgnostic_CORINFO_LOOKUP_KIND(&pLookup->lookupKind);
     if (pLookup->lookupKind.needsRuntimeLookup)
@@ -482,7 +482,7 @@ inline MethodContext::Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_C
     return lookup;
 }
 
-inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(MethodContext::Agnostic_CORINFO_LOOKUP& agnosticLookup)
+inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(Agnostic_CORINFO_LOOKUP& agnosticLookup)
 {
     CORINFO_LOOKUP lookup;
     ZeroMemory(&lookup, sizeof(lookup));

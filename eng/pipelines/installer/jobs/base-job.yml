@@ -401,7 +401,7 @@ jobs:
             path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
             entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
-    - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+packs
+    - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.tests+packs
       displayName: Build and Package
       continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 

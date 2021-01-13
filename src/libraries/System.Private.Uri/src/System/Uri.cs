@@ -2731,27 +2731,26 @@ namespace System
                 {
                     mode = UnescapeMode.CopyOnly;
                 }
+
                 // NormalizedHost
                 if ((parts & UriComponents.NormalizedHost) != 0)
                 {
-                    unsafe
+                    stemp = UriHelper.StripBidiControlCharacters(stemp, stemp);
+
+                    var hostBuilder = new ValueStringBuilder(stackalloc char[512]);
+
+                    // The host may be invalid punycode (www.xn--?-pck.com),
+                    // but we shouldn't throw after the constructor.
+                    if (DomainNameHelper.TryGetUnicodeEquivalent(stemp, ref hostBuilder))
                     {
-                        fixed (char* hostPtr = stemp)
-                        {
-                            bool allAscii = false;
-                            bool atLeastOneValidIdn = false;
-                            try
-                            {
-                                // Upconvert any punycode to unicode, xn--pck -> ?
-                                stemp = DomainNameHelper.UnicodeEquivalent(
-                                    hostPtr, 0, stemp.Length, ref allAscii, ref atLeastOneValidIdn)!;
-                            }
-                            // The host may be invalid punycode (www.xn--?-pck.com),
-                            // but we shouldn't throw after the constructor.
-                            catch (UriFormatException) { }
-                        }
+                        stemp = hostBuilder.ToString();
+                    }
+                    else
+                    {
+                        hostBuilder.Dispose();
                     }
                 }
+
                 chars = UriHelper.UnescapeString(stemp, 0, stemp.Length, chars, ref count, '/', '?', '#', mode,
                     _syntax, false);
 

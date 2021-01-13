@@ -10,16 +10,16 @@
       - WasmBuildDir    - Directory where build artifacts are stored.
       - WasmBuildNative - Whenever to build the native executable. Defaults to false.
       - WasmNativeStrip - Whenever to strip the native executable. Defaults to true.
+
+      Public items:
+      - WasmExtraFilesToDeploy - Files to copy to $(WasmBuildDir).
+                                 (relative path can be set via %(TargetPath) metadata)
   -->
 
   <PropertyGroup>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
     <WasmNativeStrip>true</WasmNativeStrip>
-  </PropertyGroup>
-
-  <PropertyGroup>
-      <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative</WasmBuildAppDependsOn>
   </PropertyGroup>
 
   <Target Name="WasmBuildApp" AfterTargets="Publish" />
@@ -71,6 +71,7 @@
 
   <Target Name="_BeforeWasmBuildApp">
       <Error Condition="'$(WasmMainAssemblyPath)' == ''" Text="%24(WasmMainAssemblyPath) property needs to be set" />
+      <Error Condition="!Exists('$(WasmMainAssemblyPath)')" Text="WasmMainAssemblyPath=$(WasmMainAssemblyPath) does not exist" />
       <Error Condition="'$(WasmAppDir)' == ''" Text="%24(WasmAppDir) property needs to be set" />
       <Error Condition="'$(WasmBuildNative)' == 'true' and '$(WasmBuildDir)' == ''" Text="%24(WasmBuildDir) property needs to be set" />
       <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
@@ -91,6 +92,7 @@
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       IcuDataFileName="$(WasmIcuDataFileName)"
       RemoteSources="@(WasmRemoteSources)"
+      ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       DebugLevel="$(WasmDebugLevel)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
@@ -105,7 +107,7 @@
       <_managedAppAssemblies Include="$(WasmAppDir)managed\*.dll"/>
     </ItemGroup>
     <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
-    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip -q %(_managedAppAssemblies.Identity)" />
   </Target>
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp" Condition="'$(WasmBuildNative)' == 'true'">
@@ -121,7 +123,7 @@
     <PropertyGroup>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
-      <_EmsdkEnvSourceCommand>source $(EMSDK_PATH)/emsdk_env.sh</_EmsdkEnvSourceCommand>
+      <_EmsdkEnvSourceCommand>source $(EMSDK_PATH)/emsdk_env.sh &gt; /dev/null 2&gt;&amp;1</_EmsdkEnvSourceCommand>
       <_EmccCommand>$(_EmsdkEnvSourceCommand) &amp;&amp; emcc</_EmccCommand>
     </PropertyGroup>
 
@@ -198,17 +200,4 @@
     <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
   </Target>
 
-  <Target Name="RebuildWasmAppBuilder">
-    <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-         Targets="Restore"/>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug"
-         Targets="Build;Publish"/>
-  </Target>
 </Project>
