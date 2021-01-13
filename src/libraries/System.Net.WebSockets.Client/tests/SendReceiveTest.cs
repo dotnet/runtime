@@ -218,12 +218,13 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46909", TestPlatforms.Browser)]
         public async Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
-                var cts = new CancellationTokenSource(TimeOutMilliseconds);
+                // It seems that sometimes the default timeout is not enough for browser so we will extend it
+                // See issue https://github.com/dotnet/runtime/issues/46909
+                var cts = PlatformDetection.IsBrowser ? new CancellationTokenSource(BrowserTimeOutMilliseconds) : new CancellationTokenSource(TimeOutMilliseconds);
 
                 Task[] tasks = new Task[2];
 
@@ -322,13 +323,15 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46909", TestPlatforms.Browser)]
         public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var rand = new Random();
-                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+
+                // It seems that sometimes the default timeout is not enough for browser so we will extend it
+                // See issue https://github.com/dotnet/runtime/issues/46909
+                var ctsDefault = PlatformDetection.IsBrowser ? new CancellationTokenSource(BrowserTimeOutMilliseconds) : new CancellationTokenSource(TimeOutMilliseconds);
 
                 // Values chosen close to boundaries in websockets message length handling as well
                 // as in vectors used in mask application.

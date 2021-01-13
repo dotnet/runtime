@@ -26,6 +26,7 @@ namespace System.Net.WebSockets.Client.Tests
         }).ToArray();
 
         public const int TimeOutMilliseconds = 20000;
+        public const int BrowserTimeOutMilliseconds = 30000;
         public const int CloseDescriptionMaxLength = 123;
         public readonly ITestOutputHelper _output;
 
