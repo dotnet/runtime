@@ -33,6 +33,7 @@ namespace System.Net.Sockets.Tests
         public abstract Task<int> SendAsync(Socket s, ArraySegment<byte> buffer);
         public abstract Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList);
         public abstract Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endpoint);
+        public abstract Task DisconnectAsync(Socket s, bool reuseSocket);
         public virtual bool GuaranteedSendOrdering => true;
         public virtual bool ValidatesArrayArguments => true;
         public virtual bool UsesSync => false;
@@ -90,6 +91,8 @@ namespace System.Net.Sockets.Tests
             Task.Run(() => s.Send(bufferList, SocketFlags.None));
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             Task.Run(() => s.SendTo(buffer.Array, buffer.Offset, buffer.Count, SocketFlags.None, endPoint));
+        public override Task DisconnectAsync(Socket s, bool reuseSocket) =>
+            Task.Run(() => s.Disconnect(reuseSocket));
 
         public override bool GuaranteedSendOrdering => false;
         public override bool UsesSync => true;
@@ -191,6 +194,10 @@ namespace System.Net.Sockets.Tests
             Task.Factory.FromAsync(
                 (callback, state) => s.BeginSendTo(buffer.Array, buffer.Offset, buffer.Count, SocketFlags.None, endPoint, callback, state),
                 s.EndSendTo, null);
+        public override Task DisconnectAsync(Socket s, bool reuseSocket) =>
+            Task.Factory.FromAsync(
+                (callback, state) => s.BeginDisconnect(reuseSocket, callback, state),
+                s.EndDisconnect, null);
 
         public override bool UsesApm => true;
     }
@@ -221,6 +228,8 @@ namespace System.Net.Sockets.Tests
             s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             s.SendToAsync(buffer, SocketFlags.None, endPoint);
+        public override Task DisconnectAsync(Socket s, bool reuseSocket) =>
+            throw new NotImplementedException();    // Not supported yet
     }
 
     // Same as above, but call the CancellationToken overloads where possible
@@ -253,6 +262,8 @@ namespace System.Net.Sockets.Tests
             s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             s.SendToAsync(buffer, SocketFlags.None, endPoint);
+        public override Task DisconnectAsync(Socket s, bool reuseSocket) =>
+            throw new NotImplementedException();    // Not supported yet
     }
 
     public sealed class SocketHelperEap : SocketHelperBase
@@ -342,6 +353,12 @@ namespace System.Net.Sockets.Tests
                 e.RemoteEndPoint = endPoint;
                 return s.SendToAsync(e);
             });
+        public override Task DisconnectAsync(Socket s, bool reuseSocket) =>
+            InvokeAsync(s, e => true, e =>
+            {
+                e.DisconnectReuseSocket = reuseSocket;
+                return s.DisconnectAsync(e);
+            });
 
         private static Task<TResult> InvokeAsync<TResult>(
             Socket s,
@@ -397,6 +414,7 @@ namespace System.Net.Sockets.Tests
         public Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) => _socketHelper.SendAsync(s, buffer);
         public Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) => _socketHelper.SendAsync(s, bufferList);
         public Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endpoint) => _socketHelper.SendToAsync(s, buffer, endpoint);
+        public Task DisconnectAsync(Socket s, bool reuseSocket) => _socketHelper.DisconnectAsync(s, reuseSocket);
         public bool GuaranteedSendOrdering => _socketHelper.GuaranteedSendOrdering;
         public bool ValidatesArrayArguments => _socketHelper.ValidatesArrayArguments;
         public bool UsesSync => _socketHelper.UsesSync;
