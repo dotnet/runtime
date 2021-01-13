@@ -24846,6 +24846,14 @@ void gc_heap::process_last_np_surv_region (generation* consing_gen,
                     heap_number, heap_segment_gen_num (next_region), heap_segment_mem (next_region)));
                 assert (next_region != 0);
             }
+            else if (settings.promotion)
+            {
+                assert(next_plan_gen_num == 0);
+                next_region = get_new_region(0);
+
+                dprintf(REGIONS_LOG, ("h%d getting a new region for gen0 plan start seg to %Ix",
+                    heap_number, heap_segment_mem(next_region)));
+            }
         }
         else
         {
@@ -24873,24 +24881,7 @@ void gc_heap::process_last_np_surv_region (generation* consing_gen,
         }
         else
         {
-            if (settings.promotion)
-            {
-                assert(next_plan_gen_num == 0);
-                next_region = get_new_region (0);
-
-                generation_allocation_segment (consing_gen) = next_region;
-                generation_allocation_pointer (consing_gen) = heap_segment_mem (next_region);
-                generation_allocation_context_start_region (consing_gen) = generation_allocation_pointer (consing_gen);
-                generation_allocation_limit (consing_gen) = generation_allocation_pointer (consing_gen);
-
-                generation_plan_start_segment (generation_of (next_plan_gen_num)) = next_region;
-                dprintf (REGIONS_LOG, ("h%d getting a new region for gen0 plan start seg to %Ix",
-                    heap_number, heap_segment_mem (next_region)));
-            }
-            else
-            {
-                assert(!"ran out of regions for non promotion case??");
-            }
+            assert(!"ran out of regions for non promotion case??");
         }
     }
 }
@@ -26860,10 +26851,6 @@ void gc_heap::fix_generation_bounds (int condemned_gen_number,
 #ifndef _DEBUG
     UNREFERENCED_PARAMETER(consing_gen);
 #endif //_DEBUG
-
-#ifdef USE_REGIONS
-    verify_generations_and_regions();
-#endif //USE_REGIONS
 
     int gen_number = condemned_gen_number;
     dprintf (2, ("---- thread regions gen%d GC ----", gen_number));
@@ -38802,53 +38789,6 @@ void gc_heap::verify_partial()
     }
 }
 #endif //BACKGROUND_GC
-
-#ifdef USE_REGIONS
-void gc_heap::verify_generations_and_regions()
-{
-    // For each generation, verify that
-    //
-    // 1) it has at least one region.
-    // 2) the tail region is the same as the last region if we following the list of regions
-    // in that generation.
-    for (int i = 0; i < total_generation_count; i++)
-    {
-        generation* gen = generation_of(i);
-        int num_regions_in_gen = 0;
-        heap_segment* seg_in_gen = heap_segment_rw(generation_start_segment(gen));
-        heap_segment* prev_region_in_gen = 0;
-        heap_segment* tail_region = generation_tail_region(gen);
-
-        while (seg_in_gen)
-        {
-            prev_region_in_gen = seg_in_gen;
-            num_regions_in_gen++;
-            // an insane number of regions likely means a circular list
-            if (num_regions_in_gen > (1000 * 1000))
-            {
-                dprintf(REGIONS_LOG, ("h%d gen%d has %d regions!!", heap_number, i, num_regions_in_gen));
-                FATAL_GC_ERROR();
-            }
-            seg_in_gen = heap_segment_next(seg_in_gen);
-        }
-
-        if (num_regions_in_gen == 0)
-        {
-            dprintf(REGIONS_LOG, ("h%d gen%d has no regions!!", heap_number, i));
-            FATAL_GC_ERROR();
-        }
-
-        if (tail_region != prev_region_in_gen)
-        {
-            dprintf(REGIONS_LOG, ("h%d gen%d tail region is %Ix, diff from last region %Ix!!",
-                heap_number, i,
-                heap_segment_mem(tail_region),
-                heap_segment_mem(prev_region_in_gen)));
-            FATAL_GC_ERROR();
-        }
-    }
-}
-#endif //USE_REGIONS
 
 #ifdef VERIFY_HEAP
 void
