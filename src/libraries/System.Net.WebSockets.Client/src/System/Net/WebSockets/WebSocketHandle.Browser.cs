@@ -24,6 +24,7 @@ namespace System.Net.WebSockets
 
         public void Abort()
         {
+            _abortSource.Cancel();
             WebSocket?.Abort();
         }
 

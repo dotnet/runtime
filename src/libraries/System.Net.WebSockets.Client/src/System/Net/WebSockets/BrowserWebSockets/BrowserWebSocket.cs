@@ -118,15 +118,17 @@ namespace System.Net.WebSockets
 
         internal async Task ConnectAsyncJavaScript(Uri uri, CancellationToken cancellationToken, List<string>? requestedSubProtocols)
         {
-            // Check that we have not started already
-            int priorState = Interlocked.CompareExchange(ref _state, (int)InternalState.Connecting, (int)InternalState.Created);
-            if (priorState == (int)InternalState.Disposed)
+            // Check that we have not started already.
+            switch ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connecting, (int)InternalState.Created))
             {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
-            else if (priorState != (int)InternalState.Created)
-            {
-                throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
+                case InternalState.Disposed:
+                    throw new ObjectDisposedException(GetType().FullName);
+
+                case InternalState.Created:
+                    break;
+
+                default:
+                    throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
             }
 
             CancellationTokenRegistration connectRegistration = cancellationToken.Register(cts => ((CancellationTokenSource)cts!).Cancel(), _cts);
