@@ -53,10 +53,10 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <AotInputAssemblies Include="@(_WasmAssemblies->Distinct())">
+      <_AotInputAssemblies Include="@(_WasmAssemblies->Distinct())">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      </AotInputAssemblies>
+      </_AotInputAssemblies>
 
       <_WasmAssemblies Remove="@(_WasmAssemblies)" />
     </ItemGroup>
@@ -69,7 +69,7 @@
       CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\mono-aot-cross"
       Mode="$(AOTMode)"
       OutputType="AsmOnly"
-      Assemblies="@(AotInputAssemblies)"
+      Assemblies="@(_AotInputAssemblies)"
       UseAotDataFile="false"
       AotProfilePath="$(AOTProfilePath)"
       Profilers="$(WasmProfilers)"
