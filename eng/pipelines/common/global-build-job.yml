@@ -11,6 +11,7 @@ parameters:
   variables: []
   targetRid: ''
   timeoutInMinutes: ''
+  dependsOn: ''
   pool: ''
   platform: ''
   condition: true
@@ -40,8 +41,12 @@ jobs:
     workspace:
       clean: all
 
+    dependsOn: ${{ parameters.dependsOn }}
+
     ${{ if eq(parameters.useCheckoutBundle, true) }}:
-      dependsOn: checkout
+      dependsOn: 
+      - checkout
+      - ${{ parameters.dependsOn }}
 
     variables:
       - name: _osParameter
