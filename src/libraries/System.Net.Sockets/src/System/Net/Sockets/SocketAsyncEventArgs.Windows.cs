@@ -187,7 +187,10 @@ namespace System.Net.Sockets
 
             // Socket handle is going to post a completion to the completion port (may have done so already).
             // Return pending and we will continue in the completion port callback.
-            RegisterToCancelPendingIO(overlapped, cancellationToken);
+
+            // Hackety hack
+            //RegisterToCancelPendingIO(overlapped, cancellationToken);
+
             return SocketError.IOPending;
         }
 
@@ -1165,37 +1168,30 @@ namespace System.Net.Sockets
         private void CompleteCore()
         {
             _strongThisRef.Value = null; // null out this reference from the overlapped so this isn't kept alive artificially
-            if (_singleBufferHandleState != SingleBufferHandleState.None)
+
+            // The operation could complete so quickly that it races with the code
+            // initiating it.  Wait until that initiation code has completed before
+            // we try to undo the state it configures.
+            SpinWait sw = default;
+            while (_singleBufferHandleState == SingleBufferHandleState.InProcess)
             {
-                CompleteCoreSpin();
+                sw.SpinOnce();
             }
 
-            void CompleteCoreSpin() // separate out to help inline the fast path
+            // Remove any cancellation registration.  First dispose the registration
+            // to ensure that cancellation will either never fine or will have completed
+            // firing before we continue.  Only then can we safely null out the overlapped.
+            _registrationToCancelPendingIO.Dispose();
+            unsafe
             {
-                // The operation could complete so quickly that it races with the code
-                // initiating it.  Wait until that initiation code has completed before
-                // we try to undo the state it configures.
-                SpinWait sw = default;
-                while (_singleBufferHandleState == SingleBufferHandleState.InProcess)
-                {
-                    sw.SpinOnce();
-                }
+                _pendingOverlappedForCancellation = null;
+            }
 
-                // Remove any cancellation registration.  First dispose the registration
-                // to ensure that cancellation will either never fine or will have completed
-                // firing before we continue.  Only then can we safely null out the overlapped.
-                _registrationToCancelPendingIO.Dispose();
-                unsafe
-                {
-                    _pendingOverlappedForCancellation = null;
-                }
-
-                // Release any GC handles.
-                if (_singleBufferHandleState == SingleBufferHandleState.Set)
-                {
-                    _singleBufferHandleState = SingleBufferHandleState.None;
-                    _singleBufferHandle.Dispose();
-                }
+            // Release any GC handles.
+            if (_singleBufferHandleState == SingleBufferHandleState.Set)
+            {
+                _singleBufferHandleState = SingleBufferHandleState.None;
+                _singleBufferHandle.Dispose();
             }
         }
 
