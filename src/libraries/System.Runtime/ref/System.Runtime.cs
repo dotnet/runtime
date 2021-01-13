@@ -2781,6 +2781,7 @@ namespace System
         public static int Sign(sbyte value) { throw null; }
         public static int Sign(float value) { throw null; }
         public static double Sin(double a) { throw null; }
+        public static (double Sin, double Cos) SinCos(double x) { throw null; }
         public static double Sinh(double value) { throw null; }
         public static double Sqrt(double d) { throw null; }
         public static double Tan(double a) { throw null; }
@@ -2829,6 +2830,7 @@ namespace System
         public static float ScaleB(float x, int n) { throw null; }
         public static int Sign(float x) { throw null; }
         public static float Sin(float x) { throw null; }
+        public static (float Sin, float Cos) SinCos(float x) { throw null; }
         public static float Sinh(float x) { throw null; }
         public static float Sqrt(float x) { throw null; }
         public static float Tan(float x) { throw null; }
@@ -5956,6 +5958,13 @@ namespace System.Diagnostics.CodeAnalysis
     {
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+    public sealed partial class RequiresAssemblyFilesAttribute : System.Attribute
+    {
+        public RequiresAssemblyFilesAttribute() { }
+        public string? Message { get { throw null; } set { } }
+        public string? Url { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
