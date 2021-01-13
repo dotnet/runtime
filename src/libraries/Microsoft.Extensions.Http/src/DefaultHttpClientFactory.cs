@@ -367,7 +367,7 @@ namespace Microsoft.Extensions.Http
         }
 
         // Internal for tests
-        internal void ExpiryTimer_Tick(object state)
+        internal virtual void ExpiryTimer_Tick(object state)
         {
             var active = (ActiveHandlerTrackingEntry)state;
 
