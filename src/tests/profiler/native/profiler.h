@@ -67,25 +67,19 @@ public:
 // Managed code can keep running after Shutdown() is called, and things like
 // ELT hooks will continue to be called. We would AV if we tried to call
 // in to freed resources.
-#define SHUTDOWNGUARD()                             \
-    do                                              \
-    {                                               \
-        ShutdownGuard();                            \
-        if (ShutdownGuard::HasShutdownStarted())    \
-        {                                           \
-            return S_OK;                            \
-        }                                           \
-    } while(0) 
+#define SHUTDOWNGUARD()                         \
+    ShutdownGuard();                            \
+    if (ShutdownGuard::HasShutdownStarted())    \
+    {                                           \
+        return S_OK;                            \
+    }
 
-#define SHUTDOWNGUARD_RETVOID()                     \
-    do                                              \
-    {                                               \
-        ShutdownGuard();                            \
-        if (ShutdownGuard::HasShutdownStarted())    \
-        {                                           \
-            return;                                 \
-        }                                           \
-    } while(0)
+#define SHUTDOWNGUARD_RETVOID()                 \
+    ShutdownGuard();                            \
+    if (ShutdownGuard::HasShutdownStarted())    \
+    {                                           \
+        return;                                 \
+    }
 
 class Profiler : public ICorProfilerCallback10
 {
