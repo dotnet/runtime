@@ -106,7 +106,7 @@
     <ItemGroup>
       <_managedAppAssemblies Include="$(WasmAppDir)managed\*.dll"/>
     </ItemGroup>
-    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip -q %(_managedAppAssemblies.Identity)" />
   </Target>
 
 
