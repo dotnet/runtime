@@ -102,6 +102,10 @@ namespace BasicEventSourceTests
 
                     tracesession.Flush();
 
+                    // Sleep after requesting flush to ensure that the manifest payload generated
+                    // is fully written to the etl file.
+                    Thread.Sleep(TimeSpan.FromSeconds(5));
+
                     tracesession.DisableProvider("SimpleEventSource");
                     tracesession.Dispose();
 
