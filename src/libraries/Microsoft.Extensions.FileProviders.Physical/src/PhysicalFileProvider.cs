@@ -34,6 +34,7 @@ namespace Microsoft.Extensions.FileProviders
 
         private bool? _usePollingFileWatcher;
         private bool? _useActivePolling;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of a PhysicalFileProvider at the given root directory.
@@ -100,7 +101,7 @@ namespace Microsoft.Extensions.FileProviders
             {
                 if (_fileWatcher != null)
                 {
-                    throw new InvalidOperationException($"Cannot modify {nameof(UsePollingFileWatcher)} once file watcher has been initialized.");
+                    throw new InvalidOperationException(SR.Format(SR.CannotModifyWhenFileWatcherInitialized, nameof(UsePollingFileWatcher)));
                 }
                 _usePollingFileWatcher = value;
             }
@@ -158,7 +159,10 @@ namespace Microsoft.Extensions.FileProviders
         internal PhysicalFilesWatcher CreateFileWatcher()
         {
             string root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
-            return new PhysicalFilesWatcher(root, new FileSystemWatcher(root), UsePollingFileWatcher, _filters)
+
+            // When both UsePollingFileWatcher & UseActivePolling are set, we won't use a FileSystemWatcher.
+            FileSystemWatcher watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher(root);
+            return new PhysicalFilesWatcher(root, watcher, UsePollingFileWatcher, _filters)
             {
                 UseActivePolling = UseActivePolling,
             };
@@ -177,7 +181,11 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Disposes the provider. Change tokens may not trigger after the provider is disposed.
         /// </summary>
-        public void Dispose() => Dispose(true);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Disposes the provider.
@@ -185,13 +193,15 @@ namespace Microsoft.Extensions.FileProviders
         /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
-            _fileWatcher?.Dispose();
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _fileWatcher?.Dispose();
+                }
+                _disposed = true;
+            }
         }
-
-        /// <summary>
-        /// Destructor for <see cref="PhysicalFileProvider"/>.
-        /// </summary>
-        ~PhysicalFileProvider() => Dispose(false);
 
         /// <summary>
         /// The root directory for this instance.

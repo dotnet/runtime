@@ -74,6 +74,7 @@ namespace System.Net.Sockets
             byte[] buffer = s_keepAliveValuesBuffer ?? (s_keepAliveValuesBuffer = new byte[3 * sizeof(uint)]);
             ioControlKeepAlive.Fill(buffer);
             int realOptionLength = 0;
+            Debug.Assert(OperatingSystem.IsWindows());
             return SocketPal.WindowsIoctl(handle, unchecked((int)IOControlCode.KeepAliveValues), buffer, null, out realOptionLength);
         }
 

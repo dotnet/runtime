@@ -14,6 +14,6 @@ namespace System.Collections.Generic
         // value less than zero if x is less than y, zero if x is equal to y, or a
         // value greater than zero if x is greater than y.
         //
-        int Compare([AllowNull] T x, [AllowNull] T y);
+        int Compare(T? x, T? y);
     }
 }

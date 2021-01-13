@@ -16,8 +16,8 @@ namespace Internal.Cryptography
         private SafeProvHandle _hProvider;
         private SafeKeyHandle _hKey;
 
-        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, bool addNoSaltFlag, byte[]? iv, bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, bool addNoSaltFlag, byte[]? iv, bool encrypting, int feedbackSize, int paddingSizeInBytes)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             _encrypting = encrypting;
 
@@ -25,6 +25,10 @@ namespace Internal.Cryptography
             _hKey = ImportCspBlob(_hProvider, algId, key, addNoSaltFlag);
 
             SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_MODE, (int)cipherMode);
+            if (cipherMode == CipherMode.CFB)
+            {
+                SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_MODE_BITS, feedbackSize);
+            }
 
             byte[]? currentIv = cipherMode.GetCipherIv(iv);
             if (currentIv != null)
@@ -67,7 +71,7 @@ namespace Internal.Cryptography
 
         public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
             int numBytesWritten = 0;
 
@@ -91,7 +95,7 @@ namespace Internal.Cryptography
         private int Transform(ReadOnlySpan<byte> input, Span<byte> output, bool isFinal)
         {
             Debug.Assert(input.Length > 0);
-            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
             int numBytesWritten;
             if (_encrypting)

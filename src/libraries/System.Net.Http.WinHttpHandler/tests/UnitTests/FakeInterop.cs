@@ -20,6 +20,34 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal unsafe struct CERT_CHAIN_POLICY_PARA
+        {
+            public uint cbSize;
+            public uint dwFlags;
+            public void* pvExtraPolicyPara;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal unsafe struct CERT_CHAIN_POLICY_STATUS
+        {
+            public uint cbSize;
+            public uint dwError;
+            public int lChainIndex;
+            public int lElementIndex;
+            public void* pvExtraPolicyStatus;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal struct CERT_CONTEXT
+        {
+            internal uint dwCertEncodingType;
+            internal IntPtr pbCertEncoded;
+            internal uint cbCertEncoded;
+            internal IntPtr pCertInfo;
+            internal IntPtr hCertStore;
+        }
+
         public static bool CertFreeCertificateContext(IntPtr certContext)
         {
             return true;
@@ -33,6 +61,7 @@ internal static partial class Interop
         {
             return true;
         }
+
     }
 
     internal static partial class Kernel32
@@ -128,7 +157,7 @@ internal static partial class Interop
 
         public static bool WinHttpSendRequest(
             SafeWinHttpHandle requestHandle,
-            StringBuilder headers,
+            IntPtr headers,
             uint headersLength,
             IntPtr optional,
             uint optionalLength,
@@ -478,6 +507,10 @@ internal static partial class Interop
             {
                 APICallHistory.WinHttpOptionRedirectPolicy = optionData;
             }
+            else if (option == Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT)
+            {
+                APICallHistory.WinHttpOptionReceiveTimeout = optionData;
+            }
 
             return true;
         }
@@ -508,7 +541,7 @@ internal static partial class Interop
             return true;
         }
 
-        public static bool WinHttpSetOption(
+        public unsafe static bool WinHttpSetOption(
             SafeWinHttpHandle handle,
             uint option,
             IntPtr optionData,
@@ -526,6 +559,11 @@ internal static partial class Interop
             else if (option == Interop.WinHttp.WINHTTP_OPTION_CLIENT_CERT_CONTEXT)
             {
                 APICallHistory.WinHttpOptionClientCertContext.Add(optionData);
+            }
+            else if (option == Interop.WinHttp.WINHTTP_OPTION_TCP_KEEPALIVE)
+            {
+                Interop.WinHttp.tcp_keepalive* ptr = (Interop.WinHttp.tcp_keepalive*)optionData;
+                APICallHistory.WinHttpOptionTcpKeepAlive = (ptr->onoff, ptr->keepalivetime, ptr->keepaliveinterval);
             }
 
             return true;

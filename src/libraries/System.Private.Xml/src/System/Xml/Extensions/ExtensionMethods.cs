@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Reflection;
 
 
@@ -9,20 +8,6 @@ namespace System.Xml.Extensions
 {
     internal static class ExtensionMethods
     {
-        #region Contract compliance for System.Type
-
-        internal static ConstructorInfo? GetConstructor(this Type type, BindingFlags bindingFlags, Type[] parameterTypes)
-        {
-            return type.GetConstructor(bindingFlags, null, parameterTypes, null);
-        }
-
-        internal static MethodInfo? GetMethod(this Type type, string methodName, BindingFlags bindingFlags, Type[] parameterTypes)
-        {
-            return type.GetMethod(methodName, bindingFlags, null, parameterTypes, null);
-        }
-
-        #endregion
-
         internal static Uri ToUri(string s)
         {
             if (s != null && s.Length > 0)

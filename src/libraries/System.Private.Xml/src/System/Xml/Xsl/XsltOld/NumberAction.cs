@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Xml.XPath;
 using System.Xml.Xsl.Runtime;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -18,9 +19,9 @@ namespace System.Xml.Xsl.XsltOld
             public bool isSeparator;      // False for alphanumeric strings of chars
             public NumberingSequence numSequence;      // Specifies numbering sequence
             public int length;           // Minimum length of decimal numbers (if necessary, pad to left with zeros)
-            public string formatString;     // Format string for separator token
+            public string? formatString;     // Format string for separator token
 
-            public FormatInfo(bool isSeparator, string formatString)
+            public FormatInfo(bool isSeparator, string? formatString)
             {
                 this.isSeparator = isSeparator;
                 this.formatString = formatString;
@@ -36,7 +37,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             private NumberingSequence _seq;
             private int _cMinLen;
-            private string _separator;
+            private string? _separator;
             private int _sizeGroup;
 
             internal NumberingFormat() { }
@@ -45,7 +46,7 @@ namespace System.Xml.Xsl.XsltOld
             //void setLangID(LID langid) {_langid = langid;}
             //internal void setTraditional(bool fTraditional) {_grfnfc = fTraditional ? msofnfcTraditional : 0;}
             internal void setMinLen(int cMinLen) { _cMinLen = cMinLen; }
-            internal void setGroupingSeparator(string separator) { _separator = separator; }
+            internal void setGroupingSeparator(string? separator) { _separator = separator; }
 
             internal void setGroupingSize(int sizeGroup)
             {
@@ -55,7 +56,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
             }
 
-            internal string FormatItem(object value)
+            internal string? FormatItem(object value)
             {
                 double dblVal;
 
@@ -109,7 +110,7 @@ namespace System.Xml.Xsl.XsltOld
                 return ConvertToArabic(dblVal, _cMinLen, _sizeGroup, _separator);
             }
 
-            private static string ConvertToArabic(double val, int minLength, int groupSize, string groupSeparator)
+            private static string ConvertToArabic(double val, int minLength, int groupSize, string? groupSeparator)
             {
                 string str;
 
@@ -146,24 +147,24 @@ namespace System.Xml.Xsl.XsltOld
         // States:
         private const int OutputNumber = 2;
 
-        private string _level;
-        private string _countPattern;
+        private string? _level;
+        private string? _countPattern;
         private int _countKey = Compiler.InvalidQueryKey;
-        private string _from;
+        private string? _from;
         private int _fromKey = Compiler.InvalidQueryKey;
-        private string _value;
+        private string? _value;
         private int _valueKey = Compiler.InvalidQueryKey;
-        private Avt _formatAvt;
-        private Avt _langAvt;
-        private Avt _letterAvt;
-        private Avt _groupingSepAvt;
-        private Avt _groupingSizeAvt;
+        private Avt? _formatAvt;
+        private Avt? _langAvt;
+        private Avt? _letterAvt;
+        private Avt? _groupingSepAvt;
+        private Avt? _groupingSizeAvt;
         // Compile time precalculated AVTs
-        private List<FormatInfo> _formatTokens;
-        private string _lang;
-        private string _letter;
-        private string _groupingSep;
-        private string _groupingSize;
+        private List<FormatInfo?>? _formatTokens;
+        private string? _lang;
+        private string? _letter;
+        private string? _groupingSep;
+        private string? _groupingSize;
         private bool _forwardCompatibility;
 
         internal override bool CompileAttribute(Compiler compiler)
@@ -241,7 +242,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             int result = 0;
             // Our current point will be our end point in this search
-            XPathNavigator endNode = frame.Node;
+            XPathNavigator endNode = frame.Node!;
             if (endNode.NodeType == XPathNodeType.Attribute || endNode.NodeType == XPathNodeType.Namespace)
             {
                 endNode = endNode.Clone();
@@ -277,11 +278,11 @@ namespace System.Xml.Xsl.XsltOld
                         hitFrom = true;
                         result = 0;
                     }
-                    else if (MatchCountKey(processor, frame.Node, sel.Current))
+                    else if (MatchCountKey(processor, frame.Node!, sel.Current!))
                     {
                         result++;
                     }
-                    if (sel.Current.IsSamePosition(endNode))
+                    if (sel.Current!.IsSamePosition(endNode))
                     {
                         break;
                     }
@@ -299,11 +300,11 @@ namespace System.Xml.Xsl.XsltOld
                 // and count root node by itself
                 while (sel.MoveNext())
                 {
-                    if (MatchCountKey(processor, frame.Node, sel.Current))
+                    if (MatchCountKey(processor, frame.Node!, sel.Current!))
                     {
                         result++;
                     }
-                    if (sel.Current.IsSamePosition(endNode))
+                    if (sel.Current!.IsSamePosition(endNode))
                     {
                         break;
                     }
@@ -380,16 +381,16 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(!(value is int));
             if (Type.GetTypeCode(value.GetType()) == TypeCode.Object)
             {
-                XPathNodeIterator nodeset = value as XPathNodeIterator;
+                XPathNodeIterator? nodeset = value as XPathNodeIterator;
                 if (nodeset != null)
                 {
                     if (nodeset.MoveNext())
                     {
-                        return nodeset.Current.Value;
+                        return nodeset.Current!.Value;
                     }
                     return string.Empty;
                 }
-                XPathNavigator nav = value as XPathNavigator;
+                XPathNavigator? nav = value as XPathNavigator;
                 if (nav != null)
                 {
                     return nav.Value;
@@ -423,8 +424,8 @@ namespace System.Xml.Xsl.XsltOld
                     else
                     {
                         bool multiple = (_level == "multiple");
-                        XPathNavigator contextNode = frame.Node;         // context of xsl:number element. We using this node in MatchCountKey()
-                        XPathNavigator countNode = frame.Node.Clone(); // node we count for
+                        XPathNavigator contextNode = frame.Node!;         // context of xsl:number element. We using this node in MatchCountKey()
+                        XPathNavigator countNode = frame.Node!.Clone(); // node we count for
                         if (countNode.NodeType == XPathNodeType.Attribute || countNode.NodeType == XPathNodeType.Namespace)
                         {
                             countNode.MoveToParent();
@@ -497,7 +498,7 @@ namespace System.Xml.Xsl.XsltOld
         // in case of no AVTs we can build this object at compile time and reuse it on execution time.
         // even partial step in this derection will be usefull (when cFormats == 0)
 
-        private static string Format(ArrayList numberlist, List<FormatInfo> tokens, string lang, string letter, string groupingSep, string groupingSize)
+        private static string Format(ArrayList numberlist, List<FormatInfo?>? tokens, string? lang, string? letter, string? groupingSep, string? groupingSize)
         {
             StringBuilder result = new StringBuilder();
             int cFormats = 0;
@@ -527,16 +528,16 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (0 < cFormats)
             {
-                FormatInfo prefix = tokens[0];
+                FormatInfo? prefix = tokens![0];
                 Debug.Assert(prefix == null || prefix.isSeparator);
-                FormatInfo sufix = null;
+                FormatInfo? sufix = null;
                 if (cFormats % 2 == 1)
                 {
                     sufix = tokens[cFormats - 1];
                     cFormats--;
                 }
-                FormatInfo periodicSeparator = 2 < cFormats ? tokens[cFormats - 2] : s_defaultSeparator;
-                FormatInfo periodicFormat = 0 < cFormats ? tokens[cFormats - 1] : s_defaultFormat;
+                FormatInfo periodicSeparator = 2 < cFormats ? tokens[cFormats - 2]! : s_defaultSeparator;
+                FormatInfo periodicFormat = 0 < cFormats ? tokens[cFormats - 1]! : s_defaultFormat;
                 if (prefix != null)
                 {
                     result.Append(prefix.formatString);
@@ -548,12 +549,12 @@ namespace System.Xml.Xsl.XsltOld
                     bool haveFormat = formatIndex < cFormats;
                     if (0 < i)
                     {
-                        FormatInfo thisSeparator = haveFormat ? tokens[formatIndex + 0] : periodicSeparator;
+                        FormatInfo thisSeparator = haveFormat ? tokens[formatIndex + 0]! : periodicSeparator;
                         Debug.Assert(thisSeparator.isSeparator);
                         result.Append(thisSeparator.formatString);
                     }
 
-                    FormatInfo thisFormat = haveFormat ? tokens[formatIndex + 1] : periodicFormat;
+                    FormatInfo thisFormat = haveFormat ? tokens[formatIndex + 1]! : periodicFormat;
                     Debug.Assert(!thisFormat.isSeparator);
 
                     //numberingFormat.setletter(this.letter);
@@ -561,7 +562,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     numberingFormat.setNumberingType(thisFormat.numSequence);
                     numberingFormat.setMinLen(thisFormat.length);
-                    result.Append(numberingFormat.FormatItem(numberlist[i]));
+                    result.Append(numberingFormat.FormatItem(numberlist[i]!));
                 }
 
                 if (sufix != null)
@@ -578,7 +579,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         result.Append('.');
                     }
-                    result.Append(numberingFormat.FormatItem(numberlist[i]));
+                    result.Append(numberingFormat.FormatItem(numberlist[i]!));
                 }
             }
             return result.ToString();
@@ -696,7 +697,8 @@ namespace System.Xml.Xsl.XsltOld
             (non-alphanumeric).
 
         */
-        private static List<FormatInfo> ParseFormat(string formatString)
+        [return: NotNullIfNotNull("formatString")]
+        private static List<FormatInfo?>? ParseFormat(string? formatString)
         {
             if (formatString == null || formatString.Length == 0)
             {
@@ -704,7 +706,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             int length = 0;
             bool lastAlphaNumeric = CharUtil.IsAlphaNumeric(formatString[length]);
-            List<FormatInfo> tokens = new List<FormatInfo>();
+            List<FormatInfo?> tokens = new List<FormatInfo?>();
             int count = 0;
 
             if (lastAlphaNumeric)
@@ -748,7 +750,7 @@ namespace System.Xml.Xsl.XsltOld
             return tokens;
         }
 
-        private string ParseLetter(string letter)
+        private string? ParseLetter(string? letter)
         {
             if (letter == null || letter == "traditional" || letter == "alphabetic")
             {

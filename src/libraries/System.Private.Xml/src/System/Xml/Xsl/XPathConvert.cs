@@ -9,6 +9,7 @@
 */
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Xml.Xsl
@@ -2016,8 +2017,9 @@ namespace System.Xml.Xsl
                 AssertValid();
             }
 
-            public int CompareTo(object obj)
+            public int CompareTo(object? obj)
             {
+                Debug.Assert(obj != null);
                 BigInteger bi = (BigInteger)obj;
                 AssertValid();
                 bi.AssertValid();
@@ -2845,37 +2847,6 @@ namespace System.Xml.Xsl
         };
 
         /*  ----------------------------------------------------------------------------
-            IntToString()
-
-            Converts an integer to a string according to XPath rules.
-        */
-        private static unsafe string IntToString(int val)
-        {
-            // The maximum number of characters needed to represent any int value is 11
-            const int BufSize = 12;
-            char* pBuf = stackalloc char[BufSize];
-            char* pch = pBuf += BufSize;
-            uint u = (uint)(val < 0 ? -val : val);
-
-            while (u >= 10)
-            {
-                // Fast division by 10
-                uint quot = (uint)((0x66666667L * u) >> 32) >> 2;
-                *(--pch) = (char)((u - quot * 10) + '0');
-                u = quot;
-            }
-
-            *(--pch) = (char)(u + '0');
-
-            if (val < 0)
-            {
-                *(--pch) = '-';
-            }
-
-            return new string(pch, 0, (int)(pBuf - pch));
-        }
-
-        /*  ----------------------------------------------------------------------------
             DoubleToString()
 
             Converts a floating point number to a string according to XPath rules.
@@ -2888,7 +2859,7 @@ namespace System.Xml.Xsl
 
             if (IsInteger(dbl, out iVal))
             {
-                return IntToString(iVal);
+                return iVal.ToString(CultureInfo.InvariantCulture);
             }
 
             // Handle NaN and infinity

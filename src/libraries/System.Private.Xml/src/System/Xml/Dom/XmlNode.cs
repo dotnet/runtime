@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Collections;
@@ -475,7 +474,7 @@ namespace System.Xml
         {
             XmlNode? nextNode = oldChild.NextSibling;
             RemoveChild(oldChild);
-            XmlNode? node = InsertBefore(newChild, nextNode);
+            InsertBefore(newChild, nextNode);
             return oldChild;
         }
 
@@ -847,7 +846,6 @@ namespace System.Xml
         {
             get
             {
-                XmlDocument? doc = OwnerDocument;
                 return HasReadOnlyParent(this);
             }
         }
@@ -1408,7 +1406,7 @@ namespace System.Xml
             }
         }
 
-        internal virtual string? GetXPAttribute(string localName, string namespaceURI)
+        internal virtual string GetXPAttribute(string localName, string namespaceURI)
         {
             return string.Empty;
         }

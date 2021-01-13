@@ -5,8 +5,7 @@
     <CLRTestKind>BuildOnly</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateRunScript>false</GenerateRunScript>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <ProjectAssetsFile>$(TestSourceDir)Common\CoreCLRTestLibrary\obj\project.assets.json</ProjectAssetsFile>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Assertion.cs" />

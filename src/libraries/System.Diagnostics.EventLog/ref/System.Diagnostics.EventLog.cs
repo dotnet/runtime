@@ -110,6 +110,7 @@ namespace System.Diagnostics
         public int Index { get { throw null; } }
         public long InstanceId { get { throw null; } }
         public string MachineName { get { throw null; } }
+        [System.ComponentModel.EditorAttribute("System.ComponentModel.Design.BinaryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string Message { get { throw null; } }
         public string[] ReplacementStrings { get { throw null; } }
         public string Source { get { throw null; } }

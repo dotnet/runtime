@@ -170,6 +170,80 @@ c_static_assert(offsetof(IOVector, Count) == offsetof(iovec, iov_len));
 
 #define Min(left,right) (((left) < (right)) ? (left) : (right))
 
+static bool TryConvertAddressFamilyPlatformToPal(sa_family_t platformAddressFamily, int32_t* palAddressFamily)
+{
+    assert(palAddressFamily != NULL);
+
+    switch (platformAddressFamily)
+    {
+        case AF_UNSPEC:
+            *palAddressFamily = AddressFamily_AF_UNSPEC;
+            return true;
+
+        case AF_UNIX:
+            *palAddressFamily = AddressFamily_AF_UNIX;
+            return true;
+
+        case AF_INET:
+            *palAddressFamily = AddressFamily_AF_INET;
+            return true;
+
+        case AF_INET6:
+            *palAddressFamily = AddressFamily_AF_INET6;
+            return true;
+#ifdef AF_PACKET
+        case AF_PACKET:
+            *palAddressFamily = AddressFamily_AF_PACKET;
+            return true;
+#endif
+#ifdef AF_CAN
+        case AF_CAN:
+            *palAddressFamily = AddressFamily_AF_CAN;
+            return true;
+#endif
+        default:
+            *palAddressFamily = platformAddressFamily;
+            return false;
+    }
+}
+
+static bool TryConvertAddressFamilyPalToPlatform(int32_t palAddressFamily, sa_family_t* platformAddressFamily)
+{
+    assert(platformAddressFamily != NULL);
+
+    switch (palAddressFamily)
+    {
+        case AddressFamily_AF_UNSPEC:
+            *platformAddressFamily = AF_UNSPEC;
+            return true;
+
+        case AddressFamily_AF_UNIX:
+            *platformAddressFamily = AF_UNIX;
+            return true;
+
+        case AddressFamily_AF_INET:
+            *platformAddressFamily = AF_INET;
+            return true;
+
+        case AddressFamily_AF_INET6:
+            *platformAddressFamily = AF_INET6;
+            return true;
+#ifdef AF_PACKET
+        case AddressFamily_AF_PACKET:
+            *platformAddressFamily = AF_PACKET;
+            return true;
+#endif
+#ifdef AF_CAN
+        case AddressFamily_AF_CAN:
+            *platformAddressFamily = AF_CAN;
+            return true;
+#endif
+        default:
+            *platformAddressFamily = (sa_family_t)palAddressFamily;
+            return false;
+    }
+}
+
 static void ConvertByteArrayToIn6Addr(struct in6_addr* addr, const uint8_t* buffer, int32_t bufferLength)
 {
     assert(bufferLength == NUM_BYTES_IN_IPV6_ADDRESS);
@@ -261,7 +335,7 @@ static int32_t CopySockAddrToIPAddress(sockaddr* addr, sa_family_t family, IPAdd
     return -1;
 }
 
-int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entry)
+int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry)
 {
     if (address == NULL || entry == NULL)
     {
@@ -275,11 +349,16 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
     struct ifaddrs* addrs = NULL;
 #endif
 
-    // Get all address families and the canonical name
+    sa_family_t platformFamily;
+    if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &platformFamily))
+    {
+        return GetAddrInfoErrorFlags_EAI_FAMILY;
+    }
+
     struct addrinfo hint;
     memset(&hint, 0, sizeof(struct addrinfo));
-    hint.ai_family = AF_UNSPEC;
     hint.ai_flags = AI_CANONNAME;
+    hint.ai_family = platformFamily;
 
     int result = getaddrinfo((const char*)address, NULL, &hint, &info);
     if (result != 0)
@@ -591,80 +670,6 @@ int32_t SystemNative_GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int
     *ipv4SocketAddressSize = sizeof(struct sockaddr_in);
     *ipv6SocketAddressSize = sizeof(struct sockaddr_in6);
     return Error_SUCCESS;
-}
-
-static bool TryConvertAddressFamilyPlatformToPal(sa_family_t platformAddressFamily, int32_t* palAddressFamily)
-{
-    assert(palAddressFamily != NULL);
-
-    switch (platformAddressFamily)
-    {
-        case AF_UNSPEC:
-            *palAddressFamily = AddressFamily_AF_UNSPEC;
-            return true;
-
-        case AF_UNIX:
-            *palAddressFamily = AddressFamily_AF_UNIX;
-            return true;
-
-        case AF_INET:
-            *palAddressFamily = AddressFamily_AF_INET;
-            return true;
-
-        case AF_INET6:
-            *palAddressFamily = AddressFamily_AF_INET6;
-            return true;
-#ifdef AF_PACKET
-        case AF_PACKET:
-            *palAddressFamily = AddressFamily_AF_PACKET;
-            return true;
-#endif
-#ifdef AF_CAN
-        case AF_CAN:
-            *palAddressFamily = AddressFamily_AF_CAN;
-            return true;
-#endif
-        default:
-            *palAddressFamily = platformAddressFamily;
-            return false;
-    }
-}
-
-static bool TryConvertAddressFamilyPalToPlatform(int32_t palAddressFamily, sa_family_t* platformAddressFamily)
-{
-    assert(platformAddressFamily != NULL);
-
-    switch (palAddressFamily)
-    {
-        case AddressFamily_AF_UNSPEC:
-            *platformAddressFamily = AF_UNSPEC;
-            return true;
-
-        case AddressFamily_AF_UNIX:
-            *platformAddressFamily = AF_UNIX;
-            return true;
-
-        case AddressFamily_AF_INET:
-            *platformAddressFamily = AF_INET;
-            return true;
-
-        case AddressFamily_AF_INET6:
-            *platformAddressFamily = AF_INET6;
-            return true;
-#ifdef AF_PACKET
-        case AddressFamily_AF_PACKET:
-            *platformAddressFamily = AF_PACKET;
-            return true;
-#endif
-#ifdef AF_CAN
-        case AddressFamily_AF_CAN:
-            *platformAddressFamily = AF_CAN;
-            return true;
-#endif
-        default:
-            *platformAddressFamily = (sa_family_t)palAddressFamily;
-            return false;
-    }
 }
 
 int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t socketAddressLen, int32_t* addressFamily)
@@ -3085,6 +3090,11 @@ int32_t SystemNative_Disconnect(intptr_t socket)
     addr.sa_family = AF_UNSPEC;
 
     err = connect(fd, &addr, sizeof(addr));
+    if (err != 0) 
+    {
+        // On some older kernels connect(AF_UNSPEC) may fail. Fall back to shutdown in these cases:
+        err = shutdown(fd, SHUT_RDWR);
+    } 
 #elif HAVE_DISCONNECTX
     // disconnectx causes a FIN close on OSX. It's the best we can do.
     err = disconnectx(fd, SAE_ASSOCID_ANY, SAE_CONNID_ANY);

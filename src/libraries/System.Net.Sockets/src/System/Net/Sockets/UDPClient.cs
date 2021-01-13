@@ -193,7 +193,7 @@ namespace System.Net.Sockets
             }
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public void AllowNatTraversal(bool allowed)
         {
             _clientSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);

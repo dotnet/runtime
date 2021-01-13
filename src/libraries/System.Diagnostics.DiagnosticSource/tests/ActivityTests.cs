@@ -84,9 +84,9 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("world", anotherActivity.GetBaggageItem("hello"));
                     Assert.Equal(4, anotherActivity.Baggage.Count());
                     Assert.Equal(new KeyValuePair<string, string>("hello", "world"), anotherActivity.Baggage.First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(1).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(1).First());
                     Assert.Equal(new KeyValuePair<string, string>(Key + 1, Value + 1), anotherActivity.Baggage.Skip(2).First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(3).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(3).First());
                 }
                 finally
                 {
@@ -97,6 +97,69 @@ namespace System.Diagnostics.Tests
             {
                 activity.Stop();
             }
+        }
+
+        [Fact]
+        public void TestBaggageOrderAndDuplicateKeys()
+        {
+            Activity a = new Activity("Baggage");
+            a.AddBaggage("1", "1");
+            a.AddBaggage("1", "2");
+            a.AddBaggage("1", "3");
+            a.AddBaggage("1", "4");
+
+            int value = 4;
+
+            foreach (KeyValuePair<string, string> kvp in a.Baggage)
+            {
+                Assert.Equal("1", kvp.Key);
+                Assert.Equal(value.ToString(), kvp.Value);
+                value--;
+            }
+
+            Assert.Equal("4", a.GetBaggageItem("1"));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestBaggageWithChainedActivities()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity a1 = new Activity("a1");
+                a1.Start();
+
+                a1.AddBaggage("1", "1");
+                a1.AddBaggage("2", "2");
+
+                IEnumerable<KeyValuePair<string, string>> baggages = a1.Baggage;
+                Assert.Equal(2, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(1));
+
+                Activity a2 = new Activity("a2");
+                a2.Start();
+
+                a2.AddBaggage("3", "3");
+                baggages = a2.Baggage;
+                Assert.Equal(3, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("3", "3"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(1));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(2));
+
+                Activity a3 = new Activity("a3");
+                a3.Start();
+
+                a3.AddBaggage("4", "4");
+                baggages = a3.Baggage;
+                Assert.Equal(4, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("4", "4"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("3", "3"), baggages.ElementAt(1));
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(2));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(3));
+
+                a3.Dispose();
+                a2.Dispose();
+                a1.Dispose();
+            }).Dispose();
         }
 
         /// <summary>
@@ -536,22 +599,28 @@ namespace System.Diagnostics.Tests
             Activity activity0 = new Activity("activity0");
             Activity activity1 = new Activity("activity1");
             Activity activity2 = new Activity("activity2");
+            Activity activity3 = new Activity("activity3");
             activity0.SetParentId("01-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
             activity0.Start();
             activity1.SetParentId("cc-1123456789abcdef0123456789abcdef-1123456789abcdef-00");
             activity1.Start();
             activity2.SetParentId("fe-2123456789abcdef0123456789abcdef-2123456789abcdef-00");
             activity2.Start();
+            activity3.SetParentId("ef-3123456789abcdef0123456789abcdef-3123456789abcdef-00");
+            activity3.Start();
 
             Assert.Equal(ActivityIdFormat.W3C, activity0.IdFormat);
             Assert.Equal(ActivityIdFormat.W3C, activity1.IdFormat);
             Assert.Equal(ActivityIdFormat.W3C, activity2.IdFormat);
+            Assert.Equal(ActivityIdFormat.W3C, activity3.IdFormat);
             Assert.Equal("0123456789abcdef0123456789abcdef", activity0.TraceId.ToHexString());
             Assert.Equal("1123456789abcdef0123456789abcdef", activity1.TraceId.ToHexString());
             Assert.Equal("2123456789abcdef0123456789abcdef", activity2.TraceId.ToHexString());
+            Assert.Equal("3123456789abcdef0123456789abcdef", activity3.TraceId.ToHexString());
             Assert.Equal("0123456789abcdef", activity0.ParentSpanId.ToHexString());
             Assert.Equal("1123456789abcdef", activity1.ParentSpanId.ToHexString());
             Assert.Equal("2123456789abcdef", activity2.ParentSpanId.ToHexString());
+            Assert.Equal("3123456789abcdef", activity3.ParentSpanId.ToHexString());
         }
 
         [Fact]
@@ -1506,6 +1575,40 @@ namespace System.Diagnostics.Tests
             }
 
             Assert.Equal(resultCount, a.TagObjects.Count());
+        }
+
+        [Fact]
+        public void StructEnumerator_TagsLinkedList()
+        {
+            // Note: This test verifies the presence of the struct Enumerator on TagsLinkedList used by customers dynamically to avoid allocations.
+
+            Activity a = new Activity("TestActivity");
+            a.AddTag("Tag1", true);
+
+            IEnumerable<KeyValuePair<string, object>> enumerable = a.TagObjects;
+
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
+        }
+
+        [Fact]
+        public void StructEnumerator_GenericLinkedList()
+        {
+            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+
+            Activity a = new Activity("TestActivity");
+            a.AddEvent(new ActivityEvent());
+
+            IEnumerable<ActivityEvent> enumerable = a.Events;
+
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
         }
 
         public void Dispose()

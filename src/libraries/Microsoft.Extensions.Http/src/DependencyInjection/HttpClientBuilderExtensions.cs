@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -316,7 +317,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// scope bound to the message handler, which is managed independently.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddTypedClient<TClient>(this IHttpClientBuilder builder)
+        public static IHttpClientBuilder AddTypedClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>(
+            this IHttpClientBuilder builder)
             where TClient : class
         {
             if (builder == null)
@@ -327,7 +329,8 @@ namespace Microsoft.Extensions.DependencyInjection
             return AddTypedClientCore<TClient>(builder, validateSingleType: false);
         }
 
-        internal static IHttpClientBuilder AddTypedClientCore<TClient>(this IHttpClientBuilder builder, bool validateSingleType)
+        internal static IHttpClientBuilder AddTypedClientCore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>(
+            this IHttpClientBuilder builder, bool validateSingleType)
             where TClient : class
         {
             ReserveClient(builder, typeof(TClient), builder.Name, validateSingleType);
@@ -375,7 +378,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// scope bound to the message handler, which is managed independently.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddTypedClient<TClient, TImplementation>(this IHttpClientBuilder builder)
+        public static IHttpClientBuilder AddTypedClient<TClient, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+            this IHttpClientBuilder builder)
             where TClient : class
             where TImplementation : class, TClient
         {
@@ -387,7 +391,8 @@ namespace Microsoft.Extensions.DependencyInjection
             return AddTypedClientCore<TClient, TImplementation>(builder, validateSingleType: false);
         }
 
-        internal static IHttpClientBuilder AddTypedClientCore<TClient, TImplementation>(this IHttpClientBuilder builder, bool validateSingleType)
+        internal static IHttpClientBuilder AddTypedClientCore<TClient, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+            this IHttpClientBuilder builder, bool validateSingleType)
             where TClient : class
             where TImplementation : class, TClient
         {

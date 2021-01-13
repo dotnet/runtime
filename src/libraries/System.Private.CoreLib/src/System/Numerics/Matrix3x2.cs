@@ -2,81 +2,71 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
-    /// <summary>
-    /// A structure encapsulating a 3x2 matrix.
-    /// </summary>
+    /// <summary>A structure encapsulating a 3x2 matrix.</summary>
+    [Intrinsic]
     public struct Matrix3x2 : IEquatable<Matrix3x2>
     {
         private const float RotationEpsilon = 0.001f * MathF.PI / 180f;     // 0.1% of a degree
 
-        #region Public Fields
-        /// <summary>
-        /// The first element of the first row
-        /// </summary>
-        public float M11;
-        /// <summary>
-        /// The second element of the first row
-        /// </summary>
-        public float M12;
-        /// <summary>
-        /// The first element of the second row
-        /// </summary>
-        public float M21;
-        /// <summary>
-        /// The second element of the second row
-        /// </summary>
-        public float M22;
-        /// <summary>
-        /// The first element of the third row
-        /// </summary>
-        public float M31;
-        /// <summary>
-        /// The second element of the third row
-        /// </summary>
-        public float M32;
-        #endregion Public Fields
-
-        private static readonly Matrix3x2 _identity = new Matrix3x2
-        (
+        private static readonly Matrix3x2 _identity = new Matrix3x2(
             1f, 0f,
             0f, 1f,
             0f, 0f
         );
 
-        /// <summary>
-        /// Returns the multiplicative identity matrix.
-        /// </summary>
+        /// <summary>The first element of the first row</summary>
+        public float M11;
+
+        /// <summary>The second element of the first row</summary>
+        public float M12;
+
+        /// <summary>The first element of the second row</summary>
+        public float M21;
+
+        /// <summary>The second element of the second row</summary>
+        public float M22;
+
+        /// <summary>The first element of the third row</summary>
+        public float M31;
+
+        /// <summary>The second element of the third row</summary>
+        public float M32;
+
+        /// <summary>Constructs a Matrix3x2 from the given components.</summary>
+        public Matrix3x2(float m11, float m12,
+                         float m21, float m22,
+                         float m31, float m32)
+        {
+            M11 = m11;
+            M12 = m12;
+
+            M21 = m21;
+            M22 = m22;
+
+            M31 = m31;
+            M32 = m32;
+        }
+
+        /// <summary>Returns the multiplicative identity matrix.</summary>
         public static Matrix3x2 Identity
         {
-            get { return _identity; }
+            get => _identity;
         }
 
-        /// <summary>
-        /// Returns whether the matrix is the identity matrix.
-        /// </summary>
+        /// <summary>Returns whether the matrix is the identity matrix.</summary>
         public readonly bool IsIdentity
         {
-            get
-            {
-                return M11 == 1f && M22 == 1f && // Check diagonal element first for early out.
-                                    M12 == 0f &&
-                       M21 == 0f &&
-                       M31 == 0f && M32 == 0f;
-            }
+            get => this == Identity;
         }
 
-        /// <summary>
-        /// Gets or sets the translation component of this matrix.
-        /// </summary>
+        /// <summary>Gets or sets the translation component of this matrix.</summary>
         public Vector2 Translation
         {
-            readonly get
-            {
-                return new Vector2(M31, M32);
-            }
+            readonly get => new Vector2(M31, M32);
 
             set
             {
@@ -85,210 +75,143 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>
-        /// Constructs a Matrix3x2 from the given components.
-        /// </summary>
-        public Matrix3x2(float m11, float m12,
-                         float m21, float m22,
-                         float m31, float m32)
+        /// <summary>Adds each matrix element in value1 with its corresponding element in value2.</summary>
+        /// <param name="value1">The first source matrix.</param>
+        /// <param name="value2">The second source matrix.</param>
+        /// <returns>The matrix containing the summed values.</returns>
+        public static Matrix3x2 operator +(Matrix3x2 value1, Matrix3x2 value2)
         {
-            this.M11 = m11;
-            this.M12 = m12;
-            this.M21 = m21;
-            this.M22 = m22;
-            this.M31 = m31;
-            this.M32 = m32;
+            Matrix3x2 m;
+
+            m.M11 = value1.M11 + value2.M11;
+            m.M12 = value1.M12 + value2.M12;
+
+            m.M21 = value1.M21 + value2.M21;
+            m.M22 = value1.M22 + value2.M22;
+
+            m.M31 = value1.M31 + value2.M31;
+            m.M32 = value1.M32 + value2.M32;
+
+            return m;
         }
 
-        /// <summary>
-        /// Creates a translation matrix from the given vector.
-        /// </summary>
-        /// <param name="position">The translation position.</param>
-        /// <returns>A translation matrix.</returns>
-        public static Matrix3x2 CreateTranslation(Vector2 position)
+        /// <summary>Returns a boolean indicating whether the given matrices are equal.</summary>
+        /// <param name="value1">The first source matrix.</param>
+        /// <param name="value2">The second source matrix.</param>
+        /// <returns>True if the matrices are equal; False otherwise.</returns>
+        public static bool operator ==(Matrix3x2 value1, Matrix3x2 value2)
         {
-            Matrix3x2 result = _identity;
-
-            result.M31 = position.X;
-            result.M32 = position.Y;
-
-            return result;
+            // Check diagonal element first for early out.
+            return (value1.M11 == value2.M11
+                 && value1.M22 == value2.M22
+                 && value1.M12 == value2.M12
+                 && value1.M21 == value2.M21
+                 && value1.M31 == value2.M31
+                 && value1.M32 == value2.M32);
         }
 
-        /// <summary>
-        /// Creates a translation matrix from the given X and Y components.
-        /// </summary>
-        /// <param name="xPosition">The X position.</param>
-        /// <param name="yPosition">The Y position.</param>
-        /// <returns>A translation matrix.</returns>
-        public static Matrix3x2 CreateTranslation(float xPosition, float yPosition)
+        /// <summary>Returns a boolean indicating whether the given matrices are not equal.</summary>
+        /// <param name="value1">The first source matrix.</param>
+        /// <param name="value2">The second source matrix.</param>
+        /// <returns>True if the matrices are not equal; False if they are equal.</returns>
+        public static bool operator !=(Matrix3x2 value1, Matrix3x2 value2)
         {
-            Matrix3x2 result = _identity;
-
-            result.M31 = xPosition;
-            result.M32 = yPosition;
-
-            return result;
+            return !(value1 == value2);
         }
 
-        /// <summary>
-        /// Creates a scale matrix from the given X and Y components.
-        /// </summary>
-        /// <param name="xScale">Value to scale by on the X-axis.</param>
-        /// <param name="yScale">Value to scale by on the Y-axis.</param>
-        /// <returns>A scaling matrix.</returns>
-        public static Matrix3x2 CreateScale(float xScale, float yScale)
+        /// <summary>Multiplies two matrices together and returns the resulting matrix.</summary>
+        /// <param name="value1">The first source matrix.</param>
+        /// <param name="value2">The second source matrix.</param>
+        /// <returns>The product matrix.</returns>
+        public static Matrix3x2 operator *(Matrix3x2 value1, Matrix3x2 value2)
         {
-            Matrix3x2 result = _identity;
+            Matrix3x2 m;
 
-            result.M11 = xScale;
-            result.M22 = yScale;
+            // First row
+            m.M11 = value1.M11 * value2.M11 + value1.M12 * value2.M21;
+            m.M12 = value1.M11 * value2.M12 + value1.M12 * value2.M22;
 
-            return result;
+            // Second row
+            m.M21 = value1.M21 * value2.M11 + value1.M22 * value2.M21;
+            m.M22 = value1.M21 * value2.M12 + value1.M22 * value2.M22;
+
+            // Third row
+            m.M31 = value1.M31 * value2.M11 + value1.M32 * value2.M21 + value2.M31;
+            m.M32 = value1.M31 * value2.M12 + value1.M32 * value2.M22 + value2.M32;
+
+            return m;
         }
 
-        /// <summary>
-        /// Creates a scale matrix that is offset by a given center point.
-        /// </summary>
-        /// <param name="xScale">Value to scale by on the X-axis.</param>
-        /// <param name="yScale">Value to scale by on the Y-axis.</param>
-        /// <param name="centerPoint">The center point.</param>
-        /// <returns>A scaling matrix.</returns>
-        public static Matrix3x2 CreateScale(float xScale, float yScale, Vector2 centerPoint)
+        /// <summary>Scales all elements in a matrix by the given scalar factor.</summary>
+        /// <param name="value1">The source matrix.</param>
+        /// <param name="value2">The scaling value to use.</param>
+        /// <returns>The resulting matrix.</returns>
+        public static Matrix3x2 operator *(Matrix3x2 value1, float value2)
         {
-            Matrix3x2 result = _identity;
+            Matrix3x2 m;
 
-            float tx = centerPoint.X * (1 - xScale);
-            float ty = centerPoint.Y * (1 - yScale);
+            m.M11 = value1.M11 * value2;
+            m.M12 = value1.M12 * value2;
 
-            result.M11 = xScale;
-            result.M22 = yScale;
-            result.M31 = tx;
-            result.M32 = ty;
+            m.M21 = value1.M21 * value2;
+            m.M22 = value1.M22 * value2;
 
-            return result;
+            m.M31 = value1.M31 * value2;
+            m.M32 = value1.M32 * value2;
+
+            return m;
         }
 
-        /// <summary>
-        /// Creates a scale matrix from the given vector scale.
-        /// </summary>
-        /// <param name="scales">The scale to use.</param>
-        /// <returns>A scaling matrix.</returns>
-        public static Matrix3x2 CreateScale(Vector2 scales)
+        /// <summary>Subtracts each matrix element in value2 from its corresponding element in value1.</summary>
+        /// <param name="value1">The first source matrix.</param>
+        /// <param name="value2">The second source matrix.</param>
+        /// <returns>The matrix containing the resulting values.</returns>
+        public static Matrix3x2 operator -(Matrix3x2 value1, Matrix3x2 value2)
         {
-            Matrix3x2 result = _identity;
+            Matrix3x2 m;
 
-            result.M11 = scales.X;
-            result.M22 = scales.Y;
+            m.M11 = value1.M11 - value2.M11;
+            m.M12 = value1.M12 - value2.M12;
 
-            return result;
+            m.M21 = value1.M21 - value2.M21;
+            m.M22 = value1.M22 - value2.M22;
+
+            m.M31 = value1.M31 - value2.M31;
+            m.M32 = value1.M32 - value2.M32;
+
+            return m;
         }
 
-        /// <summary>
-        /// Creates a scale matrix from the given vector scale with an offset from the given center point.
-        /// </summary>
-        /// <param name="scales">The scale to use.</param>
-        /// <param name="centerPoint">The center offset.</param>
-        /// <returns>A scaling matrix.</returns>
-        public static Matrix3x2 CreateScale(Vector2 scales, Vector2 centerPoint)
+        /// <summary>Negates the given matrix by multiplying all values by -1.</summary>
+        /// <param name="value">The source matrix.</param>
+        /// <returns>The negated matrix.</returns>
+        public static Matrix3x2 operator -(Matrix3x2 value)
         {
-            Matrix3x2 result = _identity;
+            Matrix3x2 m;
 
-            float tx = centerPoint.X * (1 - scales.X);
-            float ty = centerPoint.Y * (1 - scales.Y);
+            m.M11 = -value.M11;
+            m.M12 = -value.M12;
 
-            result.M11 = scales.X;
-            result.M22 = scales.Y;
-            result.M31 = tx;
-            result.M32 = ty;
+            m.M21 = -value.M21;
+            m.M22 = -value.M22;
 
-            return result;
+            m.M31 = -value.M31;
+            m.M32 = -value.M32;
+
+            return m;
         }
 
-        /// <summary>
-        /// Creates a scale matrix that scales uniformly with the given scale.
-        /// </summary>
-        /// <param name="scale">The uniform scale to use.</param>
-        /// <returns>A scaling matrix.</returns>
-        public static Matrix3x2 CreateScale(float scale)
+        /// <summary>Adds each matrix element in value1 with its corresponding element in value2.</summary>
+        /// <param name="value1">The first source matrix.</param>
+        /// <param name="value2">The second source matrix.</param>
+        /// <returns>The matrix containing the summed values.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix3x2 Add(Matrix3x2 value1, Matrix3x2 value2)
         {
-            Matrix3x2 result = _identity;
-
-            result.M11 = scale;
-            result.M22 = scale;
-
-            return result;
+            return value1 + value2;
         }
 
-        /// <summary>
-        /// Creates a scale matrix that scales uniformly with the given scale with an offset from the given center.
-        /// </summary>
-        /// <param name="scale">The uniform scale to use.</param>
-        /// <param name="centerPoint">The center offset.</param>
-        /// <returns>A scaling matrix.</returns>
-        public static Matrix3x2 CreateScale(float scale, Vector2 centerPoint)
-        {
-            Matrix3x2 result = _identity;
-
-            float tx = centerPoint.X * (1 - scale);
-            float ty = centerPoint.Y * (1 - scale);
-
-            result.M11 = scale;
-            result.M22 = scale;
-            result.M31 = tx;
-            result.M32 = ty;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a skew matrix from the given angles in radians.
-        /// </summary>
-        /// <param name="radiansX">The X angle, in radians.</param>
-        /// <param name="radiansY">The Y angle, in radians.</param>
-        /// <returns>A skew matrix.</returns>
-        public static Matrix3x2 CreateSkew(float radiansX, float radiansY)
-        {
-            Matrix3x2 result = _identity;
-
-            float xTan = MathF.Tan(radiansX);
-            float yTan = MathF.Tan(radiansY);
-
-            result.M12 = yTan;
-            result.M21 = xTan;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a skew matrix from the given angles in radians and a center point.
-        /// </summary>
-        /// <param name="radiansX">The X angle, in radians.</param>
-        /// <param name="radiansY">The Y angle, in radians.</param>
-        /// <param name="centerPoint">The center point.</param>
-        /// <returns>A skew matrix.</returns>
-        public static Matrix3x2 CreateSkew(float radiansX, float radiansY, Vector2 centerPoint)
-        {
-            Matrix3x2 result = _identity;
-
-            float xTan = MathF.Tan(radiansX);
-            float yTan = MathF.Tan(radiansY);
-
-            float tx = -centerPoint.Y * xTan;
-            float ty = -centerPoint.X * yTan;
-
-            result.M12 = yTan;
-            result.M21 = xTan;
-
-            result.M31 = tx;
-            result.M32 = ty;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a rotation matrix using the given rotation in radians.
-        /// </summary>
+        /// <summary>Creates a rotation matrix using the given rotation in radians.</summary>
         /// <param name="radians">The amount of rotation, in radians.</param>
         /// <returns>A rotation matrix.</returns>
         public static Matrix3x2 CreateRotation(float radians)
@@ -331,7 +254,8 @@ namespace System.Numerics
             // [  c  s ]
             // [ -s  c ]
             // [  0  0 ]
-            Matrix3x2 result = _identity;
+            Matrix3x2 result = Identity;
+
             result.M11 = c;
             result.M12 = s;
             result.M21 = -s;
@@ -340,9 +264,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>
-        /// Creates a rotation matrix using the given rotation in radians and a center point.
-        /// </summary>
+        /// <summary>Creates a rotation matrix using the given rotation in radians and a center point.</summary>
         /// <param name="radians">The amount of rotation, in radians.</param>
         /// <param name="centerPoint">The center point.</param>
         /// <returns>A rotation matrix.</returns>
@@ -401,35 +323,173 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>
-        /// Calculates the determinant for this matrix.
-        /// The determinant is calculated by expanding the matrix with a third column whose values are (0,0,1).
-        /// </summary>
-        /// <returns>The determinant.</returns>
-        public readonly float GetDeterminant()
+        /// <summary>Creates a scale matrix from the given vector scale.</summary>
+        /// <param name="scales">The scale to use.</param>
+        /// <returns>A scaling matrix.</returns>
+        public static Matrix3x2 CreateScale(Vector2 scales)
         {
-            // There isn't actually any such thing as a determinant for a non-square matrix,
-            // but this 3x2 type is really just an optimization of a 3x3 where we happen to
-            // know the rightmost column is always (0, 0, 1). So we expand to 3x3 format:
-            //
-            //  [ M11, M12, 0 ]
-            //  [ M21, M22, 0 ]
-            //  [ M31, M32, 1 ]
-            //
-            // Sum the diagonal products:
-            //  (M11 * M22 * 1) + (M12 * 0 * M31) + (0 * M21 * M32)
-            //
-            // Subtract the opposite diagonal products:
-            //  (M31 * M22 * 0) + (M32 * 0 * M11) + (1 * M21 * M12)
-            //
-            // Collapse out the constants and oh look, this is just a 2x2 determinant!
+            Matrix3x2 result = Identity;
 
-            return (M11 * M22) - (M21 * M12);
+            result.M11 = scales.X;
+            result.M22 = scales.Y;
+
+            return result;
         }
 
-        /// <summary>
-        /// Attempts to invert the given matrix. If the operation succeeds, the inverted matrix is stored in the result parameter.
-        /// </summary>
+        /// <summary>Creates a scale matrix from the given X and Y components.</summary>
+        /// <param name="xScale">Value to scale by on the X-axis.</param>
+        /// <param name="yScale">Value to scale by on the Y-axis.</param>
+        /// <returns>A scaling matrix.</returns>
+        public static Matrix3x2 CreateScale(float xScale, float yScale)
+        {
+            Matrix3x2 result = Identity;
+
+            result.M11 = xScale;
+            result.M22 = yScale;
+
+            return result;
+        }
+
+        /// <summary>Creates a scale matrix that is offset by a given center point.</summary>
+        /// <param name="xScale">Value to scale by on the X-axis.</param>
+        /// <param name="yScale">Value to scale by on the Y-axis.</param>
+        /// <param name="centerPoint">The center point.</param>
+        /// <returns>A scaling matrix.</returns>
+        public static Matrix3x2 CreateScale(float xScale, float yScale, Vector2 centerPoint)
+        {
+            Matrix3x2 result = Identity;
+
+            float tx = centerPoint.X * (1 - xScale);
+            float ty = centerPoint.Y * (1 - yScale);
+
+            result.M11 = xScale;
+            result.M22 = yScale;
+            result.M31 = tx;
+            result.M32 = ty;
+
+            return result;
+        }
+
+        /// <summary>Creates a scale matrix from the given vector scale with an offset from the given center point.</summary>
+        /// <param name="scales">The scale to use.</param>
+        /// <param name="centerPoint">The center offset.</param>
+        /// <returns>A scaling matrix.</returns>
+        public static Matrix3x2 CreateScale(Vector2 scales, Vector2 centerPoint)
+        {
+            Matrix3x2 result = Identity;
+
+            float tx = centerPoint.X * (1 - scales.X);
+            float ty = centerPoint.Y * (1 - scales.Y);
+
+            result.M11 = scales.X;
+            result.M22 = scales.Y;
+            result.M31 = tx;
+            result.M32 = ty;
+
+            return result;
+        }
+
+        /// <summary>Creates a scale matrix that scales uniformly with the given scale.</summary>
+        /// <param name="scale">The uniform scale to use.</param>
+        /// <returns>A scaling matrix.</returns>
+        public static Matrix3x2 CreateScale(float scale)
+        {
+            Matrix3x2 result = Identity;
+
+            result.M11 = scale;
+            result.M22 = scale;
+
+            return result;
+        }
+
+        /// <summary>Creates a scale matrix that scales uniformly with the given scale with an offset from the given center.</summary>
+        /// <param name="scale">The uniform scale to use.</param>
+        /// <param name="centerPoint">The center offset.</param>
+        /// <returns>A scaling matrix.</returns>
+        public static Matrix3x2 CreateScale(float scale, Vector2 centerPoint)
+        {
+            Matrix3x2 result = Identity;
+
+            float tx = centerPoint.X * (1 - scale);
+            float ty = centerPoint.Y * (1 - scale);
+
+            result.M11 = scale;
+            result.M22 = scale;
+            result.M31 = tx;
+            result.M32 = ty;
+
+            return result;
+        }
+
+        /// <summary>Creates a skew matrix from the given angles in radians.</summary>
+        /// <param name="radiansX">The X angle, in radians.</param>
+        /// <param name="radiansY">The Y angle, in radians.</param>
+        /// <returns>A skew matrix.</returns>
+        public static Matrix3x2 CreateSkew(float radiansX, float radiansY)
+        {
+            Matrix3x2 result = Identity;
+
+            float xTan = MathF.Tan(radiansX);
+            float yTan = MathF.Tan(radiansY);
+
+            result.M12 = yTan;
+            result.M21 = xTan;
+
+            return result;
+        }
+
+        /// <summary>Creates a skew matrix from the given angles in radians and a center point.</summary>
+        /// <param name="radiansX">The X angle, in radians.</param>
+        /// <param name="radiansY">The Y angle, in radians.</param>
+        /// <param name="centerPoint">The center point.</param>
+        /// <returns>A skew matrix.</returns>
+        public static Matrix3x2 CreateSkew(float radiansX, float radiansY, Vector2 centerPoint)
+        {
+            Matrix3x2 result = Identity;
+
+            float xTan = MathF.Tan(radiansX);
+            float yTan = MathF.Tan(radiansY);
+
+            float tx = -centerPoint.Y * xTan;
+            float ty = -centerPoint.X * yTan;
+
+            result.M12 = yTan;
+            result.M21 = xTan;
+
+            result.M31 = tx;
+            result.M32 = ty;
+
+            return result;
+        }
+
+        /// <summary>Creates a translation matrix from the given vector.</summary>
+        /// <param name="position">The translation position.</param>
+        /// <returns>A translation matrix.</returns>
+        public static Matrix3x2 CreateTranslation(Vector2 position)
+        {
+            Matrix3x2 result = Identity;
+
+            result.M31 = position.X;
+            result.M32 = position.Y;
+
+            return result;
+        }
+
+        /// <summary>Creates a translation matrix from the given X and Y components.</summary>
+        /// <param name="xPosition">The X position.</param>
+        /// <param name="yPosition">The Y position.</param>
+        /// <returns>A translation matrix.</returns>
+        public static Matrix3x2 CreateTranslation(float xPosition, float yPosition)
+        {
+            Matrix3x2 result = Identity;
+
+            result.M31 = xPosition;
+            result.M32 = yPosition;
+
+            return result;
+        }
+
+        /// <summary>Attempts to invert the given matrix. If the operation succeeds, the inverted matrix is stored in the result parameter.</summary>
         /// <param name="matrix">The source matrix.</param>
         /// <param name="result">The output matrix.</param>
         /// <returns>True if the operation succeeded, False otherwise.</returns>
@@ -447,17 +507,17 @@ namespace System.Numerics
 
             result.M11 = matrix.M22 * invDet;
             result.M12 = -matrix.M12 * invDet;
+
             result.M21 = -matrix.M21 * invDet;
             result.M22 = matrix.M11 * invDet;
+
             result.M31 = (matrix.M21 * matrix.M32 - matrix.M31 * matrix.M22) * invDet;
             result.M32 = (matrix.M31 * matrix.M12 - matrix.M11 * matrix.M32) * invDet;
 
             return true;
         }
 
-        /// <summary>
-        /// Linearly interpolates from matrix1 to matrix2, based on the third parameter.
-        /// </summary>
+        /// <summary>Linearly interpolates from matrix1 to matrix2, based on the third parameter.</summary>
         /// <param name="matrix1">The first source matrix.</param>
         /// <param name="matrix2">The second source matrix.</param>
         /// <param name="amount">The relative weighting of matrix2.</param>
@@ -481,272 +541,94 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>
-        /// Negates the given matrix by multiplying all values by -1.
-        /// </summary>
-        /// <param name="value">The source matrix.</param>
-        /// <returns>The negated matrix.</returns>
-        public static Matrix3x2 Negate(Matrix3x2 value)
-        {
-            Matrix3x2 result;
-
-            result.M11 = -value.M11;
-            result.M12 = -value.M12;
-            result.M21 = -value.M21;
-            result.M22 = -value.M22;
-            result.M31 = -value.M31;
-            result.M32 = -value.M32;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Adds each matrix element in value1 with its corresponding element in value2.
-        /// </summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The matrix containing the summed values.</returns>
-        public static Matrix3x2 Add(Matrix3x2 value1, Matrix3x2 value2)
-        {
-            Matrix3x2 result;
-
-            result.M11 = value1.M11 + value2.M11;
-            result.M12 = value1.M12 + value2.M12;
-            result.M21 = value1.M21 + value2.M21;
-            result.M22 = value1.M22 + value2.M22;
-            result.M31 = value1.M31 + value2.M31;
-            result.M32 = value1.M32 + value2.M32;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Subtracts each matrix element in value2 from its corresponding element in value1.
-        /// </summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The matrix containing the resulting values.</returns>
-        public static Matrix3x2 Subtract(Matrix3x2 value1, Matrix3x2 value2)
-        {
-            Matrix3x2 result;
-
-            result.M11 = value1.M11 - value2.M11;
-            result.M12 = value1.M12 - value2.M12;
-            result.M21 = value1.M21 - value2.M21;
-            result.M22 = value1.M22 - value2.M22;
-            result.M31 = value1.M31 - value2.M31;
-            result.M32 = value1.M32 - value2.M32;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Multiplies two matrices together and returns the resulting matrix.
-        /// </summary>
+        /// <summary>Multiplies two matrices together and returns the resulting matrix.</summary>
         /// <param name="value1">The first source matrix.</param>
         /// <param name="value2">The second source matrix.</param>
         /// <returns>The product matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix3x2 Multiply(Matrix3x2 value1, Matrix3x2 value2)
         {
-            Matrix3x2 result;
-
-            // First row
-            result.M11 = value1.M11 * value2.M11 + value1.M12 * value2.M21;
-            result.M12 = value1.M11 * value2.M12 + value1.M12 * value2.M22;
-
-            // Second row
-            result.M21 = value1.M21 * value2.M11 + value1.M22 * value2.M21;
-            result.M22 = value1.M21 * value2.M12 + value1.M22 * value2.M22;
-
-            // Third row
-            result.M31 = value1.M31 * value2.M11 + value1.M32 * value2.M21 + value2.M31;
-            result.M32 = value1.M31 * value2.M12 + value1.M32 * value2.M22 + value2.M32;
-
-            return result;
+            return value1 * value2;
         }
 
-        /// <summary>
-        /// Scales all elements in a matrix by the given scalar factor.
-        /// </summary>
+        /// <summary>Scales all elements in a matrix by the given scalar factor.</summary>
         /// <param name="value1">The source matrix.</param>
         /// <param name="value2">The scaling value to use.</param>
         /// <returns>The resulting matrix.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix3x2 Multiply(Matrix3x2 value1, float value2)
         {
-            Matrix3x2 result;
-
-            result.M11 = value1.M11 * value2;
-            result.M12 = value1.M12 * value2;
-            result.M21 = value1.M21 * value2;
-            result.M22 = value1.M22 * value2;
-            result.M31 = value1.M31 * value2;
-            result.M32 = value1.M32 * value2;
-
-            return result;
+            return value1 * value2;
         }
 
-        /// <summary>
-        /// Negates the given matrix by multiplying all values by -1.
-        /// </summary>
+        /// <summary>Negates the given matrix by multiplying all values by -1.</summary>
         /// <param name="value">The source matrix.</param>
         /// <returns>The negated matrix.</returns>
-        public static Matrix3x2 operator -(Matrix3x2 value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix3x2 Negate(Matrix3x2 value)
         {
-            Matrix3x2 m;
-
-            m.M11 = -value.M11;
-            m.M12 = -value.M12;
-            m.M21 = -value.M21;
-            m.M22 = -value.M22;
-            m.M31 = -value.M31;
-            m.M32 = -value.M32;
-
-            return m;
+            return -value;
         }
 
-        /// <summary>
-        /// Adds each matrix element in value1 with its corresponding element in value2.
-        /// </summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The matrix containing the summed values.</returns>
-        public static Matrix3x2 operator +(Matrix3x2 value1, Matrix3x2 value2)
-        {
-            Matrix3x2 m;
-
-            m.M11 = value1.M11 + value2.M11;
-            m.M12 = value1.M12 + value2.M12;
-            m.M21 = value1.M21 + value2.M21;
-            m.M22 = value1.M22 + value2.M22;
-            m.M31 = value1.M31 + value2.M31;
-            m.M32 = value1.M32 + value2.M32;
-
-            return m;
-        }
-
-        /// <summary>
-        /// Subtracts each matrix element in value2 from its corresponding element in value1.
-        /// </summary>
+        /// <summary>Subtracts each matrix element in value2 from its corresponding element in value1.</summary>
         /// <param name="value1">The first source matrix.</param>
         /// <param name="value2">The second source matrix.</param>
         /// <returns>The matrix containing the resulting values.</returns>
-        public static Matrix3x2 operator -(Matrix3x2 value1, Matrix3x2 value2)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix3x2 Subtract(Matrix3x2 value1, Matrix3x2 value2)
         {
-            Matrix3x2 m;
-
-            m.M11 = value1.M11 - value2.M11;
-            m.M12 = value1.M12 - value2.M12;
-            m.M21 = value1.M21 - value2.M21;
-            m.M22 = value1.M22 - value2.M22;
-            m.M31 = value1.M31 - value2.M31;
-            m.M32 = value1.M32 - value2.M32;
-
-            return m;
+            return value1 - value2;
         }
 
-        /// <summary>
-        /// Multiplies two matrices together and returns the resulting matrix.
-        /// </summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>The product matrix.</returns>
-        public static Matrix3x2 operator *(Matrix3x2 value1, Matrix3x2 value2)
+        /// <summary>Returns a boolean indicating whether the given Object is equal to this matrix instance.</summary>
+        /// <param name="obj">The Object to compare against.</param>
+        /// <returns>True if the Object is equal to this matrix; False otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override readonly bool Equals(object? obj)
         {
-            Matrix3x2 m;
-
-            // First row
-            m.M11 = value1.M11 * value2.M11 + value1.M12 * value2.M21;
-            m.M12 = value1.M11 * value2.M12 + value1.M12 * value2.M22;
-
-            // Second row
-            m.M21 = value1.M21 * value2.M11 + value1.M22 * value2.M21;
-            m.M22 = value1.M21 * value2.M12 + value1.M22 * value2.M22;
-
-            // Third row
-            m.M31 = value1.M31 * value2.M11 + value1.M32 * value2.M21 + value2.M31;
-            m.M32 = value1.M31 * value2.M12 + value1.M32 * value2.M22 + value2.M32;
-
-            return m;
+            return (obj is Matrix3x2 other) && Equals(other);
         }
 
-        /// <summary>
-        /// Scales all elements in a matrix by the given scalar factor.
-        /// </summary>
-        /// <param name="value1">The source matrix.</param>
-        /// <param name="value2">The scaling value to use.</param>
-        /// <returns>The resulting matrix.</returns>
-        public static Matrix3x2 operator *(Matrix3x2 value1, float value2)
-        {
-            Matrix3x2 m;
-
-            m.M11 = value1.M11 * value2;
-            m.M12 = value1.M12 * value2;
-            m.M21 = value1.M21 * value2;
-            m.M22 = value1.M22 * value2;
-            m.M31 = value1.M31 * value2;
-            m.M32 = value1.M32 * value2;
-
-            return m;
-        }
-
-        /// <summary>
-        /// Returns a boolean indicating whether the given matrices are equal.
-        /// </summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>True if the matrices are equal; False otherwise.</returns>
-        public static bool operator ==(Matrix3x2 value1, Matrix3x2 value2)
-        {
-            return (value1.M11 == value2.M11 && value1.M22 == value2.M22 && // Check diagonal element first for early out.
-                                                value1.M12 == value2.M12 &&
-                    value1.M21 == value2.M21 &&
-                    value1.M31 == value2.M31 && value1.M32 == value2.M32);
-        }
-
-        /// <summary>
-        /// Returns a boolean indicating whether the given matrices are not equal.
-        /// </summary>
-        /// <param name="value1">The first source matrix.</param>
-        /// <param name="value2">The second source matrix.</param>
-        /// <returns>True if the matrices are not equal; False if they are equal.</returns>
-        public static bool operator !=(Matrix3x2 value1, Matrix3x2 value2)
-        {
-            return (value1.M11 != value2.M11 || value1.M12 != value2.M12 ||
-                    value1.M21 != value2.M21 || value1.M22 != value2.M22 ||
-                    value1.M31 != value2.M31 || value1.M32 != value2.M32);
-        }
-
-        /// <summary>
-        /// Returns a boolean indicating whether the matrix is equal to the other given matrix.
-        /// </summary>
+        /// <summary>Returns a boolean indicating whether the matrix is equal to the other given matrix.</summary>
         /// <param name="other">The other matrix to test equality against.</param>
         /// <returns>True if this matrix is equal to other; False otherwise.</returns>
         public readonly bool Equals(Matrix3x2 other)
         {
-            return (M11 == other.M11 && M22 == other.M22 && // Check diagonal element first for early out.
-                                        M12 == other.M12 &&
-                    M21 == other.M21 &&
-                    M31 == other.M31 && M32 == other.M32);
+            return this == other;
         }
 
-        /// <summary>
-        /// Returns a boolean indicating whether the given Object is equal to this matrix instance.
-        /// </summary>
-        /// <param name="obj">The Object to compare against.</param>
-        /// <returns>True if the Object is equal to this matrix; False otherwise.</returns>
-        public override readonly bool Equals(object? obj)
+        /// <summary>Calculates the determinant for this matrix.
+        /// The determinant is calculated by expanding the matrix with a third column whose values are (0,0,1).</summary>
+        /// <returns>The determinant.</returns>
+        public readonly float GetDeterminant()
         {
-            if (obj is Matrix3x2 m)
-            {
-                return Equals(m);
-            }
+            // There isn't actually any such thing as a determinant for a non-square matrix,
+            // but this 3x2 type is really just an optimization of a 3x3 where we happen to
+            // know the rightmost column is always (0, 0, 1). So we expand to 3x3 format:
+            //
+            //  [ M11, M12, 0 ]
+            //  [ M21, M22, 0 ]
+            //  [ M31, M32, 1 ]
+            //
+            // Sum the diagonal products:
+            //  (M11 * M22 * 1) + (M12 * 0 * M31) + (0 * M21 * M32)
+            //
+            // Subtract the opposite diagonal products:
+            //  (M31 * M22 * 0) + (M32 * 0 * M11) + (1 * M21 * M12)
+            //
+            // Collapse out the constants and oh look, this is just a 2x2 determinant!
 
-            return false;
+            return (M11 * M22) - (M21 * M12);
         }
 
-        /// <summary>
-        /// Returns a String representing this matrix instance.
-        /// </summary>
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>The hash code.</returns>
+        public override readonly int GetHashCode()
+        {
+            return HashCode.Combine(M11, M12, M21, M22, M31, M32);
+        }
+
+        /// <summary>Returns a String representing this matrix instance.</summary>
         /// <returns>The string representation.</returns>
         public override readonly string ToString()
         {
@@ -754,17 +636,6 @@ namespace System.Numerics
                                  M11, M12,
                                  M21, M22,
                                  M31, M32);
-        }
-
-        /// <summary>
-        /// Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>The hash code.</returns>
-        public override readonly int GetHashCode()
-        {
-            return unchecked(M11.GetHashCode() + M12.GetHashCode() +
-                             M21.GetHashCode() + M22.GetHashCode() +
-                             M31.GetHashCode() + M32.GetHashCode());
         }
     }
 }

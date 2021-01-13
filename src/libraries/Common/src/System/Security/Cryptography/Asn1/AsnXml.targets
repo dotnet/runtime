@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
     <AsnXml />
+    <_AsnXmlDiffCmd>%24%28command -v diff%29 -q -a</_AsnXmlDiffCmd>
+    <_AsnXmlDiffCmd Condition="$([MSBuild]::IsOsPlatform('windows')) == 'true'">$(SystemRoot)\System32\fc.exe /a</_AsnXmlDiffCmd>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)asn.xsd">
@@ -8,36 +10,34 @@
     </None>
   </ItemGroup>
 
-  <!-- MSBuild for .NET Core doesn't support XslTransform at this time -->
   <Target Name="CompileAsn" BeforeTargets="CoreCompile"
-    Condition="'$(MSBuildRuntimeType)' != 'core'"
+    Condition=" '@(AsnXml)' != '' "
     Inputs="@(AsnXml);$(MSBuildThisFileDirectory)asn.xslt"
     Outputs="%(Identity).cs">
 
-    <MakeDir Directories="$(IntermediateOutputPath)asnxml" />
+    <PropertyGroup>
+      <_AsnIntermediatePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'asnxml'))</_AsnIntermediatePath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_AsnIntermediatePath)" />
 
     <XslTransformation
       XslInputPath="$(MSBuildThisFileDirectory)asn.xslt"
       XmlInputPaths="@(AsnXml)"
-      OutputPaths="@(AsnXml -> '$(IntermediateOutputPath)asnxml\%(filename).cs')" />
+      OutputPaths="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')" />
 
-    <Exec Condition="'$(TargetOS)'=='Windows_NT'"
+    <Exec
       IgnoreExitCode="true"
       StandardOutputImportance="Low"
-      Command="$(SystemRoot)\System32\fc.exe /a @(AsnXml -> '$(IntermediateOutputPath)asnxml\%(filename).cs') @(AsnXml -> '%(Identity).cs')">
+      Command="$(_AsnXmlDiffCmd) @(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs') @(AsnXml -> '%(Identity).cs')">
       <Output TaskParameter="ExitCode" ItemName="_AsnXmlDiffCode" />
     </Exec>
 
-    <!-- TODO: Call diff on Unix -->
-    <ItemGroup Condition="'$(TargetOS)'!='Windows_NT'">
-      <_AsnXmlDiffCode Include="1" />
-    </ItemGroup>
-
     <Copy
       Condition="'@(_AsnXmlDiffCode)' != '0'"
-      SourceFiles="@(AsnXml -> '$(IntermediateOutputPath)asnxml\%(filename).cs')" 
+      SourceFiles="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')"
       DestinationFiles="@(AsnXml -> '%(Identity).cs')" />
-    
+
     <Warning Condition="'@(_AsnXmlDiffCode)' != '0'" Text="AsnXml regenerated files, be sure to check them in: @(AsnXml -> '%(Identity).cs')" />
   </Target>
-</Project>  
+</Project>

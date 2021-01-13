@@ -211,11 +211,8 @@ namespace System.Text.Json
         {
             parseData = default;
 
-            // Source does not have enough characters for YYYY-MM-DD
-            if (source.Length < 10)
-            {
-                return false;
-            }
+            // too short datetime
+            Debug.Assert(source.Length >= 10);
 
             // Parse the calendar date
             // -----------------------
@@ -252,8 +249,6 @@ namespace System.Text.Json
             }
 
             // We now have YYYY-MM-DD [dateX]
-
-            Debug.Assert(source.Length >= 10);
             if (source.Length == 10)
             {
                 // Just a calendar date

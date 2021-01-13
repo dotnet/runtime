@@ -2,11 +2,12 @@
   <PropertyGroup>
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
     <!-- Disable analyzers in sourcebuild -->
-    <EnableAnalyzers Condition="'$(DotNetBuildFromSource)' == 'true'">false</EnableAnalyzers>
+    <RunAnalyzers Condition="'$(DotNetBuildFromSource)' == 'true'">false</RunAnalyzers>
   </PropertyGroup>
-  <ItemGroup Condition="'$(EnableAnalyzers)' == 'true'">
+  <ItemGroup Condition="'$(RunAnalyzers)' != 'false'">
     <PackageReference Include="Microsoft.DotNet.CodeAnalysis" Version="$(MicrosoftDotNetCodeAnalysisVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="3.3.0-beta1.20355.1" PrivateAssets="all" />
-    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.164" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="$(MicrosoftCodeAnalysisCSharpCodeStyleVersion)" PrivateAssets="all" />
+    <PackageReference Include="StyleCop.Analyzers" Version="$(StyleCopAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

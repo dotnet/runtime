@@ -1,20 +1,20 @@
 # Nullability annotations
 
-C# 8 provides an opt-in feature that allows for the compiler to  track reference type nullability in order to catch potential null dereferences.  We are adopting that feature across .NET's libraries, working up from the bottom of the stack.  We're doing this for three primary reasons, in order of importance:
+As of C# 8 and improved in C# 9, the C# language provides an opt-in feature that allows the compiler to track reference type nullability in order to catch potential null dereferences.  We have adopted that feature set across .NET's libraries, working up from the bottom of the stack.  We've done this (and continue to do so for all new library development) for three primary reasons, in order of importance:
 
-- **To annotate the .NET surface area with appropriate nullability annotations.**  While this could be done solely in the reference assemblies, we're doing it first in the implementation to help validate the selected annotations.
-- **To help validate the nullability feature itself.**  With millions of lines of C# code, we have a very large and robust codebase with which to try out the feature and find areas in which it shines and areas in which we can improve it.  The work to annotate System.Private.CoreLib in .NET Core 3.0 helped to improve the feature as shipped in C# 8, and annotating the rest of the libraries will continue to be helpful in this regard.
-- **To find null-related bugs in .NET Runtime itself.** We expect to find relatively few meaningful bugs, due to how relatively well-tested the codebases are and how long they've been around.
+- **To annotate the .NET surface area with appropriate nullability annotations.**  While this could be done solely in the reference assemblies, we do it in the implementation to help validate the selected annotations.
+- **To help validate the nullability feature itself.**  With millions of lines of C# code, we have a very large and robust codebase with which to try out features and find areas in which it shines and areas in which we can improve it.  The work to annotate System.Private.CoreLib in .NET Core 3.0 helped to improve the feature as shipped in C# 8, and the rest of the core libraries being annotated in .NET 5 helped to further flesh out the design for C# 9.
+- **To find null-related bugs in .NET Runtime itself.** We have found few meaningful bugs, due to how relatively well-tested the codebases are and how long they've been around.  However, for new code, the annotations do help to highlight places where null values may be erroneously dereferenced, helping to avoid NullReferenceExceptions in places testing may not yet be adequate.
 
 ## Breaking Change Guidance
 
-We are striving to get annotations correct the "first time" and are doing due-diligence in an attempt to do so.  However, we acknowledge that we are likely to need to augment and change some annotations in the future:
+We strive to get annotations correct the "first time" and do due-diligence in an attempt to do so.  However, we acknowledge that we are likely to need to augment and change some annotations in the future:
 
 - **Mistakes.** Given the sheer number of APIs being reviewed and annotated, we are likely to make some errors, and we'd like to be able to fix them so that long-term customers get the greatest benefit.
-- **Breadth.** Annotation takes time, so annotations will roll out over time rather than being released all at once.
+- **Breadth.** Annotation takes time, so annotations have rolled out and will continue to roll out over time rather than all at once for the whole stack.
 - **Feedback.** We may need to revisit some "gray area" decisions as to whether a parameter or return type should be nullable or non-nullable (more details later).
 
-Any such additions or changes to annotations can impact the warnings consuming code receives if that code has opted in to nullability analysis and warnings. Even so, for at least the foreseeable future we may still do so.  We will be very thoughtful about when and how we do.
+Any such additions or changes to annotations can impact the warnings consuming code receives if that code has opted-in to nullability analysis and warnings. Even so, for at least the foreseeable future we may still do so, and we will be very thoughtful about when and how we do.
 
 ## Annotation Guidance
 
@@ -23,7 +23,7 @@ Nullability annotations are considered to represent intent: they represent the n
 - **DO** annotate all new APIs with the desired contract.
 - **CONSIDER** changing that contract if overwhelming use suggests a different de facto contract. This is particularly relevant to virtual/abstract/interface methods defined in a library where all implementations may not be under your control, and derived implementations may not have adhered to the original intent.
 - **DO** respect documented behaviors.  Nullability annotations are about codifying a contract, and documentation is a description of that contract.  If, for example, a base abstract or virtual method says that it may throw an exception if `null` is passed in, that dictates that the argument should be non-nullable.
-- **DO** continue to validate all arguments as you would have prior to nullability warnings.  In particular, if you would have checked an argument for `null` and thrown an `ArgumentNullException` if it was `null`, continue to do so, even if the parameter is defined as non-nullable.  Many consumers will not have nullability checked enabled, either because they're using a language other than C#, they're using an older version of C#, they simply haven't opted-in to nullability analysis, or the compiler isn't able to detect the misuse.
+- **DO** continue to validate all arguments as you would have prior to nullability warnings.  In particular, if you would have checked an argument for `null` and thrown an `ArgumentNullException` if it was `null`, continue to do so, even if the parameter is defined as non-nullable.  Many consumers will not have nullability checked enabled, either because they're using a language other than C#, they're using an older version of C#, they simply haven't opted-in to nullability analysis, they've explicitly suppressed warnings, or the compiler isn't able to detect the misuse.
 - **DO NOT** remove existing argument validation when annotating existing public/protected APIs.  If through the course of annotating it becomes clear that internal/private surface area is unnecessarily checking for nulls when nulls aren't possible (i.e. you found dead code), such use can be removed or replaced by asserts.
 - **AVOID** making any changes while annotating that substantively impact the generated IL for an implementation (e.g. `some.Method()` to `some?.Method()`).  Any such changes should be thoroughly analyzed and reviewed as a bug fix.  In some cases, such changes may be warranted, but they're a red flag that should be scrutinized heavily.
 
@@ -99,6 +99,7 @@ The C# compiler respects a set of attributes that impact its flow analysis.  We 
 - **DO** add `[NotNullIfNotNull(string)]` if nullable ref argument will be non-`null` upon exit, when an other argument passed evaluated to non-`null`, pass that argument name as string. Example: `public void Exchange([NotNullIfNotNull("value")] ref object? location, object? value);`.
 - **DO** add `[return: NotNullIfNotNull(string)]` if a method would not return `null` in case an argument passed evaluated to non-`null`, pass that argument name as string. Example: `[return: NotNullIfNotNull("name")] public string? FormatName(string? name);`
 - **DO** add `[MemberNotNull(string fieldName)]` to a helper method which initializes member field(s), passing in the field name. Example: `[MemberNotNull("_buffer")] private void InitializeBuffer()`.  This will help to avoid spurious warnings at call sites that call the initialization method and then proceed to use the specified field.  Note that there are two constructors to `MemberNotNull`; one that takes a single `string`, and one that takes a `params string[]`.  When the number of fields initialized is small (e.g. <= 3), it's preferable to use multiple `[MemberNotNull(string)]` attributes on the method rather than one `[MemberNotNull(string, string, string, ...)]` attribute, as the latter is not CLS compliant and will likely require `#pragma warning disable` and `#pragma warning restore` around the line to suppress warnings.
+- **AVOID** using `[MaybeNull]`, not because it's problematic, but because there's almost always a better option, such as `T?` (as of this writing, in all of the dotnet/runtime there are only 7 occurrences of `[MaybeNull]`).  One example of where it's applicable is `AsyncLocal<T>.Value`; `[DisallowNull]` can't be used here, because `null` is valid if `T` is nullable, and `T?` shouldn't be used because `Value` shouldn't be set to `null` if `T` isn't nullable.  Another is in the relatively rare case where a public or protected field is exposed, may begin life as null, but shouldn't be explicitly set to null.
 
 ## Code Review Guidance
 
@@ -113,7 +114,7 @@ A code review for enabling nullability generally involves three passes:
     - Adding `!` to reference type usage.  These essentially suppress the null warning, telling the compiler to treat the expression as if it's non-null.  These evaporate at compile-time.
 
     - Adding `Debug.Assert(reference != null);` statements.  These inform the compiler that the mentioned reference is non-`null`, which will cause the compiler to factor that in and have the effect of suppressing subsequent warnings on that reference (until the flow analysis suggests that could change).  As with any `Debug.Assert`, these evaporate at compile-time in release builds (where `DEBUG` isn't defined).
-  
+
   - Most any other changes have the potential to change the IL, which should not be necessary for the feature.  In particular, it's common for `?`s on dereferences to sneak in, e.g. changing `someVar.SomeMethod()` to `someVar?.SomeMethod()`; that is a change to the IL, and should only be employed when there's an actual known bug that's important to fix, as otherwise we're incurring unnecessary cost.  Similarly, it's easy to accidentally add `?` to value types, which has a significant impact, changing the `T` to a `Nullable<T>` and should be avoided.
 
   - Any `!`s added that should have been unnecessary and are required due to either a compiler issue or due to lack of expressibility about annotations should have a `// TODO-NULLABLE: http://link/to/relevant/issue` comment added on the same line.

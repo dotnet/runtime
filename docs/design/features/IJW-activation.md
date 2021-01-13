@@ -8,7 +8,7 @@ To support any C++/CLI users that wish to use .NET Core, the runtime and hosting
 * Load the appropriate version of .NET Core for the assembly if a .NET Core instance is not running, or validate that the currently running .NET Core instance can satisfy the assemblies requirements.
 * Load the (already-in-memory) assembly into the runtime.
 * Patch the vtfixup table tokens to point to JIT stubs.
-  
+
 ## Design
 
 IJW activation has a variety of hard problems associated with it, mainly with loading in mixed mode assemblies that are not the application.

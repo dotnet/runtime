@@ -21,7 +21,7 @@ namespace System.Xml.Xsl.Xslt
 #endif
 
         private readonly XmlReader _reader;
-        private readonly IXmlLineInfo _readerLineInfo;
+        private readonly IXmlLineInfo? _readerLineInfo;
         private readonly bool _topLevelReader;
         private readonly CompilerScopeManager<VarPar> _scopeManager;
         private readonly KeywordsTable _atoms;
@@ -35,7 +35,7 @@ namespace System.Xml.Xsl.Xslt
         private bool _isEmptyElement;
         private int _lastTextNode;
         private int _numAttributes;
-        private ContextInfo _ctxInfo;
+        private ContextInfo? _ctxInfo;
         private bool _attributesRead;
 
         public XsltInput(XmlReader reader, Compiler compiler, KeywordsTable atoms)
@@ -43,7 +43,7 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(reader != null);
             Debug.Assert(atoms != null);
             EnsureExpandEntities(reader);
-            IXmlLineInfo xmlLineInfo = reader as IXmlLineInfo;
+            IXmlLineInfo? xmlLineInfo = reader as IXmlLineInfo;
 
             _atoms = atoms;
             _reader = reader;
@@ -61,17 +61,17 @@ namespace System.Xml.Xsl.Xslt
         public string NamespaceUri { get { return _records[_currentRecord].nsUri; } }
         public string Prefix { get { return _records[_currentRecord].prefix; } }
         public string Value { get { return _records[_currentRecord].value; } }
-        public string BaseUri { get { return _records[_currentRecord].baseUri; } }
+        public string? BaseUri { get { return _records[_currentRecord].baseUri; } }
         public string QualifiedName { get { return _records[_currentRecord].QualifiedName; } }
         public bool IsEmptyElement { get { return _isEmptyElement; } }
 
-        public string Uri { get { return _records[_currentRecord].baseUri; } }
+        public string? Uri { get { return _records[_currentRecord].baseUri; } }
         public Location Start { get { return _records[_currentRecord].start; } }
         public Location End { get { return _records[_currentRecord].end; } }
 
         private static void EnsureExpandEntities(XmlReader reader)
         {
-            XmlTextReader tr = reader as XmlTextReader;
+            XmlTextReader? tr = reader as XmlTextReader;
             if (tr != null && tr.EntityHandling != EntityHandling.ExpandEntities)
             {
                 Debug.Assert(tr.Settings == null, "XmlReader created with XmlReader.Create should always expand entities.");
@@ -108,11 +108,11 @@ namespace System.Xml.Xsl.Xslt
             // positioned on xsl:stylesheet element (or any preceding whitespace) but there also can be namespaces defined on one
             // of the ancestor nodes. These namespace definitions have to be copied to the xsl:stylesheet element scope. Otherwise it
             // will not be possible to resolve them later and loading the stylesheet will end up with throwing an exception.
-            IDictionary<string, string> namespacesInScope = null;
+            IDictionary<string, string>? namespacesInScope = null;
             if (_reader.ReadState == ReadState.Interactive)
             {
                 // This may be an embedded stylesheet - store namespaces in scope
-                IXmlNamespaceResolver nsResolver = _reader as IXmlNamespaceResolver;
+                IXmlNamespaceResolver? nsResolver = _reader as IXmlNamespaceResolver;
                 if (nsResolver != null)
                 {
                     namespacesInScope = nsResolver.GetNamespacesInScope(XmlNamespaceScope.ExcludeXml);
@@ -137,7 +137,7 @@ namespace System.Xml.Xsl.Xslt
                         {
                             string nsAtomizedValue = _atoms.NameTable.Add(prefixNamespacePair.Value);
                             _scopeManager.AddNsDeclaration(prefixNamespacePair.Key, nsAtomizedValue);
-                            _ctxInfo.AddNamespace(prefixNamespacePair.Key, nsAtomizedValue);
+                            _ctxInfo!.AddNamespace(prefixNamespacePair.Key, nsAtomizedValue);
                         }
                     }
                 }
@@ -278,7 +278,7 @@ namespace System.Xml.Xsl.Xslt
                 if (!Ref.Equal(rec.localName, _atoms.Xml))
                 {
                     _scopeManager.AddNsDeclaration(rec.localName, atomizedValue);
-                    _ctxInfo.AddNamespace(rec.localName, atomizedValue);
+                    _ctxInfo!.AddNamespace(rec.localName, atomizedValue);
                 }
                 return false;
             }
@@ -286,7 +286,7 @@ namespace System.Xml.Xsl.Xslt
             {  // xmlns="NS_FOO"
                 string atomizedValue = _atoms.NameTable.Add(_reader.Value);
                 _scopeManager.AddNsDeclaration(string.Empty, atomizedValue);
-                _ctxInfo.AddNamespace(string.Empty, atomizedValue);
+                _ctxInfo!.AddNamespace(string.Empty, atomizedValue);
                 return false;
             }
             /* Read Attribute Value */
@@ -386,7 +386,7 @@ namespace System.Xml.Xsl.Xslt
                     case XmlNodeType.Text:
                     // XLinq reports WS nodes as Text so we need to analyze them here
                     case XmlNodeType.CDATA:
-                        if (textIsWhite && !XmlCharType.Instance.IsOnlyWhitespace(_reader.Value))
+                        if (textIsWhite && !XmlCharType.IsOnlyWhitespace(_reader.Value))
                         {
                             textIsWhite = false;
                         }
@@ -408,7 +408,7 @@ namespace System.Xml.Xsl.Xslt
                             // Special treatment for character and built-in entities
                             ExtendRecordBuffer(curTextNode);
                             FillupCharacterEntityRecord(ref _records[curTextNode]);
-                            if (textIsWhite && !XmlCharType.Instance.IsOnlyWhitespace(_records[curTextNode].value))
+                            if (textIsWhite && !XmlCharType.IsOnlyWhitespace(_records[curTextNode].value))
                             {
                                 textIsWhite = false;
                             }
@@ -558,7 +558,7 @@ namespace System.Xml.Xsl.Xslt
 
         public bool IsRequiredAttribute(int attNum)
         {
-            return (_attributes[attNum].flags & (_compiler.Version == 2 ? XsltLoader.V2Req : XsltLoader.V1Req)) != 0;
+            return (_attributes![attNum].flags & (_compiler.Version == 2 ? XsltLoader.V2Req : XsltLoader.V1Req)) != 0;
         }
 
         public bool AttributeExists(int attNum, string attName)
@@ -699,7 +699,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        private XsltAttribute[] _attributes;
+        private XsltAttribute[]? _attributes;
         // Mapping of attribute names as they ordered in 'attributes' array
         // to there's numbers in actual stylesheet as they ordered in 'records' array
         private readonly int[] _xsltAttributeNumber = new int[21];
@@ -715,7 +715,7 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(attributes.Length <= _xsltAttributeNumber.Length);
             _attributes = attributes;
             // temp hack to fix value? = new AttValue(records[values[?]].value);
-            _records[0].value = null;
+            _records[0].value = null!;
 
             // Standard Attributes:
             int attExtension = 0;
@@ -809,8 +809,8 @@ namespace System.Xml.Xsl.Xslt
             // <xsl:stylesheet unknown="foo" version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"/>
             _compiler.ExitForwardsCompatible(ForwardCompatibility);
 
-            InsertExNamespaces(attExtension, _ctxInfo, /*extensions:*/ true);
-            InsertExNamespaces(attExclude, _ctxInfo, /*extensions:*/ false);
+            InsertExNamespaces(attExtension, _ctxInfo!, /*extensions:*/ true);
+            InsertExNamespaces(attExclude, _ctxInfo!, /*extensions:*/ false);
             SetXPathDefaultNamespace(attNamespace);
             SetDefaultCollation(attCollation);
             if (attUseWhen != 0)
@@ -835,7 +835,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            return _ctxInfo;
+            return _ctxInfo!;
         }
 
         public ContextInfo GetLiteralAttributes(bool asStylesheet)
@@ -893,7 +893,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Parse xsl:extension-element-prefixes attribute (now that forwards-compatible mode is known)
-            InsertExNamespaces(attExtension, _ctxInfo, /*extensions:*/true);
+            InsertExNamespaces(attExtension, _ctxInfo!, /*extensions:*/true);
 
             if (!IsExtensionNamespace(_records[0].nsUri))
             {
@@ -908,10 +908,10 @@ namespace System.Xml.Xsl.Xslt
                     }
                 }
 
-                InsertExNamespaces(attExclude, _ctxInfo, /*extensions:*/false);
+                InsertExNamespaces(attExclude, _ctxInfo!, /*extensions:*/false);
             }
 
-            return _ctxInfo;
+            return _ctxInfo!;
         }
 
         // Get just the 'version' attribute of an unknown XSLT instruction. All other attributes
@@ -961,7 +961,7 @@ namespace System.Xml.Xsl.Xslt
                         {
                             if (list[idx] == "#default")
                             {
-                                list[idx] = this.LookupXmlNamespace(string.Empty);
+                                list[idx] = this.LookupXmlNamespace(string.Empty)!;
                                 if (list[idx].Length == 0 && _compiler.Version != 1 && !BackwardCompatibility)
                                 {
                                     ReportError(/*[XTSE0809]*/SR.Xslt_ExcludeDefault);
@@ -969,7 +969,7 @@ namespace System.Xml.Xsl.Xslt
                             }
                             else
                             {
-                                list[idx] = this.LookupXmlNamespace(list[idx]);
+                                list[idx] = this.LookupXmlNamespace(list[idx])!;
                             }
                         }
                         if (!_compiler.ExitForwardsCompatible(this.ForwardCompatibility))
@@ -1086,14 +1086,14 @@ namespace System.Xml.Xsl.Xslt
             else
                 loc = new Location(0, 0);
 
-            return new SourceLineInfo(_reader.BaseURI, loc, loc);
+            return new SourceLineInfo(_reader.BaseURI!, loc, loc);
         }
 
         // Resolve prefix, return null and report an error if not found
-        public string LookupXmlNamespace(string prefix)
+        public string? LookupXmlNamespace(string prefix)
         {
             Debug.Assert(prefix != null);
-            string nsUri = _scopeManager.LookupNamespace(prefix);
+            string? nsUri = _scopeManager.LookupNamespace(prefix);
             if (nsUri != null)
             {
                 Debug.Assert(Ref.Equal(_atoms.NameTable.Get(nsUri), nsUri), "Namespaces must be atomized");
@@ -1109,12 +1109,12 @@ namespace System.Xml.Xsl.Xslt
 
         // ---------------------- Error Handling ----------------------
 
-        public void ReportError(string res, params string[] args)
+        public void ReportError(string res, params string?[]? args)
         {
             _compiler.ReportError(BuildNameLineInfo(), res, args);
         }
 
-        public void ReportWarning(string res, params string[] args)
+        public void ReportWarning(string res, params string?[]? args)
         {
             _compiler.ReportWarning(BuildNameLineInfo(), res, args);
         }
@@ -1136,14 +1136,14 @@ namespace System.Xml.Xsl.Xslt
 
         internal class ContextInfo
         {
-            public NsDecl nsList;
-            public ISourceLineInfo lineInfo;       // Line info for whole start tag
-            public ISourceLineInfo elemNameLi;     // Line info for element name
-            public ISourceLineInfo endTagLi;       // Line info for end tag or '/>'
+            public NsDecl? nsList;
+            public ISourceLineInfo? lineInfo;       // Line info for whole start tag
+            public ISourceLineInfo? elemNameLi;     // Line info for element name
+            public ISourceLineInfo? endTagLi;       // Line info for end tag or '/>'
             private readonly int _elemNameLength;
 
             // Create ContextInfo based on existing line info (used during AST rewriting)
-            internal ContextInfo(ISourceLineInfo lineinfo)
+            internal ContextInfo(ISourceLineInfo? lineinfo)
             {
                 this.elemNameLi = lineinfo;
                 this.endTagLi = lineinfo;
@@ -1162,7 +1162,7 @@ namespace System.Xml.Xsl.Xslt
 
             public void SaveExtendedLineInfo(XsltInput input)
             {
-                if (lineInfo.Start.Line == 0)
+                if (lineInfo!.Start.Line == 0)
                 {
                     elemNameLi = endTagLi = null;
                     return;
@@ -1196,7 +1196,7 @@ namespace System.Xml.Xsl.Xslt
                     _elementTagLi = elementTagLi;
                 }
 
-                public string Uri { get { return _elementTagLi.Uri; } }
+                public string? Uri { get { return _elementTagLi.Uri; } }
                 public bool IsNoSource { get { return _elementTagLi.IsNoSource; } }
                 public Location Start { get { return new Location(_elementTagLi.End.Line, _elementTagLi.End.Pos - 2); } }
                 public Location End { get { return _elementTagLi.End; } }
@@ -1208,7 +1208,7 @@ namespace System.Xml.Xsl.Xslt
             public string nsUri;
             public string prefix;
             public string value;
-            public string baseUri;
+            public string? baseUri;
             public Location start;
             public Location valueStart;
             public Location end;

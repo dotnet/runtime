@@ -121,7 +121,7 @@ namespace System.Net.NetworkInformation
         }
 
         // Helper class for detecting address change events.
-        internal static unsafe class AddressChangeListener
+        internal static class AddressChangeListener
         {
             // Need to keep the reference so it isn't GC'd before the native call executes.
             private static bool s_isListening;

@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-#if FEATURE_COMPILED_XSL
 using System.Xml.Xsl.IlGen;
-#endif
 using System.Xml.Xsl.Qil;
 
 namespace System.Xml.Xsl.Runtime
@@ -34,7 +32,6 @@ namespace System.Xml.Xsl.Runtime
         private readonly string[] _globalNames;
         private readonly EarlyBoundInfo[] _earlyBound;
 
-#if FEATURE_COMPILED_XSL
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -69,7 +66,6 @@ namespace System.Xml.Xsl.Runtime
             _earlyBound = copy._earlyBound;
 #endif
         }
-#endif
 
         /// <summary>
         /// Deserialize XmlQueryStaticData object from a byte array.

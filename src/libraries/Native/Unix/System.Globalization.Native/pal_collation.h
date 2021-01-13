@@ -39,25 +39,21 @@ PALEXPORT int32_t GlobalizationNative_LastIndexOf(SortHandle* pSortHandle,
                                                   int32_t options,
                                                   int32_t* pMatchedLength);
 
-PALEXPORT int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(const UChar* lpTarget,
-                                                               int32_t cwTargetLength,
-                                                               const UChar* lpSource,
-                                                               int32_t cwSourceLength,
-                                                               int32_t findLast);
-
 PALEXPORT int32_t GlobalizationNative_StartsWith(SortHandle* pSortHandle,
                                                  const UChar* lpTarget,
                                                  int32_t cwTargetLength,
                                                  const UChar* lpSource,
                                                  int32_t cwSourceLength,
-                                                 int32_t options);
+                                                 int32_t options,
+                                                 int32_t* pMatchedLength);
 
 PALEXPORT int32_t GlobalizationNative_EndsWith(SortHandle* pSortHandle,
                                                const UChar* lpTarget,
                                                int32_t cwTargetLength,
                                                const UChar* lpSource,
                                                int32_t cwSourceLength,
-                                               int32_t options);
+                                               int32_t options,
+                                               int32_t* pMatchedLength);
 
 PALEXPORT int32_t GlobalizationNative_GetSortKey(SortHandle* pSortHandle,
                                                  const UChar* lpStr,
@@ -65,8 +61,3 @@ PALEXPORT int32_t GlobalizationNative_GetSortKey(SortHandle* pSortHandle,
                                                  uint8_t* sortKey,
                                                  int32_t cbSortKeyLength,
                                                  int32_t options);
-
-PALEXPORT int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(const UChar* lpStr1,
-                                                                     int32_t cwStr1Length,
-                                                                     const UChar* lpStr2,
-                                                                     int32_t cwStr2Length);

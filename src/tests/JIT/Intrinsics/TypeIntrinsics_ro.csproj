@@ -7,5 +7,6 @@
   <ItemGroup>
     <Compile Include="TypeIntrinsics.cs" />
     <Compile Include="TypeIntrinsics.IsAssignableFrom.cs" />
+    <Compile Include="TypeIntrinsics.IsAssignableTo.cs" />
   </ItemGroup>
 </Project>

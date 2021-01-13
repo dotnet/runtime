@@ -9,6 +9,7 @@ using System.Xml.XPath;
 using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.XPath;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Xslt
 {
@@ -50,9 +51,9 @@ namespace System.Xml.Xsl.Xslt
         public void AssertFilter(QilLoop filter)
         {
             Debug.Assert(filter.NodeType == QilNodeType.Filter, "XPathPatternBuilder expected to generate list of Filters on top level");
-            Debug.Assert(filter.Variable.XmlType.IsSubtypeOf(T.NodeNotRtf));
-            Debug.Assert(filter.Variable.Binding.NodeType == QilNodeType.Unknown);  // fixupNode
-            Debug.Assert(filter.Body.XmlType.IsSubtypeOf(T.Boolean));
+            Debug.Assert(filter.Variable.XmlType!.IsSubtypeOf(T.NodeNotRtf));
+            Debug.Assert(filter.Variable.Binding!.NodeType == QilNodeType.Unknown);  // fixupNode
+            Debug.Assert(filter.Body.XmlType!.IsSubtypeOf(T.Boolean));
         }
 
         private void FixupFilterBinding(QilLoop filter, QilNode newBinding)
@@ -61,7 +62,8 @@ namespace System.Xml.Xsl.Xslt
             filter.Variable.Binding = newBinding;
         }
 
-        public virtual QilNode EndBuild(QilNode result)
+        [return: NotNullIfNotNull("result")]
+        public virtual QilNode? EndBuild(QilNode? result)
         {
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");
             if (result == null)
@@ -78,7 +80,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        public QilNode Operator(XPathOperator op, QilNode left, QilNode right)
+        public QilNode Operator(XPathOperator op, QilNode? left, QilNode? right)
         {
             Debug.Assert(op == XPathOperator.Union);
             Debug.Assert(left != null);
@@ -97,7 +99,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        private static QilLoop BuildAxisFilter(QilPatternFactory f, QilIterator itr, XPathAxis xpathAxis, XPathNodeType nodeType, string name, string nsUri)
+        private static QilLoop BuildAxisFilter(QilPatternFactory f, QilIterator itr, XPathAxis xpathAxis, XPathNodeType nodeType, string? name, string? nsUri)
         {
             QilNode nameTest = (
                 name != null && nsUri != null ? f.Eq(f.NameOf(itr), f.QName(name, nsUri)) : // ns:bar || bar
@@ -106,7 +108,7 @@ namespace System.Xml.Xsl.Xslt
                                                                           /*name  == nsUri == null*/       f.True()                                       // *
             );
 
-            XmlNodeKindFlags intersection = XPathBuilder.AxisTypeMask(itr.XmlType.NodeKinds, nodeType, xpathAxis);
+            XmlNodeKindFlags intersection = XPathBuilder.AxisTypeMask(itr.XmlType!.NodeKinds, nodeType, xpathAxis);
 
             QilNode typeTest = (
                 intersection == 0 ? f.False() :  // input & required doesn't intersect
@@ -115,12 +117,12 @@ namespace System.Xml.Xsl.Xslt
             );
 
             QilLoop filter = f.BaseFactory.Filter(itr, f.And(typeTest, nameTest));
-            filter.XmlType = T.PrimeProduct(T.NodeChoice(intersection), filter.XmlType.Cardinality);
+            filter.XmlType = T.PrimeProduct(T.NodeChoice(intersection), filter.XmlType!.Cardinality);
 
             return filter;
         }
 
-        public QilNode Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string prefix, string name)
+        public QilNode Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
         {
             Debug.Assert(
                 xpathAxis == XPathAxis.Child ||
@@ -141,7 +143,7 @@ namespace System.Xml.Xsl.Xslt
                     priority = 0.5;
                     break;
                 default:
-                    string nsUri = prefix == null ? null : _environment.ResolvePrefix(prefix);
+                    string? nsUri = prefix == null ? null : _environment.ResolvePrefix(prefix);
                     result = BuildAxisFilter(_f, _f.For(_fixupNode), xpathAxis, nodeType, name, nsUri);
                     switch (nodeType)
                     {
@@ -214,7 +216,9 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
             Debug.Assert(right.NodeType == QilNodeType.Filter);
-            QilLoop lastParent = GetLastParent(right);
+            QilLoop? lastParent = GetLastParent(right);
+            Debug.Assert(lastParent != null);
+
             FixupFilterBinding(parentFilter, ancestor ? _f.Ancestor(lastParent.Variable) : _f.Parent(lastParent.Variable));
             lastParent.Body = _f.And(lastParent.Body, _f.Not(_f.IsEmpty(parentFilter)));
             SetPriority(right, 0.5);
@@ -280,7 +284,7 @@ namespace System.Xml.Xsl.Xslt
                 QilNode filterCurrent = _f.Filter(matchNodeIter, _f.Is(matchNodeIter, current));
                 nodeFilter.Body = _f.Not(_f.IsEmpty(filterCurrent));
                 //for passing type check, explicit say the result is target type
-                nodeFilter.Body = _f.And(_f.IsType(current, nodeFilter.XmlType), nodeFilter.Body);
+                nodeFilter.Body = _f.And(_f.IsType(current, nodeFilter.XmlType!), nodeFilter.Body);
             }
 
             SetPriority(nodeset, 0.5);
@@ -336,32 +340,32 @@ namespace System.Xml.Xsl.Xslt
         private class Annotation
         {
             public double Priority;
-            public QilLoop Parent;
+            public QilLoop? Parent;
         }
 
         public static void SetPriority(QilNode node, double priority)
         {
-            Annotation ann = (Annotation)node.Annotation ?? new Annotation();
+            Annotation ann = (Annotation?)node.Annotation ?? new Annotation();
             ann.Priority = priority;
             node.Annotation = ann;
         }
 
         public static double GetPriority(QilNode node)
         {
-            return ((Annotation)node.Annotation).Priority;
+            return ((Annotation)node.Annotation!).Priority;
         }
 
         private static void SetLastParent(QilNode node, QilLoop parent)
         {
             Debug.Assert(parent.NodeType == QilNodeType.Filter);
-            Annotation ann = (Annotation)node.Annotation ?? new Annotation();
+            Annotation ann = (Annotation?)node.Annotation ?? new Annotation();
             ann.Parent = parent;
             node.Annotation = ann;
         }
 
-        private static QilLoop GetLastParent(QilNode node)
+        private static QilLoop? GetLastParent(QilNode node)
         {
-            return ((Annotation)node.Annotation).Parent;
+            return ((Annotation)node.Annotation!).Parent;
         }
 
         public static void CleanAnnotation(QilNode node)

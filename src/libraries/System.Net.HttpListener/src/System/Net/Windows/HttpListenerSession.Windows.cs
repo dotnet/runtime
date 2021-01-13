@@ -10,7 +10,7 @@ namespace System.Net
     {
         public readonly HttpListener Listener;
         public readonly SafeHandle RequestQueueHandle;
-        private ThreadPoolBoundHandle _requestQueueBoundHandle;
+        private ThreadPoolBoundHandle? _requestQueueBoundHandle;
 
         public ThreadPoolBoundHandle RequestQueueBoundHandle
         {
@@ -38,7 +38,7 @@ namespace System.Net
 
             uint statusCode =
                 Interop.HttpApi.HttpCreateRequestQueue(
-                    Interop.HttpApi.s_version, null, null, 0, out HttpRequestQueueV2Handle requestQueueHandle);
+                    Interop.HttpApi.s_version, null!, null, 0, out HttpRequestQueueV2Handle requestQueueHandle);
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {

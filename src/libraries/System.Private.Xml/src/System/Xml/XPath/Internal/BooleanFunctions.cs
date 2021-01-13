@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Xml;
@@ -42,7 +41,7 @@ namespace MS.Internal.Xml.XPath
                 FT.FuncNot => Not(nodeIterator),
                 FT.FuncTrue => true,
                 FT.FuncFalse => false,
-                FT.FuncLang => Lang(nodeIterator),
+                FT.FuncLang => Lang(nodeIterator!),
                 _ => false,
             };
 

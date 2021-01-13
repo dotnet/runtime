@@ -316,6 +316,7 @@ mono_trace_set_mask_string (const char *value)
 		{ "profiler", MONO_TRACE_PROFILER },
 		{ "tiered", MONO_TRACE_TIERED },
 		{ "qcall", MONO_TRACE_QCALL },
+		{ "metadata-update", MONO_TRACE_METADATA_UPDATE },
 		{ "all", (MonoTraceMask)~0 }, // FIXMEcxx there is a better way -- operator overloads of enums
 		{ NULL, (MonoTraceMask)0 },
 	};
@@ -551,7 +552,7 @@ conv_ascii_char (gchar s)
 
 /* No memfree because only called during crash */
 void
-mono_dump_mem (gpointer d, int len)
+mono_dump_mem (gconstpointer d, int len)
 {
 	guint8 *data = (guint8 *) d;
 

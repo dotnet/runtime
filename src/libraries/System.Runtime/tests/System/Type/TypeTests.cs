@@ -391,7 +391,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeByRefType_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37489", TestRuntimes.Mono)]
         public void MakeByRefType_Invoke_ReturnsExpected(Type t)
         {
             Type tPointer = t.MakeByRefType();
@@ -474,7 +473,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakePointerType_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37489", TestRuntimes.Mono)]
         public void MakePointerType_Invoke_ReturnsExpected(Type t)
         {
             Type tPointer = t.MakePointerType();

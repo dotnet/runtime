@@ -157,7 +157,7 @@ namespace System.Globalization
 
             if (originalString.Length == inputLength &&
                 inputLength == outputLength &&
-                CompareInfo.EqualsOrdinalIgnoreCase(ref *input, ref *output, inputLength))
+                Ordinal.EqualsIgnoreCase(ref *input, ref *output, inputLength))
             {
                 return originalString;
             }

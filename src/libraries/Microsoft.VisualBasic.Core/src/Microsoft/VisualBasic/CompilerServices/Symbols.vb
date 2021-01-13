@@ -4,7 +4,6 @@
 Imports System
 Imports System.Reflection
 Imports System.Diagnostics
-Imports System.Collections
 Imports System.Collections.Generic
 Imports System.Linq
 
@@ -55,10 +54,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
             MAX
         End Enum
 
-        Friend Shared ReadOnly NoArguments As Object() = {}
-        Friend Shared ReadOnly NoArgumentNames As String() = {}
-        Friend Shared ReadOnly NoTypeArguments As Type() = {}
-        Friend Shared ReadOnly NoTypeParameters As Type() = {}
+        Friend Shared ReadOnly NoArguments As Object() = Array.Empty(Of Object)()
+        Friend Shared ReadOnly NoArgumentNames As String() = Array.Empty(Of String)()
+        Friend Shared ReadOnly NoTypeArguments As Type() = Array.Empty(Of Type)()
+        Friend Shared ReadOnly NoTypeParameters As Type() = Array.Empty(Of Type)()
 
         Friend Shared ReadOnly OperatorCLSNames As String()
         Friend Shared ReadOnly OperatorNames As String()
@@ -840,7 +839,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 BindingFlags.Static Or
                 BindingFlags.Instance
 
-            Private Shared ReadOnly s_noMembers As MemberInfo() = {}
+            Private Shared ReadOnly s_noMembers As MemberInfo() = Array.Empty(Of MemberInfo)()
 
             Private Shared Function FilterInvalidMembers(ByVal members As MemberInfo()) As MemberInfo()
 

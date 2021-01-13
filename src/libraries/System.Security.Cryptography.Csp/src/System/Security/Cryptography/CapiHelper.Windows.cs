@@ -910,7 +910,6 @@ namespace Internal.NativeCrypto
             bool isFinal)
         {
             VerifyValidHandle(hKey);
-            Debug.Assert((input.Length % 8) == 0);
 
             // Figure out how big the encrypted data will be
             int cbEncryptedData = input.Length;
@@ -949,7 +948,6 @@ namespace Internal.NativeCrypto
             Span<byte> output)
         {
             VerifyValidHandle(hKey);
-            Debug.Assert((input.Length % 8) == 0);
 
             byte[] dataToBeDecrypted = new byte[input.Length];
             input.CopyTo(dataToBeDecrypted);
@@ -1083,7 +1081,7 @@ namespace Internal.NativeCrypto
             else
             {
                 Type? hashAlgType = hashAlg as Type;
-                if ((object?)hashAlgType != null)
+                if (hashAlgType is not null)
                 {
                     if (typeof(MD5).IsAssignableFrom(hashAlgType))
                         return CapiHelper.CALG_MD5;

@@ -998,8 +998,7 @@ namespace System.Collections.Immutable
             /// The first element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
-            [return: MaybeNull]
-            internal T Find(Predicate<T> match)
+            internal T? Find(Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
 
@@ -1011,7 +1010,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                return default(T)!;
+                return default;
             }
 
             /// <summary>
@@ -1144,8 +1143,7 @@ namespace System.Collections.Immutable
             /// The last element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
-            [return: MaybeNull]
-            internal T FindLast(Predicate<T> match)
+            internal T? FindLast(Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
 
@@ -1160,7 +1158,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                return default(T)!;
+                return default;
             }
 
             /// <summary>

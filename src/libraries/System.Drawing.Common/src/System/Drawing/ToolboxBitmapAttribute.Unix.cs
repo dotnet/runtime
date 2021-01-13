@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.ToolboxBitmapAttribute.cs
 //
@@ -121,7 +122,7 @@ namespace System.Drawing
 
             try
             {
-                using (System.IO.Stream? s = t.GetTypeInfo().Assembly.GetManifestResourceStream(t.Namespace + "." + imageName))
+                using (System.IO.Stream? s = t.Assembly.GetManifestResourceStream(t.Namespace + "." + imageName))
                 {
                     if (s == null)
                     {

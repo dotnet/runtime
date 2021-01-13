@@ -12,7 +12,7 @@ namespace System.Formats.Cbor.Tests
     public static class CborPropertyTests
     {
         private const string? ReplaySeed = "(42,42)"; // set a seed for deterministic runs, null for randomized runs
-        private const int MaxTests = 10_000;
+        private const int MaxTests = 100; // FsCheck default is 100
 
         [Property(Replay = ReplaySeed, MaxTest = MaxTests, Arbitrary = new[] { typeof(CborRandomGenerators) })]
         public static void Roundtrip_Int64(CborConformanceMode mode, long input)
@@ -178,7 +178,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Property(Replay = ReplaySeed, MaxTest = MaxTests, Arbitrary = new[] { typeof(CborRandomGenerators) })]
-        public static void PropertyTest_Roundtrip(CborPropertyTestContext input)
+        public static void CborDocument_Roundtrip(CborPropertyTestContext input)
         {
             byte[] encoding = CborDocumentSerializer.encode(input);
 
@@ -188,7 +188,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Property(Replay = ReplaySeed, MaxTest = MaxTests, Arbitrary = new[] { typeof(CborRandomGenerators) })]
-        public static void PropertyTest_SkipValue(CborPropertyTestContext input)
+        public static void CborDocument_SkipValue(CborPropertyTestContext input)
         {
             int length = input.RootDocuments.Length;
             input.RootDocuments = new[] { CborDocument.NewArray(_isDefiniteLength: true, input.RootDocuments) };
@@ -205,7 +205,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Property(Replay = ReplaySeed, MaxTest = MaxTests, Arbitrary = new[] { typeof(CborRandomGenerators) })]
-        public static void PropertyTest_SkipToParent(CborPropertyTestContext input)
+        public static void CborDocument_SkipToParent(CborPropertyTestContext input)
         {
             input.RootDocuments = new[] { CborDocument.NewArray(_isDefiniteLength: true, input.RootDocuments) };
             byte[] encoding = CborDocumentSerializer.encode(input);

@@ -39,8 +39,6 @@
              Properties="$(TraversalGlobalProperties)" />
   </Target>
 
-  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(MonoProjectRoot)wasm\wasm.targets" />
-
   <Target Name="BuildManualShims"
           AfterTargets="BuildNonNetCoreAppProjects"
           Condition="'@(ManualShimProject)' != ''">
@@ -48,6 +46,9 @@
              Projects="@(ManualShimProject)"
              Properties="$(TraversalGlobalProperties)" />
   </Target>
+
+  <Import Condition="'$(BuildingNetCoreAppVertical)' == 'true'"
+          Project="$(MSBuildThisFileDirectory)\illink-sharedframework.targets" />
 
   <Target Name="RunApiCompat"
           Condition="'@(ApiCompatProject)' != ''"

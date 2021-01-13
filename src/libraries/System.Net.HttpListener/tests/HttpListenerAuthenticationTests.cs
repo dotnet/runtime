@@ -269,7 +269,7 @@ namespace System.Net.Tests
 
             using (var client = new HttpClient())
             {
-                HttpResponseMessage response = await AuthenticationFailure(client, HttpStatusCode.InternalServerError);
+                await AuthenticationFailure(client, HttpStatusCode.InternalServerError);
             }
         }
 
@@ -281,7 +281,7 @@ namespace System.Net.Tests
 
             using (var client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
                 Assert.Throws<OutOfMemoryException>(() => _listener.GetContext());
             }
         }
@@ -450,7 +450,7 @@ namespace System.Net.Tests
                     Basic,
                     Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", TestUser, TestPassword))));
 
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
                 HttpListenerContext listenerContext = await serverContextTask;
 
                 Assert.Null(listenerContext.User);
@@ -469,7 +469,7 @@ namespace System.Net.Tests
                     Basic,
                     Convert.ToBase64String(Encoding.ASCII.GetBytes(authHeader)));
 
-                Task <string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
                 HttpListenerContext listenerContext = await serverContextTask;
 
                 Assert.Equal(expectedUsername, listenerContext.User.Identity.Name);

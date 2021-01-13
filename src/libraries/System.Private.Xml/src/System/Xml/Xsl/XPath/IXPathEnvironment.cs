@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.XPath
     internal interface IFocus
     {
         // The context item:     the item currently being processed
-        QilNode GetCurrent();
+        QilNode? GetCurrent();
 
         // The context position: the position of the context item within the sequence of items
         // currently being processed

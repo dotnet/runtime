@@ -164,10 +164,10 @@ Thus the event names only need to be unique within a component.
 * DO - use activities (see [Activity Users Guide](ActivityUserGuide.md)) for events that are
   marking the beginning and end of an interval of time.   The key value of Activities is that they
   indicate that they represent a DURATION, and they also track what 'caused' them (and thus
-  logging systems can stitch together a 'causality graph').    
+  logging systems can stitch together a 'causality graph').
 
-* DO - If for some reason you can't use Activities, and your events mark the start and stop of 
-  an interval of time, use the 'Start' and 'Stop' suffixes on the events.  
+* DO - If for some reason you can't use Activities, and your events mark the start and stop of
+  an interval of time, use the 'Start' and 'Stop' suffixes on the events.
 
 ### Payloads
 
@@ -177,18 +177,18 @@ Thus the event names only need to be unique within a component.
 
 * CONSIDER creating an explicit type for the payload.   The main value for doing this is that the
   receiver can cast the received object to that type and immediately fetch fields (with anonymous types
-  reflection must be used to fetch fields).   This is both easier to program and more efficient.   
-  Thus in scenarios where there is likely high-volume filtering to be done by the logging listener, having 
-  this type available to do the cast is valuable.   Note that this type needs to be made public (since 
-  the listener needs to see it), and should be under the namespace System.Diagnostics.DiagnosticSource.PayloadTypes.   
-  Note that if there is doubt about the value DO NOT create an explicit type, as you CAN convert from 
+  reflection must be used to fetch fields).   This is both easier to program and more efficient.
+  Thus in scenarios where there is likely high-volume filtering to be done by the logging listener, having
+  this type available to do the cast is valuable.   Note that this type needs to be made public (since
+  the listener needs to see it), and should be under the namespace System.Diagnostics.DiagnosticSource.PayloadTypes.
+  Note that if there is doubt about the value DO NOT create an explicit type, as you CAN convert from
   an anonymous type to a explicit type compatibly in the future, but once you expose the payload type
-  you must keep it forever.   The payload type should simply have C#  'TYPE NAME {get; set; }' properties 
-  (you can't use fields). You may add new properties as needed in the future.   
+  you must keep it forever.   The payload type should simply have C#  'TYPE NAME {get; set; }' properties
+  (you can't use fields). You may add new properties as needed in the future.
 
 * CONSIDER in high volume cases (e.g. > 1K/sec) consider reusing the payload object instead of
-  creating a new one each time the event is fired.   This only works well if you already have locking 
-  or exclusive objects where you can remember the payload for the 'next' event to send easily and 
+  creating a new one each time the event is fired.   This only works well if you already have locking
+  or exclusive objects where you can remember the payload for the 'next' event to send easily and
   correctly (you are only saving an object allocation, which is not large).
 
 * CONSIDER - if you have an event that is so frequent that the performance of the logging is
@@ -256,7 +256,7 @@ A typical use of the `AllListeners` static property looks like this:
             // Here is where we put code to subscribe to the Listener.
         }
     });
-    
+
     // Typically you leave the listenerSubscription subscription active forever.
     // However when you no longer want your callback to be called, you can
     // call listenerSubscription.Dispose() to cancel your subscription to the IObservable.

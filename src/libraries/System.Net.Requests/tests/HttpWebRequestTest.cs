@@ -511,21 +511,23 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
+        public async Task Timeout_Set30MillisecondsOnLoopback_ThrowsWebException()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
             {
                 HttpWebRequest request = WebRequest.CreateHttp(url);
-                request.Timeout = 10; // ms.
+                request.Timeout = 30; // ms.
 
                 var sw = Stopwatch.StartNew();
                 WebException exception = Assert.Throws<WebException>(() => request.GetResponse());
                 sw.Stop();
 
-                Assert.InRange(sw.ElapsedMilliseconds, 1, 15 * 1000);
+                _output.WriteLine(exception.ToString());
+
                 Assert.Equal(WebExceptionStatus.Timeout, exception.Status);
                 Assert.Null(exception.InnerException);
                 Assert.Null(exception.Response);
+                Assert.InRange(sw.ElapsedMilliseconds, 1, 15 * 1000);
 
                 return Task.FromResult<object>(null);
             });
@@ -1164,7 +1166,7 @@ namespace System.Net.Tests
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
             request.Method = "POST";
 
-            IAsyncResult asyncResult = request.BeginGetRequestStream(null, null);
+            request.BeginGetRequestStream(null, null);
             Assert.Throws<InvalidOperationException>(() =>
             {
                 request.BeginGetRequestStream(null, null);
@@ -1178,7 +1180,7 @@ namespace System.Net.Tests
             {
                 HttpWebRequest request = HttpWebRequest.CreateHttp(url);
 
-                IAsyncResult asyncResult = request.BeginGetResponse(null, null);
+                request.BeginGetResponse(null, null);
                 Assert.Throws<ProtocolViolationException>(() =>
                 {
                     request.BeginGetRequestStream(null, null);
@@ -1194,7 +1196,7 @@ namespace System.Net.Tests
             await LoopbackServer.CreateServerAsync((server, url) =>
             {
                 HttpWebRequest request = WebRequest.CreateHttp(url);
-                IAsyncResult asyncResult = request.BeginGetResponse(null, null);
+                request.BeginGetResponse(null, null);
                 Assert.Throws<InvalidOperationException>(() => request.BeginGetResponse(null, null));
                 return Task.FromResult<object>(null);
             });
@@ -1324,7 +1326,6 @@ namespace System.Net.Tests
         public void CookieContainer_Count_Add(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            DateTime now = DateTime.UtcNow;
             request.CookieContainer = new CookieContainer();
             request.CookieContainer.Add(remoteServer, new Cookie("1", "cookie1"));
             request.CookieContainer.Add(remoteServer, new Cookie("2", "cookie2"));
@@ -1457,7 +1458,6 @@ namespace System.Net.Tests
                 request.ContentType = HeadersPartialContent;
 
                 using WebResponse response = await GetResponseAsync(request);
-                string headersString = response.Headers.ToString();
                 Assert.Equal(HeadersPartialContent, response.Headers[HttpResponseHeader.ContentType]);
             }, async server =>
             {

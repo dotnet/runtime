@@ -67,10 +67,6 @@ We use and recommend the following workflow:
     - The next official build will automatically include your change.
     - You can delete the branch you used for making the change.
 
-Note: It is OK for your PR to include a large number of commits. Once your change is accepted, you will be asked to squash your commits into one or some appropriately small number of commits before your PR is merged.
-
-Note: It is OK to create your PR as "[WIP]" on the upstream repo before the implementation is done. This can be useful if you'd like to start the feedback process concurrent with your implementation. State that this is the case in the initial PR comment.
-
 ## Up for Grabs
 
 The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/runtime/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
@@ -111,7 +107,7 @@ The following file header is the used for .NET Core. Please use it for new files
 // The .NET Foundation licenses this file to you under the MIT license.
 ```
 
-- See [class.cpp](./src/coreclr/src/vm/class.cpp) for an example of the header in a C++ file.
+- See [class.cpp](./src/coreclr/vm/class.cpp) for an example of the header in a C++ file.
 - See [List.cs](./src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs) for an example of the header in a C# file.
 
 ## PR - CI Process

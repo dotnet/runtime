@@ -51,7 +51,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>Asserts that the handle's inheritability matches the specified value.</summary>
         protected static void AssertInheritability(SafeHandle handle, HandleInheritability inheritability)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 uint flags;
                 Assert.True(GetHandleInformation(handle.DangerousGetHandle(), out flags));

@@ -3,7 +3,6 @@
 
 using System;
 
-
 namespace System.Xml.Serialization
 {
     /// <devdoc>

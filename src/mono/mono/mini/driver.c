@@ -39,6 +39,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-debug.h>
@@ -51,9 +52,11 @@
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
+#include "mono/utils/options.h"
 #include "mono/metadata/w32handle.h"
 #include "mono/metadata/callspec.h"
 #include "mono/metadata/custom-attrs-internals.h"
+#include <mono/utils/w32subset.h>
 
 #include "mini.h"
 #include "jit.h"
@@ -65,7 +68,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#include "version.h"
 #include "debugger-agent.h"
 #if TARGET_OSX
 #   include <sys/resource.h>
@@ -344,14 +346,15 @@ interp_opt_sets [] = {
 	INTERP_OPT_INLINE | INTERP_OPT_CPROP,
 	INTERP_OPT_INLINE | INTERP_OPT_SUPER_INSTRUCTIONS,
 	INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS,
-	INTERP_OPT_INLINE | INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS,
+	INTERP_OPT_INLINE | INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS | INTERP_OPT_BBLOCKS,
 };
 
 static const char* const
 interp_opflags_names [] = {
 	"inline",
 	"cprop",
-	"super-insn"
+	"super-insn",
+	"bblocks"
 };
 
 static const char*
@@ -448,7 +451,9 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		if (!is_ok (error))
 			continue;
 
-		char *utf8_str = (char*)(void*)typed_args[0]; //this points into image memory that is constant
+		const char *arg = (const char*)typed_args [0];
+		mono_metadata_decode_value (arg, &arg);
+		char *utf8_str = (char*)arg; //this points into image memory that is constant
 		g_free (typed_args);
 		g_free (named_args);
 		g_free (arginfo);
@@ -1652,6 +1657,9 @@ mini_usage (void)
 		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
 		"    --aot-path=PATH        List of additional directories to search for AOT images.\n"
 	  );
+
+	g_print ("\nOptions:\n");
+	mono_options_print_usage ();
 }
 
 static void
@@ -1879,6 +1887,10 @@ mono_jit_parse_options (int argc, char * argv[])
 #else
 			mono_use_llvm = TRUE;
 #endif
+		} else if (strcmp (argv [i], "--profile") == 0) {
+			mini_add_profiler_argument (NULL);
+		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
+			mini_add_profiler_argument (argv [i] + 10);
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
 		} else {
 			fprintf (stderr, "Unsupported command line option: '%s'\n", argv [i]);
@@ -1996,11 +2008,14 @@ switch_arch (char* argv[], const char* target_arch)
 static void
 apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_domain_configuration_file)
 {
+#ifndef ENABLE_NETCORE
 	g_assert (domain->setup == NULL || domain->setup->configuration_file == NULL);
 	g_assert (!domain->assembly_bindings_parsed);
 
 	mono_domain_parse_assembly_bindings (domain, 0, 0, root_domain_configuration_file);
-
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 static void
@@ -2108,6 +2123,7 @@ mono_main (int argc, char* argv[])
 #ifdef HOST_WIN32
 	int mixed_mode = FALSE;
 #endif
+	ERROR_DECL (error);
 
 #ifdef MOONLIGHT
 #ifndef HOST_WIN32
@@ -2149,6 +2165,14 @@ mono_main (int argc, char* argv[])
 #ifdef ENABLE_NETCORE
 	enable_debugging = TRUE;
 #endif
+
+	mono_options_parse_options ((const char**)argv + 1, argc - 1, &argc, error);
+	argc ++;
+	if (!is_ok (error)) {
+		g_printerr ("%s", mono_error_get_message (error));
+		mono_error_cleanup (error);
+		return 1;
+	}
 
 	for (i = 1; i < argc; ++i) {
 		if (argv [i] [0] != '-')
@@ -2643,6 +2667,8 @@ mono_main (int argc, char* argv[])
 	}
 
 	mono_set_defaults (mini_verbose_level, opt);
+	mono_set_os_args (argc, argv);
+
 	domain = mini_init (argv [i], forced_version);
 
 	mono_gc_set_stack_end (&domain);
@@ -2735,7 +2761,7 @@ mono_main (int argc, char* argv[])
 			exit (1);
 		}
 
-#if defined(HOST_WIN32) && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if defined(HOST_WIN32) && HAVE_API_SUPPORT_WIN32_CONSOLE
 		/* Detach console when executing IMAGE_SUBSYSTEM_WINDOWS_GUI on win32 */
 		if (!enable_debugging && !mono_compile_aot && mono_assembly_get_image_internal (assembly)->image_info->cli_header.nt.pe_subsys_required == IMAGE_SUBSYSTEM_WINDOWS_GUI)
 			FreeConsole ();
@@ -3218,7 +3244,7 @@ mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboo
 	return NULL;
 }
 
-#if defined(HOST_WIN32) && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if defined(HOST_WIN32) && HAVE_API_SUPPORT_WIN32_COMMAND_LINE_TO_ARGV
 #include <shellapi.h>
 
 static char *
@@ -3330,4 +3356,3 @@ mono_parse_env_options (int *ref_argc, char **ref_argv [])
 	fprintf (stderr, "%s", ret);
 	exit (1);
 }
-

@@ -13,9 +13,9 @@ using System.Runtime.Serialization;
 
 namespace System.Drawing
 {
-#if NETCOREAPP
-    [TypeConverter("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [Editor("System.Drawing.Design.IconEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [TypeConverter(typeof(IconConverter))]
     [Serializable]
     [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Icon : MarshalByRefObject, ICloneable, IDisposable, ISerializable
@@ -657,38 +657,30 @@ namespace System.Drawing
                     }
                     finally
                     {
+                        Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                         Marshal.ReleaseComObject(picture);
                     }
                 }
             }
         }
 
-        private void CopyBitmapData(BitmapData sourceData, BitmapData targetData)
+        private unsafe void CopyBitmapData(BitmapData sourceData, BitmapData targetData)
         {
-            int offsetSrc = 0;
-            int offsetDest = 0;
+            byte* srcPtr = (byte*)sourceData.Scan0;
+            byte* destPtr = (byte*)targetData.Scan0;
 
             Debug.Assert(sourceData.Height == targetData.Height, "Unexpected height. How did this happen?");
+            int height = Math.Min(sourceData.Height, targetData.Height);
+            long bytesToCopyEachIter = Math.Abs(targetData.Stride);
 
-            for (int i = 0; i < Math.Min(sourceData.Height, targetData.Height); i++)
+            for (int i = 0; i < height; i++)
             {
-                IntPtr srcPtr, destPtr;
-                if (IntPtr.Size == 4)
-                {
-                    srcPtr = new IntPtr(sourceData.Scan0.ToInt32() + offsetSrc);
-                    destPtr = new IntPtr(targetData.Scan0.ToInt32() + offsetDest);
-                }
-                else
-                {
-                    srcPtr = new IntPtr(sourceData.Scan0.ToInt64() + offsetSrc);
-                    destPtr = new IntPtr(targetData.Scan0.ToInt64() + offsetDest);
-                }
-
-                UnsafeNativeMethods.CopyMemory(new HandleRef(this, destPtr), new HandleRef(this, srcPtr), Math.Abs(targetData.Stride));
-
-                offsetSrc += sourceData.Stride;
-                offsetDest += targetData.Stride;
+                Buffer.MemoryCopy(srcPtr, destPtr, bytesToCopyEachIter, bytesToCopyEachIter);
+                srcPtr += sourceData.Stride;
+                destPtr += targetData.Stride;
             }
+
+            GC.KeepAlive(this); // finalizer mustn't deallocate data blobs while this method is running
         }
 
         private static bool BitmapHasAlpha(BitmapData bmpData)

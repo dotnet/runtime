@@ -14,7 +14,7 @@ Getting Started
 - [Installing the .NET SDK](https://dotnet.microsoft.com/download)
 - [Official .NET Docs](https://docs.microsoft.com/dotnet/core/)
 
-Workflow (Building, testing, etc.)
+Workflow (Building, testing, benchmarking, profiling, etc.)
 ===============
 
 If you want to contribute a code change to this repo, start here.
@@ -71,6 +71,6 @@ Other Information
 - [.NET Filename Encyclopedia](project/dotnet-filenames.md)
 - [Porting to .NET Core](https://docs.microsoft.com/en-us/dotnet/standard/analyzers/portability-analyzer)
 - [.NET Standards (Ecma)](project/dotnet-standards.md)
-- [CLR Configuration Knobs](../src/coreclr/src/inc/clrconfigvalues.h)
+- [CLR Configuration Knobs](../src/coreclr/inc/clrconfigvalues.h)
 - [CLR overview](https://docs.microsoft.com/dotnet/standard/clr)
 - [Wikipedia Entry for the CLR](https://en.wikipedia.org/wiki/Common_Language_Runtime)

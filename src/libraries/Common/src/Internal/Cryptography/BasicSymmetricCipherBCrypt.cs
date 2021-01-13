@@ -16,8 +16,8 @@ namespace Internal.Cryptography
         private byte[]? _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
                                      // The base IV holds a copy of the original IV for Reset(), until it is cleared by Dispose().
 
-        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, bool ownsParentHandle, byte[]? iv, bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, int paddingSizeInBytes, byte[] key, bool ownsParentHandle, byte[]? iv, bool encrypting)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             Debug.Assert(algorithm != null);
 
@@ -63,7 +63,7 @@ namespace Internal.Cryptography
         public override int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
             Debug.Assert(input.Length > 0);
-            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
             int numBytesWritten;
 
@@ -89,7 +89,7 @@ namespace Internal.Cryptography
 
         public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
             int numBytesWritten = 0;
 

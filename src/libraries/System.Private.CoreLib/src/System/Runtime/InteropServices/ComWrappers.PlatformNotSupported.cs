@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
@@ -21,6 +22,7 @@ namespace System.Runtime.InteropServices
         UniqueInstance = 2,
     }
 
+    [SupportedOSPlatform("windows")]
     [CLSCompliant(false)]
     public abstract class ComWrappers
     {

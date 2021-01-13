@@ -17,8 +17,8 @@ namespace System.Buffers
     public readonly partial struct ReadOnlySequence<T>
     {
         // The data is essentially two SequencePositions, however the Start and End SequencePositions are deconstructed to improve packing.
-        [AllowNull] private readonly object? _startObject;
-        [AllowNull] private readonly object? _endObject;
+        private readonly object? _startObject;
+        private readonly object? _endObject;
         private readonly int _startInteger;
         private readonly int _endInteger;
 
@@ -523,6 +523,64 @@ namespace System.Buffers
                 ThrowHelper.ThrowArgumentOutOfRangeException_OffsetOutOfRange();
 
             return Seek(offset);
+        }
+
+        /// <summary>
+        /// Returns the offset of a <paramref name="position" /> within this sequence from the start.
+        /// </summary>
+        /// <param name="position">The <see cref="System.SequencePosition"/> of which to get the offset.</param>
+        /// <returns>The offset from the start of the sequence.</returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">The position is out of range.</exception>
+        public long GetOffset(SequencePosition position)
+        {
+            object? positionSequenceObject = position.GetObject();
+            bool positionIsNull = positionSequenceObject == null;
+            BoundsCheck(position, !positionIsNull);
+
+            object? startObject = _startObject;
+            object? endObject = _endObject;
+
+            uint positionIndex = (uint)GetIndex(position);
+
+            // if sequence object is null we suppose start segment
+            if (positionIsNull)
+            {
+                positionSequenceObject = _startObject;
+                positionIndex = (uint)GetIndex(_startInteger);
+            }
+
+            // Single-Segment Sequence
+            if (startObject == endObject)
+            {
+                return positionIndex;
+            }
+            else
+            {
+                // Verify position validity, this is not covered by BoundsCheck for Multi-Segment Sequence
+                // BoundsCheck for Multi-Segment Sequence check only validity inside current sequence but not for SequencePosition validity.
+                // For single segment position bound check is implicit.
+                Debug.Assert(positionSequenceObject != null);
+
+                if (((ReadOnlySequenceSegment<T>)positionSequenceObject).Memory.Length - positionIndex < 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+
+                // Multi-Segment Sequence
+                ReadOnlySequenceSegment<T>? currentSegment = (ReadOnlySequenceSegment<T>?)startObject;
+                while (currentSegment != null && currentSegment != positionSequenceObject)
+                {
+                    currentSegment = currentSegment.Next!;
+                }
+
+                // Hit the end of the segments but didn't find the segment
+                if (currentSegment is null)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+                }
+
+                Debug.Assert(currentSegment!.RunningIndex + positionIndex >= 0);
+
+                return currentSegment!.RunningIndex + positionIndex;
+            }
         }
 
         /// <summary>

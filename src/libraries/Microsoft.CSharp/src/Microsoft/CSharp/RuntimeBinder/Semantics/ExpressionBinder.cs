@@ -841,7 +841,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 case ExpressionKind.Property:
                     ExprProperty prop = (ExprProperty)expr;
-                    Debug.Assert(!prop.MethWithTypeSet);
+                    Debug.Assert(!prop.MethWithTypeSet || ExprProperty.HasIsExternalInitModifier(prop.MethWithTypeSet));
                     // Assigning to a property without a setter.
                     // If we have
                     // bool? b = true; (bool)b = false;

@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.NetworkInformation;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -31,6 +32,7 @@ namespace System.Net.Mail
         International = 1, // SMTPUTF8 - Email Address Internationalization (EAI)
     }
 
+    [UnsupportedOSPlatform("browser")]
     public class SmtpClient : IDisposable
     {
         private string? _host;
@@ -287,7 +289,9 @@ namespace System.Net.Mail
                 // This has some subtle impact on behavior, e.g. the returned ServicePoint's Address property will
                 // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
                 // protocols that do not use URI."
+#pragma warning disable SYSLIB0014
                 return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
+#pragma warning restore SYSLIB0014
             }
         }
 

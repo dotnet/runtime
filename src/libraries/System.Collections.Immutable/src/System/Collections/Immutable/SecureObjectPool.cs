@@ -124,7 +124,7 @@ namespace System.Collections.Immutable
             }
             else
             {
-                value = default(T)!;
+                value = default;
                 return false;
             }
         }

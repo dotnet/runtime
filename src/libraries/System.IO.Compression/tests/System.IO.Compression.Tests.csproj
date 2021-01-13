@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CompressionStreamUnitTests.ZLib.cs" />
     <Compile Include="CompressionStreamUnitTests.Deflate.cs" />
     <Compile Include="CompressionStreamUnitTests.Gzip.cs" />
     <Compile Include="Utilities\StripHeaderAndFooter.cs" />
@@ -14,26 +16,22 @@
     <Compile Include="ZipArchive\zip_netcoreappTests.cs" />
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs"
-             Link="Common\System\IO\PathFeatures.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs"
-             Link="Common\System\IO\Compression\CRC.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs"
-             Link="Common\System\IO\Compression\CompressionStreamTestBase.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamUnitTestBase.cs"
-             Link="Common\System\IO\Compression\CompressionStreamUnitTestBase.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs"
-             Link="Common\System\IO\Compression\FileData.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs"
-             Link="Common\System\IO\Compression\LocalMemoryStream.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs"
-             Link="Common\System\IO\Compression\StreamHelpers.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
-             Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs"
-             Link="Common\System\IO\Compression\ZipTestHelper.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs" Link="Common\System\IO\Compression\CRC.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs" Link="Common\System\IO\Compression\CompressionStreamTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamUnitTestBase.cs" Link="Common\System\IO\Compression\CompressionStreamUnitTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs" Link="Common\System\IO\Compression\FileData.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs" Link="Common\System\IO\Compression\LocalMemoryStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs" Link="Common\System\IO\Compression\StreamHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs" Link="Common\System\IO\Compression\ZipTestHelper.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" />

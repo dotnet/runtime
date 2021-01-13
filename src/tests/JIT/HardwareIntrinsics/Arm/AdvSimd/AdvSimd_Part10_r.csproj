@@ -1,0 +1,115 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Not.Vector128.Int64.cs" />
+    <Compile Include="Not.Vector128.SByte.cs" />
+    <Compile Include="Not.Vector128.Single.cs" />
+    <Compile Include="Not.Vector128.UInt16.cs" />
+    <Compile Include="Not.Vector128.UInt32.cs" />
+    <Compile Include="Not.Vector128.UInt64.cs" />
+    <Compile Include="Or.Vector64.Byte.cs" />
+    <Compile Include="Or.Vector64.Double.cs" />
+    <Compile Include="Or.Vector64.Int16.cs" />
+    <Compile Include="Or.Vector64.Int32.cs" />
+    <Compile Include="Or.Vector64.Int64.cs" />
+    <Compile Include="Or.Vector64.SByte.cs" />
+    <Compile Include="Or.Vector64.Single.cs" />
+    <Compile Include="Or.Vector64.UInt16.cs" />
+    <Compile Include="Or.Vector64.UInt32.cs" />
+    <Compile Include="Or.Vector64.UInt64.cs" />
+    <Compile Include="Or.Vector128.Byte.cs" />
+    <Compile Include="Or.Vector128.Double.cs" />
+    <Compile Include="Or.Vector128.Int16.cs" />
+    <Compile Include="Or.Vector128.Int32.cs" />
+    <Compile Include="Or.Vector128.Int64.cs" />
+    <Compile Include="Or.Vector128.SByte.cs" />
+    <Compile Include="Or.Vector128.Single.cs" />
+    <Compile Include="Or.Vector128.UInt16.cs" />
+    <Compile Include="Or.Vector128.UInt32.cs" />
+    <Compile Include="Or.Vector128.UInt64.cs" />
+    <Compile Include="OrNot.Vector64.Byte.cs" />
+    <Compile Include="OrNot.Vector64.Double.cs" />
+    <Compile Include="OrNot.Vector64.Int16.cs" />
+    <Compile Include="OrNot.Vector64.Int32.cs" />
+    <Compile Include="OrNot.Vector64.Int64.cs" />
+    <Compile Include="OrNot.Vector64.SByte.cs" />
+    <Compile Include="OrNot.Vector64.Single.cs" />
+    <Compile Include="OrNot.Vector64.UInt16.cs" />
+    <Compile Include="OrNot.Vector64.UInt32.cs" />
+    <Compile Include="OrNot.Vector64.UInt64.cs" />
+    <Compile Include="OrNot.Vector128.Byte.cs" />
+    <Compile Include="OrNot.Vector128.Double.cs" />
+    <Compile Include="OrNot.Vector128.Int16.cs" />
+    <Compile Include="OrNot.Vector128.Int32.cs" />
+    <Compile Include="OrNot.Vector128.Int64.cs" />
+    <Compile Include="OrNot.Vector128.SByte.cs" />
+    <Compile Include="OrNot.Vector128.Single.cs" />
+    <Compile Include="OrNot.Vector128.UInt16.cs" />
+    <Compile Include="OrNot.Vector128.UInt32.cs" />
+    <Compile Include="OrNot.Vector128.UInt64.cs" />
+    <Compile Include="PolynomialMultiply.Vector64.Byte.cs" />
+    <Compile Include="PolynomialMultiply.Vector64.SByte.cs" />
+    <Compile Include="PolynomialMultiply.Vector128.Byte.cs" />
+    <Compile Include="PolynomialMultiply.Vector128.SByte.cs" />
+    <Compile Include="PolynomialMultiplyWideningLower.Vector64.Byte.cs" />
+    <Compile Include="PolynomialMultiplyWideningLower.Vector64.SByte.cs" />
+    <Compile Include="PolynomialMultiplyWideningUpper.Vector128.Byte.cs" />
+    <Compile Include="PolynomialMultiplyWideningUpper.Vector128.SByte.cs" />
+    <Compile Include="PopCount.Vector64.Byte.cs" />
+    <Compile Include="PopCount.Vector64.SByte.cs" />
+    <Compile Include="PopCount.Vector128.Byte.cs" />
+    <Compile Include="PopCount.Vector128.SByte.cs" />
+    <Compile Include="ReciprocalEstimate.Vector64.Single.cs" />
+    <Compile Include="ReciprocalEstimate.Vector64.UInt32.cs" />
+    <Compile Include="ReciprocalEstimate.Vector128.Single.cs" />
+    <Compile Include="ReciprocalEstimate.Vector128.UInt32.cs" />
+    <Compile Include="ReciprocalSquareRootEstimate.Vector64.Single.cs" />
+    <Compile Include="ReciprocalSquareRootEstimate.Vector64.UInt32.cs" />
+    <Compile Include="ReciprocalSquareRootEstimate.Vector128.Single.cs" />
+    <Compile Include="ReciprocalSquareRootEstimate.Vector128.UInt32.cs" />
+    <Compile Include="ReciprocalSquareRootStep.Vector64.Single.cs" />
+    <Compile Include="ReciprocalSquareRootStep.Vector128.Single.cs" />
+    <Compile Include="ReciprocalStep.Vector64.Single.cs" />
+    <Compile Include="ReciprocalStep.Vector128.Single.cs" />
+    <Compile Include="ReverseElement16.Vector64.Int32.cs" />
+    <Compile Include="ReverseElement16.Vector64.Int64.cs" />
+    <Compile Include="ReverseElement16.Vector64.UInt32.cs" />
+    <Compile Include="ReverseElement16.Vector64.UInt64.cs" />
+    <Compile Include="ReverseElement16.Vector128.Int32.cs" />
+    <Compile Include="ReverseElement16.Vector128.Int64.cs" />
+    <Compile Include="ReverseElement16.Vector128.UInt32.cs" />
+    <Compile Include="ReverseElement16.Vector128.UInt64.cs" />
+    <Compile Include="ReverseElement32.Vector64.Int64.cs" />
+    <Compile Include="ReverseElement32.Vector64.UInt64.cs" />
+    <Compile Include="ReverseElement32.Vector128.Int64.cs" />
+    <Compile Include="ReverseElement32.Vector128.UInt64.cs" />
+    <Compile Include="ReverseElement8.Vector64.Int16.cs" />
+    <Compile Include="ReverseElement8.Vector64.Int32.cs" />
+    <Compile Include="ReverseElement8.Vector64.Int64.cs" />
+    <Compile Include="ReverseElement8.Vector64.UInt16.cs" />
+    <Compile Include="ReverseElement8.Vector64.UInt32.cs" />
+    <Compile Include="ReverseElement8.Vector64.UInt64.cs" />
+    <Compile Include="ReverseElement8.Vector128.Int16.cs" />
+    <Compile Include="ReverseElement8.Vector128.Int32.cs" />
+    <Compile Include="ReverseElement8.Vector128.Int64.cs" />
+    <Compile Include="ReverseElement8.Vector128.UInt16.cs" />
+    <Compile Include="ReverseElement8.Vector128.UInt32.cs" />
+    <Compile Include="ReverseElement8.Vector128.UInt64.cs" />
+    <Compile Include="RoundAwayFromZero.Vector64.Single.cs" />
+    <Compile Include="RoundAwayFromZero.Vector128.Single.cs" />
+    <Compile Include="RoundAwayFromZeroScalar.Vector64.Double.cs" />
+    <Compile Include="RoundAwayFromZeroScalar.Vector64.Single.cs" />
+    <Compile Include="RoundToNearest.Vector64.Single.cs" />
+    <Compile Include="RoundToNearest.Vector128.Single.cs" />
+    <Compile Include="Program.AdvSimd_Part10.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

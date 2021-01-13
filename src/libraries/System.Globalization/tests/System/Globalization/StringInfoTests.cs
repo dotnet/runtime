@@ -166,6 +166,28 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetNextTextElement("abc", 4)); // Index > str.Length
         }
 
+        [Theory]
+        [MemberData(nameof(GetNextTextElement_TestData))]
+        public void GetNextTextElementLength(string str, int index, string expected)
+        {
+            if (index == 0)
+            {
+                Assert.Equal(expected.Length, StringInfo.GetNextTextElementLength(str));
+            }
+            Assert.Equal(expected.Length, StringInfo.GetNextTextElementLength(str, index));
+            Assert.Equal(expected.Length, StringInfo.GetNextTextElementLength(str.AsSpan(index)));
+        }
+
+        [Fact]
+        public void GetNextTextElementLength_Invalid()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("str", () => StringInfo.GetNextTextElementLength(null)); // Str is null
+            AssertExtensions.Throws<ArgumentNullException>("str", () => StringInfo.GetNextTextElementLength(null, 0)); // Str is null
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetNextTextElementLength("abc", -1)); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetNextTextElementLength("abc", 4)); // Index > str.Length
+        }
+
         public static IEnumerable<object[]> GetTextElementEnumerator_TestData()
         {
             yield return new object[] { "", 0, new string[0] }; // Empty string

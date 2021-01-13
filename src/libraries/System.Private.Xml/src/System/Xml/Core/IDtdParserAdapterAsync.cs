@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Text;
 using System.Xml.Schema;
@@ -19,7 +18,7 @@ namespace System.Xml
         Task ParsePIAsync(StringBuilder? sb);
         Task ParseCommentAsync(StringBuilder? sb);
 
-        Task<Tuple<int, bool>> PushEntityAsync(IDtdEntityInfo entity);
+        Task<(int, bool)> PushEntityAsync(IDtdEntityInfo entity);
 
         Task<bool> PushExternalSubsetAsync(string? systemId, string? publicId);
     }

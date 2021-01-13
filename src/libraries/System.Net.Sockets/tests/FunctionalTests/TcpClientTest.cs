@@ -4,6 +4,7 @@
 using Xunit;
 using Xunit.Abstractions;
 
+using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
@@ -119,6 +120,11 @@ namespace System.Net.Sockets.Tests
         [InlineData(3)]
         [InlineData(4)]
         [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
         public async Task ConnectAsync_DnsEndPoint_Success(int mode)
         {
             using (var client = new DerivedTcpClient())
@@ -154,6 +160,26 @@ namespace System.Net.Sockets.Tests
                     case 5:
                         addresses = await Dns.GetHostAddressesAsync(host);
                         await Task.Factory.FromAsync(client.BeginConnect, client.EndConnect, addresses, port, null);
+                        break;
+
+                    case 6:
+                        await client.ConnectAsync(host, port, CancellationToken.None);
+                        break;
+                    case 7:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses[0], port, CancellationToken.None);
+                        break;
+                    case 8:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(new IPEndPoint(addresses[0], port));
+                        break;
+                    case 9:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(new IPEndPoint(addresses[0], port), CancellationToken.None);
+                        break;
+                    case 10:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses, port, CancellationToken.None);
                         break;
                 }
 

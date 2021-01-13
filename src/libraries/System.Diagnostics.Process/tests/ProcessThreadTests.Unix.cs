@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -20,7 +19,7 @@ namespace System.Diagnostics.Tests
             ProcessThread thread = _process.Threads[0];
             ThreadPriorityLevel level = ThreadPriorityLevel.Normal;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel);
             }

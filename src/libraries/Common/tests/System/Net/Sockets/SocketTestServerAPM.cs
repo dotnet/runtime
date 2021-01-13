@@ -67,6 +67,7 @@ namespace System.Net.Sockets.Tests
                 return;
             }
 
+            NotifyAccepted(client);
             ServerSocketState state = new ServerSocketState(client, _receiveBufferSize);
             try
             {

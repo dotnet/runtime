@@ -38,7 +38,7 @@ namespace System.Xml.Xsl.Qil
 
         public MethodInfo ClrMethod
         {
-            get { return (MethodInfo)((QilLiteral)Center).Value; }
+            get { return (MethodInfo)((QilLiteral)Center).Value!; }
             set { ((QilLiteral)Center).Value = value; }
         }
 

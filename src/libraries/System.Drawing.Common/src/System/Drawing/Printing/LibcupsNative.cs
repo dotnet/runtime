@@ -33,7 +33,9 @@ namespace System.Drawing.Printing
         internal static extern void cupsFreeDests(int num_dests, IntPtr dests);
 
         [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        internal static extern IntPtr cupsTempFd(StringBuilder sb, int len);
+#pragma warning disable CA1838 // not hot-path enough to worry about the overheads of StringBuilder marshaling
+        internal static extern IntPtr cupsTempFd([Out] StringBuilder sb, int len);
+#pragma warning restore CA1838
 
         [DllImport(LibraryName, ExactSpelling = true)]
         internal static extern IntPtr cupsGetDefault();

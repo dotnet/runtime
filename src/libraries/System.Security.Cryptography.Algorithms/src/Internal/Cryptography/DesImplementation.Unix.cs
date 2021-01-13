@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -14,10 +15,13 @@ namespace Internal.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
+            int feedbackSize,
+            int paddingSize,
             bool encrypting)
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
-            IntPtr algorithm;
+            IntPtr algorithm = IntPtr.Zero;
+
             switch (cipherMode)
             {
                 case CipherMode.CBC:
@@ -26,11 +30,17 @@ namespace Internal.Cryptography
                 case CipherMode.ECB:
                     algorithm = Interop.Crypto.EvpDesEcb();
                     break;
+                case CipherMode.CFB:
+
+                    Debug.Assert(feedbackSize == 1, "TripleDES with CFB should have FeedbackSize set to 1");
+                    algorithm = Interop.Crypto.EvpDesCfb8();
+
+                    break;
                 default:
                     throw new NotSupportedException();
             }
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
     }

@@ -7,7 +7,7 @@ namespace System.Data
 {
     internal sealed class DataTableReaderListener
     {
-        private DataTable _currentDataTable;
+        private DataTable? _currentDataTable;
         private bool _isSubscribed;
         private readonly WeakReference _readerWeak;
 

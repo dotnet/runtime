@@ -445,7 +445,7 @@ namespace System.Threading.Tasks
         /// <summary>null if <see cref="_result"/> has the result, otherwise a <see cref="Task{TResult}"/> or a <see cref="IValueTaskSource{TResult}"/>.</summary>
         internal readonly object? _obj;
         /// <summary>The result to be used if the operation completed successfully synchronously.</summary>
-        [AllowNull] internal readonly TResult _result;
+        internal readonly TResult? _result;
         /// <summary>Opaque value passed through to the <see cref="IValueTaskSource{TResult}"/>.</summary>
         internal readonly short _token;
         /// <summary>true to continue on the captured context; otherwise, false.</summary>
@@ -508,7 +508,7 @@ namespace System.Threading.Tasks
         /// <param name="token">The token.</param>
         /// <param name="continueOnCapturedContext">true to continue on captured context; otherwise, false.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ValueTask(object? obj, TResult result, short token, bool continueOnCapturedContext)
+        private ValueTask(object? obj, TResult? result, short token, bool continueOnCapturedContext)
         {
             _obj = obj;
             _result = result;
@@ -556,7 +556,7 @@ namespace System.Threading.Tasks
 
             if (obj == null)
             {
-                return AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
+                return Task.FromResult(_result!);
             }
 
             if (obj is Task<TResult> t)
@@ -584,7 +584,7 @@ namespace System.Threading.Tasks
                 {
                     // Get the result of the operation and return a task for it.
                     // If any exception occurred, propagate it
-                    return AsyncTaskMethodBuilder<TResult>.GetTaskForResult(t.GetResult(_token));
+                    return Task.FromResult(t.GetResult(_token));
 
                     // If status is Faulted or Canceled, GetResult should throw.  But
                     // we can't guarantee every implementation will do the "right thing".
@@ -781,7 +781,7 @@ namespace System.Threading.Tasks
 
                 if (obj == null)
                 {
-                    return _result;
+                    return _result!;
                 }
 
                 if (obj is Task<TResult> t)

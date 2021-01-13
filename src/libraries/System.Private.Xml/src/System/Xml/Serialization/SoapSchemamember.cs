@@ -4,19 +4,21 @@
 namespace System.Xml.Serialization
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Xml;
 
     public class SoapSchemaMember
     {
-        private string _memberName;
-        private XmlQualifiedName _type = XmlQualifiedName.Empty;
+        private string? _memberName;
+        private XmlQualifiedName? _type = XmlQualifiedName.Empty;
 
-        public XmlQualifiedName MemberType
+        public XmlQualifiedName? MemberType
         {
             get { return _type; }
             set { _type = value; }
         }
 
+        [AllowNull]
         public string MemberName
         {
             get { return _memberName == null ? string.Empty : _memberName; }

@@ -38,7 +38,6 @@ namespace System.Text.Json
             internal bool IsUnknownSize => _sizeOrLengthUnion == UnknownSize;
 
             /// <summary>
-            /// Number: Use scientific format.
             /// String/PropertyName: Unescaping is required.
             /// Array: At least one element is an object/array.
             /// Otherwise; false

@@ -10,7 +10,7 @@ jobs:
   dependsOn: ${{ parameters.dependsOn }}
   pool:
     name: NetCoreInternal-Pool
-    queue: buildpool.windows.10.amd64.vs2017
+    queue: buildpool.windows.10.amd64.vs2019
   # Double the default timeout.
   timeoutInMinutes: 120
   workspace:
@@ -21,7 +21,9 @@ jobs:
     value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
   steps:
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+  - checkout: self
+    clean: true
+    fetchDepth: 20
 
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@0
@@ -33,17 +35,18 @@ jobs:
       zipSources: false
       feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
     continueOnError: false
-    condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+    condition: and(succeeded(), 
+                in(variables['SignType'], 'real', 'test'))
 
   - task: DownloadBuildArtifacts@0
-    displayName: Download IntermediateUnsignedArtifacts
+    displayName: Download IntermediateArtifacts
     inputs:
-      artifactName: IntermediateUnsignedArtifacts
+      artifactName: IntermediateArtifacts
       downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
 
   - script: >-
       build.cmd -ci
-      -subset installer.publish
+      -subset publish
       -configuration Release
       /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
       /p:OfficialBuildId=$(Build.BuildNumber)

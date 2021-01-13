@@ -2378,19 +2378,19 @@ namespace System.Linq.Expressions.Tests
 #endif
         }
 
-        public static IEnumerable<object[]> EnumerableTypeArgs() => EnumerableTypes().Select(t => new object[] {t});
+        public static IEnumerable<object[]> EnumerableTypeArgs() => EnumerableTypes().Select(t => new object[] { t });
 
         public static IEnumerable<object[]> EnumerableTypesAndIncompatibleObjects()
             => from value in EnumerableTypes().Select(Activator.CreateInstance)
-                from type in EnumerableTypes()
-                where type != value.GetType()
-                select new[] {type, value};
+               from type in EnumerableTypes()
+               where type != value.GetType()
+               select new[] { type, value };
 
         public static IEnumerable<object[]> EnumerableTypesAndIncompatibleUnderlyingObjects()
             => from value in EnumerableTypes().Select(t => Activator.CreateInstance(Enum.GetUnderlyingType(t)))
-                from type in EnumerableTypes()
-                where Enum.GetUnderlyingType(type) != value.GetType()
-                select new[] {type, value};
+               from type in EnumerableTypes()
+               where Enum.GetUnderlyingType(type) != value.GetType()
+               select new[] { type, value };
 
         [Theory, PerCompilationType(nameof(EnumerableTypeArgs))]
         public static void CanCastReferenceToUnderlyingTypeToEnumType(Type type, bool useInterpreter)
@@ -2510,6 +2510,44 @@ namespace System.Linq.Expressions.Tests
                     Expression.Empty()));
             Action act = exp.Compile(useInterpreter);
             Assert.Throws<InvalidCastException>(act);
+        }
+
+        public static IEnumerable<object[]> GreaterThanOrEqualToOneArguments => new[]
+        {
+            new object[] { typeof(decimal?), 1m },
+            new object[] { typeof(decimal), 1m },
+            new object[] { typeof(int?), 1 },
+            new object[] { typeof(int), 1 },
+            new object[] { typeof(long?), 1L },
+            new object[] { typeof(long), 1L },
+            new object[] { typeof(double?), 1.0 },
+            new object[] { typeof(double), 1.0 }
+        };
+
+        [Theory]
+        [MemberData(nameof(GreaterThanOrEqualToOneArguments))]
+        public static void GreaterThanOrEqualToOne(Type type, object value)
+        {
+            // two constant of different types that you want to compare
+            Expression x = Expression.Constant(value, type);
+            Expression y = Expression.Constant(1.0f, typeof(float));
+
+            // (T)y -- cast to a common type to allow the comparison later
+            y = Expression.Convert(y, type);
+
+            // (T)y == default(T)
+            Expression guard = Expression.Equal(y, Expression.Default(y.Type));
+
+            // x >= (T)y
+            Expression predicate = Expression.GreaterThanOrEqual(x, y);
+
+            // (T)y == default(T) || x >= (T)y
+            Expression overallExpression = Expression.OrElse(guard, predicate);
+
+            Expression<Func<bool>> lambda = Expression.Lambda<Func<bool>>(overallExpression);
+
+            Assert.True(lambda.Compile(preferInterpretation: false).Invoke());
+            Assert.True(lambda.Compile(preferInterpretation: true).Invoke());
         }
     }
 }

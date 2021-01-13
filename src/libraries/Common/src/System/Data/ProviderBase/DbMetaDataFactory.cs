@@ -168,7 +168,7 @@ namespace System.Data.ProviderBase
                     Locale = CultureInfo.InvariantCulture
                 };
 
-                schemaTable = reader.GetSchemaTable();
+                schemaTable = reader.GetSchemaTable()!;
                 foreach (DataRow row in schemaTable.Rows)
                 {
                     resultTable.Columns.Add(row["ColumnName"] as string, (Type)row["DataType"]);

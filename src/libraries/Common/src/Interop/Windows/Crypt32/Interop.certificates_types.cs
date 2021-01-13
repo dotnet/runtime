@@ -87,16 +87,6 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct CERT_CONTEXT
-        {
-            internal uint dwCertEncodingType;
-            internal IntPtr pbCertEncoded;
-            internal uint cbCertEncoded;
-            internal IntPtr pCertInfo;
-            internal IntPtr hCertStore;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal unsafe struct SSL_EXTRA_CERT_CHAIN_POLICY_PARA
         {
             internal uint cbSize;

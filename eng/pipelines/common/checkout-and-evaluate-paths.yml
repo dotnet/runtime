@@ -1,0 +1,85 @@
+parameters:
+  extraSubsets: ''
+
+jobs:
+- template: /eng/pipelines/common/checkout-job.yml
+  parameters:
+    paths:
+    - subset: coreclr
+      include:
+      - src/libraries/System.Private.CoreLib/*
+      - src/libraries/Native/Unix/System.Globalization.Native/*
+      - src/libraries/Native/Unix/Common/*
+      exclude:
+      - eng/Version.Details.xml
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
+      - src/installer/*
+      - src/mono/*
+      - src/libraries/*
+      - src/tests/*
+      - eng/pipelines/installer/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/libraries/*
+    - subset: mono
+      include:
+      - src/libraries/System.Private.CoreLib/*
+      - src/libraries/Native/Unix/System.Globalization.Native/*
+      - src/libraries/Native/Unix/Common/*
+      exclude:
+      - eng/Version.Details.xml
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
+      - src/installer/*
+      - src/coreclr/*
+      - src/libraries/*
+      - src/tests/*
+      - eng/pipelines/installer/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/libraries/*
+    - subset: libraries
+      exclude:
+      - eng/Version.Details.xml
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
+      - src/installer/*
+      - src/mono/*
+      - src/coreclr/*
+      - src/tests/*
+      - src/native/eventpipe/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/installer/*
+    - subset: runtimetests
+      include:
+      - src/tests/*
+    - subset: installer
+      include:
+      - docs/manpages/*
+      exclude:
+      - eng/Version.Details.xml
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
+      - src/coreclr/*
+      - src/mono/*
+      - src/libraries/*
+      - src/tests/*
+      - src/native/eventpipe/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/libraries/*
+
+    - ${{ if ne(parameters.extraSubsets, '') }}:
+      - ${{ parameters.extraSubsets }}

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Serialization;
 
@@ -9,15 +10,15 @@ namespace System.Xml
     public interface IXmlBinaryReaderInitializer
     {
         void SetInput(byte[] buffer, int offset, int count,
-                            IXmlDictionary dictionary,
+                            IXmlDictionary? dictionary,
                             XmlDictionaryReaderQuotas quotas,
-                            XmlBinaryReaderSession session,
-                            OnXmlDictionaryReaderClose onClose);
+                            XmlBinaryReaderSession? session,
+                            OnXmlDictionaryReaderClose? onClose);
         void SetInput(Stream stream,
-                             IXmlDictionary dictionary,
+                             IXmlDictionary? dictionary,
                              XmlDictionaryReaderQuotas quotas,
-                             XmlBinaryReaderSession session,
-                             OnXmlDictionaryReaderClose onClose);
+                             XmlBinaryReaderSession? session,
+                             OnXmlDictionaryReaderClose? onClose);
     }
 
     internal class XmlBinaryReader : XmlBaseReader, IXmlBinaryReaderInitializer
@@ -34,10 +35,10 @@ namespace System.Xml
         }
 
         public void SetInput(byte[] buffer, int offset, int count,
-                            IXmlDictionary dictionary,
+                            IXmlDictionary? dictionary,
                             XmlDictionaryReaderQuotas quotas,
-                            XmlBinaryReaderSession session,
-                            OnXmlDictionaryReaderClose onClose)
+                            XmlBinaryReaderSession? session,
+                            OnXmlDictionaryReaderClose? onClose)
         {
             if (buffer == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(buffer));
@@ -55,10 +56,10 @@ namespace System.Xml
         }
 
         public void SetInput(Stream stream,
-                             IXmlDictionary dictionary,
+                             IXmlDictionary? dictionary,
                             XmlDictionaryReaderQuotas quotas,
-                            XmlBinaryReaderSession session,
-                            OnXmlDictionaryReaderClose onClose)
+                            XmlBinaryReaderSession? session,
+                            OnXmlDictionaryReaderClose? onClose)
         {
             if (stream == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));
@@ -67,7 +68,7 @@ namespace System.Xml
             _buffered = false;
         }
 
-        private void MoveToInitial(XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession session, OnXmlDictionaryReaderClose onClose)
+        private void MoveToInitial(XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession? session, OnXmlDictionaryReaderClose? onClose)
         {
             MoveToInitial(quotas);
             _maxBytesPerRead = quotas.MaxBytesPerRead;
@@ -726,14 +727,14 @@ namespace System.Xml
                         attributeNode = AddAttribute();
                         attributeNode.Prefix.SetValue(PrefixHandleType.Empty);
                         ReadName(attributeNode.LocalName);
-                        ReadAttributeText(attributeNode.AttributeText);
+                        ReadAttributeText(attributeNode.AttributeText!);
                         break;
                     case XmlBinaryNodeType.Attribute:
                         SkipNodeType();
                         attributeNode = AddAttribute();
                         ReadName(attributeNode.Prefix);
                         ReadName(attributeNode.LocalName);
-                        ReadAttributeText(attributeNode.AttributeText);
+                        ReadAttributeText(attributeNode.AttributeText!);
                         FixXmlAttribute(attributeNode);
                         break;
                     case XmlBinaryNodeType.ShortDictionaryAttribute:
@@ -741,14 +742,14 @@ namespace System.Xml
                         attributeNode = AddAttribute();
                         attributeNode.Prefix.SetValue(PrefixHandleType.Empty);
                         ReadDictionaryName(attributeNode.LocalName);
-                        ReadAttributeText(attributeNode.AttributeText);
+                        ReadAttributeText(attributeNode.AttributeText!);
                         break;
                     case XmlBinaryNodeType.DictionaryAttribute:
                         SkipNodeType();
                         attributeNode = AddAttribute();
                         ReadName(attributeNode.Prefix);
                         ReadDictionaryName(attributeNode.LocalName);
-                        ReadAttributeText(attributeNode.AttributeText);
+                        ReadAttributeText(attributeNode.AttributeText!);
                         break;
                     case XmlBinaryNodeType.XmlnsAttribute:
                         SkipNodeType();
@@ -809,7 +810,7 @@ namespace System.Xml
                         prefix = PrefixHandle.GetAlphaPrefix((int)nodeType - (int)XmlBinaryNodeType.PrefixDictionaryAttributeA);
                         attributeNode.Prefix.SetValue(prefix);
                         ReadDictionaryName(attributeNode.LocalName);
-                        ReadAttributeText(attributeNode.AttributeText);
+                        ReadAttributeText(attributeNode.AttributeText!);
                         break;
                     case XmlBinaryNodeType.PrefixAttributeA:
                     case XmlBinaryNodeType.PrefixAttributeB:
@@ -842,7 +843,7 @@ namespace System.Xml
                         prefix = PrefixHandle.GetAlphaPrefix((int)nodeType - (int)XmlBinaryNodeType.PrefixAttributeA);
                         attributeNode.Prefix.SetValue(prefix);
                         ReadName(attributeNode.LocalName);
-                        ReadAttributeText(attributeNode.AttributeText);
+                        ReadAttributeText(attributeNode.AttributeText!);
                         break;
                     default:
                         ProcessAttributes();
@@ -1146,7 +1147,7 @@ namespace System.Xml
             }
         }
 
-        public override bool IsStartArray(out Type type)
+        public override bool IsStartArray([NotNullWhen(true)] out Type? type)
         {
             type = null;
             if (_arrayState != ArrayState.Element)

@@ -43,7 +43,7 @@ namespace Internal.Cryptography.Pal
         private readonly SafeX509StackHandle _untrustedLookup;
         private readonly SafeX509StoreCtxHandle _storeCtx;
         private readonly DateTime _verificationTime;
-        private TimeSpan _remainingDownloadTime;
+        private readonly TimeSpan _downloadTimeout;
         private WorkingChain? _workingChain;
 
         private OpenSslX509ChainProcessor(
@@ -52,14 +52,14 @@ namespace Internal.Cryptography.Pal
             SafeX509StackHandle untrusted,
             SafeX509StoreCtxHandle storeCtx,
             DateTime verificationTime,
-            TimeSpan remainingDownloadTime)
+            TimeSpan downloadTimeout)
         {
             _leafHandle = leafHandle;
             _store = store;
             _untrustedLookup = untrusted;
             _storeCtx = storeCtx;
             _verificationTime = verificationTime;
-            _remainingDownloadTime = remainingDownloadTime;
+            _downloadTimeout = downloadTimeout;
         }
 
         public void Dispose()
@@ -236,7 +236,7 @@ namespace Internal.Cryptography.Pal
 
                     X509Certificate2? downloaded = DownloadCertificate(
                         authorityInformationAccess,
-                        ref _remainingDownloadTime);
+                        _downloadTimeout);
 
                     // The AIA record is contained in a public structure, so no need to clear it.
                     CryptoPool.Return(authorityInformationAccess.Array!, clearSize: 0);
@@ -366,7 +366,7 @@ namespace Internal.Cryptography.Pal
                             _store,
                             revocationMode,
                             _verificationTime,
-                            ref _remainingDownloadTime);
+                            _downloadTimeout);
                     }
                 }
             }
@@ -655,7 +655,7 @@ namespace Internal.Cryptography.Pal
                 return status;
             }
 
-            if (revocationMode != X509RevocationMode.Online || _remainingDownloadTime <= TimeSpan.Zero)
+            if (revocationMode != X509RevocationMode.Online)
             {
                 return Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL;
             }
@@ -690,7 +690,7 @@ namespace Internal.Cryptography.Pal
                 //
                 // So, for now, only try GET.
                 SafeOcspResponseHandle? resp =
-                    CertificateAssetDownloader.DownloadOcspGet(requestUrl, ref _remainingDownloadTime);
+                    CertificateAssetDownloader.DownloadOcspGet(requestUrl, _downloadTimeout);
 
                 using (resp)
                 {
@@ -1058,6 +1058,18 @@ namespace Internal.Cryptography.Pal
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION:
                     return X509ChainStatusFlags.HasNotSupportedCriticalExtension;
 
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_PERMITTED_VIOLATION:
+                    return X509ChainStatusFlags.HasNotPermittedNameConstraint;
+
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_EXCLUDED_VIOLATION:
+                    return X509ChainStatusFlags.HasExcludedNameConstraint;
+
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_SUBTREE_MINMAX:
+                    return X509ChainStatusFlags.HasNotSupportedNameConstraint;
+
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNSUPPORTED_NAME_SYNTAX:
+                    return X509ChainStatusFlags.InvalidNameConstraints;
+
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_CHAIN_TOO_LONG:
                     throw new CryptographicException();
 
@@ -1072,14 +1084,8 @@ namespace Internal.Cryptography.Pal
 
         private static X509Certificate2? DownloadCertificate(
             ReadOnlyMemory<byte> authorityInformationAccess,
-            ref TimeSpan remainingDownloadTime)
+            TimeSpan downloadTimeout)
         {
-            // Don't do any work if we're over limit.
-            if (remainingDownloadTime <= TimeSpan.Zero)
-            {
-                return null;
-            }
-
             string? uri = FindHttpAiaRecord(authorityInformationAccess, Oids.CertificateAuthorityIssuers);
 
             if (uri == null)
@@ -1087,7 +1093,7 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
-            return CertificateAssetDownloader.DownloadCertificate(uri, ref remainingDownloadTime);
+            return CertificateAssetDownloader.DownloadCertificate(uri, downloadTimeout);
         }
 
         private static string? GetOcspEndpoint(SafeX509Handle cert)

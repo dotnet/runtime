@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -64,6 +65,12 @@ namespace System.Buffers.Binary.Tests
             TestHelpers.Validate<long>(span, longValue);
             Assert.True(MemoryMarshal.TryWrite<long>(span, ref longValue));
             TestHelpers.Validate<long>(span, longValue);
+
+            Half halfValue = BitConverter.Int16BitsToHalf(0x1122);
+            MemoryMarshal.Write<Half>(span, ref halfValue);
+            TestHelpers.Validate<Half>(span, halfValue);
+            Assert.True(MemoryMarshal.TryWrite<Half>(span, ref halfValue));
+            TestHelpers.Validate<Half>(span, halfValue);
 
             float floatValue = BitConverter.Int32BitsToSingle(0x11223344);
             MemoryMarshal.Write<float>(span, ref floatValue);
@@ -268,6 +275,43 @@ namespace System.Buffers.Binary.Tests
             Assert.Equal(value, read);
         }
 
+        // Half cannot be used as constants in InlineData
+        public static IEnumerable<object[]> SpanWriteHalf_TestData()
+        {
+            yield return new object[] { Half.MaxValue };
+            yield return new object[] { Half.MinValue };
+            yield return new object[] { Half.Epsilon };
+            yield return new object[] { Half.PositiveInfinity };
+            yield return new object[] { Half.NegativeInfinity };
+            yield return new object[] { Half.NaN };
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanWriteHalf_TestData))]
+        public void SpanWriteHalf(Half value)
+        {
+            Assert.True(BitConverter.IsLittleEndian);
+            var span = new Span<byte>(new byte[4]);
+            WriteHalfBigEndian(span, value);
+            Half read = ReadHalfBigEndian(span);
+            Assert.Equal(value, read);
+
+            span.Clear();
+            Assert.True(TryWriteHalfBigEndian(span, value));
+            read = ReadHalfBigEndian(span);
+            Assert.Equal(value, read);
+
+            span.Clear();
+            WriteHalfLittleEndian(span, value);
+            read = ReadHalfLittleEndian(span);
+            Assert.Equal(value, read);
+
+            span.Clear();
+            Assert.True(TryWriteHalfLittleEndian(span, value));
+            read = ReadHalfLittleEndian(span);
+            Assert.Equal(value, read);
+        }
+
         [Theory]
         [InlineData(float.MaxValue)]
         [InlineData(float.MinValue)]
@@ -341,6 +385,7 @@ namespace System.Buffers.Binary.Tests
             uint uintValue = 1;
             long longValue = 1;
             ulong ulongValue = 1;
+            Half halfValue = (Half)1;
             float floatValue = 1;
             double doubleValue = 1;
 
@@ -378,6 +423,8 @@ namespace System.Buffers.Binary.Tests
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<ulong>(_span, ref ulongValue));
             Assert.False(MemoryMarshal.TryWrite<ulong>(span, ref ulongValue));
 
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<Half>(_span, ref halfValue));
+            Assert.False(MemoryMarshal.TryWrite<Half>(span, ref halfValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<float>(_span, ref floatValue));
             Assert.False(MemoryMarshal.TryWrite<float>(span, ref floatValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<double>(_span, ref doubleValue));

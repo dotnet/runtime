@@ -52,8 +52,7 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        [return: MaybeNull]
-        public static TValue Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
+        public static TValue? Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
         {
             if (options == null)
             {
@@ -137,8 +136,7 @@ namespace System.Text.Json
             }
         }
 
-        [return: MaybeNull]
-        private static TValue ReadValueCore<TValue>(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
+        private static TValue? ReadValueCore<TValue>(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
             JsonReaderState readerState = reader.CurrentState;
             CheckSupportedOptions(readerState.Options, nameof(reader));
@@ -318,7 +316,7 @@ namespace System.Text.Json
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
                 JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
-                TValue value = ReadCore<TValue>(jsonConverter, ref newReader, options, ref state);
+                TValue? value = ReadCore<TValue>(jsonConverter, ref newReader, options, ref state);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);

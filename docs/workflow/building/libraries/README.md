@@ -4,16 +4,16 @@
 
 Here is one example of a daily workflow for a developer working mainly on the libraries, in this case using Windows:
 
-```bat
+```cmd
 :: From root:
 git clean -xdf
 git pull upstream master & git push origin master
 :: Build Debug libraries on top of Release runtime:
-build clr+libs -rc Release
-:: The above you may only perform once in a day, or when you pull down significant new changes.
+build.cmd clr+libs -rc Release
+:: Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
-build -vs System.Text.RegularExpressions
+build.cmd -vs System.Text.RegularExpressions
 
 :: Switch to working on a given library (RegularExpressions in this case)
 cd src\libraries\System.Text.RegularExpressions
@@ -34,7 +34,7 @@ git clean -xdf
 git pull upstream master & git push origin master
 # Build Debug libraries on top of Release runtime:
 ./build.sh clr+libs -rc Release
-# The above you may only perform once in a day, or when you pull down significant new changes.
+# Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
 # Switch to working on a given library (RegularExpressions in this case)
 cd src/libraries/System.Text.RegularExpressions
@@ -60,7 +60,7 @@ For Linux:
 ```
 
 For Windows:
-```bat
+```cmd
 ./build.cmd -rc Release
 ```
 
@@ -75,7 +75,7 @@ The libraries build has two logical components, the native build which produces 
 The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
 - `-framework|-f` identifies the target framework for the build. Possible values include `net5.0` (currently the latest .NET version) or `net48` (the latest .NETFramework version). (msbuild property `BuildTargetFramework`)
-- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
+- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `windows`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
 
@@ -185,7 +185,7 @@ You can iterate on `System.Private.CoreLib` by running:
 build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc Release
 ```
 
-When this `System.Private.CoreLib` will be built in Release mode, then it will be crossgen'd and we will update the testhost to the latest version of corelib. 
+When this `System.Private.CoreLib` will be built in Release mode, then it will be crossgen'd and we will update the testhost to the latest version of corelib.
 
 You can use the same workflow for mono runtime by using `mono.corelib+libs.pretest` subsets.
 

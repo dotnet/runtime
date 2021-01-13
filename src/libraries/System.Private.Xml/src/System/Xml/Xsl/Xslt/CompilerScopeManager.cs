@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Xslt
 {
@@ -31,8 +32,9 @@ namespace System.Xml.Xsl.Xslt
         {
             public int scopeCount;
             public ScopeFlags flags;
-            public string ncName;     // local-name for variable, prefix for namespace, null for extension or excluded namespace
-            public string nsUri;      // namespace uri
+            public string? ncName;     // local-name for variable, prefix for namespace, null for extension or excluded namespace
+            public string? nsUri;      // namespace uri
+            [AllowNull]
             public V value;      // value for variable, null for namespace
 
             // Exactly one of these three properties is true for every given record
@@ -96,7 +98,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         // returns true if ns decls was added to scope
-        public bool EnterScope(NsDecl nsDecl)
+        public bool EnterScope(NsDecl? nsDecl)
         {
             _lastScopes++;
 
@@ -142,7 +144,7 @@ namespace System.Xml.Xsl.Xslt
             _lastScopes = 0;
         }
 
-        private void AddRecord(ScopeFlags flag, string ncName, string uri, V value)
+        private void AddRecord(ScopeFlags flag, string? ncName, string? uri, [AllowNull] V value)
         {
             Debug.Assert(flag == (flag & ScopeFlags.ExclusiveFlags) && (flag & (flag - 1)) == 0 && flag != 0, "One exclusive flag");
             Debug.Assert(uri != null || ncName == null, "null, null means exclude '#all'");
@@ -202,12 +204,12 @@ namespace System.Xml.Xsl.Xslt
 
         // Since the prefix might be redefined in an inner scope, we search in descending order in [to, from]
         // If interval is empty (from < to), the function returns null.
-        private string LookupNamespace(string prefix, int from, int to)
+        private string? LookupNamespace(string prefix, int from, int to)
         {
             Debug.Assert(prefix != null);
             for (int record = from; to <= record; --record)
             {
-                string recPrefix, recNsUri;
+                string? recPrefix, recNsUri;
                 ScopeFlags flags = GetName(ref _records[record], out recPrefix, out recNsUri);
                 if (
                     (flags & ScopeFlags.NsDecl) != 0 &&
@@ -220,12 +222,12 @@ namespace System.Xml.Xsl.Xslt
             return null;
         }
 
-        public string LookupNamespace(string prefix)
+        public string? LookupNamespace(string prefix)
         {
             return LookupNamespace(prefix, _lastRecord, 0);
         }
 
-        private static ScopeFlags GetName(ref ScopeRecord re, out string prefix, out string nsUri)
+        private static ScopeFlags GetName(ref ScopeRecord re, out string? prefix, out string? nsUri)
         {
             prefix = re.ncName;
             nsUri = re.nsUri;
@@ -237,7 +239,7 @@ namespace System.Xml.Xsl.Xslt
             AddRecord(ScopeFlags.NsDecl, prefix, nsUri, default(V));
         }
 
-        public void AddExNamespace(string nsUri)
+        public void AddExNamespace(string? nsUri)
         {
             AddRecord(ScopeFlags.NsExcl, null, nsUri, default(V));
         }
@@ -248,7 +250,7 @@ namespace System.Xml.Xsl.Xslt
             int exAll = 0;
             for (int record = _lastRecord; 0 <= record; record--)
             {
-                string recPrefix, recNsUri;
+                string? recPrefix, recNsUri;
                 ScopeFlags flags = GetName(ref _records[record], out recPrefix, out recNsUri);
                 if ((flags & ScopeFlags.NsExcl) != 0)
                 {
@@ -272,8 +274,8 @@ namespace System.Xml.Xsl.Xslt
                     bool undefined = false;
                     for (int prev = record + 1; prev < exAll; prev++)
                     {
-                        string prevPrefix, prevNsUri;
-                        ScopeFlags prevFlags = GetName(ref _records[prev], out prevPrefix, out prevNsUri);
+                        string? prevPrefix;
+                        GetName(ref _records[prev], out prevPrefix, out _);
                         if (
                             (flags & ScopeFlags.NsDecl) != 0 &&
                             prevPrefix == recPrefix
@@ -299,7 +301,7 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(localName != null);
             for (int record = _lastRecord; 0 <= record; --record)
             {
-                string recLocal, recNsUri;
+                string? recLocal, recNsUri;
                 ScopeFlags flags = GetName(ref _records[record], out recLocal, out recNsUri);
                 if (
                     (flags & ScopeFlags.Variable) != 0 &&
@@ -313,6 +315,7 @@ namespace System.Xml.Xsl.Xslt
             return -1;
         }
 
+        [return: MaybeNull]
         public V LookupVariable(string localName, string uri)
         {
             int record = SearchVariable(localName, uri);
@@ -359,7 +362,7 @@ namespace System.Xml.Xsl.Xslt
                 if (_records[currentRecord].IsNamespace)
                 {
                     // This is a namespace declaration
-                    if (LookupNamespace(_records[currentRecord].ncName, _lastRecord, currentRecord + 1) != null)
+                    if (LookupNamespace(_records[currentRecord].ncName!, _lastRecord, currentRecord + 1) != null)
                     {
                         continue;
                     }
@@ -394,7 +397,7 @@ namespace System.Xml.Xsl.Xslt
                     if (_scope._records[_currentRecord].IsNamespace)
                     {
                         // This is a namespace declaration
-                        if (_scope.LookupNamespace(_scope._records[_currentRecord].ncName, _lastRecord, _currentRecord + 1) == null)
+                        if (_scope.LookupNamespace(_scope._records[_currentRecord].ncName!, _lastRecord, _currentRecord + 1) == null)
                         {
                             // Its prefix has not been redefined later in [currentRecord + 1, lastRecord]
                             return true;

@@ -133,7 +133,7 @@ namespace System.Linq.Parallel
         {
             internal int hashCode;
             internal int next;
-            [MaybeNull, AllowNull] internal TElement value;
+            internal TElement? value;
         }
     }
 }

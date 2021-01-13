@@ -441,8 +441,7 @@ namespace System.Linq
             return value;
         }
 
-        [return: MaybeNull]
-        public static TSource Max<TSource>(this IEnumerable<TSource> source)
+        public static TSource? Max<TSource>(this IEnumerable<TSource> source)
         {
             if (source == null)
             {
@@ -450,7 +449,7 @@ namespace System.Linq
             }
 
             Comparer<TSource> comparer = Comparer<TSource>.Default;
-            TSource value = default!;
+            TSource? value = default;
             if (value == null)
             {
                 using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -983,8 +982,7 @@ namespace System.Linq
             return value;
         }
 
-        [return: MaybeNull]
-        public static TResult Max<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
+        public static TResult? Max<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
             if (source == null)
             {
@@ -997,7 +995,7 @@ namespace System.Linq
             }
 
             Comparer<TResult> comparer = Comparer<TResult>.Default;
-            TResult value = default!;
+            TResult? value = default;
             if (value == null)
             {
                 using (IEnumerator<TSource> e = source.GetEnumerator())

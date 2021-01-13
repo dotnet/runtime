@@ -17,7 +17,7 @@ namespace System.Net.Security
 
         private FakeOptions? _sslAuthenticationOptions;
 
-        private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
+        private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertificateValidationCallback? remoteCallback, LocalCertSelectionCallback? localCallback)
         {
             // Without setting (or using) these members you will get a build exception in the unit test project.
             // The code that normally uses these in the main solution is in the implementation of SslStream.
@@ -35,10 +35,6 @@ namespace System.Net.Security
             _handshakeCompleted = false;
         }
 
-        private void ValidateParameters(byte[] buffer, int offset, int count)
-        {
-        }
-
         private void ValidateCreateContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
             _sslAuthenticationOptions = new FakeOptions() { TargetHost = sslAuthenticationOptions.TargetHost };
@@ -49,21 +45,7 @@ namespace System.Net.Security
 
         private ValueTask<int> ReadAsyncInternal<TReadAdapter>(TReadAdapter adapter, Memory<byte> buffer) => default;
 
-        private Task CheckEnqueueWriteAsync() => default;
-
-        private void CheckEnqueueWrite()
-        {
-        }
-
-        private ValueTask<int> CheckEnqueueReadAsync(Memory<byte> buffer) => default;
-
-        private int CheckEnqueueRead(Memory<byte> buffer) => default;
-
         private bool RemoteCertRequired => default;
-
-        private void CheckThrow(bool authSuccessCheck, bool shutdownCheck = false)
-        {
-        }
 
         private void CloseInternal()
         {
@@ -89,6 +71,7 @@ namespace System.Net.Security
         internal SslConnectionInfo ConnectionInfo => default;
         internal ChannelBinding GetChannelBinding(ChannelBindingKind kind) => default;
         internal X509Certificate LocalServerCertificate => default;
+        internal X509Certificate RemoteCertificate => default;
         internal bool IsRemoteCertificateAvailable => default;
         internal SslApplicationProtocol NegotiatedApplicationProtocol => default;
         internal X509Certificate LocalClientCertificate => default;

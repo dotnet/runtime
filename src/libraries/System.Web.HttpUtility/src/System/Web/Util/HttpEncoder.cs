@@ -64,7 +64,7 @@ namespace System.Web.Util
             HtmlAttributeEncodeInternal(value, output);
         }
 
-        private static unsafe void HtmlAttributeEncodeInternal(string s, TextWriter output)
+        private static void HtmlAttributeEncodeInternal(string s, TextWriter output)
         {
             int index = IndexOfHtmlAttributeEncodingChars(s, 0);
             if (index == -1)
@@ -73,43 +73,36 @@ namespace System.Web.Util
             }
             else
             {
-                int cch = s.Length - index;
-                fixed (char* str = s)
-                {
-                    char* pch = str;
-                    while (index-- > 0)
-                    {
-                        output.Write(*pch++);
-                    }
+                output.Write(s.AsSpan(0, index));
 
-                    while (cch-- > 0)
+                ReadOnlySpan<char> remaining = s.AsSpan(index);
+                for (int i = 0; i < remaining.Length; i++)
+                {
+                    char ch = remaining[i];
+                    if (ch <= '<')
                     {
-                        char ch = *pch++;
-                        if (ch <= '<')
+                        switch (ch)
                         {
-                            switch (ch)
-                            {
-                                case '<':
-                                    output.Write("&lt;");
-                                    break;
-                                case '"':
-                                    output.Write("&quot;");
-                                    break;
-                                case '\'':
-                                    output.Write("&#39;");
-                                    break;
-                                case '&':
-                                    output.Write("&amp;");
-                                    break;
-                                default:
-                                    output.Write(ch);
-                                    break;
-                            }
+                            case '<':
+                                output.Write("&lt;");
+                                break;
+                            case '"':
+                                output.Write("&quot;");
+                                break;
+                            case '\'':
+                                output.Write("&#39;");
+                                break;
+                            case '&':
+                                output.Write("&amp;");
+                                break;
+                            default:
+                                output.Write(ch);
+                                break;
                         }
-                        else
-                        {
-                            output.Write(ch);
-                        }
+                    }
+                    else
+                    {
+                        output.Write(ch);
                     }
                 }
             }
@@ -141,25 +134,23 @@ namespace System.Web.Util
             output.Write(WebUtility.HtmlEncode(value));
         }
 
-        private static unsafe int IndexOfHtmlAttributeEncodingChars(string s, int startPos)
+        private static int IndexOfHtmlAttributeEncodingChars(string s, int startPos)
         {
             Debug.Assert(0 <= startPos && startPos <= s.Length, "0 <= startPos && startPos <= s.Length");
-            int cch = s.Length - startPos;
-            fixed (char* str = s)
+
+            ReadOnlySpan<char> span = s.AsSpan(startPos);
+            for (int i = 0; i < span.Length; i++)
             {
-                for (char* pch = &str[startPos]; cch > 0; pch++, cch--)
+                char ch = span[i];
+                if (ch <= '<')
                 {
-                    char ch = *pch;
-                    if (ch <= '<')
+                    switch (ch)
                     {
-                        switch (ch)
-                        {
-                            case '<':
-                            case '"':
-                            case '\'':
-                            case '&':
-                                return s.Length - cch;
-                        }
+                        case '<':
+                        case '"':
+                        case '\'':
+                        case '&':
+                            return startPos + i;
                     }
                 }
             }

@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.CSharp.RuntimeBinder;
 using Xunit;
 
@@ -217,6 +221,64 @@ namespace System.Runtime.CompilerServices.Tests
             var rules3 = CallSiteOps.GetRuleCache((dynamic)callSite3);
             Assert.NotEqual(rules1, rules3);
 
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ConcurrentAdds()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                ExecuteConcurrentAdds(i);
+            }
+        }
+
+        private sealed class TestCallSiteBinder : CallSiteBinder
+        {
+            public override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) => throw new NotImplementedException();
+        }
+
+        private static void ExecuteConcurrentAdds(int run)
+        {
+            // Invoke CallSiteOps methods through reflection to avoid obsolete errors.
+            var addRuleMethod = GetCallSiteOpsMethod("AddRule");
+            var updateRulesMethod = GetCallSiteOpsMethod("UpdateRules");
+
+            var binder = new TestCallSiteBinder();
+            var callSite = CallSite<Func<CallSite, int>>.Create(binder);
+
+            const int nTasks = 5;
+            int nOperations = 0;
+            int nRules = 0;
+            var tasks = Enumerable.Range(0, nTasks).Select(i => Task.Factory.StartNew(
+                () => AddAndUpdateRules(run),
+                cancellationToken: default,
+                creationOptions: default,
+                scheduler: TaskScheduler.Default)).ToArray();
+            Task.WaitAll(tasks);
+
+            void AddAndUpdateRules(int run)
+            {
+                Thread.Sleep(10);
+                while (true)
+                {
+                    int op = Interlocked.Increment(ref nOperations);
+                    if (op > 100) break;
+                    if (op % 10 == 0)
+                    {
+                        AddRule(callSite, callSite => op);
+                        Interlocked.Increment(ref nRules);
+                    }
+                    UpdateRules(callSite, nRules - 1);
+                }
+            }
+
+            static System.Reflection.MethodInfo GetCallSiteOpsMethod(string methodName)
+            {
+                return typeof(CallSiteOps).GetMethod(methodName).MakeGenericMethod(typeof(Func<CallSite, int>));
+            }
+
+            void AddRule(CallSite<Func<CallSite, int>> callSite, Func<CallSite, int> rule) => addRuleMethod.Invoke(null, new object[] { callSite, rule });
+            void UpdateRules(CallSite<Func<CallSite, int>> callSite, int index) => updateRulesMethod.Invoke(null, new object[] { callSite, index });
         }
     }
 }

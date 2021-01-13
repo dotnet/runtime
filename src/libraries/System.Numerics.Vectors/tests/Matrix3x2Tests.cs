@@ -527,9 +527,9 @@ namespace System.Numerics.Tests
         public void Matrix3x2GetHashCodeTest()
         {
             Matrix3x2 target = GenerateIncrementalMatrixNumber();
-            int expected = unchecked(target.M11.GetHashCode() + target.M12.GetHashCode() +
-                                     target.M21.GetHashCode() + target.M22.GetHashCode() +
-                                     target.M31.GetHashCode() + target.M32.GetHashCode());
+            int expected = HashCode.Combine(target.M11, target.M12,
+                                     target.M21, target.M22,
+                                     target.M31, target.M32);
             int actual;
 
             actual = target.GetHashCode();

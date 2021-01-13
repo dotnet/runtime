@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.IO;
 
 namespace System.Runtime.Serialization.Formatters.Binary
@@ -40,7 +41,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         private static int GetInt32(byte[] buffer, int index) =>
-            buffer[index] | buffer[index + 1] << 8 | buffer[index + 2] << 16 | buffer[index + 3] << 24;
+            BinaryPrimitives.ReadInt32LittleEndian(buffer.AsSpan(index));
 
         public void Read(BinaryParser input)
         {

@@ -4,11 +4,12 @@
 namespace System.Xml.Serialization
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     [AttributeUsage(AttributeTargets.Field)]
     public class SoapEnumAttribute : System.Attribute
     {
-        private string _name;
+        private string? _name;
 
         public SoapEnumAttribute()
         {
@@ -19,6 +20,7 @@ namespace System.Xml.Serialization
             _name = name;
         }
 
+        [AllowNull]
         public string Name
         {
             get { return _name == null ? string.Empty : _name; }

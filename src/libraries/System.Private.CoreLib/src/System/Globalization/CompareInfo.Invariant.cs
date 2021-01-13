@@ -39,7 +39,7 @@ namespace System.Globalization
             }
         }
 
-        private static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(value != null);
@@ -269,7 +269,7 @@ namespace System.Globalization
             }
         }
 
-        private int InvariantGetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
+        private static int InvariantGetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
         {
             Debug.Assert(GlobalizationMode.Invariant);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
@@ -295,7 +295,7 @@ namespace System.Globalization
             return source.Length * sizeof(char);
         }
 
-        private int InvariantGetSortKeyLength(ReadOnlySpan<char> source, CompareOptions options)
+        private static int InvariantGetSortKeyLength(ReadOnlySpan<char> source, CompareOptions options)
         {
             Debug.Assert(GlobalizationMode.Invariant);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);

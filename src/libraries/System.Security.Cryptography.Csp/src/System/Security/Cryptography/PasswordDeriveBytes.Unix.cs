@@ -7,7 +7,7 @@ namespace System.Security.Cryptography
 {
     public partial class PasswordDeriveBytes : DeriveBytes
     {
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV)
         {
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CryptDeriveKey)));

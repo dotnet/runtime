@@ -20,11 +20,18 @@ namespace System.Globalization
                 {
                     LoadAppLocalIcu(icuSuffixAndVersion);
                 }
-                else if (Interop.Globalization.LoadICU() == 0)
+                else
                 {
-                    string message = "Couldn't find a valid ICU package installed on the system. " +
-                                    "Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
-                    Environment.FailFast(message);
+                    int loaded = Interop.Globalization.LoadICU();
+                    if (loaded == 0 && !OperatingSystem.IsBrowser())
+                    {
+                        string message = "Couldn't find a valid ICU package installed on the system. " +
+                                        "Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
+                        Environment.FailFast(message);
+                    }
+
+                    // fallback to Invariant mode if LoadICU failed (Browser).
+                    return loaded == 0;
                 }
             }
             return invariantEnabled;

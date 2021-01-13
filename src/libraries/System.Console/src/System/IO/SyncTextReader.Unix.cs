@@ -39,5 +39,7 @@ namespace System.IO
                 }
             }
         }
+
+        public int ReadLine(Span<byte> buffer) => Inner.ReadLine(buffer);
     }
 }

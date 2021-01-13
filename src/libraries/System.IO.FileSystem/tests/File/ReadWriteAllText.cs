@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -86,6 +85,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
         public void OpenFile_ThrowsIOException()
         {
             string path = GetTestFilePath();
@@ -119,7 +119,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
+                if (PlatformDetection.IsSuperUser)
                 {
                     Write(path, "text");
                     Assert.Equal("text", Read(path));

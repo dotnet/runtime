@@ -28,11 +28,15 @@ pr:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 jobs:
 #
 # Checkout repository
 #
-- template: /eng/pipelines/common/checkout-job.yml
+- ${{ if eq(variables.useCheckoutBundle, true) }}:
+  - template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Build with Release config and Debug runtimeConfiguration
@@ -42,13 +46,12 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
     platforms:
-    - Windows_NT_x86
+    - windows_x86
     - OSX_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Runtime_Debug
       buildArgs: -c release -runtimeConfiguration debug
-      timeoutInMinutes: 120
 
 #
 # Build with Debug config and Release runtimeConfiguration
@@ -88,7 +91,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Mono_Libraries

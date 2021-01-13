@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -37,7 +36,7 @@ namespace System.IO.Tests
                 // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
                 // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
                 // path that followed the symlink.
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (!OperatingSystem.IsMacOS())
                 {
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
@@ -65,11 +64,11 @@ namespace System.IO.Tests
 
                     // Set Current Directory to symlink
                     Directory.SetCurrentDirectory(linkPath);
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    if (OperatingSystem.IsWindows())
                     {
                         Assert.Equal(linkPath, Directory.GetCurrentDirectory());
                     }
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    else if (OperatingSystem.IsMacOS())
                     {
                         Assert.Equal("/private" + path, Directory.GetCurrentDirectory());
                     }

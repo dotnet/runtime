@@ -242,6 +242,57 @@ namespace Internal.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
+
+        public static bool AreSamePublicECParameters(ECParameters aParameters, ECParameters bParameters)
+        {
+            if (aParameters.Curve.CurveType != bParameters.Curve.CurveType)
+                return false;
+
+            if (!aParameters.Q.X!.ContentsEqual(bParameters.Q.X!) ||
+                !aParameters.Q.Y!.ContentsEqual(bParameters.Q.Y!))
+            {
+                return false;
+            }
+
+            ECCurve aCurve = aParameters.Curve;
+            ECCurve bCurve = bParameters.Curve;
+
+            if (aCurve.IsNamed)
+            {
+                // On Windows we care about FriendlyName, on Unix we care about Value
+                return (aCurve.Oid.Value == bCurve.Oid.Value && aCurve.Oid.FriendlyName == bCurve.Oid.FriendlyName);
+            }
+
+            if (!aCurve.IsExplicit)
+            {
+                // Implicit curve, always fail.
+                return false;
+            }
+
+            // Ignore Cofactor (which is derivable from the prime or polynomial and Order)
+            // Ignore Seed and Hash (which are entirely optional, and about how A and B were built)
+            if (!aCurve.G.X!.ContentsEqual(bCurve.G.X!) ||
+                !aCurve.G.Y!.ContentsEqual(bCurve.G.Y!) ||
+                !aCurve.Order.ContentsEqual(bCurve.Order) ||
+                !aCurve.A.ContentsEqual(bCurve.A) ||
+                !aCurve.B.ContentsEqual(bCurve.B))
+            {
+                return false;
+            }
+
+            if (aCurve.IsPrime)
+            {
+                return aCurve.Prime.ContentsEqual(bCurve.Prime);
+            }
+
+            if (aCurve.IsCharacteristic2)
+            {
+                return aCurve.Polynomial.ContentsEqual(bCurve.Polynomial);
+            }
+
+            Debug.Fail($"Missing match criteria for curve type {aCurve.CurveType}");
+            return false;
+        }
     }
 
     internal static class DictionaryStringHelper

@@ -30,4 +30,25 @@
       <attribute internal="RemoveAttributeInstances" />
     </type>
   </assembly>
+
+  <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
+    <type fullname="System.Diagnostics.Tracing.EventSourceAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.EventAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.EventDataAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.EventFieldAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.EventIgnoreAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.NonEventAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
 </linker>

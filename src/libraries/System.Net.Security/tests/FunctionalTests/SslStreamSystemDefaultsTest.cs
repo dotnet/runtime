@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Test.Common;
@@ -31,21 +32,48 @@ namespace System.Net.Security.Tests
         protected abstract Task AuthenticateClientAsync(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation, SslProtocols? protocols = null);
         protected abstract Task AuthenticateServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation, SslProtocols? protocols = null);
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
-        [InlineData(null, null)]
-        [InlineData(SslProtocols.None, null)]
-        [InlineData(null, SslProtocols.None)]
-        [InlineData(SslProtocols.None, SslProtocols.None)]
-        [InlineData(NegotiatedCipherSuiteTest.NonTls13Protocols, SslProtocols.Tls11)]
-        [InlineData(SslProtocols.Tls11, NegotiatedCipherSuiteTest.NonTls13Protocols)]
-        [InlineData(null, SslProtocols.Tls12)]
-        [InlineData(SslProtocols.Tls12, null)]
-        [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, null)]
-        [InlineData(null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12)]
+        public static IEnumerable<object[]> OneOrBothUseDefaulData()
+        {
+            yield return new object[] { null, null };
+            yield return new object[] { SslProtocols.None, null };
+            yield return new object[] { null, SslProtocols.None };
+            yield return new object[] { SslProtocols.None, SslProtocols.None };
 #pragma warning disable 0618
-        [InlineData(SslProtocols.Default, NegotiatedCipherSuiteTest.NonTls13Protocols)]
-        [InlineData(NegotiatedCipherSuiteTest.NonTls13Protocols, SslProtocols.Default)]
+            if (PlatformDetection.SupportsTls10)
+            {
+                // Default only has Ssl3 and Tls1.0 for legacy reasons.
+                yield return new object[] { SslProtocols.Default, SslProtocolSupport.NonTls13Protocols };
+                yield return new object[] { SslProtocolSupport.NonTls13Protocols, SslProtocols.Default };
+            }
+
 #pragma warning restore 0618
+            if (PlatformDetection.SupportsTls11)
+            {
+                yield return new object[] { SslProtocolSupport.NonTls13Protocols, SslProtocols.Tls11 };
+                yield return new object[] { SslProtocols.Tls11, SslProtocolSupport.NonTls13Protocols };
+            }
+
+            if (PlatformDetection.SupportsTls12)
+            {
+                yield return new object[] { null, SslProtocols.Tls12 };
+                yield return new object[] { SslProtocols.Tls12, null };
+            }
+
+            if (PlatformDetection.SupportsTls13)
+            {
+                yield return new object[] { null, SslProtocols.Tls13 };
+                yield return new object[] { SslProtocols.Tls13, null };
+            }
+
+            if ((SslProtocolSupport.SupportedSslProtocols & SslProtocolSupport.NonTls13Protocols) != 0)
+            {
+                yield return new object[] { SslProtocolSupport.NonTls13Protocols, null };
+                yield return new object[] { null, SslProtocolSupport.NonTls13Protocols };
+            }
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(OneOrBothUseDefaulData))]
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
         {
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())

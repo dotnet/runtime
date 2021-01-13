@@ -121,6 +121,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.Truncate)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
         public void NoTruncateOnFileShareViolation(FileMode fileMode)
         {
             string fileName = GetTestFilePath();

@@ -11,10 +11,8 @@
   <ItemGroup>
     <ProjectReference Include="../System.Runtime.Loader.Noop.Assembly/System.Runtime.Loader.Noop.Assembly.csproj"
                       ReferenceOutputAssembly="false"
-                      OutputItemType="content"
-                      CopyToOutputDirectory="PreserveNewest" />
+                      OutputItemType="ContentWithTargetPath"
+                      CopyToOutputDirectory="PreserveNewest"
+                      TargetPath="System.Runtime.Loader.Noop.Assembly_test.dll" />
   </ItemGroup>
-  <Target Name="RenameTestAssembly" AfterTargets="PrepareForRun">
-    <Move SourceFiles="$(OutDir)System.Runtime.Loader.Noop.Assembly.dll" DestinationFiles="$(OutDir)System.Runtime.Loader.Noop.Assembly_test.dll" />
-  </Target>
 </Project>

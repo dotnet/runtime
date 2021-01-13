@@ -200,6 +200,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsAscii_Char()
+        {
+            Assert.True(char.IsAscii(char.MinValue));
+            Assert.True(char.IsAscii('\x007f'));
+            Assert.False(char.IsAscii('\x0080'));
+            Assert.False(char.IsAscii(char.MaxValue));
+        }
+
+        [Fact]
         public static void IsControl_Char()
         {
             foreach (char c in GetTestChars(UnicodeCategory.Control))
@@ -278,17 +287,17 @@ namespace System.Tests
         {
             var categories = new UnicodeCategory[]
             {
-            UnicodeCategory.UppercaseLetter,
-            UnicodeCategory.LowercaseLetter,
-            UnicodeCategory.TitlecaseLetter,
-            UnicodeCategory.ModifierLetter,
-            UnicodeCategory.OtherLetter
+                UnicodeCategory.UppercaseLetter,
+                UnicodeCategory.LowercaseLetter,
+                UnicodeCategory.TitlecaseLetter,
+                UnicodeCategory.ModifierLetter,
+                UnicodeCategory.OtherLetter
             };
             foreach (char c in GetTestChars(categories))
-                Assert.True(char.IsLetter(c.ToString(), 0));
+                Assert.True(char.IsLetter(c.ToString(), 0), $"'{c}':{(int)c:x4} Is Not Letter");
 
             foreach (char c in GetTestCharsNotInCategory(categories))
-                Assert.False(char.IsLetter(c.ToString(), 0));
+                Assert.False(char.IsLetter(c.ToString(), 0), $"'{c}':{(int)c:x4} Is Not Letter");
         }
 
         [Fact]
@@ -667,10 +676,10 @@ namespace System.Tests
         {
             var categories = new UnicodeCategory[]
             {
-            UnicodeCategory.MathSymbol,
-            UnicodeCategory.ModifierSymbol,
-            UnicodeCategory.CurrencySymbol,
-            UnicodeCategory.OtherSymbol
+                UnicodeCategory.MathSymbol,
+                UnicodeCategory.ModifierSymbol,
+                UnicodeCategory.CurrencySymbol,
+                UnicodeCategory.OtherSymbol
             };
             foreach (char c in GetTestChars(categories))
                 Assert.True(char.IsSymbol(c.ToString(), 0));
@@ -966,36 +975,36 @@ namespace System.Tests
 
         private static char[][] s_latinTestSet = new char[][]
         {
-        new char[] {'\u0047','\u004c','\u0051','\u0056','\u00c0','\u00c5','\u00ca','\u00cf','\u00d4','\u00da'}, // UnicodeCategory.UppercaseLetter
-        new char[] {'\u0062','\u0068','\u006e','\u0074','\u007a','\u00e1','\u00e7','\u00ed','\u00f3','\u00fa'}, // UnicodeCategory.LowercaseLetter
-        new char[] {}, // UnicodeCategory.TitlecaseLetter
-        new char[] {}, // UnicodeCategory.ModifierLetter
-        new char[] {}, // UnicodeCategory.OtherLetter
-        new char[] {}, // UnicodeCategory.NonSpacingMark
-        new char[] {}, // UnicodeCategory.SpacingCombiningMark
-        new char[] {}, // UnicodeCategory.EnclosingMark
-        new char[] {'\u0030','\u0031','\u0032','\u0033','\u0034','\u0035','\u0036','\u0037','\u0038','\u0039'}, // UnicodeCategory.DecimalDigitNumber
-        new char[] {}, // UnicodeCategory.LetterNumber
-        new char[] {'\u00b2','\u00b3','\u00b9','\u00bc','\u00bd','\u00be'}, // UnicodeCategory.OtherNumber
-        new char[] {'\u0020','\u00a0'}, // UnicodeCategory.SpaceSeparator
-        new char[] {}, // UnicodeCategory.LineSeparator
-        new char[] {}, // UnicodeCategory.ParagraphSeparator
-        new char[] {'\u0005','\u000b','\u0011','\u0017','\u001d','\u0082','\u0085','\u008e','\u0094','\u009a'}, // UnicodeCategory.Control
-        new char[] {}, // UnicodeCategory.Format
-        new char[] {}, // UnicodeCategory.Surrogate
-        new char[] {}, // UnicodeCategory.PrivateUse
-        new char[] {'\u005f'}, // UnicodeCategory.ConnectorPunctuation
-        new char[] {'\u002d','\u00ad'}, // UnicodeCategory.DashPunctuation
-        new char[] {'\u0028','\u005b','\u007b'}, // UnicodeCategory.OpenPunctuation
-        new char[] {'\u0029','\u005d','\u007d'}, // UnicodeCategory.ClosePunctuation
-        new char[] {'\u00ab'}, // UnicodeCategory.InitialQuotePunctuation
-        new char[] {'\u00bb'}, // UnicodeCategory.FinalQuotePunctuation
-        new char[] {'\u002e','\u002f','\u003a','\u003b','\u003f','\u0040','\u005c','\u00a1','\u00b7','\u00bf'}, // UnicodeCategory.OtherPunctuation
-        new char[] {'\u002b','\u003c','\u003d','\u003e','\u007c','\u007e','\u00ac','\u00b1','\u00d7','\u00f7'}, // UnicodeCategory.MathSymbol
-        new char[] {'\u0024','\u00a2','\u00a3','\u00a4','\u00a5'}, // UnicodeCategory.CurrencySymbol
-        new char[] {'\u005e','\u0060','\u00a8','\u00af','\u00b4','\u00b8'}, // UnicodeCategory.ModifierSymbol
-        new char[] {'\u00a6','\u00a7','\u00a9','\u00ae','\u00b0','\u00b6'}, // UnicodeCategory.OtherSymbol
-        new char[] {}, // UnicodeCategory.OtherNotAssigned
+        /* UppercaseLetter         */ new char[] {'\u0047','\u004c','\u0051','\u0056','\u00c0','\u00c5','\u00ca','\u00cf','\u00d4','\u00da'},
+        /* LowercaseLetter         */ new char[] {'\u0062','\u0068','\u006e','\u0074','\u007a','\u00e1','\u00e7','\u00ed','\u00f3','\u00fa'},
+        /* TitlecaseLetter         */ new char[] {},
+        /* ModifierLetter          */ new char[] {},
+        /* OtherLetter             */ new char[] {'\u00aa','\u00ba'},
+        /* NonSpacingMark          */ new char[] {},
+        /* SpacingCombiningMark    */ new char[] {},
+        /* EnclosingMark           */ new char[] {},
+        /* DecimalDigitNumber      */ new char[] {'\u0030','\u0031','\u0032','\u0033','\u0034','\u0035','\u0036','\u0037','\u0038','\u0039'},
+        /* LetterNumber            */ new char[] {},
+        /* OtherNumber             */ new char[] {'\u00b2','\u00b3','\u00b9','\u00bc','\u00bd','\u00be'},
+        /* SpaceSeparator          */ new char[] {'\u0020','\u00a0'},
+        /* LineSeparator           */ new char[] {},
+        /* ParagraphSeparator      */ new char[] {},
+        /* Control                 */ new char[] {'\u0005','\u000b','\u0011','\u0017','\u001d','\u0082','\u0085','\u008e','\u0094','\u009a'},
+        /* Format                  */ new char[] {'\u00ad'},
+        /* Surrogate               */ new char[] {},
+        /* PrivateUse              */ new char[] {},
+        /* ConnectorPunctuation    */ new char[] {'\u005f'},
+        /* DashPunctuation         */ new char[] {'\u002d'},
+        /* OpenPunctuation         */ new char[] {'\u0028','\u005b','\u007b'},
+        /* ClosePunctuation        */ new char[] {'\u0029','\u005d','\u007d'},
+        /* InitialQuotePunctuation */ new char[] {'\u00ab'},
+        /* FinalQuotePunctuation   */ new char[] {'\u00bb'},
+        /* OtherPunctuation        */ new char[] {'\u002e','\u002f','\u003a','\u003b','\u003f','\u0040','\u005c','\u00a1','\u00a7','\u00b6','\u00b7','\u00bf'},
+        /* MathSymbol              */ new char[] {'\u002b','\u003c','\u003d','\u003e','\u007c','\u007e','\u00ac','\u00b1','\u00d7','\u00f7'},
+        /* CurrencySymbol          */ new char[] {'\u0024','\u00a2','\u00a3','\u00a4','\u00a5'},
+        /* ModifierSymbol          */ new char[] {'\u005e','\u0060','\u00a8','\u00af','\u00b4','\u00b8'},
+        /* OtherSymbol             */ new char[] {'\u00a6','\u00a9','\u00ae','\u00b0'},
+        /* OtherNotAssigned        */ new char[] {},
         };
 
         private static char[][] s_unicodeTestSet = new char[][]
@@ -1077,7 +1086,7 @@ namespace System.Tests
             //                          lower          upper    Culture
             yield return new object[] { 'a', 'A', "en-US" };
             yield return new object[] { 'i', 'I', "en-US" };
-            
+
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
                 yield return new object[] { '\u0131', 'I', "tr-TR" };
@@ -1133,37 +1142,7 @@ namespace System.Tests
 
             for (int i = 0; i <= char.MaxValue; i++)
             {
-                UnicodeCategory expected;
-
-                // The code points in the switch block below must be special-cased
-                // because they switched categories between versions of the Unicode
-                // specification. For compatibility reasons Char keeps its own copy
-                // of the categories for the first 256 code points, as it's locked
-                // to an earlier version of the standard. For an example of a code
-                // point that switched categories, see the discussion on U+00AD
-                // SOFT HYPHEN at https://www.unicode.org/versions/Unicode4.0.0/.
-
-                switch (i)
-                {
-                    case '\u00a7':
-                    case '\u00b6':
-                        expected = UnicodeCategory.OtherSymbol;
-                        break;
-
-                    case '\u00aa':
-                    case '\u00ba':
-                        expected = UnicodeCategory.LowercaseLetter;
-                        break;
-
-                    case '\u00ad':
-                        expected = UnicodeCategory.DashPunctuation;
-                        break;
-
-                    default:
-                        expected = UnicodeData.GetUnicodeCategory(i);
-                        break;
-                }
-
+                UnicodeCategory expected = UnicodeData.GetUnicodeCategory(i);
                 if (expected != char.GetUnicodeCategory((char)i))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
@@ -1204,27 +1183,7 @@ namespace System.Tests
 
             for (uint i = 0; i <= char.MaxValue; i++)
             {
-                bool expected;
-
-                switch (i)
-                {
-                    case '\u00AA': // FEMININE ORDINAL INDICATOR
-                    case '\u00BA': // MASCULINE ORDINAL INDICATOR
-
-                        // In Unicode 6.1 the code points U+00AA and U+00BA were reassigned
-                        // from category Ll to category Lo. However, for compatibility reasons,
-                        // Char uses the older version of the Unicode standard for code points
-                        // in the range U+0000..U+00FF. So we'll special-case these here.
-                        // More info: https://www.unicode.org/review/pri181/
-
-                        expected = true;
-                        break;
-
-                    default:
-                        expected = UnicodeData.GetUnicodeCategory((char)i) == UnicodeCategory.LowercaseLetter;
-                        break;
-                }
-
+                bool expected = UnicodeData.GetUnicodeCategory((char)i) == UnicodeCategory.LowercaseLetter;
                 if (expected != char.IsLower((char)i))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.

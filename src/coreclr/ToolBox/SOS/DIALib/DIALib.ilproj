@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Platform>AnyCPU</Platform>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+</Project>

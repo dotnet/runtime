@@ -16,7 +16,7 @@ namespace System.Net.WebSockets
         internal const int DefaultClientSendBufferSize = 16 * 1024;
 
         [SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 used only for hashing purposes, not for crypto.")]
-        internal static string GetSecWebSocketAcceptString(string secWebSocketKey)
+        internal static string GetSecWebSocketAcceptString(string? secWebSocketKey)
         {
             string acceptString = string.Concat(secWebSocketKey, HttpWebSocket.SecWebSocketKeyGuid);
             byte[] toHash = Encoding.UTF8.GetBytes(acceptString);
@@ -27,7 +27,7 @@ namespace System.Net.WebSockets
         }
 
         // return value here signifies if a Sec-WebSocket-Protocol header should be returned by the server.
-        internal static bool ProcessWebSocketProtocolHeader(string clientSecWebSocketProtocol,
+        internal static bool ProcessWebSocketProtocolHeader(string? clientSecWebSocketProtocol,
             string subProtocol,
             out string acceptProtocol)
         {
@@ -142,7 +142,7 @@ namespace System.Net.WebSockets
                     context.Request.Headers[HttpKnownHeaderNames.Upgrade]));
             }
 
-            string secWebSocketVersion = context.Request.Headers[HttpKnownHeaderNames.SecWebSocketVersion];
+            string? secWebSocketVersion = context.Request.Headers[HttpKnownHeaderNames.SecWebSocketVersion];
             if (string.IsNullOrEmpty(secWebSocketVersion))
             {
                 throw new WebSocketException(WebSocketError.HeaderError,
@@ -160,14 +160,14 @@ namespace System.Net.WebSockets
                     SupportedVersion));
             }
 
-            string secWebSocketKey = context.Request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
+            string? secWebSocketKey = context.Request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
             bool isSecWebSocketKeyInvalid = string.IsNullOrWhiteSpace(secWebSocketKey);
             if (!isSecWebSocketKeyInvalid)
             {
                 try
                 {
                     // key must be 16 bytes then base64-encoded
-                    isSecWebSocketKeyInvalid = Convert.FromBase64String(secWebSocketKey).Length != 16;
+                    isSecWebSocketKeyInvalid = Convert.FromBase64String(secWebSocketKey!).Length != 16;
                 }
                 catch
                 {

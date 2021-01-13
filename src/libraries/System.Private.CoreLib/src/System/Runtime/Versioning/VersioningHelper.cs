@@ -84,8 +84,7 @@ namespace System.Runtime.Versioning
             // actually call GetRuntimeId() which is an ecall method and cannot be
             // directly called from outside of the corelib.
             // In CoreCLR, GetRuntimeId() gets the TLS index for the thread and adds 3 to that number.
-            int id = 3;
-            return id.ToString(CultureInfo.InvariantCulture);
+            return "3";
         }
 
         private static SxSRequirements GetRequirements(ResourceScope consumeAsScope, ResourceScope calleeScope)

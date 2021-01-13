@@ -10,6 +10,7 @@ using System.Xml;
 
 namespace System.Data
 {
+    [Designer("Microsoft.VSDesigner.Data.VS.DataViewManagerDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class DataViewManager : MarshalByValueComponent, IBindingList, System.ComponentModel.ITypedList
     {
         private DataViewSettingCollection _dataViewSettingsCollection;

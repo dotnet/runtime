@@ -6,7 +6,7 @@ using System.Xml;
 using System.Text;
 using System.Diagnostics;
 using System.Runtime.Serialization;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -18,7 +18,7 @@ namespace System.Xml
         private readonly IXmlDictionary _dictionary;
         private readonly string _value;
         private readonly int _key;
-        private byte[] _buffer;
+        private byte[]? _buffer;
         private static readonly EmptyStringDictionary s_emptyStringDictionary = new EmptyStringDictionary();
 
         public XmlDictionaryString(IXmlDictionary dictionary, string value, int key)
@@ -34,7 +34,8 @@ namespace System.Xml
             _key = key;
         }
 
-        internal static string GetString(XmlDictionaryString s)
+        [return: NotNullIfNotNull("s")]
+        internal static string? GetString(XmlDictionaryString? s)
         {
             if (s == null)
                 return null;
@@ -102,7 +103,7 @@ namespace System.Xml
                 }
             }
 
-            public bool TryLookup(string value, out XmlDictionaryString result)
+            public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
                 if (value == null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
@@ -115,7 +116,7 @@ namespace System.Xml
                 return false;
             }
 
-            public bool TryLookup(int key, out XmlDictionaryString result)
+            public bool TryLookup(int key, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
                 if (key == 0)
                 {
@@ -126,7 +127,7 @@ namespace System.Xml
                 return false;
             }
 
-            public bool TryLookup(XmlDictionaryString value, out XmlDictionaryString result)
+            public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
                 if (value == null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));

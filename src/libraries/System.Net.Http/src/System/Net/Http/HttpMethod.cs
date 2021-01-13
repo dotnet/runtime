@@ -116,7 +116,7 @@ namespace System.Net.Http
 
         public bool Equals(HttpMethod? other)
         {
-            if ((object?)other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -155,7 +155,7 @@ namespace System.Net.Http
 
         public static bool operator ==(HttpMethod? left, HttpMethod? right)
         {
-            return (object?)left == null || (object?)right == null ?
+            return left is null || right is null ?
                 ReferenceEquals(left, right) :
                 left.Equals(right);
         }

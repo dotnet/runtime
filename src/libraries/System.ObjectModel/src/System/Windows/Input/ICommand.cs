@@ -18,7 +18,7 @@ namespace System.Windows.Input
         /// <summary>
         /// Raised when the ability of the command to execute has changed.
         /// </summary>
-        event EventHandler CanExecuteChanged;
+        event EventHandler? CanExecuteChanged;
 
         /// <summary>
         /// Returns whether the command can be executed.
