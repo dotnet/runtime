@@ -3172,7 +3172,9 @@ namespace System.Net.Sockets
             e.CancelConnectAsync();
         }
 
-        public bool DisconnectAsync(SocketAsyncEventArgs e)
+        public bool DisconnectAsync(SocketAsyncEventArgs e) => DisconnectAsync(e, default);
+
+        private bool DisconnectAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             // Throw if socket disposed
             ThrowIfDisposed();
@@ -3187,6 +3189,8 @@ namespace System.Net.Sockets
             SocketError socketError = SocketError.Success;
             try
             {
+                // TODO: CancellationToken handling
+
                 socketError = e.DoOperationDisconnect(this, _handle);
             }
             catch

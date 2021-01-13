@@ -229,7 +229,7 @@ namespace System.Net.Sockets.Tests
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             s.SendToAsync(buffer, SocketFlags.None, endPoint);
         public override Task DisconnectAsync(Socket s, bool reuseSocket) =>
-            throw new NotImplementedException();    // Not supported yet
+            s.DisconnectAsync(reuseSocket).AsTask();
     }
 
     // Same as above, but call the CancellationToken overloads where possible
@@ -263,7 +263,7 @@ namespace System.Net.Sockets.Tests
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             s.SendToAsync(buffer, SocketFlags.None, endPoint);
         public override Task DisconnectAsync(Socket s, bool reuseSocket) =>
-            throw new NotImplementedException();    // Not supported yet
+            s.DisconnectAsync(reuseSocket, _cts.Token).AsTask();
     }
 
     public sealed class SocketHelperEap : SocketHelperBase
