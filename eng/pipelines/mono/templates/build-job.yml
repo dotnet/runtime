@@ -13,7 +13,6 @@ parameters:
   isOfficialBuild: false
   crossBuild: false
   crossrootfsDir: ''
-  dependOnEvaluatePaths: false
   dependsOn: ''
   monoCrossAOTTargetOS: ''
   useCheckoutBundle: false

@@ -19,7 +19,6 @@ jobs:
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     ${{ if eq(parameters.useCheckoutBundle, true) }}:
       dependsOn: checkout
