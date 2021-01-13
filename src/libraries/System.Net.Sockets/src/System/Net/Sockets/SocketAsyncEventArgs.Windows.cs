@@ -101,7 +101,6 @@ namespace System.Net.Sockets
 
         private unsafe void RegisterToCancelPendingIO(NativeOverlapped* overlapped, CancellationToken cancellationToken)
         {
-            Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.InProcess);
             Debug.Assert(_pendingOverlappedForCancellation == null);
             _pendingOverlappedForCancellation = overlapped;
             _registrationToCancelPendingIO = cancellationToken.UnsafeRegister(s =>
