@@ -11,10 +11,6 @@
     <WasmNativeStrip>true</WasmNativeStrip>
   </PropertyGroup>
 
-  <PropertyGroup>
-      <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative</WasmBuildAppDependsOn>
-  </PropertyGroup>
-
   <Target Name="WasmBuildApp" AfterTargets="Publish" />
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
@@ -47,7 +43,7 @@
       Profilers="aot;"
       AotModulesTablePath="$(WasmBuildDir)driver-gen.c"
       UseLLVM="true"
-        DisableParallelAot="true"
+      DisableParallelAot="true"
       LLVMPath="$(EMSDK_PATH)\upstream\bin">
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblies" />
     </MonoAOTCompiler>
@@ -108,7 +104,6 @@
     </ItemGroup>
     <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip -q %(_managedAppAssemblies.Identity)" />
   </Target>
-
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp" Condition="'$(WasmBuildNative)' == 'true'">
     <PropertyGroup>
@@ -204,19 +199,5 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </ItemGroup>
 
     <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
-  </Target>
-
-  <Target Name="RebuildWasmAppBuilder">
-    <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-         Targets="Restore"/>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug"
-         Targets="Build;Publish"/>
   </Target>
 </Project>
