@@ -16,20 +16,20 @@ class SpmiDumpHelper
 {
 public:
     static std::string DumpAgnostic_CORINFO_RESOLVED_TOKENin(
-        const MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin& tokenIn);
+        const Agnostic_CORINFO_RESOLVED_TOKENin& tokenIn);
     static std::string DumpAgnostic_CORINFO_RESOLVED_TOKENout(
-        const MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut);
-    static std::string DumpAgnostic_CORINFO_RESOLVED_TOKEN(const MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN& token);
-    static std::string DumpAgnostic_CORINFO_LOOKUP_KIND(const MethodContext::Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
+        const Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut);
+    static std::string DumpAgnostic_CORINFO_RESOLVED_TOKEN(const Agnostic_CORINFO_RESOLVED_TOKEN& token);
+    static std::string DumpAgnostic_CORINFO_LOOKUP_KIND(const Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
     static std::string DumpAgnostic_CORINFO_CONST_LOOKUP(
-        const MethodContext::Agnostic_CORINFO_CONST_LOOKUP& constLookup);
+        const Agnostic_CORINFO_CONST_LOOKUP& constLookup);
     static std::string DumpAgnostic_CORINFO_RUNTIME_LOOKUP(
-        const MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP& lookup);
-    static std::string DumpAgnostic_CORINFO_LOOKUP(const MethodContext::Agnostic_CORINFO_LOOKUP& lookup);
+        const Agnostic_CORINFO_RUNTIME_LOOKUP& lookup);
+    static std::string DumpAgnostic_CORINFO_LOOKUP(const Agnostic_CORINFO_LOOKUP& lookup);
 
     template <typename key, typename value>
     static std::string DumpAgnostic_CORINFO_SIG_INFO(
-        const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
+        const Agnostic_CORINFO_SIG_INFO& sigInfo,
         LightWeightMap<key, value>* buffers,
         const DenseLightWeightMap<DWORDLONG>* handleMap);
 
@@ -62,7 +62,7 @@ private:
 
 template <typename key, typename value>
 inline std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(
-    const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo,
+    const Agnostic_CORINFO_SIG_INFO& sigInfo,
     LightWeightMap<key, value>* buffers,
     const DenseLightWeightMap<DWORDLONG>* handleMap)
 {

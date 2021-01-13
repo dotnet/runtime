@@ -6340,7 +6340,7 @@ MethodContext::Environment MethodContext::cloneEnvironment()
     MethodContext::Environment env;
     if (GetIntConfigValue != nullptr)
     {
-        env.getIntConfigValue = new LightWeightMap<MethodContext::Agnostic_ConfigIntInfo, DWORD>(*GetIntConfigValue);
+        env.getIntConfigValue = new LightWeightMap<Agnostic_ConfigIntInfo, DWORD>(*GetIntConfigValue);
     }
     if (GetStringConfigValue != nullptr)
     {

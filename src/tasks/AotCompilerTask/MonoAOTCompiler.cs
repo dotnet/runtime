@@ -103,6 +103,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? MsymPath { get; set; }
 
+    public List<string> FileWrites { get; } = new();
+
     private ConcurrentBag<ITaskItem> compiledAssemblies = new ConcurrentBag<ITaskItem>();
     private MonoAotMode parsedAotMode;
     private MonoAotOutputType parsedOutputType;
@@ -127,26 +129,32 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
         }
 
-        if (UseLLVM && string.IsNullOrEmpty(LLVMPath))
-        {
-            // prevent using some random llc/opt from PATH (installed with clang)
-            throw new ArgumentException($"'{nameof(LLVMPath)}' is required when '{nameof(UseLLVM)}' is true.", nameof(LLVMPath));
-        }
-
         if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
         {
             throw new ArgumentException($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
         }
 
-        if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
+        if (UseLLVM)
         {
-            throw new ArgumentException($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
+            if (string.IsNullOrEmpty(LLVMPath))
+                // prevent using some random llc/opt from PATH (installed with clang)
+                throw new ArgumentException($"'{nameof(LLVMPath)}' is required when '{nameof(UseLLVM)}' is true.", nameof(LLVMPath));
+
+            if (!Directory.Exists(LLVMPath))
+            {
+                Log.LogError($"Could not find LLVMPath=${LLVMPath}");
+                return false;
+            }
         }
 
-        if (!Enum.TryParse(Mode, true, out parsedAotMode))
+        switch (Mode)
         {
-            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(',', Enum.GetNames(typeof(MonoAotMode)))}");
-            return false;
+            case "Normal": parsedAotMode = MonoAotMode.Normal; break;
+            case "Full": parsedAotMode = MonoAotMode.Full; break;
+            case "LLVMOnly": parsedAotMode = MonoAotMode.LLVMOnly; break;
+            case "AotInterp": parsedAotMode = MonoAotMode.LLVMOnly; break;
+            default:
+                throw new ArgumentException($"'{nameof(Mode)}' must be one of: '{nameof(MonoAotMode.Normal)}', '{nameof(MonoAotMode.Full)}', '{nameof(MonoAotMode.LLVMOnly)}', '{nameof(MonoAotMode.AotInterp)}'. Received: '{Mode}'.", nameof(Mode));
         }
 
         switch (OutputType)
@@ -175,16 +183,27 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             GenerateAotModulesTable(Assemblies, Profilers);
         }
 
-        Parallel.ForEach(Assemblies,
-            new ParallelOptions { MaxDegreeOfParallelism = DisableParallelAot ? 1 : Environment.ProcessorCount },
-            assemblyItem => PrecompileLibrary (assemblyItem));
+        if (DisableParallelAot)
+        {
+            foreach (var assemblyItem in Assemblies)
+            {
+                if (!PrecompileLibrary(assemblyItem))
+                    return !Log.HasLoggedErrors;
+            }
+        }
+        else
+        {
+            Parallel.ForEach(Assemblies,
+                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                assemblyItem => PrecompileLibrary (assemblyItem));
+        }
 
         CompiledAssemblies = compiledAssemblies.ToArray();
 
-        return true;
+        return !Log.HasLoggedErrors;
     }
 
-    private void PrecompileLibrary(ITaskItem assemblyItem)
+    private bool PrecompileLibrary(ITaskItem assemblyItem)
     {
         string assembly = assemblyItem.ItemSpec;
         string directory = Path.GetDirectoryName(assembly)!;
@@ -304,11 +323,21 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {"MONO_PATH", directory},
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
-        Console.WriteLine($"PROCESS ARGS {string.Join(" ", processArgs)}");
-        // run the AOT compiler
-        Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, directory);
+
+        try
+        {
+            // run the AOT compiler
+            Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, directory, silent: false, outputMessageImportance: MessageImportance.Low);
+        }
+        catch (Exception ex)
+        {
+            Log.LogMessage(MessageImportance.Low, ex.ToString());
+            Log.LogError($"Precompiling failed for {assembly}: {ex.Message}");
+            return false;
+        }
 
         compiledAssemblies.Add(aotAssembly);
+        return true;
     }
 
     private void GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers)
@@ -324,6 +353,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         using (var writer = File.CreateText(AotModulesTablePath!))
         {
+            FileWrites.Add(AotModulesTablePath!);
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
                 foreach (var symbol in symbols)

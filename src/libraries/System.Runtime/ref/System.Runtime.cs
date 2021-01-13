@@ -2762,6 +2762,8 @@ namespace System
         public static nuint Min(nuint val1, nuint val2) { throw null; }
         public static double MinMagnitude(double x, double y) { throw null; }
         public static double Pow(double x, double y) { throw null; }
+        public static double ReciprocalEstimate(double d) { throw null; }
+        public static double ReciprocalSqrtEstimate(double d) { throw null; }
         public static decimal Round(decimal d) { throw null; }
         public static decimal Round(decimal d, int decimals) { throw null; }
         public static decimal Round(decimal d, int decimals, System.MidpointRounding mode) { throw null; }
@@ -2823,6 +2825,8 @@ namespace System
         public static float Min(float x, float y) { throw null; }
         public static float MinMagnitude(float x, float y) { throw null; }
         public static float Pow(float x, float y) { throw null; }
+        public static float ReciprocalEstimate(float x) { throw null; }
+        public static float ReciprocalSqrtEstimate(float x) { throw null; }
         public static float Round(float x) { throw null; }
         public static float Round(float x, int digits) { throw null; }
         public static float Round(float x, int digits, System.MidpointRounding mode) { throw null; }
