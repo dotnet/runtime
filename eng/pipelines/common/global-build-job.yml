@@ -47,7 +47,8 @@ jobs:
     ${{ if eq(parameters.useCheckoutBundle, true) }}:
       dependsOn: 
       - checkout
-      - ${{ parameters.dependsOn }}
+      - ${{ if ne(parameters.dependsOn,'') }}:
+        - ${{ parameters.dependsOn }}
 
     variables:
       - name: _osParameter
