@@ -1129,6 +1129,8 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 }
 
 #ifdef FEATURE_SIMD
+
+#ifdef TARGET_AMD64
 //------------------------------------------------------------------------
 // genSIMDSplitReturn: Generates code for returning a fixed-size SIMD type that lives
 //                     in a single register, but is returned in multiple registers.
@@ -1141,6 +1143,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 {
     assert(varTypeIsSIMD(src));
     assert(src->isUsedFromReg());
+    assert(src->TypeIs(TYP_SIMD16));
 
     // This is a case of operand is in a single reg and needs to be
     // returned in multiple ABI return registers.
@@ -1153,7 +1156,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
         // Operand reg is different from return regs.
         // Copy opReg to reg0 and let it to be handled by one of the
         // two cases below.
-        inst_RV_RV(ins_Copy(TYP_DOUBLE), reg0, opReg, TYP_DOUBLE);
+        inst_RV_RV(ins_Copy(TYP_SIMD16), reg0, opReg, TYP_SIMD16);
         opReg = reg0;
     }
 
@@ -1164,7 +1167,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
         // reg0 - already has required 8-byte in bit position [63:0].
         // reg1 = opReg.
         // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
-        inst_RV_RV(ins_Copy(TYP_DOUBLE), reg1, opReg, TYP_DOUBLE);
+        inst_RV_RV(ins_Copy(TYP_SIMD16), reg1, opReg, TYP_SIMD16);
     }
     else
     {
@@ -1172,10 +1175,26 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 
         // reg0 = opReg.
         // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
-        inst_RV_RV(ins_Copy(TYP_DOUBLE), reg0, opReg, TYP_DOUBLE);
+        inst_RV_RV(ins_Copy(TYP_SIMD16), reg0, opReg, TYP_SIMD16);
     }
     inst_RV_RV_IV(INS_shufpd, EA_16BYTE, reg1, reg1, 0x01);
 }
+#else // TARGET_X86
+
+//------------------------------------------------------------------------
+// genSIMDSplitReturn: Generates code for returning a fixed-size SIMD type that lives
+//                     in a single register, but is returned in multiple registers.
+//
+// Arguments:
+//    src         - The source of the return
+//    retTypeDesc - The return type descriptor.
+//
+void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
+{
+    unreached();
+}
+#endif // TARGET_X86
+
 #endif // FEATURE_SIMD
 
 #if defined(TARGET_X86)
