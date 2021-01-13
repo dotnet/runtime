@@ -498,10 +498,10 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
 
             return InternalReadLinesAsync(path, encoding, cancellationToken);
         }
