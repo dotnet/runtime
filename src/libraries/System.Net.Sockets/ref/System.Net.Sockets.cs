@@ -338,6 +338,7 @@ namespace System.Net.Sockets
         public static bool ConnectAsync(System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType, System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
         public void Disconnect(bool reuseSocket) { }
         public bool DisconnectAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
+        public System.Threading.Tasks.ValueTask DisconnectAsync(bool reuseSocket, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
