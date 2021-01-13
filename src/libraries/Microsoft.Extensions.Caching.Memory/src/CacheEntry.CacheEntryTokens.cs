@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Caching.Memory
             internal List<IChangeToken> ExpirationTokens => _expirationTokens ??= new List<IChangeToken>();
             internal List<PostEvictionCallbackRegistration> PostEvictionCallbacks => _postEvictionCallbacks ??= new List<PostEvictionCallbackRegistration>();
 
-            internal void AttachTokens()
+            internal void AttachTokens(CacheEntry cacheEntry)
             {
                 if (_expirationTokens != null)
                 {
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Caching.Memory
                             if (expirationToken.ActiveChangeCallbacks)
                             {
                                 _expirationTokenRegistrations ??= new List<IDisposable>(1);
-                                IDisposable registration = expirationToken.RegisterChangeCallback(ExpirationCallback, this);
+                                IDisposable registration = expirationToken.RegisterChangeCallback(ExpirationCallback, cacheEntry);
                                 _expirationTokenRegistrations.Add(registration);
                             }
                         }

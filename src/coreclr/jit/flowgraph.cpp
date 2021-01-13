@@ -9642,9 +9642,9 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->bbFlags = curr->bbFlags;
 
     // Remove flags that the new block can't have.
-    newBlock->bbFlags &=
-        ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_HAS_LABEL | BBF_JMP_TARGET |
-          BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET);
+    newBlock->bbFlags &= ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_HAS_LABEL |
+                           BBF_JMP_TARGET | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS |
+                           BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -10946,6 +10946,18 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
+    // Add the LOOP_ALIGN flag
+    if (bNext->isLoopAlign())
+    {
+        // Only if the new block is jump target or has label
+        if (((block->bbFlags & BBF_JMP_TARGET) != 0) || ((block->bbFlags & BBF_HAS_LABEL) != 0))
+        {
+            block->bbFlags |= BBF_LOOP_ALIGN;
+            JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
+                    block->bbNum);
+        }
+    }
+
     // If we're collapsing a block created after the dominators are
     // computed, copy block number the block and reuse dominator
     // information from bNext to block.
@@ -11536,6 +11548,14 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         if (block->isLoopHead() && (succBlock->bbNum <= block->bbNum))
         {
             succBlock->bbFlags |= BBF_LOOP_HEAD;
+
+            if (block->isLoopAlign())
+            {
+                succBlock->bbFlags |= BBF_LOOP_ALIGN;
+                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for loop# %d.", block->bbNum,
+                        succBlock->bbNum, block->bbNatLoopNum);
+            }
+
             if (fgDomsComputed && fgReachable(succBlock, block))
             {
                 /* Mark all the reachable blocks between 'succBlock' and 'block', excluding 'block' */
@@ -13567,7 +13587,6 @@ void Compiler::fgComputeBlockAndEdgeWeights()
     JITDUMP("*************** In fgComputeBlockAndEdgeWeights()\n");
 
     const bool usingProfileWeights = fgIsUsingProfileWeights();
-    const bool isOptimizing        = opts.OptimizationEnabled();
 
     fgModified             = false;
     fgHaveValidEdgeWeights = false;
@@ -13592,14 +13611,7 @@ void Compiler::fgComputeBlockAndEdgeWeights()
         JITDUMP(" -- no profile data, so using default called count\n");
     }
 
-    if (usingProfileWeights && isOptimizing)
-    {
-        fgComputeEdgeWeights();
-    }
-    else
-    {
-        JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
-    }
+    fgComputeEdgeWeights();
 }
 
 //-------------------------------------------------------------
@@ -13806,6 +13818,15 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
 
 void Compiler::fgComputeEdgeWeights()
 {
+    const bool isOptimizing        = opts.OptimizationEnabled();
+    const bool usingProfileWeights = fgIsUsingProfileWeights();
+
+    if (!isOptimizing || !usingProfileWeights)
+    {
+        JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
+        return;
+    }
+
     BasicBlock*          bSrc;
     BasicBlock*          bDst;
     flowList*            edge;

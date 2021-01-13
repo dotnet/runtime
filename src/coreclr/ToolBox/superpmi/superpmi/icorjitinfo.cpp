@@ -1609,7 +1609,21 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
     jitInstance->mc->cr->AddCall("allocMem");
 
     // TODO-Cleanup: Could hot block size be ever 0?
-    *hotCodeBlock = jitInstance->mc->cr->allocateMemory(hotCodeSize);
+    size_t codeAlignment      = sizeof(void*);
+    size_t hotCodeAlignedSize = static_cast<size_t>(hotCodeSize);
+
+    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+         codeAlignment = 32;
+    }
+    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    {
+         codeAlignment = 16;
+    }
+    hotCodeAlignedSize = ALIGN_UP_SPMI(hotCodeAlignedSize, codeAlignment);
+    hotCodeAlignedSize = hotCodeAlignedSize + (codeAlignment - sizeof(void*));
+    *hotCodeBlock      = jitInstance->mc->cr->allocateMemory(hotCodeAlignedSize);
+    *hotCodeBlock      = ALIGN_UP_SPMI(*hotCodeBlock, codeAlignment);
 
     if (coldCodeSize > 0)
         *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);
@@ -1857,15 +1871,7 @@ WORD MyICJI::getRelocTypeHint(void* target)
 //
 DWORD MyICJI::getExpectedTargetArchitecture()
 {
-#if defined(TARGET_X86)
-    return IMAGE_FILE_MACHINE_I386;
-#elif defined(TARGET_AMD64)
-    return IMAGE_FILE_MACHINE_AMD64;
-#elif defined(TARGET_ARM)
-    return IMAGE_FILE_MACHINE_ARMNT;
-#elif defined(TARGET_ARM64)
-    return IMAGE_FILE_MACHINE_ARM64;
-#else
-    return IMAGE_FILE_MACHINE_UNKNOWN;
-#endif
+    jitInstance->mc->cr->AddCall("getExpectedTargetArchitecture");
+    DWORD result = jitInstance->mc->repGetExpectedTargetArchitecture();
+    return result;
 }

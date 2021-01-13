@@ -311,13 +311,6 @@ void CodeGen::genCodeForBBlist()
 
         genUpdateCurrentFunclet(block);
 
-#ifdef TARGET_XARCH
-        if (ShouldAlignLoops() && block->bbFlags & BBF_LOOP_HEAD)
-        {
-            GetEmitter()->emitLoopAlign();
-        }
-#endif
-
         genLogLabel(block);
 
         // Tell everyone which basic block we're working on
@@ -355,6 +348,14 @@ void CodeGen::genCodeForBBlist()
         {
             needLabel = true;
         }
+
+#if FEATURE_LOOP_ALIGN
+        if (GetEmitter()->emitEndsWithAlignInstr())
+        {
+            // we had better be planning on starting a new IG
+            assert(needLabel);
+        }
+#endif
 
         if (needLabel)
         {
@@ -667,10 +668,6 @@ void CodeGen::genCodeForBBlist()
 
         switch (block->bbJumpKind)
         {
-            case BBJ_ALWAYS:
-                inst_JMP(EJ_jmp, block->bbJumpDest);
-                break;
-
             case BBJ_RETURN:
                 genExitCode(block);
                 break;
@@ -741,14 +738,54 @@ void CodeGen::genCodeForBBlist()
 #endif // !FEATURE_EH_FUNCLETS
 
             case BBJ_NONE:
-            case BBJ_COND:
             case BBJ_SWITCH:
+                break;
+
+            case BBJ_ALWAYS:
+                inst_JMP(EJ_jmp, block->bbJumpDest);
+                FALLTHROUGH;
+
+            case BBJ_COND:
+
+#if FEATURE_LOOP_ALIGN
+                // This is the last place where we operate on blocks and after this, we operate
+                // on IG. Hence, if we know that the destination of "block" is the first block
+                // of a loop and needs alignment (it has BBF_LOOP_ALIGN), then "block" represents
+                // end of the loop. Propagate that information on the IG through "igLoopBackEdge".
+                //
+                // During emitter, this information will be used to calculate the loop size.
+                // Depending on the loop size, decision of whether to align a loop or not will be taken.
+
+                if (block->bbJumpDest->isLoopAlign())
+                {
+                    GetEmitter()->emitSetLoopBackEdge(block->bbJumpDest);
+                }
+#endif
                 break;
 
             default:
                 noway_assert(!"Unexpected bbJumpKind");
                 break;
         }
+
+#if FEATURE_LOOP_ALIGN
+
+        // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
+        // then need to add align instruction in current "block". Also mark the
+        // corresponding IG with IGF_LOOP_ALIGN to know that there will be align
+        // instructions at the end of that IG.
+        //
+        // For non-adaptive alignment, add alignment instruction of size depending on the
+        // compJitAlignLoopBoundary.
+        // For adaptive alignment, alignment instruction will always be of 15 bytes.
+
+        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        {
+            assert(ShouldAlignLoops());
+
+            GetEmitter()->emitLoopAlignment();
+        }
+#endif
 
 #if defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
         if (compiler->verbose)

@@ -466,6 +466,9 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
+#ifdef ENABLE_METADATA_UPDATE
+	interp_opts = "-inline"; /* FIXME: EnC hack - make this configurable */
+#endif
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);

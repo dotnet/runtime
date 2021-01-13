@@ -560,6 +560,35 @@ bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const
 }
 #endif // TARGET_X86
 
+//---------------------------------------------------------------------------
+// isNativePrimitiveStructType:
+//    Check if the given struct type is an intrinsic type that should be treated as though
+//    it is not a struct at the unmanaged ABI boundary.
+//
+// Arguments:
+//    clsHnd - the handle for the struct type.
+//
+// Return Value:
+//    true if the given struct type should be treated as a primitive for unmanaged calls,
+//    false otherwise.
+//
+bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
+{
+    if (!isIntrinsicType(clsHnd))
+    {
+        return false;
+    }
+    const char* namespaceName = nullptr;
+    const char* typeName      = getClassNameFromMetadata(clsHnd, &namespaceName);
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices") != 0)
+    {
+        return false;
+    }
+
+    return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
+}
+
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
 //     Get the "primitive" type that is is used for a struct
@@ -1013,14 +1042,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         }
     }
 #elif UNIX_X86_ABI
-    if (callConv != CorInfoCallConvExtension::Managed)
+    if (callConv != CorInfoCallConvExtension::Managed && !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
 #elif defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (callConvIsInstanceMethodCallConv(callConv))
+    if (callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
@@ -2308,7 +2337,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2614,6 +2643,29 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compDbgCode = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE);
     opts.compDbgInfo = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO);
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
+
+#ifdef DEBUG
+    opts.compJitAlignLoopAdaptive       = JitConfig.JitAlignLoopAdaptive() == 1;
+    opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
+    opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
+
+    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+#else
+    opts.compJitAlignLoopAdaptive       = true;
+    opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+#endif
+    if (opts.compJitAlignLoopAdaptive)
+    {
+        opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
+    }
+    else
+    {
+        opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary - 1;
+    }
+
+    assert(isPow2(opts.compJitAlignLoopBoundary));
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns
@@ -3913,19 +3965,17 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
         {
-            codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
-
-            // The zapper doesn't set JitFlags::JIT_FLAG_ALIGN_LOOPS, and there is
-            // no reason for it to set it as the JIT doesn't currently support loop alignment
-            // for prejitted images. (The JIT doesn't know the final address of the code, hence
+            // The JIT doesn't currently support loop alignment for prejitted images.
+            // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
-            assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS));
+
+            codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
         }
         else
         {
-            codeGen->SetAlignLoops(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS));
+            codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
         }
     }
 
