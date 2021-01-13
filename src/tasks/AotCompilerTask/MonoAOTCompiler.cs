@@ -132,6 +132,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
         {
             Log.LogError($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
+            return false;
         }
 
         if (UseLLVM)
