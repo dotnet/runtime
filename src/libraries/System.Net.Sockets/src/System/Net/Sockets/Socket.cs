@@ -3189,9 +3189,7 @@ namespace System.Net.Sockets
             SocketError socketError = SocketError.Success;
             try
             {
-                // TODO: CancellationToken handling
-
-                socketError = e.DoOperationDisconnect(this, _handle);
+                socketError = e.DoOperationDisconnect(this, _handle, cancellationToken);
             }
             catch
             {

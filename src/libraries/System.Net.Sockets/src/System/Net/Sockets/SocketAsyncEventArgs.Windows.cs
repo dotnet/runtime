@@ -143,8 +143,9 @@ namespace System.Net.Sockets
         /// <param name="success">true if the operation completed synchronously and successfully; otherwise, false.</param>
         /// <param name="bytesTransferred">The number of bytes transferred, if the operation completed synchronously and successfully.</param>
         /// <param name="overlapped">The overlapped to be freed if the operation completed synchronously.</param>
+        /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
         /// <returns>The result status of the operation.</returns>
-        private unsafe SocketError ProcessIOCPResult(bool success, int bytesTransferred, NativeOverlapped* overlapped)
+        private unsafe SocketError ProcessIOCPResult(bool success, int bytesTransferred, NativeOverlapped* overlapped, CancellationToken cancellationToken = default)
         {
             // Note: We need to dispose of the overlapped iff the operation completed synchronously,
             // and if we do, we must do so before we mark the operation as completed.
@@ -187,6 +188,7 @@ namespace System.Net.Sockets
 
             // Socket handle is going to post a completion to the completion port (may have done so already).
             // Return pending and we will continue in the completion port callback.
+            RegisterToCancelPendingIO(overlapped, cancellationToken);
             return SocketError.IOPending;
         }
 
@@ -326,7 +328,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationDisconnect(Socket socket, SafeSocketHandle handle)
+        internal unsafe SocketError DoOperationDisconnect(Socket socket, SafeSocketHandle handle, CancellationToken cancellationToken)
         {
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
@@ -337,7 +339,7 @@ namespace System.Net.Sockets
                     (int)(DisconnectReuseSocket ? TransmitFileOptions.ReuseSocket : 0),
                     0);
 
-                return ProcessIOCPResult(success, 0, overlapped);
+                return ProcessIOCPResult(success, 0, overlapped, cancellationToken);
             }
             catch
             {
