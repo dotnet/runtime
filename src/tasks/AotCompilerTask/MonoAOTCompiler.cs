@@ -131,7 +131,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
         {
-            throw new ArgumentException($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
+            Log.LogError($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
         }
 
         if (UseLLVM)
@@ -147,14 +147,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        switch (Mode)
+        if (!Enum.TryParse(Mode, true, out parsedAotMode))
         {
-            case "Normal": parsedAotMode = MonoAotMode.Normal; break;
-            case "Full": parsedAotMode = MonoAotMode.Full; break;
-            case "LLVMOnly": parsedAotMode = MonoAotMode.LLVMOnly; break;
-            case "AotInterp": parsedAotMode = MonoAotMode.LLVMOnly; break;
-            default:
-                throw new ArgumentException($"'{nameof(Mode)}' must be one of: '{nameof(MonoAotMode.Normal)}', '{nameof(MonoAotMode.Full)}', '{nameof(MonoAotMode.LLVMOnly)}', '{nameof(MonoAotMode.AotInterp)}'. Received: '{Mode}'.", nameof(Mode));
+            Log.LogError($"Unknown Mode value: {Mode}. '{nameof(Mode)}' must be one of: {string.Join(',', Enum.GetNames(typeof(MonoAotMode)))}");
+            return false;
         }
 
         switch (OutputType)

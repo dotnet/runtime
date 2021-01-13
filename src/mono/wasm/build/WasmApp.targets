@@ -130,7 +130,7 @@
     <PropertyGroup>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
-      <EmccFlags Condition="'$(RunAOTCompilation)' == 'false'">$(EmccFlags) -DDRIVER_GEN=1</EmccFlags>
+      <EmccFlags Condition="'$(RunAOTCompilation)' != 'true'">$(EmccFlags) -DDRIVER_GEN=1</EmccFlags>
       <_EmsdkEnvSourceCommand>source $(EMSDK_PATH)/emsdk_env.sh &gt; /dev/null 2&gt;&amp;1</_EmsdkEnvSourceCommand>
       <_EmccCommand>$(_EmsdkEnvSourceCommand) &amp;&amp; emcc</_EmccCommand>
     </PropertyGroup>
@@ -150,7 +150,7 @@ void mono_profiler_init_aot (const char *desc)%3B
 EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_profiler_init_aot (desc)%3B }
       </InitAotProfilerCmd>
     </PropertyGroup>
-    <WriteLinesToFile File="$(WasmBuildDir)driver-gen.c" Overwrite="true" 
+    <WriteLinesToFile File="$(WasmBuildDir)driver-gen.c" Overwrite="true"
                       Condition="'$(RunAOTCompilation)' == 'false' And '$(EnableProfiler)' == 'true'"
                       Lines="$(InitAotProfilerCmd)"
                       />

@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-var Module = { 
+var Module = {
     onRuntimeInitialized: function () {
         config.loaded_cb = function () {
             try {
@@ -17,11 +17,11 @@ var Module = {
         if (config.enable_profiler)
         {
             config.aot_profiler_options = {
-                write_at:"Sample.Test::StopProfile", 
+                write_at:"Sample.Test::StopProfile",
                 send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
             }
         }
-        
+
         try
         {
             MONO.mono_load_runtime_and_bcl_args (config);
