@@ -51,14 +51,14 @@
       Assemblies="@(AotInputAssemblies)"
       UseAotDataFile="false"
       AotProfilePath="$(AOTProfilePath)"
-      Profilers="aot;"
+      Profilers="$(WasmProfilers)"
       AotModulesTablePath="$(WasmBuildDir)driver-gen.c"
       UseLLVM="true"
       DisableParallelAot="true"
       LLVMPath="$(EMSDK_PATH)\upstream\bin">
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblies" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
-    <Message Text="_WasmAssemblies: @(_WasmAssemblies)" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">
