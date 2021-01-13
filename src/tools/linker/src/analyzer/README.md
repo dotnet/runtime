@@ -13,15 +13,19 @@ etc. The edges represent the dependencies.
 
 The linker analyzer needs a linker dependencies file as an input. It
 can be retrieved by enabling dependencies dumping during linking of a
-Xamarin.Android or a Xamarin.iOS project.
+Xamarin.Android, Xamarin.iOS, or .NET SDK style project.
 
-That can be done on the command line by setting
+For Xamarin.Android and Xamarin.iOS, that can be done on the command line by setting
 `LinkerDumpDependencies` property to `true` and building the
 project. (make sure the LinkAssemblies task is called, it might
 require cleaning the project sometimes) Usually it is enough to build
 the project like this:
 
 ```msbuild /p:LinkerDumpDependencies=true /p:Configuration=Release YourAppProject.csproj```
+
+For .NET SDK style projects, you will want to use `_TrimmerDumpDependencies` instead:
+
+```msbuild /p:_TrimmerDumpDependencies=true /p:Configuration=Release YourAppProject.csproj```
 
 After a successful build, there will be a linker-dependencies.xml.gz
 file created, containing the information for the analyzer.
