@@ -52,7 +52,6 @@ struct _rt_mono_array_iterator_internal_t {
 
 struct _rt_mono_table_internal_t {
 	GHashTable *table;
-	uint32_t count;
 };
 
 struct _rt_mono_table_iterator_internal_t {

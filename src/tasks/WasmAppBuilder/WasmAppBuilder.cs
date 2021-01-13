@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -16,16 +17,24 @@ using Microsoft.Build.Utilities;
 
 public class WasmAppBuilder : Task
 {
+    [NotNull]
     [Required]
     public string? AppDir { get; set; }
+
+    [NotNull]
     [Required]
     public string? MicrosoftNetCoreAppRuntimePackDir { get; set; }
+
+    [NotNull]
     [Required]
     public string? MainJS { get; set; }
+
+    [NotNull]
     [Required]
     public string[]? Assemblies { get; set; }
 
     private List<string> _fileWrites = new();
+
     [Output]
     public string[]? FileWrites => _fileWrites.ToArray();
 
@@ -38,6 +47,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
+    public ITaskItem[]? ExtraFilesToDeploy { get; set; }
 
     private class WasmAppConfig
     {
@@ -225,6 +235,22 @@ public class WasmAppBuilder : Task
             sw.Write($"config = {json};");
         }
         _fileWrites.Add(monoConfigPath);
+
+        if (ExtraFilesToDeploy != null)
+        {
+            foreach (ITaskItem item in ExtraFilesToDeploy!)
+            {
+                string src = item.ItemSpec;
+
+                string dstDir = Path.Combine(AppDir!, item.GetMetadata("TargetPath"));
+                if (!Directory.Exists(dstDir))
+                    Directory.CreateDirectory(dstDir);
+
+                string dst = Path.Combine(dstDir, Path.GetFileName(src));
+                if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
+                    return false;
+            }
+        }
 
         return true;
     }

@@ -22,6 +22,11 @@
         binaries that link against the static version. -->
     <NativeBinary Include="$(DotNetHostBinDir)/libnethost.lib" />
     <NativeBinary Include="$(DotNetHostBinDir)/PDB/libnethost.pdb" />
+    <NativeBinary Include="$(DotNetHostBinDir)/libhostfxr.lib" />
+    <NativeBinary Include="$(DotNetHostBinDir)/PDB/libhostfxr.pdb" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(StaticLibSuffix)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
