@@ -64,6 +64,7 @@ void MethodContext::Destroy()
 #include "lwmlist.h"
 
     delete cr;
+    FreeTempAllocations();
 }
 
 #define sparseAddLen(target)                                                                                           \
@@ -287,6 +288,8 @@ void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen
     unsigned int   localsize = 0;
     unsigned char  canary    = 0xff;
     unsigned char* buff3     = nullptr;
+
+    FreeTempAllocations();
 
     while (buffIndex < totalLen)
     {
@@ -5138,7 +5141,7 @@ DWORD MethodContext::repAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ft
     //
     // Add 16 bytes of represent writeable space
     size_t bufSize = maxOffset + 16;
-    *pInstrumentationData = (BYTE*)AllocPgoInstrumentationBySchema->CreateBuffer((unsigned)bufSize);
+    *pInstrumentationData = (BYTE*)AllocJitTempBuffer((unsigned)bufSize);
     cr->recAddressMap((void*)value.address, (void*)*pInstrumentationData, (unsigned)bufSize);
     return result;
 }
@@ -5205,7 +5208,7 @@ DWORD MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHn
     *pCountSchemaItems = (UINT32)tempValue.schemaCount;
     *pInstrumentationData  = (BYTE*)GetPgoInstrumentationResults->GetBuffer(tempValue.data_index);
 
-    *pSchema = (ICorJitInfo::PgoInstrumentationSchema*)GetPgoInstrumentationResults->CreateBuffer(tempValue.schemaCount * sizeof(ICorJitInfo::PgoInstrumentationSchema));
+    *pSchema = (ICorJitInfo::PgoInstrumentationSchema*)AllocJitTempBuffer(tempValue.schemaCount * sizeof(ICorJitInfo::PgoInstrumentationSchema));
 
     Agnostic_PgoInstrumentationSchema* pAgnosticSchema = (Agnostic_PgoInstrumentationSchema*)GetPgoInstrumentationResults->GetBuffer(tempValue.schema_index);
     for (UINT32 iSchema = 0; iSchema < tempValue.schemaCount; iSchema++)

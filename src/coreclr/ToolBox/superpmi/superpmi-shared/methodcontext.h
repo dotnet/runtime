@@ -1392,6 +1392,31 @@ private:
 
     // MD5 hasher
     static Hash m_hash;
+
+    // Scheme for jit time temporary allocations
+    struct DeletionNode
+    {
+        DeletionNode* pNext;
+    };
+    DeletionNode *nodesToDelete = nullptr;
+
+    void* AllocJitTempBuffer(size_t size)
+    {
+        DeletionNode *pDeletionNode = (DeletionNode *)malloc(sizeof(DeletionNode) + size);
+        pDeletionNode = this->nodesToDelete;
+        this->nodesToDelete = pDeletionNode;
+        return pDeletionNode + 1;
+    }
+
+    void FreeTempAllocations()
+    {
+        while (nodesToDelete != nullptr)
+        {
+            DeletionNode *next = nodesToDelete->pNext;
+            free(nodesToDelete);
+            nodesToDelete = next;
+        }
+    }
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
