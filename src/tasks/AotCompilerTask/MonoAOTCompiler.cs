@@ -103,6 +103,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? MsymPath { get; set; }
 
+    [Output]
     public List<string> FileWrites { get; } = new();
 
     private ConcurrentBag<ITaskItem> compiledAssemblies = new ConcurrentBag<ITaskItem>();
@@ -406,6 +407,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 throw new NotSupportedException();
             }
+            Log.LogMessage(MessageImportance.Low, $"Generated {AotModulesTablePath}");
         }
     }
 }

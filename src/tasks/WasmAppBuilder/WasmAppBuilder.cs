@@ -231,6 +231,7 @@ public class WasmAppBuilder : Task
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
         }
+
         if (EnableProfiler)
         {
             config.EnableProfiler = true;
