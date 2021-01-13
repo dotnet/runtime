@@ -1,12 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RunAOTCompilation>true</RunAOTCompilation>
-    <WasmCopyAppZipToHelixTestDir>true</WasmCopyAppZipToHelixTestDir>
-    <WasmHelixTestAppRelativeDir>\aot\browser\</WasmHelixTestAppRelativeDir>
-    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <Scenario>WasmTestOnBrowser</Scenario>
+    <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Content Include="index.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <WasmExtraFilesToDeploy Include="index.html" />
   </ItemGroup>
 </Project>

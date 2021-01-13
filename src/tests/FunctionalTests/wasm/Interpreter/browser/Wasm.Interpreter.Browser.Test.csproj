@@ -5,13 +5,11 @@
     <TestRuntime>true</TestRuntime>
     <Scenario>WasmTestOnBrowser</Scenario>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <WasmCopyAppZipToHelixTestDir>true</WasmCopyAppZipToHelixTestDir>
-    <WasmHelixTestAppRelativeDir>\interpreter\browser\</WasmHelixTestAppRelativeDir>
-    <WasmMainJSPath>runtime.js</WasmMainJSPath>
-    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
-
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
+    <Compile Include="Program.cs" />
+    <Content Include="index.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>
