@@ -232,34 +232,25 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
-#define EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+#define EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)) { \
 		EP_ASSERT (hash_map != NULL); \
 		EP_ASSERT (key_free_callback == NULL); \
 		hash_map->table = g_hash_table_new_full ((GHashFunc)hash_callback, (GEqualFunc)eq_callback, (GDestroyNotify)key_free_callback, (GDestroyNotify)value_free_callback); \
-		hash_map->count = 0;\
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, free) (hash_map_type *hash_map) { \
 		EP_ASSERT (hash_map != NULL); \
 		g_hash_table_destroy (hash_map->table); \
 		hash_map->table = NULL; \
-		hash_map->count = 0; \
 	} \
 	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add) (hash_map_type *hash_map, key_type key, value_type value) { \
 		EP_ASSERT (hash_map != NULL); \
-		g_hash_table_replace (hash_map->table, (gpointer)key, ((gpointer)(gsize)value)); \
-		hash_map->count++; \
+		g_hash_table_insert (hash_map->table, (gpointer)key, ((gpointer)(gsize)value)); \
 		return true; \
-	} \
-	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove) (hash_map_type *hash_map, const key_type key) { \
-		EP_ASSERT (hash_map != NULL); \
-		if (g_hash_table_remove (hash_map->table, (gconstpointer)key)) \
-			hash_map->count--; \
 	} \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove_all) (hash_map_type *hash_map) { \
 		EP_ASSERT (hash_map != NULL); \
 		g_hash_table_remove_all (hash_map->table); \
-		hash_map->count = 0; \
 	} \
 	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, lookup) (const hash_map_type *hash_map, const key_type key, value_type *value) { \
 		EP_ASSERT (hash_map != NULL && value != NULL); \
@@ -270,22 +261,40 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	} \
 	static inline uint32_t EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, count) (const hash_map_type *hash_map) { \
 		EP_ASSERT (hash_map != NULL); \
-		return hash_map->count; \
+		return (hash_map->table != NULL) ? g_hash_table_size (hash_map->table) : 0; \
 	} \
 	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, is_valid) (const hash_map_type *hash_map) { \
 		EP_ASSERT (hash_map != NULL); \
 		return (hash_map != NULL && hash_map->table != NULL); \
 	}
 
+#define EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add_or_replace) (hash_map_type *hash_map, key_type key, value_type value) { \
+		EP_ASSERT (hash_map != NULL); \
+		g_hash_table_replace (hash_map->table, (gpointer)key, ((gpointer)(gsize)value)); \
+		return true; \
+	}
+
+#define EP_RT_DEFINE_HASH_MAP_REMOVE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove) (hash_map_type *hash_map, const key_type key) { \
+		EP_ASSERT (hash_map != NULL); \
+		g_hash_table_remove (hash_map->table, (gconstpointer)key); \
+	}
+
 #define EP_RT_DEFINE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
+
+#define EP_RT_DEFINE_HASH_MAP_REMOVE(hash_map_name, hash_map_type, key_type, value_type) \
+	EP_RT_DEFINE_HASH_MAP_REMOVE_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
 
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(prefix_name, hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	static inline iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_begin) (const hash_map_type *hash_map) { \
 		EP_ASSERT (hash_map != NULL); \
 		iterator_type temp; \
 		g_hash_table_iter_init (&temp.iterator, hash_map->table); \
-		if (hash_map->table && hash_map->count > 0) \
+		if (hash_map->table && g_hash_table_size (hash_map->table) > 0) \
 			temp.end = !g_hash_table_iter_next (&temp.iterator, &temp.key, &temp.value); \
 		else \
 			temp.end = true; \
@@ -523,6 +532,28 @@ mono_eventpipe_fini (void);
 
 static
 inline
+EventPipeThreadHolder *
+thread_holder_alloc_func (void)
+{
+	EventPipeThreadHolder *instance = ep_thread_holder_alloc (ep_thread_alloc());
+	if (instance)
+		ep_thread_register (ep_thread_holder_get_thread (instance));
+	return instance;
+}
+
+static
+inline
+void
+thread_holder_free_func (EventPipeThreadHolder * thread_holder)
+{
+	if (thread_holder) {
+		ep_thread_unregister (ep_thread_holder_get_thread (thread_holder));
+		ep_thread_holder_free (thread_holder);
+	}
+}
+
+static
+inline
 MonoNativeThreadId
 ep_rt_mono_native_thread_id_get (void)
 {
@@ -570,7 +601,7 @@ ep_rt_mono_thread_exited (void)
 	if (ep_rt_mono_initialized) {
 		EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (ep_rt_mono_thread_holder_tls_id);
 		if (thread_holder)
-			ep_thread_holder_free (thread_holder);
+			thread_holder_free_func (thread_holder);
 		mono_native_tls_set_value (ep_rt_mono_thread_holder_tls_id, NULL);
 	}
 #else
@@ -705,22 +736,6 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
-
-static
-inline
-EventPipeThreadHolder *
-thread_holder_alloc_func (void)
-{
-	return ep_thread_holder_alloc (ep_thread_alloc());
-}
-
-static
-inline
-void
-thread_holder_free_func (EventPipeThreadHolder * thread_holder)
-{
-	ep_thread_holder_free (thread_holder);
-}
 
 static
 inline
@@ -897,7 +912,7 @@ EP_RT_DEFINE_LIST_ITERATOR (event_list, ep_rt_event_list_t, ep_rt_event_list_ite
  * EventPipeFile.
  */
 
-EP_RT_DEFINE_HASH_MAP(metadata_labels_hash, ep_rt_metadata_labels_hash_map_t, EventPipeEvent *, uint32_t)
+EP_RT_DEFINE_HASH_MAP_REMOVE(metadata_labels_hash, ep_rt_metadata_labels_hash_map_t, EventPipeEvent *, uint32_t)
 EP_RT_DEFINE_HASH_MAP(stack_hash, ep_rt_stack_hash_map_t, StackHashKey *, StackHashEntry *)
 EP_RT_DEFINE_HASH_MAP_ITERATOR(stack_hash, ep_rt_stack_hash_map_t, ep_rt_stack_hash_map_iterator_t, StackHashKey *, StackHashEntry *)
 
