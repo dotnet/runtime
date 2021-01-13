@@ -1,19 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <RunAOTCompilation>false</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <ExpectedExitCode>42</ExpectedExitCode>
+    <WasmCopyAppZipToHelixTestDir>true</WasmCopyAppZipToHelixTestDir>
+    <WasmHelixTestAppRelativeDir>\interpreter\console\</WasmHelixTestAppRelativeDir>
+    <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-  </ItemGroup>
-
-  <Target Name="SetMainAssemblyPath" BeforeTargets="Publish">
-    <PropertyGroup>
-      <WasmMainAssemblyPath>$(PublishDir)Wasm.Interpreter.Console.Test.dll</WasmMainAssemblyPath>
-    </PropertyGroup>
-  </Target>
 </Project>

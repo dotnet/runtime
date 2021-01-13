@@ -140,7 +140,7 @@ CallType CallUtils::GetDirectCallSiteInfo(MethodContext*            mc,
                   "Null method context passed into GetCallTargetInfo for call to target %016llX.", callTarget);
 
     CallType              targetType = CallType_Unknown;
-    MethodContext::DLD    functionEntryPoint;
+    DLD                   functionEntryPoint;
     CORINFO_METHOD_HANDLE methodHandle;
 
     // Try to first obtain a method handle associated with this call target
