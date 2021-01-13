@@ -12,4 +12,15 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
+    <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(WasmAppDir)" />
+  </Target>
+
+  <Target Name="SetMainAssemblyPath" BeforeTargets="Publish">
+    <PropertyGroup>
+      <WasmMainAssemblyPath>$(PublishDir)Wasm.Interpreter.Browser.Test.dll</WasmMainAssemblyPath>
+      <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    </PropertyGroup>
+  </Target>
 </Project>
