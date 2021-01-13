@@ -145,7 +145,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       </InitAotProfilerCmd>
     </PropertyGroup>
     <WriteLinesToFile File="$(WasmBuildDir)driver-gen.c" Overwrite="true" 
-                      Condition="'$(EnableProfiler)' == 'true'"
+                      Condition="'$(RunAOTCompilation)' == 'false' And '$(EnableProfiler)' == 'true'"
                       Lines="$(InitAotProfilerCmd)"
                       />
     <ItemGroup>
@@ -178,7 +178,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
    <PropertyGroup>
      <_WasmIncludeDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/include</_WasmIncludeDir>
      <_WasmSrcDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/src</_WasmSrcDir>
-     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 -I$(WasmBuildDir) -I$(_WasmIncludeDir)/mono-2.0 -I$(_WasmIncludeDir)/wasm</EmccCFlags>
+     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 -DDRIVER_GEN=1 -I$(WasmBuildDir) -I$(_WasmIncludeDir)/mono-2.0 -I$(_WasmIncludeDir)/wasm</EmccCFlags>
      <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
    </PropertyGroup>
 

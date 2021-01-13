@@ -63,6 +63,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? AotProfilePath { get; set; }
 
+    /// <summary>
+    /// List of profilers to use.
+    /// </summary>
     public string[]? Profilers { get; set; }
 
     /// <summary>
@@ -128,6 +131,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             // prevent using some random llc/opt from PATH (installed with clang)
             throw new ArgumentException($"'{nameof(LLVMPath)}' is required when '{nameof(UseLLVM)}' is true.", nameof(LLVMPath));
+        }
+
+        if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
+        {
+            throw new ArgumentException($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
         }
 
         if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
