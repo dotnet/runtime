@@ -832,7 +832,7 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 				set_update_method (image_base, generation, image_dmeta, token_index, il_address);
 			} else {
 				/* rva points probably into image_base IL stream. can this ever happen? */
-				g_print ("TODO: this case is still a bit WTF. token=0x%08x with rva=0x%04x\n", log_token, rva);
+				g_print ("TODO: this case is still a bit contrived. token=0x%08x with rva=0x%04x\n", log_token, rva);
 			}
 		} else if (token_table == MONO_TABLE_TYPEDEF) {
 			/* TODO: throw? */
