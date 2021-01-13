@@ -156,6 +156,7 @@ namespace System.Net.Sockets
                 {
                     // The socket handle is configured to skip completion on success,
                     // so we can set the results right now.
+                    _singleBufferHandleState = SingleBufferHandleState.None;
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncSuccess(bytesTransferred, SocketFlags.None);
 
@@ -174,6 +175,7 @@ namespace System.Net.Sockets
                 if (socketError != SocketError.IOPending)
                 {
                     // Completed synchronously with a failure.
+                    _singleBufferHandleState = SingleBufferHandleState.None;
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncFailure(socketError, bytesTransferred, SocketFlags.None);
 
@@ -187,10 +189,11 @@ namespace System.Net.Sockets
 
             // Socket handle is going to post a completion to the completion port (may have done so already).
             // Return pending and we will continue in the completion port callback.
-
-            // Hackety hack
-            //RegisterToCancelPendingIO(overlapped, cancellationToken);
-
+            if (_singleBufferHandleState == SingleBufferHandleState.InProcess)
+            {
+                RegisterToCancelPendingIO(overlapped, cancellationToken); // must happen before we change state to Set to avoid race conditions
+                _singleBufferHandleState = SingleBufferHandleState.Set;
+            }
             return SocketError.IOPending;
         }
 
@@ -335,6 +338,9 @@ namespace System.Net.Sockets
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
+                Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None, $"Expected None, got {_singleBufferHandleState}");
+                _singleBufferHandleState = SingleBufferHandleState.InProcess;
+
                 bool success = socket.DisconnectEx(
                     handle,
                     overlapped,
@@ -345,6 +351,7 @@ namespace System.Net.Sockets
             }
             catch
             {
+                _singleBufferHandleState = SingleBufferHandleState.None;
                 FreeNativeOverlapped(overlapped);
                 throw;
             }
