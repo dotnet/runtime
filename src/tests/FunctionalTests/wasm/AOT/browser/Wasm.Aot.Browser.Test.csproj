@@ -18,7 +18,7 @@
 
   <Target Name="SetMainAssemblyPath" BeforeTargets="Publish">
     <PropertyGroup>
-      <WasmMainAssemblyPath>$(PublishDir)Wasm.Interpreter.Browser.Test.dll</WasmMainAssemblyPath>
+      <WasmMainAssemblyPath>$(PublishDir)Wasm.AOT.Browser.Test.dll</WasmMainAssemblyPath>
       <WasmMainJSPath>runtime.js</WasmMainJSPath>
     </PropertyGroup>
   </Target>
