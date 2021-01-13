@@ -122,7 +122,6 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-#if false   // not implemented yet
     public sealed class Disconnect_Task : Disconnect<SocketHelperTask>
     {
         public Disconnect_Task(ITestOutputHelper output) : base(output) { }
@@ -130,9 +129,8 @@ namespace System.Net.Sockets.Tests
 
     public sealed class Disconnect_CancellableTask : Disconnect<SocketHelperCancellableTask>
     {
-        public Disconnect_Task(ITestOutputHelper output) : base(output) { }
+        public Disconnect_CancellableTask(ITestOutputHelper output) : base(output) { }
     }
-#endif
 
     public sealed class Disconnect_Eap : Disconnect<SocketHelperEap>
     {
