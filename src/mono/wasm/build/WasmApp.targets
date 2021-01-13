@@ -6,14 +6,35 @@
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
-      Public properties:
-      - WasmBuildDir    - Directory where build artifacts are stored.
-      - WasmBuildNative - Whenever to build the native executable. Defaults to false.
-      - WasmNativeStrip - Whenever to strip the native executable. Defaults to true.
+      Public properties (required):
+      - $(WasmBuildDir)    - Directory where build artifacts are stored (required if WasmBuildNative==true)
+      - $(WasmAppDir)      - AppBundle dir
+      - $(WasmMainAssemblyPath)
+      - $(WasmMainJSPath)
+      - $(EMSDK_PATH)      - points to the emscripten sdk location.
+
+      Public properties (optional):
+      - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
+      - $(WasmNativeStrip)   - Whenever to strip the native executable. Defaults to true.
+      - $(RunAOTCompilation) - Defaults to false.
+      - $(EnableProfiler)    - Defaults to false.
+      - $(WasmDebugLevel)
+
+      - $(WasmProfilers)     - Profilers to use. Defaults to `aot;`
+      - $(AOTMode)           - Defaults to `LLVMOnly`
+      - $(AotProfilePath)    - profile data file to be used for profile-guided optimization
+      - $(BuildAOTProfiled)  - Defaults to false.
+      - $(WasmInvariantGlobalization)
+
+      - $(WasmResolveAssembliesBeforeBuild) - Resolve the assembly dependencies. Defaults to false
+      - $(WasmAssemblySearchPaths)          - used for resolving assembly dependencies
+      - $(WasmSkipMissingAssemblies)        - Don't fail on any missing dependencies
 
       Public items:
-      - WasmExtraFilesToDeploy - Files to copy to $(WasmBuildDir).
-                                 (relative path can be set via %(TargetPath) metadata)
+      - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmBuildDir).
+                                    (relative path can be set via %(TargetPath) metadata)
+      - @(WasmSatelliteAssemblies)
+      - @(WasmFilesToIncludeInFileSystem) - Files to include in the vfs
   -->
 
   <PropertyGroup>
