@@ -33,6 +33,8 @@ public class WasmAppBuilder : Task
     [Required]
     public string[]? Assemblies { get; set; }
 
+    public bool EnableProfiler { get; set; }
+
     private List<string> _fileWrites = new();
 
     [Output]
@@ -59,6 +61,8 @@ public class WasmAppBuilder : Task
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remote_sources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
+        [JsonPropertyName("enable_profiler")]
+        public bool EnableProfiler { get; set; } = false;
     }
 
     private class AssetEntry
@@ -226,6 +230,10 @@ public class WasmAppBuilder : Task
             foreach (var source in RemoteSources)
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
+        }
+        if (EnableProfiler)
+        {
+            config.EnableProfiler = true;
         }
 
         string monoConfigPath = Path.Join(AppDir, "mono-config.js");
