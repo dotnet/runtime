@@ -2554,12 +2554,13 @@
         "4.6.0",
         "5.0.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "5.0.1",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "5.0.0",
+        "5.0.0.1": "5.0.1"
       }
     },
     "System.Diagnostics.FileVersionInfo": {
@@ -2593,7 +2594,7 @@
         "4.6.0",
         "5.0.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "5.0.1",
       "InboxOn": {
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -2605,7 +2606,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.1.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "5.0.0",
+        "5.0.0.1": "5.0.1"
       }
     },
     "System.Diagnostics.Process": {
@@ -6253,8 +6255,12 @@
       }
     },
     "System.Speech": {
+      "BaselineVersion": "5.0.0",
       "InboxOn": {
         "net45": "4.0.0.0"
+      },
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "5.0.0"
       }
     },
     "System.Text.Encoding": {
