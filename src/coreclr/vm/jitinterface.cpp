@@ -11948,10 +11948,12 @@ void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
 }
 
 /*********************************************************************/
-HRESULT CEEJitInfo::allocMethodBlockCounts (
-    UINT32                        count,           // count of <ILOffset, ExecutionCount> tuples
-    ICorJitInfo::BlockCounts **   pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
-    )
+HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            UINT32 countSchemaItems, /* IN */
+            BYTE** pInstrumentationData /* OUT */
+            )
 {
     CONTRACTL {
         THROWS;
@@ -11985,7 +11987,7 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
     hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
 #else // FEATURE_PREJIT
 #ifdef FEATURE_PGO
-    hr = PgoManager::allocMethodBlockCounts(m_pMethodBeingCompiled, count, pBlockCounts, codeSize);
+    hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
@@ -11999,12 +12001,13 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
 
 // Consider implementing getBBProfileData on CEEJitInfo.  This will allow us
 // to use profile info in codegen for non zapped images.
-HRESULT CEEJitInfo::getMethodBlockCounts (
-    CORINFO_METHOD_HANDLE         ftnHnd,
-    UINT32 *                      pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
-    ICorJitInfo::BlockCounts **   pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-    UINT32 *                      pNumRuns
-    )
+
+HRESULT CEEJitInfo::getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE      ftnHnd,
+            PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
+            UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
+            BYTE **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            )
 {
     CONTRACTL {
         THROWS;
@@ -12013,33 +12016,47 @@ HRESULT CEEJitInfo::getMethodBlockCounts (
     } CONTRACTL_END;
 
     HRESULT hr = E_FAIL;
-    *pCount = 0;
-    *pBlockCounts = NULL;
-    *pNumRuns = 0;
+    *pCountSchemaItems = 0;
+    *pInstrumentationData = NULL;
 
     JIT_TO_EE_TRANSITION();
 
 #ifdef FEATURE_PGO
 
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    unsigned codeSize = 0;
-    if (pMD->IsDynamicMethod())
+    ComputedPgoData* pDataCur = m_foundPgoData;
+
+    // Search linked list of previously found pgo information
+    for (; pDataCur != nullptr; pDataCur = pDataCur->m_next)
     {
-        unsigned stackSize, ehSize;
-        CorInfoOptions options;
-        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
-        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
-    }
-    else if (pMD->HasILHeader())
-    {
-        COR_ILMETHOD_DECODER decoder(pMD->GetILHeader());
-        codeSize = decoder.GetCodeSize();
+        if (pDataCur->m_pMD == pMD)
+        {
+            *pSchema = pDataCur->m_schema.GetElements();
+            *pCountSchemaItems = pDataCur->m_schema.GetCount();
+            *pInstrumentationData = pDataCur->m_pInstrumentationData;
+            hr = pDataCur->m_hr;
+            break;
+        }
     }
 
-    hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
+    if (pDataCur == nullptr)
+    {
+        // If not found in previous list, gather it here, and add to linked list
+        NewHolder<ComputedPgoData> newPgoData = new ComputedPgoData(pMD);
+        newPgoData->m_next = m_foundPgoData;
+        m_foundPgoData = newPgoData;
+        newPgoData.SuppressRelease();
+        
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_schema, &newPgoData->m_pInstrumentationData);
+        pDataCur = m_foundPgoData;
+    }
 
+    *pSchema = pDataCur->m_schema.GetElements();
+    *pCountSchemaItems = pDataCur->m_schema.GetCount();
+    *pInstrumentationData = pDataCur->m_pInstrumentationData;
+    hr = pDataCur->m_hr;
 #else
-    _ASSERTE(!"getMethodBlockCounts not implemented on CEEJitInfo!");
+    _ASSERTE(!"getPgoInstrumentationResults not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
 #endif
 
@@ -14299,21 +14316,24 @@ void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
     UNREACHABLE();      // only called on derived class.
 }
 
-HRESULT CEEInfo::allocMethodBlockCounts (
-        UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
-        BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
-        )
+HRESULT CEEInfo::allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            UINT32 countSchemaItems, /* IN */
+            BYTE** pInstrumentationData /* OUT */
+            )
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.
 }
 
-HRESULT CEEInfo::getMethodBlockCounts(
-        CORINFO_METHOD_HANDLE ftnHnd,
-        UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
-        BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-        UINT32 *              pNumRuns
-        )
+
+HRESULT CEEInfo::getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE      ftnHnd,
+            PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
+            UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
+            BYTE **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            )
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.

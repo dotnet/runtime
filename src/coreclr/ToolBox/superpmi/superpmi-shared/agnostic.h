@@ -463,18 +463,33 @@ struct Agnostic_IsCompatibleDelegate
     DWORDLONG delegateCls;
 };
 
-struct Agnostic_AllocMethodBlockCounts
+struct Agnostic_PgoInstrumentationSchema
+{
+    DWORDLONG Offset;
+    ICorJitInfo::PgoInstrumentationKind InstrumentationKind;
+    int32_t ILOffset;
+    int32_t Count;
+    int32_t Other;
+};
+
+struct Agnostic_AllocPgoInstrumentationBySchema
 {
     DWORDLONG address;
     DWORD count;
+    DWORD schema_index;
+    DWORD schemaCount;
     DWORD result;
 };
 
-struct Agnostic_GetMethodBlockCounts
+struct Agnostic_GetPgoInstrumentationResults
 {
     DWORD count;
     DWORD pBlockCounts_index;
     DWORD numRuns;
+    DWORD schemaCount;
+    DWORD dataByteCount;
+    DWORD schema_index;
+    DWORD data_index;
     DWORD result;
 };
 

@@ -83,6 +83,10 @@ LoaderAllocator::LoaderAllocator()
     m_pUMEntryThunkCache = NULL;
 
     m_nLoaderAllocator = InterlockedIncrement64((LONGLONG *)&LoaderAllocator::cLoaderAllocatorsCreated);
+
+#ifdef FEATURE_PGO
+    m_pgoManager = NULL;
+#endif
 }
 
 LoaderAllocator::~LoaderAllocator()

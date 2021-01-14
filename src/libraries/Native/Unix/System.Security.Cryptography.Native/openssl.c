@@ -7,6 +7,10 @@
 #include "pal_safecrt.h"
 #include "openssl.h"
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+#include "opensslshim.h"
+#endif
+
 #include <assert.h>
 #include <limits.h>
 #include <pthread.h>
@@ -1311,6 +1315,8 @@ int32_t CryptoNative_EnsureOpenSslInitialized()
     // If 1.0, call the 1.0 one.
     // Otherwise call the 1.1 one.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    InitializeOpenSSLShim();
+
     if (API_EXISTS(SSL_state))
     {
         return EnsureOpenSsl10Initialized();

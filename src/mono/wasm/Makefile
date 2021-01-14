@@ -55,6 +55,7 @@ MONO_LIBS = \
 	$(MONO_BIN_DIR)/libmonosgen-2.0.a \
 	$(MONO_BIN_DIR)/libmono-ilgen.a \
 	$(MONO_BIN_DIR)/libmono-icall-table.a \
+	$(MONO_BIN_DIR)/libmono-profiler-aot.a \
 	${NATIVE_BIN_DIR}/libSystem.Native.a \
 	${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a \
 	$(ICU_LIBDIR)/libicuuc.a \
