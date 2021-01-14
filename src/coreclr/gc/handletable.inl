@@ -33,6 +33,33 @@ inline void HndAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
     *(_UNCHECKED_OBJECTREF *)handle = value;
 }
 
+// This is used by the GC before we actually construct the object so we cannot
+// do the normal object verification.
+inline void HndAssignHandleGC(OBJECTHANDLE handle, uint8_t* objref)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // sanity
+    _ASSERTE(handle);
+
+    // unwrap the objectref we were given
+    _UNCHECKED_OBJECTREF value = (_UNCHECKED_OBJECTREF)(Object*)objref;
+
+    // if we are doing a non-NULL pointer store then invoke the write-barrier
+    if (value)
+        HndWriteBarrierWorker(handle, value);
+
+    // store the pointer
+    *(_UNCHECKED_OBJECTREF*)handle = value;
+}
+
+
 inline void* HndInterlockedCompareExchangeHandle(OBJECTHANDLE handle, OBJECTREF objref, OBJECTREF oldObjref)
 {
     WRAPPER_NO_CONTRACT;

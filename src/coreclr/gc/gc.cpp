@@ -9281,7 +9281,7 @@ size_t gc_heap::sort_mark_list()
             }
         }
 #else //USE_REGIONS
-        size_t ephemeral_size = heap_segment_allocated(hp->ephemeral_heap_segment) - hp->gc_low;
+        size_t ephemeral_size = heap_segment_allocated (hp->ephemeral_heap_segment) - hp->gc_low;
         total_ephemeral_size += ephemeral_size;
         low = min (low, hp->gc_low);
         high = max (high, heap_segment_allocated (hp->ephemeral_heap_segment));
@@ -9312,7 +9312,7 @@ size_t gc_heap::sort_mark_list()
     for (ptrdiff_t i = 0; i < item_count; i++)
     {
         uint8_t* item = mark_list[i];
-        assert (low <= item && item < high);
+        assert ((low <= item) && (item < high));
         mark_list_copy[i] = item;
     }
 #endif // _DEBUG || WRITE_SORT_DATA
@@ -9379,8 +9379,8 @@ size_t gc_heap::sort_mark_list()
         delete[] mark_list_piece_start;
         delete[] mark_list_piece_end;
 
-        mark_list_piece_start = new (nothrow) uint8_t * *[region_count];
-        mark_list_piece_end = new (nothrow) uint8_t * *[region_count];
+        mark_list_piece_start = new (nothrow) uint8_t** [region_count];
+        mark_list_piece_end   = new (nothrow) uint8_t** [region_count];
         if (mark_list_piece_start && mark_list_piece_end)
         {
             mark_list_piece_size = region_count;
@@ -9409,7 +9409,7 @@ size_t gc_heap::sort_mark_list()
         heap_segment* region = get_region_info_for_address (*x);
 
         // sanity check - the object on the mark list should be within the region
-        assert (heap_segment_mem (region) <= *x && *x < heap_segment_allocated (region));
+        assert ((heap_segment_mem (region) <= *x) && (*x < heap_segment_allocated (region)));
 
         size_t region_index = ((size_t)heap_segment_mem (region) >> gc_heap::min_segment_size_shr) - lowest_region_index;
         uint8_t* region_limit = heap_segment_allocated (region);
@@ -9719,7 +9719,7 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
 #ifdef USE_REGIONS
 // a variant of binary search that doesn't look for an exact match,
 // but finds the first element >= e
-static uint8_t** binary_search(uint8_t** left, uint8_t** right, uint8_t* e)
+static uint8_t** binary_search (uint8_t** left, uint8_t** right, uint8_t* e)
 {
     if (left == right)
         return left;
@@ -9754,8 +9754,8 @@ uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t**
 {
     // do a binary search over the sorted marked list to find start and end of the
     // mark list for this region
-    *mark_list_end_ptr = binary_search(mark_list, mark_list_index, end);
-    return binary_search(mark_list, mark_list_index, start);
+    *mark_list_end_ptr = binary_search (mark_list, mark_list_index, end);
+    return binary_search (mark_list, mark_list_index, start);
 }
 #endif //USE_REGIONS
 #endif //MULTIPLE_HEAPS
@@ -12312,14 +12312,15 @@ gc_heap::init_gc_heap (int  h_number)
 
 #ifdef USE_REGIONS
 #ifdef STRESS_REGIONS
+    // Handle table APIs expect coop so we temporarily switch to coop.
+    disable_preemptive (true);
     pinning_handles_for_alloc = new (nothrow) (OBJECTHANDLE[PINNING_HANDLE_INITIAL_LENGTH]);
 
-    gc_heap::disable_preemptive(TRUE);
     for (int i = 0; i < PINNING_HANDLE_INITIAL_LENGTH; i++)
     {
         pinning_handles_for_alloc[i] = g_gcGlobalHandleStore->CreateHandleOfType (0, HNDTYPE_PINNED);
     }
-    gc_heap::enable_preemptive();
+    enable_preemptive();
 
     ph_index_per_heap = 0;
     pinning_seg_interval = 2;
@@ -14756,7 +14757,7 @@ BOOL gc_heap::soh_try_fit (int gen_number,
                 {
                     // disable for GC in coreclr, as we run into an assert there because
                     // we cannot legally create an OBJECTREF where the object isn't baked.
-#if defined(STRESS_REGIONS) && defined(BUILD_AS_STANDALONE)
+#ifdef STRESS_REGIONS
                     uint8_t* res = acontext->alloc_ptr;
                     heap_segment* seg = ephemeral_heap_segment;
                     size_t region_size = get_region_size (seg);
@@ -14766,8 +14767,7 @@ BOOL gc_heap::soh_try_fit (int gen_number,
                          ((res == heap_segment_mem (seg)) ||
                           ((res >= (region_mid - size)) && (res < (region_mid + size)))))
                     {
-                        HndAssignHandle(pinning_handles_for_alloc[ph_index_per_heap], 
-                            ObjectToOBJECTREF ((Object*)(acontext->alloc_ptr)));
+                        HndAssignHandleGC (pinning_handles_for_alloc[ph_index_per_heap], acontext->alloc_ptr);
                         dprintf (REGIONS_LOG, ("h%d pinning object at %Ix on eph seg %Ix (ph#%d)",
                             heap_number, res, heap_segment_mem (seg), ph_index_per_heap));
 
@@ -14777,7 +14777,7 @@ BOOL gc_heap::soh_try_fit (int gen_number,
                             ph_index_per_heap = 0;
                         }
                     }
-#endif //STRESS_REGIONS && BUILD_AS_STANDALONE
+#endif //STRESS_REGIONS
                     break;
                 }
 
@@ -25517,7 +25517,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 current_brick = brick_of (x);
 #if defined(USE_REGIONS) && defined(MARK_LIST)
                 if (use_mark_list)
-                    mark_list_next = get_region_mark_list(x, end, &mark_list_index);
+                    mark_list_next = get_region_mark_list (x, end, &mark_list_index);
 #endif //USE_REGIONS && MARK_LIST
                 dprintf(3,( " From %Ix to %Ix", (size_t)x, (size_t)end));
                 continue;
@@ -25581,7 +25581,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     current_brick = brick_of (x);
 #ifdef MARK_LIST
                     if (use_mark_list)
-                        mark_list_next = get_region_mark_list(x, end, &mark_list_index);
+                        mark_list_next = get_region_mark_list (x, end, &mark_list_index);
 #endif //MARK_LIST
                     dprintf (REGIONS_LOG,("h%d switching to gen%d start region %Ix to %Ix",
                         heap_number, active_old_gen_number, x, end));
