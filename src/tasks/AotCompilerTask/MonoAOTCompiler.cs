@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
@@ -369,7 +370,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 }
                 writer.WriteLine("}");
 
-                foreach (var profiler in profilers!)
+                foreach (var profiler in profilers ?? Enumerable.Empty<string>())
                 {
                     writer.WriteLine($"void mono_profiler_init_{profiler} (const char *desc);");
                     writer.WriteLine("EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_" + profiler + " (const char *desc) { mono_profiler_init_" + profiler + " (desc); }");
