@@ -17,10 +17,9 @@
       - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
       - $(WasmNativeStrip)   - Whenever to strip the native executable. Defaults to true.
       - $(RunAOTCompilation) - Defaults to false.
-      - $(EnableProfiler)    - Defaults to false.
       - $(WasmDebugLevel)
 
-      - $(WasmProfilers)     - Profilers to use. Defaults to `aot;`
+      - $(WasmProfilers)     - Profilers to use
       - $(AOTMode)           - Defaults to `LLVMOnly`
       - $(AotProfilePath)    - profile data file to be used for profile-guided optimization
       - $(BuildAOTProfiled)  - Defaults to false.
@@ -35,6 +34,15 @@
                                     (relative path can be set via %(TargetPath) metadata)
       - @(WasmSatelliteAssemblies)
       - @(WasmFilesToIncludeInFileSystem) - Files to include in the vfs
+
+      - @(WasmExtraConfig)        - json elements to add to `mono-config.js`
+                                    Eg. <WasmExtraConfig Include="enable_profiler" Value="true" />
+
+                                    - Value attribute can have a number, bool, quoted string, or json string
+
+                                    <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
+                                    <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
+                                    <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
   -->
 
   <PropertyGroup>
@@ -113,7 +121,6 @@
       AppDir="$(WasmAppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
       MainJS="$(WasmMainJSPath)"
-      EnableProfiler="$(EnableProfiler)"
       Assemblies="@(_WasmAssemblies)"
       InvariantGlobalization="$(WasmInvariantGlobalization)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
@@ -121,6 +128,7 @@
       IcuDataFileName="$(WasmIcuDataFileName)"
       RemoteSources="@(WasmRemoteSources)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
+      ExtraConfig="@(WasmExtraConfig)"
       DebugLevel="$(WasmDebugLevel)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
@@ -207,7 +215,7 @@
     <Exec Condition="'$(WasmNativeStrip)' == 'true'" Command="bash -c '$(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf dotnet.wasm -o dotnet.wasm'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
   </Target>
 
-  <Target Name="_GenerateDriverGenC" Condition="'$(RunAOTCompilation)' != 'true' and '$(EnableProfiler)' == 'true'">
+  <Target Name="_GenerateDriverGenC" Condition="'$(RunAOTCompilation)' != 'true' and '$(WasmProfilers)' != ''">
     <PropertyGroup>
       <EmccFlags>$(EmccFlags) -DDRIVER_GEN=1</EmccFlags>
       <InitAotProfilerCmd>
