@@ -2918,6 +2918,7 @@ public:
     virtual void SuspendForGarbageCollectionCompleted();
     virtual void ResumeForGarbageCollectionStarted();
 #endif
+    BOOL m_isSuspendedForGarbageCollection;
     BOOL m_isBlockedOnGarbageCollectionEvent;
     BOOL m_willBlockOnGarbageCollectionEvent;
     BOOL m_isGarbageCollectionEventsEnabled;
