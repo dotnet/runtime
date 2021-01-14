@@ -37,11 +37,14 @@ namespace System.Net.Http
         internal bool DeflateEnabled => (_decompressionMethods & DecompressionMethods.Deflate) != 0;
         internal bool BrotliEnabled => (_decompressionMethods & DecompressionMethods.Brotli) != 0;
         
-        private bool EncodingExists(HttpHeaderValueCollection<StringWithQualityHeaderValue> acceptEncodingHeader, string encoding)
+        private static bool EncodingExists(HttpHeaderValueCollection<StringWithQualityHeaderValue> acceptEncodingHeader, string encoding)
         {
-            foreach (var existingEncoding in acceptEncodingHeader)
+            foreach (StringWithQualityHeaderValue existingEncoding in acceptEncodingHeader)
             {
-                if (string.Equals(existingEncoding.Value, encoding, StringComparison.OrdinalIgnoreCase)) return true;
+                if (string.Equals(existingEncoding.Value, encoding, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
             }
 
             return false;
