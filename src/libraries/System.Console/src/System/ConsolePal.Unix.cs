@@ -1235,6 +1235,11 @@ namespace System
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
         private static unsafe void Write(SafeFileHandle fd, byte[] buffer, int offset, int count, bool mayChangeCursorPosition = true)
         {
+            // Console initialization might emit data to stdout.
+            // In order to avoid splitting user data we need to
+            // complete it before any writes are performed.
+            EnsureConsoleInitialized();
+
             fixed (byte* bufPtr = buffer)
             {
                 Write(fd, bufPtr + offset, count, mayChangeCursorPosition);
