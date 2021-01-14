@@ -36,6 +36,8 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DECLARE_LIST(list_name, list_type, item_type) \
 	EP_RT_DECLARE_LIST_PREFIX(ep, list_name, list_type, item_type)
 
+#define EP_RT_DEFINE_LIST ep_rt_redefine
+
 #define EP_RT_DECLARE_LIST_ITERATOR_PREFIX(prefix_name, list_name, list_type, iterator_type, item_type) \
 	static iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_begin) (const list_type *list); \
 	static bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_end) (const list_type *list, const iterator_type *iterator); \
@@ -43,7 +45,9 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	static item_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_value) (const iterator_type *iterator);
 
 #define EP_RT_DECLARE_LIST_ITERATOR(list_name, list_type, iterator_type, item_type) \
-	EP_RT_DECLARE_LIST_ITERATOR_PREFIX(ep, list_name, list_type, iterator_type, item_type) \
+	EP_RT_DECLARE_LIST_ITERATOR_PREFIX(ep, list_name, list_type, iterator_type, item_type)
+
+#define EP_RT_DEFINE_LIST_ITERATOR ep_rt_redefine
 
 #define EP_RT_DECLARE_QUEUE_PREFIX(prefix_name, queue_name, queue_type, item_type) \
 	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, alloc) (queue_type *queue); \
@@ -56,6 +60,8 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 
 #define EP_RT_DECLARE_QUEUE(queue_name, queue_type, item_type) \
 	EP_RT_DECLARE_QUEUE_PREFIX(ep, queue_name, queue_type, item_type)
+
+#define EP_RT_DEFINE_QUEUE ep_rt_redefine
 
 #define EP_RT_DECLARE_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc) (array_type *ep_array); \
@@ -75,8 +81,12 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DECLARE_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DECLARE_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
+#define EP_RT_DEFINE_ARRAY ep_rt_redefine
+
 #define EP_RT_DECLARE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DECLARE_LOCAL_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#define EP_RT_DEFINE_LOCAL_ARRAY ep_rt_redefine
 
 #define EP_RT_DECLARE_ARRAY_ITERATOR_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_begin) (const array_type *ep_array); \
@@ -91,10 +101,14 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	static item_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, reverse_iterator_value) (const iterator_type *iterator);
 
 #define EP_RT_DECLARE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DECLARE_ARRAY_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type) \
+	EP_RT_DECLARE_ARRAY_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#define EP_RT_DEFINE_ARRAY_ITERATOR ep_rt_redefine
 
 #define EP_RT_DECLARE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DECLARE_ARRAY_REVERSE_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type) \
+	EP_RT_DECLARE_ARRAY_REVERSE_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR ep_rt_redefine
 
 #define EP_RT_DECLARE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
 	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)); \
@@ -116,8 +130,12 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DECLARE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
 	EP_RT_DECLARE_HASH_MAP_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
 
+#define EP_RT_DEFINE_HASH_MAP ep_rt_redefine
+
 #define EP_RT_DECLARE_HASH_MAP_REMOVE(hash_map_name, hash_map_type, key_type, value_type) \
 	EP_RT_DECLARE_HASH_MAP_REMOVE_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
+
+#define EP_RT_DEFINE_HASH_MAP_REMOVE ep_rt_redefine
 
 #define EP_RT_DECLARE_HASH_MAP_ITERATOR_PREFIX(prefix_name, hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	static iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_begin) (const hash_map_type *hash_map); \
@@ -128,6 +146,8 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 
 #define EP_RT_DECLARE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	EP_RT_DECLARE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
+
+#define EP_RT_DEFINE_HASH_MAP_ITERATOR ep_rt_redefine
 
 /*
 * Atomics.
@@ -414,7 +434,7 @@ ep_rt_wait_event_wait (
 
 static
 EventPipeWaitHandle
-ep_rt_wait_event_get_handle (ep_rt_wait_event_handle_t *wait_event);
+ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event);
 
 static
 bool
@@ -469,6 +489,8 @@ ep_rt_object_free (void *ptr);
 /*
  * PAL.
  */
+
+#define EP_RT_DEFINE_THREAD_FUNC ep_rt_redefine
 
 static
 bool

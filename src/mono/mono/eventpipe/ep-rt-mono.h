@@ -87,6 +87,7 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	} \
 	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, is_valid) (const list_type *list) { return (list != NULL && list->list == NULL); }
 
+#undef EP_RT_DEFINE_LIST
 #define EP_RT_DEFINE_LIST(list_name, list_type, item_type) \
 	EP_RT_DEFINE_LIST_PREFIX(ep, list_name, list_type, item_type)
 
@@ -110,6 +111,7 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 		return ((item_type)(gsize)(iterator->iterator->data)); \
 	}
 
+#undef EP_RT_DEFINE_LIST_ITERATOR
 #define EP_RT_DEFINE_LIST_ITERATOR(list_name, list_type, iterator_type, item_type) \
 	EP_RT_DEFINE_LIST_ITERATOR_PREFIX(ep, list_name, list_type, iterator_type, item_type)
 
@@ -141,6 +143,7 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	} \
 	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, is_valid) (const queue_type *queue) { return (queue != NULL && queue->queue != NULL); }
 
+#undef EP_RT_DEFINE_QUEUE
 #define EP_RT_DEFINE_QUEUE(queue_name, queue_type, item_type) \
 	EP_RT_DEFINE_QUEUE_PREFIX(ep, queue_name, queue_type, item_type)
 
@@ -194,9 +197,11 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 		g_array_free (ep_array->array, TRUE); \
 	}
 
+#undef EP_RT_DEFINE_ARRAY
 #define EP_RT_DEFINE_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
+#undef EP_RT_DEFINE_LOCAL_ARRAY
 #define EP_RT_DEFINE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
@@ -243,9 +248,11 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 		return g_array_index(iterator->array, item_type, iterator->index); \
 	}
 
+#undef EP_RT_DEFINE_ARRAY_ITERATOR
 #define EP_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
+#undef EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR
 #define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
@@ -300,9 +307,11 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 		g_hash_table_remove (hash_map->table, (gconstpointer)key); \
 	}
 
+#undef EP_RT_DEFINE_HASH_MAP
 #define EP_RT_DEFINE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
 
+#undef EP_RT_DEFINE_HASH_MAP_REMOVE
 #define EP_RT_DEFINE_HASH_MAP_REMOVE(hash_map_name, hash_map_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_REMOVE_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
 
@@ -334,16 +343,12 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 		return ((value_type)(gsize)iterator->value); \
 	}
 
+#undef EP_RT_DEFINE_HASH_MAP_ITERATOR
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
 
-typedef MonoThreadStart ep_rt_thread_start_func;
-typedef mono_thread_start_return_t ep_rt_thread_start_func_return_t;
-
 typedef EventPipeThreadHolder * (*ep_rt_thread_holder_alloc_func)(void);
 typedef void (*ep_rt_thread_holder_free_func)(EventPipeThreadHolder *thread_holder);
-
-#define EP_RT_DEFINE_THREAD_FUNC(name) static mono_thread_start_return_t WINAPI name (gpointer data)
 
 typedef int (*ep_rt_mono_cpu_count_func)(void);
 typedef int (*ep_rt_mono_process_current_pid_func)(void);
@@ -1059,6 +1064,27 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 EP_RT_DEFINE_LIST (session_provider_list, ep_rt_session_provider_list_t, EventPipeSessionProvider *)
 EP_RT_DEFINE_LIST_ITERATOR (session_provider_list, ep_rt_session_provider_list_t, ep_rt_session_provider_list_iterator_t, EventPipeSessionProvider *)
 
+static
+inline
+int
+compare_session_provider_name (
+	gconstpointer a,
+	gconstpointer b)
+{
+	return (a) ? ep_rt_utf8_string_compare (ep_session_provider_get_provider_name ((EventPipeSessionProvider *)a), (const ep_char8_t *)b) : 1;
+}
+
+static
+inline
+EventPipeSessionProvider *
+ep_rt_session_provider_list_find_by_name (
+	const ep_rt_session_provider_list_t *list,
+	const ep_char8_t *name)
+{
+	GSList *item = g_slist_find_custom (list->list, name, compare_session_provider_name);
+	return (item != NULL) ? (EventPipeSessionProvider *)item->data : NULL;
+}
+
 /*
  * EventPipeSequencePoint.
  */
@@ -1095,27 +1121,6 @@ EP_RT_DEFINE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_st
 #undef EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY
 #define EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY(var_name) \
 	ep_rt_thread_session_state_array_t var_name
-
-static
-inline
-int
-compare_session_provider_name (
-	gconstpointer a,
-	gconstpointer b)
-{
-	return (a) ? ep_rt_utf8_string_compare (ep_session_provider_get_provider_name ((EventPipeSessionProvider *)a), (const ep_char8_t *)b) : 1;
-}
-
-static
-inline
-EventPipeSessionProvider *
-ep_rt_session_provider_list_find_by_name (
-	const ep_rt_session_provider_list_t *list,
-	const ep_char8_t *name)
-{
-	GSList *item = g_slist_find_custom (list->list, name, compare_session_provider_name);
-	return (item != NULL) ? (EventPipeSessionProvider *)item->data : NULL;
-}
 
 /*
  * Arrays.
@@ -1341,17 +1346,13 @@ ep_rt_object_free (void *ptr)
  * PAL.
  */
 
-typedef struct ep_rt_thread_params_t {
-	ep_rt_thread_handle_t thread;
-	EventPipeThreadType thread_type;
-	ep_rt_thread_start_func thread_func;
-	void *thread_params;
-} ep_rt_thread_params_t;
-
 typedef struct _rt_mono_thread_params_internal_t {
 	ep_rt_thread_params_t thread_params;
 	bool background_thread;
 } rt_mono_thread_params_internal_t;
+
+#undef EP_RT_DEFINE_THREAD_FUNC
+#define EP_RT_DEFINE_THREAD_FUNC(name) static mono_thread_start_return_t WINAPI name (gpointer data)
 
 EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 {
@@ -1620,6 +1621,42 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 }
 
 /*
+* Lock.
+*/
+
+static
+bool
+ep_rt_lock_aquire (ep_rt_lock_handle_t *lock)
+{
+	EP_UNREACHABLE ("Not implemented on Mono.");
+}
+
+static
+bool
+ep_rt_lock_release (ep_rt_lock_handle_t *lock)
+{
+	EP_UNREACHABLE ("Not implemented on Mono.");
+}
+
+#ifdef EP_CHECKED_BUILD
+static
+inline
+void
+ep_rt_lock_requires_lock_held (const ep_rt_lock_handle_t *lock)
+{
+	EP_UNREACHABLE ("Not implemented on Mono.");
+}
+
+static
+inline
+void
+ep_rt_lock_requires_lock_not_held (const ep_rt_lock_handle_t *lock)
+{
+	EP_UNREACHABLE ("Not implemented on Mono.");
+}
+#endif
+
+/*
 * SpinLock.
 */
 
@@ -1745,16 +1782,6 @@ ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
 
 static
 inline
-ep_char16_t *
-ep_rt_utf8_to_utf16_string (
-	const ep_char8_t *str,
-	size_t len)
-{
-	return (ep_char16_t *)(g_utf8_to_utf16 ((const gchar *)str, len, NULL, NULL, NULL));
-}
-
-static
-inline
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str)
 {
@@ -1778,6 +1805,16 @@ ep_rt_utf8_string_strtok (
 	str_len, \
 	format, ...) \
 g_snprintf ((gchar *)str, (gulong)str_len, (const gchar *)format, __VA_ARGS__)
+
+static
+inline
+ep_char16_t *
+ep_rt_utf8_to_utf16_string (
+	const ep_char8_t *str,
+	size_t len)
+{
+	return (ep_char16_t *)(g_utf8_to_utf16 ((const gchar *)str, len, NULL, NULL, NULL));
+}
 
 static
 inline

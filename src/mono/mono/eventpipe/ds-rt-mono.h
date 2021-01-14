@@ -57,15 +57,19 @@
 	MONO_EXIT_GC_SAFE \
 	MONO_REQ_GC_UNSAFE_MODE
 
+#undef DS_RT_DEFINE_ARRAY
 #define DS_RT_DEFINE_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
 
+#undef DS_RT_DEFINE_LOCAL_ARRAY
 #define DS_RT_DEFINE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
 
+#undef DS_RT_DEFINE_ARRAY_ITERATOR
 #define DS_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
 
+#undef DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR
 #define DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
 
