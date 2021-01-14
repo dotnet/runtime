@@ -9187,7 +9187,7 @@ private:
             // because genReturnBB is used for non-constant returns and its
             // corresponding entry in the returnConstants array is garbage.
             // Check the returnBlocks[] first, so we don't access an uninitialized
-            // returnContants[] value (which some tools like valgrind will
+            // returnConstants[] value (which some tools like valgrind will
             // complain about).
 
             BasicBlock* returnBlock = returnBlocks[i];
