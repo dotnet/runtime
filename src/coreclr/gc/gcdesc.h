@@ -59,13 +59,6 @@ struct val_serie_item
     }
 };
 
-struct val_array_series
-{
-    val_serie_item  items[1];
-    size_t          m_startOffset;
-    size_t          m_count;
-};
-
 typedef DPTR(class CGCDescSeries) PTR_CGCDescSeries;
 typedef DPTR(class MethodTable) PTR_MethodTable;
 class CGCDescSeries

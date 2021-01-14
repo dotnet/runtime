@@ -10,7 +10,7 @@ namespace IlasmPortablePdbTests
 {
     public static class IlasmPortablePdbTesterCommon
     {
-        public const string CommonIlasmArguments = "-nologo -dll -debug -pdbfmt=portable";
+        public const string CommonIlasmArguments = "-nologo -dll -debug";
 
         public static string GetIlasmFullPath(string coreRootVar, string ilasmFile)
         {

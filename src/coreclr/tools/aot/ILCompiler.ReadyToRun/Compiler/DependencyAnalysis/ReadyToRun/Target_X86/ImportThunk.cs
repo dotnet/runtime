@@ -29,17 +29,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!relocsOnly)
                     {
                         // push table index
-                        instructionEncoder.EmitPUSH((sbyte)_instanceCell.Table.IndexFromBeginningOfArray);
+                        instructionEncoder.EmitPUSH((sbyte)_containingImportSection.IndexFromBeginningOfArray);
                     }
 
                     // push [module]
-                    instructionEncoder.EmitPUSH(_moduleImport);
+                    instructionEncoder.EmitPUSH(factory.ModuleImport);
 
                     break;
 
                 case Kind.Lazy:
                     // mov edx, [module]
-                    instructionEncoder.EmitMOV(Register.EDX, _moduleImport);
+                    instructionEncoder.EmitMOV(Register.EDX, factory.ModuleImport);
                     break;
             }
             instructionEncoder.EmitJMP(_helperCell);

@@ -771,6 +771,11 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
 	mono_domain_unlock (domain);
 }
 
+/*
+ * mono_jit_info_add_aot_module:
+ *
+ *   Associate the AOT code range [start, end) with IMAGE in the JIT info table.
+ */
 void
 mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 {

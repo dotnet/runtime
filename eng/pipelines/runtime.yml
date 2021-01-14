@@ -54,7 +54,8 @@ jobs:
 #
 # Checkout repository and evaluate paths
 #
-- template: /eng/pipelines/common/checkout-and-evaluate-paths.yml
+- ${{ if eq(variables.useCheckoutBundle, true) }}:
+  - template: /eng/pipelines/common/checkout-and-evaluate-paths.yml
 
 #
 # Build CoreCLR checked

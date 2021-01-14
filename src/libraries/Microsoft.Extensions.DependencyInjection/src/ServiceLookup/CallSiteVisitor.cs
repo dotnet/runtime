@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 case CallSiteKind.ServiceScopeFactory:
                     return VisitServiceScopeFactory((ServiceScopeFactoryCallSite)callSite, argument);
                 default:
-                    throw new NotSupportedException($"Call site type {callSite.GetType()} is not supported");
+                    throw new NotSupportedException(SR.Format(SR.CallSiteTypeNotSupported, callSite.GetType()));
             }
         }
 

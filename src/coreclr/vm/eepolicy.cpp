@@ -536,8 +536,6 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 // Though we would like to remove the usage of ExecutionEngineException in any manner,
                 // we cannot. Its okay to use it in the case below since the process is terminating
                 // and this will serve as an exception object for debugger.
-                // We avoid calling CLRException::GetPreallocatedExecutionEngineExceptionHandle to avoid
-                // an assertion in case the exception has not been allocated yet.
                 ohException = g_pPreallocatedExecutionEngineException;
             }
 

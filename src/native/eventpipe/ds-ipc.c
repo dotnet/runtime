@@ -384,6 +384,8 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 					EP_ASSERT (port != NULL);
 					if (!stream) {  // only use first signaled stream; will get others on subsequent calls
 						stream = ds_port_get_connected_stream_vcall (port, callback);
+						if (!stream)
+							saw_error = true;
 						_ds_current_port = port;
 					}
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - SIG :: Poll attempt: %d, connection %d signalled.\n", poll_attempts, connection_id);

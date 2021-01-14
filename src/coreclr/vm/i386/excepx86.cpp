@@ -1107,13 +1107,12 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
     if (pThread->IsRudeAbort())
     {
-        OBJECTREF rudeAbortThrowable = CLRException::GetPreallocatedRudeThreadAbortException();
-
-        if (pThread->GetThrowable() != rudeAbortThrowable)
+        OBJECTREF throwable = pThread->GetThrowable();
+        if (throwable == NULL || !IsExceptionOfType(kThreadAbortException, &throwable))
         {
             // Neither of these sets will throw because the throwable that we're setting is a preallocated
             // exception. This also updates the last thrown exception, for rethrows.
-            pThread->SafeSetThrowables(rudeAbortThrowable);
+            pThread->SafeSetThrowables(CLRException::GetBestThreadAbortException());
         }
 
         if (!pThread->IsRudeAbortInitiated())

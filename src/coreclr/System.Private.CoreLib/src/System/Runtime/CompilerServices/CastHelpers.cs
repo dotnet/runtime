@@ -291,18 +291,13 @@ namespace System.Runtime.CompilerServices
                 mt = mt->ParentMethodTable;
             }
 
-            if (RuntimeHelpers.GetMethodTable(obj)->HasTypeEquivalence)
-            {
-                goto slowPath;
-            }
+            // this helper is not supposed to be used with type-equivalent "to" type.
+            Debug.Assert(!((MethodTable*)toTypeHnd)->HasTypeEquivalence);
 
             obj = null;
 
         done:
             return obj;
-
-        slowPath:
-            return IsInstance_Helper(toTypeHnd, obj);
         }
 
         [DebuggerHidden]

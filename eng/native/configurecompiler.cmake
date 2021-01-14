@@ -641,23 +641,4 @@ if (CLR_CMAKE_HOST_WIN32)
 else (CLR_CMAKE_HOST_WIN32)
     enable_language(ASM)
 
-    # Ensure that awk is present
-    find_program(AWK awk)
-    if (AWK STREQUAL "AWK-NOTFOUND")
-        message(FATAL_ERROR "AWK not found")
-    endif()
-
-    # detect linker
-    set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
-    execute_process(COMMAND ${ldVersion}
-        ERROR_QUIET
-        OUTPUT_VARIABLE ldVersionOutput)
-
-    if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
-        set(LD_GNU 1)
-    elseif("${ldVersionOutput}" MATCHES "Solaris Link")
-        set(LD_SOLARIS 1)
-    else(CLR_CMAKE_HOST_OSX)
-        set(LD_OSX 1)
-    endif()
 endif(CLR_CMAKE_HOST_WIN32)

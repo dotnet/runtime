@@ -1309,10 +1309,9 @@ int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 #endif
 }
 
-#ifdef __sun
-
 int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
 {
+#ifdef __sun
     char statusFilename[64];
     snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
 
@@ -1333,6 +1332,9 @@ int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStat
     }
 
     return 0;
-}
-
+#else
+    (void)pid, (void)processStatus;
+    errno = ENOTSUP;
+    return -1;
 #endif // __sun
+}

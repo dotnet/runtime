@@ -1190,13 +1190,6 @@ void SystemDomain::CreatePreallocatedExceptions()
     }
     CONTRACTL_END;
 
-    EXCEPTIONREF pBaseException = (EXCEPTIONREF)AllocateObject(g_pExceptionClass);
-    pBaseException->SetHResult(COR_E_EXCEPTION);
-    pBaseException->SetXCode(EXCEPTION_COMPLUS);
-    _ASSERTE(g_pPreallocatedBaseException == NULL);
-    g_pPreallocatedBaseException = CreateHandle(pBaseException);
-
-
     EXCEPTIONREF pOutOfMemory = (EXCEPTIONREF)AllocateObject(g_pOutOfMemoryExceptionClass);
     pOutOfMemory->SetHResult(COR_E_OUTOFMEMORY);
     pOutOfMemory->SetXCode(EXCEPTION_COMPLUS);
@@ -1216,20 +1209,6 @@ void SystemDomain::CreatePreallocatedExceptions()
     pExecutionEngine->SetXCode(EXCEPTION_COMPLUS);
     _ASSERTE(g_pPreallocatedExecutionEngineException == NULL);
     g_pPreallocatedExecutionEngineException = CreateHandle(pExecutionEngine);
-
-
-    EXCEPTIONREF pRudeAbortException = (EXCEPTIONREF)AllocateObject(g_pThreadAbortExceptionClass);
-    pRudeAbortException->SetHResult(COR_E_THREADABORTED);
-    pRudeAbortException->SetXCode(EXCEPTION_COMPLUS);
-    _ASSERTE(g_pPreallocatedRudeThreadAbortException == NULL);
-    g_pPreallocatedRudeThreadAbortException = CreateHandle(pRudeAbortException);
-
-
-    EXCEPTIONREF pAbortException = (EXCEPTIONREF)AllocateObject(g_pThreadAbortExceptionClass);
-    pAbortException->SetHResult(COR_E_THREADABORTED);
-    pAbortException->SetXCode(EXCEPTION_COMPLUS);
-    _ASSERTE(g_pPreallocatedThreadAbortException == NULL);
-    g_pPreallocatedThreadAbortException = CreateHandle( pAbortException );
 }
 #endif // CROSSGEN_COMPILE
 

@@ -43,9 +43,11 @@ extern jmethodID g_sksCtor;
 extern jclass    g_cipherClass;
 extern jmethodID g_cipherGetInstanceMethod;
 extern jmethodID g_cipherDoFinalMethod;
+extern jmethodID g_cipherDoFinal2Method;
 extern jmethodID g_cipherUpdateMethod;
 extern jmethodID g_cipherUpdateAADMethod;
 extern jmethodID g_cipherInitMethod;
+extern jmethodID g_cipherInit2Method;
 extern jmethodID g_getBlockSizeMethod;
 
 // javax/crypto/spec/IvParameterSpec
@@ -70,6 +72,57 @@ extern jmethodID g_sslCtxGetDefaultSslParamsMethod;
 extern jclass    g_GCMParameterSpecClass;
 extern jmethodID g_GCMParameterSpecCtor;
 
+// java/security/interfaces/RSAKey
+extern jclass    g_RSAKeyClass;
+extern jmethodID g_RSAKeyGetModulus;
+
+// java/security/interfaces/RSAPublicKey
+extern jclass    g_RSAPublicKeyClass;
+extern jmethodID g_RSAPublicKeyGetPubExpMethod;
+
+// java/security/KeyPair
+extern jclass    g_keyPairClass;
+extern jmethodID g_keyPairGetPrivateMethod;
+extern jmethodID g_keyPairGetPublicMethod;
+
+// java/security/KeyPairGenerator
+extern jclass    g_keyPairGenClass;
+extern jmethodID g_keyPairGenGetInstanceMethod;
+extern jmethodID g_keyPairGenInitializeMethod;
+extern jmethodID g_keyPairGenGenKeyPairMethod;
+
+// com/android/org/conscrypt/RSAPrivateCrtKey
+extern jclass    g_RSAPrivateCrtKeyClass;
+extern jmethodID g_RSAPrivateCrtKeyPubExpField;
+extern jmethodID g_RSAPrivateCrtKeyPrimePField;
+extern jmethodID g_RSAPrivateCrtKeyPrimeQField;
+extern jmethodID g_RSAPrivateCrtKeyPrimeExpPField;
+extern jmethodID g_RSAPrivateCrtKeyPrimeExpQField;
+extern jmethodID g_RSAPrivateCrtKeyCrtCoefField;
+extern jmethodID g_RSAPrivateCrtKeyModulusField;
+extern jmethodID g_RSAPrivateCrtKeyPrivExpField;
+
+// java/security/spec/RSAPrivateCrtKeySpec
+extern jclass    g_RSAPrivateCrtKeySpecClass;
+extern jmethodID g_RSAPrivateCrtKeySpecCtor;
+
+// java/security/spec/RSAPublicKeySpec
+extern jclass    g_RSAPublicCrtKeySpecClass;
+extern jmethodID g_RSAPublicCrtKeySpecCtor;
+
+// java/security/KeyFactory
+extern jclass    g_KeyFactoryClass;
+extern jmethodID g_KeyFactoryGetInstanceMethod;
+extern jmethodID g_KeyFactoryGenPrivateMethod;
+extern jmethodID g_KeyFactoryGenPublicMethod;
+
+// java/security/spec/X509EncodedKeySpec
+extern jclass    g_X509EncodedKeySpecClass;
+extern jmethodID g_X509EncodedKeySpecCtor;
+
+// com/android/org/conscrypt/NativeCrypto
+extern jclass    g_NativeCryptoClass;
+
 // JNI helpers
 #define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
@@ -78,8 +131,10 @@ extern jmethodID g_GCMParameterSpecCtor;
 
 void SaveTo(uint8_t* src, uint8_t** dst, size_t len);
 jobject ToGRef(JNIEnv *env, jobject lref);
+jobject AddGRef(JNIEnv *env, jobject gref);
 void ReleaseGRef(JNIEnv *env, jobject gref);
 jclass GetClassGRef(JNIEnv *env, const char* name);
 bool CheckJNIExceptions(JNIEnv* env);
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
+jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 JNIEnv* GetJNIEnv(void);
