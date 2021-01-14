@@ -20,6 +20,7 @@
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Speech\pkg\System.Speech.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.PerformanceCounter\pkg\System.Diagnostics.PerformanceCounter.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.EventLog\pkg\System.Diagnostics.EventLog.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
