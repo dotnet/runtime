@@ -166,7 +166,7 @@ namespace System.Net.Http.Headers
         {
             object? storeValue = _store.GetParsedValues(_descriptor);
             return storeValue is null ?
-                ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() :
+                ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() : // use singleton empty array enumerator
                 Iterate(storeValue);
 
             static IEnumerator<T> Iterate(object storeValue)
