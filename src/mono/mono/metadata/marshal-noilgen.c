@@ -7,6 +7,79 @@
 
 #ifndef ENABLE_ILGEN
 static int
+emit_marshal_array_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
+					MonoMarshalSpec *spec,
+					int conv_arg, MonoType **conv_arg_type,
+					MarshalAction action)
+{
+	MonoType *int_type = mono_get_int_type ();
+	MonoType *object_type = mono_get_object_type ();
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		*conv_arg_type = object_type;
+		break;
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		*conv_arg_type = int_type;
+		break;
+	}
+	return conv_arg;
+}
+
+static int
+emit_marshal_ptr_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
+		  MonoMarshalSpec *spec, int conv_arg,
+		  MonoType **conv_arg_type, MarshalAction action)
+{
+	return conv_arg;
+}
+
+static int
+emit_marshal_scalar_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
+		     MonoMarshalSpec *spec, int conv_arg,
+		     MonoType **conv_arg_type, MarshalAction action)
+{
+	return conv_arg;
+}
+#endif
+
+#if !defined(ENABLE_ILGEN) || defined(DISABLE_NONBLITTABLE)
+static int
+emit_marshal_boolean_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
+		      MonoMarshalSpec *spec,
+		      int conv_arg, MonoType **conv_arg_type,
+		      MarshalAction action)
+{
+	MonoType *int_type = mono_get_int_type ();
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		if (t->byref)
+			*conv_arg_type = int_type;
+		else
+			*conv_arg_type = mono_marshal_boolean_conv_in_get_local_type (spec, NULL);
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_IN: {
+		MonoClass* conv_arg_class = mono_marshal_boolean_managed_conv_in_get_conv_arg_class (spec, NULL);
+		if (t->byref)
+			*conv_arg_type = m_class_get_this_arg (conv_arg_class);
+		else
+			*conv_arg_type = m_class_get_byval_arg (conv_arg_class);
+		break;
+	}
+
+	}
+	return conv_arg;
+}
+
+static int
+emit_marshal_char_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
+		   MonoMarshalSpec *spec, int conv_arg,
+		   MonoType **conv_arg_type, MarshalAction action)
+{
+	return conv_arg;
+}
+
+static int
 emit_marshal_custom_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 					 MonoMarshalSpec *spec,
 					 int conv_arg, MonoType **conv_arg_type,
@@ -90,76 +163,16 @@ emit_marshal_object_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 static int
-emit_marshal_array_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-					MonoMarshalSpec *spec,
-					int conv_arg, MonoType **conv_arg_type,
-					MarshalAction action)
+emit_marshal_variant_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
+		     MonoMarshalSpec *spec,
+		     int conv_arg, MonoType **conv_arg_type,
+		     MarshalAction action)
 {
-	MonoType *int_type = mono_get_int_type ();
-	MonoType *object_type = mono_get_object_type ();
-	switch (action) {
-	case MARSHAL_ACTION_CONV_IN:
-		*conv_arg_type = object_type;
-		break;
-	case MARSHAL_ACTION_MANAGED_CONV_IN:
-		*conv_arg_type = int_type;
-		break;
-	}
-	return conv_arg;
+	g_assert_not_reached ();
 }
+#endif
 
-static int
-emit_marshal_boolean_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		      MonoMarshalSpec *spec,
-		      int conv_arg, MonoType **conv_arg_type,
-		      MarshalAction action)
-{
-	MonoType *int_type = mono_get_int_type ();
-	switch (action) {
-	case MARSHAL_ACTION_CONV_IN:
-		if (t->byref)
-			*conv_arg_type = int_type;
-		else
-			*conv_arg_type = mono_marshal_boolean_conv_in_get_local_type (spec, NULL);
-		break;
-
-	case MARSHAL_ACTION_MANAGED_CONV_IN: {
-		MonoClass* conv_arg_class = mono_marshal_boolean_managed_conv_in_get_conv_arg_class (spec, NULL);
-		if (t->byref)
-			*conv_arg_type = m_class_get_this_arg (conv_arg_class);
-		else
-			*conv_arg_type = m_class_get_byval_arg (conv_arg_class);
-		break;
-	}
-
-	}
-	return conv_arg;
-}
-
-static int
-emit_marshal_ptr_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		  MonoMarshalSpec *spec, int conv_arg,
-		  MonoType **conv_arg_type, MarshalAction action)
-{
-	return conv_arg;
-}
-
-static int
-emit_marshal_char_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		   MonoMarshalSpec *spec, int conv_arg,
-		   MonoType **conv_arg_type, MarshalAction action)
-{
-	return conv_arg;
-}
-
-static int
-emit_marshal_scalar_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		     MonoMarshalSpec *spec, int conv_arg,
-		     MonoType **conv_arg_type, MarshalAction action)
-{
-	return conv_arg;
-}
-
+#ifndef ENABLE_ILGEN
 static void
 emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle)
 {
@@ -206,15 +219,6 @@ emit_synchronized_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 		return;
 	}
 
-}
-
-static int
-emit_marshal_variant_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
-		     MonoMarshalSpec *spec,
-		     int conv_arg, MonoType **conv_arg_type,
-		     MarshalAction action)
-{
-	g_assert_not_reached ();
 }
 
 static void
@@ -350,7 +354,7 @@ emit_thunk_invoke_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 }
 
 static void
-emit_native_wrapper_noilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans)
+emit_native_wrapper_noilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags)
 {
 }
 
@@ -360,10 +364,10 @@ mono_marshal_noilgen_init (void)
 	MonoMarshalCallbacks cb;
 	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
 	cb.emit_marshal_array = emit_marshal_array_noilgen;
-	cb.emit_marshal_boolean = emit_marshal_boolean_noilgen;
 	cb.emit_marshal_ptr = emit_marshal_ptr_noilgen;
-	cb.emit_marshal_char = emit_marshal_char_noilgen;
 	cb.emit_marshal_scalar = emit_marshal_scalar_noilgen;
+	cb.emit_marshal_boolean = emit_marshal_boolean_noilgen;
+	cb.emit_marshal_char = emit_marshal_char_noilgen;
 	cb.emit_marshal_custom = emit_marshal_custom_noilgen;
 	cb.emit_marshal_asany = emit_marshal_asany_noilgen;
 	cb.emit_marshal_vtype = emit_marshal_vtype_noilgen;
@@ -406,6 +410,28 @@ mono_marshal_noilgen_init (void)
 #else
 void
 mono_marshal_noilgen_init (void)
+{
+}
+#endif
+
+#ifdef DISABLE_NONBLITTABLE
+void
+mono_marshal_noilgen_init_blittable (MonoMarshalCallbacks *cb)
+{
+	cb->emit_marshal_boolean = emit_marshal_boolean_noilgen;
+	cb->emit_marshal_char = emit_marshal_char_noilgen;
+	cb->emit_marshal_custom = emit_marshal_custom_noilgen;
+	cb->emit_marshal_asany = emit_marshal_asany_noilgen;
+	cb->emit_marshal_vtype = emit_marshal_vtype_noilgen;
+	cb->emit_marshal_string = emit_marshal_string_noilgen;
+	cb->emit_marshal_safehandle = emit_marshal_safehandle_noilgen;
+	cb->emit_marshal_handleref = emit_marshal_handleref_noilgen;
+	cb->emit_marshal_object = emit_marshal_object_noilgen;
+	cb->emit_marshal_variant = emit_marshal_variant_noilgen;
+}
+#else
+void
+mono_marshal_noilgen_init_blittable (MonoMarshalCallbacks *cb)
 {
 }
 #endif

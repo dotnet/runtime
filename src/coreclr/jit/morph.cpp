@@ -11909,6 +11909,21 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             return fgMorphCast(tree);
 
         case GT_MUL:
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase && !tree->gtOverflow())
+            {
+                // MUL(NEG(a), C) => MUL(a, NEG(C))
+                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
+                    !op2->IsIconHandle())
+                {
+                    GenTree* newOp1   = op1->gtGetOp1();
+                    GenTree* newConst = gtNewIconNode(-op2->AsIntCon()->IconValue(), op2->TypeGet());
+                    DEBUG_DESTROY_NODE(op1);
+                    DEBUG_DESTROY_NODE(op2);
+                    tree->AsOp()->gtOp1 = newOp1;
+                    tree->AsOp()->gtOp2 = newConst;
+                    return fgMorphSmpOp(tree, mac);
+                }
+            }
 
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
@@ -12054,6 +12069,24 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 assert(tree->OperIs(GT_DIV));
                 tree->ChangeOper(GT_UDIV);
                 return fgMorphSmpOp(tree, mac);
+            }
+
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase)
+            {
+                // DIV(NEG(a), C) => DIV(a, NEG(C))
+                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
+                    !op2->IsIconHandle())
+                {
+                    ssize_t op2Value = op2->AsIntCon()->IconValue();
+                    if (op2Value != 1 && op2Value != -1) // Div must throw exception for int(long).MinValue / -1.
+                    {
+                        tree->AsOp()->gtOp1 = op1->gtGetOp1();
+                        DEBUG_DESTROY_NODE(op1);
+                        tree->AsOp()->gtOp2 = gtNewIconNode(-op2Value, op2->TypeGet());
+                        DEBUG_DESTROY_NODE(op2);
+                        return fgMorphSmpOp(tree, mac);
+                    }
+                }
             }
 
 #ifndef TARGET_64BIT
@@ -13918,6 +13951,35 @@ DONE_MORPHING_CHILDREN:
             {
                 GenTree* child = op1->AsOp()->gtGetOp1();
                 return child;
+            }
+
+            // Distribute negation over simple multiplication/division expressions
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase && tree->OperIs(GT_NEG) &&
+                op1->OperIs(GT_MUL, GT_DIV))
+            {
+                GenTreeOp* mulOrDiv = op1->AsOp();
+                GenTree*   op1op1   = mulOrDiv->gtGetOp1();
+                GenTree*   op1op2   = mulOrDiv->gtGetOp2();
+
+                if (!op1op1->IsCnsIntOrI() && op1op2->IsCnsIntOrI() && !op1op2->IsIconHandle())
+                {
+                    // NEG(MUL(a, C)) => MUL(a, -C)
+                    // NEG(DIV(a, C)) => DIV(a, -C), except when C = {-1, 1}
+                    ssize_t constVal = op1op2->AsIntCon()->IconValue();
+                    if ((mulOrDiv->OperIs(GT_DIV) && (constVal != -1) && (constVal != 1)) ||
+                        (mulOrDiv->OperIs(GT_MUL) && !mulOrDiv->gtOverflow()))
+                    {
+                        GenTree* newOp1 = op1op1;                                      // a
+                        GenTree* newOp2 = gtNewIconNode(-constVal, op1op2->TypeGet()); // -C
+                        mulOrDiv->gtOp1 = newOp1;
+                        mulOrDiv->gtOp2 = newOp2;
+
+                        DEBUG_DESTROY_NODE(tree);
+                        DEBUG_DESTROY_NODE(op1op2);
+
+                        return mulOrDiv;
+                    }
+                }
             }
 
             /* Any constant cases should have been folded earlier */
@@ -16317,6 +16379,12 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                          * Remove the loop from the table */
 
                         optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
+#if FEATURE_LOOP_ALIGN
+                        optLoopTable[loopNum].lpFirst->bbFlags &= ~BBF_LOOP_ALIGN;
+                        JITDUMP("Removing LOOP_ALIGN flag from bogus loop in " FMT_BB "\n",
+                                optLoopTable[loopNum].lpFirst->bbNum);
+#endif
+
 #ifdef DEBUG
                         if (verbose)
                         {

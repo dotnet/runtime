@@ -2655,6 +2655,7 @@ namespace System
         public static short Abs(short value) { throw null; }
         public static int Abs(int value) { throw null; }
         public static long Abs(long value) { throw null; }
+        public static nint Abs(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte Abs(sbyte value) { throw null; }
         public static float Abs(float value) { throw null; }
@@ -2680,6 +2681,7 @@ namespace System
         public static short Clamp(short value, short min, short max) { throw null; }
         public static int Clamp(int value, int min, int max) { throw null; }
         public static long Clamp(long value, long min, long max) { throw null; }
+        public static nint Clamp(nint value, nint min, nint max) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte Clamp(sbyte value, sbyte min, sbyte max) { throw null; }
         public static float Clamp(float value, float min, float max) { throw null; }
@@ -2689,24 +2691,26 @@ namespace System
         public static uint Clamp(uint value, uint min, uint max) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Clamp(ulong value, ulong min, ulong max) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint Clamp(nuint value, nuint min, nuint max) { throw null; }
         public static double CopySign(double x, double y) { throw null; }
         public static double Cos(double d) { throw null; }
         public static double Cosh(double value) { throw null; }
         public static int DivRem(int a, int b, out int result) { throw null; }
         public static long DivRem(long a, long b, out long result) { throw null; }
         public static (byte Quotient, byte Remainder) DivRem(byte left, byte right) { throw null; }
+        public static (short Quotient, short Remainder) DivRem(short left, short right) { throw null; }
+        public static (int Quotient, int Remainder) DivRem(int left, int right) { throw null; }
+        public static (long Quotient, long Remainder) DivRem(long left, long right) { throw null; }
+        public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static (sbyte Quotient, sbyte Remainder) DivRem(sbyte left, sbyte right) { throw null; }
-        public static (short Quotient, short Remainder) DivRem(short left, short right) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static (ushort Quotient, ushort Remainder) DivRem(ushort left, ushort right) { throw null; }
-        public static (int Quotient, int Remainder) DivRem(int left, int right) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static (uint Quotient, uint Remainder) DivRem(uint left, uint right) { throw null; }
-        public static (long Quotient, long Remainder) DivRem(long left, long right) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right) { throw null; }
-        public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static (nuint Quotient, nuint Remainder) DivRem(nuint left, nuint right) { throw null; }
         public static double Exp(double d) { throw null; }
@@ -2725,6 +2729,7 @@ namespace System
         public static short Max(short val1, short val2) { throw null; }
         public static int Max(int val1, int val2) { throw null; }
         public static long Max(long val1, long val2) { throw null; }
+        public static nint Max(nint val1, nint val2) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte Max(sbyte val1, sbyte val2) { throw null; }
         public static float Max(float val1, float val2) { throw null; }
@@ -2734,6 +2739,8 @@ namespace System
         public static uint Max(uint val1, uint val2) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Max(ulong val1, ulong val2) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint Max(nuint val1, nuint val2) { throw null; }
         public static double MaxMagnitude(double x, double y) { throw null; }
         public static byte Min(byte val1, byte val2) { throw null; }
         public static decimal Min(decimal val1, decimal val2) { throw null; }
@@ -2741,6 +2748,7 @@ namespace System
         public static short Min(short val1, short val2) { throw null; }
         public static int Min(int val1, int val2) { throw null; }
         public static long Min(long val1, long val2) { throw null; }
+        public static nint Min(nint val1, nint val2) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte Min(sbyte val1, sbyte val2) { throw null; }
         public static float Min(float val1, float val2) { throw null; }
@@ -2750,8 +2758,12 @@ namespace System
         public static uint Min(uint val1, uint val2) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Min(ulong val1, ulong val2) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint Min(nuint val1, nuint val2) { throw null; }
         public static double MinMagnitude(double x, double y) { throw null; }
         public static double Pow(double x, double y) { throw null; }
+        public static double ReciprocalEstimate(double d) { throw null; }
+        public static double ReciprocalSqrtEstimate(double d) { throw null; }
         public static decimal Round(decimal d) { throw null; }
         public static decimal Round(decimal d, int decimals) { throw null; }
         public static decimal Round(decimal d, int decimals, System.MidpointRounding mode) { throw null; }
@@ -2766,10 +2778,12 @@ namespace System
         public static int Sign(short value) { throw null; }
         public static int Sign(int value) { throw null; }
         public static int Sign(long value) { throw null; }
+        public static int Sign(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Sign(sbyte value) { throw null; }
         public static int Sign(float value) { throw null; }
         public static double Sin(double a) { throw null; }
+        public static (double Sin, double Cos) SinCos(double x) { throw null; }
         public static double Sinh(double value) { throw null; }
         public static double Sqrt(double d) { throw null; }
         public static double Tan(double a) { throw null; }
@@ -2811,6 +2825,8 @@ namespace System
         public static float Min(float x, float y) { throw null; }
         public static float MinMagnitude(float x, float y) { throw null; }
         public static float Pow(float x, float y) { throw null; }
+        public static float ReciprocalEstimate(float x) { throw null; }
+        public static float ReciprocalSqrtEstimate(float x) { throw null; }
         public static float Round(float x) { throw null; }
         public static float Round(float x, int digits) { throw null; }
         public static float Round(float x, int digits, System.MidpointRounding mode) { throw null; }
@@ -2818,6 +2834,7 @@ namespace System
         public static float ScaleB(float x, int n) { throw null; }
         public static int Sign(float x) { throw null; }
         public static float Sin(float x) { throw null; }
+        public static (float Sin, float Cos) SinCos(float x) { throw null; }
         public static float Sinh(float x) { throw null; }
         public static float Sqrt(float x) { throw null; }
         public static float Tan(float x) { throw null; }
@@ -4266,7 +4283,7 @@ namespace System
         public virtual System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public virtual System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.MemberTypes type, System.Reflection.BindingFlags bindingAttr) { throw null; }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Reflection.MemberInfo[] GetMembers() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public abstract System.Reflection.MemberInfo[] GetMembers(System.Reflection.BindingFlags bindingAttr);
@@ -5945,6 +5962,13 @@ namespace System.Diagnostics.CodeAnalysis
     {
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+    public sealed partial class RequiresAssemblyFilesAttribute : System.Attribute
+    {
+        public RequiresAssemblyFilesAttribute() { }
+        public string? Message { get { throw null; } set { } }
+        public string? Url { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
@@ -9131,6 +9155,10 @@ namespace System.Runtime.CompilerServices
     public partial class CallConvStdcall
     {
         public CallConvStdcall() { }
+    }
+    public class CallConvSuppressGCTransition
+    {
+        public CallConvSuppressGCTransition() { }
     }
     public partial class CallConvThiscall
     {

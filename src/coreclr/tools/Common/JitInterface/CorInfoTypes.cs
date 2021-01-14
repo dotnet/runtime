@@ -296,6 +296,44 @@ namespace Internal.JitInterface
         public uint cbMethodSpec;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PgoInstrumentationSchema
+    {
+        public IntPtr Offset;
+        public PgoInstrumentationKind InstrumentationKind;
+        public int ILOffset;
+        public int Count;
+        public int Other;
+    }
+
+    public enum PgoInstrumentationKind
+    {
+        // Schema data types
+        None = 0,
+        FourByte = 1,
+        EightByte = 2,
+        TypeHandle = 3,
+
+        // Mask of all schema data types
+        MarshalMask = 0xF,
+
+        // ExcessAlignment
+        Align4Byte = 0x10,
+        Align8Byte = 0x20,
+        AlignPointer = 0x30,
+
+        // Mask of all schema data types
+        AlignMask = 0x30,
+
+        DescriptorMin = 0x40,
+
+        Done = None, // All instrumentation schemas must end with a record which is "Done"
+        BasicBlockIntCount = DescriptorMin | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
+        TypeHandleHistogramCount = (DescriptorMin * 1) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
+        TypeHandleHistogramTypeHandle = (DescriptorMin * 1) | TypeHandle, // TypeHandle that is part of a type histogram
+        Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
+        NumRuns = (DescriptorMin * 3) | None, // Number of runs is encoded in the Other field of the schema
+    }
 
     // Flags computed by a runtime compiler
     public enum CorInfoMethodRuntimeFlags
@@ -370,7 +408,7 @@ namespace Internal.JitInterface
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
-        CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
+        // unused = 0x04,
         CORINFO_SIGFLAG_FAT_CALL = 0x08,
     };
 
@@ -1296,7 +1334,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
         CORJIT_FLAG_PROF_ENTERLEAVE = 20, // Instrument prologues/epilogues
-        CORJIT_FLAG_PROF_REJIT_NOPS = 21, // Insert NOPs to ensure code is re-jitable
+        CORJIT_FLAG_UNUSED7 = 21,
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE = 22, // Disables PInvoke inlining
         CORJIT_FLAG_SKIP_VERIFICATION = 23, // (lazy) skip verification - determined without doing a full resolve. See comment below
         CORJIT_FLAG_PREJIT = 24, // jit or prejit is the execution engine.
@@ -1307,13 +1345,13 @@ namespace Internal.JitInterface
         CORJIT_FLAG_BBINSTR = 29, // Collect basic block profile information
         CORJIT_FLAG_BBOPT = 30, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED = 31, // All methods have an EBP frame
-        CORJIT_FLAG_ALIGN_LOOPS = 32, // add NOPs before loops to align them at 16 byte boundaries
+        CORJIT_FLAG_UNUSED8 = 32,
         CORJIT_FLAG_PUBLISH_SECRET_PARAM = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
-        CORJIT_FLAG_UNUSED8 = 34,
+        CORJIT_FLAG_UNUSED9 = 34,
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        CORJIT_FLAG_UNUSED9 = 38,
+        CORJIT_FLAG_UNUSED10 = 38,
         CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records

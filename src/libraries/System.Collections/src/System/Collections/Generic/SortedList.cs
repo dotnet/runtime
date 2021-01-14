@@ -270,7 +270,7 @@ namespace System.Collections.Generic
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            if (value == null && !(default(TValue) == null))    // null is an invalid value for Value types
+            if (value == null && default(TValue) != null)    // null is an invalid value for Value types
                 throw new ArgumentNullException(nameof(value));
 
             if (!(key is TKey))
@@ -493,8 +493,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
             }
 
-            KeyValuePair<TKey, TValue>[]? keyValuePairArray = array as KeyValuePair<TKey, TValue>[];
-            if (keyValuePairArray != null)
+            if (array is KeyValuePair<TKey, TValue>[] keyValuePairArray)
             {
                 for (int i = 0; i < Count; i++)
                 {
@@ -588,7 +587,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (((object)key) == null) throw new ArgumentNullException(nameof(key));
+                if (key == null) throw new ArgumentNullException(nameof(key));
                 int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
                 if (i >= 0)
                 {
@@ -622,7 +621,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue) == null))
+                if (value == null && default(TValue) != null)
                     throw new ArgumentNullException(nameof(value));
 
                 TKey tempKey = (TKey)key;
@@ -741,7 +740,7 @@ namespace System.Collections.Generic
         // SortedList.TrimExcess();
         public void TrimExcess()
         {
-            int threshold = (int)(((double)keys.Length) * 0.9);
+            int threshold = (int)(keys.Length * 0.9);
             if (_size < threshold)
             {
                 Capacity = _size;
@@ -1105,7 +1104,7 @@ namespace System.Collections.Generic
 
             public int IndexOf(TKey key)
             {
-                if (((object)key) == null)
+                if (key == null)
                     throw new ArgumentNullException(nameof(key));
 
                 int i = Array.BinarySearch<TKey>(_dict.keys, 0,

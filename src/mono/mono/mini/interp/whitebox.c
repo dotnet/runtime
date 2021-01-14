@@ -78,10 +78,6 @@ verify_cprop_ldloc_stloc (TransformData *td)
 		return 1;
 	if (expect (&ins, NULL, MINT_CALL))
 		return 2;
-	if (expect (&ins, NULL, MINT_STLOC_NP_I4))
-		return 3;
-	if (expect (&ins, NULL, MINT_LDLOC_I4))
-		return 4;
 	if (expect (&ins, NULL, MINT_ADD_I4))
 		return 5;
 	if (expect (&ins, NULL, MINT_RET))

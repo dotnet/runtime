@@ -156,6 +156,17 @@ namespace System.Runtime.InteropServices
         [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDual = 2,
     }
+    [System.CLSCompliantAttribute(false)]
+    public readonly struct CLong : IEquatable<CLong>
+    {
+        public CLong(int value) { }
+        public CLong(nint value) { }
+        public nint Value { get { throw null; } }
+        public override bool Equals(object? o) { throw null; }
+        public bool Equals(CLong other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
     public sealed partial class CoClassAttribute : System.Attribute
     {
@@ -175,7 +186,7 @@ namespace System.Runtime.InteropServices
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class ComAwareEventInfo : System.Reflection.EventInfo
     {
-        public ComAwareEventInfo(System.Type type, string eventName) { }
+        public ComAwareEventInfo([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] System.Type type, string eventName) { }
         public override System.Reflection.EventAttributes Attributes { get { throw null; } }
         public override System.Type? DeclaringType { get { throw null; } }
         public override int MetadataToken { get { throw null; } }
@@ -219,8 +230,10 @@ namespace System.Runtime.InteropServices
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ComEventInterfaceAttribute : System.Attribute
     {
-        public ComEventInterfaceAttribute(System.Type SourceInterface, System.Type EventProvider) { }
+        public ComEventInterfaceAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type SourceInterface, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type EventProvider) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Type EventProvider { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Type SourceInterface { get { throw null; } }
     }
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -277,6 +290,17 @@ namespace System.Runtime.InteropServices
     public sealed partial class ComUnregisterFunctionAttribute : System.Attribute
     {
         public ComUnregisterFunctionAttribute() { }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public readonly struct CULong : IEquatable<CULong>
+    {
+        public CULong(uint value) { }
+        public CULong(nuint value) { }
+        public nuint Value { get { throw null; } }
+        public override bool Equals(object? o) { throw null; }
+        public bool Equals(CULong other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.ObsoleteAttribute("CurrencyWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
@@ -731,6 +755,16 @@ namespace System.Runtime.InteropServices
         public static bool TryGetExport(System.IntPtr handle, string name, out System.IntPtr address) { throw null; }
         public static bool TryLoad(string libraryPath, out System.IntPtr handle) { throw null; }
         public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
+    }
+    public readonly struct NFloat : IEquatable<NFloat>
+    {
+        public NFloat(float value) { }
+        public NFloat(double value) { }
+        public double Value { get { throw null; } }
+        public override bool Equals(object? o) { throw null; }
+        public bool Equals(NFloat other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class OptionalAttribute : System.Attribute

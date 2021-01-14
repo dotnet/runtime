@@ -68,6 +68,11 @@ public:
         unsigned *       pEHSize) = 0;
     virtual SigPointer GetLocalSig() = 0;
 
+#ifdef FEATURE_PGO
+    virtual PgoManager* volatile* GetDynamicPgoManagerPointer() { return NULL; }
+    PgoManager* GetDynamicPgoManager() { return NULL; }
+#endif
+
     //
     // jit interface api
     virtual OBJECTHANDLE ConstructStringLiteral(mdToken metaTok) = 0;
@@ -136,6 +141,10 @@ public:
     STRINGREF GetStringLiteral(mdToken token);
     STRINGREF * GetOrInternString(STRINGREF *pString);
     void AddToUsedIndCellList(BYTE * indcell);
+#ifdef FEATURE_PGO
+    PgoManager* volatile* GetDynamicPgoManagerPointer() { return &m_pgoManager; }
+    PgoManager* GetDynamicPgoManager() { return m_pgoManager; }
+#endif
 
 private:
     void RecycleIndCells();
@@ -163,6 +172,10 @@ private:
     DynamicStringLiteral* m_DynamicStringLiterals;
     IndCellList * m_UsedIndCellList;    // list to keep track of all the indirection cells used by the jitted code
     ExecutionManager::JumpStubCache * m_pJumpStubCache;
+
+#ifdef FEATURE_PGO
+    Volatile<PgoManager*> m_pgoManager;
+#endif // FEATURE_PGO
 };  // class LCGMethodResolver
 
 //---------------------------------------------------------------------------------------

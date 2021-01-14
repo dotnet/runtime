@@ -2109,41 +2109,17 @@ void Thread::RareDisablePreemptiveGC()
                 }
 #endif // PROFILING_SUPPORTED
 
-                DWORD status = S_OK;
-                SetThreadStateNC(TSNC_WaitUntilGCFinished);
-                status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
-                ResetThreadStateNC(TSNC_WaitUntilGCFinished);
-
-                if (status == (DWORD)COR_E_STACKOVERFLOW)
+                DWORD status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
+                if (status != S_OK)
                 {
-                    // One of two things can happen here:
-                    // 1. Spin until EE restarts.
-                    // 2. Suspending thread lets us to cooperative mode and waits until we suspend.
-                    SetThreadState(TS_BlockGCForSO);
-                    while (GCHeapUtilities::IsGCInProgress() && m_fPreemptiveGCDisabled.Load() == 0)
-                    {
-                        // We can not go to a host for blocking operation due ot lack of stack.
-                        // Instead we will spin here until
-                        // 1. GC is finished; Or
-                        // 2. GC lets this thread to run and will wait for it
-#undef Sleep
-                        Sleep(10);
-#define Sleep(a) Dont_Use_Sleep(a)
-                    }
-                    ResetThreadState(TS_BlockGCForSO);
-                    if (m_fPreemptiveGCDisabled.Load() == 1)
-                    {
-                        // GC suspension has allowed this thread to switch back to cooperative mode.
-                        break;
-                    }
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Waiting for GC completion failed"));
                 }
+
                 if (!GCHeapUtilities::IsGCInProgress())
                 {
                     if (HasThreadState(TS_StackCrawlNeeded))
                     {
-                        SetThreadStateNC(TSNC_WaitUntilGCFinished);
                         ThreadStore::WaitForStackCrawlEvent();
-                        ResetThreadStateNC(TSNC_WaitUntilGCFinished);
                     }
                 }
 
@@ -3382,25 +3358,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                     countThreads++;
                     thread->SetThreadState(Thread::TS_GCSuspendPending);
                 }
-            }
-
-            if (thread->HasThreadState(Thread::TS_BlockGCForSO))
-            {
-                // The thread has seen the trap while going to cooperative but does not have enough stack to block.
-                // It can't continue to cooperative mode either - per contract with us, so it does Sleep(10)
-                // in a loop until EE restarts.
-                // If we happen to catch a thread in such state, we can try unwedge it earlier than that.
-                if (thread->m_fPreemptiveGCDisabled.Load() == 0)
-                {
-                    if (!thread->HasThreadState(Thread::TS_GCSuspendPending))
-                    {
-                        thread->SetThreadState(Thread::TS_GCSuspendPending);
-                        countThreads ++;
-                    }
-                    thread->ResetThreadState(Thread::TS_BlockGCForSO);
-                    FastInterlockOr (&thread->m_fPreemptiveGCDisabled, 1);
-                }
-                continue;
             }
 
             if (!thread->HasThreadStateOpportunistic(Thread::TS_GCSuspendPending))

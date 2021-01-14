@@ -1,0 +1,29 @@
+<Project>
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+
+  <Target Name="CopySampleAppToHelixTestDir" AfterTargets="Build" DependsOnTargets="Publish;BuildAppBundle" >
+    <PropertyGroup>
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_appFiles Include="$(AppBundlePath)/../**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_appFiles)"
+          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/%(RecursiveDir)" />
+
+    <Message Importance="High" Text="HelixArchiveRunOnlyAppsDir: $(HelixArchiveRunOnlyAppsDir)"/>
+  </Target>
+
+</Project>

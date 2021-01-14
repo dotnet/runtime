@@ -2190,7 +2190,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
         SigTypeContext emptyContext;
-        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, TRUE, TRUE, FALSE);
+        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
@@ -2374,7 +2374,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
         SigTypeContext emptyContext;
-        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, TRUE, TRUE, FALSE);
+        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 

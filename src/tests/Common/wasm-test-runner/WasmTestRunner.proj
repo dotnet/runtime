@@ -1,6 +1,7 @@
 <!-- This project requires an explicit SDK version number because it is used on Helix,
       and global.json is not available. -->
 <Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="WasmBuildApp">
+  <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.props" />
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
@@ -36,5 +37,5 @@
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
   </Target>
 
-  <Import Project="$(CORE_ROOT)\build\WasmApp.targets" />
+  <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.targets" />
 </Project>

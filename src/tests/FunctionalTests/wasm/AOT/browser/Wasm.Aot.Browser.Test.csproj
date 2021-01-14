@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <WasmCopyAppZipToHelixTestDir>true</WasmCopyAppZipToHelixTestDir>
+    <WasmHelixTestAppRelativeDir>\aot\browser\</WasmHelixTestAppRelativeDir>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
+</Project>
