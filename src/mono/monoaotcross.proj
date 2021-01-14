@@ -6,6 +6,8 @@
   <PropertyGroup>
     <!-- OS name is case sensitive! -->
     <_BuildMonoCrossAOT Condition="'$(BuildMonoCrossAOT)' != ''">+$(BuildMonoCrossAOT.ToLowerInvariant())+</_BuildMonoCrossAOT>
+    <_BuildMonoCrossAOT Condition="'$(MonoGenerateOffsetsOnly)' == 'true' and '$(TargetOS)' == 'Android'">+android+</_BuildMonoCrossAOT>
+    <_BuildMonoCrossAOT Condition="'$(MonoGenerateOffsetsOnly)' == 'true' and '$(TargetOS)' == 'browser'">+wasm+</_BuildMonoCrossAOT>
     <MonoAotTargets Condition="$(_BuildMonoCrossAOT.contains('+android+'))">$(MonoAotTargets);Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
     <MonoAotTargets Condition="$(_BuildMonoCrossAOT.contains('+wasm+'))">$(MonoAotTargets);Browser-wasm</MonoAotTargets>
   </PropertyGroup>
