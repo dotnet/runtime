@@ -106,7 +106,7 @@ namespace System.Net.Sockets
         }
 
         public SendPacketsElement(ReadOnlyMemory<byte> buffer) :
-            this(buffer, false)
+            this(buffer, endOfPacket: false)
         { }
 
         public SendPacketsElement(ReadOnlyMemory<byte> buffer, bool endOfPacket)
