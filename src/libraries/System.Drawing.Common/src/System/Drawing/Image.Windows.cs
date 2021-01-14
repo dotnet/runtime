@@ -394,19 +394,19 @@ namespace System.Drawing
         /// Gets an array of the property IDs stored in this <see cref='Image'/>.
         /// </summary>
         [Browsable(false)]
-        public int[] PropertyIdList
+        public unsafe int[] PropertyIdList
         {
             get
             {
-                Gdip.CheckStatus(Gdip.GdipGetPropertyCount(new HandleRef(this, nativeImage), out int count));
-
-                int[] propid = new int[count];
-
-                //if we have a 0 count, just return our empty array
+                Gdip.CheckStatus(Gdip.GdipGetPropertyCount(new HandleRef(this, nativeImage), out uint count));
                 if (count == 0)
-                    return propid;
+                    return Array.Empty<int>();
 
-                Gdip.CheckStatus(Gdip.GdipGetPropertyIdList(new HandleRef(this, nativeImage), count, propid));
+                var propid = new int[count];
+                fixed (int* pPropid = propid)
+                {
+                    Gdip.CheckStatus(Gdip.GdipGetPropertyIdList(new HandleRef(this, nativeImage), count, pPropid));
+                }
 
                 return propid;
             }
@@ -415,36 +415,46 @@ namespace System.Drawing
         /// <summary>
         /// Gets the specified property item from this <see cref='Image'/>.
         /// </summary>
-        public PropertyItem? GetPropertyItem(int propid)
+        public unsafe PropertyItem? GetPropertyItem(int propid)
         {
-            Gdip.CheckStatus(Gdip.GdipGetPropertyItemSize(new HandleRef(this, nativeImage), propid, out int size));
+            Gdip.CheckStatus(Gdip.GdipGetPropertyItemSize(new HandleRef(this, nativeImage), propid, out uint size));
 
             if (size == 0)
                 return null;
 
-            IntPtr propdata = Marshal.AllocHGlobal(size);
-
+            PropertyItemInternal* propdata = (PropertyItemInternal*)Marshal.AllocHGlobal((int)size);
             try
             {
                 Gdip.CheckStatus(Gdip.GdipGetPropertyItem(new HandleRef(this, nativeImage), propid, size, propdata));
-                return PropertyItemInternal.ConvertFromMemory(propdata, 1)[0];
+                return new PropertyItem
+                {
+                    Id = propdata->id,
+                    Len = propdata->len,
+                    Type = propdata->type,
+                    Value = propdata->Value.ToArray()
+                };
             }
             finally
             {
-                Marshal.FreeHGlobal(propdata);
+                Marshal.FreeHGlobal((IntPtr)propdata);
             }
         }
 
         /// <summary>
         /// Sets the specified property item to the specified value.
         /// </summary>
-        public void SetPropertyItem(PropertyItem propitem)
+        public unsafe void SetPropertyItem(PropertyItem propitem)
         {
-            PropertyItemInternal propItemInternal = PropertyItemInternal.ConvertFromPropertyItem(propitem);
-
-            using (propItemInternal)
+            fixed (byte *propItemValue = propitem.Value)
             {
-                Gdip.CheckStatus(Gdip.GdipSetPropertyItem(new HandleRef(this, nativeImage), propItemInternal));
+                var propItemInternal = new PropertyItemInternal
+                {
+                    id = propitem.Id,
+                    len = propitem.Len,
+                    type = propitem.Type,
+                    value = propItemValue
+                };
+                Gdip.CheckStatus(Gdip.GdipSetPropertyItem(new HandleRef(this, nativeImage), &propItemInternal));
             }
         }
 
@@ -452,25 +462,35 @@ namespace System.Drawing
         /// Gets an array of <see cref='PropertyItem'/> objects that describe this <see cref='Image'/>.
         /// </summary>
         [Browsable(false)]
-        public PropertyItem[] PropertyItems
+        public unsafe PropertyItem[] PropertyItems
         {
             get
             {
-                Gdip.CheckStatus(Gdip.GdipGetPropertyCount(new HandleRef(this, nativeImage), out int count));
-                Gdip.CheckStatus(Gdip.GdipGetPropertySize(new HandleRef(this, nativeImage), out int size, ref count));
+                Gdip.CheckStatus(Gdip.GdipGetPropertySize(new HandleRef(this, nativeImage), out uint size, out uint count));
 
                 if (size == 0 || count == 0)
                     return Array.Empty<PropertyItem>();
 
-                IntPtr propdata = Marshal.AllocHGlobal(size);
+                PropertyItemInternal* propdata = (PropertyItemInternal*)Marshal.AllocHGlobal((int)size);
+                var result = new PropertyItem[(int)count];
                 try
                 {
                     Gdip.CheckStatus(Gdip.GdipGetAllPropertyItems(new HandleRef(this, nativeImage), size, count, propdata));
-                    return PropertyItemInternal.ConvertFromMemory(propdata, count);
+                    for (int i = 0; i < count; i++)
+                    {
+                        result[i] = new PropertyItem
+                        {
+                            Id = propdata[i].id,
+                            Len = propdata[i].len,
+                            Type = propdata[i].type,
+                            Value = propdata[i].Value.ToArray()
+                        };
+                    }
+                    return result;
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(propdata);
+                    Marshal.FreeHGlobal((IntPtr)propdata);
                 }
             }
         }
