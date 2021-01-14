@@ -5,6 +5,7 @@ using System.IO;
 using System.Globalization;
 using System.Collections;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -21,6 +22,7 @@ namespace System.Runtime.Serialization
         }
 
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public abstract object Deserialize(Stream serializationStream);
 
         protected virtual object? GetNext(out long objID)
@@ -61,6 +63,7 @@ namespace System.Runtime.Serialization
         }
 
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public abstract void Serialize(Stream serializationStream, object graph);
 
         protected abstract void WriteArray(object obj, string name, Type memberType);

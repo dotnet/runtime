@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
@@ -191,6 +192,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Given the wire type information, returns the actual type and additional information
+        [RequiresUnreferencedCode("Types might be removed")]
         internal static void TypeFromInfo(BinaryTypeEnum binaryTypeEnum,
                                           object? typeInformation,
                                           ObjectReader objectReader,

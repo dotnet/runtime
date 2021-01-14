@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -11,6 +12,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
 {
     internal sealed class BinaryParser
     {
+        private const string BinaryParserUnreferencedCodeMessage = "ObjectReader requires unreferenced code";
+
         private const int ChunkSize = 4096;
         private static readonly Encoding s_encoding = new UTF8Encoding(false, true);
 
@@ -66,6 +69,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Reads each record from the input stream. If the record is a primitive type (A number)
         //  then it doesn't have a BinaryHeaderEnum byte. For this case the expected type
         //  has been previously set to Primitive
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         internal void Run()
         {
             try
@@ -303,6 +307,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             AssemIdToAssemblyTable[record._assemId] = new BinaryAssemblyInfo(record._assemblyString!);
         }
 
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadObject()
         {
             if (_binaryObject == null)
@@ -373,6 +378,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectReader.Parse(pr);
         }
 
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         internal void ReadCrossAppDomainMap()
         {
             BinaryCrossAppDomainMap record = new BinaryCrossAppDomainMap();
@@ -395,6 +401,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         internal void ReadObjectWithMap(BinaryHeaderEnum binaryHeaderEnum)
         {
             if (_bowm == null)
@@ -409,6 +416,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             ReadObjectWithMap(_bowm);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private void ReadObjectWithMap(BinaryObjectWithMap record)
         {
             BinaryAssemblyInfo? assemblyInfo = null;
@@ -495,6 +503,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectReader.Parse(pr);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal void ReadObjectWithMapTyped(BinaryHeaderEnum binaryHeaderEnum)
         {
             if (_bowmt == null)
@@ -509,6 +518,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             ReadObjectWithMapTyped(_bowmt);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private void ReadObjectWithMapTyped(BinaryObjectWithMapTyped record)
         {
             BinaryAssemblyInfo? assemblyInfo = null;
@@ -589,6 +599,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectReader.Parse(pr);
         }
 
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadObjectString(BinaryHeaderEnum binaryHeaderEnum)
         {
             if (_objectString == null)
@@ -665,6 +676,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectReader.Parse(PRs);
         }
 
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadMemberPrimitiveTyped()
         {
             if (_memberPrimitiveTyped == null)
@@ -712,6 +724,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectReader.Parse(PRs);
         }
 
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadArray(BinaryHeaderEnum binaryHeaderEnum)
         {
             BinaryAssemblyInfo? assemblyInfo = null;
@@ -898,6 +911,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadMemberPrimitiveUnTyped()
         {
             ObjectProgress? objectOp = (ObjectProgress?)_stack.Peek();
@@ -930,6 +944,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectReader.Parse(PRs);
         }
 
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadMemberReference()
         {
             if (_memberReference == null)
@@ -960,6 +975,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectReader.Parse(PRs);
         }
 
+        [RequiresUnreferencedCode(BinaryParserUnreferencedCodeMessage)]
         private void ReadObjectNull(BinaryHeaderEnum binaryHeaderEnum)
         {
             if (_objectNull == null)

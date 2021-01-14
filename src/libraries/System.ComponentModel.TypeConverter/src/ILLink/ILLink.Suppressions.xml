@@ -289,5 +289,17 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.BindingList`1.get_ItemTypeHasDefaultConstructor</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.Design.DesigntimeLicenseContextSerializer.Deserialize(System.IO.Stream,System.String,System.ComponentModel.Design.RuntimeLicenseContext)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.Design.DesigntimeLicenseContextSerializer.Serialize(System.IO.Stream,System.String,System.ComponentModel.Design.DesigntimeLicenseContext)</property>
+    </attribute>
   </assembly>
 </linker>
