@@ -267,7 +267,6 @@ namespace DebuggerTests
 
             try
             {
-                _logger?.LogDebug($"- test done,. let's close the client");
                 await Client.Shutdown(_cancellationTokenSource.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
