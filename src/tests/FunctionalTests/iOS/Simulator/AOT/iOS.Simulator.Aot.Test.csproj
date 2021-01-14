@@ -28,14 +28,14 @@
     <Message Importance="High" Text="Output publish dir: $(PublishDir)"/>
 
     <MonoAOTCompiler
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\mono-aot-cross"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\$(PackageRID)\mono-aot-cross"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         UseLLVM="True"
-        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross">
+        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\$(PackageRID)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
