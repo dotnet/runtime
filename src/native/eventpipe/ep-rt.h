@@ -67,8 +67,16 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 	static item_type * EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, data) (const array_type *ep_array); \
 	static bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, is_valid) (const array_type *ep_array);
 
+#define EP_RT_DECLARE_LOCAL_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
+	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init) (array_type *ep_array); \
+	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init_capacity) (array_type *ep_array, size_t capacity); \
+	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, fini) (array_type *ep_array);
+
 #define EP_RT_DECLARE_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DECLARE_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#define EP_RT_DECLARE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
+	EP_RT_DECLARE_LOCAL_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
 #define EP_RT_DECLARE_ARRAY_ITERATOR_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_begin) (const array_type *ep_array); \
@@ -236,14 +244,20 @@ ep_rt_provider_invoke_callback (
  */
 
 EP_RT_DECLARE_ARRAY (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+EP_RT_DECLARE_LOCAL_ARRAY (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
 EP_RT_DECLARE_ARRAY_ITERATOR (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+
+#define EP_RT_DECLARE_LOCAL_BUFFER_ARRAY(var_name) ds_rt_redefine
 
 /*
  * EventPipeBufferList.
  */
 
 EP_RT_DECLARE_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
+EP_RT_DECLARE_LOCAL_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
 EP_RT_DECLARE_ARRAY_ITERATOR (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
+
+#define EP_RT_DECLARE_LOCAL_BUFFER_LIST_ARRAY(var_name) ds_rt_redefine
 
 /*
  * EventPipeEvent.
@@ -342,7 +356,10 @@ EP_RT_DECLARE_LIST (thread_list, ep_rt_thread_list_t, EventPipeThread *)
 EP_RT_DECLARE_LIST_ITERATOR (thread_list, ep_rt_thread_list_t, ep_rt_thread_list_iterator_t, EventPipeThread *)
 
 EP_RT_DECLARE_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+EP_RT_DECLARE_LOCAL_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
 EP_RT_DECLARE_ARRAY_ITERATOR (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+
+#define EP_RT_DECLARE_LOCAL_THREAD_ARRAY(var_name) ds_rt_redefine
 
 /*
  * EventPipeThreadSessionState.
@@ -352,7 +369,10 @@ EP_RT_DECLARE_LIST (thread_session_state_list, ep_rt_thread_session_state_list_t
 EP_RT_DECLARE_LIST_ITERATOR (thread_session_state_list, ep_rt_thread_session_state_list_t, ep_rt_thread_session_state_list_iterator_t, EventPipeThreadSessionState *)
 
 EP_RT_DECLARE_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
+EP_RT_DECLARE_LOCAL_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
 EP_RT_DECLARE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
+
+#define EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY(var_name) ds_rt_redefine
 
 /*
  * Arrays.
