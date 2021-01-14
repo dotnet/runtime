@@ -21,8 +21,7 @@
 
       - $(WasmProfilers)     - Profilers to use
       - $(AOTMode)           - Defaults to `LLVMOnly`
-      - $(AotProfilePath)    - profile data file to be used for profile-guided optimization
-      - $(BuildAOTProfiled)  - Defaults to false.
+      - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
       - $(WasmInvariantGlobalization)
 
       - $(WasmResolveAssembliesBeforeBuild) - Resolve the assembly dependencies. Defaults to false
@@ -69,7 +68,7 @@
       <_WasmAssemblies Remove="@(_WasmAssemblies)" />
     </ItemGroup>
     <PropertyGroup>
-      <AOTMode Condition="'$(AOTMode)' == '' and '$(BuildAOTProfiled)' == 'true'">AotInterp</AOTMode>
+      <AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">AotInterp</AOTMode>
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
     </PropertyGroup>
 
@@ -79,7 +78,7 @@
       OutputType="AsmOnly"
       Assemblies="@(_AotInputAssemblies)"
       UseAotDataFile="false"
-      AotProfilePath="$(AOTProfilePath)"
+      AOTProfilePath="$(AOTProfilePath)"
       Profilers="$(WasmProfilers)"
       AotModulesTablePath="$(WasmBuildDir)driver-gen.c"
       UseLLVM="true"
