@@ -36,20 +36,30 @@ namespace System.Net.Http
         internal bool GZipEnabled => (_decompressionMethods & DecompressionMethods.GZip) != 0;
         internal bool DeflateEnabled => (_decompressionMethods & DecompressionMethods.Deflate) != 0;
         internal bool BrotliEnabled => (_decompressionMethods & DecompressionMethods.Brotli) != 0;
+        
+        private bool EncodingExists(HttpHeaderValueCollection<StringWithQualityHeaderValue> acceptEncodingHeader, string encoding)
+        {
+            foreach (var existingEncoding in acceptEncodingHeader)
+            {
+                if (string.Equals(existingEncoding.Value, encoding, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+
+            return false;
+        }
 
         internal override async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (GZipEnabled && request.Headers.AcceptEncoding.FirstOrDefault(encoding => string.Compare(encoding.Value, s_gzipHeaderValue.Value, StringComparison.OrdinalIgnoreCase) == 0) == null)
+            if (GZipEnabled && !EncodingExists(request.Headers.AcceptEncoding, Gzip))
             {
                 request.Headers.AcceptEncoding.Add(s_gzipHeaderValue);
             }
 
-            if (DeflateEnabled && request.Headers.AcceptEncoding.FirstOrDefault(encoding => string.Compare(encoding.Value, s_deflateHeaderValue.Value, StringComparison.OrdinalIgnoreCase) == 0) == null)
+            if (DeflateEnabled && !EncodingExists(request.Headers.AcceptEncoding, Deflate))
             {
                 request.Headers.AcceptEncoding.Add(s_deflateHeaderValue);
             }
 
-            if (BrotliEnabled && request.Headers.AcceptEncoding.FirstOrDefault(encoding => string.Compare(encoding.Value, s_brotliHeaderValue.Value, StringComparison.OrdinalIgnoreCase) == 0) == null)
+            if (BrotliEnabled && !EncodingExists(request.Headers.AcceptEncoding, Brotli))
             {
                 request.Headers.AcceptEncoding.Add(s_brotliHeaderValue);
             }
