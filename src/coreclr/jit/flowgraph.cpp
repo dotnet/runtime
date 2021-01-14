@@ -9186,18 +9186,19 @@ private:
             // Need to check both for matching const val and for genReturnBB
             // because genReturnBB is used for non-constant returns and its
             // corresponding entry in the returnConstants array is garbage.
+            // Check the returnBlocks[] first, so we don't access an uninitialized
+            // returnContants[] value (which some tools like valgrind will
+            // complain about).
+
+            BasicBlock* returnBlock = returnBlocks[i];
+
+            if (returnBlock == comp->genReturnBB)
+            {
+                continue;
+            }
+
             if (returnConstants[i] == constVal)
             {
-                BasicBlock* returnBlock = returnBlocks[i];
-
-                if (returnBlock == comp->genReturnBB)
-                {
-                    // This is the block used for non-constant returns, so
-                    // its returnConstants entry is just garbage; don't be
-                    // fooled.
-                    continue;
-                }
-
                 *index = i;
                 return returnBlock;
             }
