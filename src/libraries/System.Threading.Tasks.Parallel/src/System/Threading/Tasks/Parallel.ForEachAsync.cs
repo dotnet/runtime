@@ -14,6 +14,7 @@ namespace System.Threading.Tasks
         /// <param name="body">An asynchronous delegate that is invoked once per element in the data source.</param>
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
+        /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
         public static Task ForEachAsync<TSource>(IEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask> body)
         {
             if (source is null)
@@ -35,6 +36,7 @@ namespace System.Threading.Tasks
         /// <param name="body">An asynchronous delegate that is invoked once per element in the data source.</param>
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
+        /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
         public static Task ForEachAsync<TSource>(IEnumerable<TSource> source, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
         {
             if (source is null)
@@ -85,21 +87,25 @@ namespace System.Threading.Tasks
         /// <returns>A task that represents the entire for each operation.</returns>
         private static Task ForEachAsync<TSource>(IEnumerable<TSource> source, int dop, TaskScheduler scheduler, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
         {
+            Debug.Assert(source != null);
+            Debug.Assert(scheduler != null);
+            Debug.Assert(body != null);
+
             // One fast up-front check for cancellation before we start the whole operation.
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
             }
 
-            if (dop == -1)
+            if (dop < 0)
             {
                 dop = DefaultDegreeOfParallelism;
             }
 
             // The worker body. Each worker will execute this same body.
-            Func<object?, Task> taskBody = static async o =>
+            Func<object, Task> taskBody = static async o =>
             {
-                var state = (SyncForEachAsyncState<TSource>)o!;
+                var state = (SyncForEachAsyncState<TSource>)o;
                 bool launchedNext = false;
 
 #pragma warning disable CA2007 // Explicitly don't use ConfigureAwait, as we want to perform all work on the specified scheduler that's now current
@@ -183,6 +189,7 @@ namespace System.Threading.Tasks
         /// <param name="body">An asynchronous delegate that is invoked once per element in the data source.</param>
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
+        /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
         public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask> body)
         {
             if (source is null)
@@ -204,6 +211,7 @@ namespace System.Threading.Tasks
         /// <param name="body">An asynchronous delegate that is invoked once per element in the data source.</param>
         /// <exception cref="System.ArgumentNullException">The exception that is thrown when the <paramref name="source"/> argument or <paramref name="body"/> argument is null.</exception>
         /// <returns>A task that represents the entire for each operation.</returns>
+        /// <remarks>The operation will execute at most <see cref="Environment.ProcessorCount"/> operations in parallel.</remarks>
         public static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
         {
             if (source is null)
@@ -254,21 +262,25 @@ namespace System.Threading.Tasks
         /// <returns>A task that represents the entire for each operation.</returns>
         private static Task ForEachAsync<TSource>(IAsyncEnumerable<TSource> source, int dop, TaskScheduler scheduler, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
         {
+            Debug.Assert(source != null);
+            Debug.Assert(scheduler != null);
+            Debug.Assert(body != null);
+
             // One fast up-front check for cancellation before we start the whole operation.
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
             }
 
-            if (dop == -1)
+            if (dop < 0)
             {
                 dop = DefaultDegreeOfParallelism;
             }
 
             // The worker body. Each worker will execute this same body.
-            Func<object?, Task> taskBody = static async o =>
+            Func<object, Task> taskBody = static async o =>
             {
-                var state = (AsyncForEachAsyncState<TSource>)o!;
+                var state = (AsyncForEachAsyncState<TSource>)o;
                 bool launchedNext = false;
 
 #pragma warning disable CA2007 // Explicitly don't use ConfigureAwait, as we want to perform all work on the specified scheduler that's now current
@@ -276,7 +288,7 @@ namespace System.Threading.Tasks
                 {
                     // Continue to loop while there are more elements to be processed.
                     while (!state.Cancellation.IsCancellationRequested)
-                        {
+                    {
                         // Get the next element from the enumerator.  This requires asynchronously locking around MoveNextAsync/Current.
                         TSource element;
                         await state.Lock.WaitAsync(state.Cancellation.Token);
@@ -367,7 +379,7 @@ namespace System.Threading.Tasks
             /// This could have been an action rather than a func, but it returns a task so that the task body is an async Task
             /// method rather than async void, even though the worker body catches all exceptions and the returned Task is ignored.
             /// </remarks>
-            private readonly Func<object?, Task> _taskBody;
+            private readonly Func<object, Task> _taskBody;
             /// <summary>The <see cref="TaskScheduler"/> on which all work should be performed.</summary>
             private readonly TaskScheduler _scheduler;
             /// <summary>The <see cref="ExecutionContext"/> present at the time of the ForEachAsync invocation.  This is only used if on the default scheduler.</summary>
@@ -386,7 +398,7 @@ namespace System.Threading.Tasks
             public readonly CancellationTokenSource Cancellation = new CancellationTokenSource();
 
             /// <summary>Initializes the state object.</summary>
-            protected ForEachAsyncState(Func<object?, Task> taskBody, int dop, TaskScheduler scheduler, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
+            protected ForEachAsyncState(Func<object, Task> taskBody, int dop, TaskScheduler scheduler, CancellationToken cancellationToken, Func<TSource, CancellationToken, ValueTask> body)
             {
                 _taskBody = taskBody;
                 _remainingDop = dop;
@@ -397,7 +409,7 @@ namespace System.Threading.Tasks
                     _executionContext = ExecutionContext.Capture();
                 }
 
-                _registration = cancellationToken.UnsafeRegister(o => ((ForEachAsyncState<TSource>)o!).Cancellation.Cancel(), this);
+                _registration = cancellationToken.UnsafeRegister(static o => ((ForEachAsyncState<TSource>)o!).Cancellation.Cancel(), this);
             }
 
             /// <summary>Queues another worker if allowed by the remaining degree of parallelism permitted.</summary>
@@ -425,7 +437,7 @@ namespace System.Threading.Tasks
                     else
                     {
                         // We're targeting a non-default TaskScheduler, so queue the task body to it.
-                        Task.Factory.StartNew(_taskBody, this, default(CancellationToken), TaskCreationOptions.DenyChildAttach, _scheduler);
+                        Task.Factory.StartNew(_taskBody!, this, default(CancellationToken), TaskCreationOptions.DenyChildAttach, _scheduler);
                     }
                 }
             }
@@ -451,21 +463,23 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(_completionRefCount == 0, $"Expected {nameof(_completionRefCount)} == 0, got {_completionRefCount}");
 
+                bool taskSet;
                 if (_registration.Token.IsCancellationRequested)
                 {
                     // The externally provided token had cancellation requested. Assume that any exceptions
                     // then are due to that, and just cancel the resulting task.
-                    SetCanceled(_registration.Token);
+                    taskSet = TrySetCanceled(_registration.Token);
                 }
                 else if (_exceptions is null)
                 {
                     // Everything completed successfully.
-                    SetResult();
+                    taskSet = TrySetResult();
                 }
                 else
                 {
                     // Fault with all of the received exceptions, but filter out those due to inner cancellation,
                     // as they're effectively an implementation detail and stem from the original exception.
+                    Debug.Assert(_exceptions.Count > 0, "If _exceptions was created, it should have also been populated.");
                     for (int i = 0; i < _exceptions.Count; i++)
                     {
                         if (_exceptions[i] is OperationCanceledException oce && oce.CancellationToken == Cancellation.Token)
@@ -474,8 +488,11 @@ namespace System.Threading.Tasks
                         }
                     }
                     _exceptions.RemoveAll(e => e is null);
-                    SetException(_exceptions);
+                    Debug.Assert(_exceptions.Count > 0, "Since external cancellation wasn't requested, there should have been a non-cancellation exception that triggered internal cancellation.");
+                    taskSet = TrySetException(_exceptions);
                 }
+
+                Debug.Assert(taskSet, "Complete should only be called once.");
             }
 
             /// <summary>Executes the task body using the <see cref="ExecutionContext"/> captured when ForEachAsync was invoked.</summary>
@@ -501,12 +518,12 @@ namespace System.Threading.Tasks
             public readonly IEnumerator<TSource> Enumerator;
 
             public SyncForEachAsyncState(
-                IEnumerable<TSource> source, Func<object?, Task> taskBody,
+                IEnumerable<TSource> source, Func<object, Task> taskBody,
                 int dop, TaskScheduler scheduler, CancellationToken cancellationToken,
                 Func<TSource, CancellationToken, ValueTask> body) :
                 base(taskBody, dop, scheduler, cancellationToken, body)
             {
-                Enumerator = source.GetEnumerator();
+                Enumerator = source.GetEnumerator() ?? throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
             }
 
             public void Dispose()
@@ -524,12 +541,12 @@ namespace System.Threading.Tasks
             public readonly IAsyncEnumerator<TSource> Enumerator;
 
             public AsyncForEachAsyncState(
-                IAsyncEnumerable<TSource> source, Func<object?, Task> taskBody,
+                IAsyncEnumerable<TSource> source, Func<object, Task> taskBody,
                 int dop, TaskScheduler scheduler, CancellationToken cancellationToken,
                 Func<TSource, CancellationToken, ValueTask> body) :
                 base(taskBody, dop, scheduler, cancellationToken, body)
             {
-                Enumerator = source.GetAsyncEnumerator(Cancellation.Token);
+                Enumerator = source.GetAsyncEnumerator(Cancellation.Token) ?? throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
             }
 
             public ValueTask DisposeAsync()
