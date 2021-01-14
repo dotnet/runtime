@@ -458,13 +458,15 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="offset">Signature offset within the PE file byte array</param>
         public R2RSignatureDecoder(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, TGenericContext context, MetadataReader metadataReader, ReadyToRunReader r2rReader, int offset)
         {
-            _metadataReader = metadataReader;
-            _outerReader = metadataReader;
             Context = context;
             _provider = provider;
             _image = r2rReader.Image;
             _originalOffset = _offset = offset;
             _contextReader = r2rReader;
+            MetadataReader moduleOverrideMetadataReader = TryGetModuleOverrideMetadataReader();
+            _metadataReader = moduleOverrideMetadataReader ?? metadataReader;
+            _outerReader = moduleOverrideMetadataReader ?? metadataReader;
+            Reset();
         }
 
         /// <summary>
@@ -480,11 +482,27 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             Context = context;
             _provider = provider;
-            _metadataReader = metadataReader;
             _image = signature;
             _originalOffset = _offset = offset;
-            _outerReader = outerReader;
             _contextReader = contextReader;
+            MetadataReader moduleOverrideMetadataReader = TryGetModuleOverrideMetadataReader();
+            _metadataReader = moduleOverrideMetadataReader ?? metadataReader;
+            _outerReader = moduleOverrideMetadataReader ?? outerReader;
+            Reset();
+        }
+
+        private MetadataReader TryGetModuleOverrideMetadataReader()
+        {
+            bool moduleOverride = (ReadByte() & (byte)ReadyToRunFixupKind.ModuleOverride) != 0;
+            // Check first byte for a module override being encoded
+            if (moduleOverride)
+            {
+                int moduleIndex = (int)ReadUInt();
+                IAssemblyMetadata refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                return refAsmEcmaReader.MetadataReader;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -1098,17 +1116,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             bool moduleOverride = (fixupType & (byte)ReadyToRunFixupKind.ModuleOverride) != 0;
             SignatureDecoder moduleDecoder = this;
 
-            // Check first byte for a module override being encoded
+            // Check first byte for a module override being encoded. The metadata reader for the module
+            // override is configured in the R2RSignatureDecoder constructor.
             if (moduleOverride)
             {
                 fixupType &= ~(uint)ReadyToRunFixupKind.ModuleOverride;
-                int moduleIndex = (int)ReadUIntAndEmitInlineSignatureBinary(builder);
-                IAssemblyMetadata refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
-                moduleDecoder = new SignatureDecoder(Context.AssemblyResolver, Context.Options, refAsmEcmaReader.MetadataReader, _image, Offset, refAsmEcmaReader.MetadataReader, _contextReader);
+                ReadUIntAndEmitInlineSignatureBinary(builder);
             }
 
-            ReadyToRunSignature result = moduleDecoder.ParseSignature((ReadyToRunFixupKind)fixupType, builder);
-            UpdateOffset(moduleDecoder.Offset);
+            ReadyToRunSignature result = ParseSignature((ReadyToRunFixupKind)fixupType, builder);
             return result;
         }
 

@@ -4,8 +4,8 @@ The purpose of this document is to help establish norms and best practices for d
 Here are a guiding set of principles of how to successfully combine the communities and teams which work together in dotnet/runtime.
 - Retain a 'one community/team' feel for dotnet/runtime
 - Leverage automation to label incoming/inflight to enable accountability
-- area-* labels should align with a specific community/team for accountability
-- Within an area-* there is leeway for community/team specific practices
+- `area-*` labels should align with a specific community/team for accountability
+- Within an `area-*` there is leeway for community/team specific practices
 # Details
 dotnet/runtime issues and pull requests are a shared resource. In alignment with the Principles the goal is to find a set of norms and best practices which enable a successful community within dotnet/runtime, understand what is expected, act as 'one community/team', and provide leeway at the area level.
 

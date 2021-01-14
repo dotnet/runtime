@@ -2304,14 +2304,14 @@ namespace Internal.JitInterface
             blockType = BlockType.Unknown;
         }
 
-        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
+        private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
         {
             CORJIT_FLAGS flags = default(CORJIT_FLAGS);
             getJitFlags(ref flags, 0);
+            *pInstrumentationData = null;
 
             if (flags.IsSet(CorJitFlag.CORJIT_FLAG_IL_STUB))
             {
-                pBlockCounts = null;
                 return HRESULT.E_NOTIMPL;
             }
 
@@ -2319,17 +2319,40 @@ namespace Internal.JitInterface
             EcmaMethod ecmaMethod = _methodCodeNode.Method.GetTypicalMethodDefinition() as EcmaMethod;
             if (ecmaMethod == null)
             {
-                pBlockCounts = null;
+                return HRESULT.E_NOTIMPL;
+            }
+
+            // Only allocation of PGO data for the current method is supported.
+            if (_methodCodeNode.Method != HandleToObject(ftnHnd))
+            {
                 return HRESULT.E_NOTIMPL;
             }
 
             if (!_compilation.IsModuleInstrumented(ecmaMethod.Module))
             {
-                pBlockCounts = null;
                 return HRESULT.E_NOTIMPL;
             }
 
-            pBlockCounts = (BlockCounts*)GetPin(_bbCounts = new byte[count * sizeof(BlockCounts)]);
+            // Validate that each schema item is only used for a basic block count
+            for (uint iSchema = 0; iSchema < countSchemaItems; iSchema++)
+            {
+                if (pSchema[iSchema].InstrumentationKind != PgoInstrumentationKind.BasicBlockIntCount)
+                    return HRESULT.E_NOTIMPL;
+                if (pSchema[iSchema].Count != 1)
+                    return HRESULT.E_NOTIMPL;
+            }
+
+            BlockCounts* blockCounts = (BlockCounts*)GetPin(_bbCounts = new byte[countSchemaItems * sizeof(BlockCounts)]);
+            *pInstrumentationData = (byte*)blockCounts;
+
+            for (uint iSchema = 0; iSchema < countSchemaItems; iSchema++)
+            {
+                // Update schema have correct offsets
+                pSchema[iSchema].Offset = new IntPtr((byte*)&blockCounts[iSchema].ExecutionCount - (byte*)blockCounts);
+                // Insert IL Offsets into block data to match schema
+                blockCounts[iSchema].ILOffset = (uint)pSchema[iSchema].ILOffset;
+            }
+
             if (_profileDataNode == null)
             {
                 _profileDataNode = _compilation.NodeFactory.ProfileData(_methodCodeNode);
@@ -2337,8 +2360,8 @@ namespace Internal.JitInterface
             return 0;
         }
 
-        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
-        { throw new NotImplementedException("getBBProfileData"); }
+        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint pCountSchemaItems, byte** pInstrumentationData)
+        { throw new NotImplementedException("getPgoInstrumentationResults"); }
 
         private CORINFO_CLASS_STRUCT_* getLikelyClass(CORINFO_METHOD_STRUCT_* ftnHnd, CORINFO_CLASS_STRUCT_* baseHnd, uint IlOffset, ref uint pLikelihood, ref uint pNumberOfClasses)
         {
@@ -2368,12 +2391,6 @@ namespace Internal.JitInterface
 
         private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
         {
-            if (_compilation.NodeFactory.Target.Architecture == TargetArchitecture.X86)
-            {
-                // TODO-PERF: x86 pinvoke stubs on Unix platforms
-                return true;
-            }
-
             if (handle != null)
             {
                 var method = HandleToObject(handle);

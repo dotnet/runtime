@@ -2025,25 +2025,27 @@ void interceptor_ICJI::reportFatalError(CorJitResult result)
 
 // allocate a basic block profile buffer where execution counts will be stored
 // for jitted basic blocks.
-HRESULT interceptor_ICJI::allocMethodBlockCounts(UINT32          count, // The number of basic blocks that we have
-                                                 BlockCounts**   pBlockCounts)
+HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
+                                                          PgoInstrumentationSchema* pSchema,
+                                                          UINT32 countSchemaItems,
+                                                          BYTE** pInstrumentationData)
 {
-    mc->cr->AddCall("allocMethodBlockCounts");
-    HRESULT result = original_ICorJitInfo->allocMethodBlockCounts(count, pBlockCounts);
-    mc->recAllocMethodBlockCounts(count, pBlockCounts, result);
+    mc->cr->AddCall("allocPgoInstrumentationBySchema");
+    HRESULT result = original_ICorJitInfo->allocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
+    mc->recAllocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData, result);
     return result;
 }
 
 // get profile information to be used for optimizing the current method.  The format
 // of the buffer is the same as the format the JIT passes to allocMethodBlockCounts.
-HRESULT interceptor_ICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
-                                               UINT32 *              pCount, // The number of basic blocks that we have
-                                               BlockCounts**         pBlockCounts,
-                                               UINT32 *              pNumRuns)
+HRESULT interceptor_ICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
+                                                       PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
+                                                       UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
+                                                       BYTE **                    pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
 {
-    mc->cr->AddCall("getMethodBlockCounts");
-    HRESULT temp = original_ICorJitInfo->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
-    mc->recGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns, temp);
+    mc->cr->AddCall("getPgoInstrumentationResults");
+    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
+    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, temp);
     return temp;
 }
 
@@ -2105,7 +2107,10 @@ WORD interceptor_ICJI::getRelocTypeHint(void* target)
 //
 DWORD interceptor_ICJI::getExpectedTargetArchitecture()
 {
-    return original_ICorJitInfo->getExpectedTargetArchitecture();
+    mc->cr->AddCall("getExpectedTargetArchitecture");
+    DWORD result = original_ICorJitInfo->getExpectedTargetArchitecture();
+    mc->recGetExpectedTargetArchitecture(result);
+    return result;
 }
 
 bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)

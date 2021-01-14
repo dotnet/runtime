@@ -24,6 +24,7 @@ namespace ILCompiler
 
         public string CompositeRootPath;
         public bool Optimize;
+        public bool OptimizeDisabled;
         public bool OptimizeSpace;
         public bool OptimizeTime;
         public bool InputBubble;
@@ -86,6 +87,7 @@ namespace ILCompiler
                 syntax.DefineOption("o|out|outputfilepath", ref OutputFilePath, SR.OutputFilePath);
                 syntax.DefineOption("crp|compositerootpath", ref CompositeRootPath, SR.CompositeRootPath);
                 syntax.DefineOption("O|optimize", ref Optimize, SR.EnableOptimizationsOption);
+                syntax.DefineOption("Od|optimize-disabled", ref OptimizeDisabled, SR.DisableOptimizationsOption);
                 syntax.DefineOption("Os|optimize-space", ref OptimizeSpace, SR.OptimizeSpaceOption);
                 syntax.DefineOption("Ot|optimize-time", ref OptimizeTime, SR.OptimizeSpeedOption);
                 syntax.DefineOption("inputbubble", ref InputBubble, SR.InputBubbleOption);

@@ -85,7 +85,7 @@
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- Setup runtime pack native. -->
       <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
-                               DestinationSubDirectory="cross/" />
+                               DestinationSubDirectory="cross/%(RecursiveDir)" />
       <ReferenceCopyLocalPaths Include="@(MonoIncludeFiles)"
                                DestinationSubDirectory="include/%(RecursiveDir)" />
     </ItemGroup>

@@ -113,8 +113,7 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
             }
 
-            int arrayLen = array.Length;
-            if (arrayLen - arrayIndex < _size)
+            if (array.Length - arrayIndex < _size)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
@@ -184,7 +183,7 @@ namespace System.Collections.Generic
         {
             if (_size == _array.Length)
             {
-                int newcapacity = (int)((long)_array.Length * (long)GrowFactor / 100);
+                int newcapacity = (int)(_array.Length * (long)GrowFactor / 100);
                 if (newcapacity < _array.Length + MinimumGrow)
                 {
                     newcapacity = _array.Length + MinimumGrow;
@@ -379,7 +378,7 @@ namespace System.Collections.Generic
 
         public void TrimExcess()
         {
-            int threshold = (int)(((double)_array.Length) * 0.9);
+            int threshold = (int)(_array.Length * 0.9);
             if (_size < threshold)
             {
                 SetCapacity(_size);

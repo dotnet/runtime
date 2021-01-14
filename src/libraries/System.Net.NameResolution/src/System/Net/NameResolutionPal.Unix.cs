@@ -16,7 +16,7 @@ namespace System.Net
     {
         public const bool SupportsGetAddrInfoAsync = false;
 
-        internal static Task GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken) =>
+        internal static Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
         private static SocketError GetSocketErrorForNativeError(int error)

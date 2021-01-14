@@ -178,7 +178,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         // push edx - repush the return address
         pcpusl->X86EmitPushReg(kEDX);
     }
-    
+
     // The native signature doesn't have a return buffer
     // but the managed signature does.
     // Set up the return buffer address here.
@@ -188,12 +188,12 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         // Calculate the offset to the return buffer we establish for EAX:EDX below.
         // lea edx [esp - offset to EAX:EDX return buffer]
         pcpusl->X86EmitEspOffset(0x8d, kEDX, -0xc /* skip return addr, EBP, EBX */ -0x8 /* point to start of EAX:EDX return buffer */ );
-        
+
         // exchange edx (which has the return buffer address)
         // with the return address
         // xchg edx, [esp]
-        pcpusl->X86EmitOp(0x87, kEDX, (X86Reg)kESP_Unsafe);   
-     
+        pcpusl->X86EmitOp(0x87, kEDX, (X86Reg)kESP_Unsafe);
+
         // push edx
         pcpusl->X86EmitPushReg(kEDX);
     }
@@ -497,7 +497,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
             pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEDX);
         }
         // In the umtmlBufRetValToEnreg case,
-        // we set up the return buffer to output 
+        // we set up the return buffer to output
         // into the EDX:EAX buffer we set up for the register return case.
         // So we don't need to do more work here.
         else if ((pInfo->m_wFlags & umtmlBufRetValToEnreg) == 0)
@@ -684,7 +684,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     UINT nOffset = 0;
     int numRegistersUsed = 0;
     int numStackSlotsIndex = nStackBytes / STACK_ELEM_SIZE;
-    
+
     // This could have been set in the UnmanagedCallersOnly scenario.
     if (m_callConv == UINT16_MAX)
         m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
@@ -699,8 +699,30 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
         numRegistersUsed++;
     }
 
+    bool hasReturnBuffer = argit.HasRetBuffArg() || (m_callConv == pmCallConvThiscall && argit.HasValueTypeReturn());
+    bool hasNativeExchangeTypeReturn = false;
+
+    if (hasReturnBuffer)
+    {
+        // If think we have a return buffer, lets make sure that we aren't returning one of the intrinsic native exchange types.
+        TypeHandle returnType = pMetaSig->GetRetTypeHandleThrowing();
+        if (returnType.GetMethodTable()->IsIntrinsicType())
+        {
+            LPCUTF8 pszNamespace;
+            LPCUTF8 pszTypeName = returnType.GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
+            if ((strcmp(pszNamespace, g_InteropServicesNS) == 0)
+                && (strcmp(pszTypeName, "CLong") == 0 || strcmp(pszTypeName, "CULong") == 0 || strcmp(pszTypeName, "NFloat") == 0))
+            {
+                // We have one of the intrinsic native exchange types.
+                // As a result, we don't have a return buffer.
+                hasReturnBuffer = false;
+                hasNativeExchangeTypeReturn = true;
+            }
+        }
+    }
+
     // process the return buffer parameter
-    if (argit.HasRetBuffArg() || (m_callConv == pmCallConvThiscall && argit.HasValueTypeReturn()))
+    if (hasReturnBuffer)
     {
         // Only copy the retbuf arg from the src call when both the managed call and native call
         // have a return buffer.
@@ -808,7 +830,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
             {
                 stubInfo.m_wFlags |= umtmlThisCallHiddenArg;
             }
-            else if (argit.HasValueTypeReturn())
+            else if (argit.HasValueTypeReturn() && !hasNativeExchangeTypeReturn)
             {
                 stubInfo.m_wFlags |= umtmlThisCallHiddenArg | umtmlEnregRetValToBuf;
                 // When the native signature has a return buffer but the
