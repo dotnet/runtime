@@ -5,6 +5,9 @@
     <!-- Create an intermediate runsettings file to enable VSTest discovery. -->
     <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
     <CreateIntermediateRunSettingsFile>true</CreateIntermediateRunSettingsFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
