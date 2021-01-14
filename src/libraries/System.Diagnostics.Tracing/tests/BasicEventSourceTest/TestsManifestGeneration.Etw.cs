@@ -58,7 +58,8 @@ namespace BasicEventSourceTests
                     tracesession.DisableProvider("SimpleEventSource");
                     tracesession.Dispose();
 
-                    manifestExists = false;
+                    var manifestExists = false;
+                    var max_retries = 50;
 
                     for (int i = 0; i < max_retries; i++)
                     {
@@ -100,7 +101,7 @@ namespace BasicEventSourceTests
 
                     tracesession.Flush();
 
-                    tracesession.SetFileName(rolloverFile);
+                    tracesession.SetFileName(rolloverFileName);
 
                     Thread.Sleep(TimeSpan.FromSeconds(5));
 
