@@ -88,7 +88,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45586", TestPlatforms.Browser)]  // Failure
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46983", TestPlatforms.Browser)]  // JS Fetch does not support see issue
         public async Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
         {
             var rand = new Random();
