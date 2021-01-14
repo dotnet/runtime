@@ -39,17 +39,17 @@ namespace System.Net.Http
 
         internal override async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (GZipEnabled && !request.Headers.AcceptEncoding.Contains(s_gzipHeaderValue))
+            if (GZipEnabled && request.Headers.AcceptEncoding.FirstOrDefault(encoding => string.Compare(encoding.Value, s_gzipHeaderValue.Value, StringComparison.OrdinalIgnoreCase) == 0) == null)
             {
                 request.Headers.AcceptEncoding.Add(s_gzipHeaderValue);
             }
 
-            if (DeflateEnabled && !request.Headers.AcceptEncoding.Contains(s_deflateHeaderValue))
+            if (DeflateEnabled && request.Headers.AcceptEncoding.FirstOrDefault(encoding => string.Compare(encoding.Value, s_deflateHeaderValue.Value, StringComparison.OrdinalIgnoreCase) == 0) == null)
             {
                 request.Headers.AcceptEncoding.Add(s_deflateHeaderValue);
             }
 
-            if (BrotliEnabled && !request.Headers.AcceptEncoding.Contains(s_brotliHeaderValue))
+            if (BrotliEnabled && request.Headers.AcceptEncoding.FirstOrDefault(encoding => string.Compare(encoding.Value, s_brotliHeaderValue.Value, StringComparison.OrdinalIgnoreCase) == 0) == null)
             {
                 request.Headers.AcceptEncoding.Add(s_brotliHeaderValue);
             }
