@@ -2072,6 +2072,14 @@
   },
   {
     "Name": "System.ServiceProcess.ServiceController",
+    "Description": "Provides types to perform speech synthesis and speech recognition.",
+    "CommonTypes": [
+      "System.Speech.Synthesis.SpeechSynthesizer",
+      "System.Speech.Recognition.SpeechRecognizer"
+    ]
+  },
+  {
+    "Name": "System.Speech",
     "Description": "Provides the System.ServiceProcess.ServiceContainer class, which allows you to connect to a running or stopped service, manipulate it, or get information about it.",
     "CommonTypes": [
       "System.ServiceProcess.ServiceController",
