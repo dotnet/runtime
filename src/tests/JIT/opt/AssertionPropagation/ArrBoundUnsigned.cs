@@ -83,6 +83,79 @@ class ArrBoundUnsigned
             return 9999;
     }
 
+    // tests for constant input and indexes
+    [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+    static int i_LT_UN_len(int[] a, int i, int lenTest)
+    {
+        if ((uint)lenTest < (uint)a.Length)
+            return a[i];
+        else
+            return 9999;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+    static int len_LT_UN_i(int[] a, int i, int lenTest)
+    {
+        if ((uint)a.Length < (uint)lenTest)
+            return a[i];
+        else
+            return 9999;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+    static int len_GT_UN_i(int[] a, int i, int lenTest)
+    {
+        if ((uint)a.Length > (uint)lenTest)
+            return a[i];
+        else
+            return 9999;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+    static int i_GT_UN_len(int[] a, int i, int lenTest)
+    {
+        if ((uint)lenTest > (uint)a.Length)
+            return a[i];
+        else
+            return 9999;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+    static int i_LE_UN_len(int[] a, int i, int lenTest)
+    {
+        if ((uint)lenTest <= (uint)a.Length)
+            return a[i];
+        else
+            return 9999;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+    static int len_LE_UN_i(int[] a, int i, int lenTest)
+    {
+        if ((uint)a.Length <= (uint)lenTest)
+            return a[i];
+        else
+            return 9999;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+    static int len_GE_UN_i(int[] a, int i, int lenTest)
+    {
+        if ((uint)a.Length >= (uint)lenTest)
+            return a[i];
+        else
+            return 9999;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+    static int i_GE_UN_len(int[] a, int i, int lenTest)
+    {
+        if ((uint)lenTest >= (uint)a.Length)
+            return a[i];
+        else
+            return 9999;
+    }
+
     static int Main()
     {
         const int Pass = 100;
@@ -148,6 +221,41 @@ class ArrBoundUnsigned
         try { len_LT_UN_i(arr, arr.Length + 2); return Fail; } catch (IndexOutOfRangeException) { }
         if (len_LT_UN_i(empty, 0) != 9999) return Fail;
 
+        // constant index tests (these are inlined)
+        if (new Func<int>(() => i_LT_UN_len(arr, 0, 2))() != 1) return Fail;
+        if (new Func<int>(() => i_LT_UN_len(arr, 0, 3))() != 9999) return Fail;
+        try {new Func<int>(() => i_LT_UN_len(arr, 3, 2))(); return Fail; } catch (IndexOutOfRangeException) {}
+        if (new Func<int>(() => i_LT_UN_len(empty, 0, 0))() != 9999) return Fail;
+
+        if (new Func<int>(() => len_LT_UN_i(arr, 3, 0))() != 9999) return Fail;
+        try { new Func<int>(() => len_LT_UN_i(arr, 3, 4))(); return Fail; } catch (IndexOutOfRangeException) {}
+        if (new Func<int>(() => len_LT_UN_i(arr, 0, -1))() != 1) return Fail;
+        try { new Func<int>(() => len_LT_UN_i(arr, 3, -1))(); return Fail; } catch (IndexOutOfRangeException) {}
+        if (new Func<int>(() => len_LT_UN_i(empty, 0, 0))() != 9999) return Fail;
+
+        if (new Func<int>(() => len_GT_UN_i(arr, 2, 2))() != 3000) return Fail;
+        try { new Func<int>(() => len_GT_UN_i(arr, 3, 2))(); return Fail; } catch (IndexOutOfRangeException) {}
+        if (new Func<int>(() => len_GT_UN_i(arr, 0, 3))() != 9999) return Fail;
+
+        if (new Func<int>(() => i_GT_UN_len(arr, 0, 4))() != 1) return Fail;
+        if (new Func<int>(() => i_GT_UN_len(arr, 0, 3))() != 9999) return Fail;
+        try { new Func<int>(() => i_GT_UN_len(arr, 3, 4))(); return Fail; } catch (IndexOutOfRangeException) {}
+
+        if (new Func<int>(() => i_LE_UN_len(arr, 2, 3))() != 3000) return Fail;
+        try { new Func<int>(() => i_LE_UN_len(arr, 3, 3))(); return Fail; } catch (IndexOutOfRangeException) {}
+        if (new Func<int>(() => i_LE_UN_len(arr, 3, 4))() != 9999) return Fail;
+
+        if (new Func<int>(() => len_LE_UN_i(arr, 0, 3))() != 1) return Fail;
+        if (new Func<int>(() => len_LE_UN_i(arr, 0, 2))() != 9999) return Fail;
+        try { new Func<int>(() => len_LE_UN_i(arr, 3, 3))(); return Fail; } catch (IndexOutOfRangeException) {}
+
+        if (new Func<int>(() => len_GE_UN_i(arr, 0, 3))() != 1) return Fail;
+        try { new Func<int>(() => len_GE_UN_i(arr, 3, 3))(); return Fail; } catch (IndexOutOfRangeException) {}
+        if (new Func<int>(() => len_GE_UN_i(arr, 2, 4))() != 9999) return Fail;
+
+        if (new Func<int>(() => i_GE_UN_len(arr, 2, 3))() != 3000) return Fail;
+        if (new Func<int>(() => i_GE_UN_len(arr, 3, 2))() != 9999) return Fail;
+        try { new Func<int>(() => i_GE_UN_len(arr, 3, 4))(); return Fail; } catch (IndexOutOfRangeException) {}
 
         return Pass;
     }
