@@ -529,6 +529,27 @@ PALIMPORT double __cdecl PAL_scalbn(double x, int n)
 
 /*++
 Function:
+    sincos
+
+See MSDN.
+--*/
+PALIMPORT void __cdecl PAL_sincos(double x, double* sin, double* cos)
+{
+    PERF_ENTRY(sincos);
+    ENTRY("sincos (x=%f)\n", x);
+
+#if defined(__APPLE__)
+    __sincos(x, sin, cos);
+#else
+    sincos(x, sin, cos);
+#endif // !__APPLE__
+
+    LOGEXIT("sincos returns (double %f, double %f)\n", *sin, *cos);
+    PERF_EXIT(sincos);
+}
+
+/*++
+Function:
   _finitef
 
 Determines whether given single-precision floating point value is finite.
@@ -1002,7 +1023,28 @@ PALIMPORT float __cdecl PAL_scalbnf(float x, int n)
 
     ret = scalbnf(x, n);
 
-    LOGEXIT("scalbnf returns double %f\n", ret);
+    LOGEXIT("scalbnf returns float %f\n", ret);
     PERF_EXIT(scalbnf);
     return ret;
+}
+
+/*++
+Function:
+    sincosf
+
+See MSDN.
+--*/
+PALIMPORT void __cdecl PAL_sincosf(float x, float* sin, float* cos)
+{
+    PERF_ENTRY(sincosf);
+    ENTRY("sincosf (x=%f)\n", x);
+
+#if defined(__APPLE__)
+    __sincosf(x, sin, cos);
+#else
+    sincosf(x, sin, cos);
+#endif // !__APPLE__
+
+    LOGEXIT("sincosf returns (float %f, float %f)\n", *sin, *cos);
+    PERF_EXIT(sincosf);
 }

@@ -184,7 +184,7 @@ ep_config_init (EventPipeConfiguration *config)
 	ep_raise_error_if_nok (ep_rt_provider_list_is_valid (&config->provider_list));
 
 	EP_LOCK_ENTER (section1)
-		config->config_provider = provider_create (ep_config_get_default_provider_name_utf8 (), NULL, NULL, NULL, provider_callback_data_queue);
+		config->config_provider = provider_create_register (ep_config_get_default_provider_name_utf8 (), NULL, NULL, NULL, provider_callback_data_queue);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (config->config_provider != NULL);

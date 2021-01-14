@@ -173,7 +173,9 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" Condition="'$(TargetOS)' == 'Browser'" />
+  <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.props" Condition="'$(TargetOS)' == 'Browser'" />
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" Condition="'$(TargetOS)' == 'Browser'" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
