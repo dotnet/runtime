@@ -5450,7 +5450,7 @@ namespace System.Threading.Tasks
                     _timer = new TimerQueueTimer(state => ((DelayPromise)state!).CompleteTimedOut(), this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
                     if (IsCompleted)
                     {
-                        // Handle rare race condition where completion occurs prior to our having created and stored the timer, in which case
+                        // Handle rare race condition where the timer fires prior to our having stored it into the field, in which case
                         // the timer won't have been cleaned up appropriately.  This call to close might race with the Cleanup call to Close,
                         // but Close is thread-safe and will be a nop if it's already been closed.
                         _timer.Close();
@@ -5494,7 +5494,14 @@ namespace System.Threading.Tasks
                         // because that's strangely already handled inside of TrySetCanceled.
                     }
                 }, this);
-
+                if (IsCompleted)
+                {
+                    // Handle rare race condition where the base timer fires prior to our having stored the cancellation registration into
+                    // the field, in which case the call to Cleanup won't dispose of the registration.  In such a case, Cleanup will have
+                    // already been called to dispose of the base timer, so we can just call Dispose on the registration directly.  This
+                    // Dispose call might also race with the base calling Cleanup, but CTR.Dispose is thread-safe.
+                    _registration.Dispose();
+                }
             }
 
             protected override void Cleanup()

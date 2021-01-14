@@ -1609,7 +1609,21 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
     jitInstance->mc->cr->AddCall("allocMem");
 
     // TODO-Cleanup: Could hot block size be ever 0?
-    *hotCodeBlock = jitInstance->mc->cr->allocateMemory(hotCodeSize);
+    size_t codeAlignment      = sizeof(void*);
+    size_t hotCodeAlignedSize = static_cast<size_t>(hotCodeSize);
+
+    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+         codeAlignment = 32;
+    }
+    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    {
+         codeAlignment = 16;
+    }
+    hotCodeAlignedSize = ALIGN_UP_SPMI(hotCodeAlignedSize, codeAlignment);
+    hotCodeAlignedSize = hotCodeAlignedSize + (codeAlignment - sizeof(void*));
+    *hotCodeBlock      = jitInstance->mc->cr->allocateMemory(hotCodeAlignedSize);
+    *hotCodeBlock      = ALIGN_UP_SPMI(*hotCodeBlock, codeAlignment);
 
     if (coldCodeSize > 0)
         *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);
@@ -1786,22 +1800,24 @@ void MyICJI::reportFatalError(CorJitResult result)
 
 // allocate a basic block profile buffer where execution counts will be stored
 // for jitted basic blocks.
-HRESULT MyICJI::allocMethodBlockCounts(UINT32          count, // The number of basic blocks that we have
-                                       BlockCounts**   pBlockCounts)
+HRESULT MyICJI::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
+                                                PgoInstrumentationSchema* pSchema,
+                                                UINT32 countSchemaItems,
+                                                BYTE** pInstrumentationData)
 {
-    jitInstance->mc->cr->AddCall("allocMethodBlockCounts");
-    return jitInstance->mc->repAllocMethodBlockCounts(count, pBlockCounts);
+    jitInstance->mc->cr->AddCall("allocPgoInstrumentationBySchema");
+    return jitInstance->mc->repAllocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
 }
 
 // get profile information to be used for optimizing the current method.  The format
 // of the buffer is the same as the format the JIT passes to allocMethodBlockCounts.
-HRESULT MyICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
-                                     UINT32 *              pCount, // The number of basic blocks that we have
-                                     BlockCounts**         pBlockCounts,
-                                     UINT32 *              pNumRuns)
+HRESULT MyICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
+                                             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
+                                             UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
+                                             BYTE **                    pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
 {
-    jitInstance->mc->cr->AddCall("getMethodBlockCounts");
-    return jitInstance->mc->repGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
+    jitInstance->mc->cr->AddCall("getPgoInstrumentationResults");
+    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
 }
 
 // Get the likely implementing class for a virtual call or interface call made by ftnHnd
@@ -1857,15 +1873,7 @@ WORD MyICJI::getRelocTypeHint(void* target)
 //
 DWORD MyICJI::getExpectedTargetArchitecture()
 {
-#if defined(TARGET_X86)
-    return IMAGE_FILE_MACHINE_I386;
-#elif defined(TARGET_AMD64)
-    return IMAGE_FILE_MACHINE_AMD64;
-#elif defined(TARGET_ARM)
-    return IMAGE_FILE_MACHINE_ARMNT;
-#elif defined(TARGET_ARM64)
-    return IMAGE_FILE_MACHINE_ARM64;
-#else
-    return IMAGE_FILE_MACHINE_UNKNOWN;
-#endif
+    jitInstance->mc->cr->AddCall("getExpectedTargetArchitecture");
+    DWORD result = jitInstance->mc->repGetExpectedTargetArchitecture();
+    return result;
 }

@@ -94,7 +94,6 @@ namespace System.Threading
             }
         }
 
-#if !MONO // Workaround for #46389
         public Thread(ThreadStart start)
         {
             if (start == null)
@@ -237,7 +236,6 @@ namespace System.Threading
                 startHelper._culture = value;
             }
         }
-#endif // Workaround for #46389
 
         partial void ThreadNameChanged(string? value);
 

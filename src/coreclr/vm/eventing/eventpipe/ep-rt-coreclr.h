@@ -11,6 +11,7 @@
 #include "ep-session-provider.h"
 #include "fstream.h"
 #include "typestring.h"
+#include "win32threadpool.h"
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) (sizeof(expr) / sizeof ((expr) [0]))
@@ -365,6 +366,21 @@ template<typename ARRAY_TYPE>
 static
 inline
 void
+_rt_coreclr_array_init_capacity (
+	ARRAY_TYPE *ep_array,
+	size_t capacity)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (ep_array != NULL);
+
+	if (ep_array->array)
+		ep_array->array->AllocNoThrow (capacity);
+}
+
+template<typename ARRAY_TYPE>
+static
+inline
+void
 _rt_coreclr_array_free (ARRAY_TYPE *ep_array)
 {
 	STATIC_CONTRACT_NOTHROW;
@@ -601,6 +617,22 @@ _rt_coreclr_hash_map_add (
 	return hash_map->table->AddNoThrow (typename HASH_MAP_TYPE::table_type_t::element_t (key, value));
 }
 
+template<typename HASH_MAP_TYPE, typename KEY_TYPE, typename VALUE_TYPE>
+static
+inline
+bool
+_rt_coreclr_hash_map_add_or_replace (
+	HASH_MAP_TYPE *hash_map,
+	KEY_TYPE key,
+	VALUE_TYPE value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (HASH_MAP_TYPE::table_type_t::s_NoThrow);
+	EP_ASSERT (hash_map != NULL && hash_map->table != NULL);
+
+	return hash_map->table->AddOrReplaceNoThrow (typename HASH_MAP_TYPE::table_type_t::element_t (key, value));
+}
+
 template<typename HASH_MAP_TYPE>
 static
 inline
@@ -792,6 +824,7 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_list_is_valid<list_type>(list); \
 	}
 
+#undef EP_RT_DEFINE_LIST
 #define EP_RT_DEFINE_LIST(list_name, list_type, item_type) \
 	EP_RT_DEFINE_LIST_PREFIX(ep, list_name, list_type, item_type)
 
@@ -817,6 +850,7 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_list_iterator_value<iterator_type, item_type>(iterator); \
 	}
 
+#undef EP_RT_DEFINE_LIST_ITERATOR
 #define EP_RT_DEFINE_LIST_ITERATOR(list_name, list_type, iterator_type, item_type) \
 	EP_RT_DEFINE_LIST_ITERATOR_PREFIX(ep, list_name, list_type, iterator_type, item_type)
 
@@ -857,6 +891,7 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_queue_is_valid<queue_type>(queue); \
 	}
 
+#undef EP_RT_DEFINE_QUEUE
 #define EP_RT_DEFINE_QUEUE(queue_name, queue_type, item_type) \
 	EP_RT_DEFINE_QUEUE_PREFIX(ep, queue_name, queue_type, item_type)
 
@@ -902,8 +937,30 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_array_is_valid<array_type> (ep_array); \
 	}
 
+#define EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init) (array_type *ep_array) { \
+		STATIC_CONTRACT_NOTHROW; \
+	} \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, init_capacity) (array_type *ep_array, size_t capacity) { \
+		STATIC_CONTRACT_NOTHROW; \
+		_rt_coreclr_array_init_capacity<array_type>(ep_array, capacity); \
+	} \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, fini) (array_type *ep_array) { \
+		STATIC_CONTRACT_NOTHROW; \
+	}
+
+#undef EP_RT_DEFINE_ARRAY
 #define EP_RT_DEFINE_ARRAY(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#undef EP_RT_DEFINE_LOCAL_ARRAY
+#define EP_RT_DEFINE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
+	EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#define EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, var_type) \
+	var_type::array_type_t _local_ ##var_name; \
+	var_type var_name; \
+	var_name.array = &_local_ ##var_name
 
 #define EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
 	static inline iterator_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_begin) (const array_type *ep_array) \
@@ -949,13 +1006,15 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_array_reverse_iterator_value<iterator_type, item_type> (iterator); \
 	}
 
+#undef EP_RT_DEFINE_ARRAY_ITERATOR
 #define EP_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
+#undef EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR
 #define EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
 	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
 
-#define EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+#define EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)) \
 	{ \
 		STATIC_CONTRACT_NOTHROW; \
@@ -992,17 +1051,27 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_hash_map_is_valid<hash_map_type>(hash_map); \
 	}
 
+#define EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add_or_replace) (hash_map_type *hash_map, key_type key, value_type value) \
+	{ \
+		STATIC_CONTRACT_NOTHROW; \
+		return _rt_coreclr_hash_map_add_or_replace<hash_map_type, key_type, value_type>(hash_map, key, value); \
+	} \
+
 #define EP_RT_DEFINE_HASH_MAP_REMOVE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
-	EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	EP_RT_DEFINE_HASH_MAP_BASE_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
 	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove) (hash_map_type *hash_map, const key_type key) \
 	{ \
 		STATIC_CONTRACT_NOTHROW; \
 		_rt_coreclr_hash_map_remove<hash_map_type, key_type>(hash_map, key); \
 	}
 
+#undef EP_RT_DEFINE_HASH_MAP
 #define EP_RT_DEFINE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
 
+#undef EP_RT_DEFINE_HASH_MAP_REMOVE
 #define EP_RT_DEFINE_HASH_MAP_REMOVE(hash_map_name, hash_map_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_REMOVE_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
 
@@ -1033,15 +1102,9 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 		return _rt_coreclr_hash_map_iterator_value<hash_map_type, iterator_type, value_type>(iterator); \
 	}
 
+#undef EP_RT_DEFINE_HASH_MAP_ITERATOR
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
-
-//TODO: Move types into type API.
-typedef DWORD (WINAPI *ep_rt_thread_start_func)(LPVOID lpThreadParameter);
-typedef DWORD ep_rt_thread_start_func_return_t;
-
-//TODO: Should be a redefinable define.
-#define EP_RT_DEFINE_THREAD_FUNC(name) static ep_rt_thread_start_func_return_t WINAPI name (LPVOID data)
 
 static
 inline
@@ -1162,24 +1225,6 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
-
-static
-inline
-EventPipeThreadHolder *
-thread_holder_alloc_func (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-	return ep_thread_holder_alloc (ep_thread_alloc());
-}
-
-static
-inline
-void
-thread_holder_free_func (EventPipeThreadHolder * thread_holder)
-{
-	STATIC_CONTRACT_NOTHROW;
-	ep_thread_holder_free (thread_holder);
-}
 
 static
 void
@@ -1422,14 +1467,24 @@ ep_rt_provider_invoke_callback (
  */
 
 EP_RT_DEFINE_ARRAY (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+EP_RT_DEFINE_LOCAL_ARRAY (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
 EP_RT_DEFINE_ARRAY_ITERATOR (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+
+#undef EP_RT_DECLARE_LOCAL_BUFFER_ARRAY
+#define EP_RT_DECLARE_LOCAL_BUFFER_ARRAY(var_name) \
+	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ep_rt_buffer_array_t)
 
 /*
  * EventPipeBufferList.
  */
 
 EP_RT_DEFINE_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
+EP_RT_DEFINE_LOCAL_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
 EP_RT_DEFINE_ARRAY_ITERATOR (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
+
+#undef EP_RT_DECLARE_LOCAL_BUFFER_LIST_ARRAY
+#define EP_RT_DECLARE_LOCAL_BUFFER_LIST_ARRAY(var_name) \
+	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ep_rt_buffer_list_array_t)
 
 /*
  * EventPipeEvent.
@@ -1524,6 +1579,15 @@ ep_rt_config_value_get_circular_mb (void)
 	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeCircularMB);
 }
 
+static
+inline
+bool
+ep_rt_config_value_get_use_portable_thread_pool (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return ThreadpoolMgr::UsePortableThreadPool ();
+}
+
 /*
  * EventPipeSampleProfiler.
  */
@@ -1563,33 +1627,6 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 EP_RT_DEFINE_LIST (session_provider_list, ep_rt_session_provider_list_t, EventPipeSessionProvider *)
 EP_RT_DEFINE_LIST_ITERATOR (session_provider_list, ep_rt_session_provider_list_t, ep_rt_session_provider_list_iterator_t, EventPipeSessionProvider *)
 
-/*
- * EventPipeSequencePoint.
- */
-
-EP_RT_DEFINE_LIST (sequence_point_list, ep_rt_sequence_point_list_t, EventPipeSequencePoint *)
-EP_RT_DEFINE_LIST_ITERATOR (sequence_point_list, ep_rt_sequence_point_list_t, ep_rt_sequence_point_list_iterator_t, EventPipeSequencePoint *)
-
-/*
- * EventPipeThread.
- */
-
-EP_RT_DEFINE_LIST (thread_list, ep_rt_thread_list_t, EventPipeThread *)
-EP_RT_DEFINE_LIST_ITERATOR (thread_list, ep_rt_thread_list_t, ep_rt_thread_list_iterator_t, EventPipeThread *)
-
-EP_RT_DEFINE_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
-EP_RT_DEFINE_ARRAY_ITERATOR (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
-
-/*
- * EventPipeThreadSessionState.
- */
-
-EP_RT_DEFINE_LIST (thread_session_state_list, ep_rt_thread_session_state_list_t, EventPipeThreadSessionState *)
-EP_RT_DEFINE_LIST_ITERATOR (thread_session_state_list, ep_rt_thread_session_state_list_t, ep_rt_thread_session_state_list_iterator_t, EventPipeThreadSessionState *)
-
-EP_RT_DEFINE_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
-EP_RT_DEFINE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
-
 static
 EventPipeSessionProvider *
 ep_rt_session_provider_list_find_by_name (
@@ -1612,6 +1649,43 @@ ep_rt_session_provider_list_find_by_name (
 
 	return session_provider;
 }
+
+/*
+ * EventPipeSequencePoint.
+ */
+
+EP_RT_DEFINE_LIST (sequence_point_list, ep_rt_sequence_point_list_t, EventPipeSequencePoint *)
+EP_RT_DEFINE_LIST_ITERATOR (sequence_point_list, ep_rt_sequence_point_list_t, ep_rt_sequence_point_list_iterator_t, EventPipeSequencePoint *)
+
+/*
+ * EventPipeThread.
+ */
+
+EP_RT_DEFINE_LIST (thread_list, ep_rt_thread_list_t, EventPipeThread *)
+EP_RT_DEFINE_LIST_ITERATOR (thread_list, ep_rt_thread_list_t, ep_rt_thread_list_iterator_t, EventPipeThread *)
+
+EP_RT_DEFINE_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+EP_RT_DEFINE_LOCAL_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+EP_RT_DEFINE_ARRAY_ITERATOR (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+
+#undef EP_RT_DECLARE_LOCAL_THREAD_ARRAY
+#define EP_RT_DECLARE_LOCAL_THREAD_ARRAY(var_name) \
+	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ep_rt_thread_array_t)
+
+/*
+ * EventPipeThreadSessionState.
+ */
+
+EP_RT_DEFINE_LIST (thread_session_state_list, ep_rt_thread_session_state_list_t, EventPipeThreadSessionState *)
+EP_RT_DEFINE_LIST_ITERATOR (thread_session_state_list, ep_rt_thread_session_state_list_t, ep_rt_thread_session_state_list_iterator_t, EventPipeThreadSessionState *)
+
+EP_RT_DEFINE_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
+EP_RT_DEFINE_LOCAL_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
+EP_RT_DEFINE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
+
+#undef EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY
+#define EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY(var_name) \
+	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ep_rt_thread_session_state_array_t)
 
 /*
  * Arrays.
@@ -1831,24 +1905,18 @@ ep_rt_execute_rundown (void)
  * PAL.
  */
 
-typedef struct ep_rt_thread_params_t {
-	ep_rt_thread_handle_t thread;
-	EventPipeThreadType thread_type;
-	ep_rt_thread_start_func thread_func;
-	void *thread_params;
-} ep_rt_thread_params_t;
-
 typedef struct _rt_coreclr_thread_params_internal_t {
 	ep_rt_thread_params_t thread_params;
 } rt_coreclr_thread_params_internal_t;
 
-static
-DWORD WINAPI
-ep_rt_thread_coreclr_start_func (LPVOID params)
+#undef EP_RT_DEFINE_THREAD_FUNC
+#define EP_RT_DEFINE_THREAD_FUNC(name) static ep_rt_thread_start_func_return_t WINAPI name (LPVOID data)
+
+EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_coreclr_start_func)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	rt_coreclr_thread_params_internal_t *thread_params = reinterpret_cast<rt_coreclr_thread_params_internal_t *>(params);
+	rt_coreclr_thread_params_internal_t *thread_params = reinterpret_cast<rt_coreclr_thread_params_internal_t *>(data);
 	DWORD result = thread_params->thread_params.thread_func (thread_params);
 	if (thread_params->thread_params.thread)
 		::DestroyThread (thread_params->thread_params.thread);
@@ -2370,38 +2438,6 @@ ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
 }
 
 static
-ep_char16_t *
-ep_rt_utf8_to_utf16_string (
-	const ep_char8_t *str,
-	size_t len)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	if (!str)
-		return NULL;
-
-	COUNT_T len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), 0, 0);
-	if (len_utf16 == 0)
-		return NULL;
-
-	if (static_cast<int>(len) != -1)
-		len_utf16 += 1;
-
-	ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc (len_utf16 * sizeof (ep_char16_t)));
-	if (!str_utf16)
-		return NULL;
-
-	len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), reinterpret_cast<LPWSTR>(str_utf16), len_utf16);
-	if (len_utf16 == 0) {
-		free (str_utf16);
-		return NULL;
-	}
-
-	str_utf16 [len_utf16 - 1] = 0;
-	return str_utf16;
-}
-
-static
 inline
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str)
@@ -2433,6 +2469,38 @@ ep_rt_utf8_string_strtok (
 	str_len, \
 	format, ...) \
 sprintf_s (reinterpret_cast<char *>(str), static_cast<size_t>(str_len), reinterpret_cast<const char *>(format), __VA_ARGS__)
+
+static
+ep_char16_t *
+ep_rt_utf8_to_utf16_string (
+	const ep_char8_t *str,
+	size_t len)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	if (!str)
+		return NULL;
+
+	COUNT_T len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), 0, 0);
+	if (len_utf16 == 0)
+		return NULL;
+
+	if (static_cast<int>(len) != -1)
+		len_utf16 += 1;
+
+	ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc (len_utf16 * sizeof (ep_char16_t)));
+	if (!str_utf16)
+		return NULL;
+
+	len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), reinterpret_cast<LPWSTR>(str_utf16), len_utf16);
+	if (len_utf16 == 0) {
+		free (str_utf16);
+		return NULL;
+	}
+
+	str_utf16 [len_utf16 - 1] = 0;
+	return str_utf16;
+}
 
 static
 inline
@@ -2541,6 +2609,30 @@ ep_rt_diagnostics_command_line_get (void)
  * Thread.
  */
 
+static
+inline
+EventPipeThreadHolder *
+thread_holder_alloc_func (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EventPipeThreadHolder *instance = ep_thread_holder_alloc (ep_thread_alloc());
+	if (instance)
+		ep_thread_register (ep_thread_holder_get_thread (instance));
+	return instance;
+}
+
+static
+inline
+void
+thread_holder_free_func (EventPipeThreadHolder * thread_holder)
+{
+	STATIC_CONTRACT_NOTHROW;
+	if (thread_holder) {
+		ep_thread_unregister (ep_thread_holder_get_thread (thread_holder));
+		ep_thread_holder_free (thread_holder);
+	}
+}
+
 class EventPipeCoreCLRThreadHolderTLS {
 public:
 	EventPipeCoreCLRThreadHolderTLS ()
@@ -2553,7 +2645,7 @@ public:
 		STATIC_CONTRACT_NOTHROW;
 
 		if (m_threadHolder) {
-			ep_thread_holder_free (m_threadHolder);
+			thread_holder_free_func (m_threadHolder);
 			m_threadHolder = NULL;
 		}
 	}
@@ -2564,15 +2656,16 @@ public:
 		return g_threadHolderTLS.m_threadHolder;
 	}
 
-	static inline void setThreadHolder (EventPipeThreadHolder *threadHolder)
+	static inline EventPipeThreadHolder * createThreadHolder ()
 	{
 		STATIC_CONTRACT_NOTHROW;
 
 		if (g_threadHolderTLS.m_threadHolder) {
-			ep_thread_holder_free (g_threadHolderTLS.m_threadHolder);
+			thread_holder_free_func (g_threadHolderTLS.m_threadHolder);
 			g_threadHolderTLS.m_threadHolder = NULL;
 		}
-		g_threadHolderTLS.m_threadHolder = threadHolder;
+		g_threadHolderTLS.m_threadHolder = thread_holder_alloc_func ();
+		return g_threadHolderTLS.m_threadHolder;
 	}
 
 private:
@@ -2613,10 +2706,9 @@ ep_rt_thread_get_or_create (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	EventPipeThreadHolder *thread_holder = EventPipeCoreCLRThreadHolderTLS::getThreadHolder ();
-	if (!thread_holder) {
-		thread_holder = thread_holder_alloc_func ();
-		EventPipeCoreCLRThreadHolderTLS::setThreadHolder (thread_holder);
-	}
+	if (!thread_holder)
+		thread_holder = EventPipeCoreCLRThreadHolderTLS::createThreadHolder ();
+
 	return ep_thread_holder_get_thread (thread_holder);
 }
 
