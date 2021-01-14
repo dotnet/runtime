@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
-    <!-- Use implementation referencepath if no contract tfm is set. This item transform is executed at the time this property is evaluated in the API Compat targets. -->
+    <!-- Use implementation referencepath if no contract dependency path is set.
+         This item transform is executed at the time this property is evaluated in the API Compat targets. -->
     <ContractDependencyPaths Condition="'$(ContractDependencyPaths)' == ''">@(ReferencePath->'%(RelativeDir)'->Distinct())</ContractDependencyPaths>
   </PropertyGroup>
 
