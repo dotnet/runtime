@@ -15512,6 +15512,13 @@ GenTree* Compiler::gtNewTempAssign(
     }
 #endif
 
+    // Added this noway_assert for runtime\issue 44895, to protect against silent bad codegen
+    //
+    if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_REF))
+    {
+        noway_assert(!"Incompatible types for gtNewTempAssign");
+    }
+
     // Floating Point assignments can be created during inlining
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
     // thus we may need to set compFloatingPointUsed to true here.
@@ -19110,7 +19117,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore() const
     return false;
 }
 
-// Returns true for the HW Intrinsic instructions that have MemoryLoad semantics, false otherwise
+// Returns true for the HW Intrinsic instructions that have MemoryLoad or MemoryStore semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
