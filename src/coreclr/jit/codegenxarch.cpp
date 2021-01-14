@@ -1130,7 +1130,6 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 
 #ifdef FEATURE_SIMD
 
-#ifdef TARGET_AMD64
 //------------------------------------------------------------------------
 // genSIMDSplitReturn: Generates code for returning a fixed-size SIMD type that lives
 //                     in a single register, but is returned in multiple registers.
@@ -1143,7 +1142,6 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 {
     assert(varTypeIsSIMD(src));
     assert(src->isUsedFromReg());
-    assert(src->TypeIs(TYP_SIMD16));
 
     // This is a case of operand is in a single reg and needs to be
     // returned in multiple ABI return registers.
@@ -1151,49 +1149,52 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     regNumber reg0  = retTypeDesc->GetABIReturnReg(0);
     regNumber reg1  = retTypeDesc->GetABIReturnReg(1);
 
+    assert((reg0 != REG_COUNT) && (reg1 != REG_COUNT) && (opReg != REG_COUNT));
+
+    const bool srcIsFloatReg = genIsValidFloatReg(opReg);
+    const bool dstIsFloatReg = genIsValidFloatReg(reg0);
+    assert(srcIsFloatReg);
+
+#ifdef TARGET_AMD64
+    assert(src->TypeIs(TYP_SIMD16));
+    assert(srcIsFloatReg == dstIsFloatReg);
     if (opReg != reg0 && opReg != reg1)
     {
         // Operand reg is different from return regs.
         // Copy opReg to reg0 and let it to be handled by one of the
         // two cases below.
-        inst_RV_RV(ins_Copy(TYP_SIMD16), reg0, opReg, TYP_SIMD16);
+        inst_RV_RV(ins_Copy(opReg, TYP_SIMD16), reg0, opReg, TYP_SIMD16);
         opReg = reg0;
     }
 
     if (opReg == reg0)
     {
         assert(opReg != reg1);
-
-        // reg0 - already has required 8-byte in bit position [63:0].
         // reg1 = opReg.
-        // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
-        inst_RV_RV(ins_Copy(TYP_SIMD16), reg1, opReg, TYP_SIMD16);
+        inst_RV_RV(ins_Copy(opReg, TYP_SIMD16), reg1, opReg, TYP_SIMD16);
     }
     else
     {
         assert(opReg == reg1);
 
         // reg0 = opReg.
-        // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
-        inst_RV_RV(ins_Copy(TYP_SIMD16), reg0, opReg, TYP_SIMD16);
-    }
-    inst_RV_RV_IV(INS_shufpd, EA_16BYTE, reg1, reg1, 0x01);
-}
-#else // TARGET_X86
 
-//------------------------------------------------------------------------
-// genSIMDSplitReturn: Generates code for returning a fixed-size SIMD type that lives
-//                     in a single register, but is returned in multiple registers.
-//
-// Arguments:
-//    src         - The source of the return
-//    retTypeDesc - The return type descriptor.
-//
-void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
-{
-    unreached();
-}
+        inst_RV_RV(ins_Copy(opReg, TYP_SIMD16), reg0, opReg, TYP_SIMD16);
+    }
+    // reg0 - already has required 8-byte in bit position [63:0].
+    // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
+    inst_RV_RV_IV(INS_shufpd, EA_16BYTE, reg1, reg1, 0x01);
+
+#else  // TARGET_X86
+    assert(src->TypeIs(TYP_SIMD8));
+    assert(srcIsFloatReg != dstIsFloatReg);
+    assert((reg0 == REG_EAX) && (reg1 == REG_EDX));
+    // reg0 = opReg[31:0]
+    inst_RV_RV(ins_Copy(opReg, TYP_INT), reg0, opReg, TYP_INT);
+    // reg1 = opRef[63:32]
+    inst_RV_RV_IV(INS_pextrd, EA_4BYTE, reg1, opReg, 1);
 #endif // TARGET_X86
+}
 
 #endif // FEATURE_SIMD
 
