@@ -95,7 +95,7 @@ jobs:
         value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true $(llvmCxxAbi)
     - ${{ if eq(parameters.monoCrossAOTTargetOS, 'Android') }}:
       - name: aotCrossParameter
-        value: /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+        value: /p:BuildMonoCrossAOT=Android /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
     - ${{ parameters.variables }}
 
     steps:

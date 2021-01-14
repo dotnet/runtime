@@ -144,7 +144,7 @@ stages:
       - Linux_x64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                   /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                   /p:BuildMonoCrossAOT=Android /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
         nameSuffix: AndroidAOT_Mono
         runtimeVariant: crossandroid
         dependsOn: mono_android_offsets
