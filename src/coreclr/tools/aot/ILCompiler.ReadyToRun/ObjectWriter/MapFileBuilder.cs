@@ -228,7 +228,7 @@ namespace ILCompiler.PEWriter
 
         public void SavePdb(string pdbPath, string dllFileName)
         {
-            Console.WriteLine("Emitting PDB file: {0}", pdbPath);
+            Console.WriteLine("Emitting PDB file: {0}", Path.Combine(pdbPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.pdb"));
 
             new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, EnumerateMethods());
         }

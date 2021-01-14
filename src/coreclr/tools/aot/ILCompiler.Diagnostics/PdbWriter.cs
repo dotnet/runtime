@@ -190,26 +190,33 @@ namespace ILCompiler.Diagnostics
                 throw new NotImplementedException();
             }
 
+            string dllNameWithoutExtension = Path.GetFileNameWithoutExtension(dllPath);
+            _pdbFilePath = Path.Combine(_pdbPath, dllNameWithoutExtension + ".pdb");
+
             string originalDllPath = dllPath;
 
             // Currently DiaSymReader does not work properly generating NGEN PDBS unless
             // the DLL whose PDB is being generated ends in .ni.*.   Unfortunately, readyToRun
             // images do not follow this convention and end up producing bad PDBS.  To fix
             // this (without changing diasymreader.dll which ships indepdendently of .NET Core)
-            // we copy the file to somethign with this convention before generating the PDB
+            // we copy the file to something with this convention before generating the PDB
             // and delete it when we are done.
             if (!dllPath.EndsWith(".ni.dll", StringComparison.OrdinalIgnoreCase) && !dllPath.EndsWith(".ni.exe", StringComparison.OrdinalIgnoreCase))
             {
-                _tempSourceDllName = Path.Combine(Path.GetDirectoryName(dllPath), Path.GetFileNameWithoutExtension(dllPath) + ".ni" + Path.GetExtension(dllPath));
-                File.Copy(dllPath, _tempSourceDllName);
+                _tempSourceDllName = Path.Combine(Path.GetDirectoryName(dllPath), dllNameWithoutExtension + ".ni" + Path.GetExtension(dllPath));
+                File.Copy(dllPath, _tempSourceDllName, overwrite: true);
                 dllPath = _tempSourceDllName;
+                _pdbFilePath = Path.Combine(_pdbPath, dllNameWithoutExtension + ".ni.pdb");
             }
 
-            _ngenWriter = CreateNGenWriter(dllPath, _pdbPath + "\\");
+            // Delete any preexisting PDB file upfront otherwise CreateNGenWriter silently opens it
+            File.Delete(_pdbFilePath);
+
+            _ngenWriter = CreateNGenWriter(dllPath, _pdbFilePath);
 
             {
-                // PDB file is now created.  Get its path and initialize _pdbFilePath so the PDB file
-                // can be deleted if we don't make it successfully to the end
+                // PDB file is now created. Get its path and update _pdbFilePath so the PDB file
+                // can be deleted if we don't make it successfully to the end.
                 StringBuilder pdbFilePathBuilder = new StringBuilder();
                 pdbFilePathBuilder.Capacity = 1024;
                 _ngenWriter.QueryPDBNameExW(pdbFilePathBuilder, new IntPtr(pdbFilePathBuilder.Capacity));
