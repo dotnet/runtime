@@ -54,7 +54,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For 
 // Server GC we will balance regions between heaps.
 #ifdef HOST_64BIT
-#define USE_REGIONS
+//#define USE_REGIONS
 #endif //HOST_64BIT
 
 #ifdef USE_REGIONS
