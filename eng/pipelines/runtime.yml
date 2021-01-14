@@ -192,6 +192,7 @@ jobs:
     buildConfig: release
     platforms:
     - Android_x64
+    - Browser_wasm
     jobParameters:
       condition: >-
         or(
