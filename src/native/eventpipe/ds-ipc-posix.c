@@ -58,7 +58,20 @@
 #define DS_EXIT_BLOCKING_PAL_SECTION
 #endif
 
-#ifndef __cplusplus
+#ifdef DS_RT_IPC_PAL_USE_DEFAULT_STD_ALLOCATOR
+#include <new>
+#undef ep_rt_object_alloc
+#define ep_rt_object_alloc(obj_type) (new (std::nothrow) obj_type())
+
+#undef ep_rt_object_free
+#define ep_rt_object_free(obj_ptr) do { delete obj_ptr; } while(0)
+
+#undef ep_rt_object_array_alloc
+#define ep_rt_object_array_alloc(obj_type,size) (new (std::nothrow) obj_type [size]())
+
+#undef ep_rt_object_array_free
+#define ep_rt_object_array_free(obj_ptr) do { delete [] obj_ptr; } while(0)
+#else
 #undef ep_rt_object_alloc
 #define ep_rt_object_alloc(obj_type) ((obj_type *)calloc(1, sizeof(obj_type)))
 
@@ -70,19 +83,6 @@
 
 #undef ep_rt_object_array_free
 #define ep_rt_object_array_free(obj_ptr) do { if (obj_ptr) free (obj_ptr); } while(0)
-#else
-#include <new>
-#undef ep_rt_object_alloc
-#define ep_rt_object_alloc(obj_type) (new (nothrow) obj_type())
-
-#undef ep_rt_object_free
-#define ep_rt_object_free(obj_ptr) do { if (obj_ptr) delete obj_ptr; } while(0)
-
-#undef ep_rt_object_array_alloc
-#define ep_rt_object_array_alloc(obj_type,size) (new (nothrow) obj_type [size])
-
-#undef ep_rt_object_array_free
-#define ep_rt_object_array_free(obj_ptr) do { if (obj_ptr) delete [] obj_ptr; } while(0)
 #endif
 
 #endif /* !FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL */

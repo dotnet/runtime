@@ -36,6 +36,8 @@ endif(CORECLR_SET_RPATH)
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
+set(FEATURE_PERFTRACING_C_LIB 1)
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------

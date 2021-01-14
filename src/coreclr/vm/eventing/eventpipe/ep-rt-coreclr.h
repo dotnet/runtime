@@ -1888,15 +1888,15 @@ ep_rt_execute_rundown (void)
 
 // STATIC_CONTRACT_NOTHROW
 #undef ep_rt_object_array_alloc
-#define ep_rt_object_array_alloc(obj_type,size) (new (nothrow) obj_type [size])
+#define ep_rt_object_array_alloc(obj_type,size) (new (nothrow) obj_type [size]())
 
 // STATIC_CONTRACT_NOTHROW
 #undef ep_rt_object_array_free
-#define ep_rt_object_array_free(obj_ptr) do { if (obj_ptr) delete [] obj_ptr; } while(0)
+#define ep_rt_object_array_free(obj_ptr) do { delete [] obj_ptr; } while(0)
 
 // STATIC_CONTRACT_NOTHROW
 #undef ep_rt_object_free
-#define ep_rt_object_free(obj_ptr) do { if (obj_ptr) delete obj_ptr; } while(0)
+#define ep_rt_object_free(obj_ptr) do { delete obj_ptr; } while(0)
 
 /*
  * PAL.

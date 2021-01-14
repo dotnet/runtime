@@ -1322,10 +1322,10 @@ ep_rt_execute_rundown (void)
 #define ep_rt_object_array_alloc(obj_type,size) (g_new0 (obj_type, size))
 
 #undef ep_rt_object_free
-#define ep_rt_object_free(obj_ptr) do { if (obj_ptr) g_free (obj_ptr); } while(0)
+#define ep_rt_object_free(obj_ptr) do { g_free (obj_ptr); } while(0)
 
 #undef ep_rt_object_array_free
-#define ep_rt_object_array_free(obj_ptr) do { if (obj_ptr) g_free (obj_ptr); } while(0)
+#define ep_rt_object_array_free(obj_ptr) do { g_free (obj_ptr); } while(0)
 
 /*
  * PAL.

@@ -3,6 +3,10 @@
 
 #include "ep-rt-config.h"
 
+#ifdef FEATURE_CORECLR
+#define DS_RT_IPC_PAL_USE_DEFAULT_STD_ALLOCATOR
+#endif
+
 #ifdef EP_INLINE_GETTER_SETTER
 #define DS_INLINE_GETTER_SETTER
 #endif
