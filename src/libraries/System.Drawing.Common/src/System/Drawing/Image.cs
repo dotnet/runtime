@@ -299,6 +299,65 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Gets an array of the property IDs stored in this <see cref='Image'/>.
+        /// </summary>
+        [Browsable(false)]
+        public unsafe int[] PropertyIdList
+        {
+            get
+            {
+                Gdip.CheckStatus(Gdip.GdipGetPropertyCount(new HandleRef(this, nativeImage), out uint count));
+                if (count == 0)
+                    return Array.Empty<int>();
+
+                var propid = new int[count];
+                fixed (int* pPropid = propid)
+                {
+                    Gdip.CheckStatus(Gdip.GdipGetPropertyIdList(new HandleRef(this, nativeImage), count, pPropid));
+                }
+
+                return propid;
+            }
+        }
+
+        /// <summary>
+        /// Gets an array of <see cref='PropertyItem'/> objects that describe this <see cref='Image'/>.
+        /// </summary>
+        [Browsable(false)]
+        public unsafe PropertyItem[] PropertyItems
+        {
+            get
+            {
+                Gdip.CheckStatus(Gdip.GdipGetPropertySize(new HandleRef(this, nativeImage), out uint size, out uint count));
+
+                if (size == 0 || count == 0)
+                    return Array.Empty<PropertyItem>();
+
+                PropertyItemInternal* propdata = (PropertyItemInternal*)Marshal.AllocHGlobal((int)size);
+                var result = new PropertyItem[(int)count];
+                try
+                {
+                    Gdip.CheckStatus(Gdip.GdipGetAllPropertyItems(new HandleRef(this, nativeImage), size, count, propdata));
+                    for (int i = 0; i < count; i++)
+                    {
+                        result[i] = new PropertyItem
+                        {
+                            Id = propdata[i].id,
+                            Len = propdata[i].len,
+                            Type = propdata[i].type,
+                            Value = propdata[i].Value.ToArray()
+                        };
+                    }
+                    return result;
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal((IntPtr)propdata);
+                }
+            }
+        }
+
+        /// <summary>
         /// Returns the number of frames of the given dimension.
         /// </summary>
         public int GetFrameCount(FrameDimension dimension)
@@ -309,6 +368,34 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Gets the specified property item from this <see cref='Image'/>.
+        /// </summary>
+        public unsafe PropertyItem? GetPropertyItem(int propid)
+        {
+            Gdip.CheckStatus(Gdip.GdipGetPropertyItemSize(new HandleRef(this, nativeImage), propid, out uint size));
+
+            if (size == 0)
+                return null;
+
+            PropertyItemInternal* propdata = (PropertyItemInternal*)Marshal.AllocHGlobal((int)size);
+            try
+            {
+                Gdip.CheckStatus(Gdip.GdipGetPropertyItem(new HandleRef(this, nativeImage), propid, size, propdata));
+                return new PropertyItem
+                {
+                    Id = propdata->id,
+                    Len = propdata->len,
+                    Type = propdata->type,
+                    Value = propdata->Value.ToArray()
+                };
+            }
+            finally
+            {
+                Marshal.FreeHGlobal((IntPtr)propdata);
+            }
+        }
+
+        /// <summary>
         /// Selects the frame specified by the given dimension and index.
         /// </summary>
         public int SelectActiveFrame(FrameDimension dimension, int frameIndex)
@@ -316,6 +403,24 @@ namespace System.Drawing
             Guid dimensionID = dimension.Guid;
             Gdip.CheckStatus(Gdip.GdipImageSelectActiveFrame(new HandleRef(this, nativeImage), ref dimensionID, frameIndex));
             return 0;
+        }
+
+        /// <summary>
+        /// Sets the specified property item to the specified value.
+        /// </summary>
+        public unsafe void SetPropertyItem(PropertyItem propitem)
+        {
+            fixed (byte *propItemValue = propitem.Value)
+            {
+                var propItemInternal = new PropertyItemInternal
+                {
+                    id = propitem.Id,
+                    len = propitem.Len,
+                    type = propitem.Type,
+                    value = propItemValue
+                };
+                Gdip.CheckStatus(Gdip.GdipSetPropertyItem(new HandleRef(this, nativeImage), &propItemInternal));
+            }
         }
 
         public void RotateFlip(RotateFlipType rotateFlipType)
