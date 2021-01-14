@@ -4923,8 +4923,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
             {
 #ifdef TARGET_ARM
                 // If this is a TYP_DOUBLE interval, and the assigned interval is either null or is TYP_FLOAT,
-                // we also need to unassign the other half of the register so it is free to get assigned to
-                // this interval.
+                // we also need to unassign the other half of the register.
                 // Note that if the assigned interval is TYP_DOUBLE, it will be unassigned below.
                 if ((interval->registerType == TYP_DOUBLE) &&
                     ((targetRegRecord->assignedInterval == nullptr) ||
