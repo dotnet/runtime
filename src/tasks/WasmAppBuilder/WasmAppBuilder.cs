@@ -49,6 +49,19 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
+
+    // <summary>
+    // Extra json elements to add to mono-config.js
+    //
+    // Metadata:
+    // - Value: can be a number, bool, quoted string, or json string
+    //
+    // Examples:
+    //      <WasmExtraConfig Include="enable_profiler" Value="true" />
+    //      <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
+    //      <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
+    //       <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
+    // </summary>
     public ITaskItem[]? ExtraConfig { get; set; }
 
     private class WasmAppConfig
