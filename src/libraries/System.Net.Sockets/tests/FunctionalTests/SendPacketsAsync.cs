@@ -242,6 +242,107 @@ namespace System.Net.Sockets.Tests
 
         #endregion Buffers
 
+        #region Memory
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        public void NormalMemory_Success(SocketImplementationType type)
+        {
+            SendPackets(type, new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10])), 10);
+        }
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        public void NormalMemoryRange_Success(SocketImplementationType type)
+        {
+            SendPackets(type, new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 5, 5)), 5);
+        }
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        public void EmptyMemory_Ignored(SocketImplementationType type)
+        {
+            SendPackets(type, new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[0])), 0);
+        }
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        public void MemoryZeroCount_Ignored(SocketImplementationType type)
+        {
+            SendPackets(type, new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 4, 0)), 0);
+        }
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        public void MemoryMixedBuffers_ZeroCountMemoryIgnored(SocketImplementationType type)
+        {
+            SendPacketsElement[] elements = new SendPacketsElement[]
+            {
+                new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 4, 0)), // Ignored
+                new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 4, 4)),
+                new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 0, 4))
+            };
+            SendPackets(type, elements, SocketError.Success, 8);
+        }
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        public void MemoryZeroCountThenNormal_ZeroCountIgnored(SocketImplementationType type)
+        {
+            Assert.True(Capability.IPv6Support());
+
+            EventWaitHandle completed = new ManualResetEvent(false);
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(type, _serverAddress, out port))
+            {
+                using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    sock.Connect(new IPEndPoint(_serverAddress, port));
+                    using (SocketAsyncEventArgs args = new SocketAsyncEventArgs())
+                    {
+                        args.Completed += OnCompleted;
+                        args.UserToken = completed;
+
+                        // First do an empty send, ignored
+                        args.SendPacketsElements = new SendPacketsElement[]
+                        {
+                            new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[5], 3, 0))
+                        };
+
+                        if (sock.SendPacketsAsync(args))
+                        {
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
+                        }
+                        Assert.Equal(SocketError.Success, args.SocketError);
+                        Assert.Equal(0, args.BytesTransferred);
+
+                        completed.Reset();
+                        // Now do a real send
+                        args.SendPacketsElements = new SendPacketsElement[]
+                        {
+                            new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[5], 1, 4))
+                        };
+
+                        if (sock.SendPacketsAsync(args))
+                        {
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
+                        }
+                        Assert.Equal(SocketError.Success, args.SocketError);
+                        Assert.Equal(4, args.BytesTransferred);
+                    }
+                }
+            }
+        }
+
+        #endregion Memory
+
         #region TransmitFileOptions
         [Theory]
         [InlineData(SocketImplementationType.APM)]
@@ -632,7 +733,9 @@ namespace System.Net.Sockets.Tests
                     new SendPacketsElement(new byte[] { 5, 6, 7 }, 0, 3),
                     new SendPacketsElement(stream, s_testFileSize - 10, 10),
                     new SendPacketsElement(TestFileName, 0L, 10),
+                    new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[] { 11, 12, 13 }, 0, 3)),
                     new SendPacketsElement(stream, 10L, 20),
+                    new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[] { 14, 15, 16 })),
                     new SendPacketsElement(TestFileName, 30, 10),
                     new SendPacketsElement(new byte[] { 8, 9, 10 }, 0, 3),
                 };
@@ -649,9 +752,11 @@ namespace System.Net.Sockets.Tests
             using (var stream2 = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous)) {
                 var elements = new[]
                 {
+                    new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[] { 11, 12, 13 }, 0, 3)),
                     new SendPacketsElement(new byte[] { 5, 6, 7 }, 0, 0),
                     new SendPacketsElement(stream, s_testFileSize - 10, 10),
                     new SendPacketsElement(stream2, s_testFileSize - 100, 10),
+                    new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[] { 14, 15, 16 })),
                     new SendPacketsElement(TestFileName, 0L, 10),
                     new SendPacketsElement(new byte[] { 8, 9, 10 }, 0, 1),
                     new SendPacketsElement(TestFileName, 30, 10),
@@ -827,8 +932,8 @@ namespace System.Net.Sockets.Tests
                 else if (spe.FileStream != null) {
                     ReadFromFile(spe.FileStream.Name, spe.OffsetLong, spe.Count, result, ref resultOffset);
                 }
-                else if (spe.Buffer != null && spe.Count > 0) {
-                    Array.Copy(spe.Buffer, spe.OffsetLong, result, resultOffset, spe.Count);
+                else if (spe.MemoryBuffer != null && spe.Count > 0) {
+                    spe.MemoryBuffer.Value.CopyTo(result.AsMemory((int)resultOffset));
                     resultOffset += spe.Count;
                 }
             }
