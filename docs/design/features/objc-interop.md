@@ -34,6 +34,12 @@ The Objective-C runtime adheres to the [`cdecl`](https://en.wikipedia.org/wiki/X
 
 The dispatching of messages to the target method can be impacted by the concept of "method swizzling". This is a mechanism in Objective-C where one can change the implementation of a type's method. This changing of the target method implementation is typically done in the type's `+load` or `+initialize` methods but could conceivably be done at any time. The usefulness of this feature for interoperability is presently unknown, but the technique should be kept in mind during investigations into unexpected behavior.
 
+**Protocols**
+
+In Objective-C the [Protocol](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/WorkingwithProtocols/WorkingwithProtocols.html) is used to define a contract that an implementing class adheres to. The Protocol feature is similar but not equivalent to the C# `interface`. The differences are primarily permissabilty rather than the concept itself, but there are important considerations in the interop domain.
+
+For example, if an implementation responds to all the messages defined on a Protocol but doesn't declare it supports the Protocol, it can still be used where that Protocol is declared when passed to .NET. This is due to the concept of [duck typing](https://en.wikipedia.org/wiki/Duck_typing). Furthermore it is also possible that a private Objective-C implementation explicitly or implicitly supports two different Protocols and supplies the same instance of that implementation when either Protocol is requested. This issue results in a case where the same Objective-C implementation (i.e. same native instance) enters the .NET runtime environment but has a mapping to two different wrapper implementations.
+
 **Exceptions**
 
 The Objective-C implementation of exceptions is able to be correctly simulated through a series of well defined C functions provided by the Objective-C runtime. Details on this ABI aren't discussed here, but can be observed in various hand-written assembly code (e.g. [x86_64](https://github.com/xamarin/xamarin-macios/blob/main/runtime/trampolines-x86_64-objc_msgSend-post.inc)) in the [Xamarin-macios][xamarin_repo] code base.
@@ -54,47 +60,25 @@ Ensuring a robust mapping between these concepts can be handled more efficiently
 
 **Lifetime**
 
-Objective-C lifetime semantics are handled through [manual or automatic reference counting](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/MemoryMgmt/Articles/MemoryMgmt.html). Reconciling this with the .NET Platform's Garbage Collector will require different solutions for each .NET runtime implementation.
+Objective-C lifetime semantics are handled through [manual or automatic reference counting](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/MemoryMgmt/Articles/MemoryMgmt.html). Reconciling this with the .NET Platform's Garbage Collector (GC) will require different solutions for each .NET runtime implementation if the interop API attempts to abstract away this complexity. Alternatively, hooks could be provided for an Objective-C interop implementation (OCII) (i.e. Xamarin) to handle lifetime issues and confine the details to the implementation. The provided hook approach is described below.
 
-_Note_: In the following illustrations, a strong reference is depicted as a solid line (`===`) and a weak reference is depicted as a dashed line (`= = =`).
+In order to facilitate accurate lifetime management an OCII must be able to provide a callback to assist the GC in determining if the type is still reachable. The following C prototype is sufficient for these purposes. It will receive the Objective-C instance that is associated with a managed object during the GC pass to determine if the associated managed object is alive. The implementation is expected to return a `0` if there is no reference or `1` if there is a reference.
 
-When a projected .NET object enters an Objective-C environment, the Objective-C proxy is subject to reference counting and ensuring it extends the lifetime of the managed object it wraps. This can be accomplished in CoreCLR through use of the internal `HNDTYPE_REFCOUNTED` GC handle type. This handle, coupled with a reference count, can be used to transition a GC handle between a weak and strong reference. The transition between weak and strong reference is particularly important during the collection of the managed object. During collection the super class may call methods the derived class has overridden which means the managed object must be 'alive' during collection for at least the collection of the Objective-C super class instance.
-
-Projecting a .NET type into Objective-C will require overriding the built-in [`alloc`](https://developer.apple.com/documentation/objectivec/nsobject/1571958-alloc), [`dealloc`](https://developer.apple.com/documentation/objectivec/nsobject/1571947-dealloc), [`retain`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571946-retain), and [`release`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571957-release) methods provided by the Objective-C runtime. Overriding of these methods will not be needed when activating an Objective-C type in .NET as that type's existing methods will be used.
-
-```
- --------------------                  ----------------------
-|   Managed object   |                |   Objective-C proxy  |
-|                    |                | Ref count: !(0 | 1)  |
-|  ----------------  |                |  ------------------  |
-| | Weak reference |=| = = = = = = = >| | REFCOUNTED handle| |
-| |    to proxy    | |<===============|=|    to object     | |
-|  ----------------  |                |  ------------------  |
- --------------------                  ----------------------
+```C
+int callback(void*);
 ```
 
-When an Objective-C object enters a .NET environment, its lifetime must be extended by the managed proxy. The managed proxy needs only to retain a reference count to extend the Objective-C object's lifetime. When the managed proxy is finalized, it will release its reference count on the Objective-C object.
+The .NET Platform will request a callback from the OCII whenever a new Objective-C instance enters the runtime. The .NET Platform will also indicate if the supplied callback will be used on a .NET defined Objective-C type or a pure Objective-C type. This distinction permits an optimization in the implementation for the callback given how .NET defined Objective-C types will be allocated.
 
-There is additional complexity in this case with the need
-to ensure the managed proxy's life also extends that of the Objective-C object. This dual extension is needed because managed proxies may contain state. In order to achieve this in CoreCLR, the managed proxy creates a `HNDTYPE_REFCOUNTED` handle to itself. Handle strength is based on the reference count of the
-Objective-C object - which is determined by calling [`retainCount`](https://developer.apple.com/documentation/objectivec/1418956-nsobject/1571952-retaincount). The handle is a weak reference when the count `= 1` and strong when the count is `> 1`.
+When a .NET defined Objective-C type is allocated additional memory is requested in order to provide space for tracking metadata. This tracking metadata can be retreived through use of the Objective-C [`object_getIndexedIvars`](https://developer.apple.com/documentation/objectivec/1441508-object_getindexedivars) API. The returned pointer can be cast to the following type and is available for use by the OCII for any purpose.
 
+```C
+struct ManagedObjectWrapperLifetime
+{
+    /* The following will be initialized to (size_t)-1 */
+    size_t scratch;
+};
 ```
- --------------------                  ----------------------
-| Objective-C object |                |     Managed proxy    |
-| Ref count: +1      |                |                      |
-|  ----------------  |                |  ------------------  |
-| | Weak reference |=| = = = = = = = >| | Strong reference | |
-| |    to proxy    | |<===============|=|    to object     | |
-|  ----------------  |                |  ------------------  |<===╗
- --------------------                 |  ------------------  |    ║
-                                      | | REFCOUNTED handle|=|====╝
-                                      | |    to self       | |
-                                      |  ------------------  |
-                                       ----------------------
-```
-
-_Note_: There is a special case with interoperability and threading in Objective-C's reference counting system - .NET [thread pools](https://docs.microsoft.com/dotnet/standard/threading/the-managed-thread-pool). The Objective-C runtime assumes each thread of execution possesses its own [`NSAutoreleasePool`](https://developer.apple.com/documentation/foundation/nsautoreleasepool) instance. In order to ensure this invariant, support for managing a thread's `NSAutoreleasePool` instance is required.
 
 **Delegates and Blocks**
 
