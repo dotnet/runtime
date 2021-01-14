@@ -794,16 +794,16 @@ class MetaSig
             _In_ CORINFO_MODULE_HANDLE pModule,
             _In_ PCCOR_SIGNATURE pSig,
             _In_ ULONG cSig,
-            _Out_ CorUnmanagedCallingConvention *callConvOut,
+            _Out_ CorInfoCallConvExtension *callConvOut,
             _Out_ bool* suppressGCTransitionOut,
             _Out_ UINT *errorResID);
 
-        static CorUnmanagedCallingConvention GetDefaultUnmanagedCallingConvention()
+        static CorInfoCallConvExtension GetDefaultUnmanagedCallingConvention()
         {
 #ifdef TARGET_UNIX
-            return IMAGE_CEE_UNMANAGED_CALLCONV_C;
+            return CorInfoCallConvExtension::C;
 #else // TARGET_UNIX
-            return IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL;
+            return CorInfoCallConvExtension::Stdcall;
 #endif // !TARGET_UNIX
         }
 

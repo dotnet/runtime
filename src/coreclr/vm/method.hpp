@@ -3238,13 +3238,13 @@ private:
 #endif
 public:
 
-    void SetStackArgumentSize(WORD cbDstBuffer, CorPinvokeMap unmgdCallConv)
+    void SetStackArgumentSize(WORD cbDstBuffer, CorInfoCallConvExtension unmgdCallConv)
     {
         LIMITED_METHOD_CONTRACT;
 
 #if defined(TARGET_X86)
         // thiscall passes the this pointer in ECX
-        if (unmgdCallConv == pmCallConvThiscall)
+        if (unmgdCallConv == CorInfoCallConvExtension::Thiscall)
         {
             _ASSERTE(cbDstBuffer >= sizeof(SLOT));
             cbDstBuffer -= sizeof(SLOT);

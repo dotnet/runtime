@@ -5321,7 +5321,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     _In_ CORINFO_MODULE_HANDLE pModule,
     _In_ PCCOR_SIGNATURE pSig,
     _In_ ULONG cSig,
-    _Out_ CorUnmanagedCallingConvention *callConvOut,
+    _Out_ CorInfoCallConvExtension *callConvOut,
     _Out_ bool* suppressGCTransitionOut,
     _Out_ UINT *errorResID)
 {
@@ -5350,7 +5350,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     PCCOR_SIGNATURE pWalk = sigPtr.GetPtr();
     _ASSERTE(pWalk <= pSig + cSig);
 
-    *callConvOut = (CorUnmanagedCallingConvention)0;
+    *callConvOut = CorInfoCallConvExtension::Managed;
     bool found = false;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
@@ -5387,12 +5387,12 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 
         const struct {
             LPCSTR name;
-            CorUnmanagedCallingConvention value;
+            CorInfoCallConvExtension value;
         } knownCallConvs[] = {
-            { CMOD_CALLCONV_NAME_CDECL,     IMAGE_CEE_UNMANAGED_CALLCONV_C },
-            { CMOD_CALLCONV_NAME_STDCALL,   IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL },
-            { CMOD_CALLCONV_NAME_THISCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL },
-            { CMOD_CALLCONV_NAME_FASTCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL } };
+            { CMOD_CALLCONV_NAME_CDECL,     CorInfoCallConvExtension::C },
+            { CMOD_CALLCONV_NAME_STDCALL,   CorInfoCallConvExtension::Stdcall },
+            { CMOD_CALLCONV_NAME_THISCALL,  CorInfoCallConvExtension::Thiscall },
+            { CMOD_CALLCONV_NAME_FASTCALL,  CorInfoCallConvExtension::Fastcall } };
 
         for (const auto &callConv : knownCallConvs)
         {

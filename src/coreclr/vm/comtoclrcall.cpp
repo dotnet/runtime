@@ -1461,7 +1461,7 @@ MethodDesc* ComCall::GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags)
     return NDirect::CreateCLRToNativeILStub(&sigDesc,
                                             (CorNativeLinkType)0,
                                             (CorNativeLinkFlags)0,
-                                            (CorPinvokeMap)0,
+                                            MetaSig::GetDefaultUnmanagedCallingConvention(),
                                             dwStubFlags);
 }
 
