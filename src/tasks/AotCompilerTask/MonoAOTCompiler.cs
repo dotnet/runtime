@@ -104,7 +104,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? MsymPath { get; set; }
 
     [Output]
-    public List<string> FileWrites { get; } = new();
+    public string[]? FileWrites { get; private set; }
+
+    private List<string> _fileWrites = new();
 
     private ConcurrentBag<ITaskItem> compiledAssemblies = new ConcurrentBag<ITaskItem>();
     private MonoAotMode parsedAotMode;
@@ -197,6 +199,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         CompiledAssemblies = compiledAssemblies.ToArray();
+        FileWrites = _fileWrites.ToArray();
 
         return !Log.HasLoggedErrors;
     }
@@ -351,7 +354,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         using (var writer = File.CreateText(AotModulesTablePath!))
         {
-            FileWrites.Add(AotModulesTablePath!);
+            _fileWrites.Add(AotModulesTablePath!);
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
                 foreach (var symbol in symbols)
