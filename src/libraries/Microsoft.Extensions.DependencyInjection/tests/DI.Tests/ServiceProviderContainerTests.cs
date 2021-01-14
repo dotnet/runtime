@@ -595,7 +595,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         private class Thing1
         {
-            public Thing1(Thing0 thing2)
+            public Thing1(Thing0 thing0)
             {
             }
         }
