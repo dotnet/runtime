@@ -291,20 +291,6 @@ var BindingSupportLib = {
 			return this._is_simple_array(ele);
 		},
 
-		js_string_to_mono_string: function (string) {
-			if (string === null || typeof string === "undefined")
-				return 0;
-
-			var buffer = Module._malloc ((string.length + 1) * 2);
-			var buffer16 = (buffer / 2) | 0;
-			for (var i = 0; i < string.length; i++)
-				Module.HEAP16[buffer16 + i] = string.charCodeAt (i);
-			Module.HEAP16[buffer16 + string.length] = 0;
-			var result = this.mono_wasm_string_from_utf16 (buffer, string.length);
-			Module._free (buffer);
-			return result;
-		},
-
 		mono_array_to_js_array: function (mono_array) {
 			if (mono_array === 0)
 				return null;
@@ -564,7 +550,7 @@ var BindingSupportLib = {
 				} case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
 				case typeof js_obj === "symbol":
-					return this.js_string_to_mono_string_interned (js_obj.description || Symbol.keyFor(js_obj) || "<unknown Symbol>");
+					return this.js_string_to_mono_string_interned (js_obj);
 				case typeof js_obj === "boolean":
 					return this._box_js_bool (js_obj);
 				case isThenable() === true:
