@@ -3688,13 +3688,19 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	g_assert (!sig->hasthis && ! sig->explicit_this);
 	g_assert (!sig->is_inflated && !sig->has_type_parameters);
 
+#if 0
+	/*
+	 * Since calli sigs are already part of ECMA-335, they were already used by C++/CLI, which
+	 * allowed non-blittable types.  So the C# function pointers spec doesn't restrict this to
+	 * blittable tyhpes only.
+	 */
 	g_assertf (type_is_blittable (sig->ret), "sig return type %s is not blittable\n", mono_type_full_name (sig->ret));
 
 	for (int i = 0; i < sig->param_count; ++i) {
 		MonoType *ty = sig->params [i];
 		g_assertf (type_is_blittable (ty), "sig param %d (type %s) is not blittable\n", i, mono_type_full_name (ty));
 	}
-	/* g_assert (every param and return type is blittable) */
+#endif
 
 	GHashTable *cache = get_cache (&image->wrapper_caches.native_func_wrapper_indirect_cache,
 				       (GHashFunc)mono_signature_hash, 
