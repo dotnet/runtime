@@ -1852,7 +1852,7 @@ private:
     unsigned emitNextNop;
     bool     emitRandomNops;
 
-    void     emitEnableRandomNops()
+    void emitEnableRandomNops()
     {
         emitRandomNops = true;
     }

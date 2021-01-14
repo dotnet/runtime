@@ -716,7 +716,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
-    firstColdLoc      = MaxLocation;
+    firstColdLoc = MaxLocation;
 
 #ifdef DEBUG
     maxNodeLocation   = 0;
