@@ -7086,9 +7086,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				method->dynamic case; for other wrapper types assume the code knows
 				what its doing and added its own GC transitions */
 
-				/* TODO: unmanaged[SuppressGCTransition] call conv will set
-				 * skip_gc_trans to TRUE*/
-				gboolean skip_gc_trans = FALSE;
+				gboolean skip_gc_trans = fsig->suppress_gc_transition;
 				if (!skip_gc_trans) {
 #if 0
 					fprintf (stderr, "generating wrapper for calli in method %s with wrapper type %s\n", method->name, mono_wrapper_type_to_str (method->wrapper_type));
