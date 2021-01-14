@@ -15,6 +15,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include "jitstd/algorithm.h"
+
 #if MEASURE_BLOCK_SIZE
 /* static  */
 size_t BasicBlock::s_Size;
@@ -34,7 +36,7 @@ flowList* ShuffleHelper(unsigned hash, flowList* res)
     flowList* head = res;
     for (flowList *prev = nullptr; res != nullptr; prev = res, res = res->flNext)
     {
-        unsigned blkHash = (hash ^ (res->flBlock->bbNum << 16) ^ res->flBlock->bbNum);
+        unsigned blkHash = (hash ^ (res->getBlock()->bbNum << 16) ^ res->getBlock()->bbNum);
         if (((blkHash % 1879) & 1) && prev != nullptr)
         {
             // Swap res with head.
@@ -164,7 +166,7 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
         for (flowList* tryStartPreds = tryStart->bbPreds; tryStartPreds != nullptr;
              tryStartPreds           = tryStartPreds->flNext)
         {
-            res = new (this, CMK_FlowList) flowList(tryStartPreds->flBlock, res);
+            res = new (this, CMK_FlowList) flowList(tryStartPreds->getBlock(), res);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
@@ -204,6 +206,126 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
         ehPreds->Set(blk, res);
     }
     return res;
+}
+
+//------------------------------------------------------------------------
+// checkPredListOrder: see if pred list is properly ordered
+//
+// Returns:
+//    false if pred list is not in increasing bbNum order.
+//
+bool BasicBlock::checkPredListOrder()
+{
+    unsigned lastBBNum = 0;
+    for (flowList* pred = bbPreds; pred != nullptr; pred = pred->flNext)
+    {
+        const unsigned bbNum = pred->getBlock()->bbNum;
+        if (bbNum <= lastBBNum)
+        {
+            assert(bbNum != lastBBNum);
+            return false;
+        }
+        lastBBNum = bbNum;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
+// ensurePredListOrder: ensure all pred list entries appear in increasing
+//    bbNum order.
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+void BasicBlock::ensurePredListOrder(Compiler* compiler)
+{
+    // First, check if list is already in order.
+    //
+    if (checkPredListOrder())
+    {
+        return;
+    }
+
+    reorderPredList(compiler);
+    assert(checkPredListOrder());
+}
+
+//------------------------------------------------------------------------
+// reorderPredList: relink pred list in increasing bbNum order.
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+void BasicBlock::reorderPredList(Compiler* compiler)
+{
+    // Count number or entries.
+    //
+    int count = 0;
+    for (flowList* pred = bbPreds; pred != nullptr; pred = pred->flNext)
+    {
+        count++;
+    }
+
+    // If only 0 or 1 entry, nothing to reorder.
+    //
+    if (count < 2)
+    {
+        return;
+    }
+
+    // Allocate sort vector if needed.
+    //
+    if (compiler->fgPredListSortVector == nullptr)
+    {
+        CompAllocator allocator        = compiler->getAllocator(CMK_FlowList);
+        compiler->fgPredListSortVector = new (allocator) jitstd::vector<flowList*>(allocator);
+    }
+
+    jitstd::vector<flowList*>* const sortVector = compiler->fgPredListSortVector;
+    sortVector->clear();
+
+    // Fill in the vector from the list.
+    //
+    for (flowList* pred = bbPreds; pred != nullptr; pred = pred->flNext)
+    {
+        sortVector->push_back(pred);
+    }
+
+    // Sort by increasing bbNum
+    //
+    struct flowListBBNumCmp
+    {
+        bool operator()(const flowList* f1, const flowList* f2)
+        {
+            return f1->getBlock()->bbNum < f2->getBlock()->bbNum;
+        }
+    };
+
+    jitstd::sort(sortVector->begin(), sortVector->end(), flowListBBNumCmp());
+
+    // Rethread the list.
+    //
+    flowList* last = nullptr;
+
+    for (flowList* current : *sortVector)
+    {
+        if (last == nullptr)
+        {
+            bbPreds = current;
+        }
+        else
+        {
+            last->flNext = current;
+        }
+
+        last = current;
+    }
+
+    last->flNext = nullptr;
+
+    // Note this lastPred is only used transiently.
+    //
+    bbLastPred = last;
 }
 
 #ifdef DEBUG
@@ -383,6 +505,10 @@ void BasicBlock::dspFlags()
     {
         printf("cfe ");
     }
+    if (bbFlags & BBF_LOOP_ALIGN)
+    {
+        printf("align ");
+    }
 }
 
 /*****************************************************************************
@@ -401,11 +527,11 @@ unsigned BasicBlock::dspPreds()
             printf(",");
             count += 1;
         }
-        printf(FMT_BB, pred->flBlock->bbNum);
+        printf(FMT_BB, pred->getBlock()->bbNum);
         count += 4;
 
         // Account for %02u only handling 2 digits, but we can display more than that.
-        unsigned digits = CountDigits(pred->flBlock->bbNum);
+        unsigned digits = CountDigits(pred->getBlock()->bbNum);
         if (digits > 2)
         {
             count += digits - 2;
@@ -746,7 +872,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler)
     }
     else
     {
-        return bbPreds->flBlock;
+        return bbPreds->getBlock();
     }
 }
 

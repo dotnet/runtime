@@ -13,7 +13,7 @@
 #include <assert.h>
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(
-    const MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin& tokenIn)
+    const Agnostic_CORINFO_RESOLVED_TOKENin& tokenIn)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, "tc-%016llX ts-%016llX tok-%08X tt-%u", tokenIn.tokenContext, tokenIn.tokenScope,
@@ -22,7 +22,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENout(
-    const MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut)
+    const Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, "cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u mi-%u ms-%u", tokenOut.hClass,
@@ -32,14 +32,14 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENout(
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(
-    const MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN& token)
+    const Agnostic_CORINFO_RESOLVED_TOKEN& token)
 {
     return DumpAgnostic_CORINFO_RESOLVED_TOKENin(token.inValue) + std::string(" ") +
            DumpAgnostic_CORINFO_RESOLVED_TOKENout(token.outValue);
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(
-    const MethodContext::Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
+    const Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, "nrl-%u rlk-%u", lookupKind.needsRuntimeLookup, lookupKind.runtimeLookupKind);
@@ -47,7 +47,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(
-    const MethodContext::Agnostic_CORINFO_CONST_LOOKUP& constLookup)
+    const Agnostic_CORINFO_CONST_LOOKUP& constLookup)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, "at-%u handle/address-%016llX", constLookup.accessType, constLookup.handle);
@@ -55,7 +55,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RUNTIME_LOOKUP(
-    const MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
+    const Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, " sig-%016llX hlp-%u ind-%u tfn-%u tff-%u so-%u { ", lookup.signature, lookup.helper,
@@ -70,7 +70,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RUNTIME_LOOKUP(
     return resultDump;
 }
 
-std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(const MethodContext::Agnostic_CORINFO_LOOKUP& lookup)
+std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(const Agnostic_CORINFO_LOOKUP& lookup)
 {
     std::string kind = DumpAgnostic_CORINFO_LOOKUP_KIND(lookup.lookupKind);
     std::string lookupDescription;
@@ -85,13 +85,71 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(const MethodContext::Agn
     return kind + std::string(" ") + lookupDescription;
 }
 
-std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo)
+// Dump the consecutive elements of a DenseLightweightMap, which are DWORDLONG, and assumed to represent an array of handles.
+void SpmiDumpHelper::FormatHandleArray(char*& pbuf, int& sizeOfBuffer, const DenseLightWeightMap<DWORDLONG>* map, DWORD count, DWORD startIndex)
+{
+    int cch;
+
+    cch = sprintf_s(pbuf, sizeOfBuffer, "{");
+    pbuf += cch;
+    sizeOfBuffer -= cch;
+
+    const unsigned int maxHandleArrayDisplayElems = 5; // Don't display more than this.
+    const unsigned int handleArrayDisplayElems = min(maxHandleArrayDisplayElems, count);
+
+    bool first = true;
+    for (DWORD i = startIndex; i < startIndex + handleArrayDisplayElems; i++)
+    {
+        cch = sprintf_s(pbuf, sizeOfBuffer, "%s%016llX", first ? "" : " ", map->Get(i));
+        pbuf += cch;
+        sizeOfBuffer -= cch;
+
+        first = false;
+    }
+
+    if (handleArrayDisplayElems < count)
+    {
+        cch = sprintf_s(pbuf, sizeOfBuffer, " ...");
+        pbuf += cch;
+        sizeOfBuffer -= cch;
+    }
+
+    cch = sprintf_s(pbuf, sizeOfBuffer, "}");
+    pbuf += cch;
+    sizeOfBuffer -= cch;
+}
+
+void SpmiDumpHelper::FormatAgnostic_CORINFO_SIG_INST_Element(
+    char*& pbuf,
+    int& sizeOfBuffer,
+    const char* prefixStr,
+    const char* instCountPrefixStr,
+    const char* instIndexPrefixStr,
+    unsigned handleInstCount,
+    unsigned handleInstIndex,
+    const DenseLightWeightMap<DWORDLONG>* handleMap)
+{
+    int cch = sprintf_s(pbuf, sizeOfBuffer, "%s%s-%u %s-%u ", prefixStr, instCountPrefixStr, handleInstCount, instIndexPrefixStr, handleInstIndex);
+    pbuf += cch;
+    sizeOfBuffer -= cch;
+
+    FormatHandleArray(pbuf, sizeOfBuffer, handleMap, handleInstCount, handleInstIndex);
+}
+
+std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INST_Element(
+    const char* prefixStr,
+    const char* instCountPrefixStr,
+    const char* instIndexPrefixStr,
+    unsigned handleInstCount,
+    unsigned handleInstIndex,
+    const DenseLightWeightMap<DWORDLONG>* handleMap)
 {
     char buffer[MAX_BUFFER_SIZE];
-    sprintf_s(buffer, MAX_BUFFER_SIZE, "{flg-%08X na-%u cc-%u ci-%u mc-%u mi-%u args-%016llX scp-%016llX tok-%08X}",
-              sigInfo.flags, sigInfo.numArgs, sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index,
-              sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, sigInfo.args, sigInfo.scope,
-              sigInfo.token);
+    char* pbuf = buffer;
+    int sizeOfBuffer = sizeof(buffer);
+
+    FormatAgnostic_CORINFO_SIG_INST_Element(pbuf, sizeOfBuffer, prefixStr, instCountPrefixStr, instIndexPrefixStr, handleInstCount, handleInstIndex, handleMap);
+
     return std::string(buffer);
 }
 

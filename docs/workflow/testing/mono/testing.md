@@ -5,7 +5,7 @@ Before running tests, [build Mono](../../building/mono/README.md) using the desi
 ## Runtime Tests
 ### Desktop Mono:
 
-To build the runtime tests for Mono JIT or interpreter, execute the following command from `$(REPO_ROOT)/src/tests`
+To build the runtime tests for Mono JIT or interpreter, build CoreCLR and execute the following command from `$(REPO_ROOT)/src/tests`
 ```
 ./build.sh excludemonofailures <release|debug>
 ```

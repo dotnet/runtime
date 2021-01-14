@@ -17,6 +17,8 @@ for line in $($nmCommand $1); do
     case ${BASH_REMATCH[1]} in
       init) ;;
       fini) ;;
+      etext) ;;
+      PROCEDURE_LINKAGE_TABLE_) ;;
       *)    dllList+=(${BASH_REMATCH[1]});;
     esac
   fi

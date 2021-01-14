@@ -218,39 +218,37 @@ namespace System.Collections.Generic
             int n = keys.Length;
             for (int i = n >> 1; i >= 1; i--)
             {
-                DownHeap(keys, i, n, 0, comparer);
+                DownHeap(keys, i, n, comparer);
             }
 
             for (int i = n; i > 1; i--)
             {
                 Swap(keys, 0, i - 1);
-                DownHeap(keys, 1, i - 1, 0, comparer);
+                DownHeap(keys, 1, i - 1, comparer);
             }
         }
 
-        private static void DownHeap(Span<T> keys, int i, int n, int lo, Comparison<T> comparer)
+        private static void DownHeap(Span<T> keys, int i, int n, Comparison<T> comparer)
         {
             Debug.Assert(comparer != null);
-            Debug.Assert(lo >= 0);
-            Debug.Assert(lo < keys.Length);
 
-            T d = keys[lo + i - 1];
+            T d = keys[i - 1];
             while (i <= n >> 1)
             {
                 int child = 2 * i;
-                if (child < n && comparer(keys[lo + child - 1], keys[lo + child]) < 0)
+                if (child < n && comparer(keys[child - 1], keys[child]) < 0)
                 {
                     child++;
                 }
 
-                if (!(comparer(d, keys[lo + child - 1]) < 0))
+                if (!(comparer(d, keys[child - 1]) < 0))
                     break;
 
-                keys[lo + i - 1] = keys[lo + child - 1];
+                keys[i - 1] = keys[child - 1];
                 i = child;
             }
 
-            keys[lo + i - 1] = d;
+            keys[i - 1] = d;
         }
 
         private static void InsertionSort(Span<T> keys, Comparison<T> comparer)
@@ -505,38 +503,35 @@ namespace System.Collections.Generic
             int n = keys.Length;
             for (int i = n >> 1; i >= 1; i--)
             {
-                DownHeap(keys, i, n, 0);
+                DownHeap(keys, i, n);
             }
 
             for (int i = n; i > 1; i--)
             {
                 Swap(ref keys[0], ref keys[i - 1]);
-                DownHeap(keys, 1, i - 1, 0);
+                DownHeap(keys, 1, i - 1);
             }
         }
 
-        private static void DownHeap(Span<T> keys, int i, int n, int lo)
+        private static void DownHeap(Span<T> keys, int i, int n)
         {
-            Debug.Assert(lo >= 0);
-            Debug.Assert(lo < keys.Length);
-
-            T d = keys[lo + i - 1];
+            T d = keys[i - 1];
             while (i <= n >> 1)
             {
                 int child = 2 * i;
-                if (child < n && (keys[lo + child - 1] == null || LessThan(ref keys[lo + child - 1], ref keys[lo + child])))
+                if (child < n && (keys[child - 1] == null || LessThan(ref keys[child - 1], ref keys[child])))
                 {
                     child++;
                 }
 
-                if (keys[lo + child - 1] == null || !LessThan(ref d, ref keys[lo + child - 1]))
+                if (keys[child - 1] == null || !LessThan(ref d, ref keys[child - 1]))
                     break;
 
-                keys[lo + i - 1] = keys[lo + child - 1];
+                keys[i - 1] = keys[child - 1];
                 i = child;
             }
 
-            keys[lo + i - 1] = d;
+            keys[i - 1] = d;
         }
 
         private static void InsertionSort(Span<T> keys)
@@ -764,43 +759,41 @@ namespace System.Collections.Generic
             int n = keys.Length;
             for (int i = n >> 1; i >= 1; i--)
             {
-                DownHeap(keys, values, i, n, 0, comparer);
+                DownHeap(keys, values, i, n, comparer);
             }
 
             for (int i = n; i > 1; i--)
             {
                 Swap(keys, values, 0, i - 1);
-                DownHeap(keys, values, 1, i - 1, 0, comparer);
+                DownHeap(keys, values, 1, i - 1, comparer);
             }
         }
 
-        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, int lo, IComparer<TKey> comparer)
+        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, IComparer<TKey> comparer)
         {
             Debug.Assert(comparer != null);
-            Debug.Assert(lo >= 0);
-            Debug.Assert(lo < keys.Length);
 
-            TKey d = keys[lo + i - 1];
-            TValue dValue = values[lo + i - 1];
+            TKey d = keys[i - 1];
+            TValue dValue = values[i - 1];
 
             while (i <= n >> 1)
             {
                 int child = 2 * i;
-                if (child < n && comparer.Compare(keys[lo + child - 1], keys[lo + child]) < 0)
+                if (child < n && comparer.Compare(keys[child - 1], keys[child]) < 0)
                 {
                     child++;
                 }
 
-                if (!(comparer.Compare(d, keys[lo + child - 1]) < 0))
+                if (!(comparer.Compare(d, keys[child - 1]) < 0))
                     break;
 
-                keys[lo + i - 1] = keys[lo + child - 1];
-                values[lo + i - 1] = values[lo + child - 1];
+                keys[i - 1] = keys[child - 1];
+                values[i - 1] = values[child - 1];
                 i = child;
             }
 
-            keys[lo + i - 1] = d;
-            values[lo + i - 1] = dValue;
+            keys[i - 1] = d;
+            values[i - 1] = dValue;
         }
 
         private static void InsertionSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
@@ -1001,42 +994,39 @@ namespace System.Collections.Generic
             int n = keys.Length;
             for (int i = n >> 1; i >= 1; i--)
             {
-                DownHeap(keys, values, i, n, 0);
+                DownHeap(keys, values, i, n);
             }
 
             for (int i = n; i > 1; i--)
             {
                 Swap(keys, values, 0, i - 1);
-                DownHeap(keys, values, 1, i - 1, 0);
+                DownHeap(keys, values, 1, i - 1);
             }
         }
 
-        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, int lo)
+        private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n)
         {
-            Debug.Assert(lo >= 0);
-            Debug.Assert(lo < keys.Length);
-
-            TKey d = keys[lo + i - 1];
-            TValue dValue = values[lo + i - 1];
+            TKey d = keys[i - 1];
+            TValue dValue = values[i - 1];
 
             while (i <= n >> 1)
             {
                 int child = 2 * i;
-                if (child < n && (keys[lo + child - 1] == null || LessThan(ref keys[lo + child - 1], ref keys[lo + child])))
+                if (child < n && (keys[child - 1] == null || LessThan(ref keys[child - 1], ref keys[child])))
                 {
                     child++;
                 }
 
-                if (keys[lo + child - 1] == null || !LessThan(ref d, ref keys[lo + child - 1]))
+                if (keys[child - 1] == null || !LessThan(ref d, ref keys[child - 1]))
                     break;
 
-                keys[lo + i - 1] = keys[lo + child - 1];
-                values[lo + i - 1] = values[lo + child - 1];
+                keys[i - 1] = keys[child - 1];
+                values[i - 1] = values[child - 1];
                 i = child;
             }
 
-            keys[lo + i - 1] = d;
-            values[lo + i - 1] = dValue;
+            keys[i - 1] = d;
+            values[i - 1] = dValue;
         }
 
         private static void InsertionSort(Span<TKey> keys, Span<TValue> values)

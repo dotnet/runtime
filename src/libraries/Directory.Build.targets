@@ -1,5 +1,14 @@
 <Project InitialTargets="UpdateProjectReferencesWithAttributes">
+  <PropertyGroup>
+    <!-- Override strong name key to default to Open for test projects,
+         Tests which wish to control this should set TestStrongNameKeyId. -->
+    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</TestStrongNameKeyId>
+    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
+    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
+  </PropertyGroup>
 
+  <!-- resources.targets need to be imported before the Arcade SDK. -->
+  <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
@@ -28,26 +37,6 @@
                                                   '$(DisableImplicitFrameworkReferences)' != 'true' and
                                                   '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                   ('$(IsReferenceAssembly)' == 'true' or '$(IsSourceProject)' == 'true')">true</DisableImplicitAssemblyReferences>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Override strong name key to default to Open for test projects,
-         Tests which wish to control this should set TestStrongNameKeyId. -->
-    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</TestStrongNameKeyId>
-    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
-    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
-  </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)resources.targets" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-
-  <PropertyGroup>
-    <ArtifactsPackagesDir>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'packages', '$(Configuration)'))</ArtifactsPackagesDir>
-    <ArtifactsShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'Shipping'))</ArtifactsShippingPackagesDir>
-    <ArtifactsNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'NonShipping'))</ArtifactsNonShippingPackagesDir>
-
-    <PackageOutputPath Condition="'$(IsShippingPackage)' == 'true'">$(ArtifactsShippingPackagesDir)</PackageOutputPath>
-    <PackageOutputPath Condition="'$(IsShippingPackage)' != 'true'">$(ArtifactsNonShippingPackagesDir)</PackageOutputPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
@@ -136,6 +125,11 @@
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.DotNet.GenAPI" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetGenApiVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <!-- TODO: Remove when all required nuget pack features are part of the consumed SDK. -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'">
+    <PackageReference Include="NuGet.Build.Tasks.Pack" Version="$(NuGetBuildTasksPackVersion)" />
   </ItemGroup>
 
   <Target Name="SetGenApiProperties"
@@ -262,13 +256,6 @@
     </When>
   </Choose>
 
-  <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
-        This is required to show all the files corresponding to all target frameworks in VS. -->
-  <ItemGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' or '$(DesignTimeBuild)' == 'true'">
-    <None Include="$(MSBuildProjectDirectory)\**\*.cs"
-          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
-  </ItemGroup>
-
   <PropertyGroup>
     <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and ($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')))">true</SkipLocalsInit>
   </PropertyGroup>
@@ -286,5 +273,4 @@
       </ItemGroup>
     </When>
   </Choose>
-
 </Project>

@@ -675,15 +675,17 @@ int doAssert(
 void reportFatalError(
           CorJitResult result) override;
 
-HRESULT allocMethodBlockCounts(
-          UINT32 count,
-          ICorJitInfo::BlockCounts** pBlockCounts) override;
-
-HRESULT getMethodBlockCounts(
+HRESULT getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
-          UINT32* pCount,
-          ICorJitInfo::BlockCounts** pBlockCounts,
-          UINT32* pNumRuns) override;
+          PgoInstrumentationSchema** pSchema,
+          UINT32* pCountSchemaItems,
+          BYTE** pInstrumentationData) override;
+
+HRESULT allocPgoInstrumentationBySchema(
+          CORINFO_METHOD_HANDLE ftnHnd,
+          PgoInstrumentationSchema* pSchema,
+          UINT32 countSchemaItems,
+          BYTE** pInstrumentationData) override;
 
 CORINFO_CLASS_HANDLE getLikelyClass(
           CORINFO_METHOD_HANDLE ftnHnd,

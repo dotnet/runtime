@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <WasmCopyAppZipToHelixTestDir>true</WasmCopyAppZipToHelixTestDir>
+    <WasmHelixTestAppRelativeDir>\interpreter\browser\</WasmHelixTestAppRelativeDir>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
+
+</Project>

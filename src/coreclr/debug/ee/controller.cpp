@@ -2708,10 +2708,21 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 #ifdef FEATURE_DATABREAKPOINT
     if (stWhat & ST_SINGLE_STEP &&
         tpr != TPR_TRIGGER_ONLY_THIS &&
-        DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
+        DebuggerDataBreakpoint::IsDataBreakpoint(thread, context))
     {
-        DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
-        pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
+        if (g_pDebugger->m_isSuspendedForGarbageCollection)
+        {
+            // The debugger is not interested in Data Breakpoints during garbage collection
+            // We can safely ignore them since the Data Breakpoints are now on pinned objects
+            LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Ignoring data breakpoint while suspended for GC \n"));
+
+            used = DPOSS_USED_WITH_NO_EVENT;
+        }
+        else if(DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
+        {
+            DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
+            pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
+        }
     }
 #endif
 
@@ -2950,7 +2961,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
         DWORD dwEvent = 0xFFFFFFFF;
         DWORD dwNumberEvents = 0;
-        BOOL reabort = FALSE;
 
         SENDIPCEVENT_BEGIN(g_pDebugger, thread);
 
@@ -2992,10 +3002,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
             LOG((LF_CORDB,LL_INFO1000, "SAT called!\n"));
         }
 
-
-        // If we need to to a re-abort (see below), then save the current IP in the thread's context before we block and
-        // possibly let another func eval get setup.
-        reabort = thread->m_StateNC & Thread::TSNC_DebuggerReAbort;
         SENDIPCEVENT_END;
 
         if (!atSafePlace)
@@ -3009,19 +3015,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         {
             dcq.dcqDequeue();
             dwEvent++;
-        }
-        // If a func eval completed with a ThreadAbortException, go ahead and setup the thread to re-abort itself now
-        // that we're continuing the thread. Note: we make sure that the thread's IP hasn't changed between now and when
-        // we blocked above. While blocked above, the debugger has a chance to setup another func eval on this
-        // thread. If that happens, we don't want to setup the reabort just yet.
-        if (reabort)
-        {
-            if ((UINT_PTR)GetEEFuncEntryPoint(::FuncEvalHijack) != (UINT_PTR)GetIP(context))
-            {
-                HRESULT hr;
-                hr = g_pDebugger->FuncEvalSetupReAbort(thread, Thread::TAR_Thread);
-                _ASSERTE(SUCCEEDED(hr));
-            }
         }
     }
 
@@ -8995,12 +8988,9 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
 
 #ifdef FEATURE_DATABREAKPOINT
 
-/* static */ bool DebuggerDataBreakpoint::TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
+/* static */ bool DebuggerDataBreakpoint::IsDataBreakpoint(Thread *thread, CONTEXT * pContext)
 {
-    LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
-
     bool hitDataBp = false;
-    bool result = false;
 #ifdef TARGET_UNIX
     #error Not supported
 #endif // TARGET_UNIX
@@ -9014,6 +9004,15 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
 #else // defined(TARGET_X86) || defined(TARGET_AMD64)
     #error Not supported
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+    return hitDataBp;
+}
+
+/* static */ bool DebuggerDataBreakpoint::TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
+{
+    LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
+
+    bool hitDataBp = IsDataBreakpoint(thread, pContext);
+    bool result = false;
     if (hitDataBp)
     {
         if (g_pDebugger->IsThreadAtSafePlace(thread))

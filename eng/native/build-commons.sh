@@ -262,7 +262,8 @@ __msbuildonunsupportedplatform=0
 # processors available to a single process.
 platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+  output=("$(sysctl hw.ncpu)")
+  __NumProc="$((output[1] + 1))"
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 elif [[ "$platform" == "Darwin" ]]; then
@@ -276,7 +277,7 @@ while :; do
         break
     fi
 
-    lowerI="$(echo "$1" | awk '{print tolower($0)}')"
+    lowerI="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
         -\?|-h|--help)
             usage

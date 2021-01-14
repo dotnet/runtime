@@ -620,6 +620,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         ;
     }
 
+    // Process each user arg.
     for (unsigned i = 0; i < numUserArgs;
          i++, varDscInfo->varNum++, varDscInfo->varDsc++, argLst = info.compCompHnd->getArgNext(argLst))
     {
@@ -640,9 +641,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         // For ARM, ARM64, and AMD64 varargs, all arguments go in integer registers
         var_types argType = mangleVarArgsType(varDsc->TypeGet());
 
-#ifdef TARGET_ARM
         var_types origArgType = argType;
-#endif // TARGET_ARM
 
         // ARM softfp calling convention should affect only the floating point arguments.
         // Otherwise there appear too many surplus pre-spills and other memory operations
@@ -687,7 +686,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             // We have an HFA argument, so from here on out treat the type as a float, double, or vector.
             // The orginal struct type is available by using origArgType.
             // We also update the cSlots to be the number of float/double/vector fields in the HFA.
-            argType = hfaType;
+            argType = hfaType; // TODO-Cleanup: remove this asignment and mark `argType` as const.
             varDsc->SetHfaType(hfaType);
             cSlots = varDsc->lvHfaSlots();
         }
@@ -1065,19 +1064,15 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #endif // TARGET_XXX
 
 #if FEATURE_FASTTAILCALL
+            const unsigned argAlignment = eeGetArgAlignment(origArgType, (hfaType == TYP_FLOAT));
 #if defined(OSX_ARM64_ABI)
-            unsigned argAlignment = TARGET_POINTER_SIZE;
-            if (argSize <= TARGET_POINTER_SIZE)
-            {
-                argAlignment = argSize;
-            }
             varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
-            assert(argSize % argAlignment == 0);
-#else  // !OSX_ARM64_ABI
-            assert((argSize % TARGET_POINTER_SIZE) == 0);
-            assert((varDscInfo->stackArgSize % TARGET_POINTER_SIZE) == 0);
-#endif // !OSX_ARM64_ABI
-            JITDUMP("set user arg V%02u offset to %u\n", varDscInfo->stackArgSize);
+#endif // OSX_ARM64_ABI
+
+            assert((argSize % argAlignment) == 0);
+            assert((varDscInfo->stackArgSize % argAlignment) == 0);
+
+            JITDUMP("set user arg V%02u offset to %u\n", varDscInfo->varNum, varDscInfo->stackArgSize);
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += argSize;
 #endif // FEATURE_FASTTAILCALL
@@ -1109,9 +1104,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             varDsc->lvHasLdAddrOp = 1;
             lvaSetVarAddrExposed(varDscInfo->varNum);
         }
+    }
 
-    } // for each user arg
-    compArgSize = roundUp(compArgSize, TARGET_POINTER_SIZE);
+    compArgSize = GetOutgoingArgByteSize(compArgSize);
 
 #ifdef TARGET_ARM
     if (doubleAlignMask != RBM_NONE)
@@ -3654,6 +3649,46 @@ void LclVarDsc::lvaDisqualifyVar()
 }
 #endif // ASSERTION_PROP
 
+unsigned LclVarDsc::lvSize() const // Size needed for storage representation. Only used for structs or TYP_BLK.
+{
+    // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
+    // where the struct itself is no longer used because all access is via its member fields.
+    // When that happens, the struct is marked as unused and its type has been changed to
+    // TYP_INT (to keep the GC tracking code from looking at it).
+    // See Compiler::raAssignVars() for details. For example:
+    //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
+    //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
+    //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
+    //                                                                        f8 (last use) (last use) $345
+    // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
+    // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
+
+    assert(varTypeIsStruct(lvType) || (lvType == TYP_BLK) || (lvPromoted && lvUnusedStruct));
+
+    if (lvIsParam)
+    {
+        assert(varTypeIsStruct(lvType));
+        const bool     isFloatHfa   = (lvIsHfa() && (GetHfaType() == TYP_FLOAT));
+        const unsigned argAlignment = Compiler::eeGetArgAlignment(lvType, isFloatHfa);
+        return roundUp(lvExactSize, argAlignment);
+    }
+
+#if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
+    // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
+    // this for arguments, which must be passed according the defined ABI. We don't want to do this for
+    // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
+    // (Note that for 64-bits, we are already rounding up to 16.)
+    if (lvType == TYP_SIMD12)
+    {
+        assert(!lvIsParam);
+        assert(lvExactSize == 12);
+        return 16;
+    }
+#endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
+
+    return roundUp(lvExactSize, TARGET_POINTER_SIZE);
+}
+
 /**********************************************************************************
 * Get stack size of the varDsc.
 */
@@ -5459,8 +5494,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         if (!lvaIsPreSpilled(stkLclNum, preSpillMask))
         {
-            argOffs =
-                lvaAssignVirtualFrameOffsetToArg(stkLclNum, eeGetArgSize(argLst, &info.compMethodInfo->args), argOffs);
+            const unsigned argSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
+            argOffs                = lvaAssignVirtualFrameOffsetToArg(stkLclNum, argSize, argOffs);
             argLcls++;
         }
         argLst = info.compCompHnd->getArgNext(argLst);
@@ -5472,11 +5507,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
 
-#ifdef UNIX_AMD64_ABI
-        // On the stack frame the homed arg always takes a full number of slots
-        // for proper stack alignment. Make sure the real struct size is properly rounded up.
-        argumentSize = roundUp(argumentSize, TARGET_POINTER_SIZE);
-#endif // UNIX_AMD64_ABI
+#if !defined(OSX_ARM64_ABI)
+        assert(argumentSize % TARGET_POINTER_SIZE == 0);
+#endif // !defined(OSX_ARM64_ABI)
 
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum++, argumentSize, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
@@ -5856,19 +5889,14 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                 break;
         }
 #endif // TARGET_ARM
+        const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
+        const unsigned argAlignment = eeGetArgAlignment(varDsc->lvType, isFloatHfa);
 #if defined(OSX_ARM64_ABI)
-        unsigned argAlignment = TARGET_POINTER_SIZE;
-        if (argSize <= TARGET_POINTER_SIZE)
-        {
-            argAlignment = argSize;
-        }
-        argOffs = roundUp(argOffs, argAlignment);
-        assert((argOffs % argAlignment) == 0);
-#else  // !OSX_ARM64_ABI
-        assert((argSize % TARGET_POINTER_SIZE) == 0);
-        assert((argOffs % TARGET_POINTER_SIZE) == 0);
-#endif // !OSX_ARM64_ABI
+        argOffs                     = roundUp(argOffs, argAlignment);
+#endif // OSX_ARM64_ABI
 
+        assert((argSize % argAlignment) == 0);
+        assert((argOffs % argAlignment) == 0);
         varDsc->SetStackOffset(argOffs);
     }
 

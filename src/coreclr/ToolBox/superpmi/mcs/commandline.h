@@ -35,6 +35,7 @@ public:
             , recursive(false)
             , dedup(false)
             , stripCR(false)
+            , simple(false)
             , nameOfFile1(nullptr)
             , nameOfFile2(nullptr)
             , nameOfFile3(nullptr)
@@ -62,6 +63,7 @@ public:
         bool  recursive;
         bool  dedup;
         bool  stripCR;
+        bool  simple;
         char* nameOfFile1;
         char* nameOfFile2;
         char* nameOfFile3;

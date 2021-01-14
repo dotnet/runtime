@@ -5,6 +5,7 @@
 // and is used for communicating with a debugger.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
@@ -50,7 +51,7 @@ namespace System.Diagnostics
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool LaunchInternal();
 
         // Returns whether or not a debugger is attached to the process.
@@ -74,8 +75,10 @@ namespace System.Diagnostics
         // Posts a message for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not
         // report the message depending on its settings.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void Log(int level, string? category, string? message);
+        public static void Log(int level, string? category, string? message) => LogInternal(level, category, message);
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void LogInternal(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled
         //

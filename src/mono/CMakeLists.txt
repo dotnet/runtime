@@ -72,6 +72,7 @@ if(ENABLE_NETCORE)
   set(DISABLE_REMOTING 1)
   set(DISABLE_REFLECTION_EMIT_SAVE 1)
   set(DISABLE_APPDOMAINS 1)
+  set(DISABLE_SHADOW_COPY 1)
   set(DISABLE_CLEANUP 1)
   set(DISABLE_ASSEMBLY_REMAPPING 1)
   set(DISABLE_SECURITY 1)
@@ -223,10 +224,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_NO_SYMLINKS 1)
   set(MONO_KEYWORD_THREAD "__declspec (thread)")
   set(MONO_ZERO_LEN_ARRAY 1)
-
-  # FIXME: disable SIMD support for Windows, see https://github.com/dotnet/runtime/issues/1933
-  set(DISABLE_SIMD 1)
-
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options(/W3)   # set warning level 3
   add_compile_options(/EHsc) # set exception handling behavior

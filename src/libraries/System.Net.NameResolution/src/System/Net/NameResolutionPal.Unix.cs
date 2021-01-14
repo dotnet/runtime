@@ -79,7 +79,7 @@ namespace System.Net
 
         public static string GetHostName() => Interop.Sys.GetHostName();
 
-        public static unsafe Task GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken _)
+        public static unsafe Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken _)
         {
             Debug.Assert(hostName is not null);
 

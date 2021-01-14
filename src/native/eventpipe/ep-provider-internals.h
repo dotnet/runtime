@@ -40,14 +40,20 @@ provider_unset_config (
 void
 provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data);
 
+// Create and register provider.
 // _Requires_lock_held (ep)
 EventPipeProvider *
-provider_create (
+provider_create_register (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
 	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
+
+// Unregister and delete provider.
+// _Requires_lock_held (ep)
+void
+provider_unregister_delete (EventPipeProvider *provider);
 
 // Free provider.
 // _Requires_lock_held (ep)

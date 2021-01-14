@@ -896,7 +896,7 @@ void DestroyThread(Thread *th)
 
     if (th->IsAbortRequested()) {
         // Reset trapping count.
-        th->UnmarkThreadForAbort(Thread::TAR_ALL);
+        th->UnmarkThreadForAbort();
     }
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
@@ -985,7 +985,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     if (IsAbortRequested()) {
         // Reset trapping count.
-        UnmarkThreadForAbort(Thread::TAR_ALL);
+        UnmarkThreadForAbort();
     }
 
     if (!IsBackground())
@@ -1460,7 +1460,6 @@ Thread::Thread()
     NewHolder<Dbg_TrackSyncStack> trackSyncHolder(static_cast<Dbg_TrackSyncStack*>(m_pTrackSync));
 #endif  // TRACK_SYNC
 
-    m_RequestedStackSize = 0;
     m_PreventAsync = 0;
     m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
@@ -1485,7 +1484,6 @@ Thread::Thread()
    }
 
     m_AbortType = EEPolicy::TA_None;
-    m_AbortInfo = 0;
     m_AbortEndTime = MAXULONGLONG;
     m_RudeAbortEndTime = MAXULONGLONG;
     m_AbortController = 0;
@@ -1595,7 +1593,6 @@ Thread::Thread()
     memset(&m_activityId, 0, sizeof(m_activityId));
 #endif // FEATURE_PERFTRACING
     m_HijackReturnKind = RT_Illegal;
-    m_DeserializationTracker = NULL;
 
     m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
@@ -1865,7 +1862,7 @@ FAILURE:
         SetThreadState(TS_FailStarted);
 
         if (GetThread() != NULL && IsAbortRequested())
-            UnmarkThreadForAbort(TAR_ALL);
+            UnmarkThreadForAbort();
 
         if (!fKeepTLS)
         {
@@ -1934,9 +1931,6 @@ FAILURE:
             END_PIN_PROFILER();
         }
 #endif // PROFILING_SUPPORTED
-
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(m_State & TS_SuspendUnstarted));
     }
 
     return res;
@@ -2557,7 +2551,7 @@ Thread::~Thread()
     // we need to unmark it so that g_TrapReturningThreads is decremented.
     if (IsAbortRequested())
     {
-        UnmarkThreadForAbort(TAR_ALL);
+        UnmarkThreadForAbort();
     }
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2631,11 +2625,6 @@ Thread::~Thread()
     {
         // Destroy any handles that we're using to hold onto exception objects
         SafeSetThrowables(NULL);
-
-        if (m_DeserializationTracker != NULL)
-        {
-            DestroyGlobalStrongHandle(m_DeserializationTracker);
-        }
 
         DestroyShortWeakHandle(m_ExposedObject);
         DestroyStrongHandle(m_StrongHndToExposedObject);
@@ -3035,7 +3024,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 
             if (CurrentThreadID == ThisThreadID && IsAbortRequested())
             {
-                UnmarkThreadForAbort(Thread::TAR_ALL);
+                UnmarkThreadForAbort();
             }
         }
 
@@ -7514,9 +7503,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             ExceptionTracker::PopTrackers(pArgs->pFrame);
     #endif // FEATURE_EH_FUNCLETS
 
-            // Fortunately, ThreadAbortExceptions are always
-            if (pArgs->pThread->IsAbortRequested())
-                pArgs->pThread->EEResetAbort(Thread::TAR_Thread);
+            _ASSERTE(!pArgs->pThread->IsAbortRequested());
         }
         PAL_ENDTRY;
 
@@ -8019,11 +8006,8 @@ void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeed
     }
 
     if (fResetAbort && IsAbortRequested()) {
-        UnmarkThreadForAbort(TAR_ALL);
+        UnmarkThreadForAbort();
     }
-
-    if (fResetAbort && IsAborted())
-        ClearAborted();
 
     if (IsThreadPoolThread() && fThreadObjectResetNeeded)
     {
@@ -8551,30 +8535,3 @@ ThreadStore::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 
 #endif // #ifdef DACCESS_COMPILE
-
-OBJECTHANDLE Thread::GetOrCreateDeserializationTracker()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#if !defined (DACCESS_COMPILE)
-    if (m_DeserializationTracker != NULL)
-    {
-        return m_DeserializationTracker;
-    }
-
-    _ASSERTE(this == GetThread());
-
-    MethodTable* pMT = CoreLibBinder::GetClass(CLASS__DESERIALIZATION_TRACKER);
-    m_DeserializationTracker = CreateGlobalStrongHandle(AllocateObject(pMT));
-
-    _ASSERTE(m_DeserializationTracker != NULL);
-#endif // !defined (DACCESS_COMPILE)
-
-    return m_DeserializationTracker;
-}

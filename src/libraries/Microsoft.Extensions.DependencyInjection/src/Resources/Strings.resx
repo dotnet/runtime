@@ -159,4 +159,16 @@
   <data name="AsyncDisposableServiceDispose" xml:space="preserve">
     <value>'{0}' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.</value>
   </data>
+  <data name="GetCaptureDisposableNotSupported" xml:space="preserve">
+    <value>GetCaptureDisposable call is supported only for main scope</value>
+  </data>
+  <data name="InvalidServiceDescriptor" xml:space="preserve">
+    <value>Invalid service descriptor</value>
+  </data>
+  <data name="ServiceDescriptorNotExist" xml:space="preserve">
+    <value>Requested service descriptor doesn't exist.</value>
+  </data>
+  <data name="CallSiteTypeNotSupported" xml:space="preserve">
+    <value>Call site type {0} is not supported</value>
+  </data>
 </root>
