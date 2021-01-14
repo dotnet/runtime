@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildMonoCrossAllTargets">
+<Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
@@ -12,7 +12,7 @@
     <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
   </ItemGroup>
 
-  <Target Name="BuildMonoCrossAllTargets">
+  <Target Name="BuildMonoCrossAllTargets" AfterTargets="Build">
     <MSBuild Targets="BuildMonoCrossTarget"
              Projects="$(MSBuildThisFileFullPath)"
              BuildInParallel="true"

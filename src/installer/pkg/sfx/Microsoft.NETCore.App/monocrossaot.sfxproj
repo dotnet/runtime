@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="BuildMonoCrossAllTargets">
+<Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
     <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">android-x64;android-arm64;android-x86;android-arm</MonoAotTargets>
@@ -6,14 +6,10 @@
 
   <ItemGroup>
     <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" Build="false" />
   </ItemGroup>
 
-  <Target Name="RestoreSubProject">
-    <MSBuild Targets="Restore"
-             Projects="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" />
-  </Target>
-
-  <Target Name="BuildMonoCrossAllTargets" DependsOnTargets="RestoreSubProject">
+  <Target Name="BuildMonoCrossAllTargets" AfterTargets="Build">
     <MSBuild Targets="BuildMonoCrossTarget"
              Projects="$(MSBuildThisFileFullPath)"
              BuildInParallel="true"
