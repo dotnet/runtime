@@ -82,57 +82,53 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public static class SendTo
+    public sealed class SendTo_SyncSpan : SendToBase<SocketHelperSpanSync>
     {
-        public static class Sync
-        {
-            public sealed class Span : SendToBase<SocketHelperSpanSync>
-            {
-                public Span(ITestOutputHelper output) : base(output) { }
-            }
+        public SendTo_SyncSpan(ITestOutputHelper output) : base(output) { }
+    }
 
-            public sealed class SpanForceNonBlocking : SendToBase<SocketHelperSpanSyncForceNonBlocking>
-            {
-                public SpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
-            }
+    public sealed class SendTo_SyncSpanForceNonBlocking : SendToBase<SocketHelperSpanSyncForceNonBlocking>
+    {
+        public SendTo_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
 
-            public sealed class MemoryArrayTask : SendToBase<SocketHelperMemoryArrayTask>
-            {
-                public MemoryArrayTask(ITestOutputHelper output) : base(output) { }
-            }
+    public sealed class SendTo_ArraySync : SendToBase<SocketHelperArraySync>
+    {
+        public SendTo_ArraySync(ITestOutputHelper output) : base(output) { }
+    }
 
-            public sealed class MemoryNativeTask : SendToBase<SocketHelperMemoryNativeTask>
-            {
-                public MemoryNativeTask(ITestOutputHelper output) : base(output) { }
-            }
+    public sealed class SendTo_SyncForceNonBlocking : SendToBase<SocketHelperSyncForceNonBlocking>
+    {
+        public SendTo_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+    }
 
-            public sealed class ArraySync : SendToBase<SocketHelperArraySync>
-            {
-                public ArraySync(ITestOutputHelper output) : base(output) { }
-            }
+    public sealed class SendTo_Apm : SendToBase<SocketHelperApm>
+    {
+        public SendTo_Apm(ITestOutputHelper output) : base(output) {}
+    }
 
-            public sealed class ArrayForceNonBlocking : SendToBase<SocketHelperSyncForceNonBlocking>
-            {
-                public ArrayForceNonBlocking(ITestOutputHelper output) : base(output) {}
-            }
-        }
+    public sealed class SendTo_Eap : SendToBase<SocketHelperEap>
+    {
+        public SendTo_Eap(ITestOutputHelper output) : base(output) {}
+    }
 
-        public static class Async
-        {
-            public sealed class Apm : SendToBase<SocketHelperApm>
-            {
-                public Apm(ITestOutputHelper output) : base(output) {}
-            }
+    public sealed class SendTo_Task : SendToBase<SocketHelperTask>
+    {
+        public SendTo_Task(ITestOutputHelper output) : base(output) { }
+    }
 
-            public sealed class Task : SendToBase<SocketHelperTask>
-            {
-                public Task(ITestOutputHelper output) : base(output) {}
-            }
+    public sealed class SendTo_CancellableTask : SendToBase<SocketHelperCancellableTask>
+    {
+        public SendTo_CancellableTask(ITestOutputHelper output) : base(output) { }
+    }
 
-            public sealed class Eap : SendToBase<SocketHelperEap>
-            {
-                public Eap(ITestOutputHelper output) : base(output) {}
-            }
-        }
+    public sealed class SendTo_MemoryArrayTask : SendToBase<SocketHelperMemoryArrayTask>
+    {
+        public SendTo_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_MemoryNativeTask : SendToBase<SocketHelperMemoryNativeTask>
+    {
+        public SendTo_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
     }
 }
