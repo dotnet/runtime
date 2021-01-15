@@ -296,24 +296,13 @@ namespace System.IO
 
         public override int Read(Span<byte> buffer)
         {
-            if (GetType() == typeof(FileStream) && !_useAsyncIO)
+            Debug.Assert(!_useAsyncIO);
+
+            if (_fileHandle.IsClosed)
             {
-                if (_fileHandle.IsClosed)
-                {
-                    throw Error.GetFileNotOpen();
-                }
-                return ReadSpan(buffer);
+                throw Error.GetFileNotOpen();
             }
-            else
-            {
-                // This type is derived from FileStream and/or the stream is in async mode.  If this is a
-                // derived type, it may have overridden Read(byte[], int, int) prior to this Read(Span<byte>)
-                // overload being introduced.  In that case, this Read(Span<byte>) overload should use the behavior
-                // of Read(byte[],int,int) overload.  Or if the stream is in async mode, we can't call the
-                // synchronous ReadSpan, so we similarly call the base Read, which will turn delegate to
-                // Read(byte[],int,int), which will do the right thing if we're in async mode.
-                return base.Read(buffer);
-            }
+            return ReadSpan(buffer);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)

@@ -153,23 +153,13 @@ namespace System.IO
             return _actualImplementation.FlushAsync(cancellationToken);
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            ValidateReadWriteArgs(buffer, offset, count);
-            return _useAsyncIO ?
-                ReadAsyncTask(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult() :
-                ReadSpan(new Span<byte>(buffer, offset, count));
-        }
+        public override int Read(byte[] buffer, int offset, int count) => _actualImplementation.Read(buffer, offset, count);
 
         public override int Read(Span<byte> buffer)
         {
-            if (GetType() == typeof(FileStream) && !_useAsyncIO)
+            if (GetType() == typeof(FileStream) && !_actualImplementation.IsAsync)
             {
-                if (_fileHandle.IsClosed)
-                {
-                    throw Error.GetFileNotOpen();
-                }
-                return ReadSpan(buffer);
+                return _actualImplementation.Read(buffer);
             }
             else
             {
