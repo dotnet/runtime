@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -120,6 +123,39 @@ namespace System.Net.Sockets.Tests
     public sealed class SendTo_CancellableTask : SendToBase<SocketHelperCancellableTask>
     {
         public SendTo_CancellableTask(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        public async Task TestTimes(int DatagramCount)
+        {
+            //const int DatagramCount = 100;
+            const int DatagramSize = 2048;
+
+            List<Task> sendOps = new List<Task>();
+
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            sender.BindToAnonymousPort(IPAddress.Loopback);
+
+            using Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            receiver.BindToAnonymousPort(IPAddress.Loopback);
+            IPEndPoint remoteEp = (IPEndPoint)receiver.LocalEndPoint;
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            for (int i = 0; i < DatagramCount; i++)
+            {
+                ReadOnlyMemory<byte> buffer = new byte[DatagramSize];
+                Task sendOp = sender.SendToAsync(buffer, SocketFlags.None, remoteEp, default).AsTask();
+            }
+
+            await Task.WhenAll(sendOps);
+            sw.Stop();
+            throw new Exception("Total time: " + sw.Elapsed);
+        }
     }
 
     public sealed class SendTo_MemoryArrayTask : SendToBase<SocketHelperMemoryArrayTask>
