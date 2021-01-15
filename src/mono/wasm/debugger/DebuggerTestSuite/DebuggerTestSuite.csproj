@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,4 +20,34 @@
     <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
+  <Target Name="CopyAppZipToHelixTestDir"
+          Condition="'$(ArchiveTests)' == 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish">
+    <PropertyGroup>
+      <WasmHelixTestAppRelativeDir Condition="'$(WasmHelixTestAppRelativeDir)' == ''">$(MSBuildProjectName)</WasmHelixTestAppRelativeDir>
+      <!-- Helix properties -->
+      <!-- AnyCPU as Platform-->
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/$(WasmHelixTestAppRelativeDir)/</HelixArchiveRunOnlyAppsDir>
+      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
+      <_TmpDirForzip>$(IntermediateOutputPath)tmp-zip\</_TmpDirForzip>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <TestSuiteFile Include="$(OutDir)\**" Exclude="$(OutDir)\publish\**" />
+        <DebuggerTestFile Include="$(OutDir)\..\..\..\debugger-test\Debug\publish\**" />
+    </ItemGroup>
+
+    <Message Text="@(DeployFile)" />
+    <MakeDir Directories="$(_TmpDirForzip)" />
+
+    <Copy SourceFiles="@(TestSuiteFile)" DestinationFiles="@(TestSuiteFile->'$(_TmpDirForzip)DebuggerTestSuite\%(RecursiveDir)%(FileName)%(Extension)')" />
+    <Copy SourceFiles="@(DebuggerTestFile)" DestinationFiles="@(DebuggerTestFile->'$(_TmpDirForzip)debugger-test\%(RecursiveDir)%(FileName)%(Extension)')" />
+
+    <ZipDirectory SourceDirectory="$(_TmpDirForzip)" DestinationFile="$(ZippedApp)" Overwrite="true" />
+    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
+  </Target>
 </Project>

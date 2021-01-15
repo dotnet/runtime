@@ -160,15 +160,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections\tests\**\*.Tests.csproj"
                       Condition="'$(TestAssemblies)' == 'true'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
-                      Condition="'$(TestPackages)' == 'true'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false"
-                      Condition="'$(TestTrimming)' == 'true'" />
+    <!--<ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"-->
+                      <!--Exclude="@(ProjectExclusions)"-->
+                      <!--Condition="'$(TestAssemblies)' == 'true'" />-->
+    <!--<ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"-->
+                      <!--Condition="'$(TestPackages)' == 'true'" />-->
+    <!--<ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"-->
+                      <!--Exclude="@(ProjectExclusions)"-->
+                      <!--BuildInParallel="false"-->
+                      <!--Condition="'$(TestTrimming)' == 'true'" />-->
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')">
@@ -188,7 +190,10 @@
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'">
     <ProjectReference Include="$(MonoProjectRoot)netcore\sample\wasm\**\*.Sample.csproj"
                       BuildInParallel="false" />
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\wasm\**\*.Test.csproj"
+    <!--<ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\wasm\**\*.Test.csproj"-->
+                      <!--BuildInParallel="false" />-->
+    <ProjectReference Include="$(RepoRoot)\src\mono\wasm\debugger\DebuggerTestSuite\DebuggerTestSuite.csproj"
+                      AdditionalProperties="Configuration=Debug"
                       BuildInParallel="false" />
   </ItemGroup>
 

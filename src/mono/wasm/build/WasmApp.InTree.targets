@@ -10,7 +10,7 @@
         <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
-    <Message Text="RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="high" />
+    <Message Text="RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="low" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">
@@ -41,7 +41,7 @@
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/$(WasmHelixTestAppRelativeDir)/</HelixArchiveRunOnlyAppsDir>
       <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
     </PropertyGroup>
-    <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
+    <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" Overwrite="true" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
   </Target>
 </Project>

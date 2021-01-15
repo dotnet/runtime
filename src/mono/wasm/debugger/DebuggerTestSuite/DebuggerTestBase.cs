@@ -43,6 +43,9 @@ namespace DebuggerTests
             if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
                 return test_app_path;
 
+            test_app_path = Path.Combine(asm_dir, "..", "debugger-test");
+            if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
+                return test_app_path;
             throw new Exception($"Could not figure out debugger-test app path ({test_app_path}) based on the test suite location ({asm_dir})");
         }
 
