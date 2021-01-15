@@ -389,23 +389,6 @@ namespace System.IO
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (GetType() != typeof(FileStream))
-            {
-                // If this isn't a concrete FileStream, a derived type may have overridden WriteAsync(byte[],...),
-                // which was introduced first, so delegate to the base which will delegate to that.
-                return base.WriteAsync(buffer, cancellationToken);
-            }
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ValueTask.FromCanceled(cancellationToken);
-            }
-
-            if (IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
             if (!_useAsyncIO)
             {
                 // If we weren't opened for asynchronous I/O, we still call to the base implementation so that

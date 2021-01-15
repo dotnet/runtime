@@ -283,23 +283,12 @@ namespace System.IO
                 return ValueTask.FromCanceled(cancellationToken);
             }
 
-            if (IsClosed)
+            if (_actualImplementation.IsClosed)
             {
                 throw Error.GetFileNotOpen();
             }
 
-            if (!_useAsyncIO)
-            {
-                // If we weren't opened for asynchronous I/O, we still call to the base implementation so that
-                // Write is invoked asynchronously.  But if we have a byte[], we can do so using the base Stream's
-                // internal helper that bypasses delegating to BeginWrite, since we already know this is FileStream
-                // rather than something derived from it and what our BeginWrite implementation is going to do.
-                return MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment) ?
-                    new ValueTask((Task)BeginWriteInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
-                    base.WriteAsync(buffer, cancellationToken);
-            }
-
-            return WriteAsyncInternal(buffer, cancellationToken);
+            return _actualImplementation.WriteAsync(buffer, cancellationToken);
         }
 
         /// <summary>
