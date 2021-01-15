@@ -61,7 +61,7 @@ struct S
         }
 
         [Fact]
-        public async Task TypeWithBlittablePrimitiveFieldsMarkedBlittableNoDiagnostic()
+        public async Task BlittablePrimitiveFields_MarkedBlittable_NoDiagnostic()
         {
 
             string source = @"
@@ -73,12 +73,29 @@ struct S
     public int field;
 }
 ";
-
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
         [Fact]
-        public async Task TypeWithBlittableStructFieldsMarkedBlittableNoDiagnostic()
+        public async Task BlittableEnumFields_MarkedBlittable_NoDiagnostic()
+        {
+
+            string source = @"
+using System.Runtime.InteropServices;
+
+enum E { Zero, One, Two }
+
+[BlittableType]
+struct S
+{
+    public E field;
+}
+";
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
+        public async Task BlittableStructFields_MarkedBlittable_NoDiagnostic()
         {
             string source = @"
 using System.Runtime.InteropServices;
@@ -95,12 +112,11 @@ struct T
     public int field;
 }
 ";
-
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
         [Fact]
-        public async Task TypeMarkedBlittableWithNonBlittableFieldsMarkedBlittableReportDiagnosticOnFieldTypeDefinition()
+        public async Task NonBlittableFields_MarkedBlittable_ReportDiagnosticOnFieldTypeDefinition()
         {
             string source = @"
 using System.Runtime.InteropServices;

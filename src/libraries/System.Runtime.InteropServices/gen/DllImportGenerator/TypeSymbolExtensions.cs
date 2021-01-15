@@ -79,6 +79,11 @@ namespace Microsoft.Interop
                 return pointedAtType.IsConsideredBlittable();
             }
 
+            if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum, EnumUnderlyingType: ITypeSymbol underlyingType })
+            {
+                return underlyingType!.IsConsideredBlittable();
+            }
+
             bool hasNativeMarshallingAttribute = false;
             bool hasGeneratedMarshallingAttribute = false;
             // [TODO]: Match attributes on full name or symbol, not just on type name.
