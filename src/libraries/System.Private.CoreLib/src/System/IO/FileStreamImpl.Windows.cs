@@ -274,7 +274,7 @@ namespace System.IO
             {
                 if (_fileHandle != null && !_fileHandle.IsClosed && _writePos > 0)
                 {
-                    await FlushAsyncInternal(default).ConfigureAwait(false);
+                    await FlushAsync(default).ConfigureAwait(false);
                 }
             }
             finally
@@ -1474,7 +1474,7 @@ namespace System.IO
             internal static readonly IOCompletionCallback s_callback = IOCallback;
 
             /// <summary>The FileStream that owns this instance.</summary>
-            internal readonly FileStream _fileStream;
+            internal readonly FileStreamImpl _fileStream;
 
             /// <summary>Tracked position representing the next location from which to read.</summary>
             internal long _position;
@@ -1495,7 +1495,7 @@ namespace System.IO
             internal object CancellationLock => this;
 
             /// <summary>Initialize the awaitable.</summary>
-            internal AsyncCopyToAwaitable(FileStream fileStream)
+            internal AsyncCopyToAwaitable(FileStreamImpl fileStream)
             {
                 _fileStream = fileStream;
             }
