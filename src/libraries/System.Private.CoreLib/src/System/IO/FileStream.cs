@@ -405,45 +405,6 @@ namespace System.IO
             (e is ArgumentException && !(e is ArgumentNullException));
 
         /// <summary>
-        /// Flushes the internal read/write buffer for this stream.  If write data has been buffered,
-        /// that data is written out to the underlying file.  Or if data has been buffered for
-        /// reading from the stream, the data is dumped and our position in the underlying file
-        /// is rewound as necessary.  This does not flush the OS buffer.
-        /// </summary>
-        private void FlushInternalBuffer()
-        {
-            AssertBufferInvariants();
-            if (_writePos > 0)
-            {
-                FlushWriteBuffer();
-            }
-            else if (_readPos < _readLength && CanSeek)
-            {
-                FlushReadBuffer();
-            }
-        }
-
-        /// <summary>Dumps any read data in the buffer and rewinds our position in the stream, accordingly, as necessary.</summary>
-        private void FlushReadBuffer()
-        {
-            // Reading is done by blocks from the file, but someone could read
-            // 1 byte from the buffer then write.  At that point, the OS's file
-            // pointer is out of sync with the stream's position.  All write
-            // functions should call this function to preserve the position in the file.
-
-            AssertBufferInvariants();
-            Debug.Assert(_writePos == 0, "FileStream: Write buffer must be empty in FlushReadBuffer!");
-
-            int rewind = _readPos - _readLength;
-            if (rewind != 0)
-            {
-                Debug.Assert(CanSeek, "FileStream will lose buffered read data now.");
-                SeekCore(_fileHandle, rewind, SeekOrigin.Current);
-            }
-            _readPos = _readLength = 0;
-        }
-
-        /// <summary>
         /// Reads a byte from the file stream.  Returns the byte cast to an int
         /// or -1 if reading from the end of the stream.
         /// </summary>
@@ -454,37 +415,7 @@ namespace System.IO
         /// within the stream by one byte.
         /// </summary>
         /// <param name="value">The byte to write to the stream.</param>
-        public override void WriteByte(byte value)
-        {
-            PrepareForWriting();
-
-            // Flush the write buffer if it's full
-            if (_writePos == _bufferLength)
-                FlushWriteBufferForWriteByte();
-
-            // We now have space in the buffer. Store the byte.
-            GetBuffer()[_writePos++] = value;
-        }
-
-        /// <summary>
-        /// Validates that we're ready to write to the stream,
-        /// including flushing a read buffer if necessary.
-        /// </summary>
-        private void PrepareForWriting()
-        {
-            if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
-
-            // Make sure we're good to write.  We only need to do this if there's nothing already
-            // in our write buffer, since if there is something in the buffer, we've already done
-            // this checking and flushing.
-            if (_writePos == 0)
-            {
-                if (!CanWrite) throw Error.GetWriteNotSupported();
-                FlushReadBuffer();
-                Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
-            }
-        }
+        public override void WriteByte(byte value) => _actualImplementation.WriteByte(value);
 
         ~FileStream()
         {
