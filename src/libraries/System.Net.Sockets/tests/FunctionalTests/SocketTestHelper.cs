@@ -244,9 +244,9 @@ namespace System.Net.Sockets.Tests
         public override Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
             s.ReceiveAsync(bufferList, SocketFlags.None);
         public override Task<SocketReceiveFromResult> ReceiveFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.ReceiveFromAsync(buffer, SocketFlags.None, endPoint);
+            s.ReceiveFromAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask();
         public override Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-           s.ReceiveMessageFromAsync(buffer, SocketFlags.None, endPoint);
+           s.ReceiveMessageFromAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask();
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
             s.SendAsync(buffer, SocketFlags.None, _cts.Token).AsTask();
         public override Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
