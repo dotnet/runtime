@@ -206,6 +206,7 @@ namespace R2RDump
         abstract internal void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true);
         abstract internal void DumpSectionContents(ReadyToRunSection section);
         abstract internal void DumpQueryCount(string q, string title, int count);
+        abstract internal void DumpFixupStats();
 
         public TextWriter Writer => _writer;
 
@@ -415,6 +416,7 @@ namespace R2RDump
                 if (standardDump)
                 {
                     _dumper.DumpAllMethods();
+                    _dumper.DumpFixupStats();
                 }
             }
 
