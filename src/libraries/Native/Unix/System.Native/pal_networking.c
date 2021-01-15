@@ -666,6 +666,7 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address,
     (void)addressFamily;
     (void)entry;
     (void)callback;
+    (void)cancelHandle;
 
     // GetHostEntryForNameAsync is not supported on this platform.
     return -1;
