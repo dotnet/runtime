@@ -354,6 +354,20 @@ namespace System.IO
             Dispose(false);
         }
 
+        protected override void Dispose(bool disposing) => _actualImplementation.DisposeInternal(disposing);
+
+        public override ValueTask DisposeAsync()
+        {
+            if (OperatingSystem.IsWindows() && GetType() != typeof(FileStream))
+            {
+                return base.DisposeAsync();
+            }
+
+            return _actualImplementation.DisposeAsync();
+        }
+
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => _actualImplementation.CopyToAsync(destination, bufferSize, cancellationToken);
+
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);

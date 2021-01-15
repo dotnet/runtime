@@ -27,6 +27,8 @@ namespace System.IO
         internal abstract void Unlock(long position, long length);
 
         internal abstract void Flush(bool flushToDisk);
+
+        internal abstract void DisposeInternal(bool disposing);
     }
 
     internal sealed partial class FileStreamImpl : FileStreamImplBase
@@ -225,6 +227,8 @@ namespace System.IO
                 throw;
             }
         }
+
+        internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         internal override IntPtr Handle => SafeFileHandle.DangerousGetHandle();
 

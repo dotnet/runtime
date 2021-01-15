@@ -261,12 +261,7 @@ namespace System.IO
             }
         }
 
-        public override ValueTask DisposeAsync() =>
-            GetType() == typeof(FileStream) ?
-                DisposeAsyncCore() :
-                base.DisposeAsync();
-
-        private async ValueTask DisposeAsyncCore()
+        public override async ValueTask DisposeAsync()
         {
             // Same logic as in Dispose(), except with async counterparts.
             // TODO: https://github.com/dotnet/runtime/issues/27643: FlushAsync does synchronous work.
@@ -1247,7 +1242,7 @@ namespace System.IO
             // typical read/write looping.  We also need to take this path if this is a derived
             // instance from FileStream, as a derived type could have overridden ReadAsync, in which
             // case our custom CopyToAsync implementation isn't necessarily correct.
-            if (!_useAsyncIO || GetType() != typeof(FileStream))
+            if (!_useAsyncIO)
             {
                 return base.CopyToAsync(destination, bufferSize, cancellationToken);
             }
