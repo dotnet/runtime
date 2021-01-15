@@ -411,7 +411,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoAOTCFLAGS, ' ')"</_MonoAOTFLAGSOption>
+      <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoAOTCFLAGS, ' ')"</_MonoAOTCFLAGSOption>
       <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoAOTCXXFLAGS, ' ')"</_MonoAOTCXXFLAGSOption>
     </PropertyGroup>
     <ItemGroup>
