@@ -9,7 +9,7 @@ namespace System.IO
 {
     public partial class FileStream : Stream
     {
-        private readonly FileStreamImplBase _actualImplementation;
+        private readonly FileStreamStrategy _actualImplementation;
 
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;

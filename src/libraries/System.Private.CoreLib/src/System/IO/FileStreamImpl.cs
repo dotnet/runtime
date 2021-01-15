@@ -10,28 +10,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    internal abstract class FileStreamImplBase : Stream
-    {
-        internal abstract bool IsAsync { get; }
-
-        internal abstract string Name { get; }
-
-        internal abstract IntPtr Handle { get; }
-
-        internal abstract SafeFileHandle SafeFileHandle { get; }
-
-        internal abstract bool IsClosed { get; }
-
-        internal abstract void Lock(long position, long length);
-
-        internal abstract void Unlock(long position, long length);
-
-        internal abstract void Flush(bool flushToDisk);
-
-        internal abstract void DisposeInternal(bool disposing);
-    }
-
-    internal sealed partial class FileStreamImpl : FileStreamImplBase
+    internal sealed partial class FileStreamImpl : FileStreamStrategy
     {
         private const bool DefaultIsAsync = false;
 

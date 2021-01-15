@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
-    internal sealed partial class FileStreamImpl : FileStreamImplBase
+    internal sealed partial class FileStreamImpl : FileStreamStrategy
     {
         /// <summary>File mode.</summary>
         private FileMode _mode;
