@@ -3388,22 +3388,65 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             prevRegOptCandidates &= ~prevRegOptCandidateBit;
             regNumber prevRegOptCandidateRegNum = genRegNumFromMask(prevRegOptCandidateBit);
             Interval* assignedInterval          = physRegs[prevRegOptCandidateRegNum].assignedInterval;
-            // The assigned should be non-null, and should have a recentRefPosition, however since
-            // this is a heuristic, we don't want a fatal error, so we just assert (not noway_assert).
+            bool      foundPrevRegOptReg        = true;
+#ifdef DEBUG
+            bool      hasAssignedInterval       = false;
+#endif
+
             if ((assignedInterval != nullptr) && (assignedInterval->recentRefPosition != nullptr))
             {
                 if (assignedInterval->recentRefPosition->reload && assignedInterval->recentRefPosition->RegOptional())
                 {
-                    // TODO-Cleanup: Previously, we always used the highest regNum with a previous regOptional
-                    // RefPosition, which is not really consistent with the way other selection criteria are applied.
-                    // should probably be: prevRegOptSet |= prevRegOptCandidateBit;
-                    prevRegOptSet = prevRegOptCandidateBit;
+                    foundPrevRegOptReg &= true;
+                }
+#ifdef DEBUG
+                hasAssignedInterval = true;
+#endif
+            }
+
+#ifdef TARGET_ARM
+            // If current interval is TYP_DOUBLE, verify if the other half register matches the heuristics.
+            // We have three cases:
+            // 1. One of the register of the pair have an assigned interval: Check if that register's refPosition
+            // matches the heuristics. If yes, add it to the set.
+            // 2. Both registers of the pair have an assigned interval: Conservatively "and" conditions for heuristics of
+            // their corresponding refPositions. If both register's heuristic matches, add them to the set.
+            // TODO-CQ-ARM: We may implement a better condition later.
+            // 3. None of the register have an assigned interval: Skip adding register and assert.
+            if (currentInterval->registerType == TYP_DOUBLE)
+            {
+                regNumber anotherHalfRegNum = findAnotherHalfRegRec(prevRegOptCandidateRegNum);
+                assignedInterval            = physRegs[anotherHalfRegNum].assignedInterval;
+                if ((assignedInterval != nullptr) && (assignedInterval->recentRefPosition != nullptr))
+                {
+                    if (assignedInterval->recentRefPosition->reload &&
+                        assignedInterval->recentRefPosition->RegOptional())
+                    {
+                        foundPrevRegOptReg &= true;
+                    }
+#ifdef DEBUG
+                    hasAssignedInterval = true;
+#endif
                 }
             }
-            else
+#endif
+
+            if (foundPrevRegOptReg)
+            {
+                // TODO-Cleanup: Previously, we always used the highest regNum with a previous regOptional
+                // RefPosition, which is not really consistent with the way other selection criteria are
+                // applied. should probably be: prevRegOptSet |= prevRegOptCandidateBit;
+                prevRegOptSet = prevRegOptCandidateBit;
+            }
+
+#ifdef DEBUG
+            // The assigned should be non-null, and should have a recentRefPosition, however since
+            // this is a heuristic, we don't want a fatal error, so we just assert (not noway_assert).
+            if (!hasAssignedInterval)
             {
                 assert(!"Spill candidate has no assignedInterval recentRefPosition");
             }
+#endif
         }
         found = selector.applySelection(PREV_REG_OPT, prevRegOptSet);
     }
@@ -4500,26 +4543,41 @@ RegRecord* LinearScan::getSecondHalfRegRec(RegRecord* regRec)
 //
 RegRecord* LinearScan::findAnotherHalfRegRec(RegRecord* regRec)
 {
+    regNumber anotherHalfRegNum = findAnotherHalfRegRec(regRec->regNum);
+    return getRegisterRecord(anotherHalfRegNum);
+}
+//------------------------------------------------------------------------------------------
+// findAnotherHalfRegRec: Find another half RegRecord which forms same ARM32 double register
+//
+// Arguments:
+//    regNumber - A float regNumber
+//
+// Assumptions:
+//    None
+//
+// Return Value:
+//    A RegRecord which forms same double register with regRec
+//
+regNumber LinearScan::findAnotherHalfRegRec(regNumber regNum)
+{
     regNumber  anotherHalfRegNum;
-    RegRecord* anotherHalfRegRec;
 
-    assert(genIsValidFloatReg(regRec->regNum));
+    assert(genIsValidFloatReg(regNum));
 
     // Find another half register for TYP_DOUBLE interval,
     // following same logic in canRestorePreviousInterval().
-    if (genIsValidDoubleReg(regRec->regNum))
+    if (genIsValidDoubleReg(regNum))
     {
-        anotherHalfRegNum = REG_NEXT(regRec->regNum);
+        anotherHalfRegNum = REG_NEXT(regNum);
         assert(!genIsValidDoubleReg(anotherHalfRegNum));
     }
     else
     {
-        anotherHalfRegNum = REG_PREV(regRec->regNum);
+        anotherHalfRegNum = REG_PREV(regNum);
         assert(genIsValidDoubleReg(anotherHalfRegNum));
     }
-    anotherHalfRegRec = getRegisterRecord(anotherHalfRegNum);
 
-    return anotherHalfRegRec;
+    return anotherHalfRegNum;
 }
 #endif
 
