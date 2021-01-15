@@ -9,8 +9,8 @@
              Exclude="@(ProjectExclusions)" />
     <NonNetCoreAppProject Include="@(_allSrc)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
-    <NetCoreAppProject Include="$(CoreLibProject);
-                                @(_allSrc);
+    <!-- TODO: Support globbing not just csproj to avoid hardcoding non csproj projects. -->
+    <NetCoreAppProject Include="@(_allSrc);
                                 $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;
                                 $(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj"
                        Exclude="@(NonNetCoreAppProject)" />
@@ -48,7 +48,7 @@
   </Target>
 
   <Import Condition="'$(BuildingNetCoreAppVertical)' == 'true'"
-          Project="$(MSBuildThisFileDirectory)\illink-sharedframework.targets" />
+          Project="$(MSBuildThisFileDirectory)illink-sharedframework.targets" />
 
   <Target Name="RunApiCompat"
           Condition="'@(ApiCompatProject)' != ''"
