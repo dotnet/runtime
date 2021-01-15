@@ -134,11 +134,8 @@ namespace System.Net.Sockets.Tests
         [InlineData(BufferType.NativeMemory)]
         public void NormalBuffer_Success(BufferType bufferType)
         {
-            (SendPacketsElement element, MemoryManager<byte> memoryManager) = CreateElementForBuffer(bufferType, 10);
-            using (memoryManager)
-            {
-                SendPackets(element, 10);
-            }
+            using var e = CreateElementForBuffer(bufferType, 10);
+            SendPackets(e.Element, 10);
         }
 
         [Theory]
@@ -147,11 +144,8 @@ namespace System.Net.Sockets.Tests
         [InlineData(BufferType.NativeMemory)]
         public void NormalBufferRange_Success(BufferType bufferType)
         {
-            (SendPacketsElement element, MemoryManager<byte> memoryManager) = CreateElementForBuffer(bufferType, 10, 5, 5);
-            using (memoryManager)
-            {
-                SendPackets(element, 5);
-            }
+            using var e = CreateElementForBuffer(bufferType, 10, 5, 5);
+            SendPackets(e.Element, 5);
         }
 
         [Theory]
@@ -160,11 +154,8 @@ namespace System.Net.Sockets.Tests
         [InlineData(BufferType.NativeMemory)]
         public void EmptyBuffer_Ignored(BufferType bufferType)
         {
-            (SendPacketsElement element, MemoryManager<byte> memoryManager) = CreateElementForBuffer(bufferType, 0);
-            using (memoryManager)
-            {
-                SendPackets(element, 0);
-            }
+            using var e = CreateElementForBuffer(bufferType, 0);
+            SendPackets(e.Element, 0);
         }
 
         [Theory]
@@ -173,22 +164,21 @@ namespace System.Net.Sockets.Tests
         [InlineData(BufferType.NativeMemory)]
         public void BufferZeroCount_Ignored(BufferType bufferType)
         {
-            (SendPacketsElement element, MemoryManager<byte> memoryManager) = CreateElementForBuffer(bufferType, 10, 4, 0);
-            using (memoryManager)
-            {
-                SendPackets(element, 0);
-            }
+            using var e = CreateElementForBuffer(bufferType, 10, 4, 0);
+            SendPackets(e.Element, 0);
         }
 
-        [Fact]
-        public void BufferMixedBuffers_ZeroCountBufferIgnored()
+        [Theory]
+        [InlineData(BufferType.ByteArray)]
+        [InlineData(BufferType.ManagedMemory)]
+        [InlineData(BufferType.NativeMemory)]
+        public void BufferMixedBuffers_ZeroCountBufferIgnored(BufferType bufferType)
         {
-            SendPacketsElement[] elements = new SendPacketsElement[]
-            {
-                new SendPacketsElement(new byte[10], 4, 0), // Ignored
-                new SendPacketsElement(new byte[10], 4, 4),
-                new SendPacketsElement(new byte[10], 0, 4)
-            };
+            using var e1 = CreateElementForBuffer(bufferType, 10, 4, 0);
+            using var e2 = CreateElementForBuffer(bufferType, 10, 4, 4);
+            using var e3 = CreateElementForBuffer(bufferType, 10, 0, 4);
+
+            SendPacketsElement[] elements = new SendPacketsElement[] { e1.Element, e2.Element, e3.Element };
             SendPackets(elements, SocketError.Success, 8);
         }
 
@@ -880,26 +870,41 @@ namespace System.Net.Sockets.Tests
             NativeMemory
         }
 
-        private static (SendPacketsElement, MemoryManager<byte>) CreateElementForNativeBuffer(int size, int offset, int count)
+        private struct ElementWithMemoryManager : IDisposable
         {
-            MemoryManager<byte> memoryManager = new NativeMemoryManager(size);
-            return (new SendPacketsElement(memoryManager.Memory.Slice(offset, count)), memoryManager);
+            public ElementWithMemoryManager(SendPacketsElement element, MemoryManager<byte> memoryManager)
+            {
+                Element = element;
+                MemoryManager = memoryManager;
+            }
+
+            public SendPacketsElement Element { get; init; }
+            public MemoryManager<byte> MemoryManager { get; init; }
+
+            public void Dispose() => ((IDisposable)MemoryManager)?.Dispose();
+
         }
 
-        private static (SendPacketsElement, MemoryManager<byte>) CreateElementForBuffer(BufferType bufferType, int size) =>
+        private static ElementWithMemoryManager CreateElementForNativeBuffer(int size, int offset, int count)
+        {
+            MemoryManager<byte> memoryManager = new NativeMemoryManager(size);
+            return new ElementWithMemoryManager(new SendPacketsElement(memoryManager.Memory.Slice(offset, count)), memoryManager);
+        }
+
+        private static ElementWithMemoryManager CreateElementForBuffer(BufferType bufferType, int size) =>
             bufferType switch
             {
-                BufferType.ByteArray => (new SendPacketsElement(new byte[size]), null),
-                BufferType.ManagedMemory => (new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[size])), null),
+                BufferType.ByteArray => new ElementWithMemoryManager(new SendPacketsElement(new byte[size]), null),
+                BufferType.ManagedMemory => new ElementWithMemoryManager(new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[size])), null),
                 BufferType.NativeMemory => CreateElementForNativeBuffer(size, 0, size),
                 _ => throw new InvalidOperationException()
             };
 
-        private static (SendPacketsElement, MemoryManager<byte>) CreateElementForBuffer(BufferType bufferType, int size, int offset, int count) =>
+        private static ElementWithMemoryManager CreateElementForBuffer(BufferType bufferType, int size, int offset, int count) =>
             bufferType switch
             {
-                BufferType.ByteArray => (new SendPacketsElement(new byte[size], offset, count), null),
-                BufferType.ManagedMemory => (new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[size], offset, count)), null),
+                BufferType.ByteArray => new ElementWithMemoryManager(new SendPacketsElement(new byte[size], offset, count), null),
+                BufferType.ManagedMemory => new ElementWithMemoryManager(new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[size], offset, count)), null),
                 BufferType.NativeMemory => CreateElementForNativeBuffer(size, offset, count),
                 _ => throw new InvalidOperationException()
             };
