@@ -74,6 +74,9 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
+            _family = AddressFamily.Unknown;
+            InitializeClientSocket();
+
             try
             {
                 Connect(hostname, port);

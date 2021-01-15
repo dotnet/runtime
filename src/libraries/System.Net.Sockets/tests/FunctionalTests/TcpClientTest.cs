@@ -493,6 +493,40 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Connect_MappedV4_Success(bool useConnect)
+        {
+            if (!Socket.OSSupportsIPv6 || !Socket.OSSupportsIPv4)
+            {
+                return;
+            }
+
+            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                // Set up a server socket to which to connect
+                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                server.Listen(1);
+                var endpoint = (IPEndPoint)server.LocalEndPoint;
+
+                string serverAddress = $"::ffff:{endpoint.Address.ToString()}";
+
+                TcpClient client;
+                if (useConnect)
+                {
+                    client = new TcpClient();
+                    client.Connect(serverAddress, endpoint.Port);
+                }
+                else
+                {
+                    client = new TcpClient(serverAddress, endpoint.Port);
+                }
+
+                Assert.True(client.Connected);
+            }
+        }
+
         private sealed class DerivedTcpClient : TcpClient
         {
             public new bool Active
