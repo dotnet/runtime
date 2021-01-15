@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Internal.TypeSystem;
 
 namespace Internal.ReadyToRunConstants
 {
@@ -330,6 +331,6 @@ namespace Internal.ReadyToRunConstants
     public static class ReadyToRunRuntimeConstants
     {
         public const int READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11;
-        public const int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 5;
+        public static int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits(TargetDetails target) => target.Architecture == TargetArchitecture.X86 ? 5 : 2;
     }
 }
