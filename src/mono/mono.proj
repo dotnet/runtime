@@ -46,9 +46,12 @@
     <MonoCCompiler Condition="$(MonoCCompiler.StartsWith('-'))">$(MonoCCompiler.TrimStart('-'))</MonoCCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
-    <!-- default thread suspend for specific platforms -->
-    <MonoThreadSuspend Condition="'$(TargetswatchOS)' == 'true'">coop</MonoThreadSuspend>
-    <!-- default thread suspend for all platforms -->
+  </PropertyGroup>
+
+  <!-- default thread suspend for specific platforms -->
+  <PropertyGroup>
+    <MonoThreadSuspend Condition="'$(TargetswatchOS)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
+    <!-- all other platforms -->
     <MonoThreadSuspend Condition="'$(MonoThreadSuspend)' == ''">hybrid</MonoThreadSuspend>
   </PropertyGroup>
 
