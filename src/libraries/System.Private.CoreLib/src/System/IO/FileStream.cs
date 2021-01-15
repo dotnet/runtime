@@ -397,7 +397,7 @@ namespace System.IO
             }
         }
 
-        internal virtual bool IsClosed => _fileHandle.IsClosed;
+        internal virtual bool IsClosed => _actualImplementation.IsClosed;
 
         private static bool IsIoRelatedException(Exception e) =>
             // These all derive from IOException
