@@ -294,7 +294,7 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
-        internal virtual bool IsNull(T value) => value == null;
+        internal virtual bool IsNull(in T value) => value == null;
 
         internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
@@ -344,7 +344,7 @@ namespace System.Text.Json.Serialization
                     }
                 }
             }
-            else if (IsNull(value) && !HandleNullOnWrite)
+            else if (CanBeNull && !HandleNullOnWrite && IsNull(value))
             {
                 // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
                 // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
