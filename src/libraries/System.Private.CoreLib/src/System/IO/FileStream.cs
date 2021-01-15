@@ -220,14 +220,8 @@ namespace System.IO
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateReadWriteArgs(buffer, offset, count);
-            if (_useAsyncIO)
-            {
-                WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
-            }
-            else
-            {
-                WriteSpan(new ReadOnlySpan<byte>(buffer, offset, count));
-            }
+
+            _actualImplementation.Write(buffer, offset, count);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
