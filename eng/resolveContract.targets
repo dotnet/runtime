@@ -17,7 +17,6 @@
     <!-- We aren't referencing the contract, but make sure it's considered as an input to Compile so that if it changes we rebuild and rerun API compat -->
     <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="CustomAdditionalCompileInputs" />
   </ItemGroup>
-  
   <!-- intentionally empty since we no longer need a target -->
   <Target Name="ResolveMatchingContract" />
 
