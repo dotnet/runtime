@@ -36,6 +36,7 @@ namespace System.Net.Http
         internal bool GZipEnabled => (_decompressionMethods & DecompressionMethods.GZip) != 0;
         internal bool DeflateEnabled => (_decompressionMethods & DecompressionMethods.Deflate) != 0;
         internal bool BrotliEnabled => (_decompressionMethods & DecompressionMethods.Brotli) != 0;
+
         private static bool EncodingExists(HttpHeaderValueCollection<StringWithQualityHeaderValue> acceptEncodingHeader, string encoding)
         {
             foreach (StringWithQualityHeaderValue existingEncoding in acceptEncodingHeader)
