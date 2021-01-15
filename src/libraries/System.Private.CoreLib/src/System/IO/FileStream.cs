@@ -364,50 +364,6 @@ namespace System.IO
             }
         }
 
-        /// <summary>
-        /// Verify that the actual position of the OS's handle equals what we expect it to.
-        /// This will fail if someone else moved the UnixFileStream's handle or if
-        /// our position updating code is incorrect.
-        /// </summary>
-        private void VerifyOSHandlePosition()
-        {
-            bool verifyPosition = _exposedHandle; // in release, only verify if we've given out the handle such that someone else could be manipulating it
-#if DEBUG
-            verifyPosition = true; // in debug, always make sure our position matches what the OS says it should be
-#endif
-            if (verifyPosition && CanSeek)
-            {
-                long oldPos = _filePosition; // SeekCore will override the current _position, so save it now
-                long curPos = SeekCore(_fileHandle, 0, SeekOrigin.Current);
-                if (oldPos != curPos)
-                {
-                    // For reads, this is non-fatal but we still could have returned corrupted
-                    // data in some cases, so discard the internal buffer. For writes,
-                    // this is a problem; discard the buffer and error out.
-                    _readPos = _readLength = 0;
-                    if (_writePos > 0)
-                    {
-                        _writePos = 0;
-                        throw new IOException(SR.IO_FileStreamHandlePosition);
-                    }
-                }
-            }
-        }
-
-        /// <summary>Verifies that state relating to the read/write buffer is consistent.</summary>
-        [Conditional("DEBUG")]
-        private void AssertBufferInvariants()
-        {
-            // Read buffer values must be in range: 0 <= _bufferReadPos <= _bufferReadLength <= _bufferLength
-            Debug.Assert(0 <= _readPos && _readPos <= _readLength && _readLength <= _bufferLength);
-
-            // Write buffer values must be in range: 0 <= _bufferWritePos <= _bufferLength
-            Debug.Assert(0 <= _writePos && _writePos <= _bufferLength);
-
-            // Read buffering and write buffering can't both be active
-            Debug.Assert((_readPos == 0 && _readLength == 0) || _writePos == 0);
-        }
-
         /// <summary>Validates that we're ready to read from the stream.</summary>
         private void PrepareForReading()
         {
@@ -424,30 +380,20 @@ namespace System.IO
         {
             get
             {
-                if (_fileHandle.IsClosed)
+                if (_actualImplementation.IsClosed)
                     throw Error.GetFileNotOpen();
 
-                if (!CanSeek)
+                if (!_actualImplementation.CanSeek)
                     throw Error.GetSeekNotSupported();
 
-                AssertBufferInvariants();
-                VerifyOSHandlePosition();
-
-                // We may have read data into our buffer from the handle, such that the handle position
-                // is artificially further along than the consumer's view of the stream's position.
-                // Thus, when reading, our position is really starting from the handle position negatively
-                // offset by the number of bytes in the buffer and positively offset by the number of
-                // bytes into that buffer we've read.  When writing, both the read length and position
-                // must be zero, and our position is just the handle position offset positive by how many
-                // bytes we've written into the buffer.
-                return (_filePosition - _readLength) + _readPos + _writePos;
+                return _actualImplementation.Positon;
             }
             set
             {
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-                Seek(value, SeekOrigin.Begin);
+                _actualImplementation.Seek(value, SeekOrigin.Begin);
             }
         }
 

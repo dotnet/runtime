@@ -500,12 +500,6 @@ namespace System.IO
         {
             get
             {
-                if (_fileHandle.IsClosed)
-                    throw Error.GetFileNotOpen();
-
-                if (!CanSeek)
-                    throw Error.GetSeekNotSupported();
-
                 AssertBufferInvariants();
                 VerifyOSHandlePosition();
 
@@ -520,9 +514,6 @@ namespace System.IO
             }
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-
                 Seek(value, SeekOrigin.Begin);
             }
         }
