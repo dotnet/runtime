@@ -65,6 +65,11 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(IsWasmDebuggerTestsProject)' == 'true'">
+     <IncludeDotNetCli>true</IncludeDotNetCli>
+     <DotNetCliPackageType>aspnetcore-runtime</DotNetCliPackageType>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(HelixType)' == ''">
     <!-- For PRs we want HelixType to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
@@ -72,7 +77,7 @@
     <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
+  <PropertyGroup Condition="('$(TargetOS)' == 'Browser' and '$(IsWasmDebuggerTestsProject)' != 'true') or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 

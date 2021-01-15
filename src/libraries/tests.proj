@@ -193,6 +193,7 @@
     <!--<ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\wasm\**\*.Test.csproj"-->
                       <!--BuildInParallel="false" />-->
     <ProjectReference Include="$(RepoRoot)\src\mono\wasm\debugger\DebuggerTestSuite\DebuggerTestSuite.csproj"
+                      Condition="'$(TestAssemblies)' == 'true'"
                       AdditionalProperties="Configuration=Debug"
                       BuildInParallel="false" />
   </ItemGroup>

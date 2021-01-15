@@ -6,6 +6,7 @@
     <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <IsWasmDebuggerTestsProject>true</IsWasmDebuggerTestsProject>
   </PropertyGroup>
 
   <ItemGroup>
