@@ -15,6 +15,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestNamePrivate ();
 			TestNameAndExplicitBindingFlags ();
 			TestNameAndUnknownBindingFlags (BindingFlags.Public);
+			TestNameAndUnknownNullBindingFlags (BindingFlags.Public);
 			TestNameAndType ();
 			TestNameBindingFlagsAndParameterModifier ();
 			TestNameBindingFlagsCallingConventionParameterModifier ();
@@ -68,6 +69,24 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// Since the binding flags are not known linker should mark all methods on the type
 			var method = typeof (TestNameAndUnknownBindingClass).GetMethod ("OnlyCalledViaReflection", bindingFlags);
+			method.Invoke (null, new object[] { });
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern]
+		static void TestNameAndUnknownNullBindingFlags (BindingFlags bindingFlags)
+		{
+			// The case here is a pattern which linker doesn't not recognize (unlike the test case above, which passes a recognized
+			// method parameter with unknown value). Unrecognized patterns are internally represented as unknown values which are passed
+			// around as nulls in some cases. So there's a potential risk of hitting a nullref. The test here is to validate that
+			// linker can accept such value for binding flags.
+			// The semantic is exactly the same as above, that is unknown value and thus all methods should be marked.
+
+			// One way to produce unrecognized pattern is to use some bitfield arithmetics - linker currently doesn't do constexpr evaluation
+			// and then store it in a local.
+			var bf = bindingFlags | BindingFlags.Static;
+
+			var method = typeof (TestNameAndUnknownNullBindingClass).GetMethod ("OnlyCalledViaReflection", bf);
 			method.Invoke (null, new object[] { });
 		}
 
@@ -295,6 +314,34 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		private class TestNameAndUnknownBindingClass
+		{
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+		}
+
+		[Kept]
+		private class TestNameAndUnknownNullBindingClass
 		{
 			[Kept]
 			private static int OnlyCalledViaReflection ()
