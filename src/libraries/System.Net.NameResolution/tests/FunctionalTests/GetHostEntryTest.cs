@@ -267,31 +267,24 @@ namespace System.Net.NameResolution.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
         public async Task DnsGetHostEntry_PostCancelledToken_Throws()
         {
-            const int numberOfRequests = 100;
+            const int NumberOfRequests = 100;
 
             using CancellationTokenSource cts = new();
-            List<Task> tasks = new(capacity: numberOfRequests);
+            List<Task> tasks = new(capacity: NumberOfRequests);
 
-            for (int i = 0; i < numberOfRequests; ++i)
+            for (int i = 0; i < NumberOfRequests; ++i)
             {
                 Task task = Dns.GetHostEntryAsync(TestSettings.UncachedHost, cts.Token);
                 tasks.Add(task);
             }
 
-            cts.Cancel();
-
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            try
             {
-                for (int i = 0; i < numberOfRequests; ++i)
-                {
-                    try
-                    {
-                        await tasks[i].ConfigureAwait(false);
-                    }
-                    catch (Exception ex) when (ex is SocketException)
-                    { }
-                }
-            }).ConfigureAwait(false);
+                await Task.WhenAll(tasks);
+            }
+            catch { }
+
+            Assert.Contains(tasks, t => t.Exception?.InnerException is OperationCanceledException);
         }
     }
 }

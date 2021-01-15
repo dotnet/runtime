@@ -597,7 +597,7 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address,
                                               void** cancelHandle)
 {
 #if HAVE_GETADDRINFO_A
-    if (address == NULL || entry == NULL)
+    if (address == NULL || entry == NULL || cancelHandle == NULL)
     {
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }

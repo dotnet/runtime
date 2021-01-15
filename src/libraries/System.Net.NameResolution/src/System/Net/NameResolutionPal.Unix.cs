@@ -107,7 +107,7 @@ namespace System.Net
 
             if (error != 0)
             {
-                ProcessResult(error, context);
+                ProcessResult(GetSocketErrorForNativeError(error), context);
             }
 
             state.RegisterForCancellation(cancellationToken);
@@ -120,17 +120,17 @@ namespace System.Net
             // Can be casted directly to GetHostEntryForNameContext* because the HostEntry is its first field
             GetHostEntryForNameContext* context = (GetHostEntryForNameContext*)entry;
 
-            ProcessResult(error, context);
+            ProcessResult(GetSocketErrorForNativeError(error), context);
         }
 
-        private static unsafe void ProcessResult(int error, GetHostEntryForNameContext* context)
+        private static unsafe void ProcessResult(SocketError errorCode, GetHostEntryForNameContext* context)
         {
             try
             {
                 GetHostEntryForNameState state = GetHostEntryForNameState.FromHandleAndFree(context->State);
                 CancellationToken cancellationToken = state.UnregisterAndGetCancellationToken();
 
-                if (error == 0)
+                if (errorCode == SocketError.Success)
                 {
                     ParseHostEntry(context->Result, state.JustAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses);
 
@@ -145,9 +145,9 @@ namespace System.Net
                 }
                 else
                 {
-                    Exception ex = error == (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_CANCELED && cancellationToken.IsCancellationRequested
+                    Exception ex = errorCode == SocketError.OperationAborted && cancellationToken.IsCancellationRequested
                         ? (Exception)new OperationCanceledException(cancellationToken)
-                        : new SocketException((int)GetSocketErrorForNativeError(error));
+                        : new SocketException((int)errorCode);
 
                     state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
                 }
@@ -177,6 +177,8 @@ namespace System.Net
                     return SocketError.HostNotFound;
                 case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_MEMORY:
                     throw new OutOfMemoryException();
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_CANCELED:
+                    return SocketError.OperationAborted;
                 default:
                     Debug.Fail("Unexpected error: " + error.ToString());
                     return SocketError.SocketError;
@@ -300,7 +302,7 @@ namespace System.Net
                         return;
                     }
 
-                    _cancellationTokenRegistration = cancellationToken.UnsafeRegister(o =>
+                    _cancellationTokenRegistration = cancellationToken.UnsafeRegister(static o =>
                     {
                         var self = (GetHostEntryForNameState)o!;
 

@@ -403,7 +403,7 @@ namespace System.Net
                         return;
                     }
 
-                    _cancellationRegistration = cancellationToken.UnsafeRegister(o =>
+                    _cancellationRegistration = cancellationToken.UnsafeRegister(static o =>
                     {
                         var @this = (GetAddrInfoExState)o!;
                         int cancelResult = 0;
