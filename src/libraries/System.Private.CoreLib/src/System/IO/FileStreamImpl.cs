@@ -663,27 +663,5 @@ namespace System.IO
         {
             return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask(), callback, state);
         }
-
-        public override int EndRead(IAsyncResult asyncResult)
-        {
-            if (asyncResult == null)
-                throw new ArgumentNullException(nameof(asyncResult));
-
-            if (!IsAsync)
-                return base.EndRead(asyncResult);
-            else
-                return TaskToApm.End<int>(asyncResult);
-        }
-
-        public override void EndWrite(IAsyncResult asyncResult)
-        {
-            if (asyncResult == null)
-                throw new ArgumentNullException(nameof(asyncResult));
-
-            if (!IsAsync)
-                base.EndWrite(asyncResult);
-            else
-                TaskToApm.End(asyncResult);
-        }
     }
 }

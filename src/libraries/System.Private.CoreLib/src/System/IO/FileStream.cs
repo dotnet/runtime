@@ -454,7 +454,7 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            if (!IsAsync)
+            if (!_actualImplementation.IsAsync)
                 return base.EndRead(asyncResult);
             else
                 return TaskToApm.End<int>(asyncResult);
@@ -465,7 +465,7 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            if (!IsAsync)
+            if (!_actualImplementation.IsAsync)
                 base.EndWrite(asyncResult);
             else
                 TaskToApm.End(asyncResult);
