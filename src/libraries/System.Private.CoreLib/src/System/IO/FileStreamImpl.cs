@@ -321,23 +321,6 @@ namespace System.IO
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (GetType() != typeof(FileStream))
-            {
-                // If this isn't a concrete FileStream, a derived type may have overridden ReadAsync(byte[],...),
-                // which was introduced first, so delegate to the base which will delegate to that.
-                return base.ReadAsync(buffer, cancellationToken);
-            }
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ValueTask.FromCanceled<int>(cancellationToken);
-            }
-
-            if (IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
             if (!_useAsyncIO)
             {
                 // If we weren't opened for asynchronous I/O, we still call to the base implementation so that

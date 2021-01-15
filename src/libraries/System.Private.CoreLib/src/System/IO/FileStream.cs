@@ -209,44 +209,12 @@ namespace System.IO
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
-            if (IsClosed)
+            if (_actualImplementation.IsClosed)
             {
                 throw Error.GetFileNotOpen();
             }
 
-            if (!_useAsyncIO)
-            {
-                // If we weren't opened for asynchronous I/O, we still call to the base implementation so that
-                // Read is invoked asynchronously.  But if we have a byte[], we can do so using the base Stream's
-                // internal helper that bypasses delegating to BeginRead, since we already know this is FileStream
-                // rather than something derived from it and what our BeginRead implementation is going to do.
-                return MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment) ?
-                    new ValueTask<int>((Task<int>)base.BeginReadInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
-                    base.ReadAsync(buffer, cancellationToken);
-            }
-
-            Task<int>? t = ReadAsyncInternal(buffer, cancellationToken, out int synchronousResult);
-            return t != null ?
-                new ValueTask<int>(t) :
-                new ValueTask<int>(synchronousResult);
-        }
-
-        private Task<int> ReadAsyncTask(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            Task<int>? t = ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken, out int synchronousResult);
-
-            if (t == null)
-            {
-                t = _lastSynchronouslyCompletedTask;
-                Debug.Assert(t == null || t.IsCompletedSuccessfully, "Cached task should have completed successfully");
-
-                if (t == null || t.Result != synchronousResult)
-                {
-                    _lastSynchronouslyCompletedTask = t = Task.FromResult(synchronousResult);
-                }
-            }
-
-            return t;
+            return _actualImplementation.ReadAsync(buffer, cancellationToken);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
