@@ -153,7 +153,12 @@ namespace System.IO
             return _actualImplementation.FlushAsync(cancellationToken);
         }
 
-        public override int Read(byte[] buffer, int offset, int count) => _actualImplementation.Read(buffer, offset, count);
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ValidateReadWriteArgs(buffer, offset, count);
+
+            return _actualImplementation.Read(buffer, offset, count);
+        }
 
         public override int Read(Span<byte> buffer)
         {
@@ -320,7 +325,7 @@ namespace System.IO
         private void ValidateReadWriteArgs(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_fileHandle.IsClosed)
+            if (_actualImplementation.IsClosed)
                 throw Error.GetFileNotOpen();
         }
 

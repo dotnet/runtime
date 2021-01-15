@@ -288,7 +288,6 @@ namespace System.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateReadWriteArgs(buffer, offset, count);
             return _useAsyncIO ?
                 ReadAsyncTask(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult() :
                 ReadSpan(new Span<byte>(buffer, offset, count));
@@ -422,17 +421,6 @@ namespace System.IO
         public override bool CanRead => !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0;
 
         public override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
-
-        /// <summary>Validates arguments to Read and Write and throws resulting exceptions.</summary>
-        /// <param name="buffer">The buffer to read from or write to.</param>
-        /// <param name="offset">The zero-based offset into the buffer.</param>
-        /// <param name="count">The maximum number of bytes to read or write.</param>
-        private void ValidateReadWriteArgs(byte[] buffer, int offset, int count)
-        {
-            ValidateBufferArguments(buffer, offset, count);
-            if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
-        }
 
         /// <summary>Sets the length of this stream to the given value.</summary>
         /// <param name="value">The new length of the stream.</param>
