@@ -1149,7 +1149,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     regNumber reg0  = retTypeDesc->GetABIReturnReg(0);
     regNumber reg1  = retTypeDesc->GetABIReturnReg(1);
 
-    assert((reg0 != REG_COUNT) && (reg1 != REG_COUNT) && (opReg != REG_COUNT));
+    assert((reg0 != REG_NA) && (reg1 != REG_NA) && (opReg != REG_NA));
 
     const bool srcIsFloatReg = genIsValidFloatReg(opReg);
     const bool dstIsFloatReg = genIsValidFloatReg(reg0);
@@ -1191,8 +1191,17 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     assert((reg0 == REG_EAX) && (reg1 == REG_EDX));
     // reg0 = opReg[31:0]
     inst_RV_RV(ins_Copy(opReg, TYP_INT), reg0, opReg, TYP_INT);
-    // reg1 = opRef[63:32]
-    inst_RV_RV_IV(INS_pextrd, EA_4BYTE, reg1, opReg, 1);
+    // reg1 = opRef[61:32]
+    if (compiler->compExactlyDependsOn(InstructionSet_SSE41))
+    {
+        inst_RV_RV_IV(INS_pextrd, EA_4BYTE, reg1, opReg, 1);
+    }
+    else
+    {
+        int8_t shuffleMask = 1; //we only need [61:32]->[31:0], the rest is not read.
+        GetEmitter()->emitIns_R_R_I(INS_pshufd, EA_8BYTE, opReg, opReg, shuffleMask);
+        inst_RV_RV(ins_Copy(opReg, TYP_INT), reg1, opReg, TYP_INT);
+    }
 #endif // TARGET_X86
 }
 
