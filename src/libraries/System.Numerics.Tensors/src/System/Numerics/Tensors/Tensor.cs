@@ -696,36 +696,37 @@ namespace System.Numerics.Tensors
         /// </summary>
         public struct Enumerator : IEnumerator<T>
         {
-            private readonly Tensor<T> tensor;
-            private int index;
+            private readonly Tensor<T> _tensor;
+            private int _index;
+            private T _current;
 
             internal Enumerator(Tensor<T> tensor)
             {
                 Debug.Assert(tensor != null);
 
-                this.tensor = tensor;
-                index = 0;
-                Current = default;
+                _tensor = tensor;
+                _index = 0;
+                _current = default;
             }
 
-            public T Current { get; private set; }
+            public T Current => _current;
 
             public bool MoveNext()
             {
-                if (index < tensor.Length)
+                if (_index < _tensor.Length)
                 {
-                    Current = tensor.GetValue(index);
-                    ++index;
+                    _current = _tensor.GetValue(_index);
+                    ++_index;
                     return true;
                 }
                 else
                 {
-                    Current = default;
+                    _current = default;
                     return false;
                 }
             }
 
-            object? IEnumerator.Current => Current;
+            object? IEnumerator.Current => _current;
 
             void IEnumerator.Reset()
             {
