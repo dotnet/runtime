@@ -31,14 +31,14 @@ namespace Generators
 
             public EventSourceClass[] GetEventSourceClasses(List<ClassDeclarationSyntax> classDeclarations)
             {
-                var autogenerateAttribute = _compilation.GetTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute");
+                INamedTypeSymbol? autogenerateAttribute = _compilation.GetTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute");
                 if (autogenerateAttribute is null)
                 {
                     // No EventSourceAutoGenerateAttribute
                     return Array.Empty<EventSourceClass>();
                 }
 
-                var eventSourceAttribute = _compilation.GetTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAttribute");
+                INamedTypeSymbol? eventSourceAttribute = _compilation.GetTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAttribute");
                 if (eventSourceAttribute is null)
                 {
                     // No EventSourceAttribute
@@ -47,11 +47,11 @@ namespace Generators
 
                 List<EventSourceClass>? results = null;
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
-                foreach (var group in classDeclarations.GroupBy(x => x.SyntaxTree))
+                foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax>? group in classDeclarations.GroupBy(x => x.SyntaxTree))
                 {
                     SemanticModel? sm = null;
                     EventSourceClass? eventSourceClass = null;
-                    foreach (var classDef in group)
+                    foreach (ClassDeclarationSyntax? classDef in group)
                     {
                         if (_cancellationToken.IsCancellationRequested)
                         {
@@ -60,9 +60,9 @@ namespace Generators
                         }
 
                         bool autoGenerate = false;
-                        foreach (var cal in classDef.AttributeLists)
+                        foreach (AttributeListSyntax? cal in classDef.AttributeLists)
                         {
-                            foreach (var ca in cal.Attributes)
+                            foreach (AttributeSyntax? ca in cal.Attributes)
                             {
                                 // need a semantic model for this tree
                                 sm ??= _compilation.GetSemanticModel(classDef.SyntaxTree);
@@ -81,7 +81,7 @@ namespace Generators
                                 if (eventSourceAttribute.Equals(caSymbol.ContainingType, SymbolEqualityComparer.Default))
                                 {
                                     string nspace = string.Empty;
-                                    var ns = classDef.Parent as NamespaceDeclarationSyntax;
+                                    NamespaceDeclarationSyntax? ns = classDef.Parent as NamespaceDeclarationSyntax;
                                     if (ns is null)
                                     {
                                         if (classDef.Parent is not CompilationUnitSyntax)
@@ -105,17 +105,17 @@ namespace Generators
                                         }
                                     }
 
-                                    var className = classDef.Identifier.ToString();
-                                    var name = className;
-                                    var guid = "";
+                                    string className = classDef.Identifier.ToString();
+                                    string name = className;
+                                    string guid = "";
 
-                                    var args = ca.ArgumentList?.Arguments;
+                                    SeparatedSyntaxList<AttributeArgumentSyntax>? args = ca.ArgumentList?.Arguments;
                                     if (args is not null)
                                     {
-                                        foreach (var arg in args)
+                                        foreach (AttributeArgumentSyntax? arg in args)
                                         {
-                                            var argName = arg.NameEquals!.Name.Identifier.ToString();
-                                            var value = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
+                                            string? argName = arg.NameEquals!.Name.Identifier.ToString();
+                                            string? value = sm.GetConstantValue(arg.Expression, _cancellationToken).ToString();
 
                                             switch (argName)
                                             {
@@ -175,14 +175,14 @@ namespace Generators
 
                 byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
 
-                byte[] combinedbytes = new byte[namespaceBytes.Length + bytes.Length];
+                byte[] combinedBytes = new byte[namespaceBytes.Length + bytes.Length];
 
-                bytes.CopyTo(combinedbytes, namespaceBytes.Length);
-                namespaceBytes.CopyTo(combinedbytes);
+                bytes.CopyTo(combinedBytes, namespaceBytes.Length);
+                namespaceBytes.CopyTo(combinedBytes);
 
-                using (var sha = SHA1.Create())
+                using (SHA1 sha = SHA1.Create())
                 {
-                    bytes = sha.ComputeHash(combinedbytes);
+                    bytes = sha.ComputeHash(combinedBytes);
                 }
 
                 Array.Resize(ref bytes, 16);

@@ -14,14 +14,14 @@ namespace Generators
     {
         private class Emitter
         {
-            private StringBuilder _builder = new StringBuilder(1024);
-            private GeneratorExecutionContext _context;
+            private readonly StringBuilder _builder = new StringBuilder(1024);
+            private readonly GeneratorExecutionContext _context;
 
             public Emitter(GeneratorExecutionContext context) => _context = context;
 
-            public void Emit(EventSourceClass[] eventsources, CancellationToken cancellationToken)
+            public void Emit(EventSourceClass[] eventSources, CancellationToken cancellationToken)
             {
-                foreach (var ec in eventsources)
+                foreach (EventSourceClass? ec in eventSources)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
@@ -76,7 +76,7 @@ namespace {ec.Namespace}
         private protected override ReadOnlySpan<byte> ProviderMetadata => new byte[] { ");
 
                 byte[] metadataBytes = MetadataForString(sourceName);
-                foreach (var b in metadataBytes)
+                foreach (byte b in metadataBytes)
                 {
                     _builder.Append($"0x{b:x}, ");
                 }
@@ -89,7 +89,7 @@ namespace {ec.Namespace}
             {
                 CheckName(name);
                 int metadataSize = Encoding.UTF8.GetByteCount(name) + 3;
-                var metadata = new byte[metadataSize];
+                byte[]? metadata = new byte[metadataSize];
                 ushort totalSize = checked((ushort)(metadataSize));
                 metadata[0] = unchecked((byte)totalSize);
                 metadata[1] = unchecked((byte)(totalSize >> 8));

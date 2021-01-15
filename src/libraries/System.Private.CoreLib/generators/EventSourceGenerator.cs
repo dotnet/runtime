@@ -21,13 +21,13 @@ namespace Generators
         // Example generated output:
         //
         //     using System;
-        //      
+        //
         //     namespace System.Diagnostics.Tracing
         //     {
         //         partial class RuntimeEventSource
         //         {
         //             private RuntimeEventSource() : base(new Guid(0x49592c0f,0x5a05,0x516d,0xaa,0x4b,0xa6,0x4e,0x02,0x02,0x6c,0x89), "System.Runtime") { }
-        //      
+        //
         //             private protected override ReadOnlySpan<byte> ProviderMetadata => new byte[] { 0x11, 0x0, 0x53, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x0, };
         //         }
         //     }
@@ -37,19 +37,19 @@ namespace Generators
 
         public void Execute(GeneratorExecutionContext context)
         {
-            var receiver = context.SyntaxReceiver as SyntaxReceiver;
-            if (receiver is null || receiver.CandidateClasses is null || receiver.CandidateClasses.Count == 0)
+            SyntaxReceiver? receiver = context.SyntaxReceiver as SyntaxReceiver;
+            if ((receiver?.CandidateClasses?.Count ?? 0) == 0)
             {
                 // nothing to do yet
                 return;
             }
 
-            var p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
-            var eventSources = p.GetEventSourceClasses(receiver.CandidateClasses);
+            Parser? p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
+            EventSourceClass[]? eventSources = p.GetEventSourceClasses(receiver.CandidateClasses);
 
             if (eventSources?.Length > 0)
             {
-                var e = new Emitter(context);
+                Emitter? e = new Emitter(context);
                 e.Emit(eventSources, context.CancellationToken);
             }
         }
@@ -71,9 +71,9 @@ namespace Generators
                 {
                     // Check if has EventSource attribute before adding to candidates
                     // as we don't want to add every class in the project
-                    foreach (var cal in classDeclaration.AttributeLists)
+                    foreach (AttributeListSyntax? cal in classDeclaration.AttributeLists)
                     {
-                        foreach (var ca in cal.Attributes)
+                        foreach (AttributeSyntax? ca in cal.Attributes)
                         {
                             // Check if Span length matches before allocating the string to check more
                             int length = ca.Name.Span.Length;
