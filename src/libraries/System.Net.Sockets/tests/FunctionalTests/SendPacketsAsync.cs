@@ -52,7 +52,6 @@ namespace System.Net.Sockets.Tests
 
         #region Basic Arguments
 
-        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -74,7 +73,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -104,7 +102,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -113,7 +110,6 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentException>("e", () => SendPackets(type, (SendPacketsElement[])null, SocketError.Success, 0));
         }
 
-        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -122,7 +118,6 @@ namespace System.Net.Sockets.Tests
             SendPackets(type, (SendPacketsElement)null, 0);
         }
 
-        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -131,7 +126,6 @@ namespace System.Net.Sockets.Tests
             SendPackets(type, new SendPacketsElement[0], SocketError.Success, 0);
         }
 
-        [OuterLoop]
         [Fact]
         public void SocketAsyncEventArgs_DefaultSendSize_0()
         {
