@@ -419,10 +419,8 @@ namespace System.IO
             }
         }
 
-        /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
         public override bool CanRead => !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0;
 
-        /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
         public override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
         /// <summary>Validates arguments to Read and Write and throws resulting exceptions.</summary>

@@ -308,10 +308,10 @@ namespace System.IO
         }
 
         /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
-        public override bool CanRead => !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0;
+        public override bool CanRead => _actualImplementation.CanRead;
 
         /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
-        public override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
+        public override bool CanWrite => _actualImplementation.CanWrite;
 
         /// <summary>Validates arguments to Read and Write and throws resulting exceptions.</summary>
         /// <param name="buffer">The buffer to read from or write to.</param>
