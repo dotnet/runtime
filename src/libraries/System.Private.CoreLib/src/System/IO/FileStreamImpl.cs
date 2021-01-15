@@ -31,9 +31,7 @@ namespace System.IO
 
     internal sealed partial class FileStreamImpl : FileStreamImplBase
     {
-        private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
-        internal const int DefaultBufferSize = 4096;
 
         private byte[]? _buffer;
         private int _bufferLength;

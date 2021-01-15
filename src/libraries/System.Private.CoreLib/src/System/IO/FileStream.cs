@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -17,58 +14,6 @@ namespace System.IO
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
         internal const int DefaultBufferSize = 4096;
-
-        private byte[]? _buffer;
-        private int _bufferLength;
-        private readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
-
-        /// <summary>Whether the file is opened for reading, writing, or both.</summary>
-        private readonly FileAccess _access;
-
-        /// <summary>The path to the opened file.</summary>
-        private readonly string? _path;
-
-        /// <summary>The next available byte to be read from the _buffer.</summary>
-        private int _readPos;
-
-        /// <summary>The number of valid bytes in _buffer.</summary>
-        private int _readLength;
-
-        /// <summary>The next location in which a write should occur to the buffer.</summary>
-        private int _writePos;
-
-        /// <summary>
-        /// Whether asynchronous read/write/flush operations should be performed using async I/O.
-        /// On Windows FileOptions.Asynchronous controls how the file handle is configured,
-        /// and then as a result how operations are issued against that file handle.  On Unix,
-        /// there isn't any distinction around how file descriptors are created for async vs
-        /// sync, but we still differentiate how the operations are issued in order to provide
-        /// similar behavioral semantics and performance characteristics as on Windows.  On
-        /// Windows, if non-async, async read/write requests just delegate to the base stream,
-        /// and no attempt is made to synchronize between sync and async operations on the stream;
-        /// if async, then async read/write requests are implemented specially, and sync read/write
-        /// requests are coordinated with async ones by implementing the sync ones over the async
-        /// ones.  On Unix, we do something similar.  If non-async, async read/write requests just
-        /// delegate to the base stream, and no attempt is made to synchronize.  If async, we use
-        /// a semaphore to coordinate both sync and async operations.
-        /// </summary>
-        private readonly bool _useAsyncIO;
-
-        /// <summary>cached task for read ops that complete synchronously</summary>
-        private Task<int>? _lastSynchronouslyCompletedTask;
-
-        /// <summary>
-        /// Currently cached position in the stream.  This should always mirror the underlying file's actual position,
-        /// and should only ever be out of sync if another stream with access to this same file manipulates it, at which
-        /// point we attempt to error out.
-        /// </summary>
-        private long _filePosition;
-
-        /// <summary>Whether the file stream's handle has been exposed.</summary>
-        private bool _exposedHandle;
-
-        /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
-        private static int s_cachedSerializationSwitch;
 
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access)
@@ -387,22 +332,6 @@ namespace System.IO
         }
 
         internal virtual bool IsClosed => _actualImplementation.IsClosed;
-
-        private static bool IsIoRelatedException(Exception e) =>
-            // These all derive from IOException
-            //     DirectoryNotFoundException
-            //     DriveNotFoundException
-            //     EndOfStreamException
-            //     FileLoadException
-            //     FileNotFoundException
-            //     PathTooLongException
-            //     PipeException
-            e is IOException ||
-            // Note that SecurityException is only thrown on runtimes that support CAS
-            // e is SecurityException ||
-            e is UnauthorizedAccessException ||
-            e is NotSupportedException ||
-            (e is ArgumentException && !(e is ArgumentNullException));
 
         /// <summary>
         /// Reads a byte from the file stream.  Returns the byte cast to an int
