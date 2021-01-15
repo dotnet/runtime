@@ -19,6 +19,14 @@ trigger:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+pr:
+  branches:
+    include:
+    - master
+
 jobs:
 
 # build coreclr and libraries
@@ -31,6 +39,7 @@ jobs:
     - windows_x64
     - windows_x86
     - Linux_arm64
+    - Linux_musl_x64
     jobParameters:
       testGroup: perf
 
@@ -126,6 +135,7 @@ jobs:
     - windows_x64
     - windows_x86
     - Linux_arm64
+    - Linux_musl_x64
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release
