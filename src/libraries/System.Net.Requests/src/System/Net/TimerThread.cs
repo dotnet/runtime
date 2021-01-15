@@ -471,7 +471,7 @@ namespace System.Net
 
             if (oldState == TimerThreadState.Idle)
             {
-                new Thread(new ThreadStart(ThreadProc)).Start();
+                new Thread(new ThreadStart(ThreadProc) { IsBackground = true, Name = ".NET Networking Timer" }).Start();
             }
         }
 
@@ -481,9 +481,6 @@ namespace System.Net
         /// </summary>
         private static void ThreadProc()
         {
-            // Set this thread as a background thread.  On AppDomain/Process shutdown, the thread will just be killed.
-            Thread.CurrentThread.IsBackground = true;
-
             // Keep a permanent lock on s_Queues.  This lets for example Shutdown() know when this thread isn't running.
             lock (s_queues)
             {

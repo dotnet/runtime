@@ -37,6 +37,7 @@ namespace System.Threading
             // The timer thread must start in the default execution context without transferring the context, so
             // using UnsafeStart() instead of Start()
             Thread timerThread = new Thread(TimerThread);
+            timerThread.Name = ".NET Timers";
             timerThread.IsBackground = true;
             timerThread.UnsafeStart();
 

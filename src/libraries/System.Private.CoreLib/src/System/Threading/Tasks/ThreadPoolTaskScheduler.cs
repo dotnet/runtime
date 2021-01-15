@@ -47,6 +47,7 @@ namespace System.Threading.Tasks
                 // Run LongRunning tasks on their own dedicated thread.
 #pragma warning disable CA1416 // TODO: https://github.com/dotnet/runtime/issues/44922
                 new Thread(s_longRunningThreadWork) { IsBackground = true }.UnsafeStart(task);
+                // Do not name thread; user code may expect to do this
 #pragma warning restore CA1416
             }
             else
