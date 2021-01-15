@@ -321,9 +321,9 @@ namespace ILCompiler.DependencyAnalysis
                         string path = _perfMapPath;
                         if (string.IsNullOrEmpty(path))
                         {
-                            path = Path.ChangeExtension(_objectFilePath, ".perf.map");
+                            path = Path.GetDirectoryName(_objectFilePath);
                         }
-                        _mapFileBuilder.SavePerfMap(path);
+                        _mapFileBuilder.SavePerfMap(path, _objectFilePath);
                     }
                 }
 

@@ -233,8 +233,9 @@ namespace ILCompiler.PEWriter
             new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, EnumerateMethods());
         }
 
-        public void SavePerfMap(string perfMapFileName)
+        public void SavePerfMap(string perfMapPath, string dllFileName)
         {
+            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".perf.map");
             Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
 
             PerfMapWriter.Write(perfMapFileName, EnumerateMethods());
