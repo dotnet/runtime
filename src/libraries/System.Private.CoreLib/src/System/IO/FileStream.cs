@@ -226,13 +226,14 @@ namespace System.IO
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            if (GetType() == typeof(FileStream) && !_useAsyncIO)
+            if (GetType() == typeof(FileStream) && !_actualImplementation.IsAsync)
             {
-                if (_fileHandle.IsClosed)
+                if (_actualImplementation.IsClosed)
                 {
                     throw Error.GetFileNotOpen();
                 }
-                WriteSpan(buffer);
+
+                _actualImplementation.Write(buffer);
             }
             else
             {

@@ -370,24 +370,7 @@ namespace System.IO
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            if (GetType() == typeof(FileStream) && !_useAsyncIO)
-            {
-                if (_fileHandle.IsClosed)
-                {
-                    throw Error.GetFileNotOpen();
-                }
-                WriteSpan(buffer);
-            }
-            else
-            {
-                // This type is derived from FileStream and/or the stream is in async mode.  If this is a
-                // derived type, it may have overridden Write(byte[], int, int) prior to this Write(ReadOnlySpan<byte>)
-                // overload being introduced.  In that case, this Write(ReadOnlySpan<byte>) overload should use the behavior
-                // of Write(byte[],int,int) overload.  Or if the stream is in async mode, we can't call the
-                // synchronous WriteSpan, so we similarly call the base Write, which will turn delegate to
-                // Write(byte[],int,int), which will do the right thing if we're in async mode.
-                base.Write(buffer);
-            }
+            WriteSpan(buffer);
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
