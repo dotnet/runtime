@@ -494,37 +494,30 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void Connect_MappedV4_Success(bool useConnect)
+        [InlineData(false, "::ffff:127.0.0.1")]
+        [InlineData(false, "127.0.0.1")]
+        [InlineData(false, "localhost")]
+        [InlineData(true, "::1")]
+        public void CtorConnect_Success(bool useIPv6, string connectString)
         {
             if (!Socket.OSSupportsIPv6 || !Socket.OSSupportsIPv4)
             {
                 return;
             }
 
-            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            IPAddress serverAddress = useIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
+
+            using (var server = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
             {
                 // Set up a server socket to which to connect
-                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                server.Bind(new IPEndPoint(serverAddress, 0));
                 server.Listen(1);
                 var endpoint = (IPEndPoint)server.LocalEndPoint;
 
-                string serverAddress = $"::ffff:{endpoint.Address.ToString()}";
-
-                TcpClient client;
-                if (useConnect)
+                using (TcpClient client = new TcpClient(connectString, endpoint.Port))
                 {
-                    client = new TcpClient();
-                    client.Connect(serverAddress, endpoint.Port);
+                    Assert.True(client.Connected);
                 }
-                else
-                {
-                    client = new TcpClient(serverAddress, endpoint.Port);
-                }
-
-                Assert.True(client.Connected);
-                client.Dispose();
             }
         }
 
