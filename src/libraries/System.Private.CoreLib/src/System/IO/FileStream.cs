@@ -263,19 +263,10 @@ namespace System.IO
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
-            if (IsClosed)
+            if (_actualImplementation.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            if (!_useAsyncIO)
-            {
-                // If we weren't opened for asynchronous I/O, we still call to the base implementation so that
-                // Write is invoked asynchronously.  But we can do so using the base Stream's internal helper
-                // that bypasses delegating to BeginWrite, since we already know this is FileStream rather
-                // than something derived from it and what our BeginWrite implementation is going to do.
-                return (Task)base.BeginWriteInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
-            }
-
-            return WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return _actualImplementation.WriteAsync(buffer, offset, count);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
