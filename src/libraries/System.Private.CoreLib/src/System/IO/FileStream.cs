@@ -12,7 +12,7 @@ namespace System.IO
 {
     public partial class FileStream : Stream
     {
-        private readonly LockableStream _actualImplementation;
+        private readonly FileStreamImplBase _actualImplementation;
 
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
@@ -271,7 +271,7 @@ namespace System.IO
             if (_actualImplementation.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            return _actualImplementation.WriteAsync(buffer, offset, count);
+            return _actualImplementation.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -375,7 +375,7 @@ namespace System.IO
                 if (!_actualImplementation.CanSeek)
                     throw Error.GetSeekNotSupported();
 
-                return _actualImplementation.Positon;
+                return _actualImplementation.Position;
             }
             set
             {
@@ -422,7 +422,7 @@ namespace System.IO
             // Preserved for compatibility since FileStream has defined a
             // finalizer in past releases and derived classes may depend
             // on Dispose(false) call.
-            _actualImplementation.Dispose(false);
+            Dispose(false);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
