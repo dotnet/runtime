@@ -395,6 +395,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileShare.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamImpl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\HandleInheritability.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\InvalidDataException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\IOException.cs" />
@@ -1611,8 +1612,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamImpl.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamImpl.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamCompletionSource.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathHelper.Windows.cs" />
@@ -1816,9 +1817,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Lock.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Lock.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamImpl.Lock.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamImpl.Lock.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamImpl.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Names.Unix.cs" />
