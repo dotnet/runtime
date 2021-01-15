@@ -422,7 +422,7 @@ namespace System.IO
             // Preserved for compatibility since FileStream has defined a
             // finalizer in past releases and derived classes may depend
             // on Dispose(false) call.
-            Dispose(false);
+            _actualImplementation.Dispose(false);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
