@@ -228,6 +228,8 @@ namespace System.Net.Sockets.Tests
     {
         // Use a cancellable CancellationToken that we never cancel so that implementations can't just elide handling the CancellationToken.
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        // This variant is typically working with Memory<T> overloads.
+        public override bool ValidatesArrayArguments => false;
 
         public override Task<Socket> AcceptAsync(Socket s) =>
             s.AcceptAsync();
