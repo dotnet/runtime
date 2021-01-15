@@ -182,8 +182,11 @@ namespace System.Net.Sockets.Tests
             SendPackets(elements, SocketError.Success, 8);
         }
 
-        [Fact]
-        public void BufferZeroCountThenNormal_ZeroCountIgnored()
+        [Theory]
+        [InlineData(BufferType.ByteArray)]
+        [InlineData(BufferType.ManagedMemory)]
+        [InlineData(BufferType.NativeMemory)]
+        public void BufferZeroCountThenNormal_ZeroCountIgnored(BufferType bufferType)
         {
             Assert.True(Capability.IPv6Support());
 
@@ -201,29 +204,26 @@ namespace System.Net.Sockets.Tests
                         args.UserToken = completed;
 
                         // First do an empty send, ignored
-                        args.SendPacketsElements = new SendPacketsElement[]
-                        {
-                            new SendPacketsElement(new byte[5], 3, 0)
-                        };
-
+                        using var e1 = CreateElementForBuffer(bufferType, 5, 3, 0);
+                        args.SendPacketsElements = new SendPacketsElement[] { e1.Element };
                         if (sock.SendPacketsAsync(args))
                         {
                             Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
                         }
+
                         Assert.Equal(SocketError.Success, args.SocketError);
                         Assert.Equal(0, args.BytesTransferred);
 
                         completed.Reset();
-                        // Now do a real send
-                        args.SendPacketsElements = new SendPacketsElement[]
-                        {
-                            new SendPacketsElement(new byte[5], 1, 4)
-                        };
 
+                        // Now do a real send
+                        using var e2 = CreateElementForBuffer(bufferType, 5, 1, 4);
+                        args.SendPacketsElements = new SendPacketsElement[] { e2.Element };
                         if (sock.SendPacketsAsync(args))
                         {
                             Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
                         }
+
                         Assert.Equal(SocketError.Success, args.SocketError);
                         Assert.Equal(4, args.BytesTransferred);
                     }
@@ -232,95 +232,6 @@ namespace System.Net.Sockets.Tests
         }
 
         #endregion Buffers
-
-        #region Memory
-
-        [Fact]
-        public void NormalMemory_Success()
-        {
-            SendPackets(new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10])), 10);
-        }
-
-        [Fact]
-        public void NormalMemoryRange_Success()
-        {
-            SendPackets(new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 5, 5)), 5);
-        }
-
-        [Fact]
-        public void EmptyMemory_Ignored()
-        {
-            SendPackets(new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[0])), 0);
-        }
-
-        [Fact]
-        public void MemoryZeroCount_Ignored()
-        {
-            SendPackets(new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 4, 0)), 0);
-        }
-
-        [Fact]
-        public void MemoryMixedBuffers_ZeroCountMemoryIgnored()
-        {
-            SendPacketsElement[] elements = new SendPacketsElement[]
-            {
-                new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 4, 0)), // Ignored
-                new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 4, 4)),
-                new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[10], 0, 4))
-            };
-            SendPackets(elements, SocketError.Success, 8);
-        }
-
-        [Fact]
-        public void MemoryZeroCountThenNormal_ZeroCountIgnored()
-        {
-            Assert.True(Capability.IPv6Support());
-
-            EventWaitHandle completed = new ManualResetEvent(false);
-
-            int port;
-            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, _serverAddress, out port))
-            {
-                using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
-                {
-                    sock.Connect(new IPEndPoint(_serverAddress, port));
-                    using (SocketAsyncEventArgs args = new SocketAsyncEventArgs())
-                    {
-                        args.Completed += OnCompleted;
-                        args.UserToken = completed;
-
-                        // First do an empty send, ignored
-                        args.SendPacketsElements = new SendPacketsElement[]
-                        {
-                            new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[5], 3, 0))
-                        };
-
-                        if (sock.SendPacketsAsync(args))
-                        {
-                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
-                        }
-                        Assert.Equal(SocketError.Success, args.SocketError);
-                        Assert.Equal(0, args.BytesTransferred);
-
-                        completed.Reset();
-                        // Now do a real send
-                        args.SendPacketsElements = new SendPacketsElement[]
-                        {
-                            new SendPacketsElement(new ReadOnlyMemory<byte>(new byte[5], 1, 4))
-                        };
-
-                        if (sock.SendPacketsAsync(args))
-                        {
-                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
-                        }
-                        Assert.Equal(SocketError.Success, args.SocketError);
-                        Assert.Equal(4, args.BytesTransferred);
-                    }
-                }
-            }
-        }
-
-        #endregion Memory
 
         #region TransmitFileOptions
 
