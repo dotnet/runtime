@@ -189,19 +189,10 @@ namespace System.IO
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<int>(cancellationToken);
 
-            if (IsClosed)
+            if (_actualImplementation.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            if (!_useAsyncIO)
-            {
-                // If we weren't opened for asynchronous I/O, we still call to the base implementation so that
-                // Read is invoked asynchronously.  But we can do so using the base Stream's internal helper
-                // that bypasses delegating to BeginRead, since we already know this is FileStream rather
-                // than something derived from it and what our BeginRead implementation is going to do.
-                return (Task<int>)base.BeginReadInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
-            }
-
-            return ReadAsyncTask(buffer, offset, count, cancellationToken);
+            return _actualImplementation.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)

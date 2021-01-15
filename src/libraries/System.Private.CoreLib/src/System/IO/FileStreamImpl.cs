@@ -307,23 +307,6 @@ namespace System.IO
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateBufferArguments(buffer, offset, count);
-
-            if (GetType() != typeof(FileStream))
-            {
-                // If we have been inherited into a subclass, the following implementation could be incorrect
-                // since it does not call through to Read() which a subclass might have overridden.
-                // To be safe we will only use this implementation in cases where we know it is safe to do so,
-                // and delegate to our base class (which will call into Read/ReadAsync) when we are not sure.
-                return base.ReadAsync(buffer, offset, count, cancellationToken);
-            }
-
-            if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled<int>(cancellationToken);
-
-            if (IsClosed)
-                throw Error.GetFileNotOpen();
-
             if (!_useAsyncIO)
             {
                 // If we weren't opened for asynchronous I/O, we still call to the base implementation so that
