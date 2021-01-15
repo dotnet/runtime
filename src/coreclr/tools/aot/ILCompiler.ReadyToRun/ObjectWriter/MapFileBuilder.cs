@@ -46,7 +46,7 @@ namespace ILCompiler.PEWriter
                 Name = name;
             }
 
-            public void AddNode(ObjectNode node)
+            public void AddNode(OutputNode node)
             {
                 Debug.Assert(Name == node.Name);
                 Count++;
@@ -54,13 +54,13 @@ namespace ILCompiler.PEWriter
             }
         }
 
-        private ObjectInfoBuilder _objectInfoBuilder;
+        private OutputInfoBuilder _outputInfoBuilder;
 
         private long _fileSize;
 
-        public MapFileBuilder(ObjectInfoBuilder objectInfoBuilder)
+        public MapFileBuilder(OutputInfoBuilder outputInfoBuilder)
         {
-            _objectInfoBuilder = objectInfoBuilder;
+            _outputInfoBuilder = outputInfoBuilder;
         }
 
         public void SetFileSize(long fileSize)
@@ -72,7 +72,7 @@ namespace ILCompiler.PEWriter
         {
             Console.WriteLine("Emitting map file: {0}", mapFileName);
 
-            _objectInfoBuilder.Sort();
+            _outputInfoBuilder.Sort();
 
             using (StreamWriter mapWriter = new StreamWriter(mapFileName))
             {
@@ -88,7 +88,7 @@ namespace ILCompiler.PEWriter
         {
             Console.WriteLine("Emitting csv files: {0}, {1}", nodeStatsCsvFileName, mapCsvFileName);
 
-            _objectInfoBuilder.Sort();
+            _outputInfoBuilder.Sort();
 
             using (StreamWriter nodeStatsWriter = new StreamWriter(nodeStatsCsvFileName))
             {
@@ -106,17 +106,17 @@ namespace ILCompiler.PEWriter
             WriteTitle(writer, "Summary Info");
 
             writer.WriteLine($"Output file size: {_fileSize,10}");
-            writer.WriteLine($"Section count:    {_objectInfoBuilder.Sections.Count,10}");
-            writer.WriteLine($"Node count:       {_objectInfoBuilder.Nodes.Count,10}");
-            writer.WriteLine($"Symbol count:     {_objectInfoBuilder.Symbols.Count,10}");
-            writer.WriteLine($"Relocation count: {_objectInfoBuilder.RelocCounts.Values.Sum(),10}");
+            writer.WriteLine($"Section count:    {_outputInfoBuilder.Sections.Count,10}");
+            writer.WriteLine($"Node count:       {_outputInfoBuilder.Nodes.Count,10}");
+            writer.WriteLine($"Symbol count:     {_outputInfoBuilder.Symbols.Count,10}");
+            writer.WriteLine($"Relocation count: {_outputInfoBuilder.RelocCounts.Values.Sum(),10}");
         }
 
         private IEnumerable<NodeTypeStatistics> GetNodeTypeStatistics()
         {
             List<NodeTypeStatistics> nodeTypeStats = new List<NodeTypeStatistics>();
             Dictionary<string, int> statsNameIndex = new Dictionary<string, int>();
-            foreach (ObjectNode node in _objectInfoBuilder.Nodes)
+            foreach (OutputNode node in _outputInfoBuilder.Nodes)
             {
                 if (!statsNameIndex.TryGetValue(node.Name, out int statsIndex))
                 {
@@ -164,7 +164,7 @@ namespace ILCompiler.PEWriter
 
         private void WriteRelocTypeStatistics(StreamWriter writer)
         {
-            KeyValuePair<RelocType, int>[] relocTypeCounts = _objectInfoBuilder.RelocCounts.ToArray();
+            KeyValuePair<RelocType, int>[] relocTypeCounts = _outputInfoBuilder.RelocCounts.ToArray();
             Array.Sort(relocTypeCounts, (a, b) => b.Value.CompareTo(a.Value));
 
             WriteTitle(writer, "Reloc Type Statistics");
@@ -180,12 +180,12 @@ namespace ILCompiler.PEWriter
             WriteTitle(writer, "Top Nodes By Relocation Count");
             WriteTitle(writer, "   COUNT | SYMBOL  (NODE)");
 
-            foreach (ObjectNode node in _objectInfoBuilder.Nodes.Where(node => node.Relocations != 0).OrderByDescending(node => node.Relocations).Take(NumberOfTopNodesByRelocType))
+            foreach (OutputNode node in _outputInfoBuilder.Nodes.Where(node => node.Relocations != 0).OrderByDescending(node => node.Relocations).Take(NumberOfTopNodesByRelocType))
             {
                 writer.Write($"{node.Relocations,8} | ");
-                if (_objectInfoBuilder.FindSymbol(node, out int symbolIndex))
+                if (_outputInfoBuilder.FindSymbol(node, out int symbolIndex))
                 {
-                    writer.Write($"{_objectInfoBuilder.Symbols[symbolIndex].Name}");
+                    writer.Write($"{_outputInfoBuilder.Symbols[symbolIndex].Name}");
                 }
                 writer.WriteLine($"  ({node.Name})");
             }
@@ -195,9 +195,9 @@ namespace ILCompiler.PEWriter
         {
             WriteTitle(writer, "Section Map");
             WriteTitle(writer, "INDEX | FILEOFFSET | RVA        | END_RVA    | LENGTH     | NAME");
-            for (int sectionIndex = 0; sectionIndex < _objectInfoBuilder.Sections.Count; sectionIndex++)
+            for (int sectionIndex = 0; sectionIndex < _outputInfoBuilder.Sections.Count; sectionIndex++)
             {
-                Section section = _objectInfoBuilder.Sections[sectionIndex];
+                Section section = _outputInfoBuilder.Sections[sectionIndex];
                 writer.Write($"{sectionIndex,5} | ");
                 writer.Write($"0x{section.FilePosWhenPlaced:X8} | ");
                 writer.Write($"0x{section.RVAWhenPlaced:X8} | ");
@@ -215,15 +215,15 @@ namespace ILCompiler.PEWriter
             int nodeIndex = 0;
             int symbolIndex = 0;
 
-            while (nodeIndex < _objectInfoBuilder.Nodes.Count || symbolIndex < _objectInfoBuilder.Symbols.Count)
+            while (nodeIndex < _outputInfoBuilder.Nodes.Count || symbolIndex < _outputInfoBuilder.Symbols.Count)
             {
-                if (nodeIndex >= _objectInfoBuilder.Nodes.Count
-                    || symbolIndex < _objectInfoBuilder.Symbols.Count
-                        && ObjectItem.Comparer.Instance.Compare(_objectInfoBuilder.Symbols[symbolIndex], _objectInfoBuilder.Nodes[nodeIndex]) < 0)
+                if (nodeIndex >= _outputInfoBuilder.Nodes.Count
+                    || symbolIndex < _outputInfoBuilder.Symbols.Count
+                        && OutputItem.Comparer.Instance.Compare(_outputInfoBuilder.Symbols[symbolIndex], _outputInfoBuilder.Nodes[nodeIndex]) < 0)
                 {
                     // No more nodes or next symbol is below next node - emit symbol
-                    ObjectSymbol symbol = _objectInfoBuilder.Symbols[symbolIndex++];
-                    Section section = _objectInfoBuilder.Sections[symbol.SectionIndex];
+                    OutputSymbol symbol = _outputInfoBuilder.Symbols[symbolIndex++];
+                    Section section = _outputInfoBuilder.Sections[symbol.SectionIndex];
                     writer.Write($"0x{symbol.Offset + section.RVAWhenPlaced:X8} | ");
                     writer.Write("         | ");
                     writer.Write("       | ");
@@ -233,16 +233,16 @@ namespace ILCompiler.PEWriter
                 else
                 {
                     // Emit node and optionally symbol
-                    ObjectNode node = _objectInfoBuilder.Nodes[nodeIndex++];
-                    Section section = _objectInfoBuilder.Sections[node.SectionIndex];
+                    OutputNode node = _outputInfoBuilder.Nodes[nodeIndex++];
+                    Section section = _outputInfoBuilder.Sections[node.SectionIndex];
 
                     writer.Write($"0x{node.Offset + section.RVAWhenPlaced:X8} | ");
                     writer.Write($"0x{node.Length:X6} | ");
                     writer.Write($"{node.Relocations,6} | ");
                     writer.Write($"{GetNameHead(section),-SectionNameHeadLength} | ");
-                    if (symbolIndex < _objectInfoBuilder.Symbols.Count && ObjectItem.Comparer.Instance.Compare(node, _objectInfoBuilder.Symbols[symbolIndex]) == 0)
+                    if (symbolIndex < _outputInfoBuilder.Symbols.Count && OutputItem.Comparer.Instance.Compare(node, _outputInfoBuilder.Symbols[symbolIndex]) == 0)
                     {
-                        ObjectSymbol symbol = _objectInfoBuilder.Symbols[symbolIndex++];
+                        OutputSymbol symbol = _outputInfoBuilder.Symbols[symbolIndex++];
                         writer.Write($"{symbol.Name}");
                     }
                     writer.WriteLine($"  ({node.Name})");
@@ -257,15 +257,15 @@ namespace ILCompiler.PEWriter
             int nodeIndex = 0;
             int symbolIndex = 0;
 
-            while (nodeIndex < _objectInfoBuilder.Nodes.Count || symbolIndex < _objectInfoBuilder.Symbols.Count)
+            while (nodeIndex < _outputInfoBuilder.Nodes.Count || symbolIndex < _outputInfoBuilder.Symbols.Count)
             {
-                if (nodeIndex >= _objectInfoBuilder.Nodes.Count
-                    || symbolIndex < _objectInfoBuilder.Symbols.Count
-                        && ObjectItem.Comparer.Instance.Compare(_objectInfoBuilder.Symbols[symbolIndex], _objectInfoBuilder.Nodes[nodeIndex]) < 0)
+                if (nodeIndex >= _outputInfoBuilder.Nodes.Count
+                    || symbolIndex < _outputInfoBuilder.Symbols.Count
+                        && OutputItem.Comparer.Instance.Compare(_outputInfoBuilder.Symbols[symbolIndex], _outputInfoBuilder.Nodes[nodeIndex]) < 0)
                 {
                     // No more nodes or next symbol is below next node - emit symbol
-                    ObjectSymbol symbol = _objectInfoBuilder.Symbols[symbolIndex++];
-                    Section section = _objectInfoBuilder.Sections[symbol.SectionIndex];
+                    OutputSymbol symbol = _outputInfoBuilder.Symbols[symbolIndex++];
+                    Section section = _outputInfoBuilder.Sections[symbol.SectionIndex];
                     writer.Write($"0x{symbol.Offset + section.RVAWhenPlaced:X8},");
                     writer.Write(",");
                     writer.Write(",");
@@ -276,16 +276,16 @@ namespace ILCompiler.PEWriter
                 else
                 {
                     // Emit node and optionally symbol
-                    ObjectNode node = _objectInfoBuilder.Nodes[nodeIndex++];
-                    Section section = _objectInfoBuilder.Sections[node.SectionIndex];
+                    OutputNode node = _outputInfoBuilder.Nodes[nodeIndex++];
+                    Section section = _outputInfoBuilder.Sections[node.SectionIndex];
 
                     writer.Write($"0x{node.Offset + section.RVAWhenPlaced:X8},");
                     writer.Write($"{node.Length},");
                     writer.Write($"{node.Relocations},");
                     writer.Write($"{section.Name},");
-                    if (symbolIndex < _objectInfoBuilder.Symbols.Count && ObjectItem.Comparer.Instance.Compare(node, _objectInfoBuilder.Symbols[symbolIndex]) == 0)
+                    if (symbolIndex < _outputInfoBuilder.Symbols.Count && OutputItem.Comparer.Instance.Compare(node, _outputInfoBuilder.Symbols[symbolIndex]) == 0)
                     {
-                        ObjectSymbol symbol = _objectInfoBuilder.Symbols[symbolIndex++];
+                        OutputSymbol symbol = _outputInfoBuilder.Symbols[symbolIndex++];
                         writer.Write($"{symbol.Name}");
                     }
                     writer.Write(",");

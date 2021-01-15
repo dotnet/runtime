@@ -241,8 +241,8 @@ namespace ILCompiler.PEWriter
         /// <param name="objectData">Object data to emit</param>
         /// <param name="section">Target section</param>
         /// <param name="name">Textual name of the object data for diagnostic purposese</param>
-        /// <param name="objectInfoBuilder">Optional object info builder to output the data item to</param>
-        public void AddObjectData(DependencyAnalysis.ObjectNode.ObjectData objectData, ObjectNodeSection section, string name, ObjectInfoBuilder objectInfoBuilder)
+        /// <param name="outputInfoBuilder">Optional output info builder to output the data item to</param>
+        public void AddObjectData(DependencyAnalysis.ObjectNode.ObjectData objectData, ObjectNodeSection section, string name, OutputInfoBuilder outputInfoBuilder)
         {
             if (_written)
             {
@@ -266,7 +266,7 @@ namespace ILCompiler.PEWriter
                     throw new NotImplementedException();
             }
 
-            _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, objectInfoBuilder);
+            _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, outputInfoBuilder);
         }
 
         /// <summary>
@@ -312,10 +312,10 @@ namespace ILCompiler.PEWriter
         /// <summary>
         /// Fill in map builder section table.
         /// </summary>
-        /// <param name="objectInfoBuilder">Object info builder to set up</param>
-        public void AddSections(ObjectInfoBuilder objectInfoBuilder)
+        /// <param name="outputInfoBuilder">Object info builder to set up</param>
+        public void AddSections(OutputInfoBuilder outputInfoBuilder)
         {
-            _sectionBuilder.AddSections(objectInfoBuilder);
+            _sectionBuilder.AddSections(outputInfoBuilder);
         }
 
         /// <summary>

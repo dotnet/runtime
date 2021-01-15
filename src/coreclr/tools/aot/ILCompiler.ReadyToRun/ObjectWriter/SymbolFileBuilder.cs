@@ -14,18 +14,18 @@ namespace ILCompiler.PEWriter
 {
     public class SymbolFileBuilder
     {
-        private readonly ObjectInfoBuilder _objectInfoBuilder;
+        private readonly OutputInfoBuilder _outputInfoBuilder;
 
-        public SymbolFileBuilder(ObjectInfoBuilder objectInfoBuilder)
+        public SymbolFileBuilder(OutputInfoBuilder outputInfoBuilder)
         {
-            _objectInfoBuilder = objectInfoBuilder;
+            _outputInfoBuilder = outputInfoBuilder;
         }
 
         public void SavePdb(string pdbPath, string dllFileName)
         {
             Console.WriteLine("Emitting PDB file: {0}", Path.Combine(pdbPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.pdb"));
 
-            new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, _objectInfoBuilder.EnumerateMethods());
+            new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, _outputInfoBuilder.EnumerateMethods());
         }
 
         public void SavePerfMap(string perfMapPath, string dllFileName)
@@ -33,7 +33,7 @@ namespace ILCompiler.PEWriter
             string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".perf.map");
             Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
 
-            PerfMapWriter.Write(perfMapFileName, _objectInfoBuilder.EnumerateMethods());
+            PerfMapWriter.Write(perfMapFileName, _outputInfoBuilder.EnumerateMethods());
         }
     }
 }

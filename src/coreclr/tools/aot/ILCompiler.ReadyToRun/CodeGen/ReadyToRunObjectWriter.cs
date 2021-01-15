@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Set to non-null when the executable generator should output a map or symbol file.
         /// </summary>
-        private readonly ObjectInfoBuilder _objectInfoBuilder;
+        private readonly OutputInfoBuilder _outputInfoBuilder;
 
         /// <summary>
         /// Set to non-null when the executable generator should output a map file.
@@ -149,16 +149,16 @@ namespace ILCompiler.DependencyAnalysis
 
             if (generateMap || generateSymbols)
             {
-                _objectInfoBuilder = new ObjectInfoBuilder();
+                _outputInfoBuilder = new OutputInfoBuilder();
 
                 if (generateMap)
                 {
-                    _mapFileBuilder = new MapFileBuilder(_objectInfoBuilder);
+                    _mapFileBuilder = new MapFileBuilder(_outputInfoBuilder);
                 }
 
                 if (generateSymbols)
                 {
-                    _symbolFileBuilder = new SymbolFileBuilder(_objectInfoBuilder);
+                    _symbolFileBuilder = new SymbolFileBuilder(_outputInfoBuilder);
                 }
             }
         }
@@ -272,7 +272,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if ((_generatePdbFile || _generatePerfMapFile) && node is MethodWithGCInfo methodNode)
                     {
-                        _objectInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
+                        _outputInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
                     }
                 }
 
@@ -312,9 +312,9 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
 
-                if (_objectInfoBuilder != null)
+                if (_outputInfoBuilder != null)
                 {
-                    r2rPeBuilder.AddSections(_objectInfoBuilder);
+                    r2rPeBuilder.AddSections(_outputInfoBuilder);
 
                     if (_generateMapFile)
                     {
@@ -403,7 +403,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 #endif
 
-            r2rPeBuilder.AddObjectData(data, section, name, _objectInfoBuilder);
+            r2rPeBuilder.AddObjectData(data, section, name, _outputInfoBuilder);
         }
 
         public static void EmitObject(

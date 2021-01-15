@@ -437,8 +437,8 @@ namespace ILCompiler.PEWriter
         /// <param name="data">Block to add</param>
         /// <param name="sectionIndex">Section index</param>
         /// <param name="name">Node name to emit in the map file</param>
-        /// <param name="objectInfoBuilder">Optional output info to collect (used for creating maps and symbols)</param>
-        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex, string name, ObjectInfoBuilder objectInfoBuilder)
+        /// <param name="outputInfoBuilder">Optional output info to collect (used for creating maps and symbols)</param>
+        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex, string name, OutputInfoBuilder outputInfoBuilder)
         {
             Section section = _sections[sectionIndex];
 
@@ -475,10 +475,10 @@ namespace ILCompiler.PEWriter
                 }
             }
 
-            if (objectInfoBuilder != null)
+            if (outputInfoBuilder != null)
             {
-                ObjectNode node = new ObjectNode(sectionIndex, alignedOffset, objectData.Data.Length, name);
-                objectInfoBuilder.AddNode(node, objectData.DefinedSymbols[0]);
+                var node = new OutputNode(sectionIndex, alignedOffset, objectData.Data.Length, name);
+                outputInfoBuilder.AddNode(node, objectData.DefinedSymbols[0]);
                 if (objectData.Relocs != null)
                 {
                     foreach (Relocation reloc in objectData.Relocs)
@@ -486,7 +486,7 @@ namespace ILCompiler.PEWriter
                         RelocType fileReloc = Relocation.GetFileRelocationType(reloc.RelocType);
                         if (fileReloc != RelocType.IMAGE_REL_BASED_ABSOLUTE)
                         {
-                            objectInfoBuilder.AddRelocation(node, fileReloc);
+                            outputInfoBuilder.AddRelocation(node, fileReloc);
                         }
                     }
                 }
@@ -498,12 +498,12 @@ namespace ILCompiler.PEWriter
             {
                 foreach (ISymbolDefinitionNode symbol in objectData.DefinedSymbols)
                 {
-                    if (objectInfoBuilder != null)
+                    if (outputInfoBuilder != null)
                     {
                         Utf8StringBuilder sb = new Utf8StringBuilder();
                         symbol.AppendMangledName(GetNameMangler(), sb);
                         int sectionRelativeOffset = alignedOffset + symbol.Offset;
-                        objectInfoBuilder.AddSymbol(new ObjectSymbol(sectionIndex, sectionRelativeOffset, sb.ToString()));
+                        outputInfoBuilder.AddSymbol(new OutputSymbol(sectionIndex, sectionRelativeOffset, sb.ToString()));
                     }
                     _symbolMap.Add(symbol, new SymbolTarget(
                         sectionIndex: sectionIndex,
@@ -551,11 +551,11 @@ namespace ILCompiler.PEWriter
             return sectionList;
         }
 
-        public void AddSections(ObjectInfoBuilder objectInfoBuilder)
+        public void AddSections(OutputInfoBuilder outputInfoBuilder)
         {
             foreach (Section section in _sections)
             {
-                objectInfoBuilder.AddSection(section);
+                outputInfoBuilder.AddSection(section);
             }
         }
 

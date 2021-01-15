@@ -24,13 +24,13 @@ namespace ILCompiler.PEWriter
     /// Base class for symbols and nodes in the output file implements common logic
     /// for section / offset ordering.
     /// </summary>
-    public class ObjectItem
+    public class OutputItem
     {
-        public class Comparer : IComparer<ObjectItem>
+        public class Comparer : IComparer<OutputItem>
         {
             public readonly static Comparer Instance = new Comparer();
 
-            public int Compare([AllowNull] ObjectItem x, [AllowNull] ObjectItem y)
+            public int Compare([AllowNull] OutputItem x, [AllowNull] OutputItem y)
             {
                 return (x.SectionIndex != y.SectionIndex ? x.SectionIndex.CompareTo(y.SectionIndex) : x.Offset.CompareTo(y.Offset));
             }
@@ -51,7 +51,7 @@ namespace ILCompiler.PEWriter
         /// </summary>
         public readonly string Name;
 
-        public ObjectItem(int sectionIndex, int offset, string name)
+        public OutputItem(int sectionIndex, int offset, string name)
         {
             SectionIndex = sectionIndex;
             Offset = offset;
@@ -62,7 +62,7 @@ namespace ILCompiler.PEWriter
     /// <summary>
     /// This class represents a single node (contiguous block of data) in the output R2R PE file.
     /// </summary>
-    public class ObjectNode : ObjectItem
+    public class OutputNode : OutputItem
     {
         /// <summary>
         /// Node length (number of bytes). This doesn't include any external alignment
@@ -75,7 +75,7 @@ namespace ILCompiler.PEWriter
         /// </summary>
         public int Relocations { get; private set; }
 
-        public ObjectNode(int sectionIndex, int offset, int length, string name)
+        public OutputNode(int sectionIndex, int offset, int length, string name)
             : base(sectionIndex, offset, name)
         {
             Length = length;
@@ -93,9 +93,9 @@ namespace ILCompiler.PEWriter
     /// node beginnings (most nodes have a "start symbol" representing the beginning
     /// of the node).
     /// </summary>
-    public class ObjectSymbol : ObjectItem
+    public class OutputSymbol : OutputItem
     {
-        public ObjectSymbol(int sectionIndex, int offset, string name)
+        public OutputSymbol(int sectionIndex, int offset, string name)
             : base(sectionIndex, offset, name)
         {
         }
@@ -104,43 +104,43 @@ namespace ILCompiler.PEWriter
     /// <summary>
     /// Common class used to collect information to use when emitting map files and symbol files.
     /// </summary>
-    public class ObjectInfoBuilder
+    public class OutputInfoBuilder
     {
-        private readonly List<ObjectNode> _nodes;
-        private readonly List<ObjectSymbol> _symbols;
+        private readonly List<OutputNode> _nodes;
+        private readonly List<OutputSymbol> _symbols;
         private readonly List<Section> _sections;
 
-        private readonly Dictionary<ISymbolDefinitionNode, ObjectNode> _nodeSymbolMap;
+        private readonly Dictionary<ISymbolDefinitionNode, OutputNode> _nodeSymbolMap;
         private readonly Dictionary<ISymbolDefinitionNode, MethodWithGCInfo> _methodSymbolMap;
 
         private readonly Dictionary<RelocType, int> _relocCounts;
 
-        public ObjectInfoBuilder()
+        public OutputInfoBuilder()
         {
-            _nodes = new List<ObjectNode>();
-            _symbols = new List<ObjectSymbol>();
+            _nodes = new List<OutputNode>();
+            _symbols = new List<OutputSymbol>();
             _sections = new List<Section>();
 
-            _nodeSymbolMap = new Dictionary<ISymbolDefinitionNode, ObjectNode>();
+            _nodeSymbolMap = new Dictionary<ISymbolDefinitionNode, OutputNode>();
             _methodSymbolMap = new Dictionary<ISymbolDefinitionNode, MethodWithGCInfo>();
 
             _relocCounts = new Dictionary<RelocType, int>();
         }
 
-        public void AddNode(ObjectNode node, ISymbolDefinitionNode symbol)
+        public void AddNode(OutputNode node, ISymbolDefinitionNode symbol)
         {
             _nodes.Add(node);
             _nodeSymbolMap.Add(symbol, node);
         }
 
-        public void AddRelocation(ObjectNode node, RelocType relocType)
+        public void AddRelocation(OutputNode node, RelocType relocType)
         {
             node.AddRelocation();
             _relocCounts.TryGetValue(relocType, out int relocTypeCount);
             _relocCounts[relocType] = relocTypeCount + 1;
         }
 
-        public void AddSymbol(ObjectSymbol symbol)
+        public void AddSymbol(OutputSymbol symbol)
         {
             _symbols.Add(symbol);
         }
@@ -157,14 +157,14 @@ namespace ILCompiler.PEWriter
 
         public void Sort()
         {
-            _nodes.Sort(ObjectItem.Comparer.Instance);
-            _symbols.Sort(ObjectItem.Comparer.Instance);
+            _nodes.Sort(OutputItem.Comparer.Instance);
+            _symbols.Sort(OutputItem.Comparer.Instance);
         }
 
-        public bool FindSymbol(ObjectItem item, out int index)
+        public bool FindSymbol(OutputItem item, out int index)
         {
-            index = _symbols.BinarySearch(new ObjectSymbol(item.SectionIndex, item.Offset, name: null), ObjectItem.Comparer.Instance);
-            bool result = (index >= 0 && index < _symbols.Count && ObjectItem.Comparer.Instance.Compare(_symbols[index], item) == 0);
+            index = _symbols.BinarySearch(new OutputSymbol(item.SectionIndex, item.Offset, name: null), OutputItem.Comparer.Instance);
+            bool result = (index >= 0 && index < _symbols.Count && OutputItem.Comparer.Instance.Compare(_symbols[index], item) == 0);
             if (!result)
             {
                 index = -1;
@@ -186,7 +186,7 @@ namespace ILCompiler.PEWriter
                     methodInfo.MethodToken = (uint)MetadataTokens.GetToken(ecmaMethod.Handle);
                     methodInfo.AssemblyName = ecmaMethod.Module.Assembly.GetName().Name;
                     methodInfo.Name = FormatMethodName(symbolMethodPair.Value.Method, typeNameFormatter);
-                    ObjectNode node = _nodeSymbolMap[symbolMethodPair.Key];
+                    OutputNode node = _nodeSymbolMap[symbolMethodPair.Key];
                     Section section = _sections[node.SectionIndex];
                     methodInfo.HotRVA = (uint)(section.RVAWhenPlaced + node.Offset);
                     methodInfo.HotLength = (uint)node.Length;
@@ -221,9 +221,9 @@ namespace ILCompiler.PEWriter
             return output.ToString();
         }
 
-        public IReadOnlyList<ObjectNode> Nodes => _nodes;
+        public IReadOnlyList<OutputNode> Nodes => _nodes;
         public IReadOnlyList<Section> Sections => _sections;
-        public IReadOnlyList<ObjectSymbol> Symbols => _symbols;
+        public IReadOnlyList<OutputSymbol> Symbols => _symbols;
 
         public IReadOnlyDictionary<RelocType, int> RelocCounts => _relocCounts;
     }

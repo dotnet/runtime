@@ -196,7 +196,7 @@
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
-    <Compile Include="ObjectWriter\ObjectInfoBuilder.cs" />
+    <Compile Include="ObjectWriter\OutputInfoBuilder.cs" />
     <Compile Include="ObjectWriter\SymbolFileBuilder.cs" />
     <Compile Include="Win32Resources\ResourceData.cs" />
     <Compile Include="Win32Resources\ResourceData.Reader.cs" />
