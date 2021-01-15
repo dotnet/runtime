@@ -65,7 +65,7 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsWasmDebuggerTestsProject)' == 'true'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
      <IncludeDotNetCli>true</IncludeDotNetCli>
      <DotNetCliPackageType>aspnetcore-runtime</DotNetCliPackageType>
   </PropertyGroup>
@@ -261,12 +261,12 @@
       </HelixWorkItem>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(IsWasmDebuggerTestsProject)' == 'true' and '$(Scenario)' == 'WasmTestOnBrowser'">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'">
       <!-- Create a work item for run-only WASM console app  -->
-      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/DebuggerTestSuite/*.zip" />
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)tests/**/DebuggerTestSuite/*.zip" />
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
-        <Command>dotnet test %(FileName.dll)</Command>
+        <Command>dotnet test DebuggerTestSuite/%(FileName.dll) 2>&amp;1 > $HELIX_WORKITEM_UPLOAD_ROOT/dbg-test-output.txt</Command>
       </HelixWorkItem>
     </ItemGroup>
 

@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -31,7 +30,7 @@
       <!-- AnyCPU as Platform-->
       <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
       <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
-      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)tests/</HelixArchiveRunOnlyRoot>
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/$(WasmHelixTestAppRelativeDir)/</HelixArchiveRunOnlyAppsDir>
       <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
       <_TmpDirForzip>$(IntermediateOutputPath)tmp-zip\</_TmpDirForzip>
