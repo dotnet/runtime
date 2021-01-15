@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <MonoForceInterpreter>true</MonoForceInterpreter>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <MainLibraryFileName>iOS.Simulator.AOT.Test.dll</MainLibraryFileName>
+    <MainLibraryFileName>iOS.Simulator.Aot.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
