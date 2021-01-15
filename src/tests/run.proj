@@ -749,10 +749,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         SourceFiles="@(RuntimePackNativeLibs)"
         DestinationFolder="$(BuildDir)" />
     <Copy
-        SourceFiles="$(TestDlls)"
+        SourceFiles="@(TestDlls)"
         DestinationFolder="$(BuildDir)" />
     <Copy
-        SourceFiles="$(XUnitWrapperDll)"
+        SourceFiles="@(XUnitWrapperDll)"
         DestinationFolder="$(BuildDir)" />
 
     <AppleAppBuilderTask
