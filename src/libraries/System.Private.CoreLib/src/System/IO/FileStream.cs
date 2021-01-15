@@ -12,6 +12,8 @@ namespace System.IO
 {
     public partial class FileStream : Stream
     {
+        private readonly Stream _actualImplementation;
+
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
         internal const int DefaultBufferSize = 4096;
@@ -89,32 +91,7 @@ namespace System.IO
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
-            SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
-            try
-            {
-                ValidateAndInitFromHandle(safeHandle, access, bufferSize, isAsync);
-            }
-            catch
-            {
-                // We don't want to take ownership of closing passed in handles
-                // *unless* the constructor completes successfully.
-                GC.SuppressFinalize(safeHandle);
-
-                // This would also prevent Close from being called, but is unnecessary
-                // as we've removed the object from the finalizer queue.
-                //
-                // safeHandle.SetHandleAsInvalid();
-                throw;
-            }
-
-            // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
-            // but we can't as they're readonly.
-            _access = access;
-            _useAsyncIO = isAsync;
-
-            // As the handle was passed in, we must set the handle field at the very end to
-            // avoid the finalizer closing the handle when we throw errors.
-            _fileHandle = safeHandle;
+            _actualImplementation = new FileStreamImpl(handle, access, ownsHandle, bufferSize, isAsync);
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access)
@@ -127,39 +104,9 @@ namespace System.IO
         {
         }
 
-        private void ValidateAndInitFromHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-        {
-            if (handle.IsInvalid)
-                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
-
-            if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-
-            if (handle.IsClosed)
-                throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.GetValueOrDefault())
-                throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
-
-            _exposedHandle = true;
-            _bufferLength = bufferSize;
-
-            InitFromHandle(handle, access, isAsync);
-        }
-
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
-            ValidateAndInitFromHandle(handle, access, bufferSize, isAsync);
-
-            // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
-            // but we can't as they're readonly.
-            _access = access;
-            _useAsyncIO = isAsync;
-
-            // As the handle was passed in, we must set the handle field at the very end to
-            // avoid the finalizer closing the handle when we throw errors.
-            _fileHandle = handle;
+            _actualImplementation = new FileStreamImpl(handle, access, bufferSize, isAsync);
         }
 
         public FileStream(string path, FileMode mode) :
@@ -184,73 +131,7 @@ namespace System.IO
 
         public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-
-            // don't include inheritable in our bounds check for share
-            FileShare tempshare = share & ~FileShare.Inheritable;
-            string? badArg = null;
-
-            if (mode < FileMode.CreateNew || mode > FileMode.Append)
-                badArg = nameof(mode);
-            else if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                badArg = nameof(access);
-            else if (tempshare < FileShare.None || tempshare > (FileShare.ReadWrite | FileShare.Delete))
-                badArg = nameof(share);
-
-            if (badArg != null)
-                throw new ArgumentOutOfRangeException(badArg, SR.ArgumentOutOfRange_Enum);
-
-            // NOTE: any change to FileOptions enum needs to be matched here in the error validation
-            if (options != FileOptions.None && (options & ~(FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted | (FileOptions)0x20000000 /* NoBuffering */)) != 0)
-                throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_Enum);
-
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-
-            // Write access validation
-            if ((access & FileAccess.Write) == 0)
-            {
-                if (mode == FileMode.Truncate || mode == FileMode.CreateNew || mode == FileMode.Create || mode == FileMode.Append)
-                {
-                    // No write access, mode and access disagree but flag access since mode comes first
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFileModeAndAccessCombo, mode, access), nameof(access));
-                }
-            }
-
-            if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
-                throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
-
-            string fullPath = Path.GetFullPath(path);
-
-            _path = fullPath;
-            _access = access;
-            _bufferLength = bufferSize;
-
-            if ((options & FileOptions.Asynchronous) != 0)
-                _useAsyncIO = true;
-
-            if ((access & FileAccess.Write) == FileAccess.Write)
-            {
-                SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
-            }
-
-            _fileHandle = OpenHandle(mode, share, options);
-
-            try
-            {
-                Init(mode, share, path);
-            }
-            catch
-            {
-                // If anything goes wrong while setting up the stream, make sure we deterministically dispose
-                // of the opened handle.
-                _fileHandle.Dispose();
-                _fileHandle = null!;
-                throw;
-            }
+            _actualImplementation = new FileStreamImpl(path, mode, access, share, bufferSize, options);
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]

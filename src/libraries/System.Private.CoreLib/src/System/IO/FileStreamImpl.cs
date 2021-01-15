@@ -68,26 +68,7 @@ namespace System.IO
         /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
         private static int s_cachedSerializationSwitch;
 
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public FileStream(IntPtr handle, FileAccess access)
-            : this(handle, access, true, DefaultBufferSize, false)
-        {
-        }
-
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle)
-            : this(handle, access, ownsHandle, DefaultBufferSize, false)
-        {
-        }
-
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize)
-            : this(handle, access, ownsHandle, bufferSize, false)
-        {
-        }
-
-        [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
+        internal FileStreamImpl(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
             SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
             try
@@ -117,16 +98,6 @@ namespace System.IO
             _fileHandle = safeHandle;
         }
 
-        public FileStream(SafeFileHandle handle, FileAccess access)
-            : this(handle, access, DefaultBufferSize)
-        {
-        }
-
-        public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
-            : this(handle, access, bufferSize, GetDefaultIsAsync(handle))
-        {
-        }
-
         private void ValidateAndInitFromHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             if (handle.IsInvalid)
@@ -148,7 +119,7 @@ namespace System.IO
             InitFromHandle(handle, access, isAsync);
         }
 
-        public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        internal FileStreamImpl(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             ValidateAndInitFromHandle(handle, access, bufferSize, isAsync);
 
@@ -162,27 +133,7 @@ namespace System.IO
             _fileHandle = handle;
         }
 
-        public FileStream(string path, FileMode mode) :
-            this(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite, DefaultShare, DefaultBufferSize, DefaultIsAsync)
-        { }
-
-        public FileStream(string path, FileMode mode, FileAccess access) :
-            this(path, mode, access, DefaultShare, DefaultBufferSize, DefaultIsAsync)
-        { }
-
-        public FileStream(string path, FileMode mode, FileAccess access, FileShare share) :
-            this(path, mode, access, share, DefaultBufferSize, DefaultIsAsync)
-        { }
-
-        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) :
-            this(path, mode, access, share, bufferSize, DefaultIsAsync)
-        { }
-
-        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, bool useAsync) :
-            this(path, mode, access, share, bufferSize, useAsync ? FileOptions.Asynchronous : FileOptions.None)
-        { }
-
-        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        internal FileStreamImpl(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
