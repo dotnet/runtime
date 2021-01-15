@@ -497,4 +497,3 @@ namespace ILCompiler.PEWriter
         }
     }
 }
-;
