@@ -500,10 +500,6 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
-
-                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
-
                 if (handle != null)
                     handle.Dispose();
 
@@ -513,6 +509,10 @@ namespace System.Diagnostics.Tests
 
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
+
+                SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+
+                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 
