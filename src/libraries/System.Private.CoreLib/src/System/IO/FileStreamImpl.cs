@@ -10,7 +10,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    public partial class FileStream : Stream
+    internal sealed partial class FileStreamImpl : Stream
     {
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;

@@ -3,7 +3,7 @@
 
 namespace System.IO
 {
-    public partial class FileStream : Stream
+    internal sealed partial class FileStreamImpl : Stream
     {
         /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
         /// <param name="position">The beginning of the range to lock.</param>
