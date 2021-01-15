@@ -36,7 +36,16 @@ namespace System.IO
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
-            _actualImplementation = new FileStreamImpl(handle, access, ownsHandle, bufferSize, isAsync);
+            // it might seem to have to sense now, but we plan to introduce dedicated strategies for sync and async implementation
+            switch (isAsync)
+            {
+                case true:
+                    _actualImplementation = new FileStreamImpl(handle, access, ownsHandle, bufferSize, true);
+                    return;
+                case false:
+                    _actualImplementation = new FileStreamImpl(handle, access, ownsHandle, bufferSize, false);
+                    return;
+            }
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access)
@@ -45,13 +54,21 @@ namespace System.IO
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
+            : this(handle, access, bufferSize, FileStreamImpl.GetDefaultIsAsync(handle))
         {
-            _actualImplementation = new FileStreamImpl(handle, access, bufferSize);
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
-            _actualImplementation = new FileStreamImpl(handle, access, bufferSize, isAsync);
+            switch (isAsync)
+            {
+                case true:
+                    _actualImplementation = new FileStreamImpl(handle, access, bufferSize, true);
+                    return;
+                case false:
+                    _actualImplementation = new FileStreamImpl(handle, access, bufferSize, false);
+                    return;
+            }
         }
 
         public FileStream(string path, FileMode mode) :
@@ -76,7 +93,14 @@ namespace System.IO
 
         public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
-            _actualImplementation = new FileStreamImpl(path, mode, access, share, bufferSize, options);
+            if ((options & FileOptions.Asynchronous) != 0)
+            {
+                _actualImplementation = new FileStreamImpl(path, mode, access, share, bufferSize, options);
+            }
+            else
+            {
+                _actualImplementation = new FileStreamImpl(path, mode, access, share, bufferSize, options);
+            }
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]

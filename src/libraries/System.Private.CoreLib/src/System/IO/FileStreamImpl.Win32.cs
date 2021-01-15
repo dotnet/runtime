@@ -45,7 +45,7 @@ namespace System.IO
             }
         }
 
-        private static bool GetDefaultIsAsync(SafeFileHandle handle)
+        internal static bool GetDefaultIsAsync(SafeFileHandle handle)
         {
             return handle.IsAsync ?? !IsHandleSynchronous(handle, ignoreInvalid: true) ?? DefaultIsAsync;
         }

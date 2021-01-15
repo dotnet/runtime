@@ -117,11 +117,6 @@ namespace System.IO
             InitFromHandle(handle, access, isAsync);
         }
 
-        internal FileStreamImpl(SafeFileHandle handle, FileAccess access, int bufferSize)
-    :       this(handle, access, bufferSize, GetDefaultIsAsync(handle))
-        {
-        }
-
         internal FileStreamImpl(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             ValidateAndInitFromHandle(handle, access, bufferSize, isAsync);
