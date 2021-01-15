@@ -945,7 +945,7 @@ void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regN
 {
     assert(ins == INS_shld || ins == INS_shrd || ins == INS_shufps || ins == INS_shufpd || ins == INS_pshufd ||
            ins == INS_cmpps || ins == INS_cmppd || ins == INS_dppd || ins == INS_dpps || ins == INS_insertps ||
-           ins == INS_roundps || ins == INS_roundss || ins == INS_roundpd || ins == INS_roundsd || ins == INS_pextrd);
+           ins == INS_roundps || ins == INS_roundss || ins == INS_roundpd || ins == INS_roundsd);
 
     GetEmitter()->emitIns_R_R_I(ins, size, reg1, reg2, ival);
 }

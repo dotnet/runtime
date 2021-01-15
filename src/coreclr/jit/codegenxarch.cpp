@@ -1192,14 +1192,14 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     // reg0 = opReg[31:0]
     inst_RV_RV(ins_Copy(opReg, TYP_INT), reg0, opReg, TYP_INT);
     // reg1 = opRef[61:32]
-    if (compiler->compExactlyDependsOn(InstructionSet_SSE41))
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
     {
-        inst_RV_RV_IV(INS_pextrd, EA_4BYTE, reg1, opReg, 1);
+        inst_RV_TT_IV(INS_pextrd, EA_4BYTE, reg1, src, 1);
     }
     else
     {
         int8_t shuffleMask = 1; // we only need [61:32]->[31:0], the rest is not read.
-        GetEmitter()->emitIns_R_R_I(INS_pshufd, EA_8BYTE, opReg, opReg, shuffleMask);
+        inst_RV_TT_IV(INS_pshufd, EA_8BYTE, opReg, src, shuffleMask);
         inst_RV_RV(ins_Copy(opReg, TYP_INT), reg1, opReg, TYP_INT);
     }
 #endif // TARGET_X86
