@@ -19,8 +19,7 @@ namespace System.IO.Compression
         /// <param name="window">A number representing the encoder window bits. The minimum value is 10, and the maximum value is 24.</param>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="quality" /> is not between the minimum value of 0 and the maximum value of 11.
         /// -or-
-        /// <paramref name="window" /> is not between the minimum value of 10 and the maximum value of 24.
-        /// </exception>
+        /// <paramref name="window" /> is not between the minimum value of 10 and the maximum value of 24.</exception>
         /// <exception cref="System.IO.IOException">Failed to create the <see cref="System.IO.Compression.BrotliEncoder" /> instance.</exception>
         public BrotliEncoder(int quality, int window)
         {
@@ -106,9 +105,7 @@ namespace System.IO.Compression
         /// <summary>Gets the maximum expected compressed length for the provided input size.</summary>
         /// <param name="inputSize">The input size to get the maximum expected compressed length from. Must be greater or equal than 0 and less or equal than <see cref="System.Int32.MaxValue" /> - 515.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
-        /// <remarks><![CDATA[
-        /// Returns 1 if `inputSize` is 0.
-        /// ]]></remarks>
+        /// <remarks>Returns 1 if <paramref name="inputSize" /> is 0.</remarks>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="inputSize" /> is less than 0, the minimum allowed input size, or greater than <see cref="System.Int32.MaxValue" /> - 515, the maximum allowed input size.</exception>
         public static int GetMaxCompressedLength(int inputSize)
         {

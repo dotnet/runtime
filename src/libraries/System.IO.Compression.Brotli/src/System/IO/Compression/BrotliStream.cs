@@ -84,11 +84,9 @@ namespace System.IO.Compression
 
         /// <summary>Asynchronously releases the unmanaged resources used by the <see cref="System.IO.Compression.BrotliStream" />.</summary>
         /// <returns>A task that represents the asynchronous dispose operation.</returns>
-        /// <remarks><![CDATA[
-        /// The `DisposeAsync` method lets you perform a resource-intensive dispose operation without blocking the main thread. This performance consideration is particularly important in a [!INCLUDE[win8_appname_long](~/includes/win8-appname-long-md.md)] app or [!INCLUDE[desktop_appname](~/includes/desktop-appname-md.md)] app where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the `async` and `await` keywords in Visual Basic and C#.
+        /// <remarks>The `DisposeAsync` method lets you perform a resource-intensive dispose operation without blocking the main thread. This performance consideration is particularly important in a [!INCLUDE[win8_appname_long](~/includes/win8-appname-long-md.md)] app or [!INCLUDE[desktop_appname](~/includes/desktop-appname-md.md)] app where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.
         /// This method disposes the Brotli stream by writing any changes to the backing store and closing the stream to release resources.
-        /// Calling `DisposeAsync` allows the resources used by the <xref:System.IO.Compression.BrotliStream> to be reallocated for other purposes. For more information, see [Cleaning Up Unmanaged Resources](/dotnet/standard/garbage-collection/unmanaged).
-        /// ]]></remarks>
+        /// Calling `DisposeAsync` allows the resources used by the <see cref="System.IO.Compression.BrotliStream" /> to be reallocated for other purposes. For more information, see [Cleaning Up Unmanaged Resources](/dotnet/standard/garbage-collection/unmanaged).</remarks>
         public override async ValueTask DisposeAsync()
         {
             try

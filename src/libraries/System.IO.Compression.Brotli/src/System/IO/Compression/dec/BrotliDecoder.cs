@@ -47,13 +47,11 @@ namespace System.IO.Compression
         /// <param name="bytesConsumed">The total number of bytes that were read from <paramref name="source" />.</param>
         /// <param name="bytesWritten">The total number of bytes that were written in the <paramref name="destination" />.</param>
         /// <returns>One of the enumeration values that indicates the status of the decompression operation.</returns>
-        /// <remarks><![CDATA[
-        /// The return value can be as follows:
-        /// - <xref:System.Buffers.OperationStatus.Done?displayProperty=nameWithType>: `source` was successfully and completely decompressed into `destination`.
-        /// - <xref:System.Buffers.OperationStatus.DestinationTooSmall?displayProperty=nameWithType>: There is not enough space in `destination` to decompress `source`.
-        /// - <xref:System.Buffers.OperationStatus.NeedMoreData?displayProperty=nameWithType>: The decompression action is partially done at least one more byte is required to complete the decompression task. This method should be called again with more input to decompress.
-        /// - <xref:System.Buffers.OperationStatus.InvalidData?displayProperty=nameWithType>: The data in `source` is invalid and could not be decompressed.
-        /// ]]></remarks>
+        /// <remarks>The return value can be as follows:
+        /// - <see cref="System.Buffers.OperationStatus.Done" />: <paramref name="source" /> was successfully and completely decompressed into <paramref name="destination" />.
+        /// - <see cref="System.Buffers.OperationStatus.DestinationTooSmall" />: There is not enough space in <paramref name="destination" /> to decompress <paramref name="source" />.
+        /// - <see cref="System.Buffers.OperationStatus.NeedMoreData" />: The decompression action is partially done at least one more byte is required to complete the decompression task. This method should be called again with more input to decompress.
+        /// - <see cref="System.Buffers.OperationStatus.InvalidData" />: The data in <paramref name="source" /> is invalid and could not be decompressed.</remarks>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
             EnsureInitialized();
@@ -112,9 +110,7 @@ namespace System.IO.Compression
         /// <param name="destination">When this method returns, a byte span containing the decompressed data.</param>
         /// <param name="bytesWritten">The total number of bytes that were written in the <paramref name="destination" />.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
-        /// <remarks><![CDATA[
-        /// If this method returns `false`, `destination` may be empty or contain partially decompressed data, with `bytesWritten` being zero or greater than zero but less than the expected total.
-        /// ]]></remarks>
+        /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero or greater than zero but less than the expected total.</remarks>
         public static unsafe bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
