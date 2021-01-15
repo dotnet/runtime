@@ -428,13 +428,13 @@ namespace System.IO
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            if (_actualImplementation.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (!_actualImplementation.CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-            if (!IsAsync)
+            if (!_actualImplementation.IsAsync)
                 return base.BeginRead(buffer, offset, count, callback, state);
             else
-                return TaskToApm.Begin(ReadAsyncTask(buffer, offset, count, CancellationToken.None), callback, state);
+                return _actualImplementation.BeginRead(buffer, offset, count, callback, state);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
