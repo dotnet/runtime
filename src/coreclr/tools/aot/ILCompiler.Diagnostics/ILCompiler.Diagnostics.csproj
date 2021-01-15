@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.Diagnostics</AssemblyName>
+    <OutputType>Library</OutputType>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Platforms>x64;x86</Platforms>
+    <Platforms>x64;x86;arm;arm64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 

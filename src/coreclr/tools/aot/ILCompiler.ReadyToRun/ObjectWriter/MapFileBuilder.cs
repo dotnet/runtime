@@ -22,87 +22,6 @@ using ILCompiler.Diagnostics;
 namespace ILCompiler.PEWriter
 {
     /// <summary>
-    /// Base class for symbols and nodes in the map file implements common logic
-    /// for section / offset ordering.
-    /// </summary>
-    public class MapFileItem
-    {
-        public class Comparer : IComparer<MapFileItem>
-        {
-            public readonly static Comparer Instance = new Comparer();
-
-            public int Compare([AllowNull] MapFileItem x, [AllowNull] MapFileItem y)
-            {
-                return (x.SectionIndex != y.SectionIndex ? x.SectionIndex.CompareTo(y.SectionIndex) : x.Offset.CompareTo(y.Offset));
-            }
-        }
-
-        /// <summary>
-        /// Item section index
-        /// </summary>
-        public readonly int SectionIndex;
-
-        /// <summary>
-        /// Offset relative to section beginning
-        /// </summary>
-        public readonly int Offset;
-
-        /// <summary>
-        /// Item name
-        /// </summary>
-        public readonly string Name;
-
-        public MapFileItem(int sectionIndex, int offset, string name)
-        {
-            SectionIndex = sectionIndex;
-            Offset = offset;
-            Name = name;
-        }
-    }
-
-    /// <summary>
-    /// This class represents a single node (contiguous block of data) in the output R2R PE file.
-    /// </summary>
-    public class MapFileNode : MapFileItem
-    {
-        /// <summary>
-        /// Node length (number of bytes). This doesn't include any external alignment
-        /// applied when concatenating the nodes to form sections.
-        /// </summary>
-        public readonly int Length;
-
-        /// <summary>
-        /// Number of file-level relocations (.reloc section entries) used by the node.
-        /// </summary>
-        public int Relocations { get; private set; }
-
-        public MapFileNode(int sectionIndex, int offset, int length, string name)
-            : base(sectionIndex, offset, name)
-        {
-            Length = length;
-            Relocations = 0;
-        }
-
-        public void AddRelocation()
-        {
-            Relocations++;
-        }
-    }
-
-    /// <summary>
-    /// Symbol is a "pointer" into the PE file. Most (but not all) symbols correspond to
-    /// node beginnings (most nodes have a "start symbol" representing the beginning
-    /// of the node).
-    /// </summary>
-    public class MapFileSymbol : MapFileItem
-    {
-        public MapFileSymbol(int sectionIndex, int offset, string name)
-            : base(sectionIndex, offset, name)
-        {
-        }
-    }
-
-    /// <summary>
     /// Helper class used to collect information to be output into the map file.
     /// </summary>
     public class MapFileBuilder
@@ -127,7 +46,7 @@ namespace ILCompiler.PEWriter
                 Name = name;
             }
 
-            public void AddNode(MapFileNode node)
+            public void AddNode(ObjectNode node)
             {
                 Debug.Assert(Name == node.Name);
                 Count++;
@@ -135,55 +54,13 @@ namespace ILCompiler.PEWriter
             }
         }
 
-        private readonly List<MapFileNode> _nodes;
-        private readonly List<MapFileSymbol> _symbols;
-        private readonly List<Section> _sections;
-
-        private readonly Dictionary<ISymbolDefinitionNode, MapFileNode> _nodeSymbolMap;
-        private readonly Dictionary<ISymbolDefinitionNode, MethodWithGCInfo> _methodSymbolMap;
-
-        private readonly Dictionary<RelocType, int> _relocCounts;
+        private ObjectInfoBuilder _objectInfoBuilder;
 
         private long _fileSize;
 
-        public MapFileBuilder()
+        public MapFileBuilder(ObjectInfoBuilder objectInfoBuilder)
         {
-            _nodes = new List<MapFileNode>();
-            _symbols = new List<MapFileSymbol>();
-            _sections = new List<Section>();
-
-            _nodeSymbolMap = new Dictionary<ISymbolDefinitionNode, MapFileNode>();
-            _methodSymbolMap = new Dictionary<ISymbolDefinitionNode, MethodWithGCInfo>();
-
-            _relocCounts = new Dictionary<RelocType, int>();
-        }
-
-        public void AddNode(MapFileNode node, ISymbolDefinitionNode symbol)
-        {
-            _nodes.Add(node);
-            _nodeSymbolMap.Add(symbol, node);
-        }
-
-        public void AddRelocation(MapFileNode node, RelocType relocType)
-        {
-            node.AddRelocation();
-            _relocCounts.TryGetValue(relocType, out int relocTypeCount);
-            _relocCounts[relocType] = relocTypeCount + 1;
-        }
-
-        public void AddSymbol(MapFileSymbol symbol)
-        {
-            _symbols.Add(symbol);
-        }
-
-        public void AddSection(Section section)
-        {
-            _sections.Add(section);
-        }
-
-        public void AddMethod(MethodWithGCInfo method, ISymbolDefinitionNode symbol)
-        {
-            _methodSymbolMap.Add(symbol, method);
+            _objectInfoBuilder = objectInfoBuilder;
         }
 
         public void SetFileSize(long fileSize)
@@ -195,8 +72,7 @@ namespace ILCompiler.PEWriter
         {
             Console.WriteLine("Emitting map file: {0}", mapFileName);
 
-            _nodes.Sort(MapFileItem.Comparer.Instance);
-            _symbols.Sort(MapFileItem.Comparer.Instance);
+            _objectInfoBuilder.Sort();
 
             using (StreamWriter mapWriter = new StreamWriter(mapFileName))
             {
@@ -212,8 +88,7 @@ namespace ILCompiler.PEWriter
         {
             Console.WriteLine("Emitting csv files: {0}, {1}", nodeStatsCsvFileName, mapCsvFileName);
 
-            _nodes.Sort(MapFileItem.Comparer.Instance);
-            _symbols.Sort(MapFileItem.Comparer.Instance);
+            _objectInfoBuilder.Sort();
 
             using (StreamWriter nodeStatsWriter = new StreamWriter(nodeStatsCsvFileName))
             {
@@ -226,37 +101,22 @@ namespace ILCompiler.PEWriter
             }
         }
 
-        public void SavePdb(string pdbPath, string dllFileName)
-        {
-            Console.WriteLine("Emitting PDB file: {0}", Path.Combine(pdbPath, Path.GetFileNameWithoutExtension(dllFileName) + ".ni.pdb"));
-
-            new PdbWriter(pdbPath, PDBExtraData.None).WritePDBData(dllFileName, EnumerateMethods());
-        }
-
-        public void SavePerfMap(string perfMapPath, string dllFileName)
-        {
-            string perfMapFileName = Path.Combine(perfMapPath, Path.GetFileNameWithoutExtension(dllFileName) + ".perf.map");
-            Console.WriteLine("Emitting PerfMap file: {0}", perfMapFileName);
-
-            PerfMapWriter.Write(perfMapFileName, EnumerateMethods());
-        }
-
         private void WriteHeader(StreamWriter writer)
         {
             WriteTitle(writer, "Summary Info");
 
             writer.WriteLine($"Output file size: {_fileSize,10}");
-            writer.WriteLine($"Section count:    {_sections.Count,10}");
-            writer.WriteLine($"Node count:       {_nodes.Count,10}");
-            writer.WriteLine($"Symbol count:     {_symbols.Count,10}");
-            writer.WriteLine($"Relocation count: {_relocCounts.Values.Sum(),10}");
+            writer.WriteLine($"Section count:    {_objectInfoBuilder.Sections.Count,10}");
+            writer.WriteLine($"Node count:       {_objectInfoBuilder.Nodes.Count,10}");
+            writer.WriteLine($"Symbol count:     {_objectInfoBuilder.Symbols.Count,10}");
+            writer.WriteLine($"Relocation count: {_objectInfoBuilder.RelocCounts.Values.Sum(),10}");
         }
 
         private IEnumerable<NodeTypeStatistics> GetNodeTypeStatistics()
         {
             List<NodeTypeStatistics> nodeTypeStats = new List<NodeTypeStatistics>();
             Dictionary<string, int> statsNameIndex = new Dictionary<string, int>();
-            foreach (MapFileNode node in _nodes)
+            foreach (ObjectNode node in _objectInfoBuilder.Nodes)
             {
                 if (!statsNameIndex.TryGetValue(node.Name, out int statsIndex))
                 {
@@ -304,7 +164,7 @@ namespace ILCompiler.PEWriter
 
         private void WriteRelocTypeStatistics(StreamWriter writer)
         {
-            KeyValuePair<RelocType, int>[] relocTypeCounts = _relocCounts.ToArray();
+            KeyValuePair<RelocType, int>[] relocTypeCounts = _objectInfoBuilder.RelocCounts.ToArray();
             Array.Sort(relocTypeCounts, (a, b) => b.Value.CompareTo(a.Value));
 
             WriteTitle(writer, "Reloc Type Statistics");
@@ -320,13 +180,12 @@ namespace ILCompiler.PEWriter
             WriteTitle(writer, "Top Nodes By Relocation Count");
             WriteTitle(writer, "   COUNT | SYMBOL  (NODE)");
 
-            foreach (MapFileNode node in _nodes.Where(node => node.Relocations != 0).OrderByDescending(node => node.Relocations).Take(NumberOfTopNodesByRelocType))
+            foreach (ObjectNode node in _objectInfoBuilder.Nodes.Where(node => node.Relocations != 0).OrderByDescending(node => node.Relocations).Take(NumberOfTopNodesByRelocType))
             {
                 writer.Write($"{node.Relocations,8} | ");
-                int symbolIndex = _symbols.BinarySearch(new MapFileSymbol(node.SectionIndex, node.Offset, name: null), MapFileItem.Comparer.Instance);
-                if (symbolIndex >= 0 && symbolIndex < _symbols.Count && MapFileItem.Comparer.Instance.Compare(_symbols[symbolIndex], node) == 0)
+                if (_objectInfoBuilder.FindSymbol(node, out int symbolIndex))
                 {
-                    writer.Write($"{_symbols[symbolIndex].Name}");
+                    writer.Write($"{_objectInfoBuilder.Symbols[symbolIndex].Name}");
                 }
                 writer.WriteLine($"  ({node.Name})");
             }
@@ -336,9 +195,9 @@ namespace ILCompiler.PEWriter
         {
             WriteTitle(writer, "Section Map");
             WriteTitle(writer, "INDEX | FILEOFFSET | RVA        | END_RVA    | LENGTH     | NAME");
-            for (int sectionIndex = 0; sectionIndex < _sections.Count; sectionIndex++)
+            for (int sectionIndex = 0; sectionIndex < _objectInfoBuilder.Sections.Count; sectionIndex++)
             {
-                Section section = _sections[sectionIndex];
+                Section section = _objectInfoBuilder.Sections[sectionIndex];
                 writer.Write($"{sectionIndex,5} | ");
                 writer.Write($"0x{section.FilePosWhenPlaced:X8} | ");
                 writer.Write($"0x{section.RVAWhenPlaced:X8} | ");
@@ -356,13 +215,15 @@ namespace ILCompiler.PEWriter
             int nodeIndex = 0;
             int symbolIndex = 0;
 
-            while (nodeIndex < _nodes.Count || symbolIndex < _symbols.Count)
+            while (nodeIndex < _objectInfoBuilder.Nodes.Count || symbolIndex < _objectInfoBuilder.Symbols.Count)
             {
-                if (nodeIndex >= _nodes.Count || symbolIndex < _symbols.Count && MapFileItem.Comparer.Instance.Compare(_symbols[symbolIndex], _nodes[nodeIndex]) < 0)
+                if (nodeIndex >= _objectInfoBuilder.Nodes.Count
+                    || symbolIndex < _objectInfoBuilder.Symbols.Count
+                        && ObjectItem.Comparer.Instance.Compare(_objectInfoBuilder.Symbols[symbolIndex], _objectInfoBuilder.Nodes[nodeIndex]) < 0)
                 {
                     // No more nodes or next symbol is below next node - emit symbol
-                    MapFileSymbol symbol = _symbols[symbolIndex++];
-                    Section section = _sections[symbol.SectionIndex];
+                    ObjectSymbol symbol = _objectInfoBuilder.Symbols[symbolIndex++];
+                    Section section = _objectInfoBuilder.Sections[symbol.SectionIndex];
                     writer.Write($"0x{symbol.Offset + section.RVAWhenPlaced:X8} | ");
                     writer.Write("         | ");
                     writer.Write("       | ");
@@ -372,16 +233,16 @@ namespace ILCompiler.PEWriter
                 else
                 {
                     // Emit node and optionally symbol
-                    MapFileNode node = _nodes[nodeIndex++];
-                    Section section = _sections[node.SectionIndex];
+                    ObjectNode node = _objectInfoBuilder.Nodes[nodeIndex++];
+                    Section section = _objectInfoBuilder.Sections[node.SectionIndex];
 
                     writer.Write($"0x{node.Offset + section.RVAWhenPlaced:X8} | ");
                     writer.Write($"0x{node.Length:X6} | ");
                     writer.Write($"{node.Relocations,6} | ");
                     writer.Write($"{GetNameHead(section),-SectionNameHeadLength} | ");
-                    if (symbolIndex < _symbols.Count && MapFileItem.Comparer.Instance.Compare(node, _symbols[symbolIndex]) == 0)
+                    if (symbolIndex < _objectInfoBuilder.Symbols.Count && ObjectItem.Comparer.Instance.Compare(node, _objectInfoBuilder.Symbols[symbolIndex]) == 0)
                     {
-                        MapFileSymbol symbol = _symbols[symbolIndex++];
+                        ObjectSymbol symbol = _objectInfoBuilder.Symbols[symbolIndex++];
                         writer.Write($"{symbol.Name}");
                     }
                     writer.WriteLine($"  ({node.Name})");
@@ -396,13 +257,15 @@ namespace ILCompiler.PEWriter
             int nodeIndex = 0;
             int symbolIndex = 0;
 
-            while (nodeIndex < _nodes.Count || symbolIndex < _symbols.Count)
+            while (nodeIndex < _objectInfoBuilder.Nodes.Count || symbolIndex < _objectInfoBuilder.Symbols.Count)
             {
-                if (nodeIndex >= _nodes.Count || symbolIndex < _symbols.Count && MapFileItem.Comparer.Instance.Compare(_symbols[symbolIndex], _nodes[nodeIndex]) < 0)
+                if (nodeIndex >= _objectInfoBuilder.Nodes.Count
+                    || symbolIndex < _objectInfoBuilder.Symbols.Count
+                        && ObjectItem.Comparer.Instance.Compare(_objectInfoBuilder.Symbols[symbolIndex], _objectInfoBuilder.Nodes[nodeIndex]) < 0)
                 {
                     // No more nodes or next symbol is below next node - emit symbol
-                    MapFileSymbol symbol = _symbols[symbolIndex++];
-                    Section section = _sections[symbol.SectionIndex];
+                    ObjectSymbol symbol = _objectInfoBuilder.Symbols[symbolIndex++];
+                    Section section = _objectInfoBuilder.Sections[symbol.SectionIndex];
                     writer.Write($"0x{symbol.Offset + section.RVAWhenPlaced:X8},");
                     writer.Write(",");
                     writer.Write(",");
@@ -413,16 +276,16 @@ namespace ILCompiler.PEWriter
                 else
                 {
                     // Emit node and optionally symbol
-                    MapFileNode node = _nodes[nodeIndex++];
-                    Section section = _sections[node.SectionIndex];
+                    ObjectNode node = _objectInfoBuilder.Nodes[nodeIndex++];
+                    Section section = _objectInfoBuilder.Sections[node.SectionIndex];
 
                     writer.Write($"0x{node.Offset + section.RVAWhenPlaced:X8},");
                     writer.Write($"{node.Length},");
                     writer.Write($"{node.Relocations},");
                     writer.Write($"{section.Name},");
-                    if (symbolIndex < _symbols.Count && MapFileItem.Comparer.Instance.Compare(node, _symbols[symbolIndex]) == 0)
+                    if (symbolIndex < _objectInfoBuilder.Symbols.Count && ObjectItem.Comparer.Instance.Compare(node, _objectInfoBuilder.Symbols[symbolIndex]) == 0)
                     {
-                        MapFileSymbol symbol = _symbols[symbolIndex++];
+                        ObjectSymbol symbol = _objectInfoBuilder.Symbols[symbolIndex++];
                         writer.Write($"{symbol.Name}");
                     }
                     writer.Write(",");
@@ -448,53 +311,5 @@ namespace ILCompiler.PEWriter
             writer.WriteLine(new string('-', title.Length));
         }
 
-        private IEnumerable<MethodInfo> EnumerateMethods()
-        {
-            DebugNameFormatter nameFormatter = new DebugNameFormatter();
-            TypeNameFormatter typeNameFormatter = new TypeString();
-            HashSet<MethodDesc> emittedMethods = new HashSet<MethodDesc>();
-            foreach (KeyValuePair<ISymbolDefinitionNode, MethodWithGCInfo> symbolMethodPair in _methodSymbolMap)
-            {
-                EcmaMethod ecmaMethod = symbolMethodPair.Value.Method.GetTypicalMethodDefinition() as EcmaMethod;
-                if (ecmaMethod != null && emittedMethods.Add(ecmaMethod))
-                {
-                    MethodInfo methodInfo = new MethodInfo();
-                    methodInfo.MethodToken = (uint)MetadataTokens.GetToken(ecmaMethod.Handle);
-                    methodInfo.AssemblyName = ecmaMethod.Module.Assembly.GetName().Name;
-                    methodInfo.Name = FormatMethodName(symbolMethodPair.Value.Method, typeNameFormatter);
-                    MapFileNode node = _nodeSymbolMap[symbolMethodPair.Key];
-                    Section section = _sections[node.SectionIndex];
-                    methodInfo.HotRVA = (uint)(section.RVAWhenPlaced + node.Offset);
-                    methodInfo.HotLength = (uint)node.Length;
-                    methodInfo.ColdRVA = 0;
-                    methodInfo.ColdLength = 0;
-                    yield return methodInfo;
-                }
-            }
-        }
-
-        private string FormatMethodName(MethodDesc method, TypeNameFormatter typeNameFormatter)
-        {
-            StringBuilder output = new StringBuilder();
-            if (!method.Signature.ReturnType.IsVoid)
-            {
-                output.Append(typeNameFormatter.FormatName(method.Signature.ReturnType));
-                output.Append(" ");
-            }
-            output.Append(typeNameFormatter.FormatName(method.OwningType));
-            output.Append("::");
-            output.Append(method.Name);
-            output.Append("(");
-            for (int paramIndex = 0; paramIndex < method.Signature.Length; paramIndex++)
-            {
-                if (paramIndex != 0)
-                {
-                    output.Append(", ");
-                }
-                output.Append(typeNameFormatter.FormatName(method.Signature[paramIndex]));
-            }
-            output.Append(")");
-            return output.ToString();
-        }
     }
 }

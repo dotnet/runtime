@@ -51,9 +51,19 @@ namespace ILCompiler.DependencyAnalysis
         private readonly IEnumerable<DependencyNode> _nodes;
 
         /// <summary>
+        /// Set to non-null when the executable generator should output a map or symbol file.
+        /// </summary>
+        private readonly ObjectInfoBuilder _objectInfoBuilder;
+
+        /// <summary>
         /// Set to non-null when the executable generator should output a map file.
         /// </summary>
         private readonly MapFileBuilder _mapFileBuilder;
+
+        /// <summary>
+        /// Set to non-null when generating symbol info (PDB / PerfMap).
+        /// </summary>
+        private readonly SymbolFileBuilder _symbolFileBuilder;
 
         /// <summary>
         /// True when the map file builder should emit a textual map file
@@ -133,10 +143,23 @@ namespace ILCompiler.DependencyAnalysis
             _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
-            
-            if (generateMapFile || generateMapCsvFile || generatePdbFile || generatePerfMapFile)
+
+            bool generateMap = (generateMapFile || generateMapCsvFile);
+            bool generateSymbols = (generatePdbFile || generatePerfMapFile);
+
+            if (generateMap || generateSymbols)
             {
-                _mapFileBuilder = new MapFileBuilder();
+                _objectInfoBuilder = new ObjectInfoBuilder();
+
+                if (generateMap)
+                {
+                    _mapFileBuilder = new MapFileBuilder(_objectInfoBuilder);
+                }
+
+                if (generateSymbols)
+                {
+                    _symbolFileBuilder = new SymbolFileBuilder(_objectInfoBuilder);
+                }
             }
         }
 
@@ -244,12 +267,12 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
 
-                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, _mapFileBuilder);
+                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section);
                     lastWrittenObjectNode = node;
 
                     if ((_generatePdbFile || _generatePerfMapFile) && node is MethodWithGCInfo methodNode)
                     {
-                        _mapFileBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
+                        _objectInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
                     }
                 }
 
@@ -289,9 +312,9 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
 
-                if (_mapFileBuilder != null)
+                if (_objectInfoBuilder != null)
                 {
-                    r2rPeBuilder.AddSections(_mapFileBuilder);
+                    r2rPeBuilder.AddSections(_objectInfoBuilder);
 
                     if (_generateMapFile)
                     {
@@ -313,7 +336,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             path = Path.GetDirectoryName(_objectFilePath);
                         }
-                        _mapFileBuilder.SavePdb(path, _objectFilePath);
+                        _symbolFileBuilder.SavePdb(path, _objectFilePath);
                     }
 
                     if (_generatePerfMapFile)
@@ -323,7 +346,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             path = Path.GetDirectoryName(_objectFilePath);
                         }
-                        _mapFileBuilder.SavePerfMap(path, _objectFilePath);
+                        _symbolFileBuilder.SavePerfMap(path, _objectFilePath);
                     }
                 }
 
@@ -361,8 +384,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <param name="nodeIndex">Logical index of the emitted node for diagnostic purposes</param>
         /// <param name="name">Textual representation of the ObjecData blob in the map file</param>
         /// <param name="section">Section to emit the blob into</param>
-        /// <param name="mapFile">Map file output stream</param>
-        private void EmitObjectData(R2RPEBuilder r2rPeBuilder, ObjectData data, int nodeIndex, string name, ObjectNodeSection section, MapFileBuilder mapFileBuilder)
+        private void EmitObjectData(R2RPEBuilder r2rPeBuilder, ObjectData data, int nodeIndex, string name, ObjectNodeSection section)
         {
 #if DEBUG
             for (int symbolIndex = 0; symbolIndex < data.DefinedSymbols.Length; symbolIndex++)
@@ -381,7 +403,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 #endif
 
-            r2rPeBuilder.AddObjectData(data, section, name, mapFileBuilder);
+            r2rPeBuilder.AddObjectData(data, section, name, _objectInfoBuilder);
         }
 
         public static void EmitObject(
