@@ -305,7 +305,7 @@ namespace System.IO
             // override may already exist on a derived type.
             if (_useAsyncIO && _writePos > 0)
             {
-                return new ValueTask(Task.Factory.StartNew(static s => ((FileStream)s!).Dispose(), this,
+                return new ValueTask(Task.Factory.StartNew(static s => ((FileStreamImpl)s!).Dispose(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
             }
 
@@ -530,7 +530,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStream)s!;
+                var thisRef = (FileStreamImpl)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {
@@ -691,7 +691,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStream)s!;
+                var thisRef = (FileStreamImpl)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {
@@ -775,7 +775,7 @@ namespace System.IO
         /// <returns>The new position in the stream.</returns>
         private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin)
         {
-            Debug.Assert(!fileHandle.IsClosed && (GetType() != typeof(FileStream) || CanSeekCore(fileHandle))); // verify that we can seek, but only if CanSeek won't be a virtual call (which could happen in the ctor)
+            Debug.Assert(!fileHandle.IsClosed && CanSeekCore(fileHandle));
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
             long pos = CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin)); // SeekOrigin values are the same as Interop.libc.SeekWhence values
