@@ -10,16 +10,16 @@
       - WasmBuildDir    - Directory where build artifacts are stored.
       - WasmBuildNative - Whenever to build the native executable. Defaults to false.
       - WasmNativeStrip - Whenever to strip the native executable. Defaults to true.
+
+      Public items:
+      - WasmExtraFilesToDeploy - Files to copy to $(WasmBuildDir).
+                                 (relative path can be set via %(TargetPath) metadata)
   -->
 
   <PropertyGroup>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
     <WasmNativeStrip>true</WasmNativeStrip>
-  </PropertyGroup>
-
-  <PropertyGroup>
-      <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative</WasmBuildAppDependsOn>
   </PropertyGroup>
 
   <Target Name="WasmBuildApp" AfterTargets="Publish" />
@@ -39,13 +39,19 @@
 
       <_WasmAssemblies Remove="@(_WasmAssemblies)" />
     </ItemGroup>
+    <PropertyGroup>
+      <AOTMode Condition="'$(AOTMode)' == '' and '$(BuildAOTProfiled)' == 'true'">AotInterp</AOTMode>
+      <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
+    </PropertyGroup>
 
     <MonoAOTCompiler
-      CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\mono-aot-cross"
-      Mode="LLVMOnly"
+      CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross"
+      Mode="$(AOTMode)"
       OutputType="AsmOnly"
       Assemblies="@(AotInputAssemblies)"
       UseAotDataFile="false"
+      AotProfilePath="$(AOTProfilePath)"
+      Profilers="aot;"
       AotModulesTablePath="$(WasmBuildDir)driver-gen.c"
       UseLLVM="true"
       DisableParallelAot="true"
@@ -71,6 +77,7 @@
 
   <Target Name="_BeforeWasmBuildApp">
       <Error Condition="'$(WasmMainAssemblyPath)' == ''" Text="%24(WasmMainAssemblyPath) property needs to be set" />
+      <Error Condition="!Exists('$(WasmMainAssemblyPath)')" Text="WasmMainAssemblyPath=$(WasmMainAssemblyPath) does not exist" />
       <Error Condition="'$(WasmAppDir)' == ''" Text="%24(WasmAppDir) property needs to be set" />
       <Error Condition="'$(WasmBuildNative)' == 'true' and '$(WasmBuildDir)' == ''" Text="%24(WasmBuildDir) property needs to be set" />
       <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
@@ -85,12 +92,14 @@
       AppDir="$(WasmAppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
       MainJS="$(WasmMainJSPath)"
+      EnableProfiler="$(EnableProfiler)"
       Assemblies="@(_WasmAssemblies)"
       InvariantGlobalization="$(WasmInvariantGlobalization)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       IcuDataFileName="$(WasmIcuDataFileName)"
       RemoteSources="@(WasmRemoteSources)"
+      ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       DebugLevel="$(WasmDebugLevel)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
@@ -105,7 +114,7 @@
       <_managedAppAssemblies Include="$(WasmAppDir)managed\*.dll"/>
     </ItemGroup>
     <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
-    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip -q %(_managedAppAssemblies.Identity)" />
   </Target>
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp" Condition="'$(WasmBuildNative)' == 'true'">
@@ -121,25 +130,30 @@
     <PropertyGroup>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
-      <_EmsdkEnvSourceCommand>source $(EMSDK_PATH)/emsdk_env.sh</_EmsdkEnvSourceCommand>
+      <EmccFlags Condition="'$(RunAOTCompilation)' != 'true'">$(EmccFlags) -DDRIVER_GEN=1</EmccFlags>
+      <_EmsdkEnvSourceCommand>source $(EMSDK_PATH)/emsdk_env.sh &gt; /dev/null 2&gt;&amp;1</_EmsdkEnvSourceCommand>
       <_EmccCommand>$(_EmsdkEnvSourceCommand) &amp;&amp; emcc</_EmccCommand>
     </PropertyGroup>
 
     <ReadLinesFromFile File="$(RuntimeEmccVersionFile)">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
-
     <Exec Command="bash -c '$(_EmccCommand) --version | head -1 > emcc-version.txt'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
     <ReadLinesFromFile File="$(EmccPublishVersionFile)">
         <Output TaskParameter="Lines" PropertyName="EmccVersion" />
     </ReadLinesFromFile>
     <Error Condition="'$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
-
     <!-- Either created by MonoAOTCompiler or here -->
-    <WriteLinesToFile File="$(WasmBuildDir)driver-gen.c" Overwrite="true" Condition="'$(RunAOTCompilation)' == 'false'"
-                      Lines=""
+    <PropertyGroup>
+      <InitAotProfilerCmd>
+void mono_profiler_init_aot (const char *desc)%3B
+EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_profiler_init_aot (desc)%3B }
+      </InitAotProfilerCmd>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(WasmBuildDir)driver-gen.c" Overwrite="true"
+                      Condition="'$(RunAOTCompilation)' == 'false' And '$(EnableProfiler)' == 'true'"
+                      Lines="$(InitAotProfilerCmd)"
                       />
-
     <ItemGroup>
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
@@ -159,6 +173,7 @@
      <_WasmObjects Include="libmono-icall-table.a"/>
      <_WasmObjects Include="libSystem.Native.a"/>
      <_WasmObjects Include="libSystem.IO.Compression.Native.a"/>
+     <_WasmObjects Include="libmono-profiler-aot.a"/>
      <_WasmObjects Include="libicuuc.a"/>
      <_WasmObjects Include="libicui18n.a"/>
      <_WasmObjects Include="driver.o"/>
@@ -196,19 +211,5 @@
     </ItemGroup>
 
     <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
-  </Target>
-
-  <Target Name="RebuildWasmAppBuilder">
-    <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-         Targets="Restore"/>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug"
-         Targets="Build;Publish"/>
   </Target>
 </Project>

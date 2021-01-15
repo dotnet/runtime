@@ -240,10 +240,7 @@ if(CLR_CMAKE_TARGET_OSX)
     ${LIBUNWIND_DAC_OBJECTS}
   )
 
-  target_compile_definitions(coreclrpal_dac PUBLIC
-    "-D_XOPEN_SOURCE"
-    "-DUNW_REMOTE_ONLY"
-  )
+  target_compile_definitions(coreclrpal_dac PUBLIC -DUNW_REMOTE_ONLY)
 else()
   if(NOT FEATURE_CROSSBITNESS)
     add_library(coreclrpal_dac STATIC

@@ -71,9 +71,7 @@ if(CLR_CMAKE_HOST_UNIX)
     endif()
 
     if (CLR_CMAKE_HOST_OSX)
-        add_definitions(-D_XOPEN_SOURCE)
         add_definitions(-DUNW_REMOTE_ONLY)
-        add_definitions(-D__APPLE__)
         add_compile_options(-Wno-sometimes-uninitialized)
         add_compile_options(-Wno-implicit-function-declaration)
 

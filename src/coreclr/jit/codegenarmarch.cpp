@@ -473,8 +473,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_PINVOKE_PROLOG:
             noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
 
+#ifdef PSEUDORANDOM_NOP_INSERTION
             // the runtime side requires the codegen here to be consistent
             emit->emitDisableRandomNops();
+#endif // PSEUDORANDOM_NOP_INSERTION
             break;
 
         case GT_LABEL:

@@ -89,6 +89,12 @@ ep_thread_init (void);
 void
 ep_thread_fini (void);
 
+bool
+ep_thread_register (EventPipeThread *thread);
+
+bool
+ep_thread_unregister (EventPipeThread *thread);
+
 EventPipeThread *
 ep_thread_get (void);
 

@@ -18,7 +18,7 @@ parameters:
   dependsOnTestBuildConfiguration: Debug
   dependsOnTestArchitecture: x64
   dependsOnTestOsSubgroup: ''
-  useCheckoutBundle: false
+  dependOnEvaluatePaths: false
   condition: true
   shouldContinueOnError: false
   variables: {}
@@ -55,7 +55,7 @@ jobs:
       ${{ if eq(parameters.interpreter, 'true') }}:
         testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
-      useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
+      dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
       dependsOn:
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
