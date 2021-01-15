@@ -304,6 +304,10 @@
       <_MonoCFLAGS Include="-Wl,--build-id=sha1" />
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
+    <ItemGroup Condition="'$(RealTargetOS)' == 'Linux'">
+      <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
+    </ItemGroup>
 
     <!-- Experimental features -->
     <ItemGroup Condition="'$(MonoMetadataUpdate)' == 'true'">
@@ -409,6 +413,7 @@
     </ItemGroup>
 
     <PropertyGroup>
+      <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoAOTCFLAGS, ' ')"</_MonoAOTCFLAGSOption>
       <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoAOTCXXFLAGS, ' ')"</_MonoAOTCXXFLAGSOption>
     </PropertyGroup>
     <ItemGroup>
@@ -423,6 +428,7 @@
       <MonoAOTCMakeArgs Include="-DDISABLE_LIBS=1" />
       <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir)" />
+      <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
       <!-- Experimental features -->
       <!-- FIXME: Add sanity check that the interpreter is enabled -->
