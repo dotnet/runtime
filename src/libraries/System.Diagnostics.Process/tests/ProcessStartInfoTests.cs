@@ -510,7 +510,10 @@ namespace System.Diagnostics.Tests
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
 
-                SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                {
+                    SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                }
 
                 Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
