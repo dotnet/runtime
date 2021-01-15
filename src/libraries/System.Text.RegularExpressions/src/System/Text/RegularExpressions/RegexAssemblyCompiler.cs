@@ -38,8 +38,13 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void GenerateRegexType(string pattern, RegexOptions options, string name, bool isPublic, RegexCode code, TimeSpan matchTimeout)
+        //internal void GenerateRegexType(string pattern, RegexOptions options, string name, bool isPublic, RegexCode code, TimeSpan matchTimeout)
+        internal void GenerateRegexType(RegexCompilationInfo regexInfo, RegexOptions options, string name, RegexCode code)
         {
+            string pattern = regexInfo.Pattern;
+            bool isPublic = regexInfo.IsPublic;
+            TimeSpan matchTimeout = regexInfo.MatchTimeout;
+
             // Store arguments into the base type's fields
             _options = options;
             _code = code;
@@ -54,54 +59,107 @@ namespace System.Text.RegularExpressions
             string typenumString = ((uint)Interlocked.Increment(ref s_typeCount)).ToString();
 
             // Generate the RegexRunner-derived type.
-            TypeBuilder regexRunnerTypeBuilder = DefineType(_module, $"{name}Runner{typenumString}", isPublic: false, isSealed: true, typeof(RegexRunner));
-            _ilg = DefineMethod(regexRunnerTypeBuilder, "Go", null);
-            GenerateGo();
-            _ilg = DefineMethod(regexRunnerTypeBuilder, "FindFirstChar", typeof(bool));
-            GenerateFindFirstChar();
-            _ilg = DefineMethod(regexRunnerTypeBuilder, "InitTrackCount", null);
-            GenerateInitTrackCount();
-            Type runnerType = regexRunnerTypeBuilder.CreateType()!;
+            TypeBuilder regexRunnerTypeBuilder = null!;
+            Type runnerType = default;// = regexRunnerTypeBuilder.CreateType()!;
+            if (regexInfo.regexRunnerCode == null)
+            {
+                regexRunnerTypeBuilder = DefineType(_module, $"{name}Runner{typenumString}", isPublic: false, isSealed: true, typeof(RegexRunner));
+                _ilg = DefineMethod(regexRunnerTypeBuilder, "Go", null);
+                GenerateGo();
+                _ilg = DefineMethod(regexRunnerTypeBuilder, "FindFirstChar", typeof(bool));
+                GenerateFindFirstChar();
+                _ilg = DefineMethod(regexRunnerTypeBuilder, "InitTrackCount", null);
+                GenerateInitTrackCount();
+                runnerType = regexRunnerTypeBuilder.CreateType()!;
+            }
+            else
+            {
+                regexInfo.regexRunnerCode.AppendLine($@"using System;");
+                regexInfo.regexRunnerCode.AppendLine($@"using System.Text.RegularExpressions;");
+                regexInfo.regexRunnerCode.AppendLine($"internal sealed class {name}Runner{typenumString} : RegexRunner");
+                regexInfo.regexRunnerCode.AppendLine("{");
+                GenerateGo(regexInfo.regexRunnerCode);
+                GenerateFindFirstChar(regexInfo.regexRunnerCode);
+                GenerateInitTrackCount(regexInfo.regexRunnerCode);
+                regexInfo.regexRunnerCode.AppendLine("}");
+            }
 
             // Generate the RegexRunnerFactory-derived type.
-            TypeBuilder regexRunnerFactoryTypeBuilder = DefineType(_module, $"{name}Factory{typenumString}", isPublic: false, isSealed: true, typeof(RegexRunnerFactory));
-            _ilg = DefineMethod(regexRunnerFactoryTypeBuilder, "CreateInstance", typeof(RegexRunner));
-            GenerateCreateInstance(runnerType);
-            Type regexRunnerFactoryType = regexRunnerFactoryTypeBuilder.CreateType()!;
-
-            // Generate the Regex-derived type.
-            TypeBuilder regexTypeBuilder = DefineType(_module, name, isPublic, isSealed: false, typeof(Regex));
-            ConstructorBuilder defaultCtorBuilder = regexTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
-            _ilg = defaultCtorBuilder.GetILGenerator();
-            GenerateRegexDefaultCtor(pattern, options, regexRunnerFactoryType, code, matchTimeout);
-            if (matchTimeout != Regex.InfiniteMatchTimeout)
+            Type regexRunnerFactoryType = null!;
+            if (regexInfo.regexRunnerFactoryCode == null)
             {
-                // We only generate a constructor with a timeout parameter if the regex information supplied has a non-infinite timeout.
-                // If it has an infinite timeout, then the generated code is not going to respect the timeout. This is a difference from netfx,
-                // due to the fact that we now special-case an infinite timeout in the code generator to avoid spitting unnecessary code
-                // and paying for the checks at run time.
-                _ilg = regexTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(TimeSpan) }).GetILGenerator();
-                GenerateRegexTimeoutCtor(defaultCtorBuilder, regexTypeBuilder);
+                TypeBuilder regexRunnerFactoryTypeBuilder = DefineType(_module, $"{name}Factory{typenumString}", isPublic: false, isSealed: true, typeof(RegexRunnerFactory));
+                _ilg = DefineMethod(regexRunnerFactoryTypeBuilder, "CreateInstance", typeof(RegexRunner));
+                GenerateCreateInstance(runnerType);
+                regexRunnerFactoryType = regexRunnerFactoryTypeBuilder.CreateType()!;
             }
-            regexTypeBuilder.CreateType();
+            else
+            {
+                regexInfo.regexRunnerFactoryCode.AppendLine($@"using System;");
+                regexInfo.regexRunnerFactoryCode.AppendLine($@"using System.Text.RegularExpressions;");
+                regexInfo.regexRunnerFactoryCode.Append($@"internal sealed class {name}Factory{typenumString} : RegexRunnerFactory");
+                regexInfo.regexRunnerFactoryCode.AppendLine("{");
+                regexInfo.regexRunnerFactoryCode.AppendLine(@"protected override RegexRunner CreateInstance()");
+                regexInfo.regexRunnerFactoryCode.AppendLine("{");
+                GenerateCreateInstance(null, regexInfo.regexRunnerFactoryCode, $"{name}Runner{typenumString}");
+                regexInfo.regexRunnerFactoryCode.AppendLine("}");
+                regexInfo.regexRunnerFactoryCode.AppendLine("}");
+            }
+
+            if (regexInfo.regexRunnerFactoryCode == null)
+            {
+                // Generate the Regex-derived type.
+                TypeBuilder regexTypeBuilder = DefineType(_module, name, isPublic, isSealed: false, typeof(Regex));
+                ConstructorBuilder defaultCtorBuilder = regexTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
+                _ilg = defaultCtorBuilder.GetILGenerator();
+                GenerateRegexDefaultCtor(pattern, options, regexRunnerFactoryType, code, matchTimeout);
+                if (matchTimeout != Regex.InfiniteMatchTimeout)
+                {
+                    // We only generate a constructor with a timeout parameter if the regex information supplied has a non-infinite timeout.
+                    // If it has an infinite timeout, then the generated code is not going to respect the timeout. This is a difference from netfx,
+                    // due to the fact that we now special-case an infinite timeout in the code generator to avoid spitting unnecessary code
+                    // and paying for the checks at run time.
+                    _ilg = regexTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(TimeSpan) }).GetILGenerator();
+                    GenerateRegexTimeoutCtor(defaultCtorBuilder, regexTypeBuilder);
+                }
+                regexTypeBuilder.CreateType();
+            }
         }
 
-        private void GenerateInitTrackCount()
+        private void GenerateInitTrackCount(StringBuilder? sourceGeneratorCode = null)
         {
-            // this.runtrackcount = _trackcount;
-            // return;
-            Ldthis();
-            Ldc(_trackcount);
-            Stfld(s_runtrackcountField);
-            Ret();
+            if (sourceGeneratorCode == null)
+            {
+                Ldthis();
+                Ldc(_trackcount);
+                Stfld(s_runtrackcountField);
+                Ret();
+            }
+            else
+            {
+                sourceGeneratorCode.Append(
+$@"protected override void InitTrackCount()
+{{
+                this.runtrackcount = {_trackcount};
+                return;
+}}
+");
+            }
         }
 
         /// <summary>Generates a very simple factory method.</summary>
-        internal void GenerateCreateInstance(Type type)
+        internal void GenerateCreateInstance(Type type, StringBuilder? sourceGenerator = null, string? typeName = null)
         {
-            // return new Type();
-            Newobj(type.GetConstructor(Type.EmptyTypes)!);
-            Ret();
+            if (sourceGenerator == null)
+            {
+                // return new Type();
+                Newobj(type.GetConstructor(Type.EmptyTypes)!);
+                Ret();
+            }
+            else
+            {
+                sourceGenerator.AppendLine($"return new {typeName!}();");
+            }
         }
 
         private void GenerateRegexDefaultCtor(string pattern, RegexOptions options, Type regexRunnerFactoryType, RegexCode code, TimeSpan matchTimeout)

@@ -156,6 +156,8 @@ namespace System.Text.RegularExpressions
         public bool RightToLeft { get { throw null; } }
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname) { }
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[]? attributes) { }
+        public static void CompileWithSourceGenerator(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos) { }
+        public static void CompileWithSourceGenerator(RegexCompilationInfo regexinfo) { }
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[]? attributes, string? resourceFile) { }
         public static string Escape(string str) { throw null; }
         public string[] GetGroupNames() { throw null; }
@@ -204,10 +206,14 @@ namespace System.Text.RegularExpressions
         protected internal bool UseOptionR() { throw null; }
         protected internal static void ValidateMatchTimeout(System.TimeSpan matchTimeout) { }
     }
+
     public partial class RegexCompilationInfo
     {
         public RegexCompilationInfo(string pattern, System.Text.RegularExpressions.RegexOptions options, string name, string fullnamespace, bool ispublic) { }
         public RegexCompilationInfo(string pattern, System.Text.RegularExpressions.RegexOptions options, string name, string fullnamespace, bool ispublic, System.TimeSpan matchTimeout) { }
+        public StringBuilder? regexRunnerFactoryCode { get { throw null; } set { } }
+        public StringBuilder? regexRunnerCode { get { throw null; } set { } }
+        public StringBuilder? compiledRegexCode { get { throw null; } set { } }
         public bool IsPublic { get { throw null; } set { } }
         public System.TimeSpan MatchTimeout { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }

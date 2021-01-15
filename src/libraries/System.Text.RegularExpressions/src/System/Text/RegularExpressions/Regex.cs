@@ -19,6 +19,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public partial class Regex : ISerializable
     {
+
         internal const int MaxOptionShift = 10;
 
         protected internal string? pattern;                   // The string pattern provided
@@ -204,6 +205,9 @@ namespace System.Text.RegularExpressions
 
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes) =>
             CompileToAssembly(regexinfos, assemblyname, attributes, null);
+
+        public static void CompileWithSourceGenerator(RegexCompilationInfo[] regexinfos) => RegexCompiler.CompileRegex(regexinfos);
+        public static void CompileWithSourceGenerator(RegexCompilationInfo regexinfo) => RegexCompiler.CompileRegex(regexinfo);
 
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
         {

@@ -28,6 +28,11 @@ namespace System.Text.RegularExpressions
             MatchTimeout = matchTimeout;
         }
 
+        // StringBuilders used by the regex source generator to output C#
+        public StringBuilder? regexRunnerFactoryCode { get; set; }
+        public StringBuilder? regexRunnerCode { get; set; }
+        public StringBuilder? compiledRegexCode { get; set; }
+
         public bool IsPublic { get; set; }
 
         public TimeSpan MatchTimeout

@@ -172,12 +172,55 @@ namespace System.Text.RegularExpressions
                 RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
                 RegexCode code = RegexWriter.Write(tree);
 
-                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, code, regexinfos[i].MatchTimeout);
+                c.GenerateRegexType(regexinfos[i], options, fullname, code);
+
             }
 
             c.Save();
         }
 #endif
+
+        internal static void CompileRegex(RegexCompilationInfo regexInfo)
+        {
+            var c = new RegexAssemblyCompiler(new AssemblyName("Unused"), attribs: null, resourceFile: null);
+            regexInfo.regexRunnerFactoryCode = new StringBuilder();
+            regexInfo.regexRunnerCode = new StringBuilder();
+            regexInfo.compiledRegexCode = new StringBuilder();
+
+            string pattern = regexInfo.Pattern;
+
+            RegexOptions options = regexInfo.Options | RegexOptions.Compiled; // ensure compiled is set; it enables more optimization specific to compilation
+
+            string fullname = regexInfo.Namespace.Length == 0 ?
+                regexInfo.Name :
+                regexInfo.Namespace + "." + regexInfo.Name;
+
+            RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+            RegexCode code = RegexWriter.Write(tree);
+
+            c.GenerateRegexType(regexInfo, options, fullname, code);
+        }
+
+        // TODO: This call can perhaps be folded into the CompileToAssembly call
+        // Prototype of initial call into RegexCompiler from a source generator
+        internal static void CompileRegex(RegexCompilationInfo[] regexinfos)
+        {
+            var c = new RegexAssemblyCompiler(new AssemblyName("Unused"), attribs: null, resourceFile: null);
+
+            for (int i = 0; i < regexinfos.Length; i++)
+            {
+                if (regexinfos[i] is null)
+                {
+                    throw new ArgumentNullException(nameof(regexinfos), SR.ArgumentNull_ArrayWithNullElements);
+                }
+
+                RegexCompilationInfo regexInfo = regexinfos[i];
+                CompileRegex(regexInfo);
+            }
+
+            c.Save();
+
+        }
 
         /// <summary>
         /// Keeps track of an operation that needs to be referenced in the backtrack-jump
@@ -995,8 +1038,19 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Generates FindFirstChar.
         /// </summary>
-        protected void GenerateFindFirstChar()
+        protected void GenerateFindFirstChar(StringBuilder? sourceGeneratorCode = null)
         {
+            // Quick hack for the prototype
+            if (sourceGeneratorCode != null)
+            {
+                sourceGeneratorCode.Append(
+@"protected override bool FindFirstChar()
+{{
+    return false;
+}}
+");
+                return;
+            }
             Debug.Assert(_code != null);
             _int32LocalsPool?.Clear();
             _readOnlySpanCharLocalsPool?.Clear();
@@ -1703,7 +1757,7 @@ namespace System.Text.RegularExpressions
                 // if (!CharInClass(textSpan[i + 2], prefix[2], "...")) goto returnFalse;
                 // ...
                 Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
-                for ( ; charClassIndex < _leadingCharClasses.Length; charClassIndex++)
+                for (; charClassIndex < _leadingCharClasses.Length; charClassIndex++)
                 {
                     Debug.Assert(needLoop);
                     Ldloca(textSpanLocal);
@@ -3279,8 +3333,20 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Generates the code for "RegexRunner.Go".</summary>
-        protected void GenerateGo()
+        protected void GenerateGo(StringBuilder? sourceGeneratorCode = null)
         {
+            // TODO: Quick hack to get the source generator to compile this code
+            if (sourceGeneratorCode != null)
+            {
+                sourceGeneratorCode.Append(
+        $@"protected override void Go()
+{{
+    return;
+}}
+");
+                return;
+            }
+
             Debug.Assert(_code != null);
             _int32LocalsPool?.Clear();
             _readOnlySpanCharLocalsPool?.Clear();

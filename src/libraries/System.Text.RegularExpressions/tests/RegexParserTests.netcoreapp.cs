@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
 using Xunit.Sdk;
@@ -140,11 +141,28 @@ namespace System.Text.RegularExpressions.Tests
                 throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual error: {regexParseError})");
             }
             catch (Exception e)
-            { 
+            {
                 throw new XunitException($"Expected RegexParseException -> Actual: ({e})");
             }
 
             throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual: No exception thrown");
         }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Fact]
+        public void Test()
+        {
+            //Regex.CompileToAssembly(new[]
+            //{
+            //new RegexCompilationInfo("abcd", RegexOptions.None, "test1", "", false),
+            //}, new AssemblyName("testregex"));
+
+            RegexCompilationInfo regexInfo = new RegexCompilationInfo("abcd", RegexOptions.None, "test1", "", false);
+            Regex.CompileWithSourceGenerator(regexInfo);
+
+
+            Console.WriteLine("Hello World!");
+        }
+
     }
 }
