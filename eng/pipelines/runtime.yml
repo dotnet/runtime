@@ -195,8 +195,8 @@ jobs:
     jobParameters:
       condition: >-
         or(
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 # Build the whole product using Mono runtime
@@ -499,8 +499,8 @@ jobs:
       monoCrossAOTTargetOS: Android
       condition: >-
         or(
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
