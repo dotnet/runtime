@@ -302,8 +302,10 @@
     <!-- Linux options -->
     <ItemGroup Condition="'$(TargetsLinux)' == true">
       <_MonoCFLAGS Include="-Wl,--build-id=sha1" />
-      <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(RealTargetOS)' == 'Linux'">
+      <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
 
