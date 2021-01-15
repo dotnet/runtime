@@ -31,7 +31,8 @@ namespace System.Net
                 {
                     Interop.Winsock.EnsureInitialized();
 
-                    IntPtr libHandle = NativeLibrary.Load(Interop.Libraries.Ws2_32, typeof(NameResolutionPal).Assembly, null);
+                    IntPtr libHandle = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Ws2_32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+                    Debug.Assert(libHandle != IntPtr.Zero);
 
                     // We can't just check that 'GetAddrInfoEx' exists, because it existed before supporting overlapped.
                     // The existence of 'GetAddrInfoExCancel' indicates that overlapped is supported.

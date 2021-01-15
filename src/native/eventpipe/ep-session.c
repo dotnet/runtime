@@ -325,8 +325,8 @@ ep_session_suspend_write_event (EventPipeSession *session)
 	// Need to disable the session before calling this method.
 	EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 
-	ep_rt_thread_array_t threads;
-	ep_rt_thread_array_alloc (&threads);
+	EP_RT_DECLARE_LOCAL_THREAD_ARRAY (threads);
+	ep_rt_thread_array_init (&threads);
 
 	ep_thread_get_threads (&threads);
 
@@ -344,7 +344,7 @@ ep_session_suspend_write_event (EventPipeSession *session)
 		ep_rt_thread_array_iterator_next (&threads_iterator);
 	}
 
-	ep_rt_thread_array_free (&threads);
+	ep_rt_thread_array_fini (&threads);
 
 	if (session->buffer_manager)
 		// Convert all buffers to read only to ensure they get flushed
