@@ -13,6 +13,8 @@ parameters:
   isOfficialBuild: false
   crossBuild: false
   crossrootfsDir: ''
+  dependsOn: ''
+  monoCrossAOTTargetOS: ''
   dependOnEvaluatePaths: false
 
 ### Product build
@@ -28,6 +30,7 @@ jobs:
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     crossBuild: ${{ parameters.crossBuild }}
+    monoCrossAOTTargetOS: ${{ parameters.monoCrossAOTTargetOS }}
     crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
@@ -40,6 +43,7 @@ jobs:
     # Note that the containers are defined in platform-matrix.yml
     container: ${{ parameters.container }}
 
+    dependsOn: ${{ parameters.dependsOn }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     gatherAssetManifests: true
@@ -51,6 +55,10 @@ jobs:
     - name: officialBuildIdArg
       value: ''
     - name: osOverride
+      value: ''
+    - name: aotCrossParameter
+      value: ''
+    - name: llvmParameter
       value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
@@ -85,6 +93,9 @@ jobs:
     - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
       - name: llvmParameter
         value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true $(llvmCxxAbi)
+    - ${{ if eq(parameters.monoCrossAOTTargetOS, 'Android') }}:
+      - name: aotCrossParameter
+        value: /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
     - ${{ parameters.variables }}
 
     steps:
@@ -101,6 +112,13 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
+    - ${{ if eq(parameters.monoCrossAOTTargetOS, 'Android') }}:
+      - task: DownloadPipelineArtifact@2
+        displayName: Download AOT offset files
+        inputs:
+          artifact: Mono_Offsets_Android
+          path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
+
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
@@ -109,10 +127,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter)
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter)
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter)
         displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
@@ -134,10 +152,10 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter) -pack $(OutputRidArg)
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter) -pack $(OutputRidArg)
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
 
     # Publish official build

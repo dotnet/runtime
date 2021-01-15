@@ -122,6 +122,37 @@ stages:
         extraStepsParameters:
           name: MonoRuntimePacks
 
+  # Build Mono AOT offset headers once, for consumption elsewhere
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
+      buildConfig: release
+      platforms:
+      - Android_x64
+
+  #
+  # Build Mono release Android AOT cross-compiler
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                   /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+        nameSuffix: AndroidAOT_Mono
+        runtimeVariant: crossandroid
+        dependsOn: mono_android_offsets
+        monoCrossAOTTargetOS: Android
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
   #
   # Build Mono LLVM runtime packs
   #

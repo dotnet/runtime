@@ -13,4 +13,8 @@ macro(append_extra_system_libs NativeLibsExtra)
     if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
         list(APPEND ${NativeLibsExtra} "-framework Foundation")
     endif ()
+
+    if (CLR_CMAKE_TARGET_LINUX AND HAVE_GETADDRINFO_A)
+        list(APPEND ${NativeLibsExtra} anl)
+    endif ()
 endmacro()
