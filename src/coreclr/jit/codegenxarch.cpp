@@ -1198,7 +1198,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     }
     else
     {
-        int8_t shuffleMask = 1; //we only need [61:32]->[31:0], the rest is not read.
+        int8_t shuffleMask = 1; // we only need [61:32]->[31:0], the rest is not read.
         GetEmitter()->emitIns_R_R_I(INS_pshufd, EA_8BYTE, opReg, opReg, shuffleMask);
         inst_RV_RV(ins_Copy(opReg, TYP_INT), reg1, opReg, TYP_INT);
     }
