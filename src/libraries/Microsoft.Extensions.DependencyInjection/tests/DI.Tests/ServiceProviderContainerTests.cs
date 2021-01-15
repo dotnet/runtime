@@ -442,12 +442,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 if (ThreadId == 1)
                 {
-                    Thread.Sleep(1000);
+                    Action1();
                 }
                 else
                 {
                     // Let Thread 1 over take Thread 2
-                    Thread.Sleep(3000);
+                    Action2();
                 }
 
                 return lazy.Value;
@@ -478,6 +478,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(thing0);
             Assert.NotNull(thing1);
             Assert.NotNull(thing2);
+        }
+
+        private ManualResetEvent _manualResetEvent = new ManualResetEvent(false);
+
+        private void Action1()
+        {
+            _manualResetEvent.Set();
+        }
+
+        private void Action2()
+        {
+            _manualResetEvent.WaitOne();
         }
 
         [Fact]
@@ -519,12 +531,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 if (ThreadId == 1)
                 {
-                    Thread.Sleep(1000);
+                    Action1();
                 }
                 else
                 {
                     // Let Thread 1 over take Thread 2
-                    Thread.Sleep(3000);
+                    Action2();
                 }
 
                 return lazy.Value;
