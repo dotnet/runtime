@@ -100,8 +100,8 @@ namespace System.IO
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
-            : this(handle, access, bufferSize, GetDefaultIsAsync(handle))
         {
+            _actualImplementation = new FileStreamImpl(handle, access, bufferSize);
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
