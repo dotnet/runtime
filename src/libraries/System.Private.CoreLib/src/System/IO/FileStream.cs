@@ -399,5 +399,9 @@ namespace System.IO
             else
                 TaskToApm.End(asyncResult);
         }
+
+        public override bool CanSeek => _actualImplementation.CanSeek;
+
+        public override long Seek(long offset, SeekOrigin origin) => _actualImplementation.Seek(offset, origin);
     }
 }
