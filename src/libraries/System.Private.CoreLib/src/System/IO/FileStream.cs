@@ -335,14 +335,14 @@ namespace System.IO
         {
             if (value < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (_fileHandle.IsClosed)
+            if (_actualImplementation.IsClosed)
                 throw Error.GetFileNotOpen();
-            if (!CanSeek)
+            if (!_actualImplementation.CanSeek)
                 throw Error.GetSeekNotSupported();
-            if (!CanWrite)
+            if (!_actualImplementation.CanWrite)
                 throw Error.GetWriteNotSupported();
 
-            SetLengthInternal(value);
+            _actualImplementation.SetLength(value);
         }
 
         public virtual SafeFileHandle SafeFileHandle

@@ -422,21 +422,7 @@ namespace System.IO
 
         public override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        /// <summary>Sets the length of this stream to the given value.</summary>
-        /// <param name="value">The new length of the stream.</param>
-        public override void SetLength(long value)
-        {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
-            if (!CanSeek)
-                throw Error.GetSeekNotSupported();
-            if (!CanWrite)
-                throw Error.GetWriteNotSupported();
-
-            SetLengthInternal(value);
-        }
+        public override void SetLength(long value) => SetLengthInternal(value);
 
         public virtual SafeFileHandle SafeFileHandle
         {
