@@ -592,7 +592,6 @@ namespace System.CodeDom.Tests
             Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteAsync_MemberData))]
         public async Task WriteAsync_WithIndents_OmitsTabsAfterWriteAsync(Func<IndentedTextWriter, Task> callWriteAsync, string expected)
@@ -610,7 +609,6 @@ namespace System.CodeDom.Tests
             Assert.Equal($"{prefix}{expected}", indicator.GetStringBuilder().ToString());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteLineAsync_MemberData))]
         public async Task WriteLineAsync_WithoutIndents_CallsInnerWriteLineAsync(Func<IndentedTextWriter, Task> callWriteLineAsync, string expected)
@@ -624,7 +622,6 @@ namespace System.CodeDom.Tests
             Assert.Equal(expected, indicator.GetStringBuilder().ToString());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteLineAsync_MemberData))]
         public async Task WriteLineAsync_WithIndents_FirstLine_IsNotIndented(Func<IndentedTextWriter, Task> callWriteLineAsync, string expected)
@@ -639,7 +636,6 @@ namespace System.CodeDom.Tests
             Assert.Equal(expected, indicator.GetStringBuilder().ToString());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteLineAsync_MemberData))]
         public async Task WriteLineAsync_WithIndents_SubsequentLines_AreIndented(Func<IndentedTextWriter, Task> callWriteLineAsync, string expected)
@@ -657,7 +653,6 @@ namespace System.CodeDom.Tests
             Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public async Task ParameterlessWriteLineAsync_IndentsLinesAfterIndentIsSet()
         {
