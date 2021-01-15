@@ -247,21 +247,6 @@ namespace System.IO
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Flush() which a subclass might have overridden.  To be safe
-            // we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Flush) when we are not sure.
-            if (GetType() != typeof(FileStream))
-                return base.FlushAsync(cancellationToken);
-
-            return FlushAsyncInternal(cancellationToken);
-        }
-
-        /// <summary>Asynchronously clears all buffers for this stream, causing any buffered data to be written to the underlying device.</summary>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        /// <returns>A task that represents the asynchronous flush operation.</returns>
-        private Task FlushAsyncInternal(CancellationToken cancellationToken)
-        {
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
