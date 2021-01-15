@@ -345,30 +345,22 @@ namespace System.IO
             _actualImplementation.SetLength(value);
         }
 
-        public virtual SafeFileHandle SafeFileHandle
-        {
-            get
-            {
-                Flush();
-                _exposedHandle = true;
-                return _fileHandle;
-            }
-        }
+        public virtual SafeFileHandle SafeFileHandle => _actualImplementation.SafeFileHandle;
 
         /// <summary>Gets the path that was passed to the constructor.</summary>
-        public virtual string Name => _path ?? SR.IO_UnknownFileName;
+        public virtual string Name => _actualImplementation.Name;
 
         /// <summary>Gets a value indicating whether the stream was opened for I/O to be performed synchronously or asynchronously.</summary>
-        public virtual bool IsAsync => _useAsyncIO;
+        public virtual bool IsAsync => _actualImplementation.IsAsync;
 
         /// <summary>Gets the length of the stream in bytes.</summary>
         public override long Length
         {
             get
             {
-                if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-                if (!CanSeek) throw Error.GetSeekNotSupported();
-                return GetLengthInternal();
+                if (_actualImplementation.IsClosed) throw Error.GetFileNotOpen();
+                if (!_actualImplementation.CanSeek) throw Error.GetSeekNotSupported();
+                return _actualImplementation.Length;
             }
         }
 

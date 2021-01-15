@@ -424,7 +424,7 @@ namespace System.IO
 
         public override void SetLength(long value) => SetLengthInternal(value);
 
-        public virtual SafeFileHandle SafeFileHandle
+        internal override SafeFileHandle SafeFileHandle
         {
             get
             {
@@ -434,22 +434,11 @@ namespace System.IO
             }
         }
 
-        /// <summary>Gets the path that was passed to the constructor.</summary>
-        public virtual string Name => _path ?? SR.IO_UnknownFileName;
+        internal override string Name => _path ?? SR.IO_UnknownFileName;
 
-        /// <summary>Gets a value indicating whether the stream was opened for I/O to be performed synchronously or asynchronously.</summary>
-        public virtual bool IsAsync => _useAsyncIO;
+        internal override bool IsAsync => _useAsyncIO;
 
-        /// <summary>Gets the length of the stream in bytes.</summary>
-        public override long Length
-        {
-            get
-            {
-                if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-                if (!CanSeek) throw Error.GetSeekNotSupported();
-                return GetLengthInternal();
-            }
-        }
+        public override long Length => GetLengthInternal();
 
         /// <summary>
         /// Verify that the actual position of the OS's handle equals what we expect it to.
