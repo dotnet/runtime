@@ -64,6 +64,7 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         signBinaries: ${{ variables.isOfficialBuild }}
+        timeoutInMinutes: 120
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -73,6 +74,7 @@ stages:
       - windows_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
+        timeoutInMinutes: 120
         crossDacPlatforms:
         - Linux_x64
         - Linux_arm
