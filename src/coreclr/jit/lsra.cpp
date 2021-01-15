@@ -3452,7 +3452,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             regNumber farthestCandidateRegNum = genRegNumFromMask(farthestCandidateBit);
 
             // Find the next RefPosition of the register.
-            LsraLocation nextIntervalLocation = nextIntervalRef[farthestCandidateRegNum];
+            LsraLocation nextIntervalLocation = getNextIntervalRef(farthestCandidateRegNum, currentInterval->registerType);
             LsraLocation nextPhysRefLocation  = Min(nextFixedRef[farthestCandidateRegNum], nextIntervalLocation);
             if (nextPhysRefLocation == farthestLocation)
             {
