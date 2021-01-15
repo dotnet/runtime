@@ -546,6 +546,8 @@ elseif(GC_SUSPEND STREQUAL "default")
     set(ENABLE_COOP_SUSPEND 1)
   elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
     # use preemptive
+  elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
+    # use preemptive
   else()
     set(ENABLE_HYBRID_SUSPEND 1)
   endif()

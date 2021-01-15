@@ -51,6 +51,8 @@
   <!-- default thread suspend for specific platforms -->
   <PropertyGroup>
     <MonoThreadSuspend Condition="'$(TargetswatchOS)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
+    <!-- wasm isn't really preemptive, but we don't want safepoints -->
+    <MonoThreadSuspend Condition="'$(TargetsBrowser)' == 'true' and '$(MonoThreadSuspend)' == ''">preemptive</MonoThreadSuspend>
     <!-- all other platforms -->
     <MonoThreadSuspend Condition="'$(MonoThreadSuspend)' == ''">hybrid</MonoThreadSuspend>
   </PropertyGroup>
