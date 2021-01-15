@@ -294,11 +294,7 @@ namespace System.IO
         /// <summary>
         /// Clears buffers for this stream and causes any buffered data to be written to the file.
         /// </summary>
-        public override void Flush()
-        {
-            // Make sure that we call through the public virtual API
-            Flush(flushToDisk: false);
-        }
+        public override void Flush() => _actualImplementation.Flush();
 
         /// <summary>
         /// Clears buffers for this stream, and if <param name="flushToDisk"/> is true,
@@ -306,14 +302,9 @@ namespace System.IO
         /// </summary>
         public virtual void Flush(bool flushToDisk)
         {
-            if (IsClosed) throw Error.GetFileNotOpen();
+            if (_actualImplementation.IsClosed) throw Error.GetFileNotOpen();
 
-            FlushInternalBuffer();
-
-            if (flushToDisk && CanWrite)
-            {
-                FlushOSBuffer();
-            }
+            _actualImplementation.Flush(flushToDisk);
         }
 
         /// <summary>Gets a value indicating whether the current stream supports reading.</summary>

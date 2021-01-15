@@ -403,23 +403,14 @@ namespace System.IO
             return WriteAsyncInternal(buffer, cancellationToken);
         }
 
-        /// <summary>
-        /// Clears buffers for this stream and causes any buffered data to be written to the file.
-        /// </summary>
         public override void Flush()
         {
             // Make sure that we call through the public virtual API
             Flush(flushToDisk: false);
         }
 
-        /// <summary>
-        /// Clears buffers for this stream, and if <param name="flushToDisk"/> is true,
-        /// causes any buffered data to be written to the file.
-        /// </summary>
-        public virtual void Flush(bool flushToDisk)
+        internal override void Flush(bool flushToDisk)
         {
-            if (IsClosed) throw Error.GetFileNotOpen();
-
             FlushInternalBuffer();
 
             if (flushToDisk && CanWrite)
