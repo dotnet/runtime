@@ -261,6 +261,15 @@
       </HelixWorkItem>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(IsWasmDebuggerTestsProject)' == 'true' and '$(Scenario)' == 'WasmTestOnBrowser'">
+      <!-- Create a work item for run-only WASM console app  -->
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/DebuggerTestSuite/*.zip" />
+      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>dotnet test %(FileName.dll)</Command>
+      </HelixWorkItem>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'">
       <!-- Create a work item for run-only WASM console app  -->
       <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/console/*.zip" />
