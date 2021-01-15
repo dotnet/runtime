@@ -1170,7 +1170,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
                 continue;
 
             Instantiation parentClassInst = pParentMD->GetClassInstantiation();
-            if (ClassLoader::IsTypicalSharedInstantiation(parentClassInst))
+            if (ClassLoader::IsCanonicalGenericInstantiation(parentClassInst))
             {
                 parentClassInst = pParentMT->GetInstantiation();
             }
@@ -1179,7 +1179,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 
             Instantiation classInst = pMD->GetClassInstantiation();
-            if (ClassLoader::IsTypicalSharedInstantiation(classInst))
+            if (ClassLoader::IsCanonicalGenericInstantiation(classInst))
             {
                 classInst = pMT->GetInstantiation();
             }
