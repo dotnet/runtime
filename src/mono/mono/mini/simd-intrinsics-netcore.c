@@ -268,7 +268,7 @@ get_vector_t_elem_type (MonoType *vector_type)
 }
 
 static MonoInst *
-emit_arch_vector128_create_multi (MonoCompile *cfg, MonoMethodSignature *fsig, MonoType *etype, MonoInst **args)
+emit_arch_vector128_create_multi (MonoCompile *cfg, MonoMethodSignature *fsig, MonoClass *klass, MonoType *etype, MonoInst **args)
 {
 #if defined(TARGET_AMD64)
 	MonoInst *ins, *load;
@@ -338,14 +338,11 @@ static guint16 vector_128_methods [] = {
 static MonoInst*
 emit_vector128 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	MonoClass *klass;
-	int id;
-
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
 
-	klass = cmethod->klass;
-	id = lookup_intrins (vector_128_methods, sizeof (vector_128_methods), cmethod);
+	MonoClass *klass = cmethod->klass;
+	int id = lookup_intrins (vector_128_methods, sizeof (vector_128_methods), cmethod);
 	if (id == -1)
 		return NULL;
 
@@ -371,7 +368,7 @@ emit_vector128 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		else
-			return emit_arch_vector128_create_multi (cfg, fsig, etype, args);
+			return emit_arch_vector128_create_multi (cfg, fsig, klass, etype, args);
 	}
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
