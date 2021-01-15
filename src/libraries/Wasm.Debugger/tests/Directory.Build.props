@@ -1,6 +1,6 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.props" />
-  <Import Project="$(MSBuildThisFileDirectory)..\..\build\WasmApp.InTree.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Directory.Build.props" />
+  <!--<Import Project="$(RepoRoot)src\mono\wasm\build\WasmApp.InTree.props" />-->
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>

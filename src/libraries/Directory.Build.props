@@ -170,7 +170,7 @@
     <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IsWasmDebuggerTestsProject)' != 'true'">
     <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 

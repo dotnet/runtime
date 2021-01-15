@@ -37,7 +37,7 @@
 
     <PropertyGroup>
       <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
-      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser' and '$(IsWasmDebuggerTestsProject)' != 'true'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
 
     <MakeDir Directories="$(TestArchiveTestsDir)" />

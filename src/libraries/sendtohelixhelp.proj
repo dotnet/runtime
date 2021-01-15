@@ -65,7 +65,7 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(IsWasmDebuggerTestsProject)' == 'true'">
      <IncludeDotNetCli>true</IncludeDotNetCli>
      <DotNetCliPackageType>aspnetcore-runtime</DotNetCliPackageType>
   </PropertyGroup>

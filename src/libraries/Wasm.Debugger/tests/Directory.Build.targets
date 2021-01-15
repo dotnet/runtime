@@ -1,0 +1,23 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Directory.Build.targets" />
+  <!--<Import Project="$(RepoRoot)src\mono\wasm\build\WasmApp.InTree.props" />-->
+
+  <!-- We want to override the one from tests.mobile.targets -->
+  <Target Name="PrepareForWasmBuildApp">
+    <PropertyGroup>
+      <WasmMainAssemblyPath>$(OutDir)debugger-test.dll</WasmMainAssemblyPath>
+      <WasmAppDir>$(AppDir)</WasmAppDir>
+      <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
+      <WasmDebugLevel>1</WasmDebugLevel>
+
+      <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
+
+      <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
+</Project>
