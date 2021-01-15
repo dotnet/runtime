@@ -6,7 +6,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    internal sealed partial class FileStreamImpl : Stream
+    internal sealed partial class FileStreamImpl : LockableStream
     {
         private SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {

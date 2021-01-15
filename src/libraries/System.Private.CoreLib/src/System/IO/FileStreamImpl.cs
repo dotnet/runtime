@@ -10,7 +10,16 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    internal sealed partial class FileStreamImpl : Stream
+    internal abstract class LockableStream : Stream
+    {
+        internal abstract IntPtr Handle { get; }
+
+        internal abstract void Lock(long position, long length);
+
+        internal abstract void Unlock(long position, long length);
+    }
+
+    internal sealed partial class FileStreamImpl : LockableStream
     {
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
@@ -204,10 +213,9 @@ namespace System.IO
             }
         }
 
-        [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public virtual IntPtr Handle => SafeFileHandle.DangerousGetHandle();
+        internal override IntPtr Handle => SafeFileHandle.DangerousGetHandle();
 
-        public virtual void Lock(long position, long length)
+        internal override void Lock(long position, long length)
         {
             if (position < 0 || length < 0)
             {
@@ -222,7 +230,7 @@ namespace System.IO
             LockInternal(position, length);
         }
 
-        public virtual void Unlock(long position, long length)
+        internal override void Unlock(long position, long length)
         {
             if (position < 0 || length < 0)
             {

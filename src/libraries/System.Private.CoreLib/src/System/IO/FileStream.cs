@@ -12,7 +12,7 @@ namespace System.IO
 {
     public partial class FileStream : Stream
     {
-        private readonly Stream _actualImplementation;
+        private readonly LockableStream _actualImplementation;
 
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
@@ -135,37 +135,11 @@ namespace System.IO
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public virtual IntPtr Handle => SafeFileHandle.DangerousGetHandle();
+        public virtual IntPtr Handle => _actualImplementation.Handle;
 
-        public virtual void Lock(long position, long length)
-        {
-            if (position < 0 || length < 0)
-            {
-                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+        public virtual void Lock(long position, long length) => _actualImplementation.Lock(position, length);
 
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
-            LockInternal(position, length);
-        }
-
-        public virtual void Unlock(long position, long length)
-        {
-            if (position < 0 || length < 0)
-            {
-                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
-            UnlockInternal(position, length);
-        }
+        public virtual void Unlock(long position, long length) => _actualImplementation.Unlock(position, length);
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {

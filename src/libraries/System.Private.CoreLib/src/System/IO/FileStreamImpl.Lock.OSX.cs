@@ -3,7 +3,7 @@
 
 namespace System.IO
 {
-    internal sealed partial class FileStreamImpl : Stream
+    internal sealed partial class FileStreamImpl : LockableStream
     {
         private static void LockInternal(long position, long length)
         {
