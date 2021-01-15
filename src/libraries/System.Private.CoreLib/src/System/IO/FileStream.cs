@@ -7,13 +7,13 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    public partial class FileStream : Stream
+    public class FileStream : Stream
     {
-        private readonly FileStreamStrategy _actualImplementation;
-
+        internal const int DefaultBufferSize = 4096;
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
-        internal const int DefaultBufferSize = 4096;
+
+        private readonly FileStreamStrategy _actualImplementation;
 
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access)
@@ -36,7 +36,7 @@ namespace System.IO
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
-            // it might seem to have to sense now, but we plan to introduce dedicated strategies for sync and async implementation
+            // it might seem to have to sense now, but we plan to introduce dedicated strategies for sync and async implementations
             switch (isAsync)
             {
                 case true:
