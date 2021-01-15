@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 
 public static class Program
 {
-    // to be wired once https://github.com/dotnet/xharness/pull/46 is merged
     [DllImport("__Internal")]
     public extern static void mono_ios_append_output (string value);
 
