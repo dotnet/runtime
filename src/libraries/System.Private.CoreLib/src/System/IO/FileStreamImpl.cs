@@ -661,14 +661,7 @@ namespace System.IO
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            ValidateBufferArguments(buffer, offset, count);
-            if (IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-
-            if (!IsAsync)
-                return base.BeginWrite(buffer, offset, count, callback, state);
-            else
-                return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask(), callback, state);
+            return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask(), callback, state);
         }
 
         public override int EndRead(IAsyncResult asyncResult)
