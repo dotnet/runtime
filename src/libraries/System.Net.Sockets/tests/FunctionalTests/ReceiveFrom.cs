@@ -11,7 +11,8 @@ namespace System.Net.Sockets.Tests
 {
     public abstract class ReceiveFrom<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        private static readonly IPEndPoint ValidUdpRemoteEndpoint = new IPEndPoint(IPAddress.Parse("10.20.30.40"), 1234);
+        protected static IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
+            addressFamily == AddressFamily.InterNetwork ? new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
 
         protected ReceiveFrom(ITestOutputHelper output) : base(output) { }
 
@@ -31,7 +32,7 @@ namespace System.Net.Sockets.Tests
                 Offset = offset
             }.ToActual();
 
-            await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => ReceiveFromAsync(socket, buffer, ValidUdpRemoteEndpoint));
+            await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => ReceiveFromAsync(socket, buffer, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
@@ -40,7 +41,7 @@ namespace System.Net.Sockets.Tests
             if (!ValidatesArrayArguments) return;
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-            await Assert.ThrowsAsync<ArgumentNullException>(() => ReceiveFromAsync(socket, null, ValidUdpRemoteEndpoint));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => ReceiveFromAsync(socket, null, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
@@ -75,6 +76,23 @@ namespace System.Net.Sockets.Tests
     public sealed class ReceiveFrom_CancellableTask : ReceiveFrom<SocketHelperCancellableTask>
     {
         public ReceiveFrom_CancellableTask(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [MemberData(nameof(LoopbacksAndBuffers))]
+        public async Task WhenCanceled_Throws(IPAddress loopback, bool precanceled)
+        {
+            using var socket = new Socket(loopback.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            socket.BindToAnonymousPort(loopback);
+            Memory<byte> buffer = new byte[1];
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            if (precanceled) cts.Cancel();
+            else cts.CancelAfter(10);
+
+            OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => socket.ReceiveFromAsync(buffer, SocketFlags.None, GetGetDummyTestEndpoint(loopback.AddressFamily), cts.Token).AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+        }
     }
 
     public sealed class ReceiveFrom_Eap : ReceiveFrom<SocketHelperEap>
