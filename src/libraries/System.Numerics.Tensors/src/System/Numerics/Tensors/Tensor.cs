@@ -698,7 +698,6 @@ namespace System.Numerics.Tensors
         {
             private readonly Tensor<T> _tensor;
             private int _index;
-            private T _current;
 
             internal Enumerator(Tensor<T> tensor)
             {
@@ -706,27 +705,27 @@ namespace System.Numerics.Tensors
 
                 _tensor = tensor;
                 _index = 0;
-                _current = default;
+                Current = default;
             }
 
-            public T Current => _current;
+            public T Current { get; private set; }
 
             public bool MoveNext()
             {
                 if (_index < _tensor.Length)
                 {
-                    _current = _tensor.GetValue(_index);
+                    Current = _tensor.GetValue(_index);
                     ++_index;
                     return true;
                 }
                 else
                 {
-                    _current = default;
+                    Current = default;
                     return false;
                 }
             }
 
-            object? IEnumerator.Current => _current;
+            object? IEnumerator.Current => Current;
 
             void IEnumerator.Reset()
             {
