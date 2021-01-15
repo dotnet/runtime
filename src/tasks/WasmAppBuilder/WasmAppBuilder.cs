@@ -257,7 +257,7 @@ public class WasmAppBuilder : Task
         string monoConfigPath = Path.Join(AppDir, "mono-config.js");
         using (var sw = File.CreateText(monoConfigPath))
         {
-            var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+            var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
             sw.Write($"config = {json};");
         }
         _fileWrites.Add(monoConfigPath);
