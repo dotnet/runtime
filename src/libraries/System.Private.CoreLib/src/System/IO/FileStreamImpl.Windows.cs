@@ -39,7 +39,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO
 {
-    internal sealed partial class FileStreamImpl : LockableStream
+    internal sealed partial class FileStreamImpl : FileStreamImplBase
     {
         private bool _canSeek;
         private bool _isPipe;      // Whether to disable async buffering code.

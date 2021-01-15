@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    internal sealed partial class FileStreamImpl : LockableStream
+    internal sealed partial class FileStreamImpl : FileStreamImplBase
     {
         // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.
