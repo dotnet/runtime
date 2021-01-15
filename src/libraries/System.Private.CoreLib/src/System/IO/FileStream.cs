@@ -364,17 +364,6 @@ namespace System.IO
             }
         }
 
-        /// <summary>Validates that we're ready to read from the stream.</summary>
-        private void PrepareForReading()
-        {
-            if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
-            if (_readLength == 0 && !CanRead)
-                throw Error.GetReadNotSupported();
-
-            AssertBufferInvariants();
-        }
-
         /// <summary>Gets or sets the position within the current stream</summary>
         public override long Position
         {
@@ -414,25 +403,6 @@ namespace System.IO
             e is UnauthorizedAccessException ||
             e is NotSupportedException ||
             (e is ArgumentException && !(e is ArgumentNullException));
-
-        /// <summary>
-        /// Gets the array used for buffering reading and writing.
-        /// If the array hasn't been allocated, this will lazily allocate it.
-        /// </summary>
-        /// <returns>The buffer.</returns>
-        private byte[] GetBuffer()
-        {
-            Debug.Assert(_buffer == null || _buffer.Length == _bufferLength);
-            if (_buffer == null)
-            {
-                _buffer = new byte[_bufferLength];
-                OnBufferAllocated();
-            }
-
-            return _buffer;
-        }
-
-        partial void OnBufferAllocated();
 
         /// <summary>
         /// Flushes the internal read/write buffer for this stream.  If write data has been buffered,
@@ -477,24 +447,7 @@ namespace System.IO
         /// Reads a byte from the file stream.  Returns the byte cast to an int
         /// or -1 if reading from the end of the stream.
         /// </summary>
-        public override int ReadByte()
-        {
-            PrepareForReading();
-
-            byte[] buffer = GetBuffer();
-            if (_readPos == _readLength)
-            {
-                FlushWriteBuffer();
-                _readLength = FillReadBufferForReadByte();
-                _readPos = 0;
-                if (_readLength == 0)
-                {
-                    return -1;
-                }
-            }
-
-            return buffer[_readPos++];
-        }
+        public override int ReadByte() => _actualImplementation.ReadByte();
 
         /// <summary>
         /// Writes a byte to the current position in the stream and advances the position
