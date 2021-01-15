@@ -74,6 +74,11 @@ namespace System.Net.Sockets.Tests
         public ReceiveMessageFrom_Task(ITestOutputHelper output) : base(output) { }
     }
 
+    public sealed class ReceiveMessageFrom_CancellableTask : ReceiveMessageFrom<SocketHelperCancellableTask>
+    {
+        public ReceiveMessageFrom_CancellableTask(ITestOutputHelper output) : base(output) { }
+    }
+
     public sealed class ReceiveMessageFrom_Eap : ReceiveMessageFrom<SocketHelperEap>
     {
         public ReceiveMessageFrom_Eap(ITestOutputHelper output) : base(output) { }
