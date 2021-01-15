@@ -524,6 +524,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 Assert.True(client.Connected);
+                client.Dispose();
             }
         }
 
