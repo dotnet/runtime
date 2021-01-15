@@ -38,6 +38,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestTypeOverloadWith5ParametersWithIgnoreCase ();
 			TestTypeOverloadWith5ParametersWithoutIgnoreCase ();
 			TestInvalidTypeName ();
+			TestUnkownIgnoreCase3Params (1);
+			TestUnkownIgnoreCase5Params (1);
 		}
 
 		[Kept]
@@ -358,6 +360,24 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static Type GetTypeFromAssembly (Assembly assembly, string name, bool caseSensitive)
 		{
 			return assembly == null ? Type.GetType (name, caseSensitive) : assembly.GetType (name, caseSensitive);
+		}
+
+		[Kept]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Boolean,Boolean)'")]
+		static void TestUnkownIgnoreCase3Params (int num)
+		{
+			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+			bool unknownValue = num + 1 == 1;
+			var typeKept = Type.GetType (reflectionTypeKeptString, false, unknownValue);
+		}
+
+		[Kept]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String,Func<AssemblyName,Assembly>,Func<Assembly,String,Boolean,Type>,Boolean,Boolean)'")]
+		static void TestUnkownIgnoreCase5Params (int num)
+		{
+			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+			bool unknownValue = num + 1 == 1;
+			var typeKept = Type.GetType (reflectionTypeKeptString, AssemblyResolver, GetTypeFromAssembly, false, unknownValue);
 		}
 	}
 }
