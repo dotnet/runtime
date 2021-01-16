@@ -48,7 +48,7 @@
     <Copy SourceFiles="@(DebuggerTestFile)" DestinationFiles="@(DebuggerTestFile->'$(_TmpDirForzip)debugger-test\%(RecursiveDir)%(FileName)%(Extension)')" />
 
     <WriteLinesToFile
-      Lines="$RUNTIME_PATH/dotnet test DebuggerTestSuite/DebuggerTestSuite.dll"
+      Lines="find . ; dotnet test DebuggerTestSuite/DebuggerTestSuite.dll"
       File="$(_TmpDirForzip)\RunTests.sh" />
 
     <ZipDirectory SourceDirectory="$(_TmpDirForzip)" DestinationFile="$(ZippedApp)" Overwrite="true" />
