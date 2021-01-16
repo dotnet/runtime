@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -25,7 +26,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-    [OuterLoop]
+//    [OuterLoop]
     public async Task RunImpersonatedAsync_TaskAndTaskOfT()
     {
         WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
@@ -56,6 +57,23 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
             Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
             Assert.NotEqual(currentWindowsIdentity.Name, WindowsIdentity.GetCurrent().Name);
         }
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    //[OuterLoop]
+    public async Task RunImpersonatedAsync_NameREsolution()
+    {
+        WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
+
+//        Console.WriteLine("Using {0}", _fixture.TestAccount.AccountTokenHandle);
+
+        await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
+        {
+            //Asserts(currentWindowsIdentity);
+            var addresses = await Dns.GetHostAddressesAsync("");
+            //Console.WriteLine(addresses);
+            ///Asserts(currentWindowsIdentity);
+        });
     }
 }
 
