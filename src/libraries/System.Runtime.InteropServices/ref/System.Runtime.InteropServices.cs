@@ -1056,6 +1056,8 @@ namespace System.Runtime.InteropServices
         None = 0,
         TrackerObject = 1,
         UniqueInstance = 2,
+        Aggregation = 4,
+        Unwrap = 8,
     }
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.CLSCompliantAttribute(false)]
@@ -1076,6 +1078,7 @@ namespace System.Runtime.InteropServices
         public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
         protected abstract object? CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
         public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper, System.IntPtr inner) { throw null; }
         protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
         public static void RegisterForMarshalling(ComWrappers instance) { }
