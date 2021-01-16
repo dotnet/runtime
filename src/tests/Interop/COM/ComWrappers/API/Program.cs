@@ -101,7 +101,7 @@ namespace ComWrappersTests
 
             // Allocate a wrapper for the object
             IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
-            Assert.AreNotEqual(comWrapper, IntPtr.Zero);
+            Assert.AreNotEqual(IntPtr.Zero, comWrapper);
 
             // Get a wrapper for an object and verify it is the same one.
             IntPtr comWrapperMaybe = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
@@ -109,9 +109,9 @@ namespace ComWrappersTests
 
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
-            Assert.AreEqual(count, 1);
+            Assert.AreEqual(1, count);
             count = Marshal.Release(comWrapperMaybe);
-            Assert.AreEqual(count, 0);
+            Assert.AreEqual(0, count);
 
             // Create a new wrapper
             IntPtr comWrapperNew = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
@@ -121,7 +121,27 @@ namespace ComWrappersTests
 
             // Release the new wrapper
             count = Marshal.Release(comWrapperNew);
-            Assert.AreEqual(count, 0);
+            Assert.AreEqual(0, count);
+        }
+
+        static void ValidateComInterfaceCreationRoundTrip()
+        {
+            Console.WriteLine($"Running {nameof(ValidateComInterfaceCreationRoundTrip)}...");
+
+            var testObj = new Test();
+
+            var wrappers = new TestComWrappers();
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+            Assert.AreNotEqual(IntPtr.Zero, comWrapper);
+
+            var testObjUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
+            Assert.AreEqual(testObj, testObjUnwrapped);
+
+            // Release the wrapper
+            int count = Marshal.Release(comWrapper);
+            Assert.AreEqual(0, count);
         }
 
         static void ValidateFallbackQueryInterface()
@@ -144,17 +164,17 @@ namespace ComWrappersTests
             var anyGuid = new Guid("1E42439C-DCB5-4701-ACBD-87FE92E785DE");
             testObj.ICustomQueryInterface_GetInterfaceIID = anyGuid;
             int hr = Marshal.QueryInterface(comWrapper, ref anyGuid, out result);
-            Assert.AreEqual(hr, 0);
-            Assert.AreEqual(result, testObj.ICustomQueryInterface_GetInterfaceResult);
+            Assert.AreEqual(0, hr);
+            Assert.AreEqual(testObj.ICustomQueryInterface_GetInterfaceResult, result);
 
             var anyGuid2 = new Guid("7996D0F9-C8DD-4544-B708-0F75C6FF076F");
             hr = Marshal.QueryInterface(comWrapper, ref anyGuid2, out result);
             const int E_NOINTERFACE = unchecked((int)0x80004002);
-            Assert.AreEqual(hr, E_NOINTERFACE);
-            Assert.AreEqual(result, IntPtr.Zero);
+            Assert.AreEqual(E_NOINTERFACE, hr);
+            Assert.AreEqual(IntPtr.Zero, result);
 
             int count = Marshal.Release(comWrapper);
-            Assert.AreEqual(count, 0);
+            Assert.AreEqual(0, count);
         }
 
         static void ValidateCreateObjectCachingScenario()
@@ -234,7 +254,7 @@ namespace ComWrappersTests
             var iid = typeof(ITrackerObject).GUID;
             IntPtr iTestComObject;
             int hr = Marshal.QueryInterface(trackerObjRaw, ref iid, out iTestComObject);
-            Assert.AreEqual(hr, 0);
+            Assert.AreEqual(0, hr);
             var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
             // Register wrapper, but supply the wrapper.
@@ -473,6 +493,7 @@ namespace ComWrappersTests
             try
             {
                 ValidateComInterfaceCreation();
+                ValidateComInterfaceCreationRoundTrip();
                 ValidateFallbackQueryInterface();
                 ValidateCreateObjectCachingScenario();
                 ValidateWrappersInstanceIsolation();

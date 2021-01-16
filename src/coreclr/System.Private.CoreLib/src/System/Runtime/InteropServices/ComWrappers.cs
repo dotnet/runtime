@@ -306,7 +306,11 @@ namespace System.Runtime.InteropServices
         /// <param name="inner">Inner for COM aggregation scenarios</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         /// <remarks>
-        /// This method override is for registering an aggregated COM instance with its associated inner.
+        /// This method override is for registering an aggregated COM instance with its associated inner. The inner
+        /// will be released when the associated wrapper is eventually freed. Note that it will be released on a thread
+        /// in an unknown apartment state. If the supplied inner is not known to be a free-threaded instance then
+        /// it is advised to not supply the inner.
+        ///
         /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
         /// </remarks>
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper, IntPtr inner)
