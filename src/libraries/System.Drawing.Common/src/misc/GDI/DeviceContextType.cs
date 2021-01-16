@@ -11,9 +11,6 @@ namespace System.Drawing.Internal
         // Unknown device
         Unknown = 0x00,
 
-        // Display DC - obtained from GetDC/GetDCEx/BeginPaint.
-        Display = 0x01,
-
         // Window DC including non-client area - obtained from GetWindowDC
         NCWindow = 0x02,
 
