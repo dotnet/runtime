@@ -49,7 +49,7 @@
   </Target>
 
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateRunScript" Condition="'$(IsWasmDebuggerTestsProject)' != 'true'">
+  <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
       <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
