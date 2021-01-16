@@ -2755,8 +2755,7 @@ namespace Internal.JitInterface
 
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
         {
-            // TODO: Lazy string literal helper
-            return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
+            return CorInfoHelpFunc.CORINFO_HELP_STRCNS_CURRENT_MODULE;
         }
 
         private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)

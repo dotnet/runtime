@@ -799,6 +799,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
                     id = ReadyToRunHelper.ReversePInvokeExit;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_STRCNS_CURRENT_MODULE:
+                    id = ReadyToRunHelper.GetString;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
