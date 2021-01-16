@@ -500,7 +500,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true, "::1")]
         public void CtorConnect_Success(bool useIPv6, string connectString)
         {
-            if (!Socket.OSSupportsIPv6 || !Socket.OSSupportsIPv4)
+            if (!Socket.OSSupportsIPv6)
             {
                 return;
             }
