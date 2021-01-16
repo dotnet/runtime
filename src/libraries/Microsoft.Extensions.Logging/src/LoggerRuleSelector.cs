@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging
                 if (wildcardIndex != -1 &&
                     categoryName.IndexOf(WildcardChar, wildcardIndex + 1) != -1)
                 {
-                    throw new InvalidOperationException("Only one wildcard character is allowed in category name.");
+                    throw new InvalidOperationException(SR.MoreThanOneWildcard);
                 }
 
                 ReadOnlySpan<char> prefix, suffix;

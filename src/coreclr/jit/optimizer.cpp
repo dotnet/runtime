@@ -161,18 +161,16 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
     for (flowList* pred = begBlk->bbPreds; pred != nullptr; pred = pred->flNext)
     {
         /* Is this a backedge? */
-        if (pred->flBlock->bbNum >= begBlk->bbNum)
+        if (pred->getBlock()->bbNum >= begBlk->bbNum)
         {
-            flowList* flow = new (this, CMK_FlowList) flowList();
+            flowList* flow = new (this, CMK_FlowList) flowList(pred->getBlock(), backedgeList);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
             genFlowNodeSize += sizeof(flowList);
 #endif // MEASURE_BLOCK_SIZE
 
-            flow->flNext  = backedgeList;
-            flow->flBlock = pred->flBlock;
-            backedgeList  = flow;
+            backedgeList = flow;
         }
     }
 
@@ -199,7 +197,7 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
 
             for (flowList* tmp = backedgeList; tmp != nullptr; tmp = tmp->flNext)
             {
-                BasicBlock* backedge = tmp->flBlock;
+                BasicBlock* backedge = tmp->getBlock();
 
                 if (!curBlk->isRunRarely())
                 {
@@ -299,7 +297,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 
     for (flowList* pred = begBlk->bbPreds; pred != nullptr; pred = pred->flNext)
     {
-        curBlk = pred->flBlock;
+        curBlk = pred->getBlock();
 
         /* is this a backward edge? (from curBlk to begBlk) */
 
@@ -1235,7 +1233,7 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
         // i.e. every pred of ENTRY other than HEAD is in the loop.
         for (flowList* predEdge = entry->bbPreds; predEdge; predEdge = predEdge->flNext)
         {
-            BasicBlock* predBlock = predEdge->flBlock;
+            BasicBlock* predBlock = predEdge->getBlock();
             if ((predBlock != head) && !optLoopTable[loopInd].lpContains(predBlock))
             {
                 goto DONE_LOOP;
@@ -1379,7 +1377,7 @@ void Compiler::optCheckPreds()
             // make sure this pred is part of the BB list
             for (blockPred = fgFirstBB; blockPred; blockPred = blockPred->bbNext)
             {
-                if (blockPred == pred->flBlock)
+                if (blockPred == pred->getBlock())
                 {
                     break;
                 }
@@ -1868,7 +1866,7 @@ private:
             // Add preds to the worklist, checking for side-entries.
             for (flowList* predIter = block->bbPreds; predIter != nullptr; predIter = predIter->flNext)
             {
-                BasicBlock* pred = predIter->flBlock;
+                BasicBlock* pred = predIter->getBlock();
 
                 unsigned int testNum = PositionNum(pred);
 
@@ -1955,7 +1953,7 @@ private:
             // This must be a block we inserted to connect fall-through after moving blocks.
             // To determine if it's in the loop or not, use the number of its unique predecessor
             // block.
-            assert(block->bbPreds->flBlock == block->bbPrev);
+            assert(block->bbPreds->getBlock() == block->bbPrev);
             assert(block->bbPreds->flNext == nullptr);
             return block->bbPrev->bbNum;
         }
@@ -2146,7 +2144,7 @@ private:
         // algorithm, and isn't desirable layout anyway.
         for (flowList* predIter = newMoveAfter->bbPreds; predIter != nullptr; predIter = predIter->flNext)
         {
-            unsigned int predNum = predIter->flBlock->bbNum;
+            unsigned int predNum = predIter->getBlock()->bbNum;
 
             if ((predNum >= top->bbNum) && (predNum <= bottom->bbNum) && !loopBlocks.IsMember(predNum))
             {
@@ -2216,7 +2214,7 @@ private:
         {
             for (flowList* predIter = testBlock->bbPreds; predIter != nullptr; predIter = predIter->flNext)
             {
-                BasicBlock*  testPred           = predIter->flBlock;
+                BasicBlock*  testPred           = predIter->getBlock();
                 unsigned int predPosNum         = PositionNum(testPred);
                 unsigned int firstNonLoopPosNum = PositionNum(firstNonLoopBlock);
                 unsigned int lastNonLoopPosNum  = PositionNum(lastNonLoopBlock);
@@ -2445,7 +2443,7 @@ void Compiler::optFindNaturalLoops()
 
         for (flowList* pred = top->bbPreds; pred; pred = pred->flNext)
         {
-            if (search.FindLoop(head, top, pred->flBlock))
+            if (search.FindLoop(head, top, pred->getBlock()))
             {
                 // Found a loop; record it and see if we've hit the limit.
                 bool recordedLoop = search.RecordLoop();
@@ -2578,6 +2576,41 @@ NO_MORE_LOOPS:
         }
     }
 #endif // DEBUG
+}
+
+//-----------------------------------------------------------------------------
+//
+// All the inner loops that whose block weight meets a threshold are marked
+// as needing alignment.
+//
+
+void Compiler::optIdentifyLoopsForAlignment()
+{
+#if FEATURE_LOOP_ALIGN
+    if (codeGen->ShouldAlignLoops())
+    {
+        for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
+        {
+            BasicBlock* first = optLoopTable[loopInd].lpFirst;
+
+            // An innerloop candidate that might need alignment
+            if (optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP)
+            {
+                if (first->getBBWeight(this) >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
+                {
+                    first->bbFlags |= BBF_LOOP_ALIGN;
+                    JITDUMP("L%02u that starts at " FMT_BB " needs alignment, weight=%f.\n", loopInd, first->bbNum,
+                            first->getBBWeight(this));
+                }
+                else
+                {
+                    JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " weight=%f.\n", loopInd, first->bbNum,
+                            first->getBBWeight(this));
+                }
+            }
+        }
+    }
+#endif
 }
 
 void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap)
@@ -2842,7 +2875,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     bool firstPred = true;
     for (flowList* topPred = t->bbPreds; topPred != nullptr; topPred = topPred->flNext)
     {
-        BasicBlock* topPredBlock = topPred->flBlock;
+        BasicBlock* topPredBlock = topPred->getBlock();
 
         // Skip if topPredBlock is in the loop.
         // Note that this uses block number to detect membership in the loop. We are adding blocks during
@@ -3759,6 +3792,22 @@ void Compiler::optUnrollLoops()
 #endif
         }
 
+#if FEATURE_LOOP_ALIGN
+        for (block = head->bbNext;; block = block->bbNext)
+        {
+            if (block->isLoopAlign())
+            {
+                block->bbFlags &= ~BBF_LOOP_ALIGN;
+                JITDUMP("Removing LOOP_ALIGN flag from unrolled loop in " FMT_BB "\n", block->bbNum);
+            }
+
+            if (block == bottom)
+            {
+                break;
+            }
+        }
+#endif
+
         /* Create the unrolled loop statement list */
         {
             BlockToBlockMap blockMap(getAllocator());
@@ -4452,7 +4501,7 @@ void Compiler::optOptimizeLoops()
             {
                 /* Is this a loop candidate? - We look for "back edges" */
 
-                BasicBlock* bottom = pred->flBlock;
+                BasicBlock* bottom = pred->getBlock();
 
                 /* is this a backward edge? (from BOTTOM to TOP) */
 
@@ -4507,6 +4556,10 @@ void Compiler::optOptimizeLoops()
                 break;
             }
         }
+
+        // Check if any of the loops need alignment
+
+        optIdentifyLoopsForAlignment();
 
 #if COUNT_LOOPS
         totalUnnatLoopCount += loopNum;
@@ -5148,9 +5201,10 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 {
     assert(loopInd < optLoopCount);
 
-    JITDUMP("\nCloning loop %d: [h: %d, f: %d, t: %d, e: %d, b: %d].\n", loopInd, optLoopTable[loopInd].lpHead->bbNum,
-            optLoopTable[loopInd].lpFirst->bbNum, optLoopTable[loopInd].lpTop->bbNum,
-            optLoopTable[loopInd].lpEntry->bbNum, optLoopTable[loopInd].lpBottom->bbNum);
+    JITDUMP("\nCloning loop %d: [h: %d, f: %d, t: %d, e: %d, b: %d, c: %d].\n", loopInd,
+            optLoopTable[loopInd].lpHead->bbNum, optLoopTable[loopInd].lpFirst->bbNum,
+            optLoopTable[loopInd].lpTop->bbNum, optLoopTable[loopInd].lpEntry->bbNum,
+            optLoopTable[loopInd].lpBottom->bbNum, optLoopTable[loopInd].lpChild);
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
     unsigned             depth         = optLoopDepth(loopInd);
@@ -5452,7 +5506,7 @@ void Compiler::optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambien
 
     for (flowList* predEntry = e->bbPreds; predEntry; predEntry = predEntry->flNext)
     {
-        BasicBlock* predBlock = predEntry->flBlock;
+        BasicBlock* predBlock = predEntry->getBlock();
 
         // Skip if predBlock is in the loop.
         if (t->bbNum <= predBlock->bbNum && predBlock->bbNum <= b->bbNum)
@@ -7489,7 +7543,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     for (flowList* pred = top->bbPreds; pred; pred = pred->flNext)
     {
-        BasicBlock* predBlock = pred->flBlock;
+        BasicBlock* predBlock = pred->getBlock();
 
         if (fgDominate(top, predBlock))
         {
@@ -7977,6 +8031,20 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 // Marks the containsCall information to "lnum" and any parent loops.
 void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
 {
+
+#if FEATURE_LOOP_ALIGN
+    // If this is the inner most loop, reset the LOOP_ALIGN flag
+    // because a loop having call will not likely to benefit from
+    // alignment
+    if (optLoopTable[lnum].lpChild == BasicBlock::NOT_IN_LOOP)
+    {
+        BasicBlock* first = optLoopTable[lnum].lpFirst;
+        first->bbFlags &= ~BBF_LOOP_ALIGN;
+        JITDUMP("Removing LOOP_ALIGN flag for L%02u that starts at " FMT_BB " because loop has a call.\n", lnum,
+                first->bbNum);
+    }
+#endif
+
     assert(0 <= lnum && lnum < optLoopCount);
     while (lnum != BasicBlock::NOT_IN_LOOP)
     {

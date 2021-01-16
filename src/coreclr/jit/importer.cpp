@@ -3522,7 +3522,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         }
 
         //
-        // Make sure that the number of elements look valid.
+        // This optimization is only valid for a constant array size.
         //
         if (arrayLengthNode->gtOper != GT_CNS_INT)
         {
@@ -4807,6 +4807,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "KeepAlive") == 0)
             {
                 result = NI_System_GC_KeepAlive;
+            }
+        }
+        else if (strcmp(className, "Array") == 0)
+        {
+            if (strcmp(methodName, "Clone") == 0)
+            {
+                result = NI_System_Array_Clone;
+            }
+        }
+        else if (strcmp(className, "Object") == 0)
+        {
+            if (strcmp(methodName, "MemberwiseClone") == 0)
+            {
+                result = NI_System_Object_MemberwiseClone;
             }
         }
         else if (strcmp(className, "Type") == 0)

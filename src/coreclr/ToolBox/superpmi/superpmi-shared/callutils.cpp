@@ -12,6 +12,7 @@
 #include "typeutils.h"
 #include "errorhandling.h"
 #include "logging.h"
+#include "spmiutil.h"
 
 // String representations of the JIT helper functions
 const char* kHelperName[CORINFO_HELP_COUNT] = {
@@ -139,11 +140,11 @@ CallType CallUtils::GetDirectCallSiteInfo(MethodContext*            mc,
                   "Null method context passed into GetCallTargetInfo for call to target %016llX.", callTarget);
 
     CallType              targetType = CallType_Unknown;
-    MethodContext::DLD    functionEntryPoint;
+    DLD                   functionEntryPoint;
     CORINFO_METHOD_HANDLE methodHandle;
 
     // Try to first obtain a method handle associated with this call target
-    functionEntryPoint.A = (DWORDLONG)callTarget;
+    functionEntryPoint.A = CastPointer(callTarget);
     functionEntryPoint.B = 0; // TODO-Cleanup: we should be more conscious of this...
 
     if (mc->fndGetFunctionEntryPoint(functionEntryPoint, &methodHandle))

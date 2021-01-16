@@ -255,9 +255,9 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
             BasicBlock* predBlock = nullptr;
             for (flowList* pred = m_pCompiler->BlockPredsWithEH(block); pred; pred = pred->flNext)
             {
-                if (BitVecOps::IsMember(&m_visitedTraits, m_visited, pred->flBlock->bbNum))
+                if (BitVecOps::IsMember(&m_visitedTraits, m_visited, pred->getBlock()->bbNum))
                 {
-                    predBlock = pred->flBlock;
+                    predBlock = pred->getBlock();
                     break;
                 }
             }
@@ -272,14 +272,14 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
             BasicBlock* bbIDom = predBlock;
             for (flowList* pred = m_pCompiler->BlockPredsWithEH(block); pred; pred = pred->flNext)
             {
-                if (predBlock != pred->flBlock)
+                if (predBlock != pred->getBlock())
                 {
-                    BasicBlock* domAncestor = IntersectDom(pred->flBlock, bbIDom);
-                    // The result may be NULL if "block" and "pred->flBlock" are part of a
+                    BasicBlock* domAncestor = IntersectDom(pred->getBlock(), bbIDom);
+                    // The result may be NULL if "block" and "pred->getBlock()" are part of a
                     // cycle -- neither is guaranteed ordered wrt the other in reverse postorder,
-                    // so we may be computing the IDom of "block" before the IDom of "pred->flBlock" has
+                    // so we may be computing the IDom of "block" before the IDom of "pred->getBlock()" has
                     // been computed.  But that's OK -- if they're in a cycle, they share the same immediate
-                    // dominator, so the contribution of "pred->flBlock" is not necessary to compute
+                    // dominator, so the contribution of "pred->getBlock()" is not necessary to compute
                     // the result.
                     if (domAncestor != nullptr)
                     {
@@ -356,7 +356,7 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
 
         for (flowList* pred = blockPreds; pred != nullptr; pred = pred->flNext)
         {
-            DBG_SSA_JITDUMP("   Considering predecessor " FMT_BB ".\n", pred->flBlock->bbNum);
+            DBG_SSA_JITDUMP("   Considering predecessor " FMT_BB ".\n", pred->getBlock()->bbNum);
 
             // If we've found a B2, then consider the possible B1's.  We start with
             // B2, since a block dominates itself, then traverse upwards in the dominator
@@ -366,7 +366,7 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
             // Along this way, make "block"/B3 part of the dom frontier of the B1.
             // When we reach this immediate dominator, the definition no longer applies, since this
             // potential B1 *does* dominate "block"/B3, so we stop.
-            for (BasicBlock* b1 = pred->flBlock; (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
+            for (BasicBlock* b1 = pred->getBlock(); (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
                  b1             = b1->bbIDom)
             {
                 DBG_SSA_JITDUMP("      Adding " FMT_BB " to dom frontier of pred dom " FMT_BB ".\n", block->bbNum,

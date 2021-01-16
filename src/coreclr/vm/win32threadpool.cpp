@@ -112,7 +112,7 @@ int ThreadpoolMgr::ThreadAdjustmentInterval;
 #define GATE_THREAD_DELAY_TOLERANCE 50 /*milliseconds*/
 #define DELAY_BETWEEN_SUSPENDS (5000 + GATE_THREAD_DELAY) // time to delay between suspensions
 
-LONG ThreadpoolMgr::Initialization=0;           // indicator of whether the threadpool is initialized.
+Volatile<LONG> ThreadpoolMgr::Initialization = 0;            // indicator of whether the threadpool is initialized.
 
 bool ThreadpoolMgr::s_usePortableThreadPool = false;
 
@@ -793,9 +793,9 @@ void QueueUserWorkItemHelp(LPTHREAD_START_ROUTINE Function, PVOID Context)
     Function(Context);
 
     Thread *pThread = GetThread();
-    if (pThread) {
-        if (pThread->IsAbortRequested())
-            pThread->EEResetAbort(Thread::TAR_ALL);
+    if (pThread)
+    {
+        _ASSERTE(!pThread->IsAbortRequested());
         pThread->InternalReset();
     }
 }
@@ -2147,8 +2147,7 @@ Work:
 
         if (pThread)
         {
-            if (pThread->IsAbortRequested())
-                pThread->EEResetAbort(Thread::TAR_ALL);
+            _ASSERTE(!pThread->IsAbortRequested());
             pThread->InternalReset();
         }
     }
@@ -3742,12 +3741,14 @@ Top:
                     Thread::IncrementIOThreadPoolCompletionCount(pThread);
                 }
 
-                if (pThread == NULL) {
+                if (pThread == NULL)
+                {
                     pThread = GetThread();
                 }
-                if (pThread) {
-                    if (pThread->IsAbortRequested())
-                        pThread->EEResetAbort(Thread::TAR_ALL);
+
+                if (pThread)
+                {
+                    _ASSERTE(!pThread->IsAbortRequested());
                     pThread->InternalReset();
                 }
             }

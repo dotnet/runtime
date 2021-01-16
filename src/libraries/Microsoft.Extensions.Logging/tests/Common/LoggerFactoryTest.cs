@@ -24,6 +24,14 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void AddProvider_ThrowsIfProviderIsNull()
+        {
+            var factory = new LoggerFactory();
+
+            Assert.Throws<ArgumentNullException>(() => ((ILoggerFactory)factory).AddProvider(null));
+        }
+
+        [Fact]
         public void CreateLogger_ThrowsAfterDisposed()
         {
             var factory = new LoggerFactory();

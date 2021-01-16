@@ -10,6 +10,9 @@
 #include "standardpch.h"
 #include "compileresult.h"
 #include "methodcontext.h"
+#include "spmirecordhelper.h"
+#include "spmidumphelper.h"
+#include "spmiutil.h"
 
 CompileResult::CompileResult()
 {
@@ -159,9 +162,9 @@ void CompileResult::recAllocMemCapture()
         (DWORD)AllocMem->AddBuffer((const unsigned char*)allocMemDets.coldCodeBlock, allocMemDets.coldCodeSize);
     value.roDataBlock_offset =
         (DWORD)AllocMem->AddBuffer((const unsigned char*)allocMemDets.roDataBlock, allocMemDets.roDataSize);
-    value.hotCodeBlock  = (DWORDLONG)allocMemDets.hotCodeBlock;
-    value.coldCodeBlock = (DWORDLONG)allocMemDets.coldCodeBlock;
-    value.roDataBlock   = (DWORDLONG)allocMemDets.roDataBlock;
+    value.hotCodeBlock  = CastPointer(allocMemDets.hotCodeBlock);
+    value.coldCodeBlock = CastPointer(allocMemDets.coldCodeBlock);
+    value.roDataBlock   = CastPointer(allocMemDets.roDataBlock);
 
     AllocMem->Add(0, value);
 }
@@ -227,7 +230,7 @@ void CompileResult::recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, IC
 
     Agnostic_SetBoundaries value;
 
-    value.ftn  = (DWORDLONG)ftn;
+    value.ftn  = CastHandle(ftn);
     value.cMap = (DWORD)cMap;
     value.pMap_offset =
         (DWORD)SetBoundaries->AddBuffer((const unsigned char*)pMap, sizeof(ICorDebugInfo::OffsetMapping) * cMap);
@@ -274,7 +277,7 @@ void CompileResult::recSetVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDeb
 
     Agnostic_SetVars value;
 
-    value.ftn         = (DWORDLONG)ftn;
+    value.ftn         = CastHandle(ftn);
     value.cVars       = (DWORD)cVars;
     value.vars_offset = (DWORD)SetVars->AddBuffer((const unsigned char*)vars,
                                                   sizeof(ICorDebugInfo::NativeVarInfo) *
@@ -393,7 +396,7 @@ void CompileResult::recCompileMethod(BYTE** nativeEntry, ULONG* nativeSizeOfCode
         CompileMethod = new LightWeightMap<DWORD, Agnostic_CompileMethodResults>();
 
     Agnostic_CompileMethodResults value;
-    value.nativeEntry      = (DWORDLONG)*nativeEntry;
+    value.nativeEntry      = CastPointer(*nativeEntry);
     value.nativeSizeOfCode = (DWORD)*nativeSizeOfCode;
     value.CorJitResult     = (DWORD)result;
 
@@ -443,7 +446,7 @@ void CompileResult::recClassMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls
     if (ClassMustBeLoadedBeforeCodeIsRun == nullptr)
         ClassMustBeLoadedBeforeCodeIsRun = new DenseLightWeightMap<DWORDLONG>();
 
-    ClassMustBeLoadedBeforeCodeIsRun->Append((DWORDLONG)cls);
+    ClassMustBeLoadedBeforeCodeIsRun->Append(CastHandle(cls));
 }
 void CompileResult::dmpClassMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value)
 {
@@ -460,8 +463,8 @@ void CompileResult::recReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
 
     Agnostic_ReportInliningDecision value;
 
-    value.inlinerHnd   = (DWORDLONG)inlinerHnd;
-    value.inlineeHnd   = (DWORDLONG)inlineeHnd;
+    value.inlinerHnd   = CastHandle(inlinerHnd);
+    value.inlineeHnd   = CastHandle(inlineeHnd);
     value.inlineResult = (DWORD)inlineResult;
     if (reason != nullptr)
         value.reason_offset =
@@ -488,7 +491,7 @@ CorInfoInline CompileResult::repReportInliningDecision(CORINFO_METHOD_HANDLE inl
         unsigned int                     cnt   = ReportInliningDecision->GetCount();
         for (unsigned int i = 0; i < cnt; i++)
         {
-            if ((items[i].inlinerHnd == (DWORDLONG)inlinerHnd) && (items[i].inlineeHnd == (DWORDLONG)inlineeHnd) &&
+            if ((items[i].inlinerHnd == CastHandle(inlinerHnd)) && (items[i].inlineeHnd == CastHandle(inlineeHnd)) &&
                 (items[i].inlineResult == INLINE_PASS))
                 result = INLINE_PASS;
         }
@@ -524,9 +527,9 @@ ULONG CompileResult::repSetEHcount()
 void CompileResult::recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause)
 {
     if (SetEHinfo == nullptr)
-        SetEHinfo = new LightWeightMap<DWORD, Agnostic_CORINFO_EH_CLAUSE2>();
+        SetEHinfo = new LightWeightMap<DWORD, Agnostic_CORINFO_EH_CLAUSE>();
 
-    Agnostic_CORINFO_EH_CLAUSE2 value;
+    Agnostic_CORINFO_EH_CLAUSE value;
     value.Flags         = (DWORD)clause->Flags;
     value.TryOffset     = (DWORD)clause->TryOffset;
     value.TryLength     = (DWORD)clause->TryLength;
@@ -536,7 +539,7 @@ void CompileResult::recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* cla
 
     SetEHinfo->Add((DWORD)EHnumber, value);
 }
-void CompileResult::dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE2& value)
+void CompileResult::dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE& value)
 {
     printf("SetEHinfo key %u, value flg-%u to-%u tl-%u ho-%u hl-%u", key, value.Flags, value.TryOffset, value.TryLength,
            value.HandlerOffset, value.HandlerLength);
@@ -558,7 +561,7 @@ void CompileResult::repSetEHinfo(unsigned EHnumber,
                                  ULONG*   handlerLength,
                                  ULONG*   classToken)
 {
-    Agnostic_CORINFO_EH_CLAUSE2 value;
+    Agnostic_CORINFO_EH_CLAUSE value;
     value = SetEHinfo->Get(EHnumber);
 
     *flags         = (ULONG)value.Flags;
@@ -574,7 +577,7 @@ void CompileResult::recSetMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethod
     if (SetMethodAttribs == nullptr)
         SetMethodAttribs = new LightWeightMap<DWORDLONG, DWORD>();
 
-    SetMethodAttribs->Add((DWORDLONG)ftn, (DWORD)attribs);
+    SetMethodAttribs->Add(CastHandle(ftn), (DWORD)attribs);
 }
 void CompileResult::dmpSetMethodAttribs(DWORDLONG key, DWORD value)
 {
@@ -582,9 +585,9 @@ void CompileResult::dmpSetMethodAttribs(DWORDLONG key, DWORD value)
 }
 CorInfoMethodRuntimeFlags CompileResult::repSetMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
-    if ((SetMethodAttribs == nullptr) || (SetMethodAttribs->GetIndex((DWORDLONG)ftn) == -1))
+    if ((SetMethodAttribs == nullptr) || (SetMethodAttribs->GetIndex(CastHandle(ftn)) == -1))
         return (CorInfoMethodRuntimeFlags)0;
-    CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->Get((DWORDLONG)ftn);
+    CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->Get(CastHandle(ftn));
     return result;
 }
 
@@ -593,7 +596,7 @@ void CompileResult::recMethodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE m
     if (MethodMustBeLoadedBeforeCodeIsRun == nullptr)
         MethodMustBeLoadedBeforeCodeIsRun = new DenseLightWeightMap<DWORDLONG>();
 
-    MethodMustBeLoadedBeforeCodeIsRun->Append((DWORDLONG)method);
+    MethodMustBeLoadedBeforeCodeIsRun->Append(CastHandle(method));
 }
 void CompileResult::dmpMethodMustBeLoadedBeforeCodeIsRun(DWORD key, DWORDLONG value)
 {
@@ -611,8 +614,8 @@ void CompileResult::recReportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,
 
     Agnostic_ReportTailCallDecision value;
 
-    value.callerHnd      = (DWORDLONG)callerHnd;
-    value.calleeHnd      = (DWORDLONG)calleeHnd;
+    value.callerHnd      = CastHandle(callerHnd);
+    value.calleeHnd      = CastHandle(calleeHnd);
     value.fIsTailPrefix  = (DWORD)fIsTailPrefix;
     value.tailCallResult = (DWORD)tailCallResult;
     if (reason != nullptr) // protect strlen
@@ -688,8 +691,8 @@ void CompileResult::repRecordRelocation(void* location, void* target, WORD fRelo
 
     Agnostic_RecordRelocation value;
 
-    value.location   = (DWORDLONG)location;
-    value.target     = (DWORDLONG)target;
+    value.location   = CastPointer(location);
+    value.target     = CastPointer(target);
     value.fRelocType = (DWORD)fRelocType;
     value.slotNum    = (DWORD)slotNum;
     value.addlDelta  = (DWORD)addlDelta;
@@ -882,10 +885,10 @@ void CompileResult::recAddressMap(void* originalAddress, void* replayAddress, un
 
     Agnostic_AddressMap value;
 
-    value.Address = (DWORDLONG)originalAddress;
+    value.Address = CastPointer(originalAddress);
     value.size    = (DWORD)size;
 
-    AddressMap->Add((DWORDLONG)replayAddress, value);
+    AddressMap->Add(CastPointer(replayAddress), value);
 }
 void CompileResult::dmpAddressMap(DWORDLONG key, const Agnostic_AddressMap& value)
 {
@@ -896,12 +899,12 @@ void* CompileResult::repAddressMap(void* replayAddress)
     if (AddressMap == nullptr)
         return nullptr;
 
-    int index = AddressMap->GetIndex((DWORDLONG)replayAddress);
+    int index = AddressMap->GetIndex(CastPointer(replayAddress));
 
     if (index != -1)
     {
         Agnostic_AddressMap value;
-        value = AddressMap->Get((DWORDLONG)replayAddress);
+        value = AddressMap->Get(CastPointer(replayAddress));
         return (void*)value.Address;
     }
 
@@ -915,8 +918,8 @@ void* CompileResult::searchAddressMap(void* newAddress)
     {
         DWORDLONG           replayAddress = AddressMap->GetRawKeys()[i];
         Agnostic_AddressMap value         = AddressMap->Get(replayAddress);
-        if ((replayAddress <= (DWORDLONG)newAddress) && ((DWORDLONG)newAddress < (replayAddress + value.size)))
-            return (void*)(value.Address + ((DWORDLONG)newAddress - replayAddress));
+        if ((replayAddress <= CastPointer(newAddress)) && (CastPointer(newAddress) < (replayAddress + value.size)))
+            return (void*)(value.Address + (CastPointer(newAddress) - replayAddress));
     }
     return (void*)-1;
 }
@@ -952,8 +955,8 @@ void CompileResult::recAllocUnwindInfo(BYTE*          pHotCode,
         AllocUnwindInfo = new DenseLightWeightMap<Agnostic_AllocUnwindInfo>();
 
     Agnostic_AllocUnwindInfo value;
-    value.pHotCode           = (DWORDLONG)pHotCode;
-    value.pColdCode          = (DWORDLONG)pColdCode;
+    value.pHotCode           = CastPointer(pHotCode);
+    value.pColdCode          = CastPointer(pColdCode);
     value.startOffset        = (DWORD)startOffset;
     value.endOffset          = (DWORD)endOffset;
     value.unwindSize         = (DWORD)unwindSize;
@@ -977,13 +980,10 @@ void CompileResult::recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
 
 void CompileResult::dmpRecordCallSiteWithSignature(DWORD key, const Agnostic_RecordCallSite& value) const
 {
-    printf("RecordCallSite key %u, callSig{cc-%u rtc-%016llX rts-%016llX rt-%u flg-%u na-%u cc-%u ci-%u mc-%u mi-%u "
-           "sig-%u pSig-%u scp-%016llX tok-%08X} ftn-%016llX",
-           key, value.callSig.callConv, value.callSig.retTypeClass, value.callSig.retTypeSigClass,
-           value.callSig.retType, value.callSig.flags, value.callSig.numArgs, value.callSig.sigInst_classInstCount,
-           value.callSig.sigInst_classInst_Index, value.callSig.sigInst_methInstCount,
-           value.callSig.sigInst_methInst_Index, value.callSig.cbSig, value.callSig.pSig_Index, value.callSig.scope,
-           value.callSig.token, value.methodHandle);
+    printf("RecordCallSite key %u, callSig-%s ftn-%016llX",
+           key,
+           SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap).c_str(),
+           value.methodHandle);
 }
 
 void CompileResult::dmpRecordCallSiteWithoutSignature(DWORD key, DWORDLONG methodHandle) const
@@ -1006,31 +1006,13 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
     {
         Agnostic_RecordCallSite value;
         ZeroMemory(&value, sizeof(Agnostic_RecordCallSite));
-        value.callSig.callConv               = (DWORD)callSig->callConv;
-        value.callSig.retTypeClass           = (DWORDLONG)callSig->retTypeClass;
-        value.callSig.retTypeSigClass        = (DWORDLONG)callSig->retTypeSigClass;
-        value.callSig.retType                = (DWORD)callSig->retType;
-        value.callSig.flags                  = (DWORD)callSig->flags;
-        value.callSig.numArgs                = (DWORD)callSig->numArgs;
-        value.callSig.sigInst_classInstCount = (DWORD)callSig->sigInst.classInstCount;
-        value.callSig.sigInst_classInst_Index =
-            RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->sigInst.classInst,
-                                      callSig->sigInst.classInstCount * 8); // porting issue
-        value.callSig.sigInst_methInstCount = (DWORD)callSig->sigInst.methInstCount;
-        value.callSig.sigInst_methInst_Index =
-            RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->sigInst.methInst,
-                                      callSig->sigInst.methInstCount * 8); // porting issue
-        value.callSig.args       = (DWORDLONG)callSig->args;
-        value.callSig.cbSig      = (DWORD)callSig->cbSig;
-        value.callSig.pSig_Index = (DWORD)RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->pSig, callSig->cbSig);
-        value.callSig.scope      = (DWORDLONG)callSig->scope;
-        value.callSig.token      = (DWORD)callSig->token;
-        value.methodHandle = (DWORDLONG)methodHandle;
+        value.callSig      = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*callSig, RecordCallSiteWithSignature, CrSigInstHandleMap);
+        value.methodHandle = CastHandle(methodHandle);
         RecordCallSiteWithSignature->Add(instrOffset, value);
     }
     else
     {
-        RecordCallSiteWithoutSignature->Add(instrOffset, (DWORDLONG)methodHandle);
+        RecordCallSiteWithoutSignature->Add(instrOffset, CastHandle(methodHandle));
     }
 }
 
@@ -1047,22 +1029,7 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     if (value.callSig.callConv == (DWORD)-1)
         return false;
 
-    pCallSig->callConv               = (CorInfoCallConv)value.callSig.callConv;
-    pCallSig->retTypeClass           = (CORINFO_CLASS_HANDLE)value.callSig.retTypeClass;
-    pCallSig->retTypeSigClass        = (CORINFO_CLASS_HANDLE)value.callSig.retTypeSigClass;
-    pCallSig->retType                = (CorInfoType)value.callSig.retType;
-    pCallSig->flags                  = (unsigned)value.callSig.flags;
-    pCallSig->numArgs                = (unsigned)value.callSig.numArgs;
-    pCallSig->sigInst.classInstCount = (unsigned)value.callSig.sigInst_classInstCount;
-    pCallSig->sigInst.classInst =
-        (CORINFO_CLASS_HANDLE*)RecordCallSiteWithSignature->GetBuffer(value.callSig.sigInst_classInst_Index);
-    pCallSig->sigInst.methInstCount = (unsigned)value.callSig.sigInst_methInstCount;
-    pCallSig->sigInst.methInst = (CORINFO_CLASS_HANDLE*)RecordCallSiteWithSignature->GetBuffer(value.callSig.sigInst_methInst_Index);
-    pCallSig->args             = (CORINFO_ARG_LIST_HANDLE)value.callSig.args;
-    pCallSig->cbSig            = (unsigned int)value.callSig.cbSig;
-    pCallSig->pSig             = (PCCOR_SIGNATURE)RecordCallSiteWithSignature->GetBuffer(value.callSig.pSig_Index);
-    pCallSig->scope            = (CORINFO_MODULE_HANDLE)value.callSig.scope;
-    pCallSig->token            = (mdToken)value.callSig.token;
+    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap);
 
     return true;
 }
@@ -1081,4 +1048,9 @@ bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_MET
         *pMethodHandle = value;
     }
     return false;
+}
+
+void CompileResult::dmpCrSigInstHandleMap(DWORD key, DWORDLONG value)
+{
+    printf("CrSigInstHandleMap key %u, value %016llX", key, value);
 }

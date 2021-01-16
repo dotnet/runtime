@@ -348,7 +348,28 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 {
     WRAPPER_NO_CONTRACT;
 
+    static Thread *const FatalErrorNotSeenYet = nullptr;
+    static Thread *const FatalErrorLoggingFinished = reinterpret_cast<Thread *>(1);
+
+    static Thread *volatile s_pCrashingThread = FatalErrorNotSeenYet;
+
     Thread *pThread = GetThread();
+    Thread *pPreviousThread = InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, pThread, FatalErrorNotSeenYet);
+
+    if (pPreviousThread == pThread)
+    {
+        PrintToStdErrA("Fatal error while logging another fatal error.\n");
+        return;
+    }
+    else if (pPreviousThread != nullptr)
+    {
+        while (s_pCrashingThread != FatalErrorLoggingFinished)
+        {
+            ClrSleepEx(50, /*bAlertable*/ FALSE);
+        }
+        return;
+    }
+
     EX_TRY
     {
         if (exitCode == (UINT)COR_E_FAILFAST)
@@ -393,6 +414,8 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
+    
+    InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, FatalErrorLoggingFinished, pThread);
 }
 
 //This starts FALSE and then converts to true if HandleFatalError has ever been called by a GC thread
@@ -536,8 +559,6 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 // Though we would like to remove the usage of ExecutionEngineException in any manner,
                 // we cannot. Its okay to use it in the case below since the process is terminating
                 // and this will serve as an exception object for debugger.
-                // We avoid calling CLRException::GetPreallocatedExecutionEngineExceptionHandle to avoid
-                // an assertion in case the exception has not been allocated yet.
                 ohException = g_pPreallocatedExecutionEngineException;
             }
 

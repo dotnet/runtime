@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <!-- Generate Mono corelib version file -->
   <Import Project="GenerateMonoCoreLibVersionFile.targets" />
 
@@ -9,10 +9,6 @@
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-
-    <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
-    <DebugType>Portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
@@ -35,6 +31,8 @@
     <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <!-- Override InformationalVersion during servicing as it's returned via public api. -->
+    <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <Nullable>enable</Nullable>
@@ -88,7 +86,6 @@
 
   <!-- Signing -->
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
   </PropertyGroup>
 
@@ -121,6 +118,11 @@
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
   </PropertyGroup>
 
+  <!-- Experimental mono metadata update feature -->
+  <PropertyGroup>
+    <DefineConstants Condition="'$(MonoMetadataUpdate)' == 'true'">$(DefineConstants);FEATURE_METADATA_UPDATE</DefineConstants>
+  </PropertyGroup>
+
   <!-- ILLinker settings -->
   <PropertyGroup>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
@@ -143,8 +145,6 @@
   <!-- Sources -->
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
-      <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
-      <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoPInvokeCallbackAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeHandles.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
@@ -248,7 +248,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\Contexts\Context.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
@@ -281,9 +280,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Browser.Mono.cs" />
       <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.UnixOrWindows.Mono.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />

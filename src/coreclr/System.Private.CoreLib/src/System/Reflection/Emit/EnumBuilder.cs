@@ -38,12 +38,14 @@ namespace System.Reflection.Emit
             return fieldBuilder;
         }
 
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
         public TypeInfo? CreateTypeInfo()
         {
             return m_typeBuilder.CreateTypeInfo();
         }
 
         // CreateType cause EnumBuilder to be baked.
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
         public Type? CreateType()
         {
             return m_typeBuilder.CreateType();
@@ -332,6 +334,8 @@ namespace System.Reflection.Emit
 
         // Constructs a EnumBuilder.
         // EnumBuilder can only be a top-level (not nested) enum type.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2064:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         internal EnumBuilder(
             string name,                       // name of type
             Type underlyingType,             // underlying type for an Enum

@@ -74,6 +74,16 @@ ZapInfo::~ZapInfo()
 #ifdef FEATURE_EH_FUNCLETS
     delete [] m_pMainUnwindInfo;
 #endif
+    if (m_pgoResults != nullptr)
+    {
+        ProfileDataResults* current = m_pgoResults;
+        while (current != nullptr)
+        {
+            ProfileDataResults* next = current->m_next;
+            delete current;
+            current = next;
+        }
+    }
 }
 
 #ifdef ALLOW_SXS_JIT_NGEN
@@ -901,25 +911,31 @@ bool ZapInfo::runWithErrorTrap(void (*function)(void*), void* param)
     return m_pEEJitInfo->runWithErrorTrap(function, param);
 }
 
-HRESULT ZapInfo::allocMethodBlockCounts (
-    UINT32                        count,           // the count of <ILOffset, ExecutionCount> tuples
-    ICorJitInfo::BlockCounts **   pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
-    )
+HRESULT ZapInfo::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
+                                                 PgoInstrumentationSchema* pSchema,
+                                                 UINT32 countSchemaItems,
+                                                 BYTE** pInstrumentationData)
 {
     HRESULT hr;
 
+    *pInstrumentationData = nullptr;
     if (m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB))
     {
-        *pBlockCounts = nullptr;
+        return E_NOTIMPL;
+    }
+
+    // Only allocation of PGO data for the current method is supported.
+    if (m_currentMethodHandle != ftnHnd)
+    {
         return E_NOTIMPL;
     }
 
     // @TODO: support generic methods from other assemblies
     if (m_currentMethodModule != m_pImage->m_hModule)
     {
-        *pBlockCounts = nullptr;
         return E_NOTIMPL;
     }
+
 
     mdMethodDef md = m_currentMethodToken;
 
@@ -941,44 +957,60 @@ HRESULT ZapInfo::allocMethodBlockCounts (
         return E_FAIL;
     }
 
+    // Validate that each schema item is only used for a basic block count
+    for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
+    {
+        if (pSchema[iSchema].InstrumentationKind != PgoInstrumentationKind::BasicBlockIntCount)
+            return E_NOTIMPL;
+        if (pSchema[iSchema].Count != 1)
+            return E_NOTIMPL;
+    }
+
     // If the JIT retries the compilation (especially during JIT stress), it can
     // try to allocate the profiling data multiple times. We will just keep track
     // of the latest copy in this case.
     // _ASSERTE(m_pProfileData == NULL);
 
-    DWORD totalSize = (DWORD) (count * sizeof(ICorJitInfo::BlockCounts)) + sizeof(CORBBTPROF_METHOD_HEADER);
+    DWORD totalSize = (DWORD) (countSchemaItems * sizeof(ICorJitInfo::BlockCounts)) + sizeof(CORBBTPROF_METHOD_HEADER);
     m_pProfileData = ZapBlobWithRelocs::NewAlignedBlob(m_pImage, NULL, totalSize, sizeof(DWORD));
     CORBBTPROF_METHOD_HEADER * profileData = (CORBBTPROF_METHOD_HEADER *) m_pProfileData->GetData();
     profileData->size           = totalSize;
     profileData->cDetail        = 0;
     profileData->method.token   = md;
     profileData->method.ILSize  = m_currentMethodInfo.ILCodeSize;
-    profileData->method.cBlock  = count;
+    profileData->method.cBlock  = countSchemaItems;
 
-    *pBlockCounts = (ICorJitInfo::BlockCounts *)(&profileData->method.block[0]);
+    ICorJitInfo::BlockCounts* blockCounts = (ICorJitInfo::BlockCounts *)(&profileData->method.block[0]);
+    *pInstrumentationData = (BYTE*)blockCounts;
+
+    for (UINT32 iSchema = 0; iSchema < countSchemaItems; iSchema++)
+    {
+        // Update schema have correct offsets
+        pSchema[iSchema].Offset = (BYTE*)&blockCounts[iSchema].ExecutionCount - (BYTE*)blockCounts;
+        // Insert IL Offsets into block data to match schema
+        blockCounts[iSchema].ILOffset = pSchema[iSchema].ILOffset;
+    }
 
     return S_OK;
 }
 
-HRESULT ZapInfo::getMethodBlockCounts (
-    CORINFO_METHOD_HANDLE ftnHnd,
-    UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
-    BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-    UINT32 *              pNumRuns
-    )
+HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
+                                              PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
+                                              UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
+                                              BYTE **                    pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
 {
-    _ASSERTE(pBlockCounts != nullptr);
-    _ASSERTE(pCount != nullptr);
+    _ASSERTE(pCountSchemaItems != nullptr);
+    _ASSERTE(pInstrumentationData != nullptr);
+    _ASSERTE(pSchema != nullptr);
 
     HRESULT hr;
 
     // Initialize outputs in case we return E_FAIL
-    *pBlockCounts = nullptr;
-    *pCount = 0;
-    if (pNumRuns != nullptr)
-    {
-        *pNumRuns = 0;
-    }
+    *pCountSchemaItems = 0;
+    *pSchema = nullptr;
+    *pInstrumentationData = nullptr;
+
+    int32_t numRuns = 0;
 
     // For generic instantiations whose IL is in another module,
     // the profile data is in that module
@@ -1004,71 +1036,102 @@ HRESULT ZapInfo::getMethodBlockCounts (
         return E_FAIL;
     }
 
-    if (pNumRuns != nullptr)
+    ProfileDataResults* pgoResults = m_pgoResults;
+    while (pgoResults != nullptr)
     {
-        *pNumRuns =  m_pImage->m_profileDataNumRuns;
+        if (pgoResults->m_ftn == ftnHnd)
+            break;
+        pgoResults = pgoResults->m_next;
     }
 
-    const ZapImage::ProfileDataHashEntry * foundEntry = m_pImage->profileDataHashTable.LookupPtr(md);
-
-    if (foundEntry == NULL)
+    if (pgoResults == nullptr)
     {
-        return E_FAIL;
-    }
+        const ZapImage::ProfileDataHashEntry * foundEntry = m_pImage->profileDataHashTable.LookupPtr(md);
 
-    // The md must match.
-    _ASSERTE(foundEntry->md == md);
-
-    if (foundEntry->pos == 0)
-    {
-        // We might not have profile data and instead only have CompileStatus and flags
-        assert(foundEntry->size == 0);
-        return E_FAIL;
-    }
-
-    //
-    //
-    // We found the md. Let's retrieve the profile data.
-    //
-    _ASSERTE(foundEntry->size >= sizeof(CORBBTPROF_METHOD_HEADER));   // The size must at least this
-
-    ProfileReader profileReader(DataSection_MethodBlockCounts->pData, DataSection_MethodBlockCounts->dataSize);
-
-    // Locate the method in interest.
-    SEEK(foundEntry->pos);
-    CORBBTPROF_METHOD_HEADER *  profileData;
-    READ_SIZE(profileData, CORBBTPROF_METHOD_HEADER, foundEntry->size);
-    _ASSERTE(profileData->method.token == foundEntry->md);  // We should be looking at the right method
-    _ASSERTE(profileData->size == foundEntry->size);        // and the cached size must match
-
-    *pBlockCounts = (ICorJitInfo::BlockCounts *) &profileData->method.block[0];
-    *pCount  = profileData->method.cBlock;
-
-    // Find method's IL size
-    //
-    unsigned ilSize = m_currentMethodInfo.ILCodeSize;
-
-    if (ftnHnd != m_currentMethodHandle)
-    {
-        CORINFO_METHOD_INFO methodInfo;
-        if (!getMethodInfo(ftnHnd, &methodInfo))
+        if (foundEntry == NULL)
         {
             return E_FAIL;
         }
-        ilSize = methodInfo.ILCodeSize;
-    }
 
-    // If the ILSize is non-zero the the ILCodeSize also must match
-    //
-    if ((profileData->method.ILSize != 0) && (profileData->method.ILSize != ilSize))
-    {
-        // IL code for this method does not match the IL code for the method when it was profiled
-        // in such cases we tell the JIT to discard the profile data by returning E_FAIL
+        // The md must match.
+        _ASSERTE(foundEntry->md == md);
+
+        if (foundEntry->pos == 0)
+        {
+            // We might not have profile data and instead only have CompileStatus and flags
+            assert(foundEntry->size == 0);
+            return E_FAIL;
+        }
+
         //
-        return E_FAIL;
+        //
+        // We found the md. Let's retrieve the profile data.
+        //
+        _ASSERTE(foundEntry->size >= sizeof(CORBBTPROF_METHOD_HEADER));   // The size must at least this
+
+        ProfileReader profileReader(DataSection_MethodBlockCounts->pData, DataSection_MethodBlockCounts->dataSize);
+
+        // Locate the method in interest.
+        SEEK(foundEntry->pos);
+        CORBBTPROF_METHOD_HEADER *  profileData;
+        READ_SIZE(profileData, CORBBTPROF_METHOD_HEADER, foundEntry->size);
+        _ASSERTE(profileData->method.token == foundEntry->md);  // We should be looking at the right method
+        _ASSERTE(profileData->size == foundEntry->size);        // and the cached size must match
+
+        // Find method's IL size
+        //
+        unsigned ilSize = m_currentMethodInfo.ILCodeSize;
+
+        if (ftnHnd != m_currentMethodHandle)
+        {
+            CORINFO_METHOD_INFO methodInfo;
+            if (!getMethodInfo(ftnHnd, &methodInfo))
+            {
+                return E_FAIL;
+            }
+            ilSize = methodInfo.ILCodeSize;
+        }
+
+        // If the ILSize is non-zero the the ILCodeSize also must match
+        //
+        if ((profileData->method.ILSize != 0) && (profileData->method.ILSize != ilSize))
+        {
+            // IL code for this method does not match the IL code for the method when it was profiled
+            // in such cases we tell the JIT to discard the profile data by returning E_FAIL
+            //
+            return E_FAIL;
+        }
+
+        pgoResults = new ProfileDataResults(ftnHnd);
+        pgoResults->m_next = m_pgoResults;
+        m_pgoResults = pgoResults;
+
+        pgoResults->pInstrumentationData = (BYTE*)&profileData->method.block[0];
+
+        ICorJitInfo::BlockCounts *blockCounts = (ICorJitInfo::BlockCounts *) &profileData->method.block[0];
+
+        PgoInstrumentationSchema numRunsSchema = {};
+        numRunsSchema.Count = 1;
+        numRunsSchema.Other = m_pImage->m_profileDataNumRuns;
+        numRunsSchema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::NumRuns;
+        pgoResults->m_schema.Append(numRunsSchema);
+        for (UINT32 iSchema = 0; iSchema < profileData->method.cBlock; iSchema++)
+        {
+            PgoInstrumentationSchema blockCountSchema = {};
+            blockCountSchema.Count = 1;
+            blockCountSchema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+            blockCountSchema.ILOffset = blockCounts[iSchema].ILOffset;
+            blockCountSchema.Offset = (BYTE *)&blockCounts[iSchema].ExecutionCount - (BYTE*)blockCounts;
+            pgoResults->m_schema.Append(blockCountSchema);
+        }
+        pgoResults->m_hr = S_OK;
     }
 
-    return S_OK;
+    *pCountSchemaItems = pgoResults->m_schema.GetCount();
+    *pSchema = pgoResults->m_schema.GetElements();
+    *pInstrumentationData = pgoResults->pInstrumentationData;
+
+    return pgoResults->m_hr;
 }
 
 CORINFO_CLASS_HANDLE ZapInfo::getLikelyClass(
@@ -4207,7 +4270,8 @@ BOOL ZapInfo::CurrentMethodHasProfileData()
 {
     WRAPPER_NO_CONTRACT;
     UINT32 size;
-    ICorJitInfo::BlockCounts * pBlockCounts;
-    return SUCCEEDED(getMethodBlockCounts(m_currentMethodHandle, &size, &pBlockCounts, NULL));
+    ICorJitInfo::PgoInstrumentationSchema * pSchema;
+    BYTE* pData;
+    return SUCCEEDED(getPgoInstrumentationResults(m_currentMethodHandle, &pSchema, &size, &pData));
 }
 

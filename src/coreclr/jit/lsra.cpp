@@ -716,9 +716,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+    firstColdLoc = MaxLocation;
+
 #ifdef DEBUG
     maxNodeLocation   = 0;
-    firstColdLoc      = MaxLocation;
     activeRefPosition = nullptr;
 
     // Get the value of the environment variable that controls stress for register allocation
@@ -942,7 +943,7 @@ void LinearScan::setBlockSequence()
         bool hasUniquePred = (block->GetUniquePred(compiler) != nullptr);
         for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
         {
-            BasicBlock* predBlock = pred->flBlock;
+            BasicBlock* predBlock = pred->getBlock();
             if (!hasUniquePred)
             {
                 if (predBlock->NumSucc(compiler) > 1)
@@ -1192,7 +1193,7 @@ void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlo
     flowList* pred;
     for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
-        BlockSetOps::AddElemD(compiler, predSet, pred->flBlock->bbNum);
+        BlockSetOps::AddElemD(compiler, predSet, pred->getBlock()->bbNum);
     }
 
     // If either a rarely run block or all its preds are already sequenced, use block's weight to sequence
@@ -2457,7 +2458,7 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                         {
                             for (flowList* pred = otherBlock->bbPreds; pred != nullptr; pred = pred->flNext)
                             {
-                                BasicBlock* otherPred = pred->flBlock;
+                                BasicBlock* otherPred = pred->getBlock();
                                 if (otherPred->bbNum == blockInfo[otherBlock->bbNum].predBBNum)
                                 {
                                     predBlock = otherPred;
@@ -2477,7 +2478,7 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
         {
             for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
             {
-                BasicBlock* candidatePredBlock = pred->flBlock;
+                BasicBlock* candidatePredBlock = pred->getBlock();
 
                 if (isBlockVisited(candidatePredBlock))
                 {
@@ -8713,7 +8714,7 @@ void LinearScan::resolveEdges()
         VarToRegMap toVarToRegMap = getInVarToRegMap(block->bbNum);
         for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
         {
-            BasicBlock*     predBlock       = pred->flBlock;
+            BasicBlock*     predBlock       = pred->getBlock();
             VarToRegMap     fromVarToRegMap = getOutVarToRegMap(predBlock->bbNum);
             VarSetOps::Iter iter(compiler, block->bbLiveIn);
             unsigned        varIndex = 0;
@@ -11137,8 +11138,8 @@ void LinearScan::verifyFinalAllocation()
             {
                 dumpRegRecordTitle();
                 printf(shortRefPositionFormat, 0, 0);
-                assert(currentBlock->bbPreds != nullptr && currentBlock->bbPreds->flBlock != nullptr);
-                printf(bbRefPosFormat, currentBlock->bbNum, currentBlock->bbPreds->flBlock->bbNum);
+                assert(currentBlock->bbPreds != nullptr && currentBlock->bbPreds->getBlock() != nullptr);
+                printf(bbRefPosFormat, currentBlock->bbNum, currentBlock->bbPreds->getBlock()->bbNum);
                 dumpRegRecords();
             }
 

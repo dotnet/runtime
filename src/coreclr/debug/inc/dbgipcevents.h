@@ -1642,8 +1642,7 @@ enum DebuggerIPCE_FuncEvalType
     DB_IPCE_FET_NEW_OBJECT,
     DB_IPCE_FET_NEW_OBJECT_NC,
     DB_IPCE_FET_NEW_STRING,
-    DB_IPCE_FET_NEW_ARRAY,
-    DB_IPCE_FET_RE_ABORT
+    DB_IPCE_FET_NEW_ARRAY
 };
 
 
@@ -2310,7 +2309,7 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             VMPTR_OBJECTHANDLE vmObjectHandle;
-            BOOL            fStrong;
+            CorDebugHandleType handleType;
         } DisposeHandle;
 
         struct MSLAYOUT

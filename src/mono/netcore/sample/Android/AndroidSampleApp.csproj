@@ -20,19 +20,27 @@
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
+  <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
-      <ApkDir>$(OutputPath)apk\</ApkDir>
+      <ApkDir>$(PublishDir)apk\</ApkDir>
     </PropertyGroup>
+
+    <ItemGroup>
+      <AotInputAssemblies Include="$(PublishDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
+    </ItemGroup>
 
     <RemoveDir Directories="$(ApkDir)" />
 
-    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
     <PropertyGroup>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
@@ -40,16 +48,31 @@
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
     </PropertyGroup>
 
+    <!-- TODO: delete once we switch to Android Crypto -->
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
+
+    <Message Importance="High" Text="Path: $(PublishDir)" />
+    <Message Importance="High" Text="SourceDir: $(OutputPath)" />
+
+    <MonoAOTCompiler
+        Condition="'$(ForceAOT)' == 'true'"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\android-$(TargetArchitecture)\mono-aot-cross"
+        Mode="Full"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        UseLLVM="$(UseLLVM)"
+        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\android-$(TargetArchitecture)">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
-        SourceDir="$(OutputPath)"
+        SourceDir="$(PublishDir)"
         ProjectName="HelloAndroid"
         ForceInterpreter="$(MonoForceInterpreter)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
@@ -88,15 +111,15 @@
       <!-- AnyCPU as Platform-->
       <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
       <!-- <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig> -->
-      <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
-      <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
-      <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
     </PropertyGroup>
     <ItemGroup>
-      <_appFiles Include="$(ApkBundlePath)" />
+      <_apkFiles Include="$(ApkBundlePath)" />
     </ItemGroup>
-    <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(TestArchiveTestsDir)" />
+    <Copy SourceFiles="@(_apkFiles)"
+          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/%(RecursiveDir)" />
 
     <Message Importance="High" Text="ApkBundlePath: $(ApkBundlePath)"/>
     <Message Importance="High" Text="TestArchiveTestsDir: $(TestArchiveTestsDir)"/>

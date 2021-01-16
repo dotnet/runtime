@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             if (_options.SizeLimit.HasValue && !entry.Size.HasValue)
             {
-                throw new InvalidOperationException($"Cache entry must specify a value for {nameof(entry.Size)} when {nameof(_options.SizeLimit)} is set.");
+                throw new InvalidOperationException(SR.Format(SR.CacheEntryHasEmptySize, nameof(entry.Size), nameof(_options.SizeLimit)));
             }
 
             DateTimeOffset utcNow = _options.Clock.UtcNow;

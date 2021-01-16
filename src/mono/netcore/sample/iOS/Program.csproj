@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
-    <DebugType>Portable</DebugType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetOS>iOS</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)\runtimes\ios-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
@@ -50,14 +49,14 @@
 
     <MonoAOTCompiler
         Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\mono-aot-cross"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\$(PackageRID)\mono-aot-cross"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         UseLLVM="$(UseLLVM)"
-        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross">
+        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\$(PackageRID)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 

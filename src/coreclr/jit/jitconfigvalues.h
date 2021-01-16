@@ -41,6 +41,27 @@ CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In deb
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
                                                           // with this byte.
+CONFIG_INTEGER(JitAlignLoopMinBlockWeight,
+               W("JitAlignLoopMinBlockWeight"),
+               DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT) // Minimum weight needed for the first block of a loop to make it a
+                                                    // candidate for alignment.
+CONFIG_INTEGER(JitAlignLoopMaxCodeSize,
+               W("JitAlignLoopMaxCodeSize"),
+               DEFAULT_MAX_LOOPSIZE_FOR_ALIGN) // For non-adaptive alignment, minimum loop size (in bytes) for which
+                                               // alignment will be done.
+                                               // Defaults to 3 blocks of 32 bytes chunks = 96 bytes.
+CONFIG_INTEGER(JitAlignLoopBoundary,
+               W("JitAlignLoopBoundary"),
+               DEFAULT_ALIGN_LOOP_BOUNDARY) // For non-adaptive alignment, address boundary (power of 2) at which loop
+                                            // alignment should be done. By default, 32B.
+CONFIG_INTEGER(JitAlignLoopForJcc,
+               W("JitAlignLoopForJcc"),
+               0) // If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.
+
+CONFIG_INTEGER(JitAlignLoopAdaptive,
+               W("JitAlignLoopAdaptive"),
+               1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
+
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
 CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)         // Uses only ASCII characters in tree dumps
@@ -202,6 +223,12 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
                                                                            // intrinsic classes
 #endif                                                                     // defined(DEBUG)
 
+#if FEATURE_LOOP_ALIGN
+CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
+#else
+CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 0)
+#endif
+
 ///
 /// JIT
 ///
@@ -342,6 +369,7 @@ CONFIG_INTEGER(JitDoCopyProp, W("JitDoCopyProp"), 1)   // Perform copy propagati
 CONFIG_INTEGER(JitDoEarlyProp, W("JitDoEarlyProp"), 1) // Perform Early Value Propagation
 CONFIG_INTEGER(JitDoLoopHoisting, W("JitDoLoopHoisting"), 1)   // Perform loop hoisting on loop invariant values
 CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
+CONFIG_INTEGER(JitDoRedundantBranchOpts, W("JitDoRedundantBranchOpts"), 1) // Perform redundant branch optimizations
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
 

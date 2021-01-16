@@ -176,8 +176,11 @@ void Compiler::fgInit()
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
 
-    fgHasSwitch   = false;
-    fgBlockCounts = nullptr;
+    fgHasSwitch          = false;
+    fgPgoSchema          = nullptr;
+    fgPgoData            = nullptr;
+    fgPgoSchemaCount     = 0;
+    fgPredListSortVector = nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -215,7 +218,7 @@ bool Compiler::fgHaveProfileData()
         return false;
     }
 
-    return (fgBlockCounts != nullptr);
+    return (fgPgoSchema != nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -368,11 +371,12 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
         return false;
     }
 
-    for (UINT32 i = 0; i < fgBlockCountsCount; i++)
+    for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
     {
-        if (fgBlockCounts[i].ILOffset == offset)
+        if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
+            ((IL_OFFSET)fgPgoSchema[i].ILOffset == offset))
         {
-            *weightWB = (BasicBlock::weight_t)fgBlockCounts[i].ExecutionCount;
+            *weightWB = (BasicBlock::weight_t) * (uint32_t*)(fgPgoData + fgPgoSchema[i].Offset);
             return true;
         }
     }
@@ -380,6 +384,38 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
     *weightWB = 0;
     return true;
 }
+
+template <class TFunctor>
+class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor<TFunctor>>
+{
+public:
+    enum
+    {
+        DoPreOrder = true
+    };
+
+    TFunctor& m_functor;
+    Compiler* m_compiler;
+
+    ClassProbeVisitor(Compiler* compiler, TFunctor& functor)
+        : GenTreeVisitor<ClassProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+    {
+    }
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const node = *use;
+        if (node->IsCall())
+        {
+            GenTreeCall* const call = node->AsCall();
+            if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
+            {
+                m_functor(m_compiler, call);
+            }
+        }
+
+        return Compiler::WALK_CONTINUE;
+    }
+};
 
 //------------------------------------------------------------------------
 // fgInstrumentMethod: add instrumentation probes to the method
@@ -405,6 +441,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
 void Compiler::fgInstrumentMethod()
 {
     noway_assert(!compIsForInlining());
+    jitstd::vector<ICorJitInfo::PgoInstrumentationSchema> schema(getAllocator());
 
     // Count the number of basic blocks in the method
     // that will get block count probes.
@@ -413,10 +450,80 @@ void Compiler::fgInstrumentMethod()
     BasicBlock* block;
     for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
-        if (!(block->bbFlags & BBF_IMPORTED) || (block->bbFlags & BBF_INTERNAL))
+        // We don't want to profile any un-imported blocks
+        //
+        if ((block->bbFlags & BBF_IMPORTED) == 0)
         {
             continue;
         }
+
+        if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) != 0)
+        {
+            class BuildClassProbeSchemaGen
+            {
+                jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* m_schema;
+
+            public:
+                BuildClassProbeSchemaGen(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema)
+                    : m_schema(schema)
+                {
+                }
+                void operator()(Compiler* compiler, GenTreeCall* call)
+                {
+                    ICorJitInfo::PgoInstrumentationSchema schemaElem;
+                    schemaElem.Count = 1;
+                    schemaElem.Other = ICorJitInfo::ClassProfile::CLASS_FLAG;
+                    if (call->IsVirtualStub())
+                    {
+                        schemaElem.Other |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
+                    }
+                    else
+                    {
+                        assert(call->IsVirtualVtable());
+                    }
+
+                    schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount;
+                    schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+                    schemaElem.Offset              = 0;
+
+                    m_schema->push_back(schemaElem);
+
+                    // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
+                    schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
+                    schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
+                    m_schema->push_back(schemaElem);
+                }
+            };
+            // Scan the statements and identify the class probes
+            //
+            BuildClassProbeSchemaGen                    schemaGen(&schema);
+            ClassProbeVisitor<BuildClassProbeSchemaGen> visitor(this, schemaGen);
+            for (Statement* stmt : block->Statements())
+            {
+                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            }
+        }
+
+        if (block->bbFlags & BBF_INTERNAL)
+        {
+            continue;
+        }
+
+        // Assign the current block's IL offset into the profile data
+        // (make sure IL offset is sane)
+        //
+        IL_OFFSET offset = block->bbCodeOffs;
+        assert((int)offset >= 0);
+
+        ICorJitInfo::PgoInstrumentationSchema schemaElem;
+        schemaElem.Count               = 1;
+        schemaElem.Other               = 0;
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+        schemaElem.ILOffset            = offset;
+        schemaElem.Offset              = 0;
+
+        schema.push_back(schemaElem);
+
         countOfBlocks++;
     }
 
@@ -424,6 +531,7 @@ void Compiler::fgInstrumentMethod()
     // when importing.
     //
     int countOfCalls = info.compClassProbeCount;
+    assert(((countOfCalls * 2) + countOfBlocks) == (int)schema.size());
 
     // Optionally bail out, if there are less than three blocks and no call sites to profile.
     // One block is common. We don't expect to see zero or two blocks here.
@@ -442,16 +550,10 @@ void Compiler::fgInstrumentMethod()
 
     // Allocate the profile buffer
     //
-    // Allocation is in multiples of ICorJitInfo::BlockCounts. For each profile table we need
-    // some multiple of these.
-    //
-    const unsigned entriesPerCall = sizeof(ICorJitInfo::ClassProfile) / sizeof(ICorJitInfo::BlockCounts);
-    assert(entriesPerCall * sizeof(ICorJitInfo::BlockCounts) == sizeof(ICorJitInfo::ClassProfile));
+    BYTE* profileMemory;
 
-    const unsigned            totalEntries            = countOfBlocks + entriesPerCall * countOfCalls;
-    ICorJitInfo::BlockCounts* profileBlockCountsStart = nullptr;
-
-    HRESULT res = info.compCompHnd->allocMethodBlockCounts(totalEntries, &profileBlockCountsStart);
+    HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
+                                                                    (UINT32)schema.size(), &profileMemory);
 
     // We may not be able to instrument, if so we'll set this false.
     // We can't just early exit, because we have to clean up calls that we might have profiled.
@@ -470,9 +572,6 @@ void Compiler::fgInstrumentMethod()
         }
     }
 
-    ICorJitInfo::BlockCounts* profileBlockCountsEnd = &profileBlockCountsStart[countOfBlocks];
-    ICorJitInfo::BlockCounts* profileEnd            = &profileBlockCountsStart[totalEntries];
-
     // For each BasicBlock (non-Internal)
     //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
     //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
@@ -480,7 +579,10 @@ void Compiler::fgInstrumentMethod()
     // Each (non-Internal) block has it own BlockCounts tuple [ILOffset, ExecutionCount]
     // To start we initialize our current one with the first one that we allocated
     //
-    ICorJitInfo::BlockCounts* currentBlockCounts = profileBlockCountsStart;
+    int currentSchemaIndex = 0;
+
+    // Hold the address of the first blocks ExecutionCount
+    size_t addrOfFirstExecutionCount = 0;
 
     for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
@@ -506,130 +608,93 @@ void Compiler::fgInstrumentMethod()
                 //
                 JITDUMP("Scanning for calls to profile in " FMT_BB "\n", block->bbNum);
 
-                class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor>
+                class ClassProbeInserter
                 {
+                    jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* m_schema;
+                    BYTE*                                                  m_profileMemory;
+                    int*                                                   m_currentSchemaIndex;
+                    bool                                                   m_instrument;
+
                 public:
-                    enum
-                    {
-                        DoPreOrder = true
-                    };
+                    int m_count = 0;
 
-                    int                        m_count;
-                    ICorJitInfo::ClassProfile* m_tableBase;
-                    bool                       m_instrument;
-
-                    ClassProbeVisitor(Compiler* compiler, ICorJitInfo::ClassProfile* tableBase, bool instrument)
-                        : GenTreeVisitor<ClassProbeVisitor>(compiler)
-                        , m_count(0)
-                        , m_tableBase(tableBase)
+                    ClassProbeInserter(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema,
+                                       BYTE*                                                  profileMemory,
+                                       int*                                                   pCurrentSchemaIndex,
+                                       bool                                                   instrument)
+                        : m_schema(schema)
+                        , m_profileMemory(profileMemory)
+                        , m_currentSchemaIndex(pCurrentSchemaIndex)
                         , m_instrument(instrument)
                     {
                     }
-                    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                    void operator()(Compiler* compiler, GenTreeCall* call)
                     {
-                        GenTree* const node = *use;
-                        if (node->IsCall())
+                        JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n", compiler->dspTreeID(call),
+                                call->gtClassProfileCandidateInfo->probeIndex,
+                                call->gtClassProfileCandidateInfo->ilOffset);
+
+                        m_count++;
+                        if (m_instrument)
                         {
-                            GenTreeCall* const call = node->AsCall();
-                            if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
-                            {
-                                JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n",
-                                        m_compiler->dspTreeID(call), call->gtClassProfileCandidateInfo->probeIndex,
-                                        call->gtClassProfileCandidateInfo->ilOffset);
+                            // We transform the call from (CALLVIRT obj, ... args ...) to
+                            // to
+                            //      (CALLVIRT
+                            //        (COMMA
+                            //          (ASG tmp, obj)
+                            //          (COMMA
+                            //            (CALL probe_fn tmp, &probeEntry)
+                            //            tmp)))
+                            //         ... args ...)
+                            //
 
-                                m_count++;
+                            assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
 
-                                if (m_instrument)
-                                {
-                                    // We transform the call from (CALLVIRT obj, ... args ...) to
-                                    // to
-                                    //      (CALLVIRT
-                                    //        (COMMA
-                                    //          (ASG tmp, obj)
-                                    //          (COMMA
-                                    //            (CALL probe_fn tmp, &probeEntry)
-                                    //            tmp)))
-                                    //         ... args ...)
-                                    //
+                            // Figure out where the table is located.
+                            //
+                            BYTE* classProfile = (*m_schema)[*m_currentSchemaIndex].Offset + m_profileMemory;
+                            *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
-                                    assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
+                            // Grab a temp to hold the 'this' object as it will be used three times
+                            //
+                            unsigned const tmpNum = compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
+                            compiler->lvaTable[tmpNum].lvType = TYP_REF;
 
-                                    // Figure out where the table is located.
-                                    //
-                                    ICorJitInfo::ClassProfile* classProfile =
-                                        &m_tableBase[call->gtClassProfileCandidateInfo->probeIndex];
+                            // Generate the IR...
+                            //
+                            GenTree* const classProfileNode =
+                                compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
+                            GenTree* const          tmpNode = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                            GenTreeCall::Use* const args    = compiler->gtNewCallArgs(tmpNode, classProfileNode);
+                            GenTree* const          helperCallNode =
+                                compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
+                            GenTree* const tmpNode2 = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                            GenTree* const callCommaNode =
+                                compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+                            GenTree* const tmpNode3 = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                            GenTree* const asgNode =
+                                compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
+                            GenTree* const asgCommaNode =
+                                compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
-                                    // Grab a temp to hold the 'this' object as it will be used three times
-                                    //
-                                    unsigned const tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
-                                    m_compiler->lvaTable[tmpNum].lvType = TYP_REF;
+                            // Update the call
+                            //
+                            call->gtCallThisArg->SetNode(asgCommaNode);
 
-                                    // Generate the IR...
-                                    //
-                                    GenTree* const classProfileNode =
-                                        m_compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
-                                    GenTree* const          tmpNode = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                                    GenTreeCall::Use* const args = m_compiler->gtNewCallArgs(tmpNode, classProfileNode);
-                                    GenTree* const          helperCallNode =
-                                        m_compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
-                                    GenTree* const tmpNode2 = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                                    GenTree* const callCommaNode =
-                                        m_compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-                                    GenTree* const tmpNode3 = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                                    GenTree* const asgNode  = m_compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3,
-                                                                                       call->gtCallThisArg->GetNode());
-                                    GenTree* const asgCommaNode =
-                                        m_compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
-
-                                    // Update the call
-                                    //
-                                    call->gtCallThisArg->SetNode(asgCommaNode);
-
-                                    JITDUMP("Modified call is now\n");
-                                    DISPTREE(call);
-
-                                    // Initialize the class table
-                                    //
-                                    // Hack: we use two high bits of the offset to indicate that this record
-                                    // is the start of a class profile, and what kind of call is being profiled.
-                                    //
-                                    IL_OFFSET offset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-                                    assert((offset & (ICorJitInfo::ClassProfile::CLASS_FLAG |
-                                                      ICorJitInfo::ClassProfile::INTERFACE_FLAG)) == 0);
-
-                                    offset |= ICorJitInfo::ClassProfile::CLASS_FLAG;
-
-                                    if (call->IsVirtualStub())
-                                    {
-                                        offset |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
-                                    }
-                                    else
-                                    {
-                                        assert(call->IsVirtualVtable());
-                                    }
-
-                                    classProfile->ILOffset = offset;
-                                    classProfile->Count    = 0;
-
-                                    for (int i = 0; i < ICorJitInfo::ClassProfile::SIZE; i++)
-                                    {
-                                        classProfile->ClassTable[i] = NO_CLASS_HANDLE;
-                                    }
-                                }
-
-                                // Restore the stub address on call, whether instrumenting or not.
-                                //
-                                call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-                            }
+                            JITDUMP("Modified call is now\n");
+                            DISPTREE(call);
                         }
 
-                        return Compiler::WALK_CONTINUE;
+                        // Restore the stub address on the call, whether instrumenting or not.
+                        //
+                        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
                     }
                 };
 
                 // Scan the statements and add class probes
                 //
-                ClassProbeVisitor visitor(this, (ICorJitInfo::ClassProfile*)profileBlockCountsEnd, instrument);
+                ClassProbeInserter insertProbes(&schema, profileMemory, &currentSchemaIndex, instrument);
+                ClassProbeVisitor<ClassProbeInserter> visitor(this, insertProbes);
                 for (Statement* stmt : block->Statements())
                 {
                     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -637,8 +702,8 @@ void Compiler::fgInstrumentMethod()
 
                 // Bookkeeping
                 //
-                assert(visitor.m_count <= countOfCalls);
-                countOfCalls -= visitor.m_count;
+                assert(insertProbes.m_count <= countOfCalls);
+                countOfCalls -= insertProbes.m_count;
                 JITDUMP("\n%d calls remain to be visited\n", countOfCalls);
             }
             else
@@ -662,16 +727,11 @@ void Compiler::fgInstrumentMethod()
 
         if (instrument)
         {
-            // Assign the current block's IL offset into the profile data
-            // (make sure IL offset is sane)
-            //
-            IL_OFFSET offset = block->bbCodeOffs;
-            assert((int)offset >= 0);
-
-            currentBlockCounts->ILOffset       = offset;
-            currentBlockCounts->ExecutionCount = 0;
-
-            size_t addrOfCurrentExecutionCount = (size_t)&currentBlockCounts->ExecutionCount;
+            assert(block->bbCodeOffs == (IL_OFFSET)schema[currentSchemaIndex].ILOffset);
+            size_t addrOfCurrentExecutionCount = (size_t)(schema[currentSchemaIndex].Offset + profileMemory);
+            if (addrOfFirstExecutionCount == 0)
+                addrOfFirstExecutionCount = addrOfCurrentExecutionCount;
+            currentSchemaIndex++;
 
             // Read Basic-Block count value
             GenTree* valueNode =
@@ -685,9 +745,6 @@ void Compiler::fgInstrumentMethod()
             GenTree* asgNode = gtNewAssignNode(lhsNode, rhsNode);
 
             fgNewStmtAtBeg(block, asgNode);
-
-            // Advance to the next BlockCounts tuple [ILOffset, ExecutionCount]
-            currentBlockCounts++;
         }
     }
 
@@ -700,7 +757,6 @@ void Compiler::fgInstrumentMethod()
     //
     noway_assert(countOfBlocks == 0);
     noway_assert(countOfCalls == 0);
-    assert(currentBlockCounts == profileBlockCountsEnd);
 
     // When prejitting, add the method entry callback node
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
@@ -730,9 +786,6 @@ void Compiler::fgInstrumentMethod()
 
         GenTreeCall::Use* args = gtNewCallArgs(arg);
         GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
-
-        // Get the address of the first blocks ExecutionCount
-        size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
 
         // Read Basic-Block count value
         GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
@@ -1322,7 +1375,7 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
 
     for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
-        if (blockPred == pred->flBlock)
+        if (blockPred == pred->getBlock())
         {
             return pred;
         }
@@ -1361,7 +1414,7 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, 
     for (predPrevAddr = &block->bbPreds, pred = *predPrevAddr; pred != nullptr;
          predPrevAddr = &pred->flNext, pred = *predPrevAddr)
     {
-        if (blockPred == pred->flBlock)
+        if (blockPred == pred->getBlock())
         {
             *ptrToPred = predPrevAddr;
             return pred;
@@ -1402,7 +1455,7 @@ flowList* Compiler::fgSpliceOutPred(BasicBlock* block, BasicBlock* blockPred)
     flowList* oldEdge = nullptr;
 
     // Is this the first block in the pred list?
-    if (blockPred == block->bbPreds->flBlock)
+    if (blockPred == block->bbPreds->getBlock())
     {
         oldEdge        = block->bbPreds;
         block->bbPreds = block->bbPreds->flNext;
@@ -1410,7 +1463,7 @@ flowList* Compiler::fgSpliceOutPred(BasicBlock* block, BasicBlock* blockPred)
     else
     {
         flowList* pred;
-        for (pred = block->bbPreds; (pred->flNext != nullptr) && (blockPred != pred->flNext->flBlock);
+        for (pred = block->bbPreds; (pred->flNext != nullptr) && (blockPred != pred->flNext->getBlock());
              pred = pred->flNext)
         {
             // empty
@@ -1499,9 +1552,9 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
         {
             listp = &flowLast->flNext;
 
-            assert(flowLast->flBlock->bbNum <= blockPred->bbNum);
+            assert(flowLast->getBlock()->bbNum <= blockPred->bbNum);
 
-            if (flowLast->flBlock == blockPred)
+            if (flowLast->getBlock() == blockPred)
             {
                 flow = flowLast;
             }
@@ -1511,12 +1564,12 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     {
         // References are added randomly, so we have to search.
         //
-        while ((*listp != nullptr) && ((*listp)->flBlock->bbNum < blockPred->bbNum))
+        while ((*listp != nullptr) && ((*listp)->getBlock()->bbNum < blockPred->bbNum))
         {
             listp = &(*listp)->flNext;
         }
 
-        if ((*listp != nullptr) && ((*listp)->flBlock == blockPred))
+        if ((*listp != nullptr) && ((*listp)->getBlock() == blockPred))
         {
             flow = *listp;
         }
@@ -1530,7 +1583,6 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     }
     else
     {
-        flow = new (this, CMK_FlowList) flowList();
 
 #if MEASURE_BLOCK_SIZE
         genFlowNodeCnt += 1;
@@ -1540,12 +1592,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
         // Any changes to the flow graph invalidate the dominator sets.
         fgModified = true;
 
-        // Insert the new edge in the list in the correct ordered location.
-        flow->flNext = *listp;
-        *listp       = flow;
-
-        flow->flBlock    = blockPred;
+        // Create new edge in the list in the correct ordered location.
+        //
+        flow             = new (this, CMK_FlowList) flowList(blockPred, *listp);
         flow->flDupCount = 1;
+        *listp           = flow;
 
         if (initializingPreds)
         {
@@ -1588,6 +1639,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
             flow->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
         }
     }
+
+    // Pred list should (still) be ordered.
+    //
+    assert(block->checkPredListOrder());
+
     return flow;
 }
 
@@ -1771,7 +1827,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
                 while (bNext->countOfInEdges() > 0)
                 {
-                    fgRemoveRefPred(bNext, bNext->bbPreds->flBlock);
+                    fgRemoveRefPred(bNext, bNext->bbPreds->getBlock());
                 }
             }
 
@@ -2064,19 +2120,28 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
     }
 }
 
-/*****************************************************************************
- * Updates the predecessor list for 'block' by replacing 'oldPred' with 'newPred'.
- * Note that a block can only appear once in the preds list (for normal preds, not
- * cheap preds): if a predecessor has multiple ways to get to this block, then
- * flDupCount will be >1, but the block will still appear exactly once. Thus, this
- * function assumes that all branches from the predecessor (practically, that all
- * switch cases that target this block) are changed to branch from the new predecessor,
- * with the same dup count.
- *
- * Note that the block bbRefs is not changed, since 'block' has the same number of
- * references as before, just from a different predecessor block.
- */
-
+//------------------------------------------------------------------------
+// fgReplacePred: update the predecessor list, swapping one pred for another
+//
+// Arguments:
+//   block - block with the pred list we want to update
+//   oldPred - pred currently appearing in block's pred list
+//   newPred - pred that will take oldPred's place.
+//
+// Notes:
+//
+// A block can only appear once in the preds list (for normal preds, not
+// cheap preds): if a predecessor has multiple ways to get to this block, then
+// flDupCount will be >1, but the block will still appear exactly once. Thus, this
+// function assumes that all branches from the predecessor (practically, that all
+// switch cases that target this block) are changed to branch from the new predecessor,
+// with the same dup count.
+//
+// Note that the block bbRefs is not changed, since 'block' has the same number of
+// references as before, just from a different predecessor block.
+//
+// Also note this may cause sorting of the pred list.
+//
 void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred)
 {
     noway_assert(block != nullptr);
@@ -2084,15 +2149,23 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
     noway_assert(newPred != nullptr);
     assert(!fgCheapPredsValid);
 
-    flowList* pred;
+    bool modified = false;
 
-    for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
     {
-        if (oldPred == pred->flBlock)
+        if (oldPred == pred->getBlock())
         {
-            pred->flBlock = newPred;
+            pred->setBlock(newPred);
+            modified = true;
             break;
         }
+    }
+
+    // We may now need to reorder the pred list.
+    //
+    if (modified)
+    {
+        block->ensurePredListOrder(this);
     }
 }
 
@@ -2125,7 +2198,7 @@ bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
 
         for (flowList* pred = b2->bbPreds; pred != nullptr; pred = pred->flNext)
         {
-            if (!fgDominate(b1, pred->flBlock))
+            if (!fgDominate(b1, pred->getBlock()))
             {
                 return false;
             }
@@ -2198,7 +2271,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 
         for (flowList* pred = b2->bbPreds; pred != nullptr; pred = pred->flNext)
         {
-            if (fgReachable(b1, pred->flBlock))
+            if (fgReachable(b1, pred->getBlock()))
             {
                 return true;
             }
@@ -2310,7 +2383,7 @@ void Compiler::fgComputeReachabilitySets()
 
             for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
             {
-                BasicBlock* predBlock = pred->flBlock;
+                BasicBlock* predBlock = pred->getBlock();
 
                 /* Union the predecessor's reachability set into newReach */
                 BlockSetOps::UnionD(this, newReach, predBlock->bbReach);
@@ -2512,7 +2585,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
         unsigned blockNum = block->bbNum;
         for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
         {
-            BasicBlock* predBlock = pred->flBlock;
+            BasicBlock* predBlock = pred->getBlock();
             if (blockNum <= predBlock->bbNum)
             {
                 if (predBlock->bbJumpKind == BBJ_CALLFINALLY)
@@ -2884,7 +2957,7 @@ void Compiler::fgComputeDoms()
     // (with bbRoot as the only basic block in it) set as flRoot.
     // Later on, we clear their predecessors and let them to be nullptr again.
     // Since we number basic blocks starting at one, the imaginary entry block is conveniently numbered as zero.
-    flowList   flRoot;
+
     BasicBlock bbRoot;
 
     bbRoot.bbPreds        = nullptr;
@@ -2892,8 +2965,8 @@ void Compiler::fgComputeDoms()
     bbRoot.bbIDom         = &bbRoot;
     bbRoot.bbPostOrderNum = 0;
     bbRoot.bbFlags        = 0;
-    flRoot.flNext         = nullptr;
-    flRoot.flBlock        = &bbRoot;
+
+    flowList flRoot(&bbRoot, nullptr);
 
     fgBBInvPostOrder[0] = &bbRoot;
 
@@ -2964,7 +3037,7 @@ void Compiler::fgComputeDoms()
             // Pick up the first processed predecesor of the current block.
             for (first = block->bbPreds; first != nullptr; first = first->flNext)
             {
-                if (BlockSetOps::IsMember(this, processedBlks, first->flBlock->bbNum))
+                if (BlockSetOps::IsMember(this, processedBlks, first->getBlock()->bbNum))
                 {
                     break;
                 }
@@ -2973,21 +3046,21 @@ void Compiler::fgComputeDoms()
 
             // We assume the first processed predecessor will be the
             // immediate dominator and then compute the forward flow analysis.
-            newidom = first->flBlock;
+            newidom = first->getBlock();
             for (flowList* p = block->bbPreds; p != nullptr; p = p->flNext)
             {
-                if (p->flBlock == first->flBlock)
+                if (p->getBlock() == first->getBlock())
                 {
                     continue;
                 }
-                if (p->flBlock->bbIDom != nullptr)
+                if (p->getBlock()->bbIDom != nullptr)
                 {
                     // fgIntersectDom is basically the set intersection between
                     // the dominance sets of the new IDom and the current predecessor
                     // Since the nodes are ordered in DFS inverse post order and
                     // IDom induces a tree, fgIntersectDom actually computes
                     // the lowest common ancestor in the dominator tree.
-                    newidom = fgIntersectDom(p->flBlock, newidom);
+                    newidom = fgIntersectDom(p->getBlock(), newidom);
                 }
             }
 
@@ -9164,18 +9237,19 @@ private:
             // Need to check both for matching const val and for genReturnBB
             // because genReturnBB is used for non-constant returns and its
             // corresponding entry in the returnConstants array is garbage.
+            // Check the returnBlocks[] first, so we don't access an uninitialized
+            // returnConstants[] value (which some tools like valgrind will
+            // complain about).
+
+            BasicBlock* returnBlock = returnBlocks[i];
+
+            if (returnBlock == comp->genReturnBB)
+            {
+                continue;
+            }
+
             if (returnConstants[i] == constVal)
             {
-                BasicBlock* returnBlock = returnBlocks[i];
-
-                if (returnBlock == comp->genReturnBB)
-                {
-                    // This is the block used for non-constant returns, so
-                    // its returnConstants entry is just garbage; don't be
-                    // fooled.
-                    continue;
-                }
-
                 *index = i;
                 return returnBlock;
             }
@@ -9621,7 +9695,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 
     // Remove flags that the new block can't have.
     newBlock->bbFlags &= ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_HAS_LABEL |
-                           BBF_JMP_TARGET | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS);
+                           BBF_JMP_TARGET | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS |
+                           BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -10524,7 +10599,7 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     // (if they are valid)
     for (flowList* pred = bNext->bbPreds; pred; pred = pred->flNext)
     {
-        if (pred->flBlock->bbJumpKind == BBJ_SWITCH)
+        if (pred->getBlock()->bbJumpKind == BBJ_SWITCH)
         {
             return false;
         }
@@ -10583,11 +10658,11 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         block->bbFlags |= BBF_JMP_TARGET;
         for (flowList* pred = bNext->bbPreds; pred; pred = pred->flNext)
         {
-            fgReplaceJumpTarget(pred->flBlock, block, bNext);
+            fgReplaceJumpTarget(pred->getBlock(), block, bNext);
 
-            if (pred->flBlock != block)
+            if (pred->getBlock() != block)
             {
-                fgAddRefPred(block, pred->flBlock);
+                fgAddRefPred(block, pred->getBlock());
             }
         }
         bNext->bbPreds = nullptr;
@@ -10595,7 +10670,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     else
     {
         noway_assert(bNext->bbPreds->flNext == nullptr);
-        noway_assert(bNext->bbPreds->flBlock == block);
+        noway_assert(bNext->bbPreds->getBlock() == block);
     }
 
     /* Start compacting - move all the statements in the second block to the first block */
@@ -10845,22 +10920,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     ehUpdateForDeletedBlock(bNext);
 
-    /* If we're collapsing a block created after the dominators are
-       computed, rename the block and reuse dominator information from
-       the other block */
-    if (fgDomsComputed && block->bbNum > fgDomBBcount)
-    {
-        BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-        BlockSetOps::ClearD(this, bNext->bbReach);
-
-        block->bbIDom = bNext->bbIDom;
-        bNext->bbIDom = nullptr;
-
-        // In this case, there's no need to update the preorder and postorder numbering
-        // since we're changing the bbNum, this makes the basic block all set.
-        block->bbNum = bNext->bbNum;
-    }
-
     /* Set the jump targets */
 
     switch (bNext->bbJumpKind)
@@ -10937,6 +10996,57 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         default:
             noway_assert(!"Unexpected bbJumpKind");
             break;
+    }
+
+    // Add the LOOP_ALIGN flag
+    if (bNext->isLoopAlign())
+    {
+        // Only if the new block is jump target or has label
+        if (((block->bbFlags & BBF_JMP_TARGET) != 0) || ((block->bbFlags & BBF_HAS_LABEL) != 0))
+        {
+            block->bbFlags |= BBF_LOOP_ALIGN;
+            JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
+                    block->bbNum);
+        }
+    }
+
+    // If we're collapsing a block created after the dominators are
+    // computed, copy block number the block and reuse dominator
+    // information from bNext to block.
+    //
+    // Note we have to do this renumbering after the full set of pred list
+    // updates above, since those updates rely on stable bbNums; if we renumber
+    // before the updates, we can create pred lists with duplicate m_block->bbNum
+    // values (though different m_blocks).
+    //
+    if (fgDomsComputed && (block->bbNum > fgDomBBcount))
+    {
+        BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
+        BlockSetOps::ClearD(this, bNext->bbReach);
+
+        block->bbIDom = bNext->bbIDom;
+        bNext->bbIDom = nullptr;
+
+        // In this case, there's no need to update the preorder and postorder numbering
+        // since we're changing the bbNum, this makes the basic block all set.
+        //
+        JITDUMP("Renumbering BB%02u to be BB%02u to preserve dominator information\n", block->bbNum, bNext->bbNum);
+
+        block->bbNum = bNext->bbNum;
+
+        // Because we may have reordered pred lists when we swapped in
+        // block for bNext above, we now need to re-reorder pred lists
+        // to reflect the bbNum update.
+        //
+        // This process of reordering and re-reordering could likely be avoided
+        // via a different update strategy. But because it's probably rare,
+        // and we avoid most of the work if pred lists are already in order,
+        // we'll just ensure everything is properly ordered.
+        //
+        for (BasicBlock* checkBlock = fgFirstBB; checkBlock != nullptr; checkBlock = checkBlock->bbNext)
+        {
+            checkBlock->ensurePredListOrder(this);
+        }
     }
 
     fgUpdateLoopsAfterCompacting(block, bNext);
@@ -11490,6 +11600,14 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         if (block->isLoopHead() && (succBlock->bbNum <= block->bbNum))
         {
             succBlock->bbFlags |= BBF_LOOP_HEAD;
+
+            if (block->isLoopAlign())
+            {
+                succBlock->bbFlags |= BBF_LOOP_ALIGN;
+                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for loop# %d.", block->bbNum,
+                        succBlock->bbNum, block->bbNatLoopNum);
+            }
+
             if (fgDomsComputed && fgReachable(succBlock, block))
             {
                 /* Mark all the reachable blocks between 'succBlock' and 'block', excluding 'block' */
@@ -11568,7 +11686,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
         {
-            BasicBlock* predBlock = pred->flBlock;
+            BasicBlock* predBlock = pred->getBlock();
 
             /* Are we changing a loop backedge into a forward jump? */
 
@@ -11837,15 +11955,22 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     return jmpBlk;
 }
 
-/*****************************************************************************
- Walk the flow graph, reassign block numbers to keep them in ascending order.
- Returns 'true' if any renumbering was actually done, OR if we change the
- maximum number of assigned basic blocks (this can happen if we do inlining,
- create a new, high-numbered block, then that block goes away. We go to
- renumber the blocks, none of them actually change number, but we shrink the
- maximum assigned block number. This affects the block set epoch).
-*/
-
+//------------------------------------------------------------------------
+// fgRenumberBlocks: update block bbNums to reflect bbNext order
+//
+// Returns:
+//    true if blocks were renumbered or maxBBNum was updated.
+//
+// Notes:
+//   Walk the flow graph, reassign block numbers to keep them in ascending order.
+//   Return 'true' if any renumbering was actually done, OR if we change the
+//   maximum number of assigned basic blocks (this can happen if we do inlining,
+//   create a new, high-numbered block, then that block goes away. We go to
+//   renumber the blocks, none of them actually change number, but we shrink the
+//   maximum assigned block number. This affects the block set epoch).
+//
+//   As a consequence of renumbering, block pred lists may need to be reordered.
+//
 bool Compiler::fgRenumberBlocks()
 {
     // If we renumber the blocks the dominator information will be out-of-date
@@ -11906,6 +12031,16 @@ bool Compiler::fgRenumberBlocks()
                     newMaxBBNum = true;
                 }
             }
+        }
+    }
+
+    // If we renumbered, then we may need to reorder some pred lists.
+    //
+    if (renumbered && fgComputePredsDone)
+    {
+        for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+        {
+            block->ensurePredListOrder(this);
         }
     }
 
@@ -12134,19 +12269,19 @@ bool Compiler::fgExpandRarelyRunBlocks()
                                 if (bPrevPrev == nullptr)
                                 {
                                     // Initially we select the first block in the bbPreds list
-                                    bPrevPrev = pred->flBlock;
+                                    bPrevPrev = pred->getBlock();
                                     continue;
                                 }
 
-                                // Walk the flow graph lexically forward from pred->flBlock
+                                // Walk the flow graph lexically forward from pred->getBlock()
                                 // if we find (block == bPrevPrev) then
-                                // pred->flBlock is an earlier predecessor.
-                                for (tmpbb = pred->flBlock; tmpbb != nullptr; tmpbb = tmpbb->bbNext)
+                                // pred->getBlock() is an earlier predecessor.
+                                for (tmpbb = pred->getBlock(); tmpbb != nullptr; tmpbb = tmpbb->bbNext)
                                 {
                                     if (tmpbb == bPrevPrev)
                                     {
                                         /* We found an ealier predecessor */
-                                        bPrevPrev = pred->flBlock;
+                                        bPrevPrev = pred->getBlock();
                                         break;
                                     }
                                     else if (tmpbb == bPrev)
@@ -12202,7 +12337,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
             for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
             {
                 /* Find the fall through predecessor, if any */
-                if (!pred->flBlock->isRunRarely())
+                if (!pred->getBlock()->isRunRarely())
                 {
                     rare = false;
                     break;
@@ -12737,9 +12872,9 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
 
     for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
     {
-        if (pred->flBlock->bbJumpKind == BBJ_ALWAYS && pred->flBlock->bbJumpDest == block)
+        if (pred->getBlock()->bbJumpKind == BBJ_ALWAYS && pred->getBlock()->bbJumpDest == block)
         {
-            BasicBlock* pPrev = pred->flBlock->bbPrev;
+            BasicBlock* pPrev = pred->getBlock()->bbPrev;
             if (pPrev != NULL)
             {
                 if (pPrev->bbJumpKind == BBJ_CALLFINALLY)
@@ -12892,7 +13027,7 @@ bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
 
     for (pred = block->bbPreds; pred; pred = pred->flNext)
     {
-        BasicBlock* predBlock = pred->flBlock;
+        BasicBlock* predBlock = pred->getBlock();
 
         if (fgIsIntraHandlerPred(predBlock, block))
         {
@@ -12942,7 +13077,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
     {
-        BasicBlock* predBlock = pred->flBlock;
+        BasicBlock* predBlock = pred->getBlock();
         if (!fgIsIntraHandlerPred(predBlock, block))
         {
             // It's a jump from outside the handler; add it to the newHead preds list and remove
@@ -13435,7 +13570,7 @@ void Compiler::fgPrintEdgeWeights()
             printf("    Edge weights into " FMT_BB " :", bDst->bbNum);
             for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
             {
-                bSrc = edge->flBlock;
+                bSrc = edge->getBlock();
                 // This is the control flow edge (bSrc -> bDst)
 
                 printf(FMT_BB " ", bSrc->bbNum);
@@ -13504,7 +13639,6 @@ void Compiler::fgComputeBlockAndEdgeWeights()
     JITDUMP("*************** In fgComputeBlockAndEdgeWeights()\n");
 
     const bool usingProfileWeights = fgIsUsingProfileWeights();
-    const bool isOptimizing        = opts.OptimizationEnabled();
 
     fgModified             = false;
     fgHaveValidEdgeWeights = false;
@@ -13529,14 +13663,7 @@ void Compiler::fgComputeBlockAndEdgeWeights()
         JITDUMP(" -- no profile data, so using default called count\n");
     }
 
-    if (usingProfileWeights && isOptimizing)
-    {
-        fgComputeEdgeWeights();
-    }
-    else
-    {
-        JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
-    }
+    fgComputeEdgeWeights();
 }
 
 //-------------------------------------------------------------
@@ -13578,7 +13705,7 @@ BasicBlock::weight_t Compiler::fgComputeMissingBlockWeights()
                 if (bDst->countOfInEdges() == 1)
                 {
                     // Only one block flows into bDst
-                    bSrc = bDst->bbPreds->flBlock;
+                    bSrc = bDst->bbPreds->getBlock();
 
                     // Does this block flow into only one other block
                     if (bSrc->bbJumpKind == BBJ_NONE)
@@ -13620,7 +13747,7 @@ BasicBlock::weight_t Compiler::fgComputeMissingBlockWeights()
                     // Does only one block flow into bOnlyNext
                     if (bOnlyNext->countOfInEdges() == 1)
                     {
-                        noway_assert(bOnlyNext->bbPreds->flBlock == bDst);
+                        noway_assert(bOnlyNext->bbPreds->getBlock() == bDst);
 
                         // We know the exact weight of bDst
                         newWeight = bOnlyNext->bbWeight;
@@ -13743,6 +13870,15 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
 
 void Compiler::fgComputeEdgeWeights()
 {
+    const bool isOptimizing        = opts.OptimizationEnabled();
+    const bool usingProfileWeights = fgIsUsingProfileWeights();
+
+    if (!isOptimizing || !usingProfileWeights)
+    {
+        JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
+        return;
+    }
+
     BasicBlock*          bSrc;
     BasicBlock*          bDst;
     flowList*            edge;
@@ -13772,7 +13908,7 @@ void Compiler::fgComputeEdgeWeights()
         {
             bool assignOK = true;
 
-            bSrc = edge->flBlock;
+            bSrc = edge->getBlock();
             // We are processing the control flow edge (bSrc -> bDst)
 
             numEdges++;
@@ -13850,7 +13986,7 @@ void Compiler::fgComputeEdgeWeights()
                 bool assignOK = true;
 
                 // We are processing the control flow edge (bSrc -> bDst)
-                bSrc = edge->flBlock;
+                bSrc = edge->getBlock();
 
                 slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
                 if (bSrc->bbJumpKind == BBJ_COND)
@@ -13939,7 +14075,7 @@ void Compiler::fgComputeEdgeWeights()
                 for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
                 {
                     // We are processing the control flow edge (bSrc -> bDst)
-                    bSrc = edge->flBlock;
+                    bSrc = edge->getBlock();
 
                     maxEdgeWeightSum += edge->edgeWeightMax();
                     minEdgeWeightSum += edge->edgeWeightMin();
@@ -13953,7 +14089,7 @@ void Compiler::fgComputeEdgeWeights()
                     bool assignOK = true;
 
                     // We are processing the control flow edge (bSrc -> bDst)
-                    bSrc = edge->flBlock;
+                    bSrc = edge->getBlock();
                     slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
 
                     // otherMaxEdgesWeightSum is the sum of all of the other edges flEdgeWeightMax values
@@ -14064,7 +14200,7 @@ EARLY_EXIT:;
         {
             for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
             {
-                bSrc = edge->flBlock;
+                bSrc = edge->getBlock();
                 // This is the control flow edge (bSrc -> bDst)
 
                 if (edge->edgeWeightMin() != edge->edgeWeightMax())
@@ -14364,9 +14500,9 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                     bool okToMerge = true; // assume it's ok
                     for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
                     {
-                        if (pred->flBlock->bbJumpKind == BBJ_EHCATCHRET)
+                        if (pred->getBlock()->bbJumpKind == BBJ_EHCATCHRET)
                         {
-                            assert(pred->flBlock->bbJumpDest == block);
+                            assert(pred->getBlock()->bbJumpDest == block);
                             okToMerge = false; // we can't get rid of the empty block
                             break;
                         }
@@ -15734,7 +15870,7 @@ void Compiler::fgReorderBlocks()
                             // Examine all of the other edges into bDest
                             for (flowList* edge = bDest->bbPreds; edge != nullptr; edge = edge->flNext)
                             {
-                                BasicBlock* bTemp = edge->flBlock;
+                                BasicBlock* bTemp = edge->getBlock();
 
                                 if ((bTemp != bPrev) && (bTemp->bbWeight >= bPrev->bbWeight))
                                 {
@@ -20363,7 +20499,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
             flowList* edge;
             for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
             {
-                BasicBlock* bSource = edge->flBlock;
+                BasicBlock* bSource = edge->getBlock();
                 double      sourceWeightDivisor;
                 if (bSource->bbWeight == BB_ZERO_WEIGHT)
                 {
@@ -21210,7 +21346,7 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
     {
         blockRefs += pred->flDupCount;
 
-        BasicBlock* blockPred = pred->flBlock;
+        BasicBlock* blockPred = pred->getBlock();
 
         // Make sure this pred is part of the BB list.
         assert(blockPred->bbTraversalStamp == curTraversalStamp);
@@ -21229,6 +21365,11 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
 
         assert(CheckJump(blockPred, block));
     }
+
+    // Make sure preds are in increasting BBnum order
+    //
+    assert(block->checkPredListOrder());
+
     return blockRefs;
 }
 
@@ -26624,7 +26765,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
         // the canonical block instead.
         for (flowList* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
         {
-            BasicBlock* const predBlock = predEdge->flBlock;
+            BasicBlock* const predBlock = predEdge->getBlock();
             nextPredEdge                = predEdge->flNext;
 
             switch (predBlock->bbJumpKind)
@@ -26971,7 +27112,7 @@ void Compiler::fgDebugCheckProfileData()
 
                     for (flowList* edge = succBlock->bbPreds; edge != nullptr; edge = edge->flNext)
                     {
-                        if (edge->flBlock == block)
+                        if (edge->getBlock() == block)
                         {
                             succEdge = edge;
                             break;

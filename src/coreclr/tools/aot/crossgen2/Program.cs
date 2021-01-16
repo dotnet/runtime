@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
@@ -92,7 +93,12 @@ namespace ILCompiler
             }
 
             _optimizationMode = OptimizationMode.None;
-            if (_commandLineOptions.OptimizeSpace)
+            if (_commandLineOptions.OptimizeDisabled)
+            {
+                if (_commandLineOptions.Optimize || _commandLineOptions.OptimizeSpace || _commandLineOptions.OptimizeTime)
+                    Console.WriteLine(SR.WarningOverridingOptimize);
+            }
+            else if (_commandLineOptions.OptimizeSpace)
             {
                 if (_commandLineOptions.OptimizeTime)
                     Console.WriteLine(SR.WarningOverridingOptimizeSpace);
@@ -548,6 +554,13 @@ namespace ILCompiler
                                 break;
                             }
                         }
+                    }
+                    // In single-file compilation mode, use the assembly's DebuggableAttribute to determine whether to optimize
+                    // or produce debuggable code if an explicit optimization level was not specified on the command line 
+                    if (_optimizationMode == OptimizationMode.None && !_commandLineOptions.OptimizeDisabled && !_commandLineOptions.Composite)
+                    {
+                        System.Diagnostics.Debug.Assert(inputModules.Count == 1);
+                        _optimizationMode = ((EcmaAssembly)inputModules[0].Assembly).HasOptimizationsDisabled() ? OptimizationMode.None : OptimizationMode.Blended;
                     }
 
                     //
