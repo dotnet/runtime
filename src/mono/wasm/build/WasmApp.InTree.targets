@@ -5,10 +5,6 @@
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences" Condition="@(RuntimePack->Count()) != 0">
-    <Error
-      Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')"
-      Text="Could not find the local build of the runtime pack at $(MicrosoftNetCoreAppRuntimePackRidDir). Make sure this is using the correct Configuration" />
-
     <ItemGroup>
       <RuntimePack>
         <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackRidDir)..\..\</PackageDirectory>
