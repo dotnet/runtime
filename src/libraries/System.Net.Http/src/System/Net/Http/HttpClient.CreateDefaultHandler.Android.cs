@@ -16,26 +16,24 @@ namespace System.Net.Http
         {
             if (s_customHandlerType != null)
             {
-                return (HttpMessageHandler)Activator.CreateInstance(s_customHandlerType);
+                return (HttpMessageHandler)Activator.CreateInstance(s_customHandlerType)!;
             }
 
-            string envVar = Environment.GetEnvironmentVariable(CustomHandlerTypeEnvVar)?.Trim();
-            if (string.IsNullOrEmpty(envVar))
+            string? envVar = Environment.GetEnvironmentVariable(CustomHandlerTypeEnvVar)?.Trim();
+            if (!string.IsNullOrEmpty(envVar))
             {
-                return new HttpClientHandler();
-            }
-
-            Type handlerType = Type.GetType(envVar, false);
-            if (handlerType == null && !envVar.Contains(", "))
-            {
-                // Look for custom handlers in Mono.Android by default if assembly name is not specified.
-                handlerType = Type.GetType(envVar + ", Mono.Android", false);
-            }
-            if (handlerType != null && Activator.CreateInstance(handlerType) is HttpMessageHandler handler)
-            {
-                // Create instance or fallback to default one if the type is invalid (current XA behavior).
-                s_customHandlerType = handlerType;
-                return handler;
+                Type? handlerType = Type.GetType(envVar, false);
+                if (handlerType == null && !envVar.Contains(", "))
+                {
+                    // Look for custom handlers in Mono.Android by default if assembly name is not specified.
+                    handlerType = Type.GetType(envVar + ", Mono.Android", false);
+                }
+                if (handlerType != null && Activator.CreateInstance(handlerType) is HttpMessageHandler handler)
+                {
+                    // Create instance or fallback to default one if the type is invalid (current XA behavior).
+                    s_customHandlerType = handlerType;
+                    return handler;
+                }
             }
             return new HttpClientHandler();
         }
