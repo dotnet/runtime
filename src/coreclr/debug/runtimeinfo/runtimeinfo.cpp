@@ -13,7 +13,7 @@
 
 // Runtime information public export
 #ifdef HOST_UNIX
-DLLEXPORT
+__attribute__((visibility("default")))
 #endif
 RuntimeInfo DotNetRuntimeInfo = {
     {

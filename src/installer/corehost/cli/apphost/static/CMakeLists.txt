@@ -50,8 +50,28 @@ if(CLR_CMAKE_TARGET_WIN32)
         ../apphost.windows.h)
 endif()
 
+if(CLR_CMAKE_TARGET_WIN32)
+    add_linker_flag("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
+
+else()
+    set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
+    set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/singlefilehost.exports)
+    generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+
+    set_exports_linker_option(${EXPORTS_FILE})
+endif()
+
 include(../../exe.cmake)
 include(configure.cmake)
+
+if(CLR_CMAKE_HOST_UNIX)
+    add_custom_target(singlefilehost_exports DEPENDS ${EXPORTS_FILE})
+    add_dependencies(singlefilehost singlefilehost_exports)
+
+    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+    set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
+endif()
 
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
