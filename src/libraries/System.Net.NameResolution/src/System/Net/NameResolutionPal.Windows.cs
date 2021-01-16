@@ -172,9 +172,9 @@ namespace System.Net
                 // and final result would be posted via overlapped IO.
                 // synchronous failure here may signal issue when GetAddrInfoExW does not work from
                 // impersonated context.
-                //     GetAddrInfoExContext.FreeContext(context);
-                //     return null;
-                ProcessResult(errorCode, context);
+                     GetAddrInfoExContext.FreeContext(context);
+                     return null;
+                //ProcessResult(errorCode, context);
 
             }
             else
