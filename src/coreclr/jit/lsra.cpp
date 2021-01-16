@@ -3361,8 +3361,9 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             regNumber farthestCandidateRegNum = genRegNumFromMask(farthestCandidateBit);
 
             // Find the next RefPosition of the register.
-            LsraLocation nextIntervalLocation = getNextIntervalRef(farthestCandidateRegNum, currentInterval->registerType);
-            LsraLocation nextPhysRefLocation  = Min(nextFixedRef[farthestCandidateRegNum], nextIntervalLocation);
+            LsraLocation nextIntervalLocation =
+                getNextIntervalRef(farthestCandidateRegNum, currentInterval->registerType);
+            LsraLocation nextPhysRefLocation = Min(nextFixedRef[farthestCandidateRegNum], nextIntervalLocation);
             if (nextPhysRefLocation == farthestLocation)
             {
                 farthestSet |= farthestCandidateBit;
@@ -3390,7 +3391,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             Interval* assignedInterval          = physRegs[prevRegOptCandidateRegNum].assignedInterval;
             bool      foundPrevRegOptReg        = true;
 #ifdef DEBUG
-            bool      hasAssignedInterval       = false;
+            bool hasAssignedInterval = false;
 #endif
 
             if ((assignedInterval != nullptr) && (assignedInterval->recentRefPosition != nullptr))
@@ -3409,7 +3410,8 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             // We have three cases:
             // 1. One of the register of the pair have an assigned interval: Check if that register's refPosition
             // matches the heuristics. If yes, add it to the set.
-            // 2. Both registers of the pair have an assigned interval: Conservatively "and" conditions for heuristics of
+            // 2. Both registers of the pair have an assigned interval: Conservatively "and" conditions for heuristics
+            // of
             // their corresponding refPositions. If both register's heuristic matches, add them to the set.
             // TODO-CQ-ARM: We may implement a better condition later.
             // 3. None of the register have an assigned interval: Skip adding register and assert.
@@ -4560,7 +4562,7 @@ RegRecord* LinearScan::findAnotherHalfRegRec(RegRecord* regRec)
 //
 regNumber LinearScan::findAnotherHalfRegRec(regNumber regNum)
 {
-    regNumber  anotherHalfRegNum;
+    regNumber anotherHalfRegNum;
 
     assert(genIsValidFloatReg(regNum));
 
