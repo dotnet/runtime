@@ -23,7 +23,7 @@ namespace System.Text.Json
             //  We treat typeof(object) special and allow polymorphic behavior.
             if (inputType == JsonClassInfo.ObjectType && value != null)
             {
-                inputType = value!.GetType();
+                inputType = value.GetType();
             }
 
             WriteStack state = default;
