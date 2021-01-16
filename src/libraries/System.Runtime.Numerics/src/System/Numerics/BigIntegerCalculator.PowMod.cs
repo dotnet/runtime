@@ -465,7 +465,7 @@ namespace System.Numerics
                 power = power >> 1;
             }
 
-            return result;
+            return result.Slice(0, resultLength);
         }
 
         private static Span<uint> PowCore(Span<uint> value, int valueLength,
