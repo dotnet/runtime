@@ -477,7 +477,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The absolute value of the number</param>
         /// <param name="negative">The bool indicating the sign of the value.</param>
-        internal BigInteger(ReadOnlySpan<uint> value, bool negative)
+        private BigInteger(ReadOnlySpan<uint> value, bool negative)
         {
             int len;
 
