@@ -10,7 +10,7 @@ namespace System.Net.Http
     {
         private const string CustomHandlerTypeEnvVar = "XA_HTTP_CLIENT_HANDLER_TYPE";
 
-        private static Type s_customHandlerType;
+        private static Type? s_customHandlerType;
 
         private static HttpMessageHandler CreateDefaultHandler()
         {
