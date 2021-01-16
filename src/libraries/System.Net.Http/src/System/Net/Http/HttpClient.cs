@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public class HttpClient : HttpMessageInvoker
+    public partial class HttpClient : HttpMessageInvoker
     {
         #region Fields
 
