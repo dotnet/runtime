@@ -176,9 +176,10 @@ void Compiler::fgInit()
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
 
-    fgHasSwitch   = false;
-    fgBlockCounts = nullptr;
-
+    fgHasSwitch          = false;
+    fgPgoSchema          = nullptr;
+    fgPgoData            = nullptr;
+    fgPgoSchemaCount     = 0;
     fgPredListSortVector = nullptr;
 }
 
@@ -217,7 +218,7 @@ bool Compiler::fgHaveProfileData()
         return false;
     }
 
-    return (fgBlockCounts != nullptr);
+    return (fgPgoSchema != nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -370,11 +371,12 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
         return false;
     }
 
-    for (UINT32 i = 0; i < fgBlockCountsCount; i++)
+    for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
     {
-        if (fgBlockCounts[i].ILOffset == offset)
+        if ((fgPgoSchema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
+            ((IL_OFFSET)fgPgoSchema[i].ILOffset == offset))
         {
-            *weightWB = (BasicBlock::weight_t)fgBlockCounts[i].ExecutionCount;
+            *weightWB = (BasicBlock::weight_t) * (uint32_t*)(fgPgoData + fgPgoSchema[i].Offset);
             return true;
         }
     }
@@ -382,6 +384,38 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
     *weightWB = 0;
     return true;
 }
+
+template <class TFunctor>
+class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor<TFunctor>>
+{
+public:
+    enum
+    {
+        DoPreOrder = true
+    };
+
+    TFunctor& m_functor;
+    Compiler* m_compiler;
+
+    ClassProbeVisitor(Compiler* compiler, TFunctor& functor)
+        : GenTreeVisitor<ClassProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+    {
+    }
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const node = *use;
+        if (node->IsCall())
+        {
+            GenTreeCall* const call = node->AsCall();
+            if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
+            {
+                m_functor(m_compiler, call);
+            }
+        }
+
+        return Compiler::WALK_CONTINUE;
+    }
+};
 
 //------------------------------------------------------------------------
 // fgInstrumentMethod: add instrumentation probes to the method
@@ -407,6 +441,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
 void Compiler::fgInstrumentMethod()
 {
     noway_assert(!compIsForInlining());
+    jitstd::vector<ICorJitInfo::PgoInstrumentationSchema> schema(getAllocator());
 
     // Count the number of basic blocks in the method
     // that will get block count probes.
@@ -415,10 +450,80 @@ void Compiler::fgInstrumentMethod()
     BasicBlock* block;
     for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
-        if (!(block->bbFlags & BBF_IMPORTED) || (block->bbFlags & BBF_INTERNAL))
+        // We don't want to profile any un-imported blocks
+        //
+        if ((block->bbFlags & BBF_IMPORTED) == 0)
         {
             continue;
         }
+
+        if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) != 0)
+        {
+            class BuildClassProbeSchemaGen
+            {
+                jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* m_schema;
+
+            public:
+                BuildClassProbeSchemaGen(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema)
+                    : m_schema(schema)
+                {
+                }
+                void operator()(Compiler* compiler, GenTreeCall* call)
+                {
+                    ICorJitInfo::PgoInstrumentationSchema schemaElem;
+                    schemaElem.Count = 1;
+                    schemaElem.Other = ICorJitInfo::ClassProfile::CLASS_FLAG;
+                    if (call->IsVirtualStub())
+                    {
+                        schemaElem.Other |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
+                    }
+                    else
+                    {
+                        assert(call->IsVirtualVtable());
+                    }
+
+                    schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount;
+                    schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+                    schemaElem.Offset              = 0;
+
+                    m_schema->push_back(schemaElem);
+
+                    // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
+                    schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
+                    schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
+                    m_schema->push_back(schemaElem);
+                }
+            };
+            // Scan the statements and identify the class probes
+            //
+            BuildClassProbeSchemaGen                    schemaGen(&schema);
+            ClassProbeVisitor<BuildClassProbeSchemaGen> visitor(this, schemaGen);
+            for (Statement* stmt : block->Statements())
+            {
+                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            }
+        }
+
+        if (block->bbFlags & BBF_INTERNAL)
+        {
+            continue;
+        }
+
+        // Assign the current block's IL offset into the profile data
+        // (make sure IL offset is sane)
+        //
+        IL_OFFSET offset = block->bbCodeOffs;
+        assert((int)offset >= 0);
+
+        ICorJitInfo::PgoInstrumentationSchema schemaElem;
+        schemaElem.Count               = 1;
+        schemaElem.Other               = 0;
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+        schemaElem.ILOffset            = offset;
+        schemaElem.Offset              = 0;
+
+        schema.push_back(schemaElem);
+
         countOfBlocks++;
     }
 
@@ -426,6 +531,7 @@ void Compiler::fgInstrumentMethod()
     // when importing.
     //
     int countOfCalls = info.compClassProbeCount;
+    assert(((countOfCalls * 2) + countOfBlocks) == (int)schema.size());
 
     // Optionally bail out, if there are less than three blocks and no call sites to profile.
     // One block is common. We don't expect to see zero or two blocks here.
@@ -444,16 +550,10 @@ void Compiler::fgInstrumentMethod()
 
     // Allocate the profile buffer
     //
-    // Allocation is in multiples of ICorJitInfo::BlockCounts. For each profile table we need
-    // some multiple of these.
-    //
-    const unsigned entriesPerCall = sizeof(ICorJitInfo::ClassProfile) / sizeof(ICorJitInfo::BlockCounts);
-    assert(entriesPerCall * sizeof(ICorJitInfo::BlockCounts) == sizeof(ICorJitInfo::ClassProfile));
+    BYTE* profileMemory;
 
-    const unsigned            totalEntries            = countOfBlocks + entriesPerCall * countOfCalls;
-    ICorJitInfo::BlockCounts* profileBlockCountsStart = nullptr;
-
-    HRESULT res = info.compCompHnd->allocMethodBlockCounts(totalEntries, &profileBlockCountsStart);
+    HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
+                                                                    (UINT32)schema.size(), &profileMemory);
 
     // We may not be able to instrument, if so we'll set this false.
     // We can't just early exit, because we have to clean up calls that we might have profiled.
@@ -472,9 +572,6 @@ void Compiler::fgInstrumentMethod()
         }
     }
 
-    ICorJitInfo::BlockCounts* profileBlockCountsEnd = &profileBlockCountsStart[countOfBlocks];
-    ICorJitInfo::BlockCounts* profileEnd            = &profileBlockCountsStart[totalEntries];
-
     // For each BasicBlock (non-Internal)
     //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
     //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
@@ -482,7 +579,10 @@ void Compiler::fgInstrumentMethod()
     // Each (non-Internal) block has it own BlockCounts tuple [ILOffset, ExecutionCount]
     // To start we initialize our current one with the first one that we allocated
     //
-    ICorJitInfo::BlockCounts* currentBlockCounts = profileBlockCountsStart;
+    int currentSchemaIndex = 0;
+
+    // Hold the address of the first blocks ExecutionCount
+    size_t addrOfFirstExecutionCount = 0;
 
     for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
@@ -508,130 +608,93 @@ void Compiler::fgInstrumentMethod()
                 //
                 JITDUMP("Scanning for calls to profile in " FMT_BB "\n", block->bbNum);
 
-                class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor>
+                class ClassProbeInserter
                 {
+                    jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* m_schema;
+                    BYTE*                                                  m_profileMemory;
+                    int*                                                   m_currentSchemaIndex;
+                    bool                                                   m_instrument;
+
                 public:
-                    enum
-                    {
-                        DoPreOrder = true
-                    };
+                    int m_count = 0;
 
-                    int                        m_count;
-                    ICorJitInfo::ClassProfile* m_tableBase;
-                    bool                       m_instrument;
-
-                    ClassProbeVisitor(Compiler* compiler, ICorJitInfo::ClassProfile* tableBase, bool instrument)
-                        : GenTreeVisitor<ClassProbeVisitor>(compiler)
-                        , m_count(0)
-                        , m_tableBase(tableBase)
+                    ClassProbeInserter(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema,
+                                       BYTE*                                                  profileMemory,
+                                       int*                                                   pCurrentSchemaIndex,
+                                       bool                                                   instrument)
+                        : m_schema(schema)
+                        , m_profileMemory(profileMemory)
+                        , m_currentSchemaIndex(pCurrentSchemaIndex)
                         , m_instrument(instrument)
                     {
                     }
-                    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                    void operator()(Compiler* compiler, GenTreeCall* call)
                     {
-                        GenTree* const node = *use;
-                        if (node->IsCall())
+                        JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n", compiler->dspTreeID(call),
+                                call->gtClassProfileCandidateInfo->probeIndex,
+                                call->gtClassProfileCandidateInfo->ilOffset);
+
+                        m_count++;
+                        if (m_instrument)
                         {
-                            GenTreeCall* const call = node->AsCall();
-                            if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
-                            {
-                                JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n",
-                                        m_compiler->dspTreeID(call), call->gtClassProfileCandidateInfo->probeIndex,
-                                        call->gtClassProfileCandidateInfo->ilOffset);
+                            // We transform the call from (CALLVIRT obj, ... args ...) to
+                            // to
+                            //      (CALLVIRT
+                            //        (COMMA
+                            //          (ASG tmp, obj)
+                            //          (COMMA
+                            //            (CALL probe_fn tmp, &probeEntry)
+                            //            tmp)))
+                            //         ... args ...)
+                            //
 
-                                m_count++;
+                            assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
 
-                                if (m_instrument)
-                                {
-                                    // We transform the call from (CALLVIRT obj, ... args ...) to
-                                    // to
-                                    //      (CALLVIRT
-                                    //        (COMMA
-                                    //          (ASG tmp, obj)
-                                    //          (COMMA
-                                    //            (CALL probe_fn tmp, &probeEntry)
-                                    //            tmp)))
-                                    //         ... args ...)
-                                    //
+                            // Figure out where the table is located.
+                            //
+                            BYTE* classProfile = (*m_schema)[*m_currentSchemaIndex].Offset + m_profileMemory;
+                            *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
-                                    assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
+                            // Grab a temp to hold the 'this' object as it will be used three times
+                            //
+                            unsigned const tmpNum = compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
+                            compiler->lvaTable[tmpNum].lvType = TYP_REF;
 
-                                    // Figure out where the table is located.
-                                    //
-                                    ICorJitInfo::ClassProfile* classProfile =
-                                        &m_tableBase[call->gtClassProfileCandidateInfo->probeIndex];
+                            // Generate the IR...
+                            //
+                            GenTree* const classProfileNode =
+                                compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
+                            GenTree* const          tmpNode = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                            GenTreeCall::Use* const args    = compiler->gtNewCallArgs(tmpNode, classProfileNode);
+                            GenTree* const          helperCallNode =
+                                compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
+                            GenTree* const tmpNode2 = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                            GenTree* const callCommaNode =
+                                compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+                            GenTree* const tmpNode3 = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                            GenTree* const asgNode =
+                                compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
+                            GenTree* const asgCommaNode =
+                                compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
-                                    // Grab a temp to hold the 'this' object as it will be used three times
-                                    //
-                                    unsigned const tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
-                                    m_compiler->lvaTable[tmpNum].lvType = TYP_REF;
+                            // Update the call
+                            //
+                            call->gtCallThisArg->SetNode(asgCommaNode);
 
-                                    // Generate the IR...
-                                    //
-                                    GenTree* const classProfileNode =
-                                        m_compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
-                                    GenTree* const          tmpNode = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                                    GenTreeCall::Use* const args = m_compiler->gtNewCallArgs(tmpNode, classProfileNode);
-                                    GenTree* const          helperCallNode =
-                                        m_compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
-                                    GenTree* const tmpNode2 = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                                    GenTree* const callCommaNode =
-                                        m_compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-                                    GenTree* const tmpNode3 = m_compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                                    GenTree* const asgNode  = m_compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3,
-                                                                                       call->gtCallThisArg->GetNode());
-                                    GenTree* const asgCommaNode =
-                                        m_compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
-
-                                    // Update the call
-                                    //
-                                    call->gtCallThisArg->SetNode(asgCommaNode);
-
-                                    JITDUMP("Modified call is now\n");
-                                    DISPTREE(call);
-
-                                    // Initialize the class table
-                                    //
-                                    // Hack: we use two high bits of the offset to indicate that this record
-                                    // is the start of a class profile, and what kind of call is being profiled.
-                                    //
-                                    IL_OFFSET offset = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-                                    assert((offset & (ICorJitInfo::ClassProfile::CLASS_FLAG |
-                                                      ICorJitInfo::ClassProfile::INTERFACE_FLAG)) == 0);
-
-                                    offset |= ICorJitInfo::ClassProfile::CLASS_FLAG;
-
-                                    if (call->IsVirtualStub())
-                                    {
-                                        offset |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
-                                    }
-                                    else
-                                    {
-                                        assert(call->IsVirtualVtable());
-                                    }
-
-                                    classProfile->ILOffset = offset;
-                                    classProfile->Count    = 0;
-
-                                    for (int i = 0; i < ICorJitInfo::ClassProfile::SIZE; i++)
-                                    {
-                                        classProfile->ClassTable[i] = NO_CLASS_HANDLE;
-                                    }
-                                }
-
-                                // Restore the stub address on call, whether instrumenting or not.
-                                //
-                                call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-                            }
+                            JITDUMP("Modified call is now\n");
+                            DISPTREE(call);
                         }
 
-                        return Compiler::WALK_CONTINUE;
+                        // Restore the stub address on the call, whether instrumenting or not.
+                        //
+                        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
                     }
                 };
 
                 // Scan the statements and add class probes
                 //
-                ClassProbeVisitor visitor(this, (ICorJitInfo::ClassProfile*)profileBlockCountsEnd, instrument);
+                ClassProbeInserter insertProbes(&schema, profileMemory, &currentSchemaIndex, instrument);
+                ClassProbeVisitor<ClassProbeInserter> visitor(this, insertProbes);
                 for (Statement* stmt : block->Statements())
                 {
                     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -639,8 +702,8 @@ void Compiler::fgInstrumentMethod()
 
                 // Bookkeeping
                 //
-                assert(visitor.m_count <= countOfCalls);
-                countOfCalls -= visitor.m_count;
+                assert(insertProbes.m_count <= countOfCalls);
+                countOfCalls -= insertProbes.m_count;
                 JITDUMP("\n%d calls remain to be visited\n", countOfCalls);
             }
             else
@@ -664,16 +727,11 @@ void Compiler::fgInstrumentMethod()
 
         if (instrument)
         {
-            // Assign the current block's IL offset into the profile data
-            // (make sure IL offset is sane)
-            //
-            IL_OFFSET offset = block->bbCodeOffs;
-            assert((int)offset >= 0);
-
-            currentBlockCounts->ILOffset       = offset;
-            currentBlockCounts->ExecutionCount = 0;
-
-            size_t addrOfCurrentExecutionCount = (size_t)&currentBlockCounts->ExecutionCount;
+            assert(block->bbCodeOffs == (IL_OFFSET)schema[currentSchemaIndex].ILOffset);
+            size_t addrOfCurrentExecutionCount = (size_t)(schema[currentSchemaIndex].Offset + profileMemory);
+            if (addrOfFirstExecutionCount == 0)
+                addrOfFirstExecutionCount = addrOfCurrentExecutionCount;
+            currentSchemaIndex++;
 
             // Read Basic-Block count value
             GenTree* valueNode =
@@ -687,9 +745,6 @@ void Compiler::fgInstrumentMethod()
             GenTree* asgNode = gtNewAssignNode(lhsNode, rhsNode);
 
             fgNewStmtAtBeg(block, asgNode);
-
-            // Advance to the next BlockCounts tuple [ILOffset, ExecutionCount]
-            currentBlockCounts++;
         }
     }
 
@@ -702,7 +757,6 @@ void Compiler::fgInstrumentMethod()
     //
     noway_assert(countOfBlocks == 0);
     noway_assert(countOfCalls == 0);
-    assert(currentBlockCounts == profileBlockCountsEnd);
 
     // When prejitting, add the method entry callback node
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
@@ -732,9 +786,6 @@ void Compiler::fgInstrumentMethod()
 
         GenTreeCall::Use* args = gtNewCallArgs(arg);
         GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
-
-        // Get the address of the first blocks ExecutionCount
-        size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
 
         // Read Basic-Block count value
         GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
@@ -9186,18 +9237,19 @@ private:
             // Need to check both for matching const val and for genReturnBB
             // because genReturnBB is used for non-constant returns and its
             // corresponding entry in the returnConstants array is garbage.
+            // Check the returnBlocks[] first, so we don't access an uninitialized
+            // returnConstants[] value (which some tools like valgrind will
+            // complain about).
+
+            BasicBlock* returnBlock = returnBlocks[i];
+
+            if (returnBlock == comp->genReturnBB)
+            {
+                continue;
+            }
+
             if (returnConstants[i] == constVal)
             {
-                BasicBlock* returnBlock = returnBlocks[i];
-
-                if (returnBlock == comp->genReturnBB)
-                {
-                    // This is the block used for non-constant returns, so
-                    // its returnConstants entry is just garbage; don't be
-                    // fooled.
-                    continue;
-                }
-
                 *index = i;
                 return returnBlock;
             }

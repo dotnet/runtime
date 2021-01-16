@@ -1846,10 +1846,13 @@ private:
 
     unsigned emitNxtIGnum;
 
+#ifdef PSEUDORANDOM_NOP_INSERTION
+
     // random nop insertion to break up nop sleds
     unsigned emitNextNop;
     bool     emitRandomNops;
-    void     emitEnableRandomNops()
+
+    void emitEnableRandomNops()
     {
         emitRandomNops = true;
     }
@@ -1857,6 +1860,8 @@ private:
     {
         emitRandomNops = false;
     }
+
+#endif // PSEUDORANDOM_NOP_INSERTION
 
     insGroup* emitAllocAndLinkIG();
     insGroup* emitAllocIG();

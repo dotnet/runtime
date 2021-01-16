@@ -1,6 +1,5 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, '$(MSBuildThisFileDirectory)..'))" />
-  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.targets" />
 
   <PropertyGroup>
     <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>

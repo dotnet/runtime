@@ -173,8 +173,8 @@ struct JitInterfaceCallbacks
     bool (* logMsg)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned level, const char* fmt, va_list args);
     int (* doAssert)(void * thisHandle, CorInfoExceptionClass** ppException, const char* szFile, int iLine, const char* szExpr);
     void (* reportFatalError)(void * thisHandle, CorInfoExceptionClass** ppException, int result);
-    int (* allocMethodBlockCounts)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned int count, void** pBlockCounts);
-    int (* getMethodBlockCounts)(void * thisHandle, CorInfoExceptionClass** ppException, void* ftnHnd, unsigned int* pCount, void** pBlockCounts, unsigned int* pNumRuns);
+    int (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, void* ftnHnd, void** pSchema, unsigned int* pCountSchemaItems, unsigned char** pInstrumentationData);
+    int (* allocPgoInstrumentationBySchema)(void * thisHandle, CorInfoExceptionClass** ppException, void* ftnHnd, void* pSchema, unsigned int countSchemaItems, unsigned char** pInstrumentationData);
     void* (* getLikelyClass)(void * thisHandle, CorInfoExceptionClass** ppException, void* ftnHnd, void* baseHnd, unsigned int ilOffset, unsigned int* pLikelihood, unsigned int* pNumberOfClasses);
     void (* recordCallSite)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
@@ -1769,24 +1769,26 @@ public:
     if (pException != nullptr) throw pException;
 }
 
-    virtual int allocMethodBlockCounts(
-          unsigned int count,
-          void** pBlockCounts)
+    virtual int getPgoInstrumentationResults(
+          void* ftnHnd,
+          void** pSchema,
+          unsigned int* pCountSchemaItems,
+          unsigned char** pInstrumentationData)
 {
     CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->allocMethodBlockCounts(_thisHandle, &pException, count, pBlockCounts);
+    int temp = _callbacks->getPgoInstrumentationResults(_thisHandle, &pException, ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
     if (pException != nullptr) throw pException;
     return temp;
 }
 
-    virtual int getMethodBlockCounts(
+    virtual int allocPgoInstrumentationBySchema(
           void* ftnHnd,
-          unsigned int* pCount,
-          void** pBlockCounts,
-          unsigned int* pNumRuns)
+          void* pSchema,
+          unsigned int countSchemaItems,
+          unsigned char** pInstrumentationData)
 {
     CorInfoExceptionClass* pException = nullptr;
-    int temp = _callbacks->getMethodBlockCounts(_thisHandle, &pException, ftnHnd, pCount, pBlockCounts, pNumRuns);
+    int temp = _callbacks->allocPgoInstrumentationBySchema(_thisHandle, &pException, ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
     if (pException != nullptr) throw pException;
     return temp;
 }

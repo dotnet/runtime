@@ -5535,10 +5535,11 @@ protected:
 
     void fgAdjustForAddressExposedOrWrittenThis();
 
-    bool                      fgProfileData_ILSizeMismatch;
-    ICorJitInfo::BlockCounts* fgBlockCounts;
-    UINT32                    fgBlockCountsCount;
-    UINT32                    fgNumProfileRuns;
+    bool                                   fgProfileData_ILSizeMismatch;
+    ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
+    BYTE*                                  fgPgoData;
+    UINT32                                 fgPgoSchemaCount;
+    UINT32                                 fgNumProfileRuns;
 
     unsigned fgStressBBProf()
     {

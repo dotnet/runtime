@@ -45,7 +45,7 @@
     </PropertyGroup>
 
     <MonoAOTCompiler
-      CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\mono-aot-cross"
+      CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross"
       Mode="$(AOTMode)"
       OutputType="AsmOnly"
       Assemblies="@(AotInputAssemblies)"
