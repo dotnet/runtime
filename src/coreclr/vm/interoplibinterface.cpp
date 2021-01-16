@@ -1473,6 +1473,13 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(
     _In_ OBJECTREF instance,
     _Outptr_ void** wrapperRaw)
 {
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     if (g_marshallingGlobalInstanceId == ComWrappersNative::InvalidWrapperId)
         return false;
 
@@ -1499,6 +1506,13 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     _In_ INT32 objFromComIPFlags,
     _Out_ OBJECTREF* objRef)
 {
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     if (g_marshallingGlobalInstanceId == ComWrappersNative::InvalidWrapperId)
         return false;
 
@@ -1516,6 +1530,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     {
         GCX_COOP();
 
+        // TrackerObject support and unwrapping matches the built-in semantics that the global scenario mimics.
         int flags = CreateObjectFlags::CreateObjectFlags_TrackerObject | CreateObjectFlags::CreateObjectFlags_Unwrap;
         if ((objFromComIPFlags & ObjFromComIP::UNIQUE_OBJECT) != 0)
             flags |= CreateObjectFlags::CreateObjectFlags_UniqueInstance;
@@ -1594,13 +1609,16 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
         _ASSERTE(hr == S_OK);
     }
 
+    // TrackerObject support and unwrapping matches the built-in semantics that the global scenario mimics.
+    int flags = CreateObjectFlags::CreateObjectFlags_TrackerObject | CreateObjectFlags::CreateObjectFlags_Unwrap;
+
     // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
     return TryGetOrCreateObjectForComInstanceInternal(
         NULL /*comWrappersImpl*/,
         g_trackerSupportGlobalInstanceId,
         identity,
         NULL,
-        CreateObjectFlags::CreateObjectFlags_TrackerObject | CreateObjectFlags::CreateObjectFlags_Unwrap,
+        (CreateObjectFlags)flags,
         ComWrappersScenario::TrackerSupportGlobalInstance,
         NULL /*wrapperMaybe*/,
         objRef);
