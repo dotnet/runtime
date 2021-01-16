@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -73,7 +74,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
             IPAddress[] a2 = Dns.GetHostAddresses("");
 
             Assert.True(a1.Length > 0);
-            Assert.True(a1.SequenceEqual(a2);
+            Assert.True(a1.SequenceEqual(a2));
         });
     }
 }
