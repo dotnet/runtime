@@ -162,6 +162,9 @@
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections\tests\**\*.Tests.csproj"
                       Condition="'$(TestAssemblies)' == 'true'" />
+    <!--<ProjectReference Include="$(MSBuildThisFileDirectory)Wasm.Debugger\tests\**\*.csproj"-->
+                      <!--AdditionalProperties="Configuration=Debug;RuntimeConfiguration=$(Configuration)"-->
+                      <!--Condition="'$(TestAssemblies)' == 'true'" />-->
     <!--<ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"-->
                       <!--Exclude="@(ProjectExclusions)"-->
                       <!--Condition="'$(TestAssemblies)' == 'true'" />-->
@@ -195,10 +198,10 @@
                       Condition="'$(TestAssemblies)' == 'true'" />
     <!--<ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\wasm\**\*.Test.csproj"-->
                       <!--BuildInParallel="false" />-->
-    <!--<ProjectReference Include="$(RepoRoot)\src\mono\wasm\debugger\DebuggerTestSuite\DebuggerTestSuite.csproj"-->
-                      <!--Condition="'$(TestAssemblies)' == 'true'"-->
-                      <!--AdditionalProperties="Configuration=Debug"-->
-                      <!--BuildInParallel="false" />-->
+    <ProjectReference Include="$(RepoRoot)\src\mono\wasm\debugger\DebuggerTestSuite\DebuggerTestSuite.csproj"
+                      Condition="'$(TestAssemblies)' == 'true'"
+                      AdditionalProperties="Configuration=Debug"
+                      BuildInParallel="false" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
