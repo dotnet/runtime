@@ -75,7 +75,6 @@ namespace System.Net.Sockets
             }
 
             _family = AddressFamily.Unknown;
-            InitializeClientSocket();
 
             try
             {
@@ -174,6 +173,11 @@ namespace System.Net.Sockets
                             if ((address.AddressFamily == AddressFamily.InterNetwork && Socket.OSSupportsIPv4) || Socket.OSSupportsIPv6)
                             {
                                 var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                                if (address.IsIPv4MappedToIPv6)
+                                {
+                                    socket.DualMode = true;
+                                }
+
                                 // Use of Interlocked.Exchanged ensures _clientSocket is written before Disposed is read.
                                 Interlocked.Exchange(ref _clientSocket!, socket);
                                 if (Disposed)
