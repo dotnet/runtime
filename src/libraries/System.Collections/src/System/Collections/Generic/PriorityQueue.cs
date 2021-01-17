@@ -337,14 +337,7 @@ namespace System.Collections.Generic
         /// </summary>
         private void SetCapacity(int capacity)
         {
-            var newArray = new (TElement, TPriority)[capacity];
-
-            if (_size > 0)
-            {
-                Array.Copy(_nodes, 0, newArray, 0, _size);
-            }
-
-            _nodes = newArray;
+            Array.Resize(ref _nodes, capacity);
         }
 
         /// <summary>
