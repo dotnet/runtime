@@ -49,9 +49,12 @@ ensure_capacity (GArrayPriv *priv, guint capacity)
 	
 	if (capacity <= priv->capacity)
 		return;
-	
-	new_capacity = (capacity + 63) & ~63;
-	
+
+	/*
+	  new_capacity is grown by 1.5 and then we pad to ensure it is a multiple of 64. 
+	 */
+	new_capacity = (((capacity*3) >> 1) + 63) & ~63;
+
 	priv->array.data = g_realloc (priv->array.data, element_length (priv, new_capacity));
 	
 	if (priv->clear_) {
