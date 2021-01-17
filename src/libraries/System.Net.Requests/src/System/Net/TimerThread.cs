@@ -471,7 +471,7 @@ namespace System.Net
 
             if (oldState == TimerThreadState.Idle)
             {
-                new Thread(new ThreadStart(ThreadProc) { IsBackground = true, Name = ".NET Networking Timer" }).Start();
+                new Thread(new ThreadStart(ThreadProc)) { IsBackground = true, Name = ".NET Networking Timer" }.Start();
             }
         }
 
