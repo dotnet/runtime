@@ -1963,6 +1963,13 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
 }
 
 
+#ifdef TARGET_X86
+#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
+                          CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
+#else
+#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
+#endif
+
 void ThreadStore::AllocateOSContext()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1973,7 +1980,55 @@ void ThreadStore::AllocateOSContext()
 #endif
        )
     {
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)  
+        DWORD context = CONTEXT_COMPLETE;
+        BOOL supportsAVX = FALSE;
+
+        // Determine if the processor supports AVX so we could 
+        // retrieve extended registers
+        DWORD64 FeatureMask = GetEnabledXStateFeatures();
+        if ((FeatureMask & XSTATE_MASK_AVX) != 0)
+        {
+            context = context | CONTEXT_XSTATE;
+            supportsAVX = TRUE;
+        }
+
+        // Retrieve contextSize by passing NULL for Buffer
+        DWORD contextSize = 0;
+        BOOL success = InitializeContext(NULL,
+                                   context,
+                                   NULL,
+                                   &contextSize);
+
+        // The initialize call should fail but return contextSize
+        // So now allocate a buffer of that size and call IntitializeContext again
+        if (success == FALSE)
+        {
+            LPVOID contextBuffer = malloc(contextSize);
+            if (contextBuffer != NULL)
+            {
+                success = InitializeContext(contextBuffer,
+                                            context,
+                                            &s_pOSContext,
+                                            &contextSize);
+
+                // if AVX is supported set the appropriate features mask in the context
+                if (success == TRUE && supportsAVX)
+                {
+                    success = SetXStateFeaturesMask(s_pOSContext, XSTATE_MASK_AVX);
+                    if (success == FALSE)
+                    {
+                        s_pOSContext = NULL;
+                    }                            
+                }
+            }
+        }
+#else 
         s_pOSContext = new (nothrow) CONTEXT();
+        s_pOSContext->ContextFlags = CONTEXT_COMPLETE;
+#endif
+
     }
 #ifdef _DEBUG
     if (s_pOSContext == NULL)
@@ -2847,13 +2902,6 @@ void __stdcall Thread::RedirectedHandledJITCaseForGCStress()
 // own stack.
 //
 
-#ifdef TARGET_X86
-#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
-                          CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
-#else
-#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
-#endif
-
 BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 {
     CONTRACTL {
@@ -2912,8 +2960,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     //////////////////////////////////////
     // Get and save the thread's context
 
-    // Always get complete context
-    pCtx->ContextFlags = CONTEXT_COMPLETE;
+    // Always get complete context, pCtx->ContextFlags are set during Initialization
     BOOL bRes = EEGetThreadContext(this, pCtx);
     _ASSERTE(bRes && "Failed to GetThreadContext in RedirectThreadAtHandledJITCase - aborting redirect.");
 
