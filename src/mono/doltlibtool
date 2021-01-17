@@ -1,0 +1,20 @@
+#!/usr/bin/bash
+top_builddir_slash="${0%%doltlibtool}"
+: ${top_builddir_slash:=./}
+args=()
+modeok=false
+tagok=false
+for arg in "$@"; do
+    case "$arg" in
+        --silent) ;;
+        --mode=compile) modeok=true ;;
+        --tag=CC|--tag=CXX) tagok=true ;;
+        --quiet) ;;
+        *) args[${#args[@]}]="$arg" ;;
+    esac
+done
+if $modeok && $tagok ; then
+    . ${top_builddir_slash}doltcompile "${args[@]}"
+else
+    exec ${top_builddir_slash}libtool "$@"
+fi
