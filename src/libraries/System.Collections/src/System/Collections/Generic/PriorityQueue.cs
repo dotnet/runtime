@@ -547,7 +547,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            public struct Enumerator : IEnumerator<(TElement element, TPriority priority)>, IEnumerator
+            public struct Enumerator : IEnumerator<(TElement element, TPriority priority)>
             {
                 private readonly PriorityQueue<TElement, TPriority> _queue;
                 private readonly int _version;
