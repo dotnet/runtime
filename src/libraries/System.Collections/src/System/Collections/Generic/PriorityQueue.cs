@@ -309,7 +309,7 @@ namespace System.Collections.Generic
         /// Ensures that the priority queue has the specified capacity
         /// and resizes its underlying array if necessary.
         /// </summary>
-        public void EnsureCapacity(int capacity)
+        public int EnsureCapacity(int capacity)
         {
             if (capacity < 0)
             {
@@ -317,12 +317,14 @@ namespace System.Collections.Generic
                     nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (capacity <= _size)
+            int currentCapacity = _nodes.Length;
+            if (currentCapacity >= capacity)
             {
-                return;
+                return currentCapacity;
             }
 
             SetCapacity(capacity);
+            return capacity;
         }
 
         /// <summary>

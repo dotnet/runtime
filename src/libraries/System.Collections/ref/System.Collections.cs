@@ -396,7 +396,7 @@ namespace System.Collections.Generic
         public TElement EnqueueDequeue(TElement element, TPriority priority) { throw null; }
         public void EnqueueRange(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> items) { }
         public void EnqueueRange(System.Collections.Generic.IEnumerable<TElement> elements, TPriority priority) { }
-        public void EnsureCapacity(int capacity) { }
+        public int EnsureCapacity(int capacity) { throw null; }
         public TElement Peek() { throw null; }
         public void TrimExcess() { }
         public bool TryDequeue([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
