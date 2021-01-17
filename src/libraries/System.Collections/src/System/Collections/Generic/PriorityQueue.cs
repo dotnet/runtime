@@ -159,7 +159,7 @@ namespace System.Collections.Generic
         /// <exception cref="InvalidOperationException">The queue is empty.</exception>
         public TElement Peek()
         {
-            if (TryPeek(out TElement? element, out TPriority? priority))
+            if (TryPeek(out TElement? element, out _))
             {
                 return element;
             }
@@ -175,7 +175,7 @@ namespace System.Collections.Generic
         /// <exception cref="InvalidOperationException">The queue is empty.</exception>
         public TElement Dequeue()
         {
-            if (TryDequeue(out TElement? element, out TPriority? priority))
+            if (TryDequeue(out TElement? element, out _))
             {
                 return element;
             }
