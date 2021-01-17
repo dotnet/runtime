@@ -384,7 +384,6 @@ namespace System.Collections.Generic
         /// <summary>
         /// Puts a node at the specified index.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PutAt((TElement element, TPriority priority) node, int index)
         {
             _nodes[index] = node;
@@ -393,19 +392,16 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the index of the last node in the heap.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetLastNodeIndex() => _size - 1;
 
         /// <summary>
         /// Gets the index of an element's parent.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetParentIndex(int index) => (int)((index - 1) / Arity);
 
         /// <summary>
         /// Gets the index of the first child of an element.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetFirstChildIndex(int index) => (int)(Arity * index + 1);
 
         /// <summary>
