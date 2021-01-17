@@ -1,16 +1,22 @@
 Makefile.in
+MakeFile
 
 /aclocal.m4
 /autom4te.cache
 /compile
 /config.guess
+/config.status
 /config.h.in
 /config.h
 /config.sub
 /configure
+/doltcompile
+/doltlibtool
 /depcomp
 /install-sh
+/libtool
 /ltmain.sh
 /missing
+/stamp-h1
 
 mono_crash*

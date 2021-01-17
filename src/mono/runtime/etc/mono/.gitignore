@@ -1,0 +1,16 @@
+browscap.ini
+
+./1.0/machine.config
+
+./2.0/Browsers/Compat.browser
+./2.0/machine.config
+./2.0/web.config
+
+./4.0/Browsers/Compat.browser
+./4.0/machine.config
+./4.0/web.config
+
+./4.5/Browsers/Compat.browser
+./4.5/machine.config
+./4.5/web.config
+
