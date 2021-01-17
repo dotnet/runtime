@@ -658,10 +658,10 @@ namespace System.Collections.Generic
                 => new Enumerator(_queue);
 
             IEnumerator<(TElement element, TPriority priority)> IEnumerable<(TElement element, TPriority priority)>.GetEnumerator()
-                => new Enumerator(_queue);
+                => GetEnumerator();
 
             IEnumerator IEnumerable.GetEnumerator()
-                => new Enumerator(_queue);
+                => GetEnumerator();
         }
     }
 }
