@@ -4,7 +4,11 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.UnreachableBody
 {
 	[Define ("OTHER_INCLUDED")]
+#if NETCOREAPP
+	[SetupLinkerArgument ("-a", "other.dll", "visible")]
+#else
 	[SetupLinkerArgument ("-r", "other")]
+#endif
 	[SetupCompileBefore ("other.dll", new[] { "Dependencies/OtherAssemblyNoInstanceCtor.il" })]
 	[KeptMemberInAssembly ("other.dll", "Mono.Linker.Tests.Cases.UnreachableBody.Dependencies.OtherAssemblyNoInstanceCtor/Foo", "Method()")]
 	[RemovedMemberInAssembly ("other.dll", "Mono.Linker.Tests.Cases.UnreachableBody.Dependencies.OtherAssemblyNoInstanceCtor/Foo", "UsedByMethod()")]

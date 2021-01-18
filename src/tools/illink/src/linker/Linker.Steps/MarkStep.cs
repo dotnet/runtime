@@ -33,6 +33,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -248,7 +249,8 @@ namespace Mono.Linker.Steps
 
 		protected bool IsFullyPreserved (TypeDefinition type)
 		{
-			if (Annotations.TryGetPreserve (type, out TypePreserve preserve) && preserve == TypePreserve.All)
+			if (Annotations.TryGetPreserve (type, out TypePreserve preserve) && preserve == TypePreserve.All &&
+				Annotations.TryGetPreserveAccessibility (type, out preserve) && preserve == 0)
 				return true;
 
 			switch (Annotations.GetAction (type.Module.Assembly)) {
@@ -2005,6 +2007,15 @@ namespace Mono.Linker.Steps
 			return null;
 		}
 
+		void MarkFieldsIf (Collection<FieldDefinition> fields, Func<FieldDefinition, bool> predicate, in DependencyInfo reason)
+		{
+			foreach (FieldDefinition field in fields) {
+				if (predicate (field)) {
+					MarkField (field, reason);
+				}
+			}
+		}
+
 		protected bool MarkDefaultConstructor (TypeDefinition type, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 			if (type?.HasMethods != true)
@@ -2236,22 +2247,64 @@ namespace Mono.Linker.Steps
 			if (!Annotations.TryGetPreserve (type, out TypePreserve preserve))
 				return;
 
+			var di = new DependencyInfo (DependencyKind.TypePreserve, type);
+
 			switch (preserve) {
 			case TypePreserve.All:
-				// TODO: it seems like PreserveAll on a type won't necessarily keep nested types,
-				// but PreserveAll on an assembly will. Is this correct?
-				MarkFields (type, true, new DependencyInfo (DependencyKind.TypePreserve, type));
-				MarkMethods (type, new DependencyInfo (DependencyKind.TypePreserve, type), type);
+				Annotations.TryGetPreserveAccessibility (type, out preserve);
+				switch (preserve) {
+				case TypePreserve.AccessibilityVisible:
+					if (type.HasMethods)
+						MarkMethodsIf (type.Methods, IsMethodVisible, di, type);
+
+					if (type.HasFields)
+						MarkFieldsIf (type.Fields, IsFieldVisible, di);
+
+					break;
+				case TypePreserve.AccessibilityVisibleOrInternal:
+					if (type.HasMethods)
+						MarkMethodsIf (type.Methods, IsMethodVisibleOrInternal, di, type);
+
+					if (type.HasFields)
+						MarkFieldsIf (type.Fields, IsFieldVisibleOrInternal, di);
+
+					break;
+				default:
+					MarkFields (type, true, di);
+					MarkMethods (type, di, type);
+					break;
+				}
 				break;
+
 			case TypePreserve.Fields:
-				if (!MarkFields (type, true, new DependencyInfo (DependencyKind.TypePreserve, type), true))
+				if (!MarkFields (type, true, di, true))
 					_context.LogWarning ($"Type {type.GetDisplayName ()} has no fields to preserve", 2001, type);
 				break;
 			case TypePreserve.Methods:
-				if (!MarkMethods (type, new DependencyInfo (DependencyKind.TypePreserve, type), type))
+				if (!MarkMethods (type, di, type))
 					_context.LogWarning ($"Type {type.GetDisplayName ()} has no methods to preserve", 2002, type);
 				break;
 			}
+		}
+
+		static bool IsMethodVisible (MethodDefinition method)
+		{
+			return method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly;
+		}
+
+		static bool IsMethodVisibleOrInternal (MethodDefinition method)
+		{
+			return method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly || method.IsAssembly || method.IsFamilyAndAssembly;
+		}
+
+		static bool IsFieldVisible (FieldDefinition field)
+		{
+			return field.IsPublic || field.IsFamily || field.IsFamilyOrAssembly;
+		}
+
+		static bool IsFieldVisibleOrInternal (FieldDefinition field)
+		{
+			return field.IsPublic || field.IsFamily || field.IsFamilyOrAssembly || field.IsAssembly || field.IsFamilyAndAssembly;
 		}
 
 		void ApplyPreserveMethods (TypeDefinition type)

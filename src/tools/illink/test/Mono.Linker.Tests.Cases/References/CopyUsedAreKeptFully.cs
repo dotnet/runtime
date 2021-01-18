@@ -8,6 +8,7 @@ namespace Mono.Linker.Tests.Cases.References
 	// link - This assembly
 	// copyused - library1.dll
 	[SetupLinkerUserAction ("copyused")]
+	[SetupLinkerAction ("link", "test")]
 
 	[SetupCompileBefore ("library1.dll", new[] { "Dependencies/UserAssembliesAreLinkedByDefault_Library1.cs" })]
 

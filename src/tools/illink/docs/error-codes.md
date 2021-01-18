@@ -113,6 +113,22 @@ the error code. For example:
 
 #### `IL1030`: Invalid argument for '{token}' option
 
+#### `IL1031`: Invalid assembly action '{action}'
+
+#### `IL1032`: Root assembly '{assemblyFile}' could not be found
+
+#### `IL1033`: XML descriptor file '{xmlFile}' could not be found
+
+#### `IL1034`: Root assembly '{name}' does not have entry point
+
+#### `IL1035`: Root assembly '{name}' cannot use action '{action}'
+
+#### `IL1036`: Invalid assembly name '{assemblyName}'
+
+#### `IL1037`: Invalid assembly root mode '{mode}'
+
+#### `IL1038`: Exported type '{type.Name}' cannot be rooted
+
 ----
 ## Warning Codes
 

@@ -356,7 +356,7 @@ namespace Mono.Linker.Steps
 			// We allow xml descriptor to override feature attributes which should be
 			// removed
 			//
-			return Annotations.GetPreserve (definition) != TypePreserve.All;
+			return !Annotations.TryGetPreserve (definition, out var p) || p != TypePreserve.All;
 		}
 	}
 }

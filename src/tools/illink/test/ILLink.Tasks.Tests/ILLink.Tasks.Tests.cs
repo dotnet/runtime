@@ -74,8 +74,12 @@ namespace ILLink.Tasks.Tests
 					var trimMode = item.GetMetadata ("TrimMode");
 					if (String.IsNullOrEmpty (trimMode))
 						continue;
+
 					AssemblyAction expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), trimMode, ignoreCase: true);
-					AssemblyAction actualAction = (AssemblyAction) context.Actions[Path.GetFileNameWithoutExtension (assemblyPath)];
+
+					var ad = new Mono.Cecil.AssemblyNameDefinition (Path.GetFileNameWithoutExtension (assemblyPath), new Version ());
+					AssemblyAction actualAction = context.CalculateAssemblyAction (ad);
+
 					Assert.Equal (expectedAction, actualAction);
 				}
 			}
@@ -87,7 +91,10 @@ namespace ILLink.Tasks.Tests
 			var task = new MockTask () {
 				AssemblyPaths = new ITaskItem[] { new TaskItem ("Assembly.dll", new Dictionary<string, string> { { "TrimMode", "invalid" } }) }
 			};
-			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
+
+			using (var driver = task.CreateDriver ()) {
+				Assert.Equal (1031, driver.Logger.Messages[0].Code);
+			}
 		}
 
 		// the InlineData string [] parameters are wrapped in object [] as described in https://github.com/xunit/xunit/issues/2060
@@ -106,20 +113,22 @@ namespace ILLink.Tasks.Tests
 				var actualReferences = driver.GetReferenceAssemblies ();
 				Assert.Equal (expectedReferences.OrderBy (a => a), actualReferences.OrderBy (a => a));
 				foreach (var reference in expectedReferences) {
-					var referenceName = Path.GetFileNameWithoutExtension (reference);
-					var actualAction = driver.Context.Actions[referenceName];
+					var ad = new Mono.Cecil.AssemblyNameDefinition (Path.GetFileNameWithoutExtension (reference), new Version ());
+					AssemblyAction actualAction = driver.Context.CalculateAssemblyAction (ad);
 					Assert.Equal (AssemblyAction.Skip, actualAction);
 				}
 			}
 		}
 
 		[Theory]
-		[InlineData (new object[] { new string[] { "AssemblyName" } })]
-		public void TestRootAssemblyNames (string[] rootAssemblyNames)
+		[InlineData (new object[] { new string[] { "illink.dll" } })]
+		[InlineData (new object[] { new string[] { "illink" } })]
+		public void TestRootEntryPointAssemblyNames (string[] rootAssemblyNames)
 		{
 			var task = new MockTask () {
 				RootAssemblyNames = rootAssemblyNames.Select (a => new TaskItem (a)).ToArray ()
 			};
+
 			using (var driver = task.CreateDriver ()) {
 				var expectedRoots = rootAssemblyNames;
 				var actualRoots = driver.GetRootAssemblies ();
@@ -142,10 +151,7 @@ namespace ILLink.Tasks.Tests
 		}
 
 		[Theory]
-		[InlineData (new object[] { new string[] { "path/to/descriptor.xml" } })]
-		[InlineData (new object[] { new string[] { "path with/spaces/descriptor.xml" } })]
-		[InlineData (new object[] { new string[] { "descriptor with spaces.xml" } })]
-		[InlineData (new object[] { new string[] { "descriptor1.xml", "descriptor2.xml" } })]
+		[InlineData (new object[] { new string[] { "combined_output.xml" } })]
 		public void TestRootDescriptorFiles (string[] rootDescriptorFiles)
 		{
 			var task = new MockTask () {
@@ -501,7 +507,10 @@ namespace ILLink.Tasks.Tests
 			var task = new MockTask () {
 				TrimMode = "invalid"
 			};
-			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
+
+			using (var driver = task.CreateDriver ()) {
+				Assert.Equal (1031, driver.Logger.Messages[0].Code);
+			}
 		}
 
 		public static IEnumerable<object[]> CustomStepsCases => new List<object[]> {
@@ -604,20 +613,20 @@ namespace ILLink.Tasks.Tests
 			var task = new MockTask () {
 				CustomSteps = customSteps
 			};
+
 			Assert.Throws<ArgumentException> (() => task.CreateDriver ());
 		}
 
 		[Fact]
-		public void TestUnhandledException ()
+		public void TestErrorHandling ()
 		{
 			var task = new MockTask () {
 				RootAssemblyNames = new ITaskItem[] { new TaskItem ("MissingAssembly.dll") }
 			};
 			task.BuildEngine = new MockBuildEngine ();
-			task.Execute ();
+			Assert.False (task.Execute ());
 			Assert.Contains (task.Messages, message =>
-				message.Importance == MessageImportance.High &&
-				message.Line.Contains ("Unable to find 'MissingAssembly.dll.dll'"));
+				message.Line.Contains ("Root assembly 'MissingAssembly.dll' could not be found'"));
 		}
 	}
 }
