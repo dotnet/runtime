@@ -203,6 +203,7 @@
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
     <Compile Include="ObjectWriter\OutputInfoBuilder.cs" />
+    <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
     <Compile Include="ObjectWriter\SymbolFileBuilder.cs" />
     <Compile Include="Win32Resources\ResourceData.cs" />
     <Compile Include="Win32Resources\ResourceData.Reader.cs" />
