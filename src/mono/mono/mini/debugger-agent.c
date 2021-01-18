@@ -9259,7 +9259,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoClass *dummy_class;
 		int field_token =  decode_int (p, &p, end);
 		i = 0;
-		f = mono_field_from_token(m_class_get_image (obj_type), field_token, &dummy_class, NULL, error);
+		f = mono_field_from_token(m_class_get_image (obj_type), field_token, &dummy_class, NULL);
 		if (f) {
 			goto get_field_value;
 		}
