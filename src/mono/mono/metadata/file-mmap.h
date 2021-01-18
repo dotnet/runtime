@@ -34,11 +34,11 @@ mono_mmap_flush (void *mmap_handle, MonoError *error);
 
 ICALL_EXPORT
 void*
-mono_mmap_open_file (const gunichar2 *path, gint path_length, int mode, const gunichar2 *mapName, gint mapName_length, gint64 *capacity, int access, int options, int *win32error, MonoError *error);
+mono_mmap_open_file (const gunichar2 *path, gint path_length, int mode, const gunichar2 *mapName, gint mapName_length, gint64 *capacity, int access, int options, int *ioerror, MonoError *error);
 
 ICALL_EXPORT
 void*
-mono_mmap_open_handle (void *handle, const gunichar2 *mapName, gint mapName_length, gint64 *capacity, int access, int options, int *win32error, MonoError *error);
+mono_mmap_open_handle (void *handle, const gunichar2 *mapName, gint mapName_length, gint64 *capacity, int access, int options, int *ioerror, MonoError *error);
 
 ICALL_EXPORT
 int

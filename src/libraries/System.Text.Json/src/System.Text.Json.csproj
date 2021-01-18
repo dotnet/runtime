@@ -33,6 +33,7 @@
     <Compile Include="System\Text\Json\Document\JsonElement.ArrayEnumerator.cs" />
     <Compile Include="System\Text\Json\Document\JsonElement.cs" />
     <Compile Include="System\Text\Json\Document\JsonElement.ObjectEnumerator.cs" />
+    <Compile Include="System\Text\Json\Document\JsonElement.Parse.cs" />
     <Compile Include="System\Text\Json\Document\JsonProperty.cs" />
     <Compile Include="System\Text\Json\Document\JsonValueKind.cs" />
     <Compile Include="System\Text\Json\JsonCommentHandling.cs" />
@@ -104,6 +105,8 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DateTimeConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DateTimeOffsetConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DecimalConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\DisallowedTypeConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\DisallowedTypeConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\DoubleConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\EnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\EnumConverterFactory.cs" />
@@ -120,7 +123,6 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SByteConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SingleConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\StringConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\TypeConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt16Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
@@ -143,8 +145,8 @@
     <Compile Include="System\Text\Json\Serialization\JsonParameterInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\GenericMethodHolder.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonSerializer.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandlePropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Helpers.cs" />
@@ -181,7 +183,6 @@
     <Compile Include="System\Text\Json\Serialization\WriteStackFrame.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.Serialization.cs" />
-    <Compile Include="System\Text\Json\TypeExtensions.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Date.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Escaping.cs" />
@@ -216,6 +217,7 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.SignedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
+    <Compile Include="System\TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
@@ -235,7 +237,6 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />

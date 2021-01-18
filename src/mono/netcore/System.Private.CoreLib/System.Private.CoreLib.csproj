@@ -10,12 +10,8 @@
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
-    <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
-    <DebugType>Portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
-    <OutputPath>$(BinDir)IL/</OutputPath>
+    <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64;wasm</Platforms>
   </PropertyGroup>
@@ -35,6 +31,8 @@
     <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <!-- Override InformationalVersion during servicing as it's returned via public api. -->
+    <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <Nullable>enable</Nullable>
@@ -45,7 +43,7 @@
 
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <EnableAnalyzers>true</EnableAnalyzers>
+    <SlnGenSolutionFolder>src</SlnGenSolutionFolder>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
@@ -88,7 +86,6 @@
 
   <!-- Signing -->
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
   </PropertyGroup>
 
@@ -106,7 +103,7 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn),618,67</NoWarn>
 
-    <DefineConstants>NETCORE;DISABLE_REMOTING;MONO_FEATURE_SRE;$(DefineConstants)</DefineConstants>
+    <DefineConstants>MONO_FEATURE_SRE;$(DefineConstants)</DefineConstants>
 
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
@@ -121,6 +118,11 @@
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
   </PropertyGroup>
 
+  <!-- Experimental mono metadata update feature -->
+  <PropertyGroup>
+    <DefineConstants Condition="'$(MonoMetadataUpdate)' == 'true'">$(DefineConstants);FEATURE_METADATA_UPDATE</DefineConstants>
+  </PropertyGroup>
+
   <!-- ILLinker settings -->
   <PropertyGroup>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
@@ -131,19 +133,18 @@
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.xml" />
     <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
 
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
                              Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
 
+    <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.xml" />
     <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml"
                               Condition="Exists('$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml')" />
   </ItemGroup>
 
   <!-- Sources -->
   <ItemGroup>
-      <Compile Include="$(BclSourcesRoot)\Mono\Console.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
-      <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
-      <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoPInvokeCallbackAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeHandles.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
@@ -174,7 +175,6 @@
       <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Utf8String.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
       <Compile Include="$(BclSourcesRoot)\System\WeakReference.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.Mono.cs" />
@@ -240,7 +240,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\JitHelpers.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.Mono.cs" />
@@ -249,18 +248,15 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\Contexts\Context.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\StackCrawlMark.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLock.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelSpinWaiter.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.Mono.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
@@ -272,14 +268,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
 
       <Compile Include="$(BclSourcesRoot)\System\IO\MonoIOError.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshal.cs" />
-      <Compile Include="$(BclSourcesRoot)\Internal\Resources\PRIExceptionInfo.cs" />
-      <Compile Include="$(BclSourcesRoot)\Internal\Resources\WindowsRuntimeResourceManagerBase.cs" />
-      <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />
@@ -293,9 +281,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Browser.Mono.cs" />
       <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.UnixOrWindows.Mono.cs" />
-  </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeMarshal.cs" />
@@ -304,11 +289,16 @@
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
   </ItemGroup>
 
+  <!-- Enable unsupported browser warnings -->
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsAnyOS)' == 'true'">
+    <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
-    <Copy SourceFiles="$(BinDir)/IL/System.Private.CoreLib.dll;$(BinDir)/IL/System.Private.CoreLib.pdb"
-        DestinationFolder="$(BinDir)"
+    <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"
+        DestinationFolder="$(RuntimeBinDir)"
         SkipUnchangedFiles="true" />
   </Target>
 

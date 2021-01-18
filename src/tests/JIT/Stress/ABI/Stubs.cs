@@ -168,7 +168,7 @@ namespace ABIStress
 
             ILGenerator g = cb.GetILGenerator();
             g.Emit(OpCodes.Ldarg, 0);
-            g.Emit(OpCodes.Call, typeof(object).GetConstructor(Array.Empty<Type>()));
+            g.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes));
             g.Emit(OpCodes.Ldarg, 0);
             g.Emit(OpCodes.Ldarg_1);
             g.Emit(OpCodes.Stfld, fieldInfoMagicValueField);

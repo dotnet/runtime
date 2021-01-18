@@ -336,15 +336,15 @@ namespace System.Runtime.InteropServices
         {
             var key = (type, cookie);
 
-            LazyInitializer.EnsureInitialized(
-                ref MarshalerInstanceCache,
-                () => new Dictionary<(Type, string), ICustomMarshaler>(new MarshalerInstanceKeyComparer())
-            );
+            Dictionary<(Type, string), ICustomMarshaler> cache =
+                Volatile.Read(ref MarshalerInstanceCache) ??
+                Interlocked.CompareExchange(ref MarshalerInstanceCache, new Dictionary<(Type, string), ICustomMarshaler>(new MarshalerInstanceKeyComparer()), null) ??
+                MarshalerInstanceCache;
 
             ICustomMarshaler? result;
             bool gotExistingInstance;
-            lock (MarshalerInstanceCache)
-                gotExistingInstance = MarshalerInstanceCache.TryGetValue(key, out result);
+            lock (cache)
+                gotExistingInstance = cache.TryGetValue(key, out result);
 
             if (!gotExistingInstance)
             {
@@ -389,8 +389,8 @@ namespace System.Runtime.InteropServices
                 if (result == null)
                     throw new ApplicationException($"A call to GetInstance() for custom marshaler '{type.FullName}' returned null, which is not allowed.");
 
-                lock (MarshalerInstanceCache)
-                    MarshalerInstanceCache[key] = result;
+                lock (cache)
+                    cache[key] = result;
             }
 
             return result;

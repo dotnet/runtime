@@ -5,12 +5,12 @@ namespace System.IO
 {
     public partial class FileStream : Stream
     {
-        private void LockInternal(long position, long length)
+        private static void LockInternal(long position, long length)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
         }
 
-        private void UnlockInternal(long position, long length)
+        private static void UnlockInternal(long position, long length)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
         }

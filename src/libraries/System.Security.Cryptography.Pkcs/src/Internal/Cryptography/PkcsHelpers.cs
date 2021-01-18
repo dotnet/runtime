@@ -227,7 +227,20 @@ namespace Internal.Cryptography
             if (octets.Length < 2)
                 return string.Empty;   // .NET Framework compat: 0-length byte array maps to string.empty. 1-length byte array gets passed to Marshal.PtrToStringUni() with who knows what outcome.
 
-            string s = Encoding.Unicode.GetString(octets, 0, octets.Length - 2);
+            int end = octets.Length;
+            int endMinusOne = end - 1;
+
+            // Truncate the string to before the first embedded \0 (probably the last two bytes).
+            for (int i = 0; i < endMinusOne; i += 2)
+            {
+                if (octets[i] == 0 && octets[i + 1] == 0)
+                {
+                    end = i;
+                    break;
+                }
+            }
+
+            string s = Encoding.Unicode.GetString(octets, 0, end);
             return s;
         }
 

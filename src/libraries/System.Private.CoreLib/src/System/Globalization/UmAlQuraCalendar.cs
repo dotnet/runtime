@@ -379,7 +379,7 @@ namespace System.Globalization
         /// In order to get the exact UmAlQura year, we compare the exact absolute date for UmAlQuraYear and (UmAlQuraYear + 1).
         /// From here, we can get the correct UmAlQura year.
         /// </summary>
-        private int GetDatePart(DateTime time, int part)
+        private static int GetDatePart(DateTime time, int part)
         {
             long ticks = time.Ticks;
             CheckTicksRange(ticks);

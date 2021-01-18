@@ -16,60 +16,16 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.WebAssembly.Diagnostics
 {
 
-    class DevToolsQueue
-    {
-        Task current_send;
-        List<byte[]> pending;
-
-        public WebSocket Ws { get; private set; }
-        public Task CurrentSend { get { return current_send; } }
-        public DevToolsQueue(WebSocket sock)
-        {
-            this.Ws = sock;
-            pending = new List<byte[]>();
-        }
-
-        public Task Send(byte[] bytes, CancellationToken token)
-        {
-            pending.Add(bytes);
-            if (pending.Count == 1)
-            {
-                if (current_send != null)
-                    throw new Exception("current_send MUST BE NULL IF THERE'S no pending send");
-                //logger.LogTrace ("sending {0} bytes", bytes.Length);
-                current_send = Ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, token);
-                return current_send;
-            }
-            return null;
-        }
-
-        public Task Pump(CancellationToken token)
-        {
-            current_send = null;
-            pending.RemoveAt(0);
-
-            if (pending.Count > 0)
-            {
-                if (current_send != null)
-                    throw new Exception("current_send MUST BE NULL IF THERE'S no pending send");
-
-                current_send = Ws.SendAsync(new ArraySegment<byte>(pending[0]), WebSocketMessageType.Text, true, token);
-                return current_send;
-            }
-            return null;
-        }
-    }
-
     internal class DevToolsProxy
     {
-        TaskCompletionSource<bool> side_exception = new TaskCompletionSource<bool>();
-        TaskCompletionSource<bool> client_initiated_close = new TaskCompletionSource<bool>();
-        Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
-        ClientWebSocket browser;
-        WebSocket ide;
-        int next_cmd_id;
-        List<Task> pending_ops = new List<Task>();
-        List<DevToolsQueue> queues = new List<DevToolsQueue>();
+        private TaskCompletionSource<bool> side_exception = new TaskCompletionSource<bool>();
+        private TaskCompletionSource client_initiated_close = new TaskCompletionSource();
+        private Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
+        private ClientWebSocket browser;
+        private WebSocket ide;
+        private int next_cmd_id;
+        private List<Task> pending_ops = new List<Task>();
+        private List<DevToolsQueue> queues = new List<DevToolsQueue>();
 
         protected readonly ILogger logger;
 
@@ -88,7 +44,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return Task.FromResult(false);
         }
 
-        async Task<string> ReadOne(WebSocket socket, CancellationToken token)
+        private async Task<string> ReadOne(WebSocket socket, CancellationToken token)
         {
             byte[] buff = new byte[4000];
             var mem = new MemoryStream();
@@ -98,14 +54,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (socket.State != WebSocketState.Open)
                 {
                     Log("error", $"DevToolsProxy: Socket is no longer open.");
-                    client_initiated_close.TrySetResult(true);
+                    client_initiated_close.TrySetResult();
                     return null;
                 }
 
-                var result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
+                WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    client_initiated_close.TrySetResult(true);
+                    client_initiated_close.TrySetResult();
                     return null;
                 }
 
@@ -116,33 +72,33 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        DevToolsQueue GetQueueForSocket(WebSocket ws)
+        private DevToolsQueue GetQueueForSocket(WebSocket ws)
         {
             return queues.FirstOrDefault(q => q.Ws == ws);
         }
 
-        DevToolsQueue GetQueueForTask(Task task)
+        private DevToolsQueue GetQueueForTask(Task task)
         {
             return queues.FirstOrDefault(q => q.CurrentSend == task);
         }
 
-        void Send(WebSocket to, JObject o, CancellationToken token)
+        private void Send(WebSocket to, JObject o, CancellationToken token)
         {
-            var sender = browser == to ? "Send-browser" : "Send-ide";
+            string sender = browser == to ? "Send-browser" : "Send-ide";
 
-            var method = o["method"]?.ToString();
+            string method = o["method"]?.ToString();
             //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
             Log("protocol", $"{sender}: " + JsonConvert.SerializeObject(o));
-            var bytes = Encoding.UTF8.GetBytes(o.ToString());
+            byte[] bytes = Encoding.UTF8.GetBytes(o.ToString());
 
-            var queue = GetQueueForSocket(to);
+            DevToolsQueue queue = GetQueueForSocket(to);
 
-            var task = queue.Send(bytes, token);
+            Task task = queue.Send(bytes, token);
             if (task != null)
                 pending_ops.Add(task);
         }
 
-        async Task OnEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
+        private async Task OnEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             try
             {
@@ -158,13 +114,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        async Task OnCommand(MessageId id, string method, JObject args, CancellationToken token)
+        private async Task OnCommand(MessageId id, string method, JObject args, CancellationToken token)
         {
             try
             {
                 if (!await AcceptCommand(id, method, args, token))
                 {
-                    var res = await SendCommandInternal(id, method, args, token);
+                    Result res = await SendCommandInternal(id, method, args, token);
                     SendResponseInternal(id, res, token);
                 }
             }
@@ -174,11 +130,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        void OnResponse(MessageId id, Result result)
+        private void OnResponse(MessageId id, Result result)
         {
             //logger.LogTrace ("got id {0} res {1}", id, result);
             // Fixme
-            if (pending_cmds.Remove(id, out var task))
+            if (pending_cmds.Remove(id, out TaskCompletionSource<Result> task))
             {
                 task.SetResult(result);
                 return;
@@ -186,28 +142,29 @@ namespace Microsoft.WebAssembly.Diagnostics
             logger.LogError("Cannot respond to command: {id} with result: {result} - command is not pending", id, result);
         }
 
-        void ProcessBrowserMessage(string msg, CancellationToken token)
+        private void ProcessBrowserMessage(string msg, CancellationToken token)
         {
             var res = JObject.Parse(msg);
 
-            var method = res["method"]?.ToString();
+            string method = res["method"]?.ToString();
             //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
             Log("protocol", $"browser: {msg}");
 
             if (res["id"] == null)
-                pending_ops.Add(OnEvent(new SessionId(res["sessionId"]?.Value<string>()), res["method"].Value<string>(), res["params"] as JObject, token));
+                pending_ops.Add(OnEvent(res.ToObject<SessionId>(), res["method"].Value<string>(), res["params"] as JObject, token));
             else
-                OnResponse(new MessageId(res["sessionId"]?.Value<string>(), res["id"].Value<int>()), Result.FromJson(res));
+                OnResponse(res.ToObject<MessageId>(), Result.FromJson(res));
         }
 
-        void ProcessIdeMessage(string msg, CancellationToken token)
+        private void ProcessIdeMessage(string msg, CancellationToken token)
         {
             Log("protocol", $"ide: {msg}");
             if (!string.IsNullOrEmpty(msg))
             {
                 var res = JObject.Parse(msg);
+                var id = res.ToObject<MessageId>();
                 pending_ops.Add(OnCommand(
-                    new MessageId(res["sessionId"]?.Value<string>(), res["id"].Value<int>()),
+                    id,
                     res["method"].Value<string>(),
                     res["params"] as JObject, token));
             }
@@ -219,7 +176,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return await SendCommandInternal(id, method, args, token);
         }
 
-        Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
+        private Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             int id = Interlocked.Increment(ref next_cmd_id);
 
@@ -247,7 +204,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendEventInternal(sessionId, method, args, token);
         }
 
-        void SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
+        private void SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             var o = JObject.FromObject(new
             {
@@ -265,7 +222,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendResponseInternal(id, result, token);
         }
 
-        void SendResponseInternal(MessageId id, Result result, CancellationToken token)
+        private void SendResponseInternal(MessageId id, Result result, CancellationToken token)
         {
             JObject o = result.ToJObject(id);
             if (result.IsErr)
@@ -277,7 +234,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         // , HttpContext context)
         public async Task Run(Uri browserUri, WebSocket ideSocket)
         {
-            Log("info", $"DevToolsProxy: Starting on {browserUri}");
+            Log("debug", $"DevToolsProxy: Starting on {browserUri}");
             using (this.ide = ideSocket)
             {
                 Log("verbose", $"DevToolsProxy: IDE waiting for connection on {browserUri}");
@@ -300,11 +257,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         while (!x.IsCancellationRequested)
                         {
-                            var task = await Task.WhenAny(pending_ops.ToArray());
+                            Task task = await Task.WhenAny(pending_ops.ToArray());
+
+                            if (client_initiated_close.Task.IsCompleted)
+                            {
+                                await client_initiated_close.Task.ConfigureAwait(false);
+                                Log("verbose", $"DevToolsProxy: Client initiated close from {browserUri}");
+                                x.Cancel();
+
+                                break;
+                            }
+
                             //logger.LogTrace ("pump {0} {1}", task, pending_ops.IndexOf (task));
                             if (task == pending_ops[0])
                             {
-                                var msg = ((Task<string>)task).Result;
+                                string msg = ((Task<string>)task).Result;
                                 if (msg != null)
                                 {
                                     pending_ops[0] = ReadOne(browser, x.Token); //queue next read
@@ -313,7 +280,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
                             else if (task == pending_ops[1])
                             {
-                                var msg = ((Task<string>)task).Result;
+                                string msg = ((Task<string>)task).Result;
                                 if (msg != null)
                                 {
                                     pending_ops[1] = ReadOne(ide, x.Token); //queue next read
@@ -322,24 +289,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
                             else if (task == pending_ops[2])
                             {
-                                var res = ((Task<bool>)task).Result;
+                                bool res = ((Task<bool>)task).Result;
                                 throw new Exception("side task must always complete with an exception, what's going on???");
-                            }
-                            else if (task == pending_ops[3])
-                            {
-                                var res = ((Task<bool>)task).Result;
-                                Log("verbose", $"DevToolsProxy: Client initiated close from {browserUri}");
-                                x.Cancel();
                             }
                             else
                             {
                                 //must be a background task
                                 pending_ops.Remove(task);
-                                var queue = GetQueueForTask(task);
+                                DevToolsQueue queue = GetQueueForTask(task);
                                 if (queue != null)
                                 {
-                                    var tsk = queue.Pump(x.Token);
-                                    if (tsk != null)
+                                    if (queue.TryPumpIfCurrentCompleted(x.Token, out Task tsk))
                                         pending_ops.Add(tsk);
                                 }
                             }
@@ -369,9 +329,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "verbose":
                     logger.LogDebug(msg);
                     break;
-                case "info":
-                case "warning":
                 case "error":
+                    logger.LogError(msg);
+                    break;
+                case "info":
+                    logger.LogInformation(msg);
+                    break;
+                case "warning":
+                    logger.LogWarning(msg);
+                    break;
                 default:
                     logger.LogDebug(msg);
                     break;

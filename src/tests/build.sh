@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"$__RepoRootDir/src/tests/run.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
+        nextCommand="\"${__DotNetCli}\" msbuild \"$__RepoRootDir/src/tests/run.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=${TestWrapperTargetsWindows} $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\" ${__UnprocessedBuildArgs[@]}"
         eval $nextCommand
         local exitCode="$?"
         if [[ "$exitCode" -ne 0 ]]; then
@@ -49,13 +49,12 @@ build_test_wrappers()
 build_mono_aot()
 {
     __RuntimeFlavor="mono"
-    __MonoBinDir="$__RootBinDir/bin/mono/$__TargetOS.$__BuildArch.$__BuildType"
     __Exclude="$__RepoRootDir/src/tests/issues.targets"
     __TestBinDir="$__TestWorkingDir"
     CORE_ROOT="$__TestBinDir"/Tests/Core_Root
     export __Exclude
     export CORE_ROOT
-    build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoLlvmPath=$__MonoBinDir"
+    build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoBinDir=$__MonoBinDir"
 }
 
 generate_layout()
@@ -133,18 +132,6 @@ generate_layout()
 
     build_MSBuild_projects "Tests_Overlay_Managed" "$__RepoRootDir/src/tests/run.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
-    if [[ "$__TargetOS" != "OSX" && "$__SkipStressDependencies" == 0 ]]; then
-        nextCommand="\"${__RepoRootDir}/src/coreclr/tests/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
-        echo "Resolve runtime dependences via $nextCommand"
-        eval $nextCommand
-
-        local exitCode="$?"
-        if [[ "$exitCode" != 0 ]]; then
-            echo "${__ErrMsgPrefix}${__MsgPrefix}Error: setup-stress-dependencies failed."
-            exit "$exitCode"
-        fi
-    fi
-
     # Precompile framework assemblies with crossgen if required
     if [[ "$__DoCrossgen" != 0 || "$__DoCrossgen2" != 0 ]]; then
         chmod +x "$__CrossgenExe"
@@ -156,128 +143,53 @@ generate_layout()
 
 precompile_coreroot_fx()
 {
-    local overlayDir="$CORE_ROOT"
-    local compilerName=Crossgen
-
-    # Read the exclusion file for this platform
-    skipCrossGenFiles=($(grep -v '^#' "$(dirname "$0")/tests/skipCrossGenFiles.${__BuildArch}.txt" 2> /dev/null))
-    skipCrossGenFiles+=('System.Runtime.WindowsRuntime.dll')
-
-    # Temporary output folder for Crossgen2-compiled assemblies
-    local outputDir="$overlayDir"/out
-
-    # Delete previously crossgened assemblies
-    rm "$overlayDir"/*.ni.dll 2>/dev/null
-
-    if [[ "$__DoCrossgen2" != 0 ]]; then
-        compilerName=Crossgen2
-
-        mkdir "$outputDir"
+    # Get the number of processors available to the scheduler
+    # Other techniques such as `nproc` only get the number of
+    # processors available to a single process.
+    local platform="$(uname)"
+    if [[ "$platform" == "FreeBSD" ]]; then
+        output=("$(sysctl hw.ncpu)")
+        __NumProc="$((output[1] + 1))"
+    elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+        __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+    elif [[ "$platform" == "Darwin" ]]; then
+        __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+    else
+        __NumProc=$(nproc --all)
     fi
 
-    echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
-
-    local totalPrecompiled=0
-    local failedToPrecompile=0
-    local compositeOutputFile=$outputDir/framework-r2r.dll
-    local compositeResponseFile=$compositeOutputFile.rsp
-    local compositeCommandLine="${__DotNetCli} $__Crossgen2Dll @$compositeResponseFile"
+    local outputDir="$__TestIntermediatesDir/crossgen.out"
+    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$outputDir\" --large-bubble --release --nocleanup --target-arch $__BuildArch -dop $__NumProc"
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
-        rm $compositeResponseFile 2>/dev/null
-        echo --composite>>$compositeResponseFile
-        echo -O>>$compositeResponseFile
-        echo --out:$compositeOutputFile>>$compositeResponseFile
-        echo --targetarch:${__BuildArch}>>$compositeResponseFile
+        crossgenCmd="$crossgenCmd --composite"
+    else
+        crossgenCmd="$crossgenCmd --crossgen2-parallelism 1"
     fi
 
-    declare -a failedAssemblies
-
-    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
-    for fileToPrecompile in ${filesToPrecompile}; do
-        local filename="$fileToPrecompile"
-        if is_skip_crossgen_test "$(basename $filename)"; then
-            continue
-        fi
-
-        if [[ "$__CompositeBuildMode" != 0 ]]; then
-            echo $filename>>$compositeResponseFile
-            continue
-        fi
-
-        local commandLine=""
-        local responseFile="$overlayDir/$(basename $filename).rsp"
-
-        rm $responseFile 2>/dev/null
-
-        if [[ "$__DoCrossgen" != 0 ]]; then
-            commandLine="$__CrossgenExe @$responseFile"
-            echo /Platform_Assemblies_Paths>>$responseFile
-            echo $overlayDir>>$responseFile
-            echo $filename>>$responseFile
-        fi
-
-        if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="${__DotNetCli} $__Crossgen2Dll @$responseFile"
-            echo -O>>$responseFile
-            echo --inputbubble>>$responseFile
-            echo --out:$outputDir/$(basename $filename)>>$responseFile
-            echo --targetarch:${__BuildArch}>>$responseFile
-            echo $filename>>$responseFile
-            for reference in $overlayDir/*.dll; do
-                echo -r:$reference>>$responseFile
-            done
-        fi
-
-        echo Precompiling "$filename"
-        $commandLine 1> "$filename".stdout 2> "$filename".stderr
-        local exitCode="$?"
-        if [[ "$exitCode" != 0 ]]; then
-            if grep -q -e '0x80131018' "$filename".stderr; then
-                printf "\n\t$filename is not a managed assembly.\n\n"
-            else
-                echo Unable to precompile "$filename", exit code is "$exitCode".
-                echo Command-line: "$commandLine"
-                cat "$filename".stdout
-                cat "$filename".stderr
-                failedAssemblies+=($(basename -- "$filename"))
-                failedToPrecompile=$((failedToPrecompile+1))
-            fi
-        else
-            rm "$filename".{stdout,stderr}
-        fi
-
-        totalPrecompiled=$((totalPrecompiled+1))
-        echo "Processed: $totalPrecompiled, failed $failedToPrecompile"
-    done
-
-    if [[ "$__CompositeBuildMode" != 0 ]]; then
-        # Compile the entire framework in composite build mode
-        echo "Response file: $compositeResponseFile"
-        cat $compositeResponseFile
-        echo "Compiling composite R2R framework: $compositeCommandLine"
-        $compositeCommandLine
-        local exitCode="$?"
-        if [[ "$exitCode" != 0 ]]; then
-            echo Unable to precompile composite framework, exit code is "$exitCode".
-            exit 1
-        fi
+    local crossgenDir="$__BinDir"
+    if [[ "$__CrossBuild" == 1 ]]; then
+        crossgenDir="$crossgenDir/$__HostArch"
     fi
 
-    if [[ "$__DoCrossgen2" != 0 ]]; then
-        # Copy the Crossgen-compiled assemblies back to CORE_ROOT
-        mv -f "$outputDir"/* "$overlayDir"/
-        rm -r "$outputDir"
+    if [[ "$__DoCrossgen" != 0 ]]; then
+        crossgenCmd="$crossgenCmd --crossgen --nocrossgen2 --crossgen-path \"$crossgenDir/crossgen\""
+    else
+        crossgenCmd="$crossgenCmd --verify-type-and-field-layout --crossgen2-path \"$crossgenDir/crossgen2/crossgen2.dll\""
     fi
 
-    if [[ "$failedToPrecompile" != 0 ]]; then
-        echo Failed assemblies:
-        for assembly in "${failedAssemblies[@]}"; do
-            echo "  $assembly"
-        done
+    echo "Running $crossgenCmd"
+    eval $crossgenCmd
+    local exitCode="$?"
 
-        exit 1
+    if [[ "$exitCode" != 0 ]]; then
+        echo "Failed to crossgen the framework"
+        return 1
     fi
+
+    mv "$outputDir"/*.dll "$CORE_ROOT"
+
+    return 0
 }
 
 declare -a skipCrossGenFiles
@@ -367,8 +279,8 @@ build_Tests()
         fi
     fi
 
-    if [[ "$__SkipNative" != 1 && "$__BuildArch" != "wasm" ]]; then
-        build_native "$__BuildArch" "$__TestDir" "$__TryRunDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
+    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
+        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -473,6 +385,7 @@ build_MSBuild_projects()
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
             buildArgs+=("\"/p:CopyNativeProjectBinaries=${__CopyNativeProjectsAfterCombinedTestBuild}\"");
             buildArgs+=("/p:__SkipPackageRestore=true");
+            buildArgs+=("/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_managed_tests_${testGroupToBuild}.binlog");
 
             # Disable warnAsError - coreclr issue 19922
             nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
@@ -528,14 +441,12 @@ build_MSBuild_projects()
 usage_list=()
 
 usage_list+=("-skiprestorepackages: skip package restore.")
-usage_list+=("-skipstressdependencies: Don't install stress dependencies.")
 usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
 
 usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
-usage_list+=("-crossgenframeworkonly: only compile the framework in CORE_ROOT with Crossgen / Crossgen2.")
 
 usage_list+=("-crossgen: Precompiles the framework managed assemblies in coreroot.")
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
@@ -562,20 +473,12 @@ handle_arguments_local() {
             ;;
 
         copynativeonly|-copynativeonly)
-            __SkipStressDependencies=1
             __SkipNative=1
             __SkipManaged=1
             __CopyNativeTestBinaries=1
             __CopyNativeProjectsAfterCombinedTestBuild=true
             __SkipGenerateLayout=1
             __SkipCrossgenFramework=1
-            ;;
-
-        crossgenframeworkonly|-crossgenframeworkonly)
-            __SkipStressDependencies=1
-            __SkipNative=1
-            __SkipManaged=1
-            __SkipGenerateLayout=1
             ;;
 
         crossgen|-crossgen)
@@ -617,10 +520,6 @@ handle_arguments_local() {
 
         skiprestorepackages|-skiprestorepackages)
             __SkipRestorePackages=1
-            ;;
-
-        skipstressdependencies|-skipstressdependencies)
-            __SkipStressDependencies=1
             ;;
 
         skipgeneratelayout|-skipgeneratelayout)
@@ -680,7 +579,6 @@ __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
-__SkipStressDependencies=0
 __SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
@@ -704,15 +602,16 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__OSPlatformConfig="$__TargetOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"
-__TryRunDir="$__RepoRootDir/src/coreclr"
-__TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
-__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
+__TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
+__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
+__MonoBinDir="$__RootBinDir/bin/mono/$__OSPlatformConfig"
 
 __CrossArch="$__HostArch"
 if [[ "$__CrossBuild" == 1 ]]; then
@@ -752,27 +651,31 @@ fi
 echo "${__MsgPrefix}Test build successful."
 echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
 
+if [ "$__TargetOS" == "Android" ]; then
+    build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
+fi
+
 __testNativeBinDir="$__IntermediatesDir"/tests
 
 if [[ "$__RunTests" -ne 0 ]]; then
 
     echo "Run Tests..."
 
-    nextCommand="$__TestDir/runtest.sh --testRootDir=$__TestBinDir --coreClrBinDir=$__BinDir --coreFxBinDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir"
+    nextCommand="$__TestDir/run.sh --testRootDir=$__TestBinDir --coreClrBinDir=$__BinDir --coreFxBinDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir"
     echo "$nextCommand"
     eval $nextCommand
 
     echo "Tests run successful."
 else
-    echo "To run all tests use 'tests/runtests.sh' where:"
+    echo "To run all tests use 'run.sh' where:"
     echo "    testRootDir      = $__TestBinDir"
     echo "    coreClrBinDir    = $__BinDir"
     echo "    coreFxBinDir     = $CORE_ROOT"
     echo "    testNativeBinDir = $__testNativeBinDir"
     echo " -------------------------------------------------- "
-    echo " Example runtest.sh command"
+    echo " Example run.sh command"
     echo ""
-    echo " ./tests/runtest.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin $__BuildType"
+    echo " src/tests/run.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin $__BuildType"
     echo " -------------------------------------------------- "
     echo "To run single test use the following command:"
     echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"

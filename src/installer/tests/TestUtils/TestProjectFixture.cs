@@ -119,9 +119,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 throw new Exception($"Unable to find built host and sharedfx, please ensure the build has been run: {repoDirectoriesProvider.BuiltDotnet}");
             }
 
-            if ( ! Directory.Exists(repoDirectoriesProvider.CorehostPackages))
+            if ( ! Directory.Exists(repoDirectoriesProvider.HostArtifacts))
             {
-                throw new Exception($"Unable to find host packages directory, please ensure the build has been run: {repoDirectoriesProvider.CorehostPackages}");
+                throw new Exception($"Unable to find host artifacts directory, please ensure the build has been run: {repoDirectoriesProvider.HostArtifacts}");
             }
         }
 
@@ -257,7 +257,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             bool? selfContained = null,
             string outputDirectory = null,
             bool singleFile = false,
-            bool restore = false)
+            bool restore = false,
+            params string[] extraArgs)
         {
             dotnet = dotnet ?? SdkDotnet;
             outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
@@ -307,6 +308,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
             publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+
+            foreach (var arg in extraArgs)
+            {
+                publishArgs.Add(arg);
+            }
 
             dotnet.Publish(publishArgs.ToArray())
                 .WorkingDirectory(TestProject.ProjectDirectory)

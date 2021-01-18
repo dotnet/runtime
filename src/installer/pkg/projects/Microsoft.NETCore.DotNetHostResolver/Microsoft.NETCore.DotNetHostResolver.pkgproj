@@ -2,50 +2,20 @@
 
   <PropertyGroup>
     <VersionProp>HostResolverVersion</VersionProp>
-
     <InstallerName>dotnet-hostfxr</InstallerName>
-    <GenerateSharedFrameworkPart>true</GenerateSharedFrameworkPart>
-    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
+    <PackageDescription>Provides an implementation of framework resolution strategy used by Microsoft.NETCore.DotNetHost</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
     <Dependency Include="Microsoft.NETCore.DotNetAppHost" VersionProp="AppHostVersion" />
   </ItemGroup>
 
-  <Target Name="SetupHostResolverSpecificWixBuild"
-          DependsOnTargets="
-            GetProductVersions;
-            GetInstallerBrandingNames"
-          BeforeTargets="GetWixBuildConfiguration">
-    <PropertyGroup>
-      <WixProductMoniker>$(HostFxrBrandName)</WixProductMoniker>
-      <RegKeyProductName>hostfxr</RegKeyProductName>
-      <WixDependencyKeyName>Dotnet_CLI_HostFxr</WixDependencyKeyName>
-      <VSInsertionShortComponentName>HostFXR</VSInsertionShortComponentName>
-
-      <PublishRootDir>$(IntermediateOutputPath)publishRoot/</PublishRootDir>
-    </PropertyGroup>
-
-    <!-- Always clean this up to avoid side-by-side versions in unclean dev builds. -->
-    <RemoveDir Directories="$(PublishRootDir)" />
-
-    <!-- Copy files to staging location to easily set up relative directory for WiX. -->
-    <Copy
-      SourceFiles="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)"
-      DestinationFolder="$(PublishRootDir)host/fxr/$(HostResolverVersion)" />
-
-    <ItemGroup>
-      <CandleVariables Include="AuthoredRegistryKeys;RegKeyNugetVersionValue" Value="true" />
-
-      <DirectoryToHarvest
-        Include="$(PublishRootDir)"
-        Name="install-files"
-        SubstituteVar="HostFxrSrc"
-        ComponentGroupName="InstallFiles"
-        DirectoryRef="DOTNETHOME" />
-    </ItemGroup>
-  </Target>
-
-  <Import Project="$(MSBuildProjectName).props" />
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)"/>
+    <File Include="@(NativeBinary)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsNative>true</IsNative>
+    </File>
+  </ItemGroup>
 
 </Project>

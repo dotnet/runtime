@@ -746,11 +746,11 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("author_uri", thirdAuthor.Uri);
 
                 SyndicationPerson fourthAuthor = item.Authors[3];
-                Assert.Empty(firstAuthor.AttributeExtensions);
-                Assert.Empty(firstAuthor.ElementExtensions);
-                Assert.Null(firstAuthor.Email);
-                Assert.Null(firstAuthor.Name);
-                Assert.Null(firstAuthor.Uri);
+                Assert.Empty(fourthAuthor.AttributeExtensions);
+                Assert.Empty(fourthAuthor.ElementExtensions);
+                Assert.Null(fourthAuthor.Email);
+                Assert.Null(fourthAuthor.Name);
+                Assert.Null(fourthAuthor.Uri);
 
                 SyndicationPerson fifthAuthor = item.Authors[4];
                 Assert.Empty(fifthAuthor.AttributeExtensions);
@@ -1150,11 +1150,11 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("author_uri", thirdAuthor.Uri);
 
                 SyndicationPerson fourthAuthor = item.Authors[3];
-                Assert.Empty(firstAuthor.AttributeExtensions);
-                Assert.Empty(firstAuthor.ElementExtensions);
-                Assert.Null(firstAuthor.Email);
-                Assert.Null(firstAuthor.Name);
-                Assert.Null(firstAuthor.Uri);
+                Assert.Empty(fourthAuthor.AttributeExtensions);
+                Assert.Empty(fourthAuthor.ElementExtensions);
+                Assert.Null(fourthAuthor.Email);
+                Assert.Null(fourthAuthor.Name);
+                Assert.Null(fourthAuthor.Uri);
 
                 SyndicationPerson fifthAuthor = item.Authors[4];
                 Assert.Empty(fifthAuthor.AttributeExtensions);

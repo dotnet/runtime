@@ -103,7 +103,7 @@ namespace System.Net.Http
             {
                 if ((value != null) && (value.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(value)))
                 {
-                    throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(value));
+                    throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(value));
                 }
                 CheckDisposed();
 
@@ -189,7 +189,7 @@ namespace System.Net.Http
             }
             if ((requestUri != null) && (requestUri.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(requestUri)))
             {
-                throw new ArgumentException(SR.net_http_client_http_baseaddress_required, nameof(requestUri));
+                throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(requestUri));
             }
 
             _method = method;

@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public bool StaticCall => true;
 
-        public Type[] TypeArguments => Array.Empty<Type>();
+        public Type[] TypeArguments => Type.EmptyTypes;
 
         public string Name => ".ctor";
 

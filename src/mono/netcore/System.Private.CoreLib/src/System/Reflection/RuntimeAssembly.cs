@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2010 Novell, Inc (http://www.novell.com)
 //
@@ -395,7 +396,7 @@ namespace System.Reflection
             try
             {
                 StackCrawlMark unused = default;
-                res = Load(an, ref unused, null);
+                res = Load(an, ref unused, AssemblyLoadContext.GetLoadContext(assembly));
             }
             catch
             {

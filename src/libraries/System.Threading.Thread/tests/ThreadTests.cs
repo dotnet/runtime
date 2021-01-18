@@ -190,7 +190,7 @@ namespace System.Threading.Threads.Tests
             RemoteExecutor.Invoke(() =>
             {
                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-                Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
+                AssertExtensions.ThrowsContains<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA), "MTA");
                 Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
             }).Dispose();
         }
@@ -606,7 +606,7 @@ namespace System.Threading.Threads.Tests
             var t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, e.CheckedWait);
             t.IsBackground = true;
             t.Start();
-            Assert.NotEqual(Thread.CurrentThread.ManagedThreadId, t.ManagedThreadId);
+            Assert.NotEqual(Environment.CurrentManagedThreadId, t.ManagedThreadId);
             e.Set();
             waitForThread();
         }
@@ -732,12 +732,13 @@ namespace System.Threading.Threads.Tests
 
             Action verify = () =>
             {
-#pragma warning disable SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume
+#pragma warning disable SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume, ResetAbort
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort(t));
+                Assert.Throws<PlatformNotSupportedException>(() => Thread.ResetAbort());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Suspend());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Resume());
-#pragma warning restore SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume
+#pragma warning restore SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume, ResetAbort
             };
             verify();
 
@@ -745,9 +746,7 @@ namespace System.Threading.Threads.Tests
             verify();
 
             e.Set();
-            waitForThread();
-
-            Assert.Throws<PlatformNotSupportedException>(() => Thread.ResetAbort());
+            waitForThread(); 
         }
 
         private static void VerifyLocalDataSlot(LocalDataStoreSlot slot)
@@ -1035,9 +1034,35 @@ namespace System.Threading.Threads.Tests
             Assert.InRange((int)stopwatch.ElapsedMilliseconds, 100, int.MaxValue);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void StartTest()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void StartTest(bool useUnsafeStart)
         {
+            void Start(Thread t)
+            {
+                if (useUnsafeStart)
+                {
+                    t.UnsafeStart();
+                }
+                else
+                {
+                    t.Start();
+                }
+            }
+
+            void StartParameter(Thread t, object parameter)
+            {
+                if (useUnsafeStart)
+                {
+                    t.UnsafeStart(parameter);
+                }
+                else
+                {
+                    t.Start(parameter);
+                }
+            }
+
             var e = new AutoResetEvent(false);
             Action waitForThread;
             Thread t = null;
@@ -1047,25 +1072,25 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            Assert.Throws<InvalidOperationException>(() => t.Start(null));
-            Assert.Throws<InvalidOperationException>(() => t.Start(t));
-            t.Start();
-            Assert.Throws<ThreadStateException>(() => t.Start());
+            Assert.Throws<InvalidOperationException>(() => StartParameter(t, null));
+            Assert.Throws<InvalidOperationException>(() => StartParameter(t, t));
+            Start(t);
+            Assert.Throws<ThreadStateException>(() => Start(t));
             e.Set();
             waitForThread();
-            Assert.Throws<ThreadStateException>(() => t.Start());
+            Assert.Throws<ThreadStateException>(() => Start(t));
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter => e.CheckedWait());
             t.IsBackground = true;
-            t.Start();
-            Assert.Throws<ThreadStateException>(() => t.Start());
-            Assert.Throws<ThreadStateException>(() => t.Start(null));
-            Assert.Throws<ThreadStateException>(() => t.Start(t));
+            Start(t);
+            Assert.Throws<ThreadStateException>(() => Start(t));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, null));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, t));
             e.Set();
             waitForThread();
-            Assert.Throws<ThreadStateException>(() => t.Start());
-            Assert.Throws<ThreadStateException>(() => t.Start(null));
-            Assert.Throws<ThreadStateException>(() => t.Start(t));
+            Assert.Throws<ThreadStateException>(() => Start(t));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, null));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, t));
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
                 {
@@ -1073,7 +1098,7 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            t.Start();
+            Start(t);
             waitForThread();
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
@@ -1082,7 +1107,7 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            t.Start(null);
+            StartParameter(t, null);
             waitForThread();
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
@@ -1091,7 +1116,24 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            t.Start(t);
+            StartParameter(t, t);
+            waitForThread();
+
+            var al = new AsyncLocal<int>();
+            al.Value = 42;
+            t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
+            {
+                if (useUnsafeStart)
+                {
+                    Assert.Equal(0, al.Value);
+                }
+                else
+                {
+                    Assert.Equal(42, al.Value);
+                }
+            });
+            t.IsBackground = true;
+            StartParameter(t, t);
             waitForThread();
         }
 

@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs"
-             Link="Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs"
+             Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
 
 </Project>

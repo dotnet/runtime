@@ -198,7 +198,7 @@ namespace System.Net.Http
             return ReadAsyncCore(buffer, offset, count, token);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override int EndRead(IAsyncResult asyncResult) =>

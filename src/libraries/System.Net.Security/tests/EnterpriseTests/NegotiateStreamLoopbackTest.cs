@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -38,12 +39,9 @@ namespace System.Net.Security.Enterprise.Tests
         [MemberData(nameof(SuccessCasesMemberData))]
         public async Task StreamToStream_ValidAuthentication_Success(NetworkCredential creds, string target)
         {
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 Assert.False(client.IsAuthenticated);
                 Assert.False(server.IsAuthenticated);
@@ -77,12 +75,9 @@ namespace System.Net.Security.Enterprise.Tests
         [MemberData(nameof(FailureCasesMemberData))]
         public async Task StreamToStream_InvalidAuthentication_Failure(NetworkCredential creds, string target)
         {
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 Assert.False(client.IsAuthenticated);
                 Assert.False(server.IsAuthenticated);
@@ -97,13 +92,11 @@ namespace System.Net.Security.Enterprise.Tests
         public async Task NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
             byte[] recvBuf = new byte[s_sampleMsg.Length];
-            VirtualNetwork network = new VirtualNetwork();
             int bytesRead = 0;
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 Assert.False(client.IsAuthenticated);
                 Assert.False(server.IsAuthenticated);
@@ -136,13 +129,11 @@ namespace System.Net.Security.Enterprise.Tests
         public async Task NegotiateStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
             byte[] recvBuf = new byte[s_sampleMsg.Length];
-            VirtualNetwork network = new VirtualNetwork();
             int bytesRead = 0;
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 Assert.False(client.IsAuthenticated);
                 Assert.False(server.IsAuthenticated);
@@ -175,13 +166,11 @@ namespace System.Net.Security.Enterprise.Tests
         public async Task NegotiateStream_ReadWriteLongMsgSync_Success()
         {
             byte[] recvBuf = new byte[s_longMsg.Length];
-            var network = new VirtualNetwork();
             int bytesRead = 0;
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 await WhenAllOrAnyFailedWithTimeout(
                     client.AuthenticateAsClientAsync(EnterpriseTestConfiguration.ValidNetworkCredentials, TargetName),
@@ -202,13 +191,11 @@ namespace System.Net.Security.Enterprise.Tests
         public async Task NegotiateStream_ReadWriteLongMsgAsync_Success()
         {
             byte[] recvBuf = new byte[s_longMsg.Length];
-            var network = new VirtualNetwork();
             int bytesRead = 0;
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 await WhenAllOrAnyFailedWithTimeout(
                     client.AuthenticateAsClientAsync(EnterpriseTestConfiguration.ValidNetworkCredentials, TargetName),
@@ -222,37 +209,6 @@ namespace System.Net.Security.Enterprise.Tests
                 }
 
                 Assert.True(s_longMsg.SequenceEqual(recvBuf));
-            }
-        }
-
-        [Fact]
-        public void NegotiateStream_StreamToStream_Flush_Propagated()
-        {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var stream = new VirtualNetworkStream(network, isServer: false))
-            using (var negotiateStream = new NegotiateStream(stream))
-            {
-                Assert.False(stream.HasBeenSyncFlushed);
-                negotiateStream.Flush();
-                Assert.True(stream.HasBeenSyncFlushed);
-            }
-        }
-
-        [Fact]
-        public void NegotiateStream_StreamToStream_FlushAsync_Propagated()
-        {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var stream = new VirtualNetworkStream(network, isServer: false))
-            using (var negotiateStream = new NegotiateStream(stream))
-            {
-                stream.DelayFlush = true;
-                Task task = negotiateStream.FlushAsync();
-
-                Assert.False(task.IsCompleted);
-                stream.CompleteAsyncFlush();
-                Assert.True(task.IsCompleted);
             }
         }
 

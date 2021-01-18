@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading;
 
@@ -26,17 +27,13 @@ namespace System.Net.Sockets
         private long _datagramsSent;
 
         [Event(1, Level = EventLevel.Informational)]
-        public void ConnectStart(string? address)
+        private void ConnectStart(string? address)
         {
-            Interlocked.Increment(ref _outgoingConnectionsEstablished);
-            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
-            {
-                WriteEvent(eventId: 1, address ?? "");
-            }
+            WriteEvent(eventId: 1, address);
         }
 
         [Event(2, Level = EventLevel.Informational)]
-        public void ConnectStop()
+        private void ConnectStop()
         {
             if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
@@ -45,105 +42,108 @@ namespace System.Net.Sockets
         }
 
         [Event(3, Level = EventLevel.Error)]
-        public void ConnectFailed(SocketError error, string? exceptionMessage)
+        private void ConnectFailed(SocketError error, string? exceptionMessage)
         {
             if (IsEnabled(EventLevel.Error, EventKeywords.All))
             {
-                WriteEvent(eventId: 3, (int)error, exceptionMessage ?? string.Empty);
+                WriteEvent(eventId: 3, (int)error, exceptionMessage);
             }
         }
 
-        [Event(4, Level = EventLevel.Warning)]
-        public void ConnectCanceled()
+        [Event(4, Level = EventLevel.Informational)]
+        private void AcceptStart(string? address)
         {
-            if (IsEnabled(EventLevel.Warning, EventKeywords.All))
-            {
-                WriteEvent(eventId: 4);
-            }
+            WriteEvent(eventId: 4, address);
         }
 
         [Event(5, Level = EventLevel.Informational)]
-        public void AcceptStart(string? address)
-        {
-            Interlocked.Increment(ref _incomingConnectionsEstablished);
-            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
-            {
-                WriteEvent(eventId: 5, address ?? "");
-            }
-        }
-
-        [Event(6, Level = EventLevel.Informational)]
-        public void AcceptStop()
+        private void AcceptStop()
         {
             if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {
-                WriteEvent(eventId: 6);
+                WriteEvent(eventId: 5);
             }
         }
 
-        [Event(7, Level = EventLevel.Error)]
-        public void AcceptFailed(SocketError error, string? exceptionMessage)
+        [Event(6, Level = EventLevel.Error)]
+        private void AcceptFailed(SocketError error, string? exceptionMessage)
         {
             if (IsEnabled(EventLevel.Error, EventKeywords.All))
             {
-                WriteEvent(eventId: 7, (int)error, exceptionMessage ?? string.Empty);
+                WriteEvent(eventId: 6, (int)error, exceptionMessage);
             }
         }
 
         [NonEvent]
         public void ConnectStart(Internals.SocketAddress address)
         {
-            ConnectStart(address.ToString());
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                ConnectStart(address.ToString());
+            }
         }
 
         [NonEvent]
-        public void ConnectStart(EndPoint address)
+        public void AfterConnect(SocketError error, string? exceptionMessage = null)
         {
-            ConnectStart(address.ToString());
-        }
+            if (error == SocketError.Success)
+            {
+                Debug.Assert(exceptionMessage is null);
+                Interlocked.Increment(ref _outgoingConnectionsEstablished);
+            }
+            else
+            {
+                ConnectFailed(error, exceptionMessage);
+            }
 
-        [NonEvent]
-        public void ConnectCanceledAndStop()
-        {
-            ConnectCanceled();
-            ConnectStop();
-        }
-
-        [NonEvent]
-        public void ConnectFailedAndStop(SocketError error, string? exceptionMessage)
-        {
-            ConnectFailed(error, exceptionMessage);
             ConnectStop();
         }
 
         [NonEvent]
         public void AcceptStart(Internals.SocketAddress address)
         {
-            AcceptStart(address.ToString());
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                AcceptStart(address.ToString());
+            }
         }
 
         [NonEvent]
         public void AcceptStart(EndPoint address)
         {
-            AcceptStart(address.ToString());
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                AcceptStart(address.ToString());
+            }
         }
 
         [NonEvent]
-        public void AcceptFailedAndStop(SocketError error, string? exceptionMessage)
+        public void AfterAccept(SocketError error, string? exceptionMessage = null)
         {
-            AcceptFailed(error, exceptionMessage);
+            if (error == SocketError.Success)
+            {
+                Debug.Assert(exceptionMessage is null);
+                Interlocked.Increment(ref _incomingConnectionsEstablished);
+            }
+            else
+            {
+                AcceptFailed(error, exceptionMessage);
+            }
+
             AcceptStop();
         }
 
         [NonEvent]
         public void BytesReceived(int count)
         {
+            Debug.Assert(count >= 0);
             Interlocked.Add(ref _bytesReceived, count);
         }
 
         [NonEvent]
         public void BytesSent(int count)
         {
+            Debug.Assert(count >= 0);
             Interlocked.Add(ref _bytesSent, count);
         }
 

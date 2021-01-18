@@ -16,7 +16,7 @@ To build a complete runtime environment, you need to build both the Mono runtime
 ./build.sh --subset mono+libs
 ```
 or on Windows,
-```bat
+```cmd
 build.cmd -subset mono+libs
 ```
 Note that the debug configuration is the default option. It generates a 'debug' output and that includes asserts, fewer code optimizations, and is easier for debugging. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version which does not have these checks by adding the flag `-configuration release` (or `-c release`).
@@ -28,7 +28,7 @@ Once you've built the complete runtime and assuming you want to work with just m
 ./build.sh --subset mono
 ```
 or on Windows,
-```bat
+```cmd
 build.cmd -subset mono
 ```
 When the build completes, product binaries will be dropped in the `artifacts\bin\mono\<OS>.<arch>.<flavor>` folder.
@@ -51,7 +51,15 @@ The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly
 
-See the instructions in [../libraries/webassembly-instructions.md].
+See the instructions for [Building WebAssembly](../../building/libraries/webassembly-instructions.md).
+
+### Android
+
+See the instructions for [Testing Android](../../testing/libraries/testing-android.md)
+
+### iOS
+
+See the instructions for [Testing iOS](../../testing/libraries/testing-apple.md)
 
 ## Packages
 
@@ -61,7 +69,7 @@ To generate nuget packages:
 ./build.sh --subset mono -pack (with optional release configuration)
 ```
 or on Windows,
-```bat
+```cmd
 build.cmd -subset mono -pack (with optional release configuration)
 ```
 
@@ -71,6 +79,14 @@ The following packages will be created under `artifacts\packages\<configuration>
 - `runtime.<OS>.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 - `transport.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 - `transport.runtime.<OS>.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
+
+## To get started with "Hello World"
+
+Try the sample at `src/mono/netcore/sample/HelloWorld`.
+To run this sample, from the above folder
+```cd ../..
+make run-sample
+```
 
 ## Important Notes
 

@@ -150,6 +150,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr s = p + sizeof(IntPtr);
             *(((uint*)s) - 1) = (uint)(length * sizeof(char));
+            ((char*)s)[length] = '\0';
 
             return s;
         }
@@ -187,6 +188,17 @@ namespace System.Runtime.InteropServices
             {
                 Interop.Sys.MemFree(ptr - sizeof(IntPtr));
             }
+        }
+
+        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
+        {
+            if (progID == null)
+                throw new ArgumentNullException(nameof(progID));
+
+            if (throwOnError)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+
+            return null;
         }
     }
 }

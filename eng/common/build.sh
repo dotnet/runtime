@@ -36,8 +36,6 @@ usage()
   echo "  --prepareMachine         Prepare machine for CI run, clean up processes after build"
   echo "  --nodeReuse <value>      Sets nodereuse msbuild parameter ('true' or 'false')"
   echo "  --warnAsError <value>    Sets warnaserror msbuild parameter ('true' or 'false')"
-  echo "  --useDefaultDotnetInstall <value> Use dotnet-install.* scripts from public location as opposed to from eng common folder"
-  
   echo ""
   echo "Command line arguments not listed above are passed thru to msbuild."
   echo "Arguments can also be passed in with a single hyphen."
@@ -80,11 +78,10 @@ prepare_machine=false
 verbosity='minimal'
 runtime_source_feed=''
 runtime_source_feed_key=''
-use_default_dotnet_install=false
 
 properties=''
 while [[ $# > 0 ]]; do
-  opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
+  opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     -help|-h)
       usage
@@ -159,12 +156,8 @@ while [[ $# > 0 ]]; do
       runtime_source_feed=$2
       shift
       ;;
-    -runtimesourcefeedkey)
+     -runtimesourcefeedkey)
       runtime_source_feed_key=$2
-      shift
-      ;;
-    -usedefaultdotnetinstall)
-      use_default_dotnet_install=$2
       shift
       ;;
     *)

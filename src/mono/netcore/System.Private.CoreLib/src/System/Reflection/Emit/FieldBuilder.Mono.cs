@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -71,7 +72,7 @@ namespace System.Reflection.Emit
             offset = -1;
             typeb = tb;
 
-            ((ModuleBuilder)tb.Module).RegisterToken(this, GetToken().Token);
+            ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
 
         public override FieldAttributes Attributes
@@ -129,11 +130,6 @@ namespace System.Reflection.Emit
         }
 
         public override int MetadataToken { get { return ((ModuleBuilder)typeb.Module).GetToken(this); } }
-
-        public FieldToken GetToken()
-        {
-            return new FieldToken(MetadataToken, type);
-        }
 
         public override object? GetValue(object? obj)
         {
@@ -233,7 +229,7 @@ namespace System.Reflection.Emit
             throw CreateNotSupportedException();
         }
 
-        private Exception CreateNotSupportedException()
+        private static Exception CreateNotSupportedException()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }

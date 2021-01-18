@@ -130,12 +130,17 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public bool SupportsAutomaticDecompression => false;
-        public bool SupportsProxy => false;
-        public bool SupportsRedirectConfiguration => true;
+        public const bool SupportsAutomaticDecompression = false;
+        public const bool SupportsProxy = false;
+        public const bool SupportsRedirectConfiguration = true;
 
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
+
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            throw new PlatformNotSupportedException ();
+        }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -242,12 +247,13 @@ namespace System.Net.Http
                 var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
                 args.Dispose();
                 if (response == null)
-                    throw new Exception("Internal error marshalling the response Promise from `fetch`.");
+                    throw new Exception(SR.net_http_marshalling_response_promise_from_fetch);
 
                 JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
                 var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
+                httpResponse.RequestMessage = request;
 
                 // Here we will set the ReasonPhrase so that it can be evaluated later.
                 // We do not have a status code but this will signal some type of what happened
@@ -556,7 +562,7 @@ namespace System.Net.Http
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                throw new NotSupportedException("Synchronous reads are not supported, use ReadAsync instead");
+                throw new NotSupportedException(SR.net_http_synchronous_reads_not_supported);
             }
 
             public override long Seek(long offset, SeekOrigin origin)

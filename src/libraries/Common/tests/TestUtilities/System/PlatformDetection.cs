@@ -28,7 +28,7 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
-        public static bool IsIllumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
+        public static bool Isillumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
@@ -43,10 +43,14 @@ namespace System
         public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
+        public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => !IsBrowser;
+
+        public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
+        public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
 
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
@@ -74,6 +78,7 @@ namespace System
         }
 
         public static bool IsInContainer => GetIsInContainer();
+        public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime; // matches definitions in clr.featuredefines.props
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
@@ -121,7 +126,7 @@ namespace System
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
-        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || IsIllumos || IsSolaris;
+        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
 
         public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
             (IsOpenSslSupported &&
@@ -226,17 +231,7 @@ namespace System
             if (IsWindows)
             {
                 string key = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control";
-                string value = "";
-
-                try
-                {
-                    value = (string)Registry.GetValue(key, "ContainerType", defaultValue: "");
-                }
-                catch
-                {
-                }
-
-                return !string.IsNullOrEmpty(value);
+                return Registry.GetValue(key, "ContainerType", defaultValue: null) != null;
             }
 
             return (IsLinux && File.Exists("/.dockerenv"));
@@ -339,8 +334,10 @@ namespace System
                     }
                 }
                 catch { };
-                // assume no if key is missing or on error.
-                return false;
+                // assume no if positive entry is missing on older Windows
+                // Latest insider builds have TLS 1.3 enabled by default.
+                // The build number is approximation.
+                return IsWindows10Version2004Build19573OrGreater;
             }
             else if (IsOSX || IsiOS || IstvOS)
             {
@@ -366,6 +363,15 @@ namespace System
             // within the runtime.
             var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
             return (val != null && val.Contains("--interpreter"));
+        }
+
+        private static bool GetIsBrowserDomSupported()
+        {
+            if (!IsBrowser)
+                return false;
+
+            var val = Environment.GetEnvironmentVariable("IsBrowserDomSupported");
+            return (val != null && val == "true");
         }
     }
 }

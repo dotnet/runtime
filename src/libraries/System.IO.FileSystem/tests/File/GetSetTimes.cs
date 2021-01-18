@@ -148,6 +148,7 @@ namespace System.IO.Tests
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43166", TestPlatforms.Linux)]
         [ConditionalFact(nameof(SupportsLongMaxDateTime))]
         public void SetDateTimeMax()
         {

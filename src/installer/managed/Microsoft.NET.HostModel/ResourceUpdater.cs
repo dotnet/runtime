@@ -1,5 +1,5 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Diagnostics;
@@ -96,7 +96,7 @@ namespace Microsoft.NET.HostModel
                                                  ushort wLang,
                                                  IntPtr lParam);
 
-            [DllImport(nameof(Kernel32),SetLastError=true)]
+            [DllImport(nameof(Kernel32), SetLastError=true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool EnumResourceTypes(IntPtr hModule,
                                                          EnumResTypeProc lpEnumFunc,
@@ -138,6 +138,8 @@ namespace Microsoft.NET.HostModel
             [DllImport(nameof(Kernel32), SetLastError=true)]
             public static extern uint SizeofResource(IntPtr hModule,
                                                      IntPtr hResInfo);
+
+            public const int ERROR_CALL_NOT_IMPLEMENTED = 0x78;
         }
 
         /// <summary>
@@ -183,9 +185,12 @@ namespace Microsoft.NET.HostModel
             {
                 // On Nano Server 1709+, `BeginUpdateResource` is exported but returns a null handle with a zero error
                 // Try to call `BeginUpdateResource` with an invalid parameter; the error should be non-zero if supported
+                // On Nano Server 20213, `BeginUpdateResource` fails with ERROR_CALL_NOT_IMPLEMENTED
                 using (var handle = Kernel32.BeginUpdateResource("", false))
                 {
-                    if (handle.IsInvalid && Marshal.GetLastWin32Error() == 0)
+                    int lastWin32Error = Marshal.GetLastWin32Error();
+
+                    if (handle.IsInvalid && (lastWin32Error == 0 || lastWin32Error == Kernel32.ERROR_CALL_NOT_IMPLEMENTED))
                     {
                         return false;
                     }

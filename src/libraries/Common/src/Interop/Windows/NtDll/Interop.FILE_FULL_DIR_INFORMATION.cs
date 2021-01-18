@@ -15,7 +15,7 @@ internal partial class Interop
         /// Equivalent to <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/hh447298.aspx">FILE_FULL_DIR_INFO</a> structure.
         /// </summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public unsafe struct FILE_FULL_DIR_INFORMATION
+        public struct FILE_FULL_DIR_INFORMATION
         {
             /// <summary>
             /// Offset in bytes of the next entry, if any.
@@ -54,7 +54,7 @@ internal partial class Interop
             public uint EaSize;
 
             private char _fileName;
-            public ReadOnlySpan<char> FileName { get { fixed (char* c = &_fileName) { return new ReadOnlySpan<char>(c, (int)FileNameLength / sizeof(char)); } } }
+            public unsafe ReadOnlySpan<char> FileName { get { fixed (char* c = &_fileName) { return new ReadOnlySpan<char>(c, (int)FileNameLength / sizeof(char)); } } }
 
             /// <summary>
             /// Gets the next info pointer or null if there are no more.

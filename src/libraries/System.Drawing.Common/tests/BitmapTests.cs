@@ -1212,7 +1212,7 @@ namespace System.Drawing.Tests
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // "Reserved" is documented as "Reserved. Do not use.", so it's not clear whether we actually need to test this in any unit tests.
-                    // Additionally, the values are not consistent accross Windows (GDI+) and Unix (libgdiplus)
+                    // Additionally, the values are not consistent across Windows (GDI+) and Unix (libgdiplus)
                     Assert.Equal(expectedReserved, data.Reserved);
                 }
 

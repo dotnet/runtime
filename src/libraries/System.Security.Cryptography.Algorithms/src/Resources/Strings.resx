@@ -357,4 +357,7 @@
   <data name="Cryptography_ExceedKdfExtractLimit" xml:space="preserve">
     <value>The total number of bytes extracted cannot exceed UInt32.MaxValue * hash length.</value>
   </data>
+  <data name="Cryptography_FeedbackSizeNotSupported" xml:space="preserve">
+    <value>The current platform does not support the specified feedback size.</value>
+  </data>
 </root>

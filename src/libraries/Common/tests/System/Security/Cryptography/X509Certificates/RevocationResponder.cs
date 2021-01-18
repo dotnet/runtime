@@ -90,7 +90,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (context != null)
             {
-                HandleRequest(context);
+                ThreadPool.QueueUserWorkItem(
+                    state => HandleRequest(state),
+                    context,
+                    true);
             }
         }
 
@@ -108,7 +111,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (context != null)
             {
-                HandleRequest(context);
+                ThreadPool.QueueUserWorkItem(
+                    state => HandleRequest(state),
+                    context,
+                    true);
             }
         }
 
@@ -366,6 +372,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
         }
 
+        internal void Stop() => _listener.Stop();
+
         private static void Trace(string trace)
         {
             if (s_traceEnabled)
@@ -373,14 +381,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 Console.WriteLine(trace);
             }
         }
+    }
 
-        internal enum DelayedActionsFlag : byte
-        {
-            None = 0,
-            Ocsp = 0b1,
-            Crl = 0b10,
-            Aia = 0b100,
-            All = 0b11111111
-        }
+    public enum DelayedActionsFlag : byte
+    {
+        None = 0,
+        Ocsp = 0b1,
+        Crl = 0b10,
+        Aia = 0b100,
+        All = 0b11111111
     }
 }

@@ -32,12 +32,12 @@
     <Compile Include="RegexReductionTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs"
-             Link="System\Text\RegularExpressions\RegexParseError.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="System\Text\RegularExpressions\RegexParseError.cs" />
     <Compile Include="RegexParserTests.netfx.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="RegexParserTests.netcoreapp.cs" />
+    <Compile Include="RegexValidations.netcoreapp.cs" />
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
     <Compile Include="CaptureCollectionTests2.cs" />
     <Compile Include="GroupCollectionTests2.cs" />
@@ -45,7 +45,7 @@
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="RegexCompilationInfoTests.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
-             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" Link="System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" />
   </ItemGroup>
 </Project>

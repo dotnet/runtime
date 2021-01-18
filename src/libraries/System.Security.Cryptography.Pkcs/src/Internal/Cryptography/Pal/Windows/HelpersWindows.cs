@@ -412,6 +412,7 @@ namespace Internal.Cryptography.Pal.Windows
                 CryptoPool.Return(rented, maxClear);
             }
 
+            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
             return new CspParameters(provType)
             {
                 Flags = provFlags,

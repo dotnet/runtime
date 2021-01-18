@@ -69,9 +69,9 @@ moving these.
 
 We need to ensure that the CoreCLR repo contains a suitably
 hookable test script. Core testing is driven by xunit but there's typically a
-wrapper around this (runtest.cmd today) to facilitate test execution.
+wrapper around this (run.cmd today) to facilitate test execution.
 
-The proposal is to implement platform-neutral variant of runtest.cmd that
+The proposal is to implement platform-neutral variant of run.cmd that
 contains all the existing functionality plus some additional capabilities for
 JIT testing. Initially this will mean:
 

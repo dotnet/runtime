@@ -20,10 +20,7 @@ namespace System.Xml.Tests
         [Fact]
         public void NodeReaderConstructionWithNull()
         {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                var nodeReader = new XmlNodeReader(null);
-            });
+            Assert.Throws<ArgumentNullException>(() => new XmlNodeReader(null));
         }
     }
 }

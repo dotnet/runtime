@@ -9,7 +9,7 @@
 .class public auto ansi beforefieldinit FunctionPointer
        extends [System.Runtime]System.Object
 {
-    .method hidebysig specialname rtspecialname 
+    .method hidebysig specialname rtspecialname
             instance void .ctor() cil managed
     {
         ldarg.0
@@ -24,7 +24,7 @@
         .maxstack  8
         ldarg.1
         ldarg.0
-        calli unmanaged stdcall int32 (int32*)
+        calli unmanaged cdecl int32 (int32*)
         ret
     }
 }

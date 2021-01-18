@@ -948,7 +948,7 @@ namespace System.Management
                 {
                     if (!IsConnected)
                     {
-                        // The locator cannot be marshalled accross apartments, so we must create the locator
+                        // The locator cannot be marshalled across apartments, so we must create the locator
                         // and get the IWbemServices from an MTA thread
                         if (!MTAHelper.IsNoContextMTA())
                         {

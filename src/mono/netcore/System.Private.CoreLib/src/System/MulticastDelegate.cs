@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
@@ -12,12 +13,13 @@ namespace System
     {
         private Delegate[]? delegates;
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         protected MulticastDelegate(object target, string method)
             : base(target, method)
         {
         }
 
-        protected MulticastDelegate(Type target, string method)
+        protected MulticastDelegate([DynamicallyAccessedMembers(AllMethods)] Type target, string method)
             : base(target, method)
         {
         }
@@ -167,7 +169,7 @@ namespace System
         }
 
         /* Based on the Boyer-Moore string search algorithm */
-        private int LastIndexOf(Delegate[] haystack, Delegate[] needle)
+        private static int LastIndexOf(Delegate[] haystack, Delegate[] needle)
         {
             if (haystack.Length < needle.Length)
                 return -1;

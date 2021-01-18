@@ -62,7 +62,7 @@ namespace System.Diagnostics
         {
             get
             {
-                int index = _list.FindIndex(kvp => kvp.Key == key);
+                int index = FindIndex(key);
                 return index < 0 ? null : _list[index].Value;
             }
 
@@ -73,7 +73,7 @@ namespace System.Diagnostics
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                int index = _list.FindIndex(kvp => kvp.Key == key);
+                int index = FindIndex(key);
                 if (value == null)
                 {
                     if (index >= 0)
@@ -149,7 +149,7 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(key));
             }
 
-            int index = _list.FindIndex(kvp => kvp.Key == key);
+            int index = FindIndex(key);
             if (index >= 0)
             {
                 throw new InvalidOperationException(SR.Format(SR.KeyAlreadyExist, key));
@@ -169,7 +169,7 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(item));
             }
 
-            int index = _list.FindIndex(kvp => kvp.Key == item.Key);
+            int index = FindIndex(item.Key);
             if (index >= 0)
             {
                 throw new InvalidOperationException(SR.Format(SR.KeyAlreadyExist, item.Key));
@@ -190,7 +190,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="key"></param>
         /// <returns>True if the collection contains tag with that key. False otherwise.</returns>
-        public bool ContainsKey(string key) => _list.FindIndex(kvp => kvp.Key == key) >= 0;
+        public bool ContainsKey(string key) => FindIndex(key) >= 0;
 
         /// <summary>
         /// Copies the elements of the collection to an array, starting at a particular array index.
@@ -226,7 +226,7 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(key));
             }
 
-            int index = _list.FindIndex(kvp => kvp.Key == key);
+            int index = FindIndex(key);
             if (index >= 0)
             {
                 _list.RemoveAt(index);
@@ -251,7 +251,7 @@ namespace System.Diagnostics
         /// <returns>When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</returns>
         public bool TryGetValue(string key, out object? value)
         {
-            int index = _list.FindIndex(kvp => kvp.Key == key);
+            int index = FindIndex(key);
             if (index >= 0)
             {
                 value = _list[index].Value;
@@ -260,6 +260,25 @@ namespace System.Diagnostics
 
             value = null;
             return false;
+        }
+
+        /// <summary>
+        /// FindIndex finds the index of item in the list having a key matching the input key.
+        /// We didn't use List.FindIndex to avoid the extra allocation caused by the closure when calling the Predicate delegate.
+        /// </summary>
+        /// <param name="key">The key to search the item in the list</param>
+        /// <returns>The index of the found item, or -1 if the item not found.</returns>
+        private int FindIndex(string key)
+        {
+            for (int i = 0; i < _list.Count; i++)
+            {
+                if (_list[i].Key == key)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         public struct Enumerator : IEnumerator<KeyValuePair<string, object?>>, IEnumerator

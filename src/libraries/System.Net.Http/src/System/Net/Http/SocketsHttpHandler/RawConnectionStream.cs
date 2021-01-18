@@ -17,8 +17,8 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             }
 
-            public sealed override bool CanRead => true;
-            public sealed override bool CanWrite => true;
+            public sealed override bool CanRead => _connection != null;
+            public sealed override bool CanWrite => _connection != null;
 
             public override int Read(Span<byte> buffer)
             {
@@ -89,7 +89,7 @@ namespace System.Net.Http
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                ValidateCopyToArgs(this, destination, bufferSize);
+                ValidateCopyToArguments(destination, bufferSize);
 
                 if (cancellationToken.IsCancellationRequested)
                 {

@@ -213,7 +213,7 @@ namespace System.Net
 
         public RequestCachePolicy? CachePolicy { get; set; }
 
-        public bool IsBusy => _asyncOp != null;
+        public bool IsBusy => Volatile.Read(ref _callNesting) > 0;
 
         protected virtual WebRequest GetWebRequest(Uri address)
         {

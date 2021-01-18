@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -38,8 +38,6 @@ namespace System
         private static int s_windowWidth;   // Cached WindowWidth, -1 when invalid.
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
-
-        private static readonly Interop.Sys.TerminalInvalidationCallback s_invalidateTerminalSettings = InvalidateTerminalSettings;
 
         public static Stream OpenStandardInput()
         {
@@ -129,6 +127,15 @@ namespace System
             bool previouslyProcessed;
             ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
 
+            // Replace the '\n' char for Enter by '\r' to match Windows behavior.
+            if (keyInfo.Key == ConsoleKey.Enter && keyInfo.KeyChar == '\n')
+            {
+                bool shift   = (keyInfo.Modifiers & ConsoleModifiers.Shift)   != 0;
+                bool alt     = (keyInfo.Modifiers & ConsoleModifiers.Alt)     != 0;
+                bool control = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
+                keyInfo = new ConsoleKeyInfo('\r', keyInfo.Key, shift, alt, control);
+            }
+
             if (!intercept && !previouslyProcessed && keyInfo.KeyChar != '\0')
             {
                 Console.Write(keyInfo.KeyChar);
@@ -151,7 +158,7 @@ namespace System
                 if (!Console.IsInputRedirected)
                 {
                     EnsureConsoleInitialized();
-                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(value)) == 0)
+                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(!value)) == 0)
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
             }
@@ -431,7 +438,7 @@ namespace System
         /// <param name="left">Cursor column.</param>
         /// <param name="top">Cursor row.</param>
         /// <param name="reinitializeForRead">Indicates whether this method is called as part of a on-going Read operation.</param>
-        internal static unsafe bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
+        internal static bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
         {
             left = top = 0;
 
@@ -509,7 +516,7 @@ namespace System
                         !BufferUntil((byte)';', r, ref readBytes, ref readBytesPos, out semiPos) ||
                         !BufferUntil((byte)'R', r, ref readBytes, ref readBytesPos, out rPos))
                     {
-                        // We were unable to read everything from stdin, e.g. a timeout ocurred.
+                        // We were unable to read everything from stdin, e.g. a timeout occurred.
                         // Since we couldn't get the complete CPR, transfer any bytes we did read
                         // back to the StdInReader's extra buffer, treating it all as user input,
                         // and exit having not computed a valid cursor position.
@@ -561,7 +568,7 @@ namespace System
                     s_firstCursorPositionRequest = false;
                 }
 
-                bool BufferUntil(byte toFind, StdInReader src, ref Span<byte> dst, ref int dstPos, out int foundPos)
+                static unsafe bool BufferUntil(byte toFind, StdInReader src, ref Span<byte> dst, ref int dstPos, out int foundPos)
                 {
                     // Loop until we find the target byte.
                     while (true)
@@ -594,8 +601,7 @@ namespace System
                     }
                 }
 
-                unsafe bool AppendToStdInReaderUntil(
-                    byte toFind, StdInReader reader, Span<byte> foundByteDst, ref int foundByteDstPos, out int foundPos)
+                static unsafe bool AppendToStdInReaderUntil(byte toFind, StdInReader reader, Span<byte> foundByteDst, ref int foundByteDstPos, out int foundPos)
                 {
                     // Loop until we find the target byte.
                     while (true)
@@ -618,11 +624,11 @@ namespace System
                         }
 
                         // Otherwise, push it back into the reader's extra buffer.
-                        reader.AppendExtraBuffer(&b, 1);
+                        reader.AppendExtraBuffer(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
                     }
                 }
 
-                void ReadRowOrCol(int startExclusive, int endExclusive, StdInReader reader, ReadOnlySpan<byte> source, ref int result)
+                static void ReadRowOrCol(int startExclusive, int endExclusive, StdInReader reader, ReadOnlySpan<byte> source, ref int result)
                 {
                     int row = 0;
 
@@ -639,7 +645,7 @@ namespace System
                         }
                         else
                         {
-                            reader.AppendExtraBuffer(&b, 1);
+                            reader.AppendExtraBuffer(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
                         }
                     }
 
@@ -648,14 +654,13 @@ namespace System
                         result = row - 1;
                     }
                 }
+            }
 
-                void TransferBytes(ReadOnlySpan<byte> src, StdInReader dst)
+            static void TransferBytes(ReadOnlySpan<byte> src, StdInReader dst)
+            {
+                for (int i = 0; i < src.Length; i++)
                 {
-                    for (int i = 0; i < src.Length; i++)
-                    {
-                        byte b = src[i];
-                        dst.AppendExtraBuffer(&b, 1);
-                    }
+                    dst.AppendExtraBuffer(src.Slice(i, 1));
                 }
             }
 
@@ -720,7 +725,7 @@ namespace System
             Encoding? enc = EncodingHelper.GetEncodingFromCharset();
             return enc != null ?
                 enc.RemovePreamble() :
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+                Encoding.Default;
         }
 
         public static void SetConsoleInputEncoding(Encoding enc)
@@ -871,7 +876,7 @@ namespace System
 
                 for (int i = maxRange; i >= minRange; i--)
                 {
-                    var currentString = new StringOrCharArray(givenChars, startIndex, i);
+                    var currentString = new ReadOnlyMemory<char>(givenChars, startIndex, i);
 
                     // Check if the string prefix matches.
                     if (TerminalFormatStrings.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
@@ -912,7 +917,7 @@ namespace System
         }
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
-        private static void EnsureInitializedCore()
+        private static unsafe void EnsureInitializedCore()
         {
             // Initialization is only needed when input isn't redirected.
             if (Console.IsInputRedirected)
@@ -932,7 +937,7 @@ namespace System
 
                     // Register a callback for signals that may invalidate our cached terminal settings.
                     // This includes: SIGCONT, SIGCHLD, SIGWINCH.
-                    Interop.Sys.SetTerminalInvalidationHandler(s_invalidateTerminalSettings);
+                    Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
@@ -1015,7 +1020,9 @@ namespace System
             /// The dictionary of keystring to ConsoleKeyInfo.
             /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
             /// </summary>
-            public readonly Dictionary<StringOrCharArray, ConsoleKeyInfo> KeyFormatToConsoleKey = new Dictionary<StringOrCharArray, ConsoleKeyInfo>();
+            public readonly Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo> KeyFormatToConsoleKey =
+                new Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo>(new ReadOnlyMemoryContentComparer());
+
             /// <summary> Max key length </summary>
             public readonly int MaxKeyFormatLength;
             /// <summary> Min key length </summary>
@@ -1119,7 +1126,7 @@ namespace System
                     MaxKeyFormatLength = int.MinValue;
                     MinKeyFormatLength = int.MaxValue;
 
-                    foreach (KeyValuePair<StringOrCharArray, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
+                    foreach (KeyValuePair<ReadOnlyMemory<char>, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
                     {
                         if (entry.Key.Length > MaxKeyFormatLength)
                         {
@@ -1180,8 +1187,8 @@ namespace System
 
             private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key, bool shift, bool alt, bool control)
             {
-                string? keyFormat = db.GetString(keyId);
-                if (!string.IsNullOrEmpty(keyFormat))
+                ReadOnlyMemory<char> keyFormat = db.GetString(keyId).AsMemory();
+                if (!keyFormat.IsEmpty)
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
 
@@ -1196,8 +1203,8 @@ namespace System
 
             private void AddKey(TermInfo.Database db, string extendedName, ConsoleKey key, bool shift, bool alt, bool control)
             {
-                string? keyFormat = db.GetExtendedString(extendedName);
-                if (!string.IsNullOrEmpty(keyFormat))
+                ReadOnlyMemory<char> keyFormat = db.GetExtendedString(extendedName).AsMemory();
+                if (!keyFormat.IsEmpty)
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
         }
@@ -1205,84 +1212,74 @@ namespace System
         /// <summary>Reads data from the file descriptor into the buffer.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer to read into.</param>
-        /// <param name="offset">The offset at which to start writing into the buffer.</param>
-        /// <param name="count">The maximum number of bytes to read.</param>
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
-        internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
+        internal static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
         {
-            Interop.Sys.InitializeConsoleBeforeRead(convertCrToNl: true);
-            try
+            fixed (byte* bufPtr = buffer)
             {
-                fixed (byte* bufPtr = buffer)
-                {
-                    int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
-                    Debug.Assert(result <= count);
-                    return result;
-                }
-            }
-            finally
-            {
-                Interop.Sys.UninitializeConsoleAfterRead();
+                int result = Interop.CheckIo(Interop.Sys.Read(fd, bufPtr, buffer.Length));
+                Debug.Assert(result <= buffer.Length);
+                return result;
             }
         }
 
         /// <summary>Writes data from the buffer into the file descriptor.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
-        /// <param name="offset">The offset at which the data to write starts in the buffer.</param>
-        /// <param name="count">The number of bytes to write.</param>
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
-        private static unsafe void Write(SafeFileHandle fd, byte[] buffer, int offset, int count, bool mayChangeCursorPosition = true)
+        internal static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
-            fixed (byte* bufPtr = buffer)
-            {
-                Write(fd, bufPtr + offset, count, mayChangeCursorPosition);
-            }
-        }
+            // Console initialization might emit data to stdout.
+            // In order to avoid splitting user data we need to
+            // complete it before any writes are performed.
+            EnsureConsoleInitialized();
 
-        private static unsafe void Write(SafeFileHandle fd, byte* bufPtr, int count, bool mayChangeCursorPosition = true)
-        {
-            while (count > 0)
+            fixed (byte* p = buffer)
             {
-                int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
-
-                int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
-                if (bytesWritten < 0)
+                byte* bufPtr = p;
+                int count = buffer.Length;
+                while (count > 0)
                 {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error == Interop.Error.EPIPE)
+                    int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
+
+                    int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
+                    if (bytesWritten < 0)
                     {
-                        // Broken pipe... likely due to being redirected to a program
-                        // that ended, so simply pretend we were successful.
-                        return;
-                    }
-                    else if (errorInfo.Error == Interop.Error.EAGAIN) // aka EWOULDBLOCK
-                    {
-                        // May happen if the file handle is configured as non-blocking.
-                        // In that case, we need to wait to be able to write and then
-                        // try again. We poll, but don't actually care about the result,
-                        // only the blocking behavior, and thus ignore any poll errors
-                        // and loop around to do another write (which may correctly fail
-                        // if something else has gone wrong).
-                        Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
-                        continue;
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        if (errorInfo.Error == Interop.Error.EPIPE)
+                        {
+                            // Broken pipe... likely due to being redirected to a program
+                            // that ended, so simply pretend we were successful.
+                            return;
+                        }
+                        else if (errorInfo.Error == Interop.Error.EAGAIN) // aka EWOULDBLOCK
+                        {
+                            // May happen if the file handle is configured as non-blocking.
+                            // In that case, we need to wait to be able to write and then
+                            // try again. We poll, but don't actually care about the result,
+                            // only the blocking behavior, and thus ignore any poll errors
+                            // and loop around to do another write (which may correctly fail
+                            // if something else has gone wrong).
+                            Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
+                            continue;
+                        }
+                        else
+                        {
+                            // Something else... fail.
+                            throw Interop.GetExceptionForIoErrno(errorInfo);
+                        }
                     }
                     else
                     {
-                        // Something else... fail.
-                        throw Interop.GetExceptionForIoErrno(errorInfo);
+                        if (mayChangeCursorPosition)
+                        {
+                            UpdatedCachedCursorPosition(bufPtr, bytesWritten, cursorVersion);
+                        }
                     }
-                }
-                else
-                {
-                    if (mayChangeCursorPosition)
-                    {
-                        UpdatedCachedCursorPosition(bufPtr, bytesWritten, cursorVersion);
-                    }
-                }
 
-                count -= bytesWritten;
-                bufPtr += bytesWritten;
+                    count -= bytesWritten;
+                    bufPtr += bytesWritten;
+                }
             }
         }
 
@@ -1368,6 +1365,7 @@ namespace System
             }
         }
 
+        [UnmanagedCallersOnly]
         private static void InvalidateTerminalSettings()
         {
             Volatile.Write(ref s_invalidateCachedSettings, 1);
@@ -1376,35 +1374,26 @@ namespace System
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>
         /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static unsafe void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
+        internal static void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
 
-            // Except for extremely rare cases, ANSI escape strings should be very short.
-            const int StackAllocThreshold = 256;
-            if (value.Length <= StackAllocThreshold)
+            Span<byte> data = stackalloc byte[0];
+            if (value.Length <= 256) // except for extremely rare cases, ANSI escape strings are very short
             {
-                int dataLen = Encoding.UTF8.GetMaxByteCount(value.Length);
-                byte* data = stackalloc byte[dataLen];
-                fixed (char* chars = value)
-                {
-                    int bytesToWrite = Encoding.UTF8.GetBytes(chars, value.Length, data, dataLen);
-                    Debug.Assert(bytesToWrite <= dataLen);
-
-                    lock (Console.Out) // synchronize with other writers
-                    {
-                        Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, bytesToWrite, mayChangeCursorPosition);
-                    }
-                }
+                data = stackalloc byte[Encoding.UTF8.GetMaxByteCount(value.Length)];
+                int bytesToWrite = Encoding.UTF8.GetBytes(value, data);
+                data = data.Slice(0, bytesToWrite);
             }
             else
             {
-                byte[] data = Encoding.UTF8.GetBytes(value);
-                lock (Console.Out) // synchronize with other writers
-                {
-                    Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, 0, data.Length, mayChangeCursorPosition);
-                }
+                data = Encoding.UTF8.GetBytes(value);
+            }
+
+            lock (Console.Out) // synchronize with other writers
+            {
+                Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, mayChangeCursorPosition);
             }
         }
 
@@ -1438,26 +1427,13 @@ namespace System
                 base.Dispose(disposing);
             }
 
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                ValidateRead(buffer, offset, count);
+            public override int Read(Span<byte> buffer) =>
+                _useReadLine ?
+                    ConsolePal.StdInReader.ReadLine(buffer) :
+                    ConsolePal.Read(_handle, buffer);
 
-                if (_useReadLine)
-                {
-                    return ConsolePal.StdInReader.ReadLine(buffer, offset, count);
-                }
-                else
-                {
-                    return ConsolePal.Read(_handle, buffer, offset, count);
-                }
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                ValidateWrite(buffer, offset, count);
-
-                ConsolePal.Write(_handle, buffer, offset, count);
-            }
+            public override void Write(ReadOnlySpan<byte> buffer) =>
+                ConsolePal.Write(_handle, buffer);
 
             public override void Flush()
             {
@@ -1473,12 +1449,12 @@ namespace System
         {
             private bool _handlerRegistered;
 
-            internal void Register()
+            internal unsafe void Register()
             {
                 EnsureConsoleInitialized();
 
                 Debug.Assert(!_handlerRegistered);
-                Interop.Sys.RegisterForCtrl(c => OnBreakEvent(c));
+                Interop.Sys.RegisterForCtrl(&OnBreakEvent);
                 _handlerRegistered = true;
             }
 
@@ -1489,6 +1465,7 @@ namespace System
                 Interop.Sys.UnregisterForCtrl();
             }
 
+            [UnmanagedCallersOnly]
             private static void OnBreakEvent(Interop.Sys.CtrlCode ctrlCode)
             {
                 // This is called on the native signal handling thread. We need to move to another thread so
@@ -1511,6 +1488,15 @@ namespace System
                     Interop.Sys.RestoreAndHandleCtrl(ctrlCode);
                 }
             }
+        }
+
+        private sealed class ReadOnlyMemoryContentComparer : IEqualityComparer<ReadOnlyMemory<char>>
+        {
+            public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) =>
+                x.Span.SequenceEqual(y.Span);
+
+            public int GetHashCode(ReadOnlyMemory<char> obj) =>
+                string.GetHashCode(obj.Span);
         }
     }
 }

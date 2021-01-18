@@ -88,8 +88,6 @@ namespace System.Text.Json
         public const int MinimumDateTimeParseLength = 10; // YYYY-MM-DD
         public const int MaximumEscapedDateTimeOffsetParseLength = MaxExpansionFactorWhileEscaping * MaximumDateTimeOffsetParseLength;
 
-        internal const char ScientificNotationFormat = 'e';
-
         // Encoding Helpers
         public const char HighSurrogateStart = '\ud800';
         public const char HighSurrogateEnd = '\udbff';

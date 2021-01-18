@@ -315,7 +315,8 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { typeof(Dictionary<string, Dictionary<string, Poco>>), @"{""key"":1}" };
         }
 
-        [Fact]
+        [Fact, OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static void InvalidJsonForTypeShouldFail()
         {
             foreach (object[] args in DataForInvalidJsonForTypeTests()) // ~140K tests, too many for theory to handle well with our infrastructure

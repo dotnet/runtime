@@ -315,7 +315,7 @@ namespace System.Xml
             if (object.ReferenceEquals(id1, id2))
                 return true;
 
-            if (object.ReferenceEquals(id1, null) || object.ReferenceEquals(id2, null))
+            if (id1 is null || id2 is null)
                 return false;
 
 #pragma warning suppress 56506 // Microsoft, checks for whether id1 and id2 are null done above.

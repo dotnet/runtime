@@ -24,6 +24,7 @@
 #include "tabledefs.h"
 #include "tokentype.h"
 #include "metadata-internals.h"
+#include "metadata-update.h"
 #include "profiler-private.h"
 #include "loader.h"
 #include "marshal.h"
@@ -45,6 +46,7 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/image-internals.h>
 #include <mono/metadata/loaded-images-internals.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/w32process-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mono-private-unstable.h>
@@ -449,6 +451,21 @@ mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 	return TRUE;
 }
 
+/**
+ * mono_metadata_module_mvid:
+ *
+ * Return the module mvid GUID or NULL if the image doesn't have a module table.
+ */
+static const guint8 *
+mono_metadata_module_mvid (MonoImage *image)
+{
+	if (!image->tables [MONO_TABLE_MODULE].base)
+		return NULL;
+	guint32 module_cols [MONO_MODULE_SIZE];
+	mono_metadata_decode_row (&image->tables [MONO_TABLE_MODULE], 0, module_cols, MONO_MODULE_SIZE);
+	return (const guint8*) mono_metadata_guid_heap (image, module_cols [MONO_MODULE_MVID]);
+}
+
 static gboolean
 load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
@@ -527,6 +544,13 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			image->heap_pdb.data = image->raw_metadata + read32 (ptr);
 			image->heap_pdb.size = read32 (ptr + 4);
 			ptr += 8 + 5;
+		} else if (strncmp (ptr + 8, "#JTD", 5) == 0) {
+			// See https://github.com/dotnet/runtime/blob/110282c71b3f7e1f91ea339953f4a0eba362a62c/src/libraries/System.Reflection.Metadata/src/System/Reflection/Metadata/MetadataReader.cs#L165-L175
+			// skip read32(ptr) and read32(ptr + 4)
+			// ignore the content of this stream
+			image->minimal_delta = TRUE;
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Image '%s' has a minimal delta marker", image->name);
+			ptr += 8 + 5;
 		} else {
 			g_message ("Unknown heap type: %s\n", ptr + 8);
 			ptr += 8 + strlen (ptr + 8) + 1;
@@ -534,6 +558,21 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		pad = ptr - image->raw_metadata;
 		if (pad % 4)
 			ptr += 4 - (pad % 4);
+	}
+
+	{
+		/* Compute the precise size of the string heap by walking back over the trailing nul padding.
+		 *
+		 * ENC minimal delta images require the precise size of the base image string heap to be known.
+		 */
+		const char *p;
+		p = image->heap_strings.data + image->heap_strings.size - 1;
+		pad = 0;
+		while (p [0] == '\0' && p [-1] == '\0') {
+			p--;
+			pad++;
+		}
+		image->heap_strings.size -= pad;
 	}
 
 	i = ((MonoImageLoader*)image->loader)->load_tables (image);
@@ -544,19 +583,24 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 		image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
 	} else {
-		/* PPDB files have no guid */
-		guint8 empty_guid [16];
+		const guint8 *guid = mono_metadata_module_mvid (image);
+		if (guid)
+			image->guid = mono_guid_to_string (guid);
+		else {
+			/* PPDB files have no guid */
+			guint8 empty_guid [16];
 
-		memset (empty_guid, 0, sizeof (empty_guid));
+			memset (empty_guid, 0, sizeof (empty_guid));
 
-		image->guid = mono_guid_to_string (empty_guid);
+			image->guid = mono_guid_to_string (empty_guid);
+		}
 	}
 
 	return i;
 }
 
 /*
- * Load representation of logical metadata tables, from the "#~" stream
+ * Load representation of logical metadata tables, from the "#~" or "#-" stream
  */
 static gboolean
 load_tables (MonoImage *image)
@@ -571,6 +615,15 @@ load_tables (MonoImage *image)
 	image->idx_string_wide = ((heap_sizes & 0x01) == 1);
 	image->idx_guid_wide   = ((heap_sizes & 0x02) == 2);
 	image->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
+
+#ifdef ENABLE_METADATA_UPDATE
+	if (G_UNLIKELY (image->minimal_delta)) {
+		/* sanity check */
+		g_assert (image->idx_string_wide);
+		g_assert (image->idx_guid_wide);
+		g_assert (image->idx_blob_wide);
+	}
+#endif
 	
 	valid_mask = read64 (heap_tables + 8);
 	rows = (const guint32 *) (heap_tables + 24);
@@ -1167,7 +1220,10 @@ mono_image_load_names (MonoImage *image)
 	}
 
 	/* Portable pdb images don't have a MODULE row */
-	if (image->tables [MONO_TABLE_MODULE].rows) {
+	/* Minimal ENC delta images index the combined string heap of the base and delta image,
+	 * so the module index is out of bounds here.
+	 */
+	if (image->tables [MONO_TABLE_MODULE].rows && !image->minimal_delta) {
 		image->module_name = mono_metadata_string_heap (image,
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
 					0, MONO_MODULE_NAME));
@@ -1200,6 +1256,8 @@ install_pe_loader (void)
 {
 	mono_install_image_loader (&pe_loader);
 }
+
+#ifndef DISABLE_DESKTOP_LOADER
 
 /*
 Ignored assemblies.
@@ -1352,9 +1410,12 @@ static const IgnoredAssemblyVersion ignored_assembly_versions [] = {
 	IGNORED_ASM_VER (SYS_THREADING_OVERLAPPED, 4, 1, 0, 0)
 };
 
+#endif /* DISABLE_DESKTOP_LOADER */
+
 gboolean
 mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 minor, guint16 build, guint16 revision)
 {
+#ifndef DISABLE_DESKTOP_LOADER
 	for (int i = 0; i < G_N_ELEMENTS (ignored_assembly_versions); ++i) {
 		if (ignored_assembly_versions [i].major != major ||
 			ignored_assembly_versions [i].minor != minor ||
@@ -1364,6 +1425,7 @@ mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 m
 		if (!strcmp (ignored_assemblies_names [ignored_assembly_versions [i].assembly_name], name))
 			return TRUE;
 	}
+#endif
 	return FALSE;
 }
 
@@ -1393,6 +1455,7 @@ hash_guid (const char *str)
 gboolean
 mono_is_problematic_image (MonoImage *image)
 {
+#ifndef DISABLE_DESKTOP_LOADER
 	int h = hash_guid (image->guid);
 
 	//TODO make this more cache effiecient.
@@ -1406,8 +1469,29 @@ mono_is_problematic_image (MonoImage *image)
 				return TRUE;
 		}
 	}
+#endif
 	return FALSE;
 }
+
+#ifdef ENABLE_METADATA_UPDATE
+static void
+dump_encmap (MonoImage *image)
+{
+	MonoTableInfo *encmap = &image->tables [MONO_TABLE_ENCMAP];
+	if (!encmap || !encmap->rows)
+		return;
+
+	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
+		for (int i = 0; i < encmap->rows; ++i) {
+			guint32 cols [MONO_ENCMAP_SIZE];
+			mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
+			int token = cols [MONO_ENCMAP_TOKEN];
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "\t0x%08x: 0x%08x table: %s", i+1, token, mono_meta_table_name (mono_metadata_token_table (token)));
+		}
+	}
+}
+#endif
 
 static MonoImage *
 do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
@@ -1472,6 +1556,10 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 
 	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_table_data (image, error))
 		goto invalid_image;
+
+#ifdef ENABLE_METADATA_UPDATE
+	dump_encmap (image);
+#endif
 
 	mono_image_load_names (image);
 
@@ -2440,6 +2528,7 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->native_wrapper_aot_check_cache);
 
 	free_hash (cache->native_func_wrapper_aot_cache);
+	free_hash (cache->native_func_wrapper_indirect_cache);
 	free_hash (cache->remoting_invoke_cache);
 	free_hash (cache->synchronized_cache);
 	free_hash (cache->unbox_wrapper_cache);
@@ -2458,6 +2547,20 @@ mono_image_close_except_pools_all (MonoImage**images, int image_count)
 		}
 	}
 }
+
+#ifdef ENABLE_METADATA_UPDATE
+static void
+mono_image_close_except_pools_all_list (GList *images)
+{
+	for (GList *ptr = images; ptr; ptr = ptr->next) {
+		MonoImage *image = (MonoImage *)ptr->data;
+		if (image) {
+			if (!mono_image_close_except_pools (image))
+			    ptr->data = NULL;
+		}
+	}
+}
+#endif
 
 /*
  * Returns whether mono_image_close_finish() must be called as well.
@@ -2497,6 +2600,10 @@ mono_image_close_except_pools (MonoImage *image)
 	mono_image_invoke_unload_hook (image);
 
 	mono_metadata_clean_for_image (image);
+
+#ifdef ENABLE_METADATA_UPDATE
+	mono_metadata_update_cleanup_on_close (image);
+#endif
 
 	/*
 	 * The caches inside a MonoImage might refer to metadata which is stored in referenced 
@@ -2625,6 +2732,11 @@ mono_image_close_except_pools (MonoImage *image)
 	mono_image_close_except_pools_all (image->modules, image->module_count);
 	g_free (image->modules_loaded);
 
+#ifdef ENABLE_METADATA_UPDATE
+	if (image->delta_image)
+		mono_image_close_except_pools_all_list (image->delta_image);
+#endif
+
 	mono_os_mutex_destroy (&image->szarray_cache_lock);
 	mono_os_mutex_destroy (&image->lock);
 
@@ -2651,6 +2763,20 @@ mono_image_close_all (MonoImage**images, int image_count)
 		g_free (images);
 }
 
+#ifdef ENABLE_METADATA_UPDATE
+static void
+mono_image_close_all_list (GList *images)
+{
+	for (GList *ptr = images; ptr; ptr = ptr->next) {
+		MonoImage *image = (MonoImage *)ptr->data;
+		if (image)
+			mono_image_close_finish (image);
+	}
+
+	g_list_free (images);
+}
+#endif
+
 void
 mono_image_close_finish (MonoImage *image)
 {
@@ -2668,6 +2794,10 @@ mono_image_close_finish (MonoImage *image)
 
 	mono_image_close_all (image->files, image->file_count);
 	mono_image_close_all (image->modules, image->module_count);
+
+#ifdef ENABLE_METADATA_UPDATE
+	mono_image_close_all_list (image->delta_image);
+#endif
 
 #ifndef DISABLE_PERFCOUNTERS
 	/* FIXME: use an explicit subtraction method as soon as it's available */
@@ -3370,6 +3500,4 @@ mono_image_append_class_to_reflection_info_set (MonoClass *klass)
 	image->reflection_info_unregister_classes = g_slist_prepend_mempool (image->mempool, image->reflection_info_unregister_classes, klass);
 	mono_image_unlock (image);
 }
-
-
 

@@ -4,7 +4,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
@@ -12,6 +15,7 @@ using System.Text;
 
 namespace System.Net.Http
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
@@ -359,9 +363,9 @@ namespace System.Net.Http
             }
         }
 
-        internal bool SupportsAutomaticDecompression => true;
-        internal bool SupportsProxy => true;
-        internal bool SupportsRedirectConfiguration => true;
+        internal const bool SupportsAutomaticDecompression = true;
+        internal const bool SupportsProxy = true;
+        internal const bool SupportsRedirectConfiguration = true;
 
         /// <summary>
         /// When non-null, a custom callback used to open new connections.
@@ -373,6 +377,34 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _settings._connectCallback = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a custom callback that provides access to the plaintext HTTP protocol stream.
+        /// </summary>
+        public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter
+        {
+            get => _settings._plaintextStreamFilter;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._plaintextStreamFilter = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the QUIC implementation to be used for HTTP3 requests.
+        /// </summary>
+        public QuicImplementationProvider? QuicImplementationProvider
+        {
+            // !!! NOTE !!!
+            // This is temporary and will not ship.
+            get => _settings._quicImplementationProvider;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._quicImplementationProvider = value;
             }
         }
 

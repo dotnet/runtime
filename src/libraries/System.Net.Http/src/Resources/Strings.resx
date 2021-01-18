@@ -204,6 +204,9 @@
   <data name="net_http_client_http_baseaddress_required" xml:space="preserve">
     <value>Only 'http' and 'https' schemes are allowed.</value>
   </data>
+  <data name="net_http_client_http_browser_baseaddress_required" xml:space="preserve">
+    <value>Only 'http', 'https', and 'blob' schemes are allowed.</value>
+  </data>
   <data name="net_http_parser_invalid_base64_string" xml:space="preserve">
     <value>Value '{0}' is not a valid Base64 string. Error: {1}</value>
   </data>
@@ -353,6 +356,9 @@
   </data>
   <data name="net_http_invalid_response_status_reason" xml:space="preserve">
     <value>Received status phrase could not be decoded with iso-8859-1: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_multiple_status_codes" xml:space="preserve">
+    <value>The response contained more than one status code.</value>
   </data>
   <data name="net_http_invalid_response_header_folder" xml:space="preserve">
     <value>Received an invalid folded header.</value>
@@ -556,7 +562,7 @@
     <value>Connection aborted by peer ({0}).</value>
   </data>
   <data name="net_quic_notsupported" xml:space="preserve">
-    <value>QUIC is not supported on this platform. See http://aka.ms/dotnetquic</value>
+    <value>QUIC is not supported on this platform. See https://aka.ms/dotnetquic</value>
   </data>
   <data name="net_quic_operationaborted" xml:space="preserve">
     <value>Operation aborted.</value>
@@ -585,7 +591,19 @@
   <data name="net_http_requested_version_server_refused" xml:space="preserve">
     <value>Requesting HTTP version {0} with version policy {1} while server offers only version fallback.</value>
   </data>
-  <data name="net_http_sync_operations_not_allowed_with_connect_callback" xml:space="preserve">
-    <value>Synchronous operation is not supported when a ConnectCallback is specified on the SocketsHttpHandler instance.</value>
+  <data name="net_http_exception_during_plaintext_filter" xml:space="preserve">
+    <value>An exception occurred while invoking the PlaintextStreamFilter.</value>
+  </data>
+  <data name="net_http_null_from_connect_callback" xml:space="preserve">
+    <value>The user-supplied ConnectCallback returned null.</value>
+  </data>
+  <data name="net_http_null_from_plaintext_filter" xml:space="preserve">
+    <value>The user-supplied PlaintextStreamFilter returned null.</value>
+  </data>
+  <data name="net_http_marshalling_response_promise_from_fetch" xml:space="preserve">
+    <value>Internal error marshalling the response Promise from `fetch`.</value>
+  </data>
+  <data name="net_http_synchronous_reads_not_supported" xml:space="preserve">
+    <value>Synchronous reads are not supported, use ReadAsync instead.</value>
   </data>
 </root>

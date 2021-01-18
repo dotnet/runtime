@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <!-- CustomMarshalers unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>

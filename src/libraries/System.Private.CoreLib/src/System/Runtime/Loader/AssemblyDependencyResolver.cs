@@ -95,7 +95,9 @@ namespace System.Runtime.Loader
             _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (string assemblyPath in assemblyPaths)
             {
-                _assemblyPaths.Add(Path.GetFileNameWithoutExtension(assemblyPath), assemblyPath);
+                // Add the first entry with the same simple assembly name if there are multiples
+                // and ignore others
+                _assemblyPaths.TryAdd(Path.GetFileNameWithoutExtension(assemblyPath), assemblyPath);
             }
 
             _nativeSearchPaths = SplitPathsList(nativeSearchPathsList);

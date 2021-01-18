@@ -403,7 +403,7 @@ namespace System.IO.Ports
             return Read(array, offset, count, ReadTimeout);
         }
 
-        internal unsafe int Read(byte[] array, int offset, int count, int timeout)
+        internal int Read(byte[] array, int offset, int count, int timeout)
         {
             using (CancellationTokenSource cts = GetCancellationTokenSourceFromTimeout(timeout))
             {
@@ -786,7 +786,7 @@ namespace System.IO.Ports
             return 0;
         }
 
-        private unsafe void IOLoop()
+        private void IOLoop()
         {
             bool eofReceived = false;
             // we do not care about bytes we got before - only about changes

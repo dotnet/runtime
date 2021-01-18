@@ -511,15 +511,26 @@ namespace System.Net.Http
                 if (t != null)
                 {
                     // Handle the pre-emptive read.  For the async==false case, hopefully the read has
-                    // already completed and this will be a nop, but if it hasn't, we're forced to block
+                    // already completed and this will be a nop, but if it hasn't, the caller will be forced to block
                     // waiting for the async operation to complete.  We will only hit this case for proxied HTTPS
                     // requests that use a pooled connection, as in that case we don't have a Socket we
                     // can poll and are forced to issue an async read.
                     ValueTask<int> vt = t.GetValueOrDefault();
-                    int bytesRead =
-                        vt.IsCompletedSuccessfully ? vt.Result :
-                        async ? await vt.ConfigureAwait(false) :
-                        vt.AsTask().GetAwaiter().GetResult();
+                    int bytesRead;
+                    if (vt.IsCompleted)
+                    {
+                        bytesRead = vt.Result;
+                    }
+                    else
+                    {
+                        if (!async)
+                        {
+                            Trace($"Pre-emptive read completed asynchronously for a synchronous request.");
+                        }
+
+                        bytesRead = await vt.ConfigureAwait(false);
+                    }
+
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
 
                     if (bytesRead == 0)
@@ -538,7 +549,7 @@ namespace System.Net.Http
 
                 // Parse the response status line.
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
-                ParseStatusLine(await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false), response);
+                ParseStatusLine((await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false)).Span, response);
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
 
@@ -575,18 +586,18 @@ namespace System.Net.Http
                     while (!IsLineEmpty(await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false)));
 
                     // Parse the status line for next response.
-                    ParseStatusLine(await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false), response);
+                    ParseStatusLine((await ReadNextResponseHeaderLineAsync(async).ConfigureAwait(false)).Span, response);
                 }
 
                 // Parse the response headers.  Logic after this point depends on being able to examine headers in the response object.
                 while (true)
                 {
-                    ArraySegment<byte> line = await ReadNextResponseHeaderLineAsync(async, foldedHeadersAllowed: true).ConfigureAwait(false);
+                    ReadOnlyMemory<byte> line = await ReadNextResponseHeaderLineAsync(async, foldedHeadersAllowed: true).ConfigureAwait(false);
                     if (IsLineEmpty(line))
                     {
                         break;
                     }
-                    ParseHeaderNameValue(this, line, response);
+                    ParseHeaderNameValue(this, line.Span, response, isFromTrailer: false);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
@@ -635,14 +646,7 @@ namespace System.Net.Http
                 {
                     Task sendTask = sendRequestContentTask;
                     sendRequestContentTask = null;
-                    if (async)
-                    {
-                        await sendTask.ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        sendTask.GetAwaiter().GetResult();
-                    }
+                    await sendTask.ConfigureAwait(false);
                 }
 
                 // Now we are sure that the request was fully sent.
@@ -735,15 +739,7 @@ namespace System.Net.Http
                     {
                         try
                         {
-                            if (async)
-                            {
-                                await sendRequestContentTask.ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                // No way around it here if we want to get the exception from the task.
-                                sendRequestContentTask.GetAwaiter().GetResult();
-                            }
+                            await sendRequestContentTask.ConfigureAwait(false);
                         }
                         // Map the exception the same way as we normally do.
                         catch (Exception ex) when (MapSendException(ex, cancellationToken, out Exception mappedEx))
@@ -835,7 +831,7 @@ namespace System.Net.Http
             }, _weakThisRef);
         }
 
-        private static bool IsLineEmpty(ArraySegment<byte> line) => line.Count == 0;
+        private static bool IsLineEmpty(ReadOnlyMemory<byte> line) => line.Length == 0;
 
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
         {
@@ -899,12 +895,7 @@ namespace System.Net.Http
             }
         }
 
-        // TODO: Remove this overload once https://github.com/dotnet/csharplang/issues/1331 is addressed
-        // and the compiler doesn't prevent using spans in async methods.
-        private static void ParseStatusLine(ArraySegment<byte> line, HttpResponseMessage response) =>
-            ParseStatusLine((Span<byte>)line, response);
-
-        private static void ParseStatusLine(Span<byte> line, HttpResponseMessage response)
+        private static void ParseStatusLine(ReadOnlySpan<byte> line, HttpResponseMessage response)
         {
             // We sent the request version as either 1.0 or 1.1.
             // We expect a response version of the form 1.X, where X is a single digit as per RFC.
@@ -954,7 +945,7 @@ namespace System.Net.Http
             }
             else if (line[MinStatusLineLength] == ' ')
             {
-                Span<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
+                ReadOnlySpan<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
                 string? knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
                 if (knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
                 {
@@ -977,11 +968,6 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
             }
         }
-
-        // TODO: Remove this overload once https://github.com/dotnet/csharplang/issues/1331 is addressed
-        // and the compiler doesn't prevent using spans in async methods.
-        private static void ParseHeaderNameValue(HttpConnection connection, ArraySegment<byte> line, HttpResponseMessage response) =>
-            ParseHeaderNameValue(connection, (Span<byte>)line, response, isFromTrailer: false);
 
         private static void ParseHeaderNameValue(HttpConnection connection, ReadOnlySpan<byte> line, HttpResponseMessage response, bool isFromTrailer)
         {
@@ -1430,7 +1416,7 @@ namespace System.Net.Http
             return true;
         }
 
-        private async ValueTask<ArraySegment<byte>> ReadNextResponseHeaderLineAsync(bool async, bool foldedHeadersAllowed = false)
+        private async ValueTask<ReadOnlyMemory<byte>> ReadNextResponseHeaderLineAsync(bool async, bool foldedHeadersAllowed = false)
         {
             int previouslyScannedBytes = 0;
             while (true)
@@ -1510,7 +1496,7 @@ namespace System.Net.Http
                     ThrowIfExceededAllowedReadLineBytes();
                     _readOffset = lfIndex + 1;
 
-                    return new ArraySegment<byte>(_readBuffer, startIndex, length);
+                    return new ReadOnlyMemory<byte>(_readBuffer, startIndex, length);
                 }
 
                 // Couldn't find LF.  Read more. Note this may cause _readOffset to change.
@@ -1983,7 +1969,7 @@ namespace System.Net.Http
             }
         }
 
-        private static bool EqualsOrdinal(string left, Span<byte> right)
+        private static bool EqualsOrdinal(string left, ReadOnlySpan<byte> right)
         {
             Debug.Assert(left != null, "Expected non-null string");
 
