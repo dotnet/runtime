@@ -272,8 +272,6 @@ static int packet_id = 0;
  * Wire Protocol definitions
  */
 
-#define HEADER_LENGTH 11
-
 #define MAJOR_VERSION 3
 #define MINOR_VERSION 0
 
@@ -9701,7 +9699,7 @@ debugger_thread (void *arg)
 {
 	int res, len, id, flags, command = 0;
 	CommandSet command_set = (CommandSet)0;
-	guint8 header [HEADER_LENGTH];
+	guint8 header [HEADER_LEN];
 	guint8 *data, *p, *end;
 	Buffer buf;
 	ErrorCode err;
@@ -9734,18 +9732,18 @@ debugger_thread (void *arg)
 	}
 	
 	while (!attach_failed) {
-		res = transport_recv (header, HEADER_LENGTH);
+		res = transport_recv (header, HEADER_LEN);
 
 		/* This will break if the socket is closed during shutdown too */
-		if (res != HEADER_LENGTH) {
-			PRINT_DEBUG_MSG (1, "[dbg] transport_recv () returned %d, expected %d.\n", res, HEADER_LENGTH);
+		if (res != HEADER_LEN) {
+			PRINT_DEBUG_MSG (1, "[dbg] transport_recv () returned %d, expected %d.\n", res, HEADER_LEN);
 			command_set = (CommandSet)0;
 			command = 0;
 			dispose_vm ();
 			break;
 		} else {
 			p = header;
-			end = header + HEADER_LENGTH;
+			end = header + HEADER_LEN;
 
 			len = decode_int (p, &p, end);
 			id = decode_int (p, &p, end);
@@ -9768,18 +9766,18 @@ debugger_thread (void *arg)
 			PRINT_DEBUG_MSG (1, "[dbg] Command %s(%s) [%d][at=%lx].\n", command_set_to_string (command_set), cmd_str, id, (long)mono_100ns_ticks () / 10000);
 		}
 
-		data = (guint8 *)g_malloc (len - HEADER_LENGTH);
-		if (len - HEADER_LENGTH > 0)
+		data = (guint8 *)g_malloc (len - HEADER_LEN);
+		if (len - HEADER_LEN > 0)
 		{
-			res = transport_recv (data, len - HEADER_LENGTH);
-			if (res != len - HEADER_LENGTH) {
-				PRINT_DEBUG_MSG (1, "[dbg] transport_recv () returned %d, expected %d.\n", res, len - HEADER_LENGTH);
+			res = transport_recv (data, len - HEADER_LEN);
+			if (res != len - HEADER_LEN) {
+				PRINT_DEBUG_MSG (1, "[dbg] transport_recv () returned %d, expected %d.\n", res, len - HEADER_LEN);
 				break;
 			}
 		}
 
 		p = data;
-		end = data + (len - HEADER_LENGTH);
+		end = data + (len - HEADER_LEN);
 
 		buffer_init (&buf, 128);
 
