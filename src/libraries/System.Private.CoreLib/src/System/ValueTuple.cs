@@ -343,15 +343,17 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1> objTuple)
+                {
+                    return comparer.Compare(Item1, objTuple.Item1);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            return comparer.Compare(Item1, objTuple.Item1);
+            return 1;
         }
 
         /// <summary>
@@ -535,18 +537,20 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2> objTuple)
+                {
+                    int c = comparer.Compare(Item1, objTuple.Item1);
+                    if (c != 0) return c;
+
+                    return comparer.Compare(Item2, objTuple.Item2);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            int c = comparer.Compare(Item1, objTuple.Item1);
-            if (c != 0) return c;
-
-            return comparer.Compare(Item2, objTuple.Item2);
+            return 1;
         }
 
         /// <summary>
@@ -727,21 +731,23 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3> objTuple)
+                {
+                    int c = comparer.Compare(Item1, objTuple.Item1);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item2, objTuple.Item2);
+                    if (c != 0) return c;
+
+                    return comparer.Compare(Item3, objTuple.Item3);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            int c = comparer.Compare(Item1, objTuple.Item1);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item2, objTuple.Item2);
-            if (c != 0) return c;
-
-            return comparer.Compare(Item3, objTuple.Item3);
+            return 1;
         }
 
         /// <summary>
@@ -935,24 +941,26 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4> objTuple)
+                {
+                    int c = comparer.Compare(Item1, objTuple.Item1);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item2, objTuple.Item2);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item3, objTuple.Item3);
+                    if (c != 0) return c;
+
+                    return comparer.Compare(Item4, objTuple.Item4);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            int c = comparer.Compare(Item1, objTuple.Item1);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item2, objTuple.Item2);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item3, objTuple.Item3);
-            if (c != 0) return c;
-
-            return comparer.Compare(Item4, objTuple.Item4);
+            return 1;
         }
 
         /// <summary>
@@ -1160,27 +1168,29 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4, T5> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4, T5> objTuple)
+                {
+                    int c = comparer.Compare(Item1, objTuple.Item1);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item2, objTuple.Item2);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item3, objTuple.Item3);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item4, objTuple.Item4);
+                    if (c != 0) return c;
+
+                    return comparer.Compare(Item5, objTuple.Item5);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            int c = comparer.Compare(Item1, objTuple.Item1);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item2, objTuple.Item2);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item3, objTuple.Item3);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item4, objTuple.Item4);
-            if (c != 0) return c;
-
-            return comparer.Compare(Item5, objTuple.Item5);
+            return 1;
         }
 
         /// <summary>
@@ -1403,30 +1413,32 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4, T5, T6> objTuple)
+                {
+                    int c = comparer.Compare(Item1, objTuple.Item1);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item2, objTuple.Item2);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item3, objTuple.Item3);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item4, objTuple.Item4);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item5, objTuple.Item5);
+                    if (c != 0) return c;
+
+                    return comparer.Compare(Item6, objTuple.Item6);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            int c = comparer.Compare(Item1, objTuple.Item1);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item2, objTuple.Item2);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item3, objTuple.Item3);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item4, objTuple.Item4);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item5, objTuple.Item5);
-            if (c != 0) return c;
-
-            return comparer.Compare(Item6, objTuple.Item6);
+            return 1;
         }
 
         /// <summary>
@@ -1664,33 +1676,35 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
+                {
+                    int c = comparer.Compare(Item1, objTuple.Item1);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item2, objTuple.Item2);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item3, objTuple.Item3);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item4, objTuple.Item4);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item5, objTuple.Item5);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item6, objTuple.Item6);
+                    if (c != 0) return c;
+
+                    return comparer.Compare(Item7, objTuple.Item7);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            int c = comparer.Compare(Item1, objTuple.Item1);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item2, objTuple.Item2);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item3, objTuple.Item3);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item4, objTuple.Item4);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item5, objTuple.Item5);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item6, objTuple.Item6);
-            if (c != 0) return c;
-
-            return comparer.Compare(Item7, objTuple.Item7);
+            return 1;
         }
 
         /// <summary>
@@ -1949,36 +1963,38 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other is null) return 1;
-
-            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
+            if (other is not null)
             {
+                if (other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
+                {
+                    int c = comparer.Compare(Item1, objTuple.Item1);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item2, objTuple.Item2);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item3, objTuple.Item3);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item4, objTuple.Item4);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item5, objTuple.Item5);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item6, objTuple.Item6);
+                    if (c != 0) return c;
+
+                    c = comparer.Compare(Item7, objTuple.Item7);
+                    if (c != 0) return c;
+
+                    return comparer.Compare(Rest, objTuple.Rest);
+                }
+
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
-            int c = comparer.Compare(Item1, objTuple.Item1);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item2, objTuple.Item2);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item3, objTuple.Item3);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item4, objTuple.Item4);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item5, objTuple.Item5);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item6, objTuple.Item6);
-            if (c != 0) return c;
-
-            c = comparer.Compare(Item7, objTuple.Item7);
-            if (c != 0) return c;
-
-            return comparer.Compare(Rest, objTuple.Rest);
+            return 1;
         }
 
         /// <summary>
