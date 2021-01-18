@@ -10,65 +10,7 @@
 #include <mono/mini/debugger-state-machine.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/mini/interp/interp-internals.h>
-
-/*
-FIXME:
-- Move EventKind back to debugger-agent.c as it contains sdb wire protocol constants.
-This is complicated because EventRequest has an event_kind field.
-
-*/
-
-typedef enum {
-	EVENT_KIND_VM_START = 0,
-	EVENT_KIND_VM_DEATH = 1,
-	EVENT_KIND_THREAD_START = 2,
-	EVENT_KIND_THREAD_DEATH = 3,
-	EVENT_KIND_APPDOMAIN_CREATE = 4,
-	EVENT_KIND_APPDOMAIN_UNLOAD = 5,
-	EVENT_KIND_METHOD_ENTRY = 6,
-	EVENT_KIND_METHOD_EXIT = 7,
-	EVENT_KIND_ASSEMBLY_LOAD = 8,
-	EVENT_KIND_ASSEMBLY_UNLOAD = 9,
-	EVENT_KIND_BREAKPOINT = 10,
-	EVENT_KIND_STEP = 11,
-	EVENT_KIND_TYPE_LOAD = 12,
-	EVENT_KIND_EXCEPTION = 13,
-	EVENT_KIND_KEEPALIVE = 14,
-	EVENT_KIND_USER_BREAK = 15,
-	EVENT_KIND_USER_LOG = 16,
-	EVENT_KIND_CRASH = 17
-} EventKind;
-
-typedef enum {
-	MOD_KIND_COUNT = 1,
-	MOD_KIND_THREAD_ONLY = 3,
-	MOD_KIND_LOCATION_ONLY = 7,
-	MOD_KIND_EXCEPTION_ONLY = 8,
-	MOD_KIND_STEP = 10,
-	MOD_KIND_ASSEMBLY_ONLY = 11,
-	MOD_KIND_SOURCE_FILE_ONLY = 12,
-	MOD_KIND_TYPE_NAME_ONLY = 13,
-	MOD_KIND_NONE = 14
-} ModifierKind;
-
-typedef enum {
-	STEP_DEPTH_INTO = 0,
-	STEP_DEPTH_OVER = 1,
-	STEP_DEPTH_OUT = 2
-} StepDepth;
-
-typedef enum {
-	STEP_SIZE_MIN = 0,
-	STEP_SIZE_LINE = 1
-} StepSize;
-
-typedef enum {
-	STEP_FILTER_NONE = 0,
-	STEP_FILTER_STATIC_CTOR = 1,
-	STEP_FILTER_DEBUGGER_HIDDEN = 2,
-	STEP_FILTER_DEBUGGER_STEP_THROUGH = 4,
-	STEP_FILTER_DEBUGGER_NON_USER_CODE = 8
-} StepFilter;
+#include <mono/mini/debugger-protocol.h>
 
 typedef struct {
 	ModifierKind kind;

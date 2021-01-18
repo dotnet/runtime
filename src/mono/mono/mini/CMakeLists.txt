@@ -166,6 +166,8 @@ set(debugger_sources
   debugger-engine.c
   debugger-agent.h
   debugger-agent.c
+  debugger-protocol.h
+  debugger-protocol.c
   debugger-agent-stubs.c
   debugger-state-machine.h
   debugger-state-machine.c)
