@@ -3,6 +3,7 @@
 
 using System;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
@@ -12,6 +13,7 @@ namespace System.Net.Http
 
         private static Type? s_customHandlerType;
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private static HttpMessageHandler CreateDefaultHandler()
         {
             if (s_customHandlerType != null)
