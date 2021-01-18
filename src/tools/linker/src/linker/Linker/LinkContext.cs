@@ -154,11 +154,6 @@ namespace Mono.Linker
 
 		public string PInvokesListFile;
 
-
-		public System.Collections.IDictionary Actions {
-			get { return _actions; }
-		}
-
 		public AssemblyResolver Resolver {
 			get { return _resolver; }
 		}
@@ -302,6 +297,7 @@ namespace Mono.Linker
 			return assembly.MainModule.GetType (fullName);
 		}
 
+#if !FEATURE_ILLINK
 		public AssemblyDefinition Resolve (string name)
 		{
 			if (File.Exists (name)) {
@@ -314,6 +310,7 @@ namespace Mono.Linker
 
 			return Resolve (new AssemblyNameReference (name, new Version ()));
 		}
+#endif
 
 		public AssemblyDefinition Resolve (IMetadataScope scope)
 		{
@@ -334,7 +331,7 @@ namespace Mono.Linker
 		{
 			if (SeenFirstTime (assembly)) {
 				SafeReadSymbols (assembly);
-				SetDefaultAction (assembly);
+				Annotations.SetAction (assembly, CalculateAssemblyAction (assembly.Name));
 			}
 		}
 
@@ -401,6 +398,12 @@ namespace Mono.Linker
 			return reference;
 		}
 
+		public void RegisterAssemblyAction (string assemblyName, AssemblyAction action)
+		{
+			_actions[assemblyName] = action;
+		}
+
+#if !FEATURE_ILLINK
 		public void SetAction (AssemblyDefinition assembly, AssemblyAction defaultAction)
 		{
 			RegisterAssembly (assembly);
@@ -410,19 +413,16 @@ namespace Mono.Linker
 
 			Annotations.SetAction (assembly, action);
 		}
-
-		protected void SetDefaultAction (AssemblyDefinition assembly)
+#endif
+		public AssemblyAction CalculateAssemblyAction (AssemblyNameDefinition name)
 		{
-			AssemblyNameDefinition name = assembly.Name;
+			if (_actions.TryGetValue (name.Name, out AssemblyAction action))
+				return action;
 
-			if (_actions.TryGetValue (name.Name, out AssemblyAction action)) {
-			} else if (IsCore (name)) {
-				action = _coreAction;
-			} else {
-				action = _userAction;
-			}
+			if (IsCore (name))
+				return CoreAction;
 
-			_annotations.SetAction (assembly, action);
+			return UserAction;
 		}
 
 		public static bool IsCore (AssemblyNameReference name)

@@ -34,7 +34,7 @@ namespace Mono.Linker {
 			directories = new Collection<string> (2) { "." };
 		}
 
-		protected AssemblyDefinition GetAssembly (string file, ReaderParameters parameters)
+		public AssemblyDefinition GetAssembly (string file, ReaderParameters parameters)
 		{
 			if (parameters.AssemblyResolver == null)
 				parameters.AssemblyResolver = this;

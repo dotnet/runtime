@@ -283,17 +283,24 @@ namespace Mono.Linker
 			return rightPreserveAction;
 		}
 
-		public TypePreserve GetPreserve (TypeDefinition type)
-		{
-			if (preserved_types.TryGetValue (type, out TypePreserve preserve))
-				return preserve;
-
-			throw new NotSupportedException ($"No type preserve information for `{type}`");
-		}
-
 		public bool TryGetPreserve (TypeDefinition type, out TypePreserve preserve)
 		{
-			return preserved_types.TryGetValue (type, out preserve);
+			if (preserved_types.TryGetValue (type, out preserve)) {
+				preserve &= ~TypePreserve.AccessibilityMask;
+				return true;
+			}
+
+			return false;
+		}
+
+		public bool TryGetPreserveAccessibility (TypeDefinition type, out TypePreserve preserve)
+		{
+			if (preserved_types.TryGetValue (type, out preserve)) {
+				preserve &= TypePreserve.AccessibilityMask;
+				return true;
+			}
+
+			return false;
 		}
 
 		public bool TryGetMethodStubValue (MethodDefinition method, out object value)

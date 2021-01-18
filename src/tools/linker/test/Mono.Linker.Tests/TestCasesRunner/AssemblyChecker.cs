@@ -27,8 +27,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public void Verify ()
 		{
-			// TODO: Implement fully, probably via custom Kept attribute
-			Assert.IsFalse (linkedAssembly.MainModule.HasExportedTypes);
+			VerifyExportedTypes (originalAssembly, linkedAssembly);
 
 			VerifyCustomAttributes (originalAssembly, linkedAssembly);
 			VerifySecurityAttributes (originalAssembly, linkedAssembly);
@@ -513,6 +512,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptResourceAttribute)));
 
 			Assert.That (linked.MainModule.Resources.Select (r => r.Name), Is.EquivalentTo (expectedResources));
+		}
+
+		void VerifyExportedTypes (AssemblyDefinition original, AssemblyDefinition linked)
+		{
+			var expectedTypes = original.MainModule.AllDefinedTypes ()
+				.SelectMany (t => GetCustomAttributeCtorValues<TypeReference> (t, nameof (KeptExportedTypeAttribute)).Select (l => l.FullName)).ToArray ();
+
+			Assert.That (linked.MainModule.ExportedTypes.Select (l => l.FullName), Is.EquivalentTo (expectedTypes));
 		}
 
 		protected virtual void VerifyPseudoAttributes (MethodDefinition src, MethodDefinition linked)

@@ -35,6 +35,7 @@
     <Compile Remove="Linker.Steps\PreserveCalendarsStep.cs" />
     <Compile Remove="Linker.Steps\RemoveFeaturesStep.cs" />
     <Compile Remove="Linker.Steps\ResolveFromXApiStep.cs" />
+    <Compile Remove="Linker.Steps\ResolveFromAssemblyStep.cs" />
     <Compile Remove="System.Diagnostics.CodeAnalysis\*.cs" />
   </ItemGroup>
 
@@ -45,6 +46,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(MonoBuild)' != ''">
+    <Compile Remove="Linker.Steps\RootAssemblyInputStep.cs" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
   </ItemGroup>

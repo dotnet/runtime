@@ -115,10 +115,12 @@ namespace Mono.Linker
 			return null;
 		}
 
+#if !FEATURE_ILLINK
 		public AssemblyDefinition ResolveFromPath (string path, ReaderParameters parameters)
 		{
 			return CacheAssembly (GetAssembly (path, parameters));
 		}
+#endif
 
 		public override AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters)
 		{

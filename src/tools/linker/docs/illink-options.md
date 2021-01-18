@@ -6,14 +6,30 @@ The `illink` is IL linker version shipping with .NET Core or .NET 5 platforms. I
 the .NET SDK and most of the options are accessible using msbuild properties but any option
 can also be passed using `_ExtraTrimmerArgs` property.
 
-### Linking from the main assembly
+### Linking from the root assembly
 
 The command:
 
 `illink -a Program.exe`
 
-will use the assembly `Program.exe` as a source. That means that the linker will
-start with the main entry point method of `Program.exe` (typically the `Main` method) and process all its dependencies to determine what is necessary for this assembly to run.
+will use the assembly `Program.exe` as root linker input. That means that the linker will
+start with the main entry point method of `Program.exe` (typically the `Main` method) and
+process all its dependencies to determine what is necessary for this assembly to run.
+
+It's possible to use multiple input files and linker will use them all as multiple sources.
+When a library is used instead of executable linker will root and mark all members instead of
+assembly entry point. This rooting behaviour can be customized by passing additional option
+which can use one of following values.
+
+- `all` - Keep all members in root assembly
+- `default` - Use entry point for applications and all members for libraries
+- `entrypoint` - Use assembly entry point as only root in the assembly
+- `visible` - Keep all members and types visible outside of root assembly
+
+You can retain all public members of `Program.exe` application even if they are not
+referenced by any dependency by calling linker like
+
+`illink -a Program.exe visible`
 
 ### Linking from an [XML descriptor](data-formats.md#descriptor-format)
 

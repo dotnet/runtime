@@ -10,6 +10,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 	[SetupLinkerUserAction ("copy")]
 	[SetupCompileBefore ("lib.dll", new[] { "Dependencies/UserAssemblyActionWorks_Lib.cs" })]
 	[KeptAllTypesAndMembersInAssembly ("lib.dll")]
+	[SetupLinkerAction ("link", "test")]
 	public class UserAssemblyActionWorks
 	{
 		public static void Main ()
