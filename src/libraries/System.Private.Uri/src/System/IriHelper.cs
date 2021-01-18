@@ -89,8 +89,8 @@ namespace System
         internal static unsafe string EscapeUnescapeIri(char* pInput, int start, int end, UriComponents component)
         {
             int size = end - start;
-            ValueStringBuilder dest = size <= 256
-                ? new ValueStringBuilder(stackalloc char[256])
+            var dest = size <= Uri.StackallocThreshold
+                ? new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold])
                 : new ValueStringBuilder(size);
 
             Span<byte> maxUtf8EncodedSpan = stackalloc byte[4];

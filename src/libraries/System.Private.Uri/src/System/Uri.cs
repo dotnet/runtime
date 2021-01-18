@@ -1185,7 +1185,7 @@ namespace System
                     else if (hostType == Flags.BasicHostType && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical))
                     {
                         // Unescape everything
-                        ValueStringBuilder dest = new ValueStringBuilder(stackalloc char[256]);
+                        var dest = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
 
                         UriHelper.UnescapeString(host, 0, host.Length, ref dest,
                             c_DummyChar, c_DummyChar, c_DummyChar,
@@ -2635,7 +2635,7 @@ namespace System
 
             string str = _string;
 
-            ValueStringBuilder dest = str.Length <= StackallocThreshold
+            var dest = str.Length <= StackallocThreshold
                 ? new ValueStringBuilder(stackalloc char[StackallocThreshold])
                 : new ValueStringBuilder(str.Length);
 
@@ -2731,7 +2731,7 @@ namespace System
                         mode = UnescapeMode.CopyOnly;
                     }
 
-                    ValueStringBuilder hostBuilder = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                    var hostBuilder = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
 
                     // NormalizedHost
                     if ((parts & UriComponents.NormalizedHost) != 0)
@@ -4443,7 +4443,7 @@ namespace System
                 if (!IsWindowsSystem && InFact(Flags.BackslashInPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes) && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && !IsImplicitFile)
                 {
                     // We can't do an in-place escape, create a copy
-                    ValueStringBuilder copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                    var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
                     copy.Append(dest.AsSpan(start, dest.Length - start));
 
                     dest.Length = start;
@@ -4502,7 +4502,7 @@ namespace System
                     //Note: Flags.UserEscaped check is solely based on trusting the user
 
                     // We can't do an in-place escape, create a copy
-                    ValueStringBuilder copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                    var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
                     copy.Append(dest.AsSpan(start, dest.Length - start));
 
                     dest.Length = start;
@@ -4543,7 +4543,7 @@ namespace System
                 if (mode != UnescapeMode.CopyOnly)
                 {
                     // We can't do an in-place unescape, create a copy
-                    ValueStringBuilder copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                    var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
                     copy.Append(dest.AsSpan(start, dest.Length - start));
 
                     dest.Length = start;
