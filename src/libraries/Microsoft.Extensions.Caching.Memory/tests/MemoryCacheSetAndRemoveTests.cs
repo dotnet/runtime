@@ -214,17 +214,23 @@ namespace Microsoft.Extensions.Caching.Memory
             object GetScope(ICacheEntry entry)
             {
                 return entry.GetType()
-                    .GetField("_scope", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetField("_previous", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(entry);
             }
 
             var cache = CreateCache();
 
-            ICacheEntry entry = cache.CreateEntry("myKey");
-            Assert.NotNull(GetScope(entry));
+            ICacheEntry first = cache.CreateEntry("myKey1");
+            Assert.Null(GetScope(first)); // it's the first entry, so it has no previous cache entry set
 
-            entry.Dispose();
-            Assert.Null(GetScope(entry));
+            ICacheEntry second = cache.CreateEntry("myKey2");
+            Assert.NotNull(GetScope(second)); // it's not first, so it has previous set
+            Assert.Same(first, GetScope(second)); // second.previous is set to first
+
+            second.Dispose();
+            Assert.Null(GetScope(second));
+            first.Dispose();
+            Assert.Null(GetScope(first));
         }
 
         [Fact]

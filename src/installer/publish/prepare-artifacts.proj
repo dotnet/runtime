@@ -1,5 +1,15 @@
 <Project DefaultTargets="Build">
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  
+  <!-- When doing post build sign, pull in the arcade sign.props file, which will
+       create some initial sign groups and then pulls in the repo's custom Signing.props overrides.
+       Before importing the signing props. Set PrepareArtifactst=true. Depending on context (SDK project vs. not),
+       the initial imports of livebuilds.targets and Configuration.props are already imported and thus cannot
+       be imported again. Without those imports, the globbing of files to sign will not work properly. -->
+  <PropertyGroup>
+    <PrepareArtifacts>true</PrepareArtifacts>
+  </PropertyGroup>
+  <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
@@ -46,81 +56,19 @@
     <GenerateChecksums Items="@(ArtifactsForGeneratingChecksums)" />
   </Target>
 
-  <Target Name="SignPackages"
-          Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'">
-    <Message Importance="High" Text="Signing final packages" />
-    <MSBuild
-      Projects="$(SigningToolsDir)\SignFinalPackages.proj"
-      Targets="Build"
-      Properties="DownloadDirectory=$(DownloadDirectory)" />
-  </Target>
-
-  <Target Name="PreparePublishToAzureBlobFeed">
+  <Target Name="PreparePublishToAzureBlobFeed"
+          DependsOnTargets="GetProductVersions;FindDownloadedArtifacts">
     <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
 
     <PropertyGroup>
-      <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
       <AssetManifestFilename>Manifest.xml</AssetManifestFilename>
       <AssetManifestFile>$(ArtifactsLogDir)AssetManifest/$(AssetManifestFilename)</AssetManifestFile>
 
       <!-- Create temp dir to store generated asset manifest, per Arcade guidance. -->
       <TempWorkingDir>$(ArtifactsObjDir)TempWorkingDir\$([System.Guid]::NewGuid())\</TempWorkingDir>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!-- Split nupkgs into shipping/nonshipping for BAR categorization. -->
-      <ShippingNupkgToPublishFile
-        Include="@(NupkgToPublishFile)"
-        Condition="$([System.String]::new('%(Identity)').Contains('\Shipping\'))" />
-
-      <NonShippingNupkgToPublishFile
-        Include="@(NupkgToPublishFile)"
-        Exclude="@(ShippingNupkgToPublishFile)" />
-
-      <ItemsToPush Remove="@(ItemsToPush)" />
-
-      <ItemsToPush Include="@(ShippingNupkgToPublishFile)" />
-      <ItemsToPush Include="@(NonShippingNupkgToPublishFile)" ManifestArtifactData="NonShipping=true" />
-      <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
-    </ItemGroup>
-
-    <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
-    <PushToAzureDevOpsArtifacts
-      ItemsToPush="@(ItemsToPush)"
-      ManifestBuildData="@(ManifestBuildData)"
-      ManifestRepoUri="$(BUILD_REPOSITORY_NAME)"
-      ManifestBranch="$(BUILD_SOURCEBRANCH)"
-      ManifestBuildId="$(BUILD_BUILDNUMBER)"
-      ManifestCommit="$(BUILD_SOURCEVERSION)"
-      IsStableBuild="$(IsStableBuild)"
-      AssetManifestPath="$(AssetManifestFile)"
-      AssetsTemporaryDirectory="$(TempWorkingDir)"
-      PublishingVersion="3" />
-
-    <!-- Copy the generated manifest to the build's artifacts -->
-    <Copy SourceFiles="$(AssetManifestFile)" DestinationFolder="$(TempWorkingDir)" />
-
-    <Message Importance="High" Text="Uploading $(AssetManifestFilename) to pipeline" />
-    <Message
-      Text="##vso[artifact.upload containerfolder=AssetManifests;artifactname=AssetManifests]$(TempWorkingDir)$(AssetManifestFilename)"
-      Importance="High" />
-  </Target>
-
-  <Target Name="PreparePublishFilesToAzureBlobFeed"
-          DependsOnTargets="GetProductVersions">
-    <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
-
-    <PropertyGroup>
-      <ExpectedFeedUrl>$(PackagesUrl)</ExpectedFeedUrl>
-      <AssetManifestFilename>Manifest_Installers.xml</AssetManifestFilename>
-      <AssetManifestFile>$(ArtifactsLogDir)AssetManifest/$(AssetManifestFilename)</AssetManifestFile>
-
-      <!-- Create temp dir to store generated asset manifest, per Arcade guidance. -->
-      <TempWorkingDir>$(ArtifactsObjDir)TempWorkingDir\$([System.Guid]::NewGuid())\</TempWorkingDir>
-
+      
       <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'=='true'">$(ProductionVersion)</ProductVersionTxtContents>
       <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'!='true'">$(ProductVersion)</ProductVersionTxtContents>
-
     </PropertyGroup>
 
     <!-- Generate productVersion.txt containing the value of $(PackageVersion) -->
@@ -129,29 +77,43 @@
       Lines="$(ProductVersionTxtContents)"
       Overwrite="true"
       Encoding="ASCII" />
-
+      
     <ItemGroup>
       <ItemsToPush Remove="@(ItemsToPush)" />
 
+      <ItemsToPush Include="@(ShippingNupkgToPublishFile)" />
+      <ItemsToPush Include="@(NonShippingNupkgToPublishFile)" ManifestArtifactData="NonShipping=true" />
+      <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
+      
       <ItemsToPush
         Include="@(UploadToBlobStorageFile)"
         Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)">
         <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+        <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
       <ItemsToPush Include="@(GeneratedChecksumFile)">
         <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
         <Category>Checksum</Category>
+        <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
       <ItemsToPush Include="$(ArtifactsShippingPackagesDir)productVersion.txt">
         <RelativeBlobPath>$(InstallersRelativePath)productVersion.txt</RelativeBlobPath>
+        <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
     </ItemGroup>
 
     <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
     <PushToAzureDevOpsArtifacts
+      AzureDevOpsCollectionUri="$(SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)"
+      AzureDevOpsProject="$(SYSTEM_TEAMPROJECT)"
+      AzureDevOpsBuildId="$(BUILD_BUILDID)"
+      ItemsToSign="@(ItemsToSignPostBuild)"
+      StrongNameSignInfo="@(StrongNameSignInfo)"
+      FileSignInfo="@(FileSignInfo)"
+      FileExtensionSignInfo="@(FileExtensionSignInfo)"
       ItemsToPush="@(ItemsToPush)"
       ManifestBuildData="@(ManifestBuildData)"
       ManifestRepoUri="$(BUILD_REPOSITORY_NAME)"
@@ -159,7 +121,6 @@
       ManifestBuildId="$(BUILD_BUILDNUMBER)"
       ManifestCommit="$(BUILD_SOURCEVERSION)"
       IsStableBuild="$(IsStableBuild)"
-      PublishFlatContainer="true"
       AssetManifestPath="$(AssetManifestFile)"
       AssetsTemporaryDirectory="$(TempWorkingDir)"
       PublishingVersion ="3" />
@@ -182,10 +143,8 @@
   <Target Name="Build"
           DependsOnTargets="
             FindDownloadedArtifacts;
-            SignPackages;
             CreateChecksums;
-            PreparePublishToAzureBlobFeed;
-            PreparePublishFilesToAzureBlobFeed">
+            PreparePublishToAzureBlobFeed">
     <Message Importance="High" Text="Complete!" />
   </Target>
 

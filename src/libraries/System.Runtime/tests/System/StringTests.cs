@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -545,6 +546,10 @@ namespace System.Tests
             {
                 Assert.Equal(expected, string.Join(separator, values));
                 Assert.Equal(expected, string.Join(separator, (IEnumerable<string>)values));
+                // We are using concat to force the value to be an IEnumerable and avoid the optimizations for List<T> and T[]
+                Assert.Equal(expected, string.Join(separator, values.Concat(new string[0])));
+                // Validate the optimization for List<T>
+                Assert.Equal(expected, string.Join(separator, new List<string>(values)));
                 Assert.Equal(expected, string.Join(separator, (object[])values));
                 Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
             }
@@ -1773,6 +1778,105 @@ namespace System.Tests
                 Assert.True(rom.Span.SequenceEqual(rom.Trim().Span));
                 Assert.True(rom.Span.SequenceEqual(rom.TrimStart().Span));
                 Assert.True(rom.Span.SequenceEqual(rom.TrimEnd().Span));
+            }
+        }
+
+        [OuterLoop]
+        [Theory]
+        [InlineData(CompareOptions.None)]
+        [InlineData(CompareOptions.IgnoreCase)]
+        [InlineData(CompareOptions.IgnoreNonSpace)]
+        [InlineData(CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace)]
+        public void TestStringSearchCacheSynchronization(CompareOptions options)
+        {
+            int parallelism = Environment.ProcessorCount / 2;
+            if (Environment.ProcessorCount == 0) // 1 processor case
+            {
+                return;
+            }
+
+            string source = "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "сентября Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh ";
+
+            string source1 = "сентября Abcdefgh сентября ";
+
+            string pattern = "сентября ";
+            string pattern1 = "сентябряnone";
+
+            CompareInfo ci = CultureInfo.CurrentCulture.CompareInfo;
+
+            Task [] tasks = new Task[parallelism];
+            for (int i = 0; i < parallelism; i++)
+            {
+                tasks[i] = new Task(() =>
+                {
+                    for (int i = 0; i < 1_00_000; i++)
+                    {
+                        Assert.True(ci.IndexOf(source, pattern, options) > 0, "ci.IndexOf 1");
+                        Assert.True(ci.LastIndexOf(source, pattern, options) > 0, "LastIndexOf 1");
+
+                        Assert.False(ci.IndexOf(source, pattern1, options) > 0, "IndexOf 2");
+                        Assert.False(ci.LastIndexOf(source, pattern1, options) > 0, "LastIndexOf 2");
+
+                        Assert.True(ci.IsPrefix(source1, pattern, options), "IsPrefix 1");
+                        Assert.True(ci.IsSuffix(source1, pattern, options), "IsSuffix 1");
+
+                        Assert.False(ci.IsPrefix(source, pattern, options), "IsPrefix 2");
+                        Assert.False(ci.IsSuffix(source, pattern, options), "IsPrefix 2");
+                    }
+                });
+            }
+
+            for (int i = 0; i < parallelism; i++)
+            {
+                tasks[i].Start();
+            }
+
+            Task.WaitAll(tasks);
+        }
+
+        [Fact]
+        public static void EqualityTests_AsciiOptimizations()
+        {
+            for (int i = 0; i < 128; i++)
+            {
+                for (int j = 0; j < 128; j++)
+                {
+                    for (int len = 0; len < 8; len++)
+                    {
+                        bool expectedEqualOrdinal = i == j;
+                        bool expectedEqualOrdinalIgnoreCase = (i == j) || ((i | 0x20) >= 'a' && (i | 0x20) <= 'z' && ((i | 0x20) == (j | 0x20)));
+
+                        // optimization might vary based on string length, so we use 'len' to vary the string length
+                        // in order to hit as many code paths as possible
+                        string prefix = new string('a', len);
+                        string suffix = new string('b', len);
+                        string s1 = prefix + (char)i + suffix;
+                        string s2 = prefix + (char)j + suffix;
+
+                        bool actualEqualOrdinal = string.Equals(s1, s2, StringComparison.Ordinal);
+                        bool actualEqualOrdinalIgnoreCase = string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase);
+
+                        int actualCompareToOrdinal = string.Compare(s1, s2, StringComparison.Ordinal);
+                        int actualCompareToOrdinalIgnoreCase = string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase);
+
+                        try
+                        {
+                            Assert.Equal(expectedEqualOrdinal, actualEqualOrdinal);
+                            Assert.Equal(expectedEqualOrdinal, actualCompareToOrdinal == 0);
+                            Assert.Equal(expectedEqualOrdinalIgnoreCase, actualEqualOrdinalIgnoreCase);
+                            Assert.Equal(expectedEqualOrdinalIgnoreCase, actualCompareToOrdinalIgnoreCase == 0);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Chars U+{i:X4} ('{(char)i}') and U+{j:X4} ('{(char)j}') did not compare as expected. Iteration: len = {len}.", ex);
+                        }
+                    }
+                }
             }
         }
     }

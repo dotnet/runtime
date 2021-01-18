@@ -67,7 +67,7 @@ Unix_name_map = {
 }
 
 Is_windows = (os.name == 'nt')
-Clr_os = 'Windows_NT' if Is_windows else Unix_name_map[os.uname()[0]]
+Clr_os = 'windows' if Is_windows else Unix_name_map[os.uname()[0]]
 
 ##########################################################################
 # Delete protocol
@@ -452,7 +452,7 @@ def do_pmi_diffs():
         dotnetcliUrl = "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-linux-arm64.tar.gz"
     elif Clr_os == 'OSX':
         dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-osx-x64.tar.gz"
-    elif Clr_os == 'Windows_NT':
+    elif Clr_os == 'windows':
         dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-win-x64.zip"
     else:
         log('ERROR: unknown or unsupported OS (%s) architecture (%s) combination' % (Clr_os, arch))

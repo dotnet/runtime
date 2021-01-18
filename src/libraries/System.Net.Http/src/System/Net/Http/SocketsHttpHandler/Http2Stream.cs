@@ -35,7 +35,7 @@ namespace System.Net.Http
             /// <summary>Stores any trailers received after returning the response content to the caller.</summary>
             private HttpResponseHeaders? _trailers;
 
-            private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
+            private MultiArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
             private CreditWaiter? _creditWaiter;
             private int _availableCredit;
@@ -99,7 +99,7 @@ namespace System.Net.Http
 
                 _responseProtocolState = ResponseProtocolState.ExpectingStatus;
 
-                _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
+                _responseBuffer = new MultiArrayBuffer(InitialStreamBufferSize);
 
                 _pendingWindowUpdate = 0;
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
@@ -409,10 +409,7 @@ namespace System.Net.Http
                 }
 
                 // Discard any remaining buffered response data
-                if (_responseBuffer.ActiveLength != 0)
-                {
-                    _responseBuffer.Discard(_responseBuffer.ActiveLength);
-                }
+                _responseBuffer.DiscardAll();
 
                 _responseProtocolState = ResponseProtocolState.Aborted;
 
@@ -804,14 +801,14 @@ namespace System.Net.Http
                             break;
                     }
 
-                    if (_responseBuffer.ActiveLength + buffer.Length > StreamWindowSize)
+                    if (_responseBuffer.ActiveMemory.Length + buffer.Length > StreamWindowSize)
                     {
                         // Window size exceeded.
                         ThrowProtocolError(Http2ProtocolErrorCode.FlowControlError);
                     }
 
                     _responseBuffer.EnsureAvailableSpace(buffer.Length);
-                    buffer.CopyTo(_responseBuffer.AvailableSpan);
+                    _responseBuffer.AvailableMemory.CopyFrom(buffer);
                     _responseBuffer.Commit(buffer.Length);
 
                     if (endStream)
@@ -957,7 +954,7 @@ namespace System.Net.Http
                     else
                     {
                         Debug.Assert(_responseProtocolState == ResponseProtocolState.Complete);
-                        return (false, _responseBuffer.ActiveLength == 0);
+                        return (false, _responseBuffer.IsEmpty);
                     }
                 }
             }
@@ -1045,10 +1042,11 @@ namespace System.Net.Http
                 {
                     CheckResponseBodyState();
 
-                    if (_responseBuffer.ActiveLength > 0)
+                    if (!_responseBuffer.IsEmpty)
                     {
-                        int bytesRead = Math.Min(buffer.Length, _responseBuffer.ActiveLength);
-                        _responseBuffer.ActiveSpan.Slice(0, bytesRead).CopyTo(buffer);
+                        MultiMemory activeBuffer = _responseBuffer.ActiveMemory;
+                        int bytesRead = Math.Min(buffer.Length, activeBuffer.Length);
+                        activeBuffer.Slice(0, bytesRead).CopyTo(buffer);
                         _responseBuffer.Discard(bytesRead);
 
                         return (false, bytesRead);
@@ -1268,7 +1266,7 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
-                    if (_responseBuffer.ActiveLength == 0 && _responseProtocolState == ResponseProtocolState.Complete)
+                    if (_responseBuffer.IsEmpty && _responseProtocolState == ResponseProtocolState.Complete)
                     {
                         fullyConsumed = true;
                     }
@@ -1280,7 +1278,10 @@ namespace System.Net.Http
                     Cancel();
                 }
 
-                _responseBuffer.Dispose();
+                lock (SyncObject)
+                {
+                    _responseBuffer.Dispose();
+                }
             }
 
             private CancellationTokenRegistration RegisterRequestBodyCancellation(CancellationToken cancellationToken) =>
@@ -1326,7 +1327,7 @@ namespace System.Net.Http
                 // However, this could still be non-cancelable if HttpMessageInvoker was used, at which point this will only be
                 // cancelable if the caller's token was cancelable.
 
-                _waitSourceCancellation = cancellationToken.UnsafeRegister(static s =>
+                _waitSourceCancellation = cancellationToken.UnsafeRegister(static (s, cancellationToken) =>
                 {
                     var thisRef = (Http2Stream)s!;
 
@@ -1342,17 +1343,9 @@ namespace System.Net.Http
                     {
                         // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
                         thisRef._waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(
-                            CancellationHelper.CreateOperationCanceledException(null, thisRef._waitSourceCancellation.Token)));
+                            CancellationHelper.CreateOperationCanceledException(null, cancellationToken)));
                     }
                 }, this);
-
-                // There's a race condition in UnsafeRegister above.  If cancellation is requested prior to UnsafeRegister,
-                // the delegate may be invoked synchronously as part of the UnsafeRegister call.  In that case, it will execute
-                // before _waitSourceCancellation has been set, which means UnsafeRegister will have set a cancellation
-                // exception into the wait source with a default token rather than the ideal one.  To handle that,
-                // we check for cancellation again, and throw here with the right token.  Worst case, if cancellation is
-                // requested prior to here, we end up allocating an extra OCE object.
-                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 return new ValueTask(this, _waitSource.Version);
             }
@@ -1423,7 +1416,7 @@ namespace System.Net.Http
                     base.Dispose(disposing);
                 }
 
-                public override bool CanRead => true;
+                public override bool CanRead => _http2Stream != null;
                 public override bool CanWrite => false;
 
                 public override int Read(Span<byte> destination)
@@ -1452,14 +1445,14 @@ namespace System.Net.Http
 
                 public override void CopyTo(Stream destination, int bufferSize)
                 {
-                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    ValidateCopyToArguments(destination, bufferSize);
                     Http2Stream http2Stream = _http2Stream ?? throw ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)));
                     http2Stream.CopyTo(_responseMessage, destination, bufferSize);
                 }
 
                 public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
                 {
-                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    ValidateCopyToArguments(destination, bufferSize);
                     Http2Stream? http2Stream = _http2Stream;
                     return
                         http2Stream is null ? Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))) :
@@ -1496,7 +1489,7 @@ namespace System.Net.Http
                 }
 
                 public override bool CanRead => false;
-                public override bool CanWrite => true;
+                public override bool CanWrite => _http2Stream != null;
 
                 public override int Read(Span<byte> buffer) => throw new NotSupportedException();
 

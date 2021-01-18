@@ -15,16 +15,17 @@ set(SOURCES
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     eltprofiler/slowpatheltprofiler.cpp
     releaseondetach/releaseondetach.cpp
+    transitions/transitions.cpp
     profiler.def
     profiler.cpp
     classfactory.cpp
     dllmain.cpp
     guids.cpp)
 
-include_directories(../../../coreclr/src/pal/prebuilt/inc)
+include_directories(../../../coreclr/pal/prebuilt/inc)
 
 if(NOT WIN32)
-    include_directories(../../../coreclr/src/pal/inc/rt ../../../coreclr/src/pal/inc ../../../coreclr/src/inc)
+    include_directories(../../../coreclr/pal/inc/rt ../../../coreclr/pal/inc ../../../coreclr/inc)
     add_compile_options(-DPAL_STDCPP_COMPAT)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-arithmetic)

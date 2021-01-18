@@ -844,7 +844,6 @@ namespace System.Net.Http
 
         private abstract class WriteQueueEntry : TaskCompletionSource
         {
-            private readonly CancellationToken _cancellationToken;
             private readonly CancellationTokenRegistration _cancellationRegistration;
 
             public WriteQueueEntry(int writeBytes, CancellationToken cancellationToken)
@@ -852,16 +851,14 @@ namespace System.Net.Http
             {
                 WriteBytes = writeBytes;
 
-                _cancellationToken = cancellationToken;
-                _cancellationRegistration = cancellationToken.UnsafeRegister(static s => ((WriteQueueEntry)s!).OnCancellation(), this);
+                _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, cancellationToken) =>
+                {
+                    bool canceled = ((WriteQueueEntry)s!).TrySetCanceled(cancellationToken);
+                    Debug.Assert(canceled, "Callback should have been unregistered if the operation was completing successfully.");
+                }, this);
             }
 
             public int WriteBytes { get; }
-
-            private void OnCancellation()
-            {
-                SetCanceled(_cancellationToken);
-            }
 
             public bool TryDisableCancellation()
             {
@@ -1838,6 +1835,7 @@ namespace System.Net.Http
 
         public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            Debug.Assert(async);
             if (NetEventSource.Log.IsEnabled()) Trace($"{request}");
 
             try

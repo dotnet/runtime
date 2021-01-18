@@ -199,12 +199,12 @@ namespace System.IO
                         Debug.Assert(s_scheduledStreamsCount == 0);
                         s_scheduledStreamsCount = 1;
                         var runLoopStarted = new ManualResetEventSlim();
-                        new Thread(args =>
+                        new Thread(static args =>
                         {
                             object[] inputArgs = (object[])args!;
                             WatchForFileSystemEventsThreadStart((ManualResetEventSlim)inputArgs[0], (SafeEventStreamHandle)inputArgs[1]);
                         })
-                        { IsBackground = true }.Start(new object[] { runLoopStarted, eventStream });
+                        { IsBackground = true }.UnsafeStart(new object[] { runLoopStarted, eventStream });
 
                         runLoopStarted.Wait();
                     }
@@ -473,7 +473,7 @@ namespace System.IO
 
                 this._context = ExecutionContext.Capture();
 
-                ParsedEvent ParseEvent(byte* nativeEventPath)
+                static ParsedEvent ParseEvent(byte* nativeEventPath)
                 {
                     int byteCount = 0;
                     Debug.Assert(nativeEventPath != null);
@@ -577,7 +577,7 @@ namespace System.IO
                 return _includeChildren || _fullDirectory.AsSpan().StartsWith(System.IO.Path.GetDirectoryName(eventPath), StringComparison.OrdinalIgnoreCase);
             }
 
-            private unsafe int? FindRenameChangePairedChange(
+            private int? FindRenameChangePairedChange(
                 int currentIndex,
                 Span<FSEventStreamEventFlags> flags, Span<FSEventStreamEventId> ids)
             {

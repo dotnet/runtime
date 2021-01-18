@@ -41,7 +41,7 @@ namespace Microsoft.NET.HostModel
 
         public static void RetryOnWin32Error(Action func)
         {
-            bool IsKnownIrrecoverableError(int hresult)
+            static bool IsKnownIrrecoverableError(int hresult)
             {
                 // Error codes are defined in winerror.h
                 // The error code is stored in the lowest 16 bits of the HResult

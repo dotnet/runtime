@@ -50,7 +50,7 @@ namespace System.Threading.Channels
 
             try
             {
-                if (TryRead(out T fastItem))
+                if (TryRead(out T? fastItem))
                 {
                     return new ValueTask<T>(fastItem);
                 }
@@ -71,7 +71,7 @@ namespace System.Threading.Channels
                         throw new ChannelClosedException();
                     }
 
-                    if (TryRead(out T item))
+                    if (TryRead(out T? item))
                     {
                         return item;
                     }

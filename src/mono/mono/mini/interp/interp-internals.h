@@ -26,6 +26,7 @@
 #define PROFILING_FLAG 0x2
 
 #define MINT_VT_ALIGNMENT 8
+#define MINT_STACK_SLOT_SIZE (sizeof (stackval))
 
 #define INTERP_STACK_SIZE (1024*1024)
 
@@ -116,6 +117,7 @@ struct InterpMethod {
 	MonoExceptionClause *clauses; // num_clauses
 	void **data_items;
 	guint32 *local_offsets;
+	guint32 *arg_offsets;
 	guint32 *clause_data_offsets;
 	gpointer jit_call_info;
 	gpointer jit_entry;
@@ -125,9 +127,10 @@ struct InterpMethod {
 	MonoJitInfo *jinfo;
 	MonoDomain *domain;
 
+	// This doesn't include the size of stack locals
 	guint32 total_locals_size;
+	// The size of locals that map to the execution stack
 	guint32 stack_size;
-	guint32 vt_stack_size;
 	guint32 alloca_size;
 	int num_clauses; // clauses
 	int transformed; // boolean
@@ -184,8 +187,6 @@ typedef struct FrameClauseArgs FrameClauseArgs;
 
 /* State of the interpreter main loop */
 typedef struct {
-	stackval *sp;
-	unsigned char *vt_sp;
 	const unsigned short  *ip;
 } InterpState;
 
@@ -224,6 +225,11 @@ typedef struct {
 	guchar *stack_pointer;
 	/* Used for allocation of localloc regions */
 	FrameDataAllocator data_stack;
+	/* Used when a thread self-suspends at a safepoint in the interpreter, points to the
+	 * currently executing frame. (If a thread self-suspends somewhere else in the runtime, this
+	 * is NULL - the LMF will point to the InterpFrame before the thread exited the interpreter)
+	 */
+	InterpFrame *safepoint_frame;
 } ThreadContext;
 
 typedef struct {
@@ -264,6 +270,9 @@ mono_interp_print_code (InterpMethod *imethod);
 
 gboolean
 mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
+
+void
+mono_interp_error_cleanup (MonoError *error);
 
 static inline int
 mint_type(MonoType *type_)

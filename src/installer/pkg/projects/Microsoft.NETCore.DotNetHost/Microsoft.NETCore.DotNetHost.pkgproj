@@ -2,54 +2,12 @@
 
   <PropertyGroup>
     <VersionProp>HostVersion</VersionProp>
-
     <InstallerName>dotnet-host</InstallerName>
-    <GenerateSharedFrameworkPart>true</GenerateSharedFrameworkPart>
-    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
+    <PackageDescription>Provides an executable implementation of the Microsoft DotNet Framework and SDK launcher module</PackageDescription>
   </PropertyGroup>
 
-  <Target Name="SetupHostSpecificWixBuild"
-          DependsOnTargets="GetInstallerBrandingNames"
-          BeforeTargets="GetWixBuildConfiguration">
-    <PropertyGroup>
-      <WixProductMoniker>$(SharedHostBrandName)</WixProductMoniker>
-      <RegKeyProductName>sharedhost</RegKeyProductName>
-      <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
-      <VSInsertionShortComponentName>SharedHost</VSInsertionShortComponentName>
-
-      <PublishRootDir>$(IntermediateOutputPath)publishRoot/</PublishRootDir>
-    </PropertyGroup>
-
-    <!-- Always clean this up to avoid side-by-side versions in unclean dev builds. -->
-    <RemoveDir Directories="$(PublishRootDir)" />
-
-    <!-- copy shared host layout -->
-    <Copy SourceFiles="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)"
-          DestinationFolder="$(PublishRootDir)" />
-
-    <Copy SourceFiles="$(InstallerProjectRoot)pkg\THIRD-PARTY-NOTICES.TXT"
-          DestinationFiles="$(PublishRootDir)ThirdPartyNotices.txt" />
-
-    <Copy SourceFiles="$(RepoRoot)LICENSE.TXT"
-          DestinationFiles="$(PublishRootDir)LICENSE.txt"
-          Condition="'$(TargetsUnix)' == 'true'"/>
-
-    <Copy SourceFiles="$(InstallerProjectRoot)pkg\LICENSE-MSFT.TXT"
-          DestinationFiles="$(PublishRootDir)LICENSE.txt"
-          Condition="'$(TargetsUnix)' != 'true'"/>
-
-    <ItemGroup>
-      <WixSrcFile Include="host.wxs" />
-
-      <WixExtraComponentGroupRefId Include="InstallSharedHostandDetectionKeys" />
-
-      <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
-      <CandleVariables Include="HostSrc" Value="$(PublishRootDir)" />
-    </ItemGroup>
-  </Target>
-
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <NativeBinary Include="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/dotnet$(ExeSuffix)" />
     <File Include="@(NativeBinary)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsNative>true</IsNative>

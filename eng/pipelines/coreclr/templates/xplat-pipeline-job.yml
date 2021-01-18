@@ -7,6 +7,7 @@ parameters:
   helixType: '(unspecified)'
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   liveLibrariesBuildConfig: ''
   stagedBuild: false
@@ -17,6 +18,7 @@ parameters:
   condition: true
   continueOnError: false
   dependsOn: ''
+  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -34,6 +36,7 @@ jobs:
     name: ${{ parameters.name }}
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
@@ -43,6 +46,7 @@ jobs:
     condition: and(succeeded(), ${{ parameters.condition }})
     continueOnError: ${{ parameters.continueOnError }}
     dependsOn: ${{ parameters.dependsOn }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     displayName: ${{ parameters.displayName }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
@@ -125,10 +129,10 @@ jobs:
 
     # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
     - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter')) }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: priorityArg
           value: 'priority1'
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: priorityArg
           value: '-priority=1'
 

@@ -207,8 +207,8 @@ namespace System.Security.Cryptography.Pkcs
     {
         public System.Security.Cryptography.Oid SignatureAlgorithm { get { throw null; } }
         public byte[] GetSignature() { throw null; }
-        public void AddUnsignedAttribute(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
-        public void RemoveUnsignedAttribute(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public void AddUnsignedAttribute(System.Security.Cryptography.AsnEncodedData unsignedAttribute) { }
+        public void RemoveUnsignedAttribute(System.Security.Cryptography.AsnEncodedData unsignedAttribute) { }
     }
     public sealed partial class SubjectIdentifier
     {

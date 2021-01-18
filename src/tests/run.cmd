@@ -8,7 +8,7 @@ set "__MsgPrefix=RUNTEST: "
 :: Set the default arguments
 set __BuildArch=x64
 set __BuildType=Debug
-set __TargetOS=Windows_NT
+set __TargetOS=windows
 
 set "__ProjectDir=%~dp0"
 set "__RepoRootDir=%~dp0\..\.."

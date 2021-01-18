@@ -261,7 +261,7 @@ namespace System
                 return AssembleFloatingPointBits(in info, value.ToUInt64(), baseExponent, !hasNonZeroFractionalPart);
             }
 
-            uint topBlockIndex = Math.DivRem(integerBitsOfPrecision, 32, out uint topBlockBits);
+            (uint topBlockIndex, uint topBlockBits) = Math.DivRem(integerBitsOfPrecision, 32);
             uint middleBlockIndex = topBlockIndex - 1;
             uint bottomBlockIndex = middleBlockIndex - 1;
 

@@ -6,6 +6,8 @@
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
     <RuntimePackDir>{RuntimePackDir}</RuntimePackDir>
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
+    <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
+    <MicrosoftNETCoreAppVersion>{MicrosoftNETCoreAppVersion}</MicrosoftNETCoreAppVersion>
 
     <!-- These can be removed once we get an SDK with https://github.com/mono/linker/pull/1385. -->
     <LinkerNoWarn>IL2026</LinkerNoWarn>

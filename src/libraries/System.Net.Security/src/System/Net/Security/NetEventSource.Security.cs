@@ -87,7 +87,7 @@ namespace System.Net
         }
 
         [Event(SslStreamCtorId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private unsafe void SslStreamCtor(string thisOrContextObject, string? localId, string? remoteId) =>
+        private void SslStreamCtor(string thisOrContextObject, string? localId, string? remoteId) =>
               WriteEvent(SslStreamCtorId, thisOrContextObject, localId, remoteId);
 
         [NonEvent]
@@ -100,7 +100,7 @@ namespace System.Net
         }
 
         [Event(SecureChannelCtorId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private unsafe void SecureChannelCtor(string sslStream, string hostname, int secureChannelHash, int clientCertificatesCount, EncryptionPolicy encryptionPolicy) =>
+        private void SecureChannelCtor(string sslStream, string hostname, int secureChannelHash, int clientCertificatesCount, EncryptionPolicy encryptionPolicy) =>
             WriteEvent(SecureChannelCtorId, sslStream, hostname, secureChannelHash, clientCertificatesCount, (int)encryptionPolicy);
 
         [NonEvent]
@@ -284,7 +284,7 @@ namespace System.Net
             WriteEvent(UsingCachedCredentialId, secureChannelHash);
 
         [Event(SspiSelectedCipherSuitId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        public unsafe void SspiSelectedCipherSuite(
+        public void SspiSelectedCipherSuite(
             string process,
             SslProtocols sslProtocol,
             CipherAlgorithmType cipherAlgorithm,

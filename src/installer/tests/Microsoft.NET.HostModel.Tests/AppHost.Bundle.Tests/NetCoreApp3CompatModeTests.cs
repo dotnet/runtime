@@ -13,11 +13,11 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class NetCoreApp3CompatModeTests : BundleTestBase, IClassFixture<NetCoreApp3CompatModeTests.SharedTestState>
+    public class NetCoreApp3CompatModeTests : BundleTestBase, IClassFixture<SingleFileSharedState>
     {
-        private SharedTestState sharedTestState;
+        private SingleFileSharedState sharedTestState;
 
-        public NetCoreApp3CompatModeTests(SharedTestState fixture)
+        public NetCoreApp3CompatModeTests(SingleFileSharedState fixture)
         {
             sharedTestState = fixture;
         }
@@ -25,7 +25,7 @@ namespace AppHost.Bundle.Tests
         [Fact]
         public void Bundle_Is_Extracted()
         {
-            var fixture = sharedTestState.SingleFileTestFixture.Copy();
+            var fixture = sharedTestState.TestFixture.Copy();
             UseSingleFileSelfContainedHost(fixture);
             Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleAllContent);
             var extractionBaseDir = BundleHelper.GetExtractionRootDir(fixture);
@@ -51,21 +51,6 @@ namespace AppHost.Bundle.Tests
                 .Except(bundleFiles)
                 .ToArray();
             extractionDir.Should().HaveFiles(publishedFiles);
-        }
-
-        public class SharedTestState : SharedTestStateBase, IDisposable
-        {
-            public TestProjectFixture SingleFileTestFixture { get; set; }
-
-            public SharedTestState()
-            {
-                SingleFileTestFixture = PreparePublishedSelfContainedTestProject("SingleFileApiTests");
-            }
-
-            public void Dispose()
-            {
-                SingleFileTestFixture.Dispose();
-            }
         }
     }
 }

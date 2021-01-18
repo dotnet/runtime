@@ -231,7 +231,7 @@ namespace System.Net.Security
 
                     return task.ContinueWith((t, s) =>
                         {
-                            var tuple = (Tuple<SslStream, ValueStopwatch>)s!;
+                            var tuple = ((SslStream, ValueStopwatch))s!;
                             SslStream thisRef = tuple.Item1;
                             ValueStopwatch stopwatch = tuple.Item2;
 
@@ -247,7 +247,7 @@ namespace System.Net.Security
                                 t.GetAwaiter().GetResult();
                             }
                         },
-                        state: Tuple.Create(this, stopwatch),
+                        state: (this, stopwatch),
                         cancellationToken: default,
                         TaskContinuationOptions.ExecuteSynchronously,
                         TaskScheduler.Current);
@@ -362,7 +362,7 @@ namespace System.Net.Security
                         payload = message.Payload;
                         size = message.Size;
                     }
-                    else if (message.Failed && _lastFrame.Header.Type == TlsContentType.Handshake)
+                    else if (message.Failed && (_lastFrame.Header.Type == TlsContentType.Handshake || _lastFrame.Header.Type == TlsContentType.ChangeCipherSpec))
                     {
                         // If we failed without OS sending out alert, inject one here to be consistent across platforms.
                         payload = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
@@ -562,7 +562,8 @@ namespace System.Net.Security
                     }
 
                     frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
-                    if (nextHeader.Type == TlsContentType.AppData || frameSize > _handshakeBuffer.ActiveLength)
+                    // Can process more handshake frames in single step, but we should avoid processing too much so as to preserve API boundary between handshake and I/O.
+                    if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) || frameSize > _handshakeBuffer.ActiveLength)
                     {
                         // We don't have full frame left or we already have app data which needs to be processed by decrypt.
                         break;
@@ -730,32 +731,6 @@ namespace System.Net.Security
             }
         }
 
-        //
-        // Validates user parameters for all Read/Write methods.
-        //
-        private void ValidateParameters(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            if (count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.net_offset_plus_count);
-            }
-        }
-
         ~SslStream()
         {
             Dispose(disposing: false);
@@ -884,10 +859,9 @@ namespace System.Net.Security
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
-                            // We determine above that we will not process it.
+                            // We determined above that we will not process it.
                             if (_handshakeWaiter == null)
                             {
-                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Fail(this, "Renegotiation was requested but it is disallowed");
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
 
@@ -1171,10 +1145,7 @@ namespace System.Net.Security
 
             int version = -1;
 
-            if (bytes.Length == 0)
-            {
-                NetEventSource.Fail(this, "Header buffer is not allocated.");
-            }
+            Debug.Assert(bytes.Length != 0, "Header buffer is not allocated.");
 
             // If the first byte is SSL3 HandShake, then check if we have a SSLv3 Type3 client hello.
             if (bytes[0] == (byte)TlsContentType.Handshake || bytes[0] == (byte)TlsContentType.AppData

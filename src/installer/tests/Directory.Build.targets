@@ -13,13 +13,9 @@
       Set up the shared framework copy this set of tests should use. There's no known reason to have
       one per test project, but RepoDirectoriesProvider may need some tweaking to share.
     -->
-    <ItemGroup>
-      <SharedFrameworkPublishFiles Include="$(SharedFrameworkPublishDir)**" />
-    </ItemGroup>
-
-    <Copy
-      SourceFiles="@(SharedFrameworkPublishFiles)"
-      DestinationFiles="@(SharedFrameworkPublishFiles->'$(TestsOutputDir)sharedFrameworkPublish/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
+             Targets="PublishToDisk"
+             Properties="OutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
 
     <!-- Create files with a name that describes what a test dir is. Useful if path abbreviated. -->
     <WriteLinesToFile
@@ -47,8 +43,8 @@
         specific path separators or the string compoarison will fail.
       -->
       <DirectorySeparatorChar>$([System.IO.Path]::DirectorySeparatorChar)</DirectorySeparatorChar>
-      <SystemPathTestsOutputDir>$([System.String]::Copy('$(TestsOutputDir)').Replace('/', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
-      <SystemPathTestsOutputDir>$([System.String]::Copy('$(SystemPathTestsOutputDir)').Replace('\', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
+      <SystemPathTestsOutputDir>$(TestsOutputDir.Replace('/', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
+      <SystemPathTestsOutputDir>$(SystemPathTestsOutputDir.Replace('\', '$(DirectorySeparatorChar)'))</SystemPathTestsOutputDir>
 
       <!-- This is defined when building in Visual Studio, not DotNetRoot. -->
       <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(NetCoreRoot)</DotNetRoot>
@@ -63,7 +59,7 @@
       the same as the package's version. Fetch this directly from the project to avoid guesswork.
     -->
     <MSBuild
-      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
+      Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
       Targets="ReturnProductVersion">
       <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackageVersion" />
     </MSBuild>
@@ -102,27 +98,15 @@
   -->
   <Target Name="GetNETCoreAppRuntimePackVersion">
     <MSBuild
-      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj"
+      Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj"
       Targets="ReturnProductVersion">
       <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackVersion" />
     </MSBuild>
   </Target>
 
-  <!--
-    Fetch the package version of Microsoft.NETCore.App.Internal. The legacy App nupkg project
-    doesn't ship, so it never has a stable version.
-  -->
-  <Target Name="GetNETCoreAppInternalPackageVersion">
-    <MSBuild
-      Projects="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\legacy\Microsoft.NETCore.App.Internal.pkgproj"
-      Targets="ReturnProductVersion">
-      <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppInternalPackageVersion" />
-    </MSBuild>
-  </Target>
-
   <Target Name="DetermineTestOutputDirectory">
     <PropertyGroup>
-      <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(HostRuntimeIdentifier)</TestTargetRid>
+      <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(PackageRID)</TestTargetRid>
       <TestsOutputName Condition="'$(TestsOutputName)' == ''">$(MSBuildProjectName)</TestsOutputName>
 
       <TestsOutputRootDir Condition="'$(TestsOutputRootDir)' == ''">$(ArtifactsDir)tests/$(Configuration)/</TestsOutputRootDir>

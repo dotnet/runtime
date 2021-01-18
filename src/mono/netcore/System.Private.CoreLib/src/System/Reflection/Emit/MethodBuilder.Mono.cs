@@ -102,7 +102,7 @@ namespace System.Reflection.Emit
             type = tb;
             table_idx = get_next_table_index(this, 0x06, 1);
 
-            ((ModuleBuilder)tb.Module).RegisterToken(this, GetToken().Token);
+            ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
 
         internal MethodBuilder(TypeBuilder tb, string name, MethodAttributes attributes,
@@ -131,6 +131,8 @@ namespace System.Reflection.Emit
         {
             get { return type; }
         }
+
+        public override int MetadataToken => 0x06000000 | table_idx;
 
         public override RuntimeMethodHandle MethodHandle
         {
@@ -226,11 +228,6 @@ namespace System.Reflection.Emit
             {
                 extra_flags = (uint)((extra_flags & ~0x40) | (uint)(value ? 0x40 : 0x00));
             }
-        }
-
-        public MethodToken GetToken()
-        {
-            return new MethodToken(0x06000000 | table_idx);
         }
 
         public override MethodInfo GetBaseDefinition()
@@ -534,7 +531,7 @@ namespace System.Reflection.Emit
             return type.get_next_table_index(obj, table, count);
         }
 
-        private void ExtendArray<T>([NotNull] ref T[]? array, T elem)
+        private static void ExtendArray<T>([NotNull] ref T[]? array, T elem)
         {
             if (array == null)
             {
@@ -560,7 +557,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException("Type definition of the method is complete.");
         }
 
-        private Exception NotSupported()
+        private static Exception NotSupported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
@@ -571,8 +568,6 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException("Method is not a generic method definition");
             if (typeArguments == null)
                 throw new ArgumentNullException(nameof(typeArguments));
-            if (generic_params!.Length != typeArguments.Length)
-                throw new ArgumentException("Incorrect length", nameof(typeArguments));
             foreach (Type type in typeArguments)
             {
                 if (type == null)

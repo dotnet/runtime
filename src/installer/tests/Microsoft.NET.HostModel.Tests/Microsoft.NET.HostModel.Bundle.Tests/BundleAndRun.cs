@@ -7,6 +7,7 @@ using Xunit;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using BundleTests.Helpers;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -31,6 +32,20 @@ namespace Microsoft.NET.HostModel.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
+        private void CheckFileNotarizable(string path)
+        {
+            // attempt to remove signature data.
+            // no-op if the file is not signed (it should not be)
+            // fail if the file structure is malformed
+            // i: input, o: output, r: remove
+            Command.Create("codesign_allocate", $"-i {path} -o {path} -r")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass();
+        }
+
         private void BundleRun(TestProjectFixture fixture, string publishPath)
         {
             var hostName = BundleHelper.GetHostName(fixture);
@@ -40,6 +55,13 @@ namespace Microsoft.NET.HostModel.Tests
 
             // Bundle to a single-file
             string singleFile = BundleHelper.BundleApp(fixture);
+
+            // check that the file structure is understood by codesign
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            if (targetOS == OSPlatform.OSX)
+            {
+                CheckFileNotarizable(singleFile);
+            }
 
             // Run the extracted app
             RunTheApp(singleFile);
@@ -88,7 +110,7 @@ namespace Microsoft.NET.HostModel.Tests
                 TestFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
                 BundleHelper.AddLongNameContentToAppWithSubDirs(TestFixture);
                 TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(TestFixture.CurrentRid)
                     .PublishProject(runtime: TestFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFixture));
             }

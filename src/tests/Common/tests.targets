@@ -24,7 +24,7 @@
     <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')"/>
   </Target>
 
-   <Target Name="RunTests"
+  <Target Name="RunTests"
           DependsOnTargets="FindTestDirectories"
           Condition="'$(SkipTests)' != 'True'">
 
@@ -41,9 +41,10 @@
 
     <Error Condition="'$(CORE_ROOT)' == ''" Text="CORE_ROOT is not set." />
     <PropertyGroup>
-      <XunitConsoleRunner>$(CORE_ROOT)\xunit.console.dll</XunitConsoleRunner>
+      <XunitConsoleRunner>$(CORE_ROOT)\xunit\xunit.console.dll</XunitConsoleRunner>
 
-      <XunitArgs>-parallel $(ParallelRun)</XunitArgs>
+      <XunitArgs Condition="'$(TargetOS)' == 'Android'">-parallel none</XunitArgs>
+      <XunitArgs Condition="'$(TargetOS)' != 'Android'">-parallel $(ParallelRun)</XunitArgs>
       <XunitArgs>$(XunitArgs) -html $(__TestRunHtmlLog)</XunitArgs>
       <XunitArgs>$(XunitArgs) -xml $(__TestRunXmlLog)</XunitArgs>
       <XunitArgs>$(XunitArgs) @(IncludeTraitsItems->'-trait %(Identity)', ' ')</XunitArgs>
@@ -54,7 +55,7 @@
 
       <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
       <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
-      <CorerunExecutable Condition="'$(TargetArchitecture)' == 'wasm'"> $(DotnetRoot)/dotnet</CorerunExecutable>
+      <CorerunExecutable Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'"> $(DotnetRoot)/dotnet</CorerunExecutable>
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths

@@ -70,11 +70,11 @@ IL_47:   ret			//
   .method public static int32  Main()
 {.entrypoint
 .maxstack 3
- 
+
 call int32 FullProof::Test()
 pop
 
-ldstr "Test SUCCCESS"
+ldstr "Test SUCCESS"
 call void [System.Console]System.Console::WriteLine(string)
 ldc.i4 100
 ret

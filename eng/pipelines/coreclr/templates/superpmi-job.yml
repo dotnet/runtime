@@ -16,6 +16,8 @@ parameters:
   runKind: ''
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-job.yml'
   additionalSetupParameters: ''
+  collectionType: ''
+  collectionName: ''
 
 ### SuperPMI job
 
@@ -27,7 +29,7 @@ jobs:
   parameters:
     # Compute job name from template parameters
     jobName: ${{ format('superpmibuild_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
-    displayName: ${{ format('SuperPMI {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
+    displayName: ${{ format('SuperPMI {7} {8} {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.collectionName, parameters.collectionType) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -40,6 +42,8 @@ jobs:
     projectFile: ${{ parameters.projectFile }}
     runKind: ${{ parameters.runKind }}
     testGroup: ${{ parameters.testGroup }}
+    collectionType: ${{ parameters.collectionType }}
+    collectionName: ${{ parameters.collectionName }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     # Test job depends on the corresponding build job
     dependsOn:
@@ -49,11 +53,8 @@ jobs:
        - ${{ format('coreclr_{0}_product_build_{1}{2}_x64_{3}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-    # TODO: Disable SPMI for P1 tests
-    #  - ${{ if eq(parameters.testGroup, 'innerloop') }}:
-    #     - '${{ parameters.runtimeType }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-    #  - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-    #     - '${{ parameters.runtimeType }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+     - ${{ if eq(parameters.collectionName, 'tests') }}:
+        - '${{ parameters.runtimeType }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
 
     variables: ${{ parameters.variables }}
 
@@ -89,14 +90,14 @@ jobs:
           artifactName: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
           displayName: 'Coreclr product build (x64)'
 
-    # TODO: Disable SPMI for P1 tests
     # # Download and unzip managed test artifacts
-    # - template: /eng/pipelines/common/download-artifact-step.yml
-    #   parameters:
-    #     unpackFolder: '$(managedTestArtifactRootFolderPath)'
-    #     artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
-    #     artifactName: '$(managedGenericTestArtifactName)'
-    #     displayName: 'generic managed test artifacts'
+    - ${{ if eq(parameters.collectionName, 'tests') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(managedTestArtifactRootFolderPath)'
+          artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+          artifactName: '$(managedGenericTestArtifactName)'
+          displayName: 'generic managed test artifacts'
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)

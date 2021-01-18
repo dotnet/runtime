@@ -1,5 +1,5 @@
 parameters:
-  PublishRidAgnosticPackagesFromPlatform: Windows_NT_x64
+  PublishRidAgnosticPackagesFromPlatform: windows_x64
   publishingInfraVersion: 3
 
 stages:
@@ -49,6 +49,6 @@ stages:
         -TsaRepositoryName "$(TsaRepositoryName)"
         -TsaCodebaseName "$(TsaCodebaseName)"
         -TsaPublish $True
-
+    symbolPublishingAdditionalParameters: '/p:PublishSpecialClrFiles=true'
     # Publish to blob storage.
     publishInstallersAndChecksums: true

@@ -209,8 +209,10 @@ ICALL_TYPE(ASSEMB, "System.Reflection.Emit.AssemblyBuilder", ASSEMB_1)
 HANDLES(ASSEMB_1, "UpdateNativeCustomAttributes", ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes, void, 1, (MonoReflectionAssemblyBuilder))
 HANDLES(ASSEMB_2, "basic_init", ves_icall_AssemblyBuilder_basic_init, void, 1, (MonoReflectionAssemblyBuilder))
 
+#ifndef DISABLE_REFLECTION_EMIT
 ICALL_TYPE(CATTRB, "System.Reflection.Emit.CustomAttributeBuilder", CATTRB_1)
 HANDLES(CATTRB_1, "GetBlob", ves_icall_CustomAttributeBuilder_GetBlob, MonoArray, 7, (MonoReflectionAssembly, MonoObject, MonoArray, MonoArray, MonoArray, MonoArray, MonoArray))
+#endif
 
 ICALL_TYPE(DYNM, "System.Reflection.Emit.DynamicMethod", DYNM_1)
 HANDLES(DYNM_1, "create_dynamic_method", ves_icall_DynamicMethod_create_dynamic_method, void, 1, (MonoReflectionDynamicMethod))
@@ -267,7 +269,6 @@ HANDLES(RASSEM_12, "get_location", ves_icall_System_Reflection_RuntimeAssembly_g
 ICALL_TYPE(MCMETH, "System.Reflection.RuntimeConstructorInfo", MCMETH_1)
 HANDLES(MCMETH_1, "GetGenericMethodDefinition_impl", ves_icall_RuntimeMethodInfo_GetGenericMethodDefinition, MonoReflectionMethod, 1, (MonoReflectionMethod))
 HANDLES(MCMETH_2, "InternalInvoke", ves_icall_InternalInvoke, MonoObject, 4, (MonoReflectionMethod, MonoObject, MonoArray, MonoExceptionOut))
-HANDLES(MCMETH_3, "get_core_clr_security_level", ves_icall_RuntimeMethodInfo_get_core_clr_security_level, int, 1, (MonoReflectionMethod))
 HANDLES_REUSE_WRAPPER(MCMETH_4, "get_metadata_token", ves_icall_reflection_get_token)
 
 ICALL_TYPE(MEV, "System.Reflection.RuntimeEventInfo", MEV_1)
@@ -284,7 +285,6 @@ HANDLES(MFIELD_5, "GetValueInternal", ves_icall_RuntimeFieldInfo_GetValueInterna
 HANDLES(MFIELD_6, "ResolveType", ves_icall_RuntimeFieldInfo_ResolveType, MonoReflectionType, 1, (MonoReflectionField))
 HANDLES(MFIELD_7, "SetValueInternal", ves_icall_RuntimeFieldInfo_SetValueInternal, void, 3, (MonoReflectionField, MonoObject, MonoObject))
 HANDLES_REUSE_WRAPPER(MFIELD_8, "UnsafeGetValue", ves_icall_RuntimeFieldInfo_GetValueInternal)
-HANDLES(MFIELD_9, "get_core_clr_security_level", ves_icall_RuntimeFieldInfo_get_core_clr_security_level, int, 1, (MonoReflectionField))
 HANDLES_REUSE_WRAPPER(MFIELD_10, "get_metadata_token", ves_icall_reflection_get_token)
 
 ICALL_TYPE(RMETHODINFO, "System.Reflection.RuntimeMethodInfo", RMETHODINFO_1)
@@ -298,14 +298,12 @@ HANDLES(RMETHODINFO_7, "MakeGenericMethod_impl", ves_icall_RuntimeMethodInfo_Mak
 HANDLES(RMETHODINFO_8, "get_IsGenericMethod", ves_icall_RuntimeMethodInfo_get_IsGenericMethod, MonoBoolean, 1, (MonoReflectionMethod))
 HANDLES(RMETHODINFO_9, "get_IsGenericMethodDefinition", ves_icall_RuntimeMethodInfo_get_IsGenericMethodDefinition, MonoBoolean, 1, (MonoReflectionMethod))
 HANDLES(RMETHODINFO_10, "get_base_method", ves_icall_RuntimeMethodInfo_get_base_method, MonoReflectionMethod, 2, (MonoReflectionMethod, MonoBoolean))
-HANDLES_REUSE_WRAPPER(RMETHODINFO_11, "get_core_clr_security_level", ves_icall_RuntimeMethodInfo_get_core_clr_security_level)
 HANDLES_REUSE_WRAPPER(RMETHODINFO_12, "get_metadata_token", ves_icall_reflection_get_token)
 HANDLES(RMETHODINFO_13, "get_name", ves_icall_RuntimeMethodInfo_get_name, MonoString, 1, (MonoReflectionMethod))
 
 ICALL_TYPE(MODULE, "System.Reflection.RuntimeModule", MODULE_2)
 HANDLES(MODULE_2, "GetGlobalType", ves_icall_System_Reflection_RuntimeModule_GetGlobalType, MonoReflectionType, 1, (MonoImage_ptr))
 HANDLES(MODULE_3, "GetGuidInternal", ves_icall_System_Reflection_RuntimeModule_GetGuidInternal, void, 2, (MonoImage_ptr, MonoArray))
-HANDLES(MODULE_14, "GetHINSTANCE", ves_icall_System_Reflection_RuntimeModule_GetHINSTANCE, gpointer, 1, (MonoImage_ptr))
 HANDLES(MODULE_4, "GetMDStreamVersion", ves_icall_System_Reflection_RuntimeModule_GetMDStreamVersion, gint32, 1, (MonoImage_ptr))
 HANDLES(MODULE_5, "GetPEKind", ves_icall_System_Reflection_RuntimeModule_GetPEKind, void, 3, (MonoImage_ptr, gint32_ptr, gint32_ptr))
 HANDLES(MODULE_6, "InternalGetTypes", ves_icall_System_Reflection_RuntimeModule_InternalGetTypes, MonoArray, 1, (MonoImage_ptr))
@@ -327,6 +325,11 @@ HANDLES(MPROP_2, "get_default_value", ves_icall_property_info_get_default_value,
 HANDLES_REUSE_WRAPPER(MPROP_3, "get_metadata_token", ves_icall_reflection_get_token)
 HANDLES(MPROP_4, "get_property_info", ves_icall_RuntimePropertyInfo_get_property_info, void, 3, (MonoReflectionProperty, MonoPropertyInfo_ref, PInfo))
 HANDLES(MPROP_5, "internal_from_handle_type", ves_icall_System_Reflection_RuntimePropertyInfo_internal_from_handle_type, MonoReflectionProperty, 2, (MonoProperty_ptr, MonoType_ptr))
+
+#ifdef ENABLE_METADATA_UPDATE
+ICALL_TYPE(RUNF, "System.Runtime.CompilerServices.RuntimeFeature", RUNF_1)
+NOHANDLES(ICALL(RUNF_1, "LoadMetadataUpdate_internal", ves_icall_Mono_Runtime_LoadMetadataUpdate))
+#endif
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
 HANDLES(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue, MonoObject, 1, (MonoObject))
@@ -428,7 +431,6 @@ HANDLES(RTH_12, "IsComObject", ves_icall_RuntimeTypeHandle_IsComObject, MonoBool
 HANDLES(RTH_13, "IsGenericTypeDefinition", ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition, MonoBoolean, 1, (MonoReflectionType))
 HANDLES(RTH_14, "IsGenericVariable", ves_icall_RuntimeTypeHandle_IsGenericVariable, MonoBoolean, 1, (MonoReflectionType))
 HANDLES(RTH_15, "IsInstanceOfType", ves_icall_RuntimeTypeHandle_IsInstanceOfType, guint32, 2, (MonoReflectionType, MonoObject))
-//HANDLES(RTH_17a, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of, MonoBoolean, 2, (MonoType_ptr, MonoType_ptr))
 HANDLES(RTH_17a, "internal_from_name", ves_icall_System_RuntimeTypeHandle_internal_from_name, MonoReflectionType, 6, (MonoString, MonoStackCrawlMark_ptr, MonoReflectionAssembly, MonoBoolean, MonoBoolean, MonoBoolean))
 NOHANDLES(ICALL(RTH_17b, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of))
 HANDLES(RTH_18, "type_is_assignable_from", ves_icall_RuntimeTypeHandle_type_is_assignable_from, guint32, 2, (MonoReflectionType, MonoReflectionType))

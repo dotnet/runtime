@@ -67,6 +67,9 @@ namespace Tracing.Tests.Common
 
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.Environment.Add("COMPlus_StressLog",   "1");    // Turn on stresslog for subprocess
+                process.StartInfo.Environment.Add("COMPlus_LogFacility", "1000"); // Diagnostics Server Log Facility
+                process.StartInfo.Environment.Add("COMPlus_LogLevel",    "10");   // Log everything
                 foreach ((string key, string value) in environment)
                     process.StartInfo.Environment.Add(key, value);
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
@@ -97,14 +100,14 @@ namespace Tracing.Tests.Common
                 fSuccess &= process.Start();
                 if (!fSuccess)
                     throw new Exception("Failed to start subprocess");
-                StreamWriter subprocesssStdIn = process.StandardInput;
+                StreamWriter subprocessStdIn = process.StandardInput;
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 Logger.logger.Log($"subprocess started: {fSuccess}");
                 Logger.logger.Log($"subprocess PID: {process.Id}");
 
                 bool fGotToEnd = false;
-                process.Exited += (s, e) => 
+                process.Exited += (s, e) =>
                 {
                     Logger.logger.Log("================= Subprocess Exited =================");
                     if (!fGotToEnd)
@@ -127,8 +130,8 @@ namespace Tracing.Tests.Common
                         await duringExecution(process.Id);
                     fGotToEnd = true;
                     Logger.logger.Log($"Sending 'exit' to subprocess stdin");
-                    subprocesssStdIn.WriteLine("exit");
-                    subprocesssStdIn.Close();
+                    subprocessStdIn.WriteLine("exit");
+                    subprocessStdIn.Close();
                     while (!process.WaitForExit(5000))
                     {
                         Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
@@ -246,7 +249,7 @@ namespace Tracing.Tests.Common
         public IpcHeader Header { get; private set; } = default;
 
         public byte[] Serialize()
-        { 
+        {
             byte[] serializedData = null;
             // Verify things will fit in the size capacity
             Header.Size = checked((UInt16)(IpcHeader.HeaderSizeInBytes + (Payload?.Length ?? 0))); ;
@@ -375,7 +378,7 @@ namespace Tracing.Tests.Common
         private static string IpcRootPath { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\\.\pipe\" : Path.GetTempPath();
         public static Stream GetStandardTransport(int processId)
         {
-            try 
+            try
             {
                 var process = Process.GetProcessById(processId);
             }
@@ -387,7 +390,7 @@ namespace Tracing.Tests.Common
             {
                 throw new Exception($"Process {processId} seems to be elevated.");
             }
- 
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 string pipeName = $"dotnet-diagnostic-{processId}";

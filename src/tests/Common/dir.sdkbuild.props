@@ -6,7 +6,7 @@
        and old-style projects should go in dir.common.props. -->
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultItems>false</EnableDefaultItems>
     <Platform>AnyCPU</Platform>

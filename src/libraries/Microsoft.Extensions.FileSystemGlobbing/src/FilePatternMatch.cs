@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Extensions.Internal;
+using System.Numerics.Hashing;
 
 namespace Microsoft.Extensions.FileSystemGlobbing
 {
@@ -66,13 +66,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// Gets a hash for the file pattern match.
         /// </summary>
         /// <returns>Some number</returns>
-        public override int GetHashCode()
-        {
-            var hashCodeCombiner = HashCodeCombiner.Start();
-            hashCodeCombiner.Add(Path, StringComparer.OrdinalIgnoreCase);
-            hashCodeCombiner.Add(Stem, StringComparer.OrdinalIgnoreCase);
+        public override int GetHashCode() =>
+            HashHelpers.Combine(GetHashCode(Path), GetHashCode(Stem));
 
-            return hashCodeCombiner;
-        }
+        private static int GetHashCode(string value) =>
+            value != null ? StringComparer.OrdinalIgnoreCase.GetHashCode(value) : 0;
     }
 }

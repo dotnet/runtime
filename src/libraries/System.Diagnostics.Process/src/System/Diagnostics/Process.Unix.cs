@@ -9,17 +9,15 @@ using System.Net.Sockets;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private static readonly UTF8Encoding s_utf8NoBom =
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
-        private static readonly Interop.Sys.SigChldCallback s_sigChildHandler = OnSigChild;
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
         private static int s_childrenUsingTerminalCount;
 
@@ -449,20 +447,20 @@ namespace System.Diagnostics
             {
                 Debug.Assert(stdinFd >= 0);
                 _standardInput = new StreamWriter(OpenStream(stdinFd, FileAccess.Write),
-                    startInfo.StandardInputEncoding ?? s_utf8NoBom, StreamBufferSize)
+                    startInfo.StandardInputEncoding ?? Encoding.Default, StreamBufferSize)
                 { AutoFlush = true };
             }
             if (startInfo.RedirectStandardOutput)
             {
                 Debug.Assert(stdoutFd >= 0);
                 _standardOutput = new StreamReader(OpenStream(stdoutFd, FileAccess.Read),
-                    startInfo.StandardOutputEncoding ?? s_utf8NoBom, true, StreamBufferSize);
+                    startInfo.StandardOutputEncoding ?? Encoding.Default, true, StreamBufferSize);
             }
             if (startInfo.RedirectStandardError)
             {
                 Debug.Assert(stderrFd >= 0);
                 _standardError = new StreamReader(OpenStream(stderrFd, FileAccess.Read),
-                    startInfo.StandardErrorEncoding ?? s_utf8NoBom, true, StreamBufferSize);
+                    startInfo.StandardErrorEncoding ?? Encoding.Default, true, StreamBufferSize);
             }
 
             return true;
@@ -556,7 +554,7 @@ namespace System.Diagnostics
         private static string[] ParseArgv(ProcessStartInfo psi, string? resolvedExe = null, bool ignoreArguments = false)
         {
             if (string.IsNullOrEmpty(resolvedExe) &&
-                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && psi.ArgumentList.Count == 0)))
+                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && !psi.HasArgumentList)))
             {
                 return new string[] { psi.FileName };
             }
@@ -579,7 +577,7 @@ namespace System.Diagnostics
                 {
                     ParseArgumentsIntoList(psi.Arguments, argvList);
                 }
-                else
+                else if (psi.HasArgumentList)
                 {
                     argvList.AddRange(psi.ArgumentList);
                 }
@@ -1000,7 +998,7 @@ namespace System.Diagnostics
 
         private bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
 
-        private static void EnsureInitialized()
+        private static unsafe void EnsureInitialized()
         {
             if (s_initialized)
             {
@@ -1017,20 +1015,21 @@ namespace System.Diagnostics
                     }
 
                     // Register our callback.
-                    Interop.Sys.RegisterForSigChld(s_sigChildHandler);
+                    Interop.Sys.RegisterForSigChld(&OnSigChild);
 
                     s_initialized = true;
                 }
             }
         }
 
-        private static void OnSigChild(bool reapAll)
+        [UnmanagedCallersOnly]
+        private static void OnSigChild(int reapAll)
         {
             // Lock to avoid races with Process.Start
             s_processStartLock.EnterWriteLock();
             try
             {
-                ProcessWaitState.CheckChildren(reapAll);
+                ProcessWaitState.CheckChildren(reapAll != 0);
             }
             finally
             {

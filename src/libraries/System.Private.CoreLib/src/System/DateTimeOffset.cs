@@ -54,13 +54,15 @@ namespace System
 
         // Constructors
 
-        // Constructs a DateTimeOffset from a tick count and offset
-        public DateTimeOffset(long ticks, TimeSpan offset)
+        private DateTimeOffset(short validOffsetMinutes, DateTime validDateTime)
         {
-            _offsetMinutes = ValidateOffset(offset);
-            // Let the DateTime constructor do the range checks
-            DateTime dateTime = new DateTime(ticks);
-            _dateTime = ValidateDate(dateTime, offset);
+            _dateTime = validDateTime;
+            _offsetMinutes = validOffsetMinutes;
+        }
+
+        // Constructs a DateTimeOffset from a tick count and offset
+        public DateTimeOffset(long ticks, TimeSpan offset) : this(ValidateOffset(offset), ValidateDate(new DateTime(ticks), offset))
+        {
         }
 
         // Constructs a DateTimeOffset from a DateTime. For Local and Unspecified kinds,
@@ -174,7 +176,18 @@ namespace System
         // resolution of the returned value depends on the system timer.
         public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
 
-        public static DateTimeOffset UtcNow => new DateTimeOffset(DateTime.UtcNow);
+        public static DateTimeOffset UtcNow
+        {
+            get
+            {
+                DateTime utcNow = DateTime.UtcNow;
+                var result = new DateTimeOffset(0, utcNow);
+
+                Debug.Assert(new DateTimeOffset(utcNow) == result); // ensure lack of verification does not break anything
+
+                return result;
+            }
+        }
 
         public DateTime DateTime => ClockDateTime;
 

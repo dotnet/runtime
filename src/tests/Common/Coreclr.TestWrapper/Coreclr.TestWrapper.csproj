@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentToolTargetFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppToolCurrent)</NuGetTargetMonikerShort>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 

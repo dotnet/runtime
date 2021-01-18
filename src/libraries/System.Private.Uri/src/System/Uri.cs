@@ -18,14 +18,18 @@ namespace System
     {
         public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
         public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
+        public static readonly string UriSchemeSftp = "sftp";
+        public static readonly string UriSchemeFtps = "ftps";
         public static readonly string UriSchemeGopher = UriParser.GopherUri.SchemeName;
         public static readonly string UriSchemeHttp = UriParser.HttpUri.SchemeName;
         public static readonly string UriSchemeHttps = UriParser.HttpsUri.SchemeName;
-        internal static readonly string UriSchemeWs = UriParser.WsUri.SchemeName;
-        internal static readonly string UriSchemeWss = UriParser.WssUri.SchemeName;
+        public static readonly string UriSchemeWs = UriParser.WsUri.SchemeName;
+        public static readonly string UriSchemeWss = UriParser.WssUri.SchemeName;
         public static readonly string UriSchemeMailto = UriParser.MailToUri.SchemeName;
         public static readonly string UriSchemeNews = UriParser.NewsUri.SchemeName;
         public static readonly string UriSchemeNntp = UriParser.NntpUri.SchemeName;
+        public static readonly string UriSchemeSsh = "ssh";
+        public static readonly string UriSchemeTelnet = UriParser.TelnetUri.SchemeName;
         public static readonly string UriSchemeNetTcp = UriParser.NetTcpUri.SchemeName;
         public static readonly string UriSchemeNetPipe = UriParser.NetPipeUri.SchemeName;
         public static readonly string SchemeDelimiter = "://";
@@ -4687,7 +4691,7 @@ namespace System
                         {
                             //  /./ or /.<eos> or /../ or /..<eos>
 
-                            // dest.Remove(i+1, dotCount + (lastSlash==0?0:1));
+                            // span.Remove(i + 1, dotCount + (lastSlash == 0 ? 0 : 1));
                             lastSlash = i + 1 + dotCount + (lastSlash == 0 ? 0 : 1);
                             span.Slice(lastSlash).CopyTo(span.Slice(i + 1));
                             span = span.Slice(0, span.Length - (lastSlash - i - 1));
@@ -4739,7 +4743,7 @@ namespace System
                     {
                         // If final string starts with a segment looking like .[...]/ or .[...]<eos>
                         // then we remove this first segment
-                        if (lastSlash == dotCount + 1 || (lastSlash == 0 && dotCount + 1 == span.Length))
+                        if (lastSlash == dotCount || (lastSlash == 0 && dotCount == span.Length))
                         {
                             dotCount += lastSlash == 0 ? 0 : 1;
                             span.Slice(dotCount).CopyTo(span);

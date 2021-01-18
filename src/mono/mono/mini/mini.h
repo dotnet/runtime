@@ -2500,9 +2500,14 @@ gpointer mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info);
 gpointer mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+// Moves data (arguments and return vt address) from the InterpFrame to the CallContext so a pinvoke call can be made.
 void mono_arch_set_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
-void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
-void mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+// Moves the return value from the InterpFrame to the ccontext, or to the retp (if native code passed the retvt address)
+void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer retp);
+// When entering interp from native, this moves the arguments from the ccontext to the InterpFrame. If we have a return
+// vt address, we return it. This ret vt address needs to be passed to mono_arch_set_native_call_context_ret.
+gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+// After the pinvoke call is done, this moves return value from the ccontext to the InterpFrame.
 void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
 #endif
 
@@ -2989,7 +2994,6 @@ MonoCPUFeatures mono_arch_get_cpu_features (void);
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 void        mono_simd_simplify_indirection (MonoCompile *cfg);
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
-void        mono_simd_decompose_intrinsics (MonoCompile *cfg);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);
