@@ -198,13 +198,13 @@
       <Uri>https://github.com/mono/linker</Uri>
       <Sha>9978bd03eab26081f5a353b84e516af5f33e88e7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21068.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21068.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>790d274627f5aeff0a49ee2262cdc4750709e686</Sha>
+      <Sha>9e780becaca437f94097a7c322bf296109384c17</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.21068.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.21068.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>790d274627f5aeff0a49ee2262cdc4750709e686</Sha>
+      <Sha>9e780becaca437f94097a7c322bf296109384c17</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
