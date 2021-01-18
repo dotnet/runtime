@@ -699,13 +699,18 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 	MONO_STATIC_POINTER_INIT (MonoMethod, resolve)
 
 		ERROR_DECL (local_error);
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		resolve = mono_class_get_method_from_name_checked (alc_class, "MonoResolveUnmanagedDllUsingEvent", -1, 0, local_error);
-		mono_error_assert_ok (local_error);
+		static gboolean inited;
+		if (!inited) {
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			resolve = mono_class_get_method_from_name_checked (alc_class, "MonoResolveUnmanagedDllUsingEvent", -1, 0, local_error);
+			inited = TRUE;
+		}
+		mono_error_cleanup (local_error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve)
-	g_assert (resolve);
+	if (!resolve)
+		return NULL;
 
 	if (mono_runtime_get_no_exec ())
 		return NULL;

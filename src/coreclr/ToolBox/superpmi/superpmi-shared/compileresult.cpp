@@ -10,6 +10,8 @@
 #include "standardpch.h"
 #include "compileresult.h"
 #include "methodcontext.h"
+#include "spmirecordhelper.h"
+#include "spmidumphelper.h"
 #include "spmiutil.h"
 
 CompileResult::CompileResult()
@@ -525,9 +527,9 @@ ULONG CompileResult::repSetEHcount()
 void CompileResult::recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause)
 {
     if (SetEHinfo == nullptr)
-        SetEHinfo = new LightWeightMap<DWORD, Agnostic_CORINFO_EH_CLAUSE2>();
+        SetEHinfo = new LightWeightMap<DWORD, Agnostic_CORINFO_EH_CLAUSE>();
 
-    Agnostic_CORINFO_EH_CLAUSE2 value;
+    Agnostic_CORINFO_EH_CLAUSE value;
     value.Flags         = (DWORD)clause->Flags;
     value.TryOffset     = (DWORD)clause->TryOffset;
     value.TryLength     = (DWORD)clause->TryLength;
@@ -537,7 +539,7 @@ void CompileResult::recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* cla
 
     SetEHinfo->Add((DWORD)EHnumber, value);
 }
-void CompileResult::dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE2& value)
+void CompileResult::dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE& value)
 {
     printf("SetEHinfo key %u, value flg-%u to-%u tl-%u ho-%u hl-%u", key, value.Flags, value.TryOffset, value.TryLength,
            value.HandlerOffset, value.HandlerLength);
@@ -559,7 +561,7 @@ void CompileResult::repSetEHinfo(unsigned EHnumber,
                                  ULONG*   handlerLength,
                                  ULONG*   classToken)
 {
-    Agnostic_CORINFO_EH_CLAUSE2 value;
+    Agnostic_CORINFO_EH_CLAUSE value;
     value = SetEHinfo->Get(EHnumber);
 
     *flags         = (ULONG)value.Flags;
@@ -978,13 +980,10 @@ void CompileResult::recRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
 
 void CompileResult::dmpRecordCallSiteWithSignature(DWORD key, const Agnostic_RecordCallSite& value) const
 {
-    printf("RecordCallSite key %u, callSig{cc-%u rtc-%016llX rts-%016llX rt-%u flg-%u na-%u cc-%u ci-%u mc-%u mi-%u "
-           "sig-%u pSig-%u scp-%016llX tok-%08X} ftn-%016llX",
-           key, value.callSig.callConv, value.callSig.retTypeClass, value.callSig.retTypeSigClass,
-           value.callSig.retType, value.callSig.flags, value.callSig.numArgs, value.callSig.sigInst_classInstCount,
-           value.callSig.sigInst_classInst_Index, value.callSig.sigInst_methInstCount,
-           value.callSig.sigInst_methInst_Index, value.callSig.cbSig, value.callSig.pSig_Index, value.callSig.scope,
-           value.callSig.token, value.methodHandle);
+    printf("RecordCallSite key %u, callSig-%s ftn-%016llX",
+           key,
+           SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap).c_str(),
+           value.methodHandle);
 }
 
 void CompileResult::dmpRecordCallSiteWithoutSignature(DWORD key, DWORDLONG methodHandle) const
@@ -1007,26 +1006,8 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
     {
         Agnostic_RecordCallSite value;
         ZeroMemory(&value, sizeof(Agnostic_RecordCallSite));
-        value.callSig.callConv               = (DWORD)callSig->callConv;
-        value.callSig.retTypeClass           = CastHandle(callSig->retTypeClass);
-        value.callSig.retTypeSigClass        = CastHandle(callSig->retTypeSigClass);
-        value.callSig.retType                = (DWORD)callSig->retType;
-        value.callSig.flags                  = (DWORD)callSig->flags;
-        value.callSig.numArgs                = (DWORD)callSig->numArgs;
-        value.callSig.sigInst_classInstCount = (DWORD)callSig->sigInst.classInstCount;
-        value.callSig.sigInst_classInst_Index =
-            RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->sigInst.classInst,
-                                      callSig->sigInst.classInstCount * 8); // porting issue
-        value.callSig.sigInst_methInstCount = (DWORD)callSig->sigInst.methInstCount;
-        value.callSig.sigInst_methInst_Index =
-            RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->sigInst.methInst,
-                                      callSig->sigInst.methInstCount * 8); // porting issue
-        value.callSig.args       = CastHandle(callSig->args);
-        value.callSig.cbSig      = (DWORD)callSig->cbSig;
-        value.callSig.pSig_Index = (DWORD)RecordCallSiteWithSignature->AddBuffer((unsigned char*)callSig->pSig, callSig->cbSig);
-        value.callSig.scope      = CastHandle(callSig->scope);
-        value.callSig.token      = (DWORD)callSig->token;
-        value.methodHandle       = CastHandle(methodHandle);
+        value.callSig      = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*callSig, RecordCallSiteWithSignature, CrSigInstHandleMap);
+        value.methodHandle = CastHandle(methodHandle);
         RecordCallSiteWithSignature->Add(instrOffset, value);
     }
     else
@@ -1048,22 +1029,7 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     if (value.callSig.callConv == (DWORD)-1)
         return false;
 
-    pCallSig->callConv               = (CorInfoCallConv)value.callSig.callConv;
-    pCallSig->retTypeClass           = (CORINFO_CLASS_HANDLE)value.callSig.retTypeClass;
-    pCallSig->retTypeSigClass        = (CORINFO_CLASS_HANDLE)value.callSig.retTypeSigClass;
-    pCallSig->retType                = (CorInfoType)value.callSig.retType;
-    pCallSig->flags                  = (unsigned)value.callSig.flags;
-    pCallSig->numArgs                = (unsigned)value.callSig.numArgs;
-    pCallSig->sigInst.classInstCount = (unsigned)value.callSig.sigInst_classInstCount;
-    pCallSig->sigInst.classInst =
-        (CORINFO_CLASS_HANDLE*)RecordCallSiteWithSignature->GetBuffer(value.callSig.sigInst_classInst_Index);
-    pCallSig->sigInst.methInstCount = (unsigned)value.callSig.sigInst_methInstCount;
-    pCallSig->sigInst.methInst = (CORINFO_CLASS_HANDLE*)RecordCallSiteWithSignature->GetBuffer(value.callSig.sigInst_methInst_Index);
-    pCallSig->args             = (CORINFO_ARG_LIST_HANDLE)value.callSig.args;
-    pCallSig->cbSig            = (unsigned int)value.callSig.cbSig;
-    pCallSig->pSig             = (PCCOR_SIGNATURE)RecordCallSiteWithSignature->GetBuffer(value.callSig.pSig_Index);
-    pCallSig->scope            = (CORINFO_MODULE_HANDLE)value.callSig.scope;
-    pCallSig->token            = (mdToken)value.callSig.token;
+    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap);
 
     return true;
 }
@@ -1082,4 +1048,9 @@ bool CompileResult::fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_MET
         *pMethodHandle = value;
     }
     return false;
+}
+
+void CompileResult::dmpCrSigInstHandleMap(DWORD key, DWORDLONG value)
+{
+    printf("CrSigInstHandleMap key %u, value %016llX", key, value);
 }

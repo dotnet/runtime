@@ -7,6 +7,20 @@
 #ifndef _HANDLETABLE_INL
 #define _HANDLETABLE_INL
 
+inline void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    // unwrap the objectref we were given
+    _UNCHECKED_OBJECTREF value = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref);
+
+    _ASSERTE (objref != NULL);
+
+    HndWriteBarrierWorker(handle, value);
+}
+
 inline void HndAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
 {
     CONTRACTL
@@ -56,9 +70,8 @@ inline void HndAssignHandleGC(OBJECTHANDLE handle, uint8_t* objref)
         HndWriteBarrierWorker(handle, value);
 
     // store the pointer
-    *(_UNCHECKED_OBJECTREF*)handle = value;
+    *(_UNCHECKED_OBJECTREF *)handle = value;
 }
-
 
 inline void* HndInterlockedCompareExchangeHandle(OBJECTHANDLE handle, OBJECTREF objref, OBJECTREF oldObjref)
 {

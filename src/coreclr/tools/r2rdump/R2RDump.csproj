@@ -21,6 +21,7 @@
     <PackageReference Include="System.CommandLine">
       <Version>$(SystemCommandLineVersion)</Version>
     </PackageReference>
+    <ProjectReference Include="..\aot\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
     <Content Include="$(CoreDisToolsLibrary)" Condition="Exists('$(CoreDisToolsLibrary)')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

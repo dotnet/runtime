@@ -28,7 +28,6 @@ extern "C"
 #include <signal.h>
 #include <pthread.h>
 
-#if !HAVE_MACH_EXCEPTIONS
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */
 #if HAVE_UCONTEXT_T
@@ -38,6 +37,8 @@ typedef ucontext_t native_context_t;
 #else   // HAVE_UCONTEXT_T
 #error Native context type is not known on this platform!
 #endif  // HAVE_UCONTEXT_T
+
+#if !HAVE_MACH_EXCEPTIONS
 
 #if defined(XSTATE_SUPPORTED) && !HAVE_PUBLIC_XSTATE_STRUCT
 namespace asm_sigcontext
@@ -268,6 +269,9 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 #ifdef HOST_64BIT
 
 #if defined(HOST_ARM64)
+
+#ifndef TARGET_OSX
+
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
 #define MCREG_X2(mc)      ((mc).regs[2])
@@ -305,7 +309,6 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 #define MCREG_Cpsr(mc)    ((mc).pstate)
 
 
-#ifndef TARGET_OSX
 inline
 fpsimd_context* GetNativeSigSimdContext(native_context_t *mc)
 {
@@ -342,9 +345,110 @@ const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
     return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
+#else // TARGET_OSX
+
+#define MCREG_X0(mc)      ((mc)->__ss.__x[0])
+#define MCREG_X1(mc)      ((mc)->__ss.__x[1])
+#define MCREG_X2(mc)      ((mc)->__ss.__x[2])
+#define MCREG_X3(mc)      ((mc)->__ss.__x[3])
+#define MCREG_X4(mc)      ((mc)->__ss.__x[4])
+#define MCREG_X5(mc)      ((mc)->__ss.__x[5])
+#define MCREG_X6(mc)      ((mc)->__ss.__x[6])
+#define MCREG_X7(mc)      ((mc)->__ss.__x[7])
+#define MCREG_X8(mc)      ((mc)->__ss.__x[8])
+#define MCREG_X9(mc)      ((mc)->__ss.__x[9])
+#define MCREG_X10(mc)     ((mc)->__ss.__x[10])
+#define MCREG_X11(mc)     ((mc)->__ss.__x[11])
+#define MCREG_X12(mc)     ((mc)->__ss.__x[12])
+#define MCREG_X13(mc)     ((mc)->__ss.__x[13])
+#define MCREG_X14(mc)     ((mc)->__ss.__x[14])
+#define MCREG_X15(mc)     ((mc)->__ss.__x[15])
+#define MCREG_X16(mc)     ((mc)->__ss.__x[16])
+#define MCREG_X17(mc)     ((mc)->__ss.__x[17])
+#define MCREG_X18(mc)     ((mc)->__ss.__x[18])
+#define MCREG_X19(mc)     ((mc)->__ss.__x[19])
+#define MCREG_X20(mc)     ((mc)->__ss.__x[20])
+#define MCREG_X21(mc)     ((mc)->__ss.__x[21])
+#define MCREG_X22(mc)     ((mc)->__ss.__x[22])
+#define MCREG_X23(mc)     ((mc)->__ss.__x[23])
+#define MCREG_X24(mc)     ((mc)->__ss.__x[24])
+#define MCREG_X25(mc)     ((mc)->__ss.__x[25])
+#define MCREG_X26(mc)     ((mc)->__ss.__x[26])
+#define MCREG_X27(mc)     ((mc)->__ss.__x[27])
+#define MCREG_X28(mc)     ((mc)->__ss.__x[28])
+#define MCREG_Fp(mc)      ((mc)->__ss.__fp)
+#define MCREG_Lr(mc)      ((mc)->__ss.__lr)
+
+#define MCREG_Sp(mc)      ((mc)->__ss.__sp)
+#define MCREG_Pc(mc)      ((mc)->__ss.__pc)
+#define MCREG_Cpsr(mc)    ((mc)->__ss.__cpsr)
+
+inline
+_STRUCT_ARM_NEON_STATE64* GetNativeSigSimdContext(native_context_t *mc)
+{
+    return &(mc)->uc_mcontext->__ns;
+}
+
+inline
+const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_context_t *mc)
+{
+    return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
+}
+
 #endif // TARGET_OSX
 
 #else // HOST_ARM64
+
+#ifdef TARGET_OSX
+
+#define MCREG_Rbp(mc)      ((mc)->__ss.__rbp)
+#define MCREG_Rip(mc)      ((mc)->__ss.__rip)
+#define MCREG_Rsp(mc)      ((mc)->__ss.__rsp)
+#define MCREG_Rsi(mc)      ((mc)->__ss.__rsi)
+#define MCREG_Rdi(mc)      ((mc)->__ss.__rdi)
+#define MCREG_Rbx(mc)      ((mc)->__ss.__rbx)
+#define MCREG_Rdx(mc)      ((mc)->__ss.__rdx)
+#define MCREG_Rcx(mc)      ((mc)->__ss.__rcx)
+#define MCREG_Rax(mc)      ((mc)->__ss.__rax)
+#define MCREG_R8(mc)       ((mc)->__ss.__r8)
+#define MCREG_R9(mc)       ((mc)->__ss.__r9)
+#define MCREG_R10(mc)      ((mc)->__ss.__r10)
+#define MCREG_R11(mc)      ((mc)->__ss.__r11)
+#define MCREG_R12(mc)      ((mc)->__ss.__r12)
+#define MCREG_R13(mc)      ((mc)->__ss.__r13)
+#define MCREG_R14(mc)      ((mc)->__ss.__r14)
+#define MCREG_R15(mc)      ((mc)->__ss.__r15)
+#define MCREG_EFlags(mc)   ((mc)->__ss.__rflags)
+#define MCREG_SegCs(mc)    ((mc)->__ss.__cs)
+
+#define FPSTATE(uc)             ((uc)->uc_mcontext->__fs)
+#define FPREG_ControlWord(uc)   *((WORD*)&FPSTATE(uc).__fpu_fcw)
+#define FPREG_StatusWord(uc)    *((WORD*)&FPSTATE(uc).__fpu_fsw)
+#define FPREG_TagWord(uc)       FPSTATE(uc).__fpu_ftw
+#define FPREG_MxCsr(uc)         FPSTATE(uc).__fpu_mxcsr
+#define FPREG_MxCsr_Mask(uc)    FPSTATE(uc).__fpu_mxcsrmask
+#define FPREG_ErrorOffset(uc)   *(DWORD*) &(FPSTATE(uc).__fpu_ip)
+#define FPREG_ErrorSelector(uc) *((WORD*) &(FPSTATE(uc).__fpu_ip) + 2)
+#define FPREG_DataOffset(uc)    *(DWORD*) &(FPSTATE(uc).__fpu_dp)
+#define FPREG_DataSelector(uc)  *((WORD*) &(FPSTATE(uc).__fpu_dp) + 2)
+
+#define FPREG_Xmm(uc, index)    *(M128A*) &((&FPSTATE(uc).__fpu_xmm0)[index])
+#define FPREG_St(uc, index)     *(M128A*) &((&FPSTATE(uc).__fpu_stmm0)[index]) //.fp_acc)
+
+inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
+{
+    _ASSERTE((uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX64)) || (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64)));
+    return (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX64)) || (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64));
+}
+
+static_assert_no_msg(offsetof(_STRUCT_X86_AVX_STATE64, __fpu_ymmh0) == offsetof(_STRUCT_X86_AVX512_STATE64, __fpu_ymmh0));
+inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
+{
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX_STATE64&)FPSTATE(uc)).__fpu_ymmh0);
+}
+
+#else //TARGET_OSX
+
     // For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
 #define MCREG_Rip(mc)	    ((mc).mc_rip)
@@ -380,7 +484,8 @@ const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
 
 #define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc)->sv_xmm[index])
 #define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc)->sv_fp[index].fp_acc)
-#endif
+#endif // TARGET_OSX
+#endif // HOST_ARM64
 
 #else // HOST_64BIT
 
@@ -732,7 +837,8 @@ CONTEXT_GetThreadContextFromThreadState(
     thread_state_t threadState,
     LPCONTEXT lpContext);
 
-#else // HAVE_MACH_EXCEPTIONS
+#endif // HAVE_MACH_EXCEPTIONS
+
 /*++
 Function :
     CONTEXTToNativeContext
@@ -769,6 +875,8 @@ Return value :
 --*/
 void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContext,
                               ULONG contextFlags);
+
+#if !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function :

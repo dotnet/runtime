@@ -66,9 +66,9 @@ namespace System.Runtime.Versioning
 #else
     internal
 #endif
-        sealed class SupportedOSPlatformAttribute  : OSPlatformAttribute
+        sealed class SupportedOSPlatformAttribute : OSPlatformAttribute
     {
-        public SupportedOSPlatformAttribute (string platformName) : base(platformName)
+        public SupportedOSPlatformAttribute(string platformName) : base(platformName)
         {
         }
     }

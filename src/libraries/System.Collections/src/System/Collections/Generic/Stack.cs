@@ -177,7 +177,7 @@ namespace System.Collections.Generic
 
         public void TrimExcess()
         {
-            int threshold = (int)(((double)_array.Length) * 0.9);
+            int threshold = (int)(_array.Length * 0.9);
             if (_size < threshold)
             {
                 Array.Resize(ref _array, _size);
