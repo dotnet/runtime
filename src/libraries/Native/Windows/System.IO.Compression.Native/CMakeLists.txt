@@ -95,8 +95,6 @@ add_library(System.IO.Compression.Native-static
     ${NATIVECOMPRESSION_SOURCES}
 )
 
-SET_TARGET_PROPERTIES(System.IO.Compression.Native-static PROPERTIES OUTPUT_NAME System.IO.Compression.Native)
-
 # Allow specification of arguments that should be passed to the linker
 if (GEN_SHARED_LIB)
     SET_TARGET_PROPERTIES(System.IO.Compression.Native PROPERTIES LINK_OPTIONS "${__LinkArgs};${__SharedLinkArgs}")
@@ -122,4 +120,3 @@ if (GEN_SHARED_LIB)
 endif()
 
 install (TARGETS System.IO.Compression.Native-static DESTINATION ${STATIC_LIB_DESTINATION})
-
