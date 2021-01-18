@@ -604,19 +604,6 @@ void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
     }
 }
 
-
-void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    // unwrap the objectref we were given
-    _UNCHECKED_OBJECTREF value = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref);
-
-    HndWriteBarrierWorker(handle, value);
-}
-
 #endif // DACCESS_COMPILE
 
 /*

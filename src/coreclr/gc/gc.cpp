@@ -3390,6 +3390,13 @@ uint8_t* align_lower_region (uint8_t* add)
     return (uint8_t*)((size_t)add & ~(REGION_SIZE - 1));
 }
 
+inline
+size_t get_basic_region_index_for_address (uint8_t* address)
+{
+    size_t basic_region_index = (size_t)address >> gc_heap::min_segment_size_shr;
+    return basic_region_index - ((size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr);
+}
+
 // Go from a random address to its region info. The random address could be 
 // in one of the basic regions of a larger region so we need to check for that.
 inline
@@ -9372,19 +9379,20 @@ size_t gc_heap::sort_mark_list()
 
 #ifdef USE_REGIONS
     // first set the pieces for all regions to empty
-    size_t lowest_region_index = (size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr;
-    size_t highest_region_index = (size_t)g_gc_highest_address >> gc_heap::min_segment_size_shr;
-    size_t region_count = highest_region_index - lowest_region_index + 1;
+    size_t region_count = get_basic_region_index_for_address (g_gc_highest_address) + 1;
     if (mark_list_piece_size < region_count)
     {
         delete[] mark_list_piece_start;
         delete[] mark_list_piece_end;
 
-        mark_list_piece_start = new (nothrow) uint8_t** [region_count];
-        mark_list_piece_end   = new (nothrow) uint8_t** [region_count];
+        // at least double the size
+        size_t alloc_count = max ((mark_list_piece_size * 2), region_count);
+
+        mark_list_piece_start = new (nothrow) uint8_t** [alloc_count];
+        mark_list_piece_end   = new (nothrow) uint8_t** [alloc_count];
         if (mark_list_piece_start && mark_list_piece_end)
         {
-            mark_list_piece_size = region_count;
+            mark_list_piece_size = alloc_count;
         }
         else
         {
@@ -9392,6 +9400,7 @@ size_t gc_heap::sort_mark_list()
                 delete[] mark_list_piece_start;
             if (mark_list_piece_end)
                 delete[] mark_list_piece_end;
+            mark_list_piece_start = mark_list_piece_end = nullptr;
             mark_list_piece_size = 0;
             return 0;
         }
@@ -9412,7 +9421,7 @@ size_t gc_heap::sort_mark_list()
         // sanity check - the object on the mark list should be within the region
         assert ((heap_segment_mem (region) <= *x) && (*x < heap_segment_allocated (region)));
 
-        size_t region_index = ((size_t)heap_segment_mem (region) >> gc_heap::min_segment_size_shr) - lowest_region_index;
+        size_t region_index = get_basic_region_index_for_address (heap_segment_mem (region));
         uint8_t* region_limit = heap_segment_allocated (region);
 
         uint8_t*** mark_list_piece_start_ptr = &mark_list_piece_start[region_index];
@@ -9547,8 +9556,7 @@ static int __cdecl cmp_mark_list_item (const void* vkey, const void* vdatum)
 #ifdef USE_REGIONS
 uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end_ptr)
 {
-    size_t lowest_region_number = (size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr;
-    size_t region_number = ((size_t)start >> gc_heap::min_segment_size_shr) - lowest_region_number;
+    size_t region_number = get_basic_region_index_for_address (start);
     size_t source_number = region_number;
 #else //USE_REGIONS
 void gc_heap::merge_mark_lists (size_t total_mark_list_size)
@@ -9756,7 +9764,7 @@ uint8_t** gc_heap::get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t**
     // do a binary search over the sorted marked list to find start and end of the
     // mark list for this region
     *mark_list_end_ptr = binary_search (mark_list, mark_list_index, end);
-    return binary_search (mark_list, mark_list_index, start);
+    return binary_search (mark_list, *mark_list_end_ptr, start);
 }
 #endif //USE_REGIONS
 #endif //MULTIPLE_HEAPS
@@ -12041,9 +12049,7 @@ gc_heap* gc_heap::make_gc_heap (
 
 #ifdef MARK_LIST
 #ifdef USE_REGIONS
-    size_t lowest_region_index = (size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr;
-    size_t highest_region_index = (size_t)g_gc_highest_address >> gc_heap::min_segment_size_shr;
-    size_t region_count = highest_region_index - lowest_region_index + 1;
+    size_t region_count = get_basic_region_index_for_address (g_gc_highest_address) + 1;
     res->mark_list_piece_size = 0;
     size_t slot_count = region_count;
 #else //USE_REGIONS
@@ -14808,8 +14814,6 @@ BOOL gc_heap::soh_try_fit (int gen_number,
 #ifdef USE_REGIONS
                 if (can_allocate)
                 {
-                    // disable for GC in coreclr, as we run into an assert there because
-                    // we cannot legally create an OBJECTREF where the object isn't baked.
 #ifdef STRESS_REGIONS
                     uint8_t* res = acontext->alloc_ptr;
                     heap_segment* seg = ephemeral_heap_segment;
@@ -18605,7 +18609,7 @@ void gc_heap::init_background_gc ()
 
 #ifndef USE_REGIONS
     //reset the plan allocation for each segment
-    for (heap_segment* seg = generation_allocation_segment (gen); seg != nullptr && seg != ephemeral_heap_segment;
+    for (heap_segment* seg = generation_allocation_segment (gen); seg != ephemeral_heap_segment;
         seg = heap_segment_next_rw (seg))
     {
         heap_segment_plan_allocated (seg) = heap_segment_allocated (seg);
@@ -23383,7 +23387,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     }
 
 #if defined(MULTIPLE_HEAPS) && defined(MARK_LIST) && !defined(USE_REGIONS)
-    merge_mark_lists(total_mark_list_size);
+    merge_mark_lists (total_mark_list_size);
 #endif //MULTIPLE_HEAPS && MARK_LIST !USE_REGIONS
 
 #ifdef BACKGROUND_GC
@@ -25179,7 +25183,20 @@ void gc_heap::plan_phase (int condemned_gen_number)
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS
         use_mark_list = TRUE;
-        get_gc_data_per_heap()->set_mechanism_bit (gc_mark_list_bit);
+#ifdef MULTIPLE_HEAPS
+        // in server GC, we may have failed to allocate the mark_list_piece_start
+        // or mark_list_piece_end arrays for one of the heaps - in this case,
+        // we cannot use the mark list either
+        for (int i = 0; i < n_heaps; i++)
+        {
+            if (g_heaps[i]->mark_list_piece_size == 0)
+                use_mark_list = FALSE;
+        }
+        if (use_mark_list)
+#endif
+        {
+            get_gc_data_per_heap()->set_mechanism_bit(gc_mark_list_bit);
+        }
     }
     else
     {
