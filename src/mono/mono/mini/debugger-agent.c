@@ -8206,11 +8206,12 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		}
 
 		/* Emit parameter names */
-		names = g_new (char*, sig->param_count);
-		mono_method_get_param_names (method, (const char**)names);
+		names = g_new (char *, sig->param_count);
+		mono_method_get_param_names (method, (const char **) names);
 		for (i = 0; i < sig->param_count; ++i)
-			buffer_add_string (buf, names[i]);
+			buffer_add_string (buf, names [i]);
 		g_free (names);
+
 		break;
 	}
 	case CMD_METHOD_GET_LOCALS_INFO: {
@@ -8648,7 +8649,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			 */
 			buffer_add_byte (buf, tls->frames [i]->flags);
 		}
-		if (CHECK_PROTOCOL_VERSION (3, 0))
+		if (CHECK_PROTOCOL_VERSION (3, 0)) //I'm not sure if this is being used by icordbg
 			buffer_add_byte_array(buf, ((guint8 *)&tls->context.ctx), (guint32)sizeof(MonoContext));
 		break;
 	}
