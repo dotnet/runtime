@@ -4,17 +4,13 @@
 namespace System.Diagnostics
 {
     /// <summary>
-    /// RandomNumberGenerator implementation is borrowed from the Random class which implement the Additive Number Generator algorithm for generating random numbers.
-    /// The difference here is RandomNumberGenerator based on long numbers instead of int numbers
-    /// to allow generating long numbers and increase the period (which is when the generated number can repeat again)
+    /// RandomNumberGenerator implementation is the 64-bit random number generator based on the Xorshift algorithm (known as shift-register generators).
     /// </summary>
     internal class RandomNumberGenerator
     {
-        private readonly long[] _seedArray = new long[56];
-        private int _inext;
-        private int _inextp;
-
         [ThreadStatic] private static RandomNumberGenerator? t_random;
+
+        private ulong _s0, _s1, _s2, _s3;
 
         public static RandomNumberGenerator Current
         {
@@ -28,88 +24,38 @@ namespace System.Diagnostics
             }
         }
 
-        public RandomNumberGenerator() : this(((long)Guid.NewGuid().GetHashCode() << 32) | (long)Guid.NewGuid().GetHashCode()) { }
-
-        public RandomNumberGenerator(long Seed)
+        public unsafe RandomNumberGenerator()
         {
-            long subtraction = (Seed == long.MinValue) ? long.MaxValue : Math.Abs(Seed);
-            long mj = 1618033988749894848L - subtraction; // magic number based on Phi (golden ratio)
-            _seedArray[55] = mj;
-            long mk = 1;
-
-            int ii = 0;
-            for (int i = 1; i < 55; i++)
+            do
             {
-                // The range [1..55] is special (Knuth) and so we're wasting the 0'th position.
-                if ((ii += 21) >= 55)
-                {
-                    ii -= 55;
-                }
-
-                _seedArray[ii] = mk;
-                mk = mj - mk;
-                if (mk < 0)
-                {
-                    mk += int.MaxValue;
-                }
-
-                mj = _seedArray[ii];
+                Guid g1 = Guid.NewGuid();
+                Guid g2 = Guid.NewGuid();
+                ulong* g1p = (ulong*)&g1;
+                ulong* g2p = (ulong*)&g2;
+                _s0 = *g1p;
+                _s1 = *(g1p + 1);
+                _s2 = *g2p;
+                _s3 = *(g2p + 1);
             }
-
-            for (int k = 1; k < 5; k++)
-            {
-                for (int i = 1; i < 56; i++)
-                {
-                    int n = i + 30;
-                    if (n >= 55)
-                    {
-                        n -= 55;
-                    }
-
-                    _seedArray[i] -= _seedArray[1 + n];
-                    if (_seedArray[i] < 0)
-                    {
-                        _seedArray[i] += int.MaxValue;
-                    }
-                }
-            }
-
-            _inextp = 21;
+            while ((_s0 | _s1 | _s2 | _s3) == 0);
         }
 
-        public long Next() => InternalSample();
+        private ulong Rol64(ulong x, int k) => (x << k) | (x >> (64 - k));
 
-        private long InternalSample()
+        public long Next()
         {
-            int locINext = _inext;
-            if (++locINext >= 56)
-            {
-                locINext = 1;
-            }
+            ulong result = Rol64(_s1 * 5, 7) * 9;
+            ulong t = _s1 << 17;
 
-            int locINextp = _inextp;
-            if (++locINextp >= 56)
-            {
-                locINextp = 1;
-            }
+            _s2 ^= _s0;
+            _s3 ^= _s1;
+            _s1 ^= _s2;
+            _s0 ^= _s3;
 
-            long retVal = _seedArray[locINext] - _seedArray[locINextp];
+            _s2 ^= t;
+            _s3 = Rol64(_s3, 45);
 
-            if (retVal == long.MaxValue)
-            {
-                retVal--;
-            }
-
-            if (retVal < 0)
-            {
-                retVal += long.MaxValue;
-            }
-
-            _seedArray[locINext] = retVal;
-            _inext = locINext;
-            _inextp = locINextp;
-
-            return retVal;
+            return (long)result;
         }
     }
 }
