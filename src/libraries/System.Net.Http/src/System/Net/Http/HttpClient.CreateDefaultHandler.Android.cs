@@ -13,23 +13,26 @@ namespace System.Net.Http
 
         private static Type? s_customHandlerType;
 
-        [RequiresUnreferencedCode("Types might be removed")]
         private static HttpMessageHandler CreateDefaultHandler()
         {
             if (s_customHandlerType != null)
             {
+#pragma warning disable IL2057
                 return (HttpMessageHandler)Activator.CreateInstance(s_customHandlerType)!;
+#pragma warning restore IL2057
             }
 
             string? envVar = Environment.GetEnvironmentVariable(CustomHandlerTypeEnvVar)?.Trim();
             if (!string.IsNullOrEmpty(envVar))
             {
+#pragma warning disable IL2072
                 Type? handlerType = Type.GetType(envVar, false);
                 if (handlerType == null && !envVar.Contains(", "))
                 {
                     // Look for custom handlers in Mono.Android by default if assembly name is not specified.
                     handlerType = Type.GetType(envVar + ", Mono.Android", false);
                 }
+#pragma warning restore IL2072
                 if (handlerType != null && Activator.CreateInstance(handlerType) is HttpMessageHandler handler)
                 {
                     // Create instance or fallback to default one if the type is invalid (current XA behavior).
