@@ -245,7 +245,6 @@
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
           DependsOnTargets="SetCommonILLinkArgs">
     <PropertyGroup>
-      <ILLinkArgs>$(ILLinkArgs) -r $(TargetName)</ILLinkArgs>
       <!-- default action for core assemblies -->
       <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
       <!-- default action for non-core assemblies -->
@@ -309,6 +308,9 @@
       </_DependencyDirectoriesNoSlash>
       <_DependencyDirectories Remove="@(_DependencyDirectories)" />
       <_DependencyDirectories Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
+      <ILLinkTrimInputAssembly Include="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)">
+        <RootMode>visible</RootMode>
+      </ILLinkTrimInputAssembly>
     </ItemGroup>
 
     <PropertyGroup>
@@ -323,8 +325,8 @@
       <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
     </PropertyGroup>
 
-    <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"
-            RootAssemblyNames=""
+    <ILLink AssemblyPaths=""
+            RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"
