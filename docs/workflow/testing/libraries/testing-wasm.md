@@ -101,6 +101,26 @@ To run all tests, including "outer loop" tests (which are typically slower and i
     MSBUILD_ARGS=/p:OuterLoop=true make -C src/mono/wasm/ run-browser-tests-System.AppContext
     ```
 
+### Running tests using different Browsers
+It's possible to set a Browser explicitly by adding `--browser=` command line argument to `XHARNESS_COMMAND`:
+
+- CLI
+    ```
+    XHARNESS_COMMAND="test-browser --browser=safari" ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+    ```
+
+- Makefile target `run-browser-tests-<test>`
+
+    ```
+    XHARNESS_BROWSER=firefox make -C src/mono/wasm/ run-browser-tests-System.AppContext
+    ```
+
+At the moment supported values are:
+- `chrome`
+- `safari`
+- `firefox`
+
+By default, `chrome` browser is used.
 
 ## Kicking off outer loop tests from GitHub Interface
 
