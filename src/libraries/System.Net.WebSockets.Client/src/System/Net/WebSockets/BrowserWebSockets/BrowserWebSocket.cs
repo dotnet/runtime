@@ -119,7 +119,10 @@ namespace System.Net.WebSockets
         internal async Task ConnectAsyncJavaScript(Uri uri, CancellationToken cancellationToken, List<string>? requestedSubProtocols)
         {
             // Check that we have not started already.
-            switch ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connecting, (int)InternalState.Created))
+            int prevState = _state;
+            _state = _state == (int)InternalState.Created ? (int)InternalState.Connecting : _state;
+
+            switch ((InternalState)prevState)
             {
                 case InternalState.Disposed:
                     throw new ObjectDisposedException(GetType().FullName);
@@ -201,7 +204,9 @@ namespace System.Net.WebSockets
                         if (!cancellationToken.IsCancellationRequested)
                         {
                             // Change internal _state to 'Connected' to enable the other methods
-                            if (Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != (int)InternalState.Connecting)
+                            int prevState = _state;
+                            _state = _state == (int)InternalState.Connecting ? (int)InternalState.Connected : _state;
+                            if (prevState != (int)InternalState.Connecting)
                             {
                                 // Aborted/Disposed during connect.
                                 tcsConnect.TrySetException(new ObjectDisposedException(GetType().FullName));
