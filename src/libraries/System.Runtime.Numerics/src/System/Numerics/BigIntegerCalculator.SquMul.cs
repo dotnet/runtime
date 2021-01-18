@@ -3,6 +3,8 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -32,6 +34,11 @@ namespace System.Numerics
 
             if (value.Length < SquareThreshold)
             {
+                // Switching to managed references helps eliminating
+                // index bounds check...
+                ref uint valuePtr = ref MemoryMarshal.GetReference(value);
+                ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
+
                 // Squares the bits using the "grammar-school" method.
                 // Envisioning the "rhombus" of a pen-and-paper calculation
                 // we see that computing z_i+j += a_j * a_i can be optimized
@@ -46,16 +53,17 @@ namespace System.Numerics
                 for (int i = 0; i < value.Length; i++)
                 {
                     ulong carry = 0UL;
+                    uint v = Unsafe.Add(ref valuePtr, i);
                     for (int j = 0; j < i; j++)
                     {
-                        ulong digit1 = bits[i + j] + carry;
-                        ulong digit2 = (ulong)value[j] * value[i];
-                        bits[i + j] = unchecked((uint)(digit1 + (digit2 << 1)));
+                        ulong digit1 = Unsafe.Add(ref resultPtr, i + j) + carry;
+                        ulong digit2 = (ulong)Unsafe.Add(ref valuePtr, j) * v;
+                        Unsafe.Add(ref resultPtr, i + j) = unchecked((uint)(digit1 + (digit2 << 1)));
                         carry = (digit2 + (digit1 >> 1)) >> 31;
                     }
-                    ulong digits = (ulong)value[i] * value[i] + carry;
-                    bits[i + i] = unchecked((uint)digits);
-                    bits[i + i + 1] = (uint)(digits >> 32);
+                    ulong digits = (ulong)v * v + carry;
+                    Unsafe.Add(ref resultPtr, i + i) = unchecked((uint)digits);
+                    Unsafe.Add(ref resultPtr, i + i + 1) = (uint)(digits >> 32);
                 }
             }
             else
@@ -169,6 +177,12 @@ namespace System.Numerics
 
             if (right.Length < MultiplyThreshold)
             {
+                // Switching to managed references helps eliminating
+                // index bounds check...
+                ref uint leftPtr = ref MemoryMarshal.GetReference(left);
+                ref uint rightPtr = ref MemoryMarshal.GetReference(right);
+                ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
+
                 // Multiplies the bits using the "grammar-school" method.
                 // Envisioning the "rhombus" of a pen-and-paper calculation
                 // should help getting the idea of these two loops...
@@ -181,12 +195,12 @@ namespace System.Numerics
                     ulong carry = 0UL;
                     for (int j = 0; j < left.Length; j++)
                     {
-                        ref uint elementPtr = ref bits[i + j];
-                        ulong digits = elementPtr + carry + (ulong)left[j] * right[i];
+                        ref uint elementPtr = ref Unsafe.Add(ref resultPtr, i + j);
+                        ulong digits = elementPtr + carry + (ulong)Unsafe.Add(ref leftPtr, j) * Unsafe.Add(ref rightPtr, i);
                         elementPtr = unchecked((uint)digits);
                         carry = digits >> 32;
                     }
-                    bits[i + left.Length] = (uint)carry;
+                    Unsafe.Add(ref resultPtr, i + left.Length) = (uint)carry;
                 }
             }
             else
@@ -288,25 +302,28 @@ namespace System.Numerics
             int i = 0;
             long carry = 0L;
 
+            // Switching to managed references helps eliminating
+            // index bounds check...
+            ref uint leftPtr = ref MemoryMarshal.GetReference(left);
+            ref uint rightPtr = ref MemoryMarshal.GetReference(right);
+            ref uint corePtr = ref MemoryMarshal.GetReference(core);
+
             for ( ; i < right.Length; i++)
             {
-                ref uint elementPtr = ref core[i];
-                long digit = (elementPtr + carry) - left[i] - right[i];
-                elementPtr = unchecked((uint)digit);
+                long digit = (Unsafe.Add(ref corePtr, i) + carry) - Unsafe.Add(ref leftPtr, i) - Unsafe.Add(ref rightPtr, i);
+                Unsafe.Add(ref corePtr, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for ( ; i < left.Length; i++)
             {
-                ref uint elementPtr = ref core[i];
-                long digit = (elementPtr + carry) - left[i];
-                elementPtr = unchecked((uint)digit);
+                long digit = (Unsafe.Add(ref corePtr, i) + carry) - Unsafe.Add(ref leftPtr, i);
+                Unsafe.Add(ref corePtr, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for ( ; carry != 0 && i < core.Length; i++)
             {
-                ref uint elementPtr = ref core[i];
-                long digit = elementPtr + carry;
-                elementPtr = (uint)digit;
+                long digit = Unsafe.Add(ref corePtr, i) + carry;
+                Unsafe.Add(ref corePtr, i) = (uint)digit;
                 carry = digit >> 32;
             }
         }
