@@ -97,6 +97,7 @@ namespace ILCompiler
         private readonly HashSet<MethodDesc> _placedProfileMethodsAll = new HashSet<MethodDesc>();
         private readonly bool _partialNGen;
         private readonly ReadyToRunCompilationModuleGroupBase _compilationGroup;
+        private readonly CallChainProfile _callChainProfile;
 
         public ProfileDataManager(Logger logger,
                                   IEnumerable<ModuleDesc> possibleReferenceModules,
@@ -104,11 +105,13 @@ namespace ILCompiler
                                   IEnumerable<ModuleDesc> versionBubbleModules,
                                   ModuleDesc nonLocalGenericsHome,
                                   IReadOnlyList<string> mibcFiles,
+                                  CallChainProfile callChainProfile,
                                   CompilerTypeSystemContext context,
                                   ReadyToRunCompilationModuleGroupBase compilationGroup)
         {
             _ibcParser = new IBCProfileParser(logger, possibleReferenceModules);
             _compilationGroup = compilationGroup;
+            _callChainProfile = callChainProfile;
             HashSet<ModuleDesc> versionBubble = new HashSet<ModuleDesc>(versionBubbleModules);
 
             {
@@ -247,5 +250,7 @@ namespace ILCompiler
                 return profileData;
             }
         }
+
+        public CallChainProfile CallChainProfile => _callChainProfile;
     }
 }

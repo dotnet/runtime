@@ -28,6 +28,7 @@ namespace ILCompiler
         private string _pdbPath;
         private bool _generatePerfMapFile;
         private string _perfMapPath;
+        private bool _generateProfileFile;
         private int _parallelism;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
@@ -151,6 +152,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseProfileFile(bool generateProfileFile)
+        {
+            _generateProfileFile = generateProfileFile;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseParallelism(int parallelism)
         {
             _parallelism = parallelism;
@@ -270,6 +277,7 @@ namespace ILCompiler
                 pdbPath: _pdbPath,
                 generatePerfMapFile: _generatePerfMapFile,
                 perfMapPath: _perfMapPath,
+                generateProfileFile: _generateProfileFile,
                 _parallelism,
                 _profileData,
                 _r2rMethodLayoutAlgorithm,
