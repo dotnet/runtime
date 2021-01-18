@@ -13479,7 +13479,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                  */
 
                 type = genActualType(lclTyp);
-
                 // If this is a no-op cast, just use op1.
                 if (!ovfl && (type == op1->TypeGet()) && (genTypeSize(type) == genTypeSize(lclTyp)))
                 {
@@ -13488,18 +13487,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Work is evidently required, add cast node
                 else
                 {
+                    GenTree* castOp = op1;
                     if (callNode)
                     {
-                        op1 = gtNewCastNodeL(type, op1, uns, lclTyp);
+                        op1 = gtNewCastNodeL(type, castOp, uns, lclTyp);
                     }
                     else
                     {
-                        op1 = gtNewCastNode(type, op1, uns, lclTyp);
+                        op1 = gtNewCastNode(type, castOp, uns, lclTyp);
                     }
 
                     if (ovfl)
                     {
                         op1->gtFlags |= (GTF_OVERFLOW | GTF_EXCEPT);
+                    }
+
+                    if (castOp->OperIsConst() && opts.OptimizationEnabled())
+                    {
+                        // Try and fold the introduced cast
+                        op1 = gtFoldExprConst(op1);
                     }
                 }
 
