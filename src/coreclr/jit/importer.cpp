@@ -3522,7 +3522,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         }
 
         //
-        // Make sure that the number of elements look valid.
+        // This optimization is only valid for a constant array size.
         //
         if (arrayLengthNode->gtOper != GT_CNS_INT)
         {

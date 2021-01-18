@@ -460,6 +460,7 @@ function_name() to call the system's implementation
 #undef pow
 #undef scalbn
 #undef sin
+#undef sincos
 #undef sinh
 #undef sqrt
 #undef tan
@@ -488,6 +489,7 @@ function_name() to call the system's implementation
 #undef powf
 #undef scalbnf
 #undef sinf
+#undef sincosf
 #undef sinhf
 #undef sqrtf
 #undef tanf

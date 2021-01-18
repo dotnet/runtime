@@ -56,6 +56,7 @@ set __TargetsWindows=1
 set __DoCrossgen=
 set __DoCrossgen2=
 set __CompositeBuildMode=
+set __CreatePdb=
 set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
@@ -108,6 +109,7 @@ if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages 
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set __TestBuildMode=crossgen&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen2"             (set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "pdb"                   (set __CreatePdb=1&shift&goto Arg_Loop)
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
@@ -583,6 +585,10 @@ set "__CrossgenOutputDir=%__TestIntermediatesDir%\crossgen.out"
 
 set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll" compile-framework -cr "%CORE_ROOT%" --output-directory "%__CrossgenOutputDir%" --release --nocleanup --target-arch %__BuildArch% -dop %NUMBER_OF_PROCESSORS%
 
+if defined __CreatePdb (
+    set __CrossgenCmd=!__CrossgenCmd! --pdb
+)
+
 if defined __CompositeBuildMode (
     set __CrossgenCmd=%__CrossgenCmd% --composite
 ) else (
@@ -620,7 +626,12 @@ if %__exitCode% neq 0 (
     exit /b 1
 )
 
-move "%__CrossgenOutputDir%\*.dll" %CORE_ROOT% > nul
+move /Y "%__CrossgenOutputDir%\*.dll" %CORE_ROOT% > nul
+
+if defined __CreatePdb (
+    move /Y "!__CrossgenOutputDir!\*.ni.pdb" !CORE_ROOT! > nul
+    copy /Y "!__BinDir!\PDB\System.Private.CoreLib.ni.pdb" !CORE_ROOT! > nul
+)
 
 exit /b 0
 
