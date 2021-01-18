@@ -62,15 +62,15 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     //[OuterLoop]
-    public async Task RunImpersonatedAsync_NameResolution()
+    public void RunImpersonatedAsync_NameResolution()
     {
         WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
 
-        await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
+        WindowsIdentity.RunImpersonated(_fixture.TestAccount.AccountTokenHandle, () =>
         {
             Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
 
-            IPAddress[] a1 = await Dns.GetHostAddressesAsync("");
+            IPAddress[] a1 = Dns.GetHostAddressesAsync("").GetAwaiter().GetResult();
             IPAddress[] a2 = Dns.GetHostAddresses("");
 
             Assert.True(a1.Length > 0);
