@@ -11,17 +11,7 @@ namespace System.Threading.Channels
         private static void QueueUserWorkItem(Action<object?> action, object? state) =>
             ThreadPool.QueueUserWorkItem(new WaitCallback(action), state);
 
-        private static CancellationTokenRegistration UnsafeRegister(CancellationToken cancellationToken, Action<object?> action, object? state)
-        {
-            if (ExecutionContext.IsFlowSuppressed())
-            {
-                return cancellationToken.Register(action, state);
-            }
-
-            using (ExecutionContext.SuppressFlow())
-            {
-                return cancellationToken.Register(action, state);
-            }
-        }
+        private static CancellationTokenRegistration UnsafeRegister(CancellationToken cancellationToken, Action<object?> action, object? state) =>
+            cancellationToken.Register(action, state);
     }
 }
