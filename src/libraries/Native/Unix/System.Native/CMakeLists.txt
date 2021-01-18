@@ -74,10 +74,13 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
+if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} entrypoints.c)
+endif()
+
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
-    entrypoints.c
 )
 
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
