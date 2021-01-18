@@ -264,6 +264,12 @@ namespace Internal.NativeFormat
             return val._offset;
         }
 
+        public void SetCurrentOffset(Vertex val)
+        {
+            val._iteration = _iteration;
+            val._offset = GetCurrentOffset();
+        }
+
         public int GetCurrentOffset()
         {
             return _encoder.Size;
@@ -1587,7 +1593,7 @@ namespace Internal.NativeFormat
         {
             if (_fixups != null)
             {
-                int existingOffset = _fixups._offset;
+                int existingOffset = writer.GetCurrentOffset(_fixups);
                 if (existingOffset != -1)
                 {
                     writer.WriteUnsigned((_methodIndex << 2) | 3);
@@ -1596,6 +1602,7 @@ namespace Internal.NativeFormat
                 else
                 {
                     writer.WriteUnsigned((_methodIndex << 2) | 1);
+                    writer.SetCurrentOffset(_fixups);
                     _fixups.Save(writer);
                 }
             }
@@ -1653,8 +1660,7 @@ namespace Internal.NativeFormat
             else
             {
                 writer.WriteUnsigned(0);
-                _debugInfo._iteration = writer.GetNumberOfIterations();
-                _debugInfo._offset = writer.GetCurrentOffset();
+                writer.SetCurrentOffset(_debugInfo);
                 _debugInfo.Save(writer);
             }
         }

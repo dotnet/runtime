@@ -57,6 +57,7 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity AddTag(string key, string? value) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, object? value) { throw null; }
         public System.Diagnostics.Activity SetTag(string key, object? value) { throw null; }
+        public System.Diagnostics.Activity SetBaggage(string key, string? value) { throw null; }
         public string? GetBaggageItem(string key) { throw null; }
         public System.Diagnostics.Activity SetEndTime(System.DateTime endTimeUtc) { throw null; }
         public System.Diagnostics.Activity SetIdFormat(System.Diagnostics.ActivityIdFormat format) { throw null; }

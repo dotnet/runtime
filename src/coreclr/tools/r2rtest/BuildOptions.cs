@@ -25,6 +25,7 @@ namespace R2RTest
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
         public bool Map { get; set; }
+        public bool Pdb { get; set; }
         public FileInfo PackageList { get; set; }
         public int DegreeOfParallelism { get; set; }
         public bool Sequential { get; set; }
