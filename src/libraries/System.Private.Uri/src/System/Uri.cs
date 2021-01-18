@@ -4793,7 +4793,7 @@ namespace System
                     {
                         // If final string starts with a segment looking like .[...]/ or .[...]<eos>
                         // then we remove this first segment
-                        if (lastSlash == dotCount + 1 || (lastSlash == 0 && dotCount + 1 == span.Length))
+                        if (lastSlash == dotCount || (lastSlash == 0 && dotCount == span.Length))
                         {
                             dotCount += lastSlash == 0 ? 0 : 1;
                             span.Slice(dotCount).CopyTo(span);
