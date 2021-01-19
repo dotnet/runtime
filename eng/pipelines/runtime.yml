@@ -193,6 +193,8 @@ jobs:
     platforms:
     - Android_x64
     - Browser_wasm
+    - tvOS_x64
+    - iOS_x64
     jobParameters:
       condition: >-
         or(
@@ -499,9 +501,13 @@ jobs:
       dependsOn:
       - mono_android_offsets
       - mono_browser_offsets
+      - mono_tvos_offsets
+      - mono_ios_offsets
       monoCrossAOTTargetOS:
       - Android
       - Browser
+      - tvOS
+      - iOS
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
