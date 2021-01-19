@@ -127,7 +127,8 @@ namespace Mono.Linker
 		// Linker internals, requirements for certain optimizations
 		UnreachableBodyRequirement = 77, // method -> well-known type required for unreachable bodies optimization
 		DisablePrivateReflectionRequirement = 78, // null -> DisablePrivateReflectionAttribute type/methods (note that no specific source is reported)
-		AlreadyMarked = 79, // null -> member that has already been marked for a particular reason (used to propagate reasons internally, not reported)
+		DynamicInterfaceCastableImplementation = 79, // type -> type is marked with IDynamicInterfaceCastableImplementationAttribute and implements the provided interface
+		AlreadyMarked = 80, // null -> member that has already been marked for a particular reason (used to propagate reasons internally, not reported)
 	}
 
 	public readonly struct DependencyInfo : IEquatable<DependencyInfo>
