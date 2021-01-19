@@ -8,6 +8,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeProcessHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
+        public SafeProcessHandle() : base (default(bool)) { }
         public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
         protected override bool ReleaseHandle() { throw null; }
     }

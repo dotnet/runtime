@@ -19,7 +19,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 
-        internal SafeProcessHandle()
+        public SafeProcessHandle()
             : this(IntPtr.Zero)
         {
         }
