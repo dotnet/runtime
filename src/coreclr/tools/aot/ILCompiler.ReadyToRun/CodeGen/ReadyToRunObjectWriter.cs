@@ -11,6 +11,7 @@ using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Diagnostics;
 using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
@@ -50,24 +51,55 @@ namespace ILCompiler.DependencyAnalysis
         private readonly IEnumerable<DependencyNode> _nodes;
 
         /// <summary>
+        /// Set to non-null when the executable generator should output a map or symbol file.
+        /// </summary>
+        private readonly OutputInfoBuilder _outputInfoBuilder;
+
+        /// <summary>
         /// Set to non-null when the executable generator should output a map file.
         /// </summary>
         private readonly MapFileBuilder _mapFileBuilder;
+
+        /// <summary>
+        /// Set to non-null when generating symbol info (PDB / PerfMap).
+        /// </summary>
+        private readonly SymbolFileBuilder _symbolFileBuilder;
+
         /// <summary>
         /// True when the map file builder should emit a textual map file
         /// </summary>
         private bool _generateMapFile;
+
         /// <summary>
         /// True when the map file builder should emit a CSV formatted map file
         /// </summary>
         private bool _generateMapCsvFile;
 
         /// <summary>
+        /// True when the map file builder should emit a PDB symbol file (only supported on Windows)
+        /// </summary>
+        private bool _generatePdbFile;
+
+        /// <summary>
+        /// Explicit specification of the output PDB path
+        /// </summary>
+        private string _pdbPath;
+
+        /// <summary>
+        /// True when the map file builder should emit a PerfMap file
+        /// </summary>
+        private bool _generatePerfMapFile;
+
+        /// <summary>
+        /// Explicit specification of the output PerfMap path
+        /// </summary>
+        private string _perfMapPath;
+
+        /// <summary>
         /// If non-zero, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB.
         /// This is used to support loading via large pages on Linux.
         /// </summary>
         private readonly int _customPESectionAlignment;
-
 
 #if DEBUG
         private struct NodeInfo
@@ -87,7 +119,18 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, NodeInfo> _previouslyWrittenNodeNames = new Dictionary<string, NodeInfo>();
 #endif
 
-        public ReadyToRunObjectWriter(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, bool generateMapCsvFile, int customPESectionAlignment)
+        public ReadyToRunObjectWriter(
+            string objectFilePath,
+            EcmaModule componentModule,
+            IEnumerable<DependencyNode> nodes,
+            NodeFactory factory,
+            bool generateMapFile,
+            bool generateMapCsvFile,
+            bool generatePdbFile,
+            string pdbPath,
+            bool generatePerfMapFile,
+            string perfMapPath,
+            int customPESectionAlignment)
         {
             _objectFilePath = objectFilePath;
             _componentModule = componentModule;
@@ -96,10 +139,27 @@ namespace ILCompiler.DependencyAnalysis
             _customPESectionAlignment = customPESectionAlignment;
             _generateMapFile = generateMapFile;
             _generateMapCsvFile = generateMapCsvFile;
-            
-            if (generateMapFile || generateMapCsvFile)
+            _generatePdbFile = generatePdbFile;
+            _pdbPath = pdbPath;
+            _generatePerfMapFile = generatePerfMapFile;
+            _perfMapPath = perfMapPath;
+
+            bool generateMap = (generateMapFile || generateMapCsvFile);
+            bool generateSymbols = (generatePdbFile || generatePerfMapFile);
+
+            if (generateMap || generateSymbols)
             {
-                _mapFileBuilder = new MapFileBuilder();
+                _outputInfoBuilder = new OutputInfoBuilder();
+
+                if (generateMap)
+                {
+                    _mapFileBuilder = new MapFileBuilder(_outputInfoBuilder);
+                }
+
+                if (generateSymbols)
+                {
+                    _symbolFileBuilder = new SymbolFileBuilder(_outputInfoBuilder);
+                }
             }
         }
 
@@ -207,8 +267,13 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
 
-                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, _mapFileBuilder);
+                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section);
                     lastWrittenObjectNode = node;
+
+                    if ((_generatePdbFile || _generatePerfMapFile) && node is MethodWithGCInfo methodNode)
+                    {
+                        _outputInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
+                    }
                 }
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
@@ -247,9 +312,9 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
 
-                if (_mapFileBuilder != null)
+                if (_outputInfoBuilder != null)
                 {
-                    r2rPeBuilder.AddSections(_mapFileBuilder);
+                    r2rPeBuilder.AddSections(_outputInfoBuilder);
 
                     if (_generateMapFile)
                     {
@@ -262,6 +327,26 @@ namespace ILCompiler.DependencyAnalysis
                         string nodeStatsCsvFileName = Path.ChangeExtension(_objectFilePath, ".nodestats.csv");
                         string mapCsvFileName = Path.ChangeExtension(_objectFilePath, ".map.csv");
                         _mapFileBuilder.SaveCsv(nodeStatsCsvFileName, mapCsvFileName);
+                    }
+
+                    if (_generatePdbFile)
+                    {
+                        string path = _pdbPath;
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            path = Path.GetDirectoryName(_objectFilePath);
+                        }
+                        _symbolFileBuilder.SavePdb(path, _objectFilePath);
+                    }
+
+                    if (_generatePerfMapFile)
+                    {
+                        string path = _perfMapPath;
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            path = Path.GetDirectoryName(_objectFilePath);
+                        }
+                        _symbolFileBuilder.SavePerfMap(path, _objectFilePath);
                     }
                 }
 
@@ -299,8 +384,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <param name="nodeIndex">Logical index of the emitted node for diagnostic purposes</param>
         /// <param name="name">Textual representation of the ObjecData blob in the map file</param>
         /// <param name="section">Section to emit the blob into</param>
-        /// <param name="mapFile">Map file output stream</param>
-        private void EmitObjectData(R2RPEBuilder r2rPeBuilder, ObjectData data, int nodeIndex, string name, ObjectNodeSection section, MapFileBuilder mapFileBuilder)
+        private void EmitObjectData(R2RPEBuilder r2rPeBuilder, ObjectData data, int nodeIndex, string name, ObjectNodeSection section)
         {
 #if DEBUG
             for (int symbolIndex = 0; symbolIndex < data.DefinedSymbols.Length; symbolIndex++)
@@ -319,13 +403,35 @@ namespace ILCompiler.DependencyAnalysis
             }
 #endif
 
-            r2rPeBuilder.AddObjectData(data, section, name, mapFileBuilder);
+            r2rPeBuilder.AddObjectData(data, section, name, _outputInfoBuilder);
         }
 
-        public static void EmitObject(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, bool generateMapCsvFile, int customPESectionAlignment)
+        public static void EmitObject(
+            string objectFilePath,
+            EcmaModule componentModule,
+            IEnumerable<DependencyNode> nodes,
+            NodeFactory factory,
+            bool generateMapFile,
+            bool generateMapCsvFile,
+            bool generatePdbFile,
+            string pdbPath,
+            bool generatePerfMapFile,
+            string perfMapPath,
+            int customPESectionAlignment)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
-            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, componentModule, nodes, factory, generateMapFile, generateMapCsvFile, customPESectionAlignment);
+            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(
+                objectFilePath,
+                componentModule,
+                nodes,
+                factory,
+                generateMapFile: generateMapFile,
+                generateMapCsvFile: generateMapCsvFile,
+                generatePdbFile: generatePdbFile,
+                pdbPath: pdbPath,
+                generatePerfMapFile: generatePerfMapFile,
+                perfMapPath: perfMapPath,
+                customPESectionAlignment);
             objectWriter.EmitPortableExecutable();
         }
     }

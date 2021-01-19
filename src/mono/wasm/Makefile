@@ -6,6 +6,7 @@ escape_quote = $(subst ",\",$(1))
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver
+GECKODRIVER?=$(HOME)/.geckodriver
 
 #
 # These variables are set by wasm.proj
@@ -22,6 +23,7 @@ SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
 ENABLE_ES6?=false
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
 ENABLE_METADATA_UPDATE?=false
+XHARNESS_BROWSER?=chrome
 
 all: build-native icu-files source-files header-files
 
@@ -180,7 +182,7 @@ run-tests-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-browser-tests-%:
-	PATH="$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND=test-browser $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-debugger-tests:
 	if [ ! -z "$(TEST_FILTER)" ]; then \

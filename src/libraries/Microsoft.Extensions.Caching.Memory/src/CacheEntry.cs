@@ -136,6 +136,8 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 _state.IsDisposed = true;
 
+                CacheEntryHelper.ExitScope(this, _previous);
+
                 // Don't commit or propagate options if the CacheEntry Value was never set.
                 // We assume an exception occurred causing the caller to not set the Value successfully,
                 // so don't use this entry.
@@ -149,7 +151,6 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
                 }
 
-                CacheEntryHelper.ExitScope(this, _previous);
                 _previous = null; // we don't want to root unnecessary objects
             }
         }

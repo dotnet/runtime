@@ -11,6 +11,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 
 using ILCompiler.Reflection.ReadyToRun;
+using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 
 namespace R2RDump
@@ -476,6 +477,29 @@ namespace R2RDump
         internal override void DumpQueryCount(string q, string title, int count)
         {
             _writer.WriteLine(count + " result(s) for \"" + q + "\"");
+            SkipLine();
+        }
+
+        internal override void DumpFixupStats()
+        {
+            WriteDivider("Eager fixup counts across all methods");
+            
+            // Group all fixups across methods by fixup kind, and sum each category
+            var sortedFixupCounts = _r2r.Methods.Where(m => m.Fixups != null)
+                .SelectMany(m => m.Fixups)
+                .GroupBy(f => f.Signature.FixupKind)
+                .Select(group => new {
+                    FixupKind = group.Key,
+                    Count = group.Count()
+                }).OrderByDescending(x => x.Count);
+
+            Console.WriteLine($"                      Fixup | Count");
+            foreach (var fixupAndCount in sortedFixupCounts)
+            {
+                Console.WriteLine($"{fixupAndCount.FixupKind, 27} | {fixupAndCount.Count, 5}");
+            }
+            Console.WriteLine("-----------------------------------");
+            Console.WriteLine($"                      Total | {sortedFixupCounts.Sum(x => x.Count), 5}");
             SkipLine();
         }
     }
