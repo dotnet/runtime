@@ -18,7 +18,7 @@
 
   <PropertyGroup>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
-    <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+    <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' or '$(EnableProfiler)' == 'true'">true</WasmBuildNative>
     <WasmNativeStrip>true</WasmNativeStrip>
   </PropertyGroup>
 
@@ -151,7 +151,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       </InitAotProfilerCmd>
     </PropertyGroup>
     <WriteLinesToFile File="$(WasmBuildDir)driver-gen.c" Overwrite="true"
-                      Condition="'$(RunAOTCompilation)' == 'false' And '$(EnableProfiler)' == 'true'"
+                      Condition="'$(RunAOTCompilation)' == 'false' And '$(WasmBuildNative)' == 'true'"
                       Lines="$(InitAotProfilerCmd)"
                       />
     <ItemGroup>
