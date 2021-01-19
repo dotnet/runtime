@@ -203,8 +203,9 @@ namespace System.IO.Tests
             @"",
             @"\", @"\\",
             @"/", @"//", @"\/", @"/\",
-            @".", @".\", @".\\",
-            @".", @"./", @".//",
+            @".",
+            @".\", @".\\",
+            @"./", @".//",
             @"\.", @"\\.", @"\.\", @"\\.\\",
             @"/.", @"//.", @"/./", @"//.//",
             @"\.\.", @"\\.\\.", @"\.\.\", @"\\.\\.\\",
@@ -220,13 +221,9 @@ namespace System.IO.Tests
         };
         private static readonly string[] TestPaths_DevicePrefix = new string[]
         {
-            @"C",
             @"C:",
-            @"C:\",
-            @"C:/",
             @"C:\folder",
             @"C:/folder",
-            @"C:A",
             @"C:A",
             @"C:A\folder",
             @"C:A/folder",
