@@ -114,9 +114,9 @@ jobs:
 
     - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
-        displayName: Download AOT offset files
+        displayName: Download ${{monoCrossAOTTargetOS}} AOT offset files
         inputs:
-          artifact: Mono_${{monoCrossAOTTargetOS}}_Android
+          artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
