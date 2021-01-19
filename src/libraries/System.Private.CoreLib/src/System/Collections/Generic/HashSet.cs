@@ -399,7 +399,7 @@ namespace System.Collections.Generic
 
             if (_buckets != null)
             {
-                var array = new T[Count];
+                var array = GC.AllocateUninitializedArray<T>(Count);
                 CopyTo(array);
                 info.AddValue(ElementsName, array, typeof(T[]));
             }
@@ -426,8 +426,8 @@ namespace System.Collections.Generic
 
             if (capacity != 0)
             {
-                _buckets = new int[capacity];
-                _entries = new Entry[capacity];
+                _buckets = GC.AllocateUninitializedArray<int>(capacity);
+                _entries = GC.AllocateUninitializedArray<Entry>(capacity);
 #if TARGET_64BIT
                 _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)capacity);
 #endif
@@ -974,7 +974,7 @@ namespace System.Collections.Generic
             Debug.Assert(_entries != null, "_entries should be non-null");
             Debug.Assert(newSize >= _entries.Length);
 
-            var entries = new Entry[newSize];
+            var entries = GC.AllocateUninitializedArray<Entry>(newSize);
 
             int count = _count;
             Array.Copy(_entries, entries, count);
@@ -1000,7 +1000,7 @@ namespace System.Collections.Generic
             }
 
             // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
-            _buckets = new int[newSize];
+            _buckets = GC.AllocateUninitializedArray<int>(newSize);
 #if TARGET_64BIT
             _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
 #endif
@@ -1071,8 +1071,8 @@ namespace System.Collections.Generic
         private int Initialize(int capacity)
         {
             int size = HashHelpers.GetPrime(capacity);
-            var buckets = new int[size];
-            var entries = new Entry[size];
+            var buckets = GC.AllocateUninitializedArray<int>(size);
+            var entries = GC.AllocateUninitializedArray<Entry>(size);
 
             // Assign member variables after both arrays are allocated to guard against corruption from OOM if second fails.
             _freeList = -1;
