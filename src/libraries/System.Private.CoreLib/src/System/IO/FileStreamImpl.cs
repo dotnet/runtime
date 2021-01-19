@@ -202,6 +202,13 @@ namespace System.IO
             }
         }
 
+        ~FileStreamImpl()
+        {
+            // it looks like having this finalizer is mandatory,
+            // as we can not guarantee that the Strategy won't be null in FileStream finalizer
+            Dispose(false);
+        }
+
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         internal override IntPtr Handle => SafeFileHandle.DangerousGetHandle();
