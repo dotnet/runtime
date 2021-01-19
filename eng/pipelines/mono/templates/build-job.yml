@@ -13,8 +13,8 @@ parameters:
   isOfficialBuild: false
   crossBuild: false
   crossrootfsDir: ''
-  dependsOn: ''
-  monoCrossAOTTargetOS: ''
+  dependsOn: []
+  monoCrossAOTTargetOS: []
   dependOnEvaluatePaths: false
 
 ### Product build
@@ -112,11 +112,11 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-    - ${{ if eq(parameters.monoCrossAOTTargetOS, 'Android') }}:
+    - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
         displayName: Download AOT offset files
         inputs:
-          artifact: Mono_Offsets_Android
+          artifact: Mono_${{monoCrossAOTTargetOS}}_Android
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
