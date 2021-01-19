@@ -685,7 +685,7 @@ public:
             {
                 CorInfoHFAElemType type = m_argTypeHandle.GetHFAType();
                 pLoc->setHFAFieldSize(type);
-                pLoc->m_cFloatReg = byteArgSize / pLoc->m_hfaFieldSize;
+                pLoc->m_cFloatReg = GetArgSize() / pLoc->m_hfaFieldSize;
 
             }
             else
@@ -780,7 +780,7 @@ public:
                 argSizeInBytes = TARGET_POINTER_SIZE;
             else
                 argSizeInBytes = GetArgSize();
-            pLoc->m_byteStackSize = argSizeInBytes;
+            pLoc->m_byteStackSize = StackElemSize(argSizeInBytes);
         }
     }
 #endif // TARGET_AMD64
