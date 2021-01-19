@@ -104,10 +104,7 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
-    typedef INT32 StackElemType;
-    const unsigned stackSlotSize = sizeof(StackElemType);
-    // The next expression assumes STACK_ELEM_SIZE is a power of 2.
-    static_assert(((stackSlotSize & (stackSlotSize-1)) == 0), "STACK_ELEM_SIZE must be a power of 2");
+    const unsigned stackSlotSize = sizeof(void*);
     return (parmSize + stackSlotSize - 1) & ~(stackSlotSize - 1);
 }
 
