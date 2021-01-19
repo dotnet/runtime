@@ -609,7 +609,7 @@ namespace System.Linq.Tests
             IEnumerable<int> second = new[] { 4, 5, 6 };
             IEnumerable<int> third = new[] { 7, 8, 9 };
 
-            Assert.Throws<ArgumentNullException>("first", () => first.Zip(second, third));
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.Zip(second, third));
         }
 
         [Fact]
@@ -619,7 +619,7 @@ namespace System.Linq.Tests
             IEnumerable<int> second = null;
             IEnumerable<int> third = new[] { 4, 5, 6 };
 
-            Assert.Throws<ArgumentNullException>("second", () => first.Zip(second, third));
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.Zip(second, third));
         }
 
         [Fact]
@@ -629,7 +629,7 @@ namespace System.Linq.Tests
             IEnumerable<int> second = new[] { 4, 5, 6 };
             IEnumerable<int> third = null;
 
-            Assert.Throws<ArgumentNullException>("third", () => first.Zip(second, third));
+            AssertExtensions.Throws<ArgumentNullException>("third", () => first.Zip(second, third));
         }
 
         [Fact]
@@ -677,7 +677,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void Zip3_ThridManyMore()
+        public void Zip3_ThirdManyMore()
         {
             IEnumerable<int> first = new[] { 1, 2 };
             IEnumerable<int> second = new[] { 3, 4 };

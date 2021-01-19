@@ -51,7 +51,7 @@ namespace System.Linq
         /// <param name="first">The first sequence to merge.</param>
         /// <param name="second">The second sequence to merge.</param>
         /// <param name="third">The third sequence to merge.</param>
-        /// <returns>A sequence of tuples with elements taken from the first, second and third sequences, in that order.</returns>
+        /// <returns>A sequence of tuples with elements taken from the first, second, and third sequences, in that order.</returns>
         public static IEnumerable<(TFirst First, TSecond Second, TThird Third)> Zip<TFirst, TSecond, TThird>(this IEnumerable<TFirst> first, IEnumerable<TSecond> second, IEnumerable<TThird> third)
         {
             if (first is null)
