@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -1430,6 +1432,28 @@ namespace System.Numerics
         internal static void ThrowInsufficientNumberOfElementsException(int requiredElementCount)
         {
             throw new IndexOutOfRangeException(SR.Format(SR.Arg_InsufficientNumberOfElements, requiredElementCount, "values"));
+        }
+
+        /// <summary>
+        /// Reinterprets a <see cref="Vector{T}"/> as a <see cref="Vector{T}"/> of new type.
+        /// </summary>
+        /// <typeparam name="TFrom">The type of the input vector.</typeparam>
+        /// <typeparam name="TTo">The type to reinterpret the vector as.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector"/> reinterpreted as a new <see cref="Vector{T}"/>.</returns>
+        /// <exception cref="NotSupportedException">
+        /// The type of <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> is not supported.
+        /// </exception>
+        public static Vector<TTo> As<TFrom, TTo>(Vector<TFrom> vector)
+            where TFrom : struct
+            where TTo : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<TFrom>();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<TTo>();
+
+            Debug.Assert(Vector<TFrom>.Count * Unsafe.SizeOf<TFrom>() == Vector<TTo>.Count * Unsafe.SizeOf<TTo>());
+
+            return Unsafe.As<Vector<TFrom>, Vector<TTo>>(ref vector);
         }
     }
 }
