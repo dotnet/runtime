@@ -601,12 +601,6 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t ad
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
 
-    sa_family_t platformFamily;
-    if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &platformFamily))
-    {
-        return GetAddrInfoErrorFlags_EAI_FAMILY;
-    }
-
     struct GetAddrInfoAsyncState* state = malloc(sizeof(*state) + addrlen + 1);
 
     if (state == NULL)
