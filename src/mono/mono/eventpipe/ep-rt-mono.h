@@ -421,6 +421,15 @@ ep_rt_mono_system_timestamp_get (void);
 void
 ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
 
+void
+ep_rt_mono_init_providers_and_events (void);
+
+void
+ep_rt_mono_fini_providers_and_events (void);
+
+void
+ep_rt_mono_execute_rundown (void);
+
 #ifndef EP_RT_MONO_USE_STATIC_RUNTIME
 static
 inline
@@ -866,7 +875,7 @@ inline
 void
 ep_rt_init_providers_and_events (void)
 {
-	;
+	ep_rt_mono_init_providers_and_events ();
 }
 
 static
@@ -1034,6 +1043,19 @@ ep_rt_config_value_get_use_portable_thread_pool (void)
 {
 	// Only supports portable thread pool.
 	return true;
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_rundown (void)
+{
+	uint32_t value_uint32_t = 1;
+	gchar *value = g_getenv ("COMPlus_EventPipeRundown");
+	if (value)
+		value_uint32_t = (uint32_t)atoi (value);
+	g_free (value);
+	return value_uint32_t;
 }
 
 /*
@@ -1313,7 +1335,11 @@ inline
 void
 ep_rt_execute_rundown (void)
 {
-	//TODO: Implement.
+	if (ep_rt_config_value_get_rundown () > 0) {
+		// Ask the runtime to emit rundown events.
+		if (/*is_running &&*/ !ep_rt_process_shutdown ())
+			ep_rt_mono_execute_rundown ();
+	}
 }
 
 /*
