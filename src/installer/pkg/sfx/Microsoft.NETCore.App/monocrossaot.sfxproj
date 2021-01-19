@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
-    <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">android-x64;android-arm64;android-x86;android-arm</MonoAotTargets>
+    <_MonoCrossAOTTargetOS Condition="'$(MonoCrossAOTTargetOS)' != ''">+$(MonoCrossAOTTargetOS.ToLowerInvariant())+</_MonoCrossAOTTargetOS>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))">$(MonoAotTargets);android-x64;android-arm64;android-x86;android-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+wasm+'))">$(MonoAotTargets);browser-wasm</MonoAotTargets>
   </PropertyGroup>
 
   <ItemGroup>

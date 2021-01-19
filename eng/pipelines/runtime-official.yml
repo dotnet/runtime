@@ -132,9 +132,10 @@ stages:
       buildConfig: release
       platforms:
       - Android_x64
+      - Browser_wasm
 
   #
-  # Build Mono release Android AOT cross-compiler
+  # Build Mono release AOT cross-compilers
   #
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -146,15 +147,20 @@ stages:
       - Linux_x64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                   /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-        nameSuffix: AndroidAOT_Mono
-        runtimeVariant: crossandroid
-        dependsOn: mono_android_offsets
-        monoCrossAOTTargetOS: Android
+                   /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+        nameSuffix: CrossAOT_Mono
+        runtimeVariant: crossaot
+        dependsOn:
+        - mono_android_offsets
+        - mono_browser_offsets
+        monoCrossAOTTargetOS:
+        - Android
+        - Browser
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: MonoRuntimePacks
+
   #
   # Build Mono LLVM runtime packs
   #

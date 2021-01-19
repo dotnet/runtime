@@ -192,6 +192,7 @@ jobs:
     buildConfig: release
     platforms:
     - Android_x64
+    - Browser_wasm
     jobParameters:
       condition: >-
         or(
@@ -494,9 +495,13 @@ jobs:
     # - windows_arm
     # - windows_arm64
     jobParameters:
-      runtimeVariant: crossandroid
-      dependsOn: mono_android_offsets
-      monoCrossAOTTargetOS: Android
+      runtimeVariant: crossaot
+      dependsOn:
+      - mono_android_offsets
+      - mono_browser_offsets
+      monoCrossAOTTargetOS:
+      - Android
+      - Browser
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
