@@ -378,7 +378,13 @@ namespace System.IO
             Dispose(false);
         }
 
-        protected override void Dispose(bool disposing) => _actualImplementation.DisposeInternal(disposing);
+        protected override void Dispose(bool disposing)
+        {
+            if (_actualImplementation != null) // possible in finalizer
+            {
+                _actualImplementation.DisposeInternal(disposing);
+            }
+        }
 
         public override ValueTask DisposeAsync()
         {
