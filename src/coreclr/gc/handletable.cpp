@@ -603,7 +603,6 @@ void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
         }
     }
 }
-
 #endif // DACCESS_COMPILE
 
 /*

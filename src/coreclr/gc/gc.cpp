@@ -25183,7 +25183,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS
         use_mark_list = TRUE;
-#ifdef MULTIPLE_HEAPS
+#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
         // in server GC, we may have failed to allocate the mark_list_piece_start
         // or mark_list_piece_end arrays for one of the heaps - in this case,
         // we cannot use the mark list either
@@ -25193,7 +25193,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 use_mark_list = FALSE;
         }
         if (use_mark_list)
-#endif
+#endif //MULTIPLE_HEAPS && USE_REGIONS
         {
             get_gc_data_per_heap()->set_mechanism_bit(gc_mark_list_bit);
         }
