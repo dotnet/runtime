@@ -97,10 +97,11 @@ namespace System.Net.Sockets.Tests
 
             CancellationTokenSource cts = new CancellationTokenSource();
             if (precanceled) cts.Cancel();
-            else cts.CancelAfter(10);
+            else cts.CancelAfter(100);
 
             OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                () => socket.ReceiveFromAsync(buffer, SocketFlags.None, GetGetDummyTestEndpoint(loopback.AddressFamily), cts.Token).AsTask());
+                () => socket.ReceiveFromAsync(buffer, SocketFlags.None, GetGetDummyTestEndpoint(loopback.AddressFamily), cts.Token).AsTask())
+                .TimeoutAfter(10_000);
             Assert.Equal(cts.Token, ex.CancellationToken);
         }
     }
