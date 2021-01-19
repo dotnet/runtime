@@ -11,8 +11,6 @@ namespace System.IO
 {
     internal sealed partial class FileStreamImpl : FileStreamStrategy
     {
-        private const bool DefaultIsAsync = false;
-
         private byte[]? _buffer;
         private readonly int _bufferLength;
         private readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
@@ -230,10 +228,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer)
-        {
-            WriteSpan(buffer);
-        }
+        public override void Write(ReadOnlySpan<byte> buffer) => WriteSpan(buffer);
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

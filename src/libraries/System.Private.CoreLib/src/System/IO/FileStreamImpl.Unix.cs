@@ -61,7 +61,7 @@ namespace System.IO
             return SafeFileHandle.Open(_path!, openFlags, (int)OpenPermissions);
         }
 
-        internal static bool GetDefaultIsAsync(SafeFileHandle handle) => handle.IsAsync ?? DefaultIsAsync;
+        internal static bool GetDefaultIsAsync(SafeFileHandle handle, bool defaultIsAsync) => handle.IsAsync ?? defaultIsAsync;
 
         /// <summary>Initializes a stream for reading or writing a Unix file.</summary>
         /// <param name="mode">How the file should be opened.</param>

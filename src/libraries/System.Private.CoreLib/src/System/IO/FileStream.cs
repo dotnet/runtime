@@ -92,7 +92,7 @@ namespace System.IO
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
-            : this(handle, access, bufferSize, FileStreamImpl.GetDefaultIsAsync(handle))
+            : this(handle, access, bufferSize, FileStreamImpl.GetDefaultIsAsync(handle, DefaultIsAsync))
         {
         }
 
