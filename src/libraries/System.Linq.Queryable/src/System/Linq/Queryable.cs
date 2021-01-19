@@ -666,6 +666,16 @@ namespace System.Linq
                     ));
         }
 
+        /// <summary>
+        /// Produces a sequence of tuples with elements from the three specified sequences.
+        /// </summary>
+        /// <typeparam name="TFirst">The type of the elements of the first input sequence.</typeparam>
+        /// <typeparam name="TSecond">The type of the elements of the second input sequence.</typeparam>
+        /// <typeparam name="TThird">The type of the elements of the third input sequence.</typeparam>
+        /// <param name="source1">The first sequence to merge.</param>
+        /// <param name="source2">The second sequence to merge.</param>
+        /// <param name="source3">The third sequence to merge.</param>
+        /// <returns>A sequence of tuples with elements taken from the first, second and third sequences, in that order.</returns>
         [DynamicDependency("Zip`3", typeof(Enumerable))]
         public static IQueryable<(TFirst First, TSecond Second, TThird Third)> Zip<TFirst, TSecond, TThird>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2, IEnumerable<TThird> source3)
         {
