@@ -18,5 +18,24 @@ namespace System.Net.Sockets
         {
             return (Options & option) == option;
         }
+
+        internal bool UseOnlyOverlappedIO
+        {
+            get
+            {
+                return ((Options&SocketInformationOptions.UseOnlyOverlappedIO)!=0);
+            }
+            set
+            {
+                if (value)
+                {
+                    Options |= SocketInformationOptions.UseOnlyOverlappedIO;
+                }
+                else
+                {
+                    Options &= ~SocketInformationOptions.UseOnlyOverlappedIO;
+                }
+            }
+        }
     }
 }

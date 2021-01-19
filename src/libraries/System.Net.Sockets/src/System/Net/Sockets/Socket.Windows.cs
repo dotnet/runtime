@@ -63,6 +63,7 @@ namespace System.Net.Sockets
             _willBlock = !socketInformation.GetOption(SocketInformationOptions.NonBlocking);
             InternalSetBlocking(_willBlock);
             _isListening = socketInformation.GetOption(SocketInformationOptions.Listening);
+            UseOnlyOverlappedIO = socketInformation.GetOption(SocketInformationOptions.UseOnlyOverlappedIO);
 
             IPAddress tempAddress = _addressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
             IPEndPoint ep = new IPEndPoint(tempAddress, 0);
@@ -138,6 +139,7 @@ namespace System.Net.Sockets
             info.SetOption(SocketInformationOptions.Connected, Connected);
             info.SetOption(SocketInformationOptions.NonBlocking, !Blocking);
             info.SetOption(SocketInformationOptions.Listening, _isListening);
+            info.SetOption(SocketInformationOptions.UseOnlyOverlappedIO, UseOnlyOverlappedIO);
 
             Close(timeout: -1);
 

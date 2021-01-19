@@ -10,6 +10,7 @@ using System.Net.Internals;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,6 +24,17 @@ namespace System.Net.Sockets
         private static readonly IPAddress s_IPAddressAnyMapToIPv6 = IPAddress.Any.MapToIPv6();
 
         private SafeSocketHandle _handle;
+
+        // Overlapped constants.
+#if !(FEATURE_PAL && !MONO) || CORIOLIS
+        internal static volatile bool UseOverlappedIO;
+#else
+        internal static volatile bool UseOverlappedIO = true;
+#endif // !(FEATURE_PAL && !MONO) || CORIOLIS
+        private bool useOverlappedIO;
+
+        // Bool marked true if the native socket m_Handle was bound to the ThreadPool
+        private bool        m_BoundToThreadPool; // = false;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
         // correct type (IPEndPoint, etc).
@@ -421,17 +433,18 @@ namespace System.Net.Sockets
         {
             get
             {
-                return false;
+                // return the user's desired blocking behaviour (not the actual win32 state)
+                return useOverlappedIO;
             }
             set
             {
-                //
-                // This implementation does not support non-IOCP-based async I/O on Windows, and this concept is
-                // not even meaningful on other platforms.  This option is really only functionally meaningful
-                // if the user calls DuplicateAndClose.  Since we also don't support DuplicateAndClose,
-                // we can safely ignore the caller's choice here, rather than breaking compat further with something
-                // like PlatformNotSupportedException.
-                //
+#if !MONO
+                if (m_BoundToThreadPool)
+                {
+                    throw new InvalidOperationException("The socket has already been bound to an io completion port.");
+                }
+#endif
+                useOverlappedIO = value;
             }
         }
 
