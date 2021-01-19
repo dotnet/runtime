@@ -13,7 +13,7 @@ namespace System.IO
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
 
-        private readonly FileStreamStrategy _actualImplementation;
+        private readonly FileStreamStrategy _impl;
 
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access)
@@ -40,10 +40,10 @@ namespace System.IO
             switch (isAsync)
             {
                 case true:
-                    _actualImplementation = new FileStreamImpl(handle, access, ownsHandle, bufferSize, true);
+                    _impl = new FileStreamImpl(handle, access, ownsHandle, bufferSize, true);
                     return;
                 case false:
-                    _actualImplementation = new FileStreamImpl(handle, access, ownsHandle, bufferSize, false);
+                    _impl = new FileStreamImpl(handle, access, ownsHandle, bufferSize, false);
                     return;
             }
         }
@@ -63,10 +63,10 @@ namespace System.IO
             switch (isAsync)
             {
                 case true:
-                    _actualImplementation = new FileStreamImpl(handle, access, bufferSize, true);
+                    _impl = new FileStreamImpl(handle, access, bufferSize, true);
                     return;
                 case false:
-                    _actualImplementation = new FileStreamImpl(handle, access, bufferSize, false);
+                    _impl = new FileStreamImpl(handle, access, bufferSize, false);
                     return;
             }
         }
@@ -95,20 +95,20 @@ namespace System.IO
         {
             if ((options & FileOptions.Asynchronous) != 0)
             {
-                _actualImplementation = new FileStreamImpl(path, mode, access, share, bufferSize, options);
+                _impl = new FileStreamImpl(path, mode, access, share, bufferSize, options);
             }
             else
             {
-                _actualImplementation = new FileStreamImpl(path, mode, access, share, bufferSize, options);
+                _impl = new FileStreamImpl(path, mode, access, share, bufferSize, options);
             }
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public virtual IntPtr Handle => _actualImplementation.Handle;
+        public virtual IntPtr Handle => _impl.Handle;
 
-        public virtual void Lock(long position, long length) => _actualImplementation.Lock(position, length);
+        public virtual void Lock(long position, long length) => _impl.Lock(position, length);
 
-        public virtual void Unlock(long position, long length) => _actualImplementation.Unlock(position, length);
+        public virtual void Unlock(long position, long length) => _impl.Unlock(position, length);
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
@@ -119,21 +119,21 @@ namespace System.IO
             if (GetType() != typeof(FileStream))
                 return base.FlushAsync(cancellationToken);
 
-            return _actualImplementation.FlushAsync(cancellationToken);
+            return _impl.FlushAsync(cancellationToken);
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateReadWriteArgs(buffer, offset, count);
 
-            return _actualImplementation.Read(buffer, offset, count);
+            return _impl.Read(buffer, offset, count);
         }
 
         public override int Read(Span<byte> buffer)
         {
-            if (GetType() == typeof(FileStream) && !_actualImplementation.IsAsync)
+            if (GetType() == typeof(FileStream) && !_impl.IsAsync)
             {
-                return _actualImplementation.Read(buffer);
+                return _impl.Read(buffer);
             }
             else
             {
@@ -163,10 +163,10 @@ namespace System.IO
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<int>(cancellationToken);
 
-            if (_actualImplementation.IsClosed)
+            if (_impl.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            return _actualImplementation.ReadAsync(buffer, offset, count, cancellationToken);
+            return _impl.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -183,31 +183,31 @@ namespace System.IO
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
-            if (_actualImplementation.IsClosed)
+            if (_impl.IsClosed)
             {
                 throw Error.GetFileNotOpen();
             }
 
-            return _actualImplementation.ReadAsync(buffer, cancellationToken);
+            return _impl.ReadAsync(buffer, cancellationToken);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateReadWriteArgs(buffer, offset, count);
 
-            _actualImplementation.Write(buffer, offset, count);
+            _impl.Write(buffer, offset, count);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            if (GetType() == typeof(FileStream) && !_actualImplementation.IsAsync)
+            if (GetType() == typeof(FileStream) && !_impl.IsAsync)
             {
-                if (_actualImplementation.IsClosed)
+                if (_impl.IsClosed)
                 {
                     throw Error.GetFileNotOpen();
                 }
 
-                _actualImplementation.Write(buffer);
+                _impl.Write(buffer);
             }
             else
             {
@@ -237,10 +237,10 @@ namespace System.IO
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
-            if (_actualImplementation.IsClosed)
+            if (_impl.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            return _actualImplementation.WriteAsync(buffer, offset, count, cancellationToken);
+            return _impl.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -257,18 +257,18 @@ namespace System.IO
                 return ValueTask.FromCanceled(cancellationToken);
             }
 
-            if (_actualImplementation.IsClosed)
+            if (_impl.IsClosed)
             {
                 throw Error.GetFileNotOpen();
             }
 
-            return _actualImplementation.WriteAsync(buffer, cancellationToken);
+            return _impl.WriteAsync(buffer, cancellationToken);
         }
 
         /// <summary>
         /// Clears buffers for this stream and causes any buffered data to be written to the file.
         /// </summary>
-        public override void Flush() => _actualImplementation.Flush();
+        public override void Flush() => _impl.Flush();
 
         /// <summary>
         /// Clears buffers for this stream, and if <param name="flushToDisk"/> is true,
@@ -276,16 +276,16 @@ namespace System.IO
         /// </summary>
         public virtual void Flush(bool flushToDisk)
         {
-            if (_actualImplementation.IsClosed) throw Error.GetFileNotOpen();
+            if (_impl.IsClosed) throw Error.GetFileNotOpen();
 
-            _actualImplementation.Flush(flushToDisk);
+            _impl.Flush(flushToDisk);
         }
 
         /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
-        public override bool CanRead => _actualImplementation.CanRead;
+        public override bool CanRead => _impl.CanRead;
 
         /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
-        public override bool CanWrite => _actualImplementation.CanWrite;
+        public override bool CanWrite => _impl.CanWrite;
 
         /// <summary>Validates arguments to Read and Write and throws resulting exceptions.</summary>
         /// <param name="buffer">The buffer to read from or write to.</param>
@@ -294,7 +294,7 @@ namespace System.IO
         private void ValidateReadWriteArgs(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_actualImplementation.IsClosed)
+            if (_impl.IsClosed)
                 throw Error.GetFileNotOpen();
         }
 
@@ -304,32 +304,32 @@ namespace System.IO
         {
             if (value < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (_actualImplementation.IsClosed)
+            if (_impl.IsClosed)
                 throw Error.GetFileNotOpen();
-            if (!_actualImplementation.CanSeek)
+            if (!_impl.CanSeek)
                 throw Error.GetSeekNotSupported();
-            if (!_actualImplementation.CanWrite)
+            if (!_impl.CanWrite)
                 throw Error.GetWriteNotSupported();
 
-            _actualImplementation.SetLength(value);
+            _impl.SetLength(value);
         }
 
-        public virtual SafeFileHandle SafeFileHandle => _actualImplementation.SafeFileHandle;
+        public virtual SafeFileHandle SafeFileHandle => _impl.SafeFileHandle;
 
         /// <summary>Gets the path that was passed to the constructor.</summary>
-        public virtual string Name => _actualImplementation.Name;
+        public virtual string Name => _impl.Name;
 
         /// <summary>Gets a value indicating whether the stream was opened for I/O to be performed synchronously or asynchronously.</summary>
-        public virtual bool IsAsync => _actualImplementation.IsAsync;
+        public virtual bool IsAsync => _impl.IsAsync;
 
         /// <summary>Gets the length of the stream in bytes.</summary>
         public override long Length
         {
             get
             {
-                if (_actualImplementation.IsClosed) throw Error.GetFileNotOpen();
-                if (!_actualImplementation.CanSeek) throw Error.GetSeekNotSupported();
-                return _actualImplementation.Length;
+                if (_impl.IsClosed) throw Error.GetFileNotOpen();
+                if (!_impl.CanSeek) throw Error.GetSeekNotSupported();
+                return _impl.Length;
             }
         }
 
@@ -338,37 +338,37 @@ namespace System.IO
         {
             get
             {
-                if (_actualImplementation.IsClosed)
+                if (_impl.IsClosed)
                     throw Error.GetFileNotOpen();
 
-                if (!_actualImplementation.CanSeek)
+                if (!_impl.CanSeek)
                     throw Error.GetSeekNotSupported();
 
-                return _actualImplementation.Position;
+                return _impl.Position;
             }
             set
             {
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-                _actualImplementation.Seek(value, SeekOrigin.Begin);
+                _impl.Seek(value, SeekOrigin.Begin);
             }
         }
 
-        internal virtual bool IsClosed => _actualImplementation.IsClosed;
+        internal virtual bool IsClosed => _impl.IsClosed;
 
         /// <summary>
         /// Reads a byte from the file stream.  Returns the byte cast to an int
         /// or -1 if reading from the end of the stream.
         /// </summary>
-        public override int ReadByte() => _actualImplementation.ReadByte();
+        public override int ReadByte() => _impl.ReadByte();
 
         /// <summary>
         /// Writes a byte to the current position in the stream and advances the position
         /// within the stream by one byte.
         /// </summary>
         /// <param name="value">The byte to write to the stream.</param>
-        public override void WriteByte(byte value) => _actualImplementation.WriteByte(value);
+        public override void WriteByte(byte value) => _impl.WriteByte(value);
 
         ~FileStream()
         {
@@ -380,9 +380,9 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            if (_actualImplementation != null) // possible in finalizer
+            if (_impl != null) // possible in finalizer
             {
-                _actualImplementation.DisposeInternal(disposing);
+                _impl.DisposeInternal(disposing);
             }
         }
 
@@ -393,33 +393,33 @@ namespace System.IO
                 return base.DisposeAsync();
             }
 
-            return _actualImplementation.DisposeAsync();
+            return _impl.DisposeAsync();
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => _actualImplementation.CopyToAsync(destination, bufferSize, cancellationToken);
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => _impl.CopyToAsync(destination, bufferSize, cancellationToken);
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_actualImplementation.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!_actualImplementation.CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            if (_impl.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (!_impl.CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-            if (!_actualImplementation.IsAsync)
+            if (!_impl.IsAsync)
                 return base.BeginRead(buffer, offset, count, callback, state);
             else
-                return _actualImplementation.BeginRead(buffer, offset, count, callback, state);
+                return _impl.BeginRead(buffer, offset, count, callback, state);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_actualImplementation.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!_actualImplementation.CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            if (_impl.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (!_impl.CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
-            if (!_actualImplementation.IsAsync)
+            if (!_impl.IsAsync)
                 return base.BeginWrite(buffer, offset, count, callback, state);
             else
-                return _actualImplementation.BeginWrite(buffer, offset, count, callback, state);
+                return _impl.BeginWrite(buffer, offset, count, callback, state);
         }
 
         public override int EndRead(IAsyncResult asyncResult)
@@ -427,7 +427,7 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            if (!_actualImplementation.IsAsync)
+            if (!_impl.IsAsync)
                 return base.EndRead(asyncResult);
             else
                 return TaskToApm.End<int>(asyncResult);
@@ -438,14 +438,14 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            if (!_actualImplementation.IsAsync)
+            if (!_impl.IsAsync)
                 base.EndWrite(asyncResult);
             else
                 TaskToApm.End(asyncResult);
         }
 
-        public override bool CanSeek => _actualImplementation.CanSeek;
+        public override bool CanSeek => _impl.CanSeek;
 
-        public override long Seek(long offset, SeekOrigin origin) => _actualImplementation.Seek(offset, origin);
+        public override long Seek(long offset, SeekOrigin origin) => _impl.Seek(offset, origin);
     }
 }
