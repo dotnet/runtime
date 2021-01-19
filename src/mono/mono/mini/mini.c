@@ -3102,6 +3102,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	static gboolean verbose_method_inited;
 	static char **verbose_method_names;
 
+	if (!(strcmp(method->name, "Main")))
+		printf("Compiling Main function");
+
 	mono_atomic_inc_i32 (&mono_jit_stats.methods_compiled);
 	MONO_PROFILER_RAISE (jit_begin, (method));
 	if (MONO_METHOD_COMPILE_BEGIN_ENABLED ())
