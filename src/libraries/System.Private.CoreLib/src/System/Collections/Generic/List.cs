@@ -51,7 +51,7 @@ namespace System.Collections.Generic
             if (capacity == 0)
                 _items = s_emptyArray;
             else
-                _items = new T[capacity];
+                _items = GC.AllocateUninitializedArray<T>(capacity);
         }
 
         // Constructs a List, copying the contents of the given collection. The
@@ -72,7 +72,7 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    _items = new T[count];
+                    _items = GC.AllocateUninitializedArray<T>(count);
                     c.CopyTo(_items, 0);
                     _size = count;
                 }
@@ -108,7 +108,7 @@ namespace System.Collections.Generic
                 {
                     if (value > 0)
                     {
-                        T[] newItems = new T[value];
+                        T[] newItems = GC.AllocateUninitializedArray<T>(value);
                         if (_size > 0)
                         {
                             Array.Copy(_items, newItems, _size);
@@ -1030,7 +1030,7 @@ namespace System.Collections.Generic
                 return s_emptyArray;
             }
 
-            T[] array = new T[_size];
+            T[] array = GC.AllocateUninitializedArray<T>(_size);
             Array.Copy(_items, array, _size);
             return array;
         }
