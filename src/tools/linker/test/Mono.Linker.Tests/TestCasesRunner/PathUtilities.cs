@@ -27,7 +27,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public static string GetTestsSourceRootDirectory ([CallerFilePath] string thisFile = null)
 		{
-#if ILLINK
+#if NETCOREAPP
 			// Deterministic builds sanitize source paths, so CallerFilePathAttribute gives an incorrect path.
 			// Instead, get the testcase dll based on the working directory of the test runner.
 
@@ -37,16 +37,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #else
 			var thisDirectory = Path.GetDirectoryName (thisFile);
 			return Path.GetFullPath (Path.Combine (thisDirectory, "..", ".."));
-#endif // ILLINK
+#endif
 		}
 
 		public static string GetTestAssemblyPath (string assemblyName)
 		{
-#if ILLINK
+#if NETCOREAPP
 			return Path.GetFullPath (Path.Combine (GetTestsSourceRootDirectory (), "..", "artifacts", "bin", assemblyName, ConfigDirectoryName, TFMDirectoryName, $"{assemblyName}.dll"));
 #else
 			return Path.GetFullPath (Path.Combine (GetTestsSourceRootDirectory (), assemblyName, "bin", ConfigDirectoryName, TFMDirectoryName, $"{assemblyName}.dll"));
-#endif // ILLINK
+#endif
 		}
 	}
 }

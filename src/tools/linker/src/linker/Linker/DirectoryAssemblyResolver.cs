@@ -9,10 +9,11 @@ using System.IO.MemoryMappedFiles;
 using Mono.Cecil;
 using Mono.Collections.Generic;
 
-#if FEATURE_ILLINK
-namespace Mono.Linker {
+namespace Mono.Linker
+{
 
-	public abstract class DirectoryAssemblyResolver : IAssemblyResolver {
+	public abstract class DirectoryAssemblyResolver : IAssemblyResolver
+	{
 
 		readonly Collection<string> directories;
 
@@ -84,7 +85,7 @@ namespace Mono.Linker {
 
 		AssemblyDefinition SearchDirectory (AssemblyNameReference name, IEnumerable<string> directories, ReaderParameters parameters)
 		{
-			var extensions = new [] { ".dll", ".exe" };
+			var extensions = new[] { ".dll", ".exe" };
 			foreach (var directory in directories) {
 				foreach (var extension in extensions) {
 					string file = Path.Combine (directory, name.Name + extension);
@@ -119,4 +120,3 @@ namespace Mono.Linker {
 		}
 	}
 }
-#endif

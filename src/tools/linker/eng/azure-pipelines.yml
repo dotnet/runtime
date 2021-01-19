@@ -126,22 +126,6 @@ stages:
         submodules: true
       - script: ./lint.sh --check
 
-  - ${{ if eq(variables.officialBuild, 'false') }}:
-    - job: Linux_Mono
-      pool:
-        name: Hosted Ubuntu 1604
-      steps:
-      - checkout: self
-        submodules: true
-      - script: |
-          mono --version
-          make -C monobuild CONFIGURATION=$(_BuildConfig)
-        displayName: Build and test
-      - task: PublishTestResults@2
-        inputs:
-          testResultsFormat: 'NUnit'
-          testResultsFiles: 'test/Mono.Linker.Tests/TestResults.xml'
-
 # Post-Build Arcade logic
 - ${{ if eq(variables.officialBuild, 'true') }}:
   - template: /eng/common/templates/post-build/post-build.yml

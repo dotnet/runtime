@@ -862,13 +862,8 @@ namespace Mono.Linker.Steps
 				case TypeSpecification ts:
 					UpdateScopeOfTypeReference (ts.ElementType);
 					return;
-#if FEATURE_ILLINK
 				case TypeDefinition:
 				case GenericParameter:
-#else
-				case TypeDefinition _:
-				case GenericParameter _:
-#endif
 					// Nothing to update
 					return;
 				}

@@ -35,12 +35,8 @@ using Mono.Collections.Generic;
 namespace Mono.Linker
 {
 
-#if FEATURE_ILLINK
-	public class AssemblyResolver : DirectoryAssemblyResolver {
-#else
-	public class AssemblyResolver : BaseAssemblyResolver
+	public class AssemblyResolver : DirectoryAssemblyResolver
 	{
-#endif
 
 		readonly Dictionary<string, AssemblyDefinition> _assemblies;
 		HashSet<string> _unresolvedAssemblies;
@@ -74,29 +70,14 @@ namespace Mono.Linker
 			set { _context = value; }
 		}
 
-#if !FEATURE_ILLINK
-		// The base class's definition of GetAssembly is visible when using DirectoryAssemblyResolver.
-		AssemblyDefinition GetAssembly (string file, ReaderParameters parameters)
-		{
-			if (parameters.AssemblyResolver == null)
-				parameters.AssemblyResolver = this;
-
-			return ModuleDefinition.ReadModule (file, parameters).Assembly;
-		}
-#endif
-
 		public string GetAssemblyFileName (AssemblyDefinition assembly)
 		{
-#if FEATURE_ILLINK
-			if (assemblyToPath.TryGetValue(assembly, out string path)) {
+			if (assemblyToPath.TryGetValue (assembly, out string path)) {
 				return path;
 			}
-			else
-#endif
-			{
-				// Must be an assembly that we didn't open through the resolver
-				return assembly.MainModule.FileName;
-			}
+
+			// Must be an assembly that we didn't open through the resolver
+			return assembly.MainModule.FileName;
 		}
 
 		AssemblyDefinition ResolveFromReferences (AssemblyNameReference name, Collection<string> references, ReaderParameters parameters)

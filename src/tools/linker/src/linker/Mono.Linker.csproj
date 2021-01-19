@@ -6,21 +6,12 @@
     <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(MonoBuild)' == ''">
+  <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
     <IsPackable>true</IsPackable>
     <!-- Nuget issues a warning about missing <reference> items in the generated nuspec,
          used for packages.config which we do not support. -->
     <NoWarn>$(NoWarn);NU5131</NoWarn>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(MonoBuild)' != ''">
-    <AssemblyName>monolinker</AssemblyName>
-    <AssemblyTitle>Mono.Linker</AssemblyTitle>
-    <Description>Mono CIL Linker</Description>
-    <Copyright>(C) 2006, Jb Evain</Copyright>
-    <TargetFramework>net471</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,27 +19,10 @@
     <Compile Include="..\..\external\corert\**\*.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(MonoBuild)' == ''">
-    <Compile Remove="Linker\I18nAssemblies.cs" />
-    <Compile Remove="Linker\XApiReader.cs" />
-    <Compile Remove="Linker.Steps\LoadI18nAssemblies.cs" />
-    <Compile Remove="Linker.Steps\PreserveCalendarsStep.cs" />
-    <Compile Remove="Linker.Steps\RemoveFeaturesStep.cs" />
-    <Compile Remove="Linker.Steps\ResolveFromXApiStep.cs" />
-    <Compile Remove="Linker.Steps\ResolveFromAssemblyStep.cs" />
-    <Compile Remove="System.Diagnostics.CodeAnalysis\*.cs" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\Mono.Cecil.csproj" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" PrivateAssets="all" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(MonoBuild)' != ''">
-    <Compile Remove="Linker.Steps\RootAssemblyInputStep.cs" />
-    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
-    <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
   </ItemGroup>
 
   <ItemGroup>

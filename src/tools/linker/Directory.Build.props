@@ -1,9 +1,5 @@
 <Project>
   <PropertyGroup>
-    <MonoBuild Condition="'$(MonoBuild)' == '' and '$(SolutionName)' == 'monolinker'">true</MonoBuild>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and '$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))' == 'ref'">true</IsReferenceAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(IsReferenceAssembly)' == 'true' ">
@@ -17,9 +13,7 @@
     <RunApiCompat>false</RunApiCompat>
   </PropertyGroup>
 
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(MonoBuild)' == ''" />
-  <!-- Still use global versions even if not using arcade. -->
-  <Import Project="eng/Versions.props" Condition="'$(MonoBuild)' != ''" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="eng/Analyzers.props" />
   <PropertyGroup>
     <IsPackable>false</IsPackable>

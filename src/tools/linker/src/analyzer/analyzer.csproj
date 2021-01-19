@@ -7,13 +7,8 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(MonoBuild)' == ''">
-    <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
+  <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(MonoBuild)' != ''">
-    <TargetFrameworks>net471</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,7 +20,7 @@
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="../../external/cecil/Mono.Cecil.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(MonoBuild)' == ''">
+  <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="All" Version="1.0.0" />
   </ItemGroup>
 

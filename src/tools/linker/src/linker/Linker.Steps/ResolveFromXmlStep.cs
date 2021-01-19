@@ -58,10 +58,6 @@ namespace Mono.Linker.Steps
 		{
 		}
 
-#if !FEATURE_ILLINK
-		protected override bool ShouldProcessElement (XPathNavigator nav) => true;
-#endif
-
 		protected override void Process ()
 		{
 			ProcessXml (Context.StripDescriptors, Context.IgnoreDescriptors);
@@ -71,11 +67,6 @@ namespace Mono.Linker.Steps
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
 		{
-#if !FEATURE_ILLINK
-			if (IsExcluded (nav))
-				return;
-#endif
-
 			if (GetTypePreserve (nav) == TypePreserve.All) {
 				foreach (var type in assembly.MainModule.Types)
 					MarkAndPreserveAll (type);
@@ -130,11 +121,6 @@ namespace Mono.Linker.Steps
 		{
 			Debug.Assert (ShouldProcessElement (nav));
 
-#if !FEATURE_ILLINK
-			if (IsExcluded (nav))
-				return;
-#endif
-
 			TypePreserve preserve = GetTypePreserve (nav);
 			if (preserve != TypePreserve.Nothing)
 				Annotations.SetPreserve (type, preserve);
@@ -144,10 +130,6 @@ namespace Mono.Linker.Steps
 
 			if (!required)
 				return;
-
-			if (Annotations.IsMarked (type)) {
-				var duplicateLevel = preserve != TypePreserve.Nothing ? preserve : nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All;
-			}
 
 			Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
@@ -172,16 +154,6 @@ namespace Mono.Linker.Steps
 			return TypePreserve.Nothing;
 		}
 
-#if !FEATURE_ILLINK
-		protected override void ProcessField (TypeDefinition type, XPathNavigator nav)
-		{
-			if (IsExcluded (nav))
-				return;
-
-			base.ProcessField (type, nav);
-		}
-#endif
-
 		protected override void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav)
 		{
 			if (Annotations.IsMarked (field))
@@ -189,16 +161,6 @@ namespace Mono.Linker.Steps
 
 			Context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 		}
-
-#if !FEATURE_ILLINK
-		protected override void ProcessMethod (TypeDefinition type, XPathNavigator nav, object customData)
-		{
-			if (IsExcluded (nav))
-				return;
-
-			base.ProcessMethod (type, nav, customData);
-		}
-#endif
 
 		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object customData)
 		{
@@ -255,16 +217,6 @@ namespace Mono.Linker.Steps
 			return sb.ToString ();
 		}
 
-#if !FEATURE_ILLINK
-		protected override void ProcessEvent (TypeDefinition type, XPathNavigator nav, object customData)
-		{
-			if (IsExcluded (nav))
-				return;
-
-			base.ProcessEvent (type, nav, customData);
-		}
-#endif
-
 		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object customData)
 		{
 			if (Annotations.IsMarked (@event))
@@ -276,16 +228,6 @@ namespace Mono.Linker.Steps
 			ProcessMethod (type, @event.RemoveMethod, null, customData);
 			ProcessMethodIfNotNull (type, @event.InvokeMethod, customData);
 		}
-
-#if !FEATURE_ILLINK
-		protected override void ProcessProperty (TypeDefinition type, XPathNavigator nav, object customData)
-		{
-			if (IsExcluded (nav))
-				return;
-
-			base.ProcessProperty (type, nav, customData);
-		}
-#endif
 
 		protected override void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object customData, bool fromSignature)
 		{
@@ -353,16 +295,5 @@ namespace Mono.Linker.Steps
 			}
 			return _accessorsAll;
 		}
-
-#if !FEATURE_ILLINK
-		protected virtual bool IsExcluded (XPathNavigator nav)
-		{
-			var value = GetAttribute (nav, "feature");
-			if (string.IsNullOrEmpty (value))
-				return false;
-
-			return Context.IsFeatureExcluded (value);
-		}
-#endif
 	}
 }
