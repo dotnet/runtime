@@ -333,13 +333,21 @@ namespace System.Net.Sockets
         /// <param name="buffer">The buffer for the received data.</param>
         /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
         /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
-        /// <returns>An asynchronous task that completes with a SocketReceiveFromResult containing the number of bytes received and the endpoint of the sending host.</returns>
+        /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveFromResult"/> containing the number of bytes received and the endpoint of the sending host.</returns>
         public Task<SocketReceiveFromResult> ReceiveFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
         {
             ValidateBuffer(buffer);
             return ReceiveFromAsync(buffer, socketFlags, remoteEndPoint, default).AsTask();
         }
 
+        /// <summary>
+        /// Receives data and returns the endpoint of the sending host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to signal the asynchronous operation should be canceled.</param>
+        /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveFromResult"/> containing the number of bytes received and the endpoint of the sending host.</returns>
         public ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default)
         {
             if (remoteEndPoint is null)
@@ -378,13 +386,21 @@ namespace System.Net.Sockets
         /// <param name="buffer">The buffer for the received data.</param>
         /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
         /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
-        /// <returns>An asynchronous task that completes with a SocketReceiveMessageFromResult containing the number of bytes received and additional information about the sending host.</returns>
+        /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveMessageFromResult"/> containing the number of bytes received and additional information about the sending host.</returns>
         public Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
         {
             ValidateBuffer(buffer);
             return ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint, default).AsTask();
         }
 
+        /// <summary>
+        /// Receives data and returns additional information about the sender of the message.
+        /// </summary>
+        /// <param name="buffer">The buffer for the received data.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when receiving the data.</param>
+        /// <param name="remoteEndPoint">An endpoint of the same type as the endpoint of the remote host.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to signal the asynchronous operation should be canceled.</param>
+        /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveMessageFromResult"/> containing the number of bytes received and additional information about the sending host.</returns>
         public ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default)
         {
             if (remoteEndPoint is null)
@@ -507,6 +523,14 @@ namespace System.Net.Sockets
             return SendToAsync(buffer, socketFlags, remoteEP, default).AsTask();
         }
 
+        /// <summary>
+        /// Sends data to the specified remote host.
+        /// </summary>
+        /// <param name="buffer">The buffer for the data to send.</param>
+        /// <param name="socketFlags">A bitwise combination of SocketFlags values that will be used when sending the data.</param>
+        /// <param name="remoteEP">The remote host to which to send the data.</param>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+        /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
         public ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken = default)
         {
             if (remoteEP is null)
