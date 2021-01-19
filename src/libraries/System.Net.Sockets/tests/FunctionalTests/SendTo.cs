@@ -147,6 +147,8 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(cts.Token, ex.CancellationToken);
         }
 
+        // On Unix, flooding the kernel with sendto calls will lead to actual asynchronous completions, which allows us to test cancellation.
+        // On Windows, WSASendTo/WSASendMsg are currently not cancellable.
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public async Task CancelDuringOperation_Throws()
@@ -161,6 +163,8 @@ namespace System.Net.Sockets.Tests
             List<Task> tasks = new List<Task>();
             CancellationTokenSource cts = new CancellationTokenSource();
 
+            // After flooding the socket with a high number of send tasks,
+            // we assume some of them won't complete before the "CancelAfter" period expires.
             for (int i = 0; i < DatagramCount; i++)
             {
                 var leftTask = client.SendToAsync(new byte[DatagramSize], SocketFlags.None, ValidUdpRemoteEndpoint, cts.Token);
