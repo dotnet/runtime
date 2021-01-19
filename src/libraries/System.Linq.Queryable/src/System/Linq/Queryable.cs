@@ -666,6 +666,23 @@ namespace System.Linq
                     ));
         }
 
+        [DynamicDependency("Zip`3", typeof(Enumerable))]
+        public static IQueryable<(TFirst First, TSecond Second, TThird Third)> Zip<TFirst, TSecond, TThird>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2, IEnumerable<TThird> source3)
+        {
+            if (source1 == null)
+                throw Error.ArgumentNull(nameof(source1));
+            if (source2 == null)
+                throw Error.ArgumentNull(nameof(source2));
+            if (source3 == null)
+                throw Error.ArgumentNull(nameof(source3));
+            return source1.Provider.CreateQuery<(TFirst, TSecond, TThird)>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Zip_TFirst_TSecond_TThird_3(typeof(TFirst), typeof(TSecond), typeof(TThird)),
+                    source1.Expression, GetSourceExpression(source2), GetSourceExpression(source3)
+                    ));
+        }
+
         [DynamicDependency("Union`1", typeof(Enumerable))]
         public static IQueryable<TSource> Union<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
