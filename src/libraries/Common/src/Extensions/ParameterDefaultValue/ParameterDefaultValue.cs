@@ -23,13 +23,20 @@ namespace Microsoft.Extensions.Internal
             {
                 hasDefaultValue = parameter.HasDefaultValue;
             }
-            catch (FormatException) when (parameter.ParameterType == typeof(DateTime))
+            catch (FormatException e)
             {
-                // Workaround for https://github.com/dotnet/runtime/issues/18844
-                // If HasDefaultValue throws FormatException for DateTime
-                // we expect it to have default value
-                hasDefaultValue = true;
-                tryToGetDefaultValue = false;
+                if (parameter.ParameterType == typeof(DateTime))
+                {
+                    // Workaround for https://github.com/dotnet/runtime/issues/18844
+                    // If HasDefaultValue throws FormatException for DateTime
+                    // we expect it to have default value
+                    hasDefaultValue = true;
+                    tryToGetDefaultValue = false;
+                }
+                else
+                {
+                    throw e;
+                }
             }
 
             if (hasDefaultValue)
