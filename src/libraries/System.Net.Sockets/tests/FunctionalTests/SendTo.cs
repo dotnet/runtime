@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -12,7 +13,7 @@ namespace System.Net.Sockets.Tests
 {
     public abstract class SendToBase<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        private static readonly IPEndPoint ValidUdpRemoteEndpoint = new IPEndPoint(IPAddress.Parse("10.20.30.40"), 1234);
+        protected static readonly IPEndPoint ValidUdpRemoteEndpoint = new IPEndPoint(IPAddress.Parse("10.20.30.40"), 1234);
 
         protected SendToBase(ITestOutputHelper output) : base(output)
         {
@@ -124,37 +125,41 @@ namespace System.Net.Sockets.Tests
     {
         public SendTo_CancellableTask(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
-        [InlineData(10)]
-        [InlineData(100)]
-        [InlineData(1000)]
-        [InlineData(10000)]
-        public async Task TestTimes(int DatagramCount)
+        [Fact]
+        public async Task PreCanceled_Throws()
         {
-            //const int DatagramCount = 100;
-            const int DatagramSize = 2048;
-
-            List<Task> sendOps = new List<Task>();
-
             using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            sender.BindToAnonymousPort(IPAddress.Loopback);
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
 
-            using Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            receiver.BindToAnonymousPort(IPAddress.Loopback);
-            IPEndPoint remoteEp = (IPEndPoint)receiver.LocalEndPoint;
+            OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => sender.SendToAsync(new byte[1], SocketFlags.None, ValidUdpRemoteEndpoint, cts.Token).AsTask());
 
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
+            Assert.Equal(cts.Token, ex.CancellationToken);
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public async Task CancelDuringOperation_Throws()
+        {
+            const int DatagramCount = 50;
+            const int DatagramSize = 32768;
+            TimeSpan cancelAfter = TimeSpan.FromMilliseconds(5);
+
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            int port = client.BindToAnonymousPort(IPAddress.Any);
+
+            List<Task> tasks = new List<Task>();
+            CancellationTokenSource cts = new CancellationTokenSource();
 
             for (int i = 0; i < DatagramCount; i++)
             {
-                ReadOnlyMemory<byte> buffer = new byte[DatagramSize];
-                Task sendOp = sender.SendToAsync(buffer, SocketFlags.None, remoteEp, default).AsTask();
+                var leftTask = client.SendToAsync(new byte[DatagramSize], SocketFlags.None, ValidUdpRemoteEndpoint, cts.Token);
+                tasks.Add(leftTask.AsTask());
             }
+            cts.CancelAfter(cancelAfter);
 
-            await Task.WhenAll(sendOps);
-            sw.Stop();
-            throw new Exception("Total time: " + sw.Elapsed);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(tasks));
         }
     }
 
