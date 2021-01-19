@@ -89,8 +89,8 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            keys = new TKey[capacity];
-            values = new TValue[capacity];
+            keys = GC.AllocateUninitializedArray<TKey>(capacity);
+            values = GC.AllocateUninitializedArray<TValue>(capacity);
             comparer = Comparer<TKey>.Default;
         }
 
@@ -238,8 +238,8 @@ namespace System.Collections.Generic
 
                     if (value > 0)
                     {
-                        TKey[] newKeys = new TKey[value];
-                        TValue[] newValues = new TValue[value];
+                        TKey[] newKeys = GC.AllocateUninitializedArray<TKey>(value);
+                        TValue[] newValues = GC.AllocateUninitializedArray<TValue>(value);
                         if (_size > 0)
                         {
                             Array.Copy(keys, newKeys, _size);
