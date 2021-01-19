@@ -5,15 +5,8 @@
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(MonoBuild)' == ''">
+  <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoBuild)' != ''">
-    <TargetFramework>net471</TargetFramework>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(MonoBuild)' == ''">
-    <Compile Remove="System.Diagnostics.CodeAnalysis\*.cs" />
-  </ItemGroup>
 
 </Project>

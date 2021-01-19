@@ -8,7 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-#if !ILLINK
+#if !NETCOREAPP
 	[Reference ("System.Core.dll")]
 #endif
 	[SkipKeptItemsValidation]

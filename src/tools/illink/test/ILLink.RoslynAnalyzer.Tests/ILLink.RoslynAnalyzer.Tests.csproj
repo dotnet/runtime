@@ -4,7 +4,6 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <TargetFramework>net5.0</TargetFramework>
-    <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

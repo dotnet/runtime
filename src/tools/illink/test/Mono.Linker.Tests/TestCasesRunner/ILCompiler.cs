@@ -54,7 +54,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private string BuildArguments (CompilerOptions options)
 		{
 			var args = new StringBuilder ();
-#if ILLINK
+#if NETCOREAPP
 			args.Append(options.OutputPath.ExtensionWithDot == ".dll" ? "-dll" : "-exe");
 			args.Append($" -out:{options.OutputPath.InQuotes ()}");
 #else
@@ -67,7 +67,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public static NPath LocateIlasm ()
 		{
-#if ILLINK
+#if NETCOREAPP
 			var extension = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? ".exe" : "";
 
 			// working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>

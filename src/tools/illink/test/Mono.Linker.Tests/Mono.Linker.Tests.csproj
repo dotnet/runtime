@@ -6,14 +6,9 @@
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(MonoBuild)' == ''">
+  <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
     <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants);DEBUG</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(MonoBuild)' != ''">
-    <TargetFramework>net471</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,7 +25,7 @@
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(MonoBuild)' == ''">
+  <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.8.0" />
     <PackageReference Include="nunit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
@@ -40,7 +35,7 @@
     <PackageReference Include="System.Threading.AccessControl" Version="4.5.0" />
   </ItemGroup>
 
-  <Target Name="PrepareTools" BeforeTargets="Build" Condition="'$(MonoBuild)' == ''">
+  <Target Name="PrepareTools" BeforeTargets="Build">
     <!-- Restore ilasm using ilasm.ilproj. Restore must be done
          separately from copy with a different set of input
          properties, to force MSBuild to re-evaluate using new props
@@ -53,21 +48,10 @@
     <MSBuild Projects="$(IlasmProject)" Targets="CopyILAsmTool" />
   </Target>
 
-  <ItemGroup Condition="'$(MonoBuild)' != ''">
-    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
-    <PackageReference Include="NUnit" Version="3.12.0" />
-    <PackageReference Include="NUnit.ConsoleRunner" Version="3.10.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
-  </ItemGroup>
-
   <ItemGroup>
     <None Update="TestCases\Dependencies\PInvokesExpectations.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
-  <Target Name="RunTestsOnMono" Condition="'$(MonoBuild)' != ''">
-    <Exec Command="mono $(PkgNUnit_ConsoleRunner)/tools/nunit3-console.exe --result=TestResults.xml $(OutputPath)Mono.Linker.Tests.dll" />
-  </Target>
 
 </Project>

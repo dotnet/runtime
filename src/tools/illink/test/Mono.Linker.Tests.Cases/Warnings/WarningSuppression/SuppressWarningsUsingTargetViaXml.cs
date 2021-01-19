@@ -14,12 +14,9 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 	// that assembly is not yet loaded into the closure in the linker, so it won't find the attribute type.
 #if NETCOREAPP
 	[SetupLinkAttributesFile ("SuppressWarningsUsingTargetViaXml.netcore.xml")]
-#else
-	[SetupLinkAttributesFile ("SuppressWarningsUsingTargetViaXml.mono.xml")]
-#endif
-#if !ILLINK
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) }, new[] { "System.Core.dll" })]
 #else
+	[SetupLinkAttributesFile ("SuppressWarningsUsingTargetViaXml.mono.xml")]
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) })]
 #endif
 

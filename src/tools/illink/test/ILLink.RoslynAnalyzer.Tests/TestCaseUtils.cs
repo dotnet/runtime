@@ -186,7 +186,7 @@ In diagnostics:
 			return MSBuildProperties.Select (msbp => ($"build_property.{msbp}", "true")).ToArray ();
 		}
 
-		internal static void GetDirectoryPaths (out string rootSourceDirectory, out string testAssemblyPath, [CallerFilePath] string thisFile = null)
+		internal static void GetDirectoryPaths (out string rootSourceDirectory, out string testAssemblyPath)
 		{
 
 #if DEBUG
@@ -194,28 +194,12 @@ In diagnostics:
 #else
 			var configDirectoryName = "Release";
 #endif
-
-#if NET5_0
-			var tfm = "net5.0";
-#elif NET471
-			var tfm = "net471";
-#else
-			var tfm = "";
-#endif
-
-#if ILLINK
-			// Deterministic builds sanitize source paths, so CallerFilePathAttribute gives an incorrect path.
-			// Instead, get the testcase dll based on the working directory of the test runner.
+			const string tfm = "net5.0";
 
 			// working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
 			var artifactsBinDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..");
 			rootSourceDirectory = Path.GetFullPath (Path.Combine (artifactsBinDir, "..", "..", "test", "Mono.Linker.Tests.Cases"));
 			testAssemblyPath = Path.GetFullPath (Path.Combine (artifactsBinDir, "ILLink.RoslynAnalyzer.Tests", configDirectoryName, tfm));
-#else
-			var thisDirectory = Path.GetDirectoryName (thisFile);
-			rootSourceDirectory = Path.GetFullPath (Path.Combine (thisDirectory, "..", "..", "Mono.Linker.Tests.Cases"));
-			testCaseAssemblyPath = Path.GetFullPath (Path.Combine (rootSourceDirectory, "bin", configDirectoryName, tfm));
-#endif // ILLINK
 		}
 	}
 }

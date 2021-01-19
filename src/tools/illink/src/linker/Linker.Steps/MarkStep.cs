@@ -60,9 +60,6 @@ namespace Mono.Linker.Steps
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
 			DependencyKind.Unspecified,
 			DependencyKind.NestedType,
-#if !FEATURE_ILLINK
-			DependencyKind.PreservedDependency,
-#endif
 			DependencyKind.DynamicDependency,
 			DependencyKind.TypeInAssembly,
 			DependencyKind.AccessedViaReflection,
@@ -81,9 +78,6 @@ namespace Mono.Linker.Steps
 			DependencyKind.InteropMethodDependency,
 			DependencyKind.Ldtoken,
 			DependencyKind.MemberOfType,
-#if !FEATURE_ILLINK
-			DependencyKind.PreservedDependency,
-#endif
 			DependencyKind.DynamicDependency,
 			DependencyKind.ReferencedBySpecialAttribute,
 			DependencyKind.TypePreserve,
@@ -150,9 +144,6 @@ namespace Mono.Linker.Steps
 			DependencyKind.Newobj,
 			DependencyKind.Override,
 			DependencyKind.OverrideOnInstantiatedType,
-#if !FEATURE_ILLINK
-			DependencyKind.PreservedDependency,
-#endif
 			DependencyKind.DynamicDependency,
 			DependencyKind.PreservedMethod,
 			DependencyKind.ReferencedBySpecialAttribute,
@@ -1381,20 +1372,13 @@ namespace Mono.Linker.Steps
 
 		protected virtual void MarkSerializable (TypeDefinition type)
 		{
-#if !FEATURE_ILLINK
-			// Keep default ctor for XmlSerializer support. See https://github.com/mono/linker/issues/957
-			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
-
-			if (_context.IsFeatureExcluded ("deserialization"))
-				return;
-#else
 			// TODO: move after the check once SPC is correctly annotated
 			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 
 			// TODO: blocked for now by libraries build issue explained at https://github.com/mono/linker/issues/1603
 			//if (_context.GetTargetRuntimeVersion () > TargetRuntimeVersion.NET5)
 			//	return;
-#endif
+
 			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 		}
 
@@ -1497,12 +1481,7 @@ namespace Mono.Linker.Steps
 
 			// TODO: This needs work to ensure we handle EventSource appropriately.
 			// This marks static fields of KeyWords/OpCodes/Tasks subclasses of an EventSource type.
-			if (
-#if !FEATURE_ILLINK
-					!_context.IsFeatureExcluded ("etw") &&
-#endif
-					BCL.EventTracingForWindows.IsEventSourceImplementation (type, _context)
-				) {
+			if (BCL.EventTracingForWindows.IsEventSourceImplementation (type, _context)) {
 				MarkEventSourceProviders (type);
 			}
 
@@ -1545,14 +1524,7 @@ namespace Mono.Linker.Steps
 				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod)
 					MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), type);
 
-#if !FEATURE_ILLINK
-				if (_context.IsFeatureExcluded ("deserialization")) {
-					MarkMethodsIf (type.Methods, HasOnSerializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
-				} else
-#endif
-				{
-					MarkMethodsIf (type.Methods, HasOnSerializeOrDeserializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
-				}
+				MarkMethodsIf (type.Methods, HasOnSerializeOrDeserializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 			}
 
 			DoAdditionalTypeProcessing (type);
@@ -2076,25 +2048,6 @@ namespace Mono.Linker.Steps
 
 			return method.Body.Instructions[0].OpCode.Code != Code.Ret;
 		}
-
-#if !FEATURE_ILLINK
-		static bool HasOnSerializeAttribute (MethodDefinition method)
-		{
-			if (!method.HasCustomAttributes)
-				return false;
-			foreach (var ca in method.CustomAttributes) {
-				var cat = ca.AttributeType;
-				if (cat.Namespace != "System.Runtime.Serialization")
-					continue;
-				switch (cat.Name) {
-				case "OnSerializedAttribute":
-				case "OnSerializingAttribute":
-					return true;
-				}
-			}
-			return false;
-		}
-#endif
 
 		static bool HasOnSerializeOrDeserializeAttribute (MethodDefinition method)
 		{
