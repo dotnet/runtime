@@ -572,3 +572,7 @@ End
 
 Crst NativeImageLoad
 End
+
+Crst PgoData
+    AcquiredBefore LoaderHeap
+End

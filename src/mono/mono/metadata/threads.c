@@ -938,6 +938,11 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 
 	set_current_thread_for_domain (domain, internal, thread);
 
+#ifdef MONO_METADATA_UPDATE
+	/* Roll up to the latest published metadata generation */
+	mono_metadata_update_thread_expose_published ();
+#endif
+
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, internal->tid, internal->handle));
 
 	return TRUE;
@@ -999,7 +1004,9 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	thread->abort_state_handle = 0;
 
 	thread->abort_exc = NULL;
+#ifndef ENABLE_NETCORE
 	thread->current_appcontext = NULL;
+#endif
 
 	LOCK_THREAD (thread);
 
@@ -1933,8 +1940,11 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 	mono_threads_close_native_thread_handle (MONO_GPOINTER_TO_NATIVE_THREAD_HANDLE (this_obj->native_handle));
 	this_obj->native_handle = NULL;
 
-	/* Possibly free synch_cs, if the thread already detached also. */
-	dec_longlived_thread_data (this_obj->longlived);
+	/* might be null if the constructor threw an exception */
+	if (this_obj->longlived) {
+		/* Possibly free synch_cs, if the thread already detached also. */
+		dec_longlived_thread_data (this_obj->longlived);
+	}
 
 	mono_thread_name_cleanup (&this_obj->name);
 }
@@ -5039,7 +5049,11 @@ mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 off
 	if (static_type == SPECIAL_STATIC_OFFSET_TYPE_THREAD) {
 		return get_thread_static_data (thread, offset);
 	} else {
+#ifndef ENABLE_NETCORE
 		return get_context_static_data (thread->current_appcontext, offset);
+#else
+		g_assert_not_reached ();
+#endif
 	}
 }
 

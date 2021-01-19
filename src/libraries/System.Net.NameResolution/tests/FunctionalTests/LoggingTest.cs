@@ -5,11 +5,9 @@ using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.NameResolution.Tests
 {
@@ -42,7 +40,7 @@ namespace System.Net.NameResolution.Tests
                     try
                     {
                         Dns.GetHostEntry(Configuration.Sockets.InvalidHost);
-                        throw new SkipTestException("GetHostEntry() should fail but it did not.");
+                        throw new SkipTestException("GetHostEntry should fail but it did not.");
                     }
                     catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
                     {
@@ -53,7 +51,7 @@ namespace System.Net.NameResolution.Tests
                     }
                 });
 
-                Assert.True(events.Count() > 0);
+                Assert.True(events.Count > 0, "events.Count should be > 0");
                 foreach (EventWrittenEventArgs ev in events)
                 {
                     Assert.True(ev.Payload.Count >= 3);
@@ -66,29 +64,31 @@ namespace System.Net.NameResolution.Tests
 
         [ConditionalFact]
         [PlatformSpecific(~TestPlatforms.Windows)]  // Unreliable on Windows.
-        public void GetHostEntryAsync_InvalidHost_LogsError()
+        public async Task GetHostEntryAsync_InvalidHost_LogsError()
         {
             using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
             {
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
 
-                listener.RunWithCallback(ev => events.Enqueue(ev), () =>
+                await listener.RunWithCallbackAsync(ev => events.Enqueue(ev), async () =>
                 {
                     try
                     {
-                        Dns.GetHostEntryAsync(Configuration.Sockets.InvalidHost).GetAwaiter().GetResult();
-                        throw new SkipTestException("GetHostEntry() should fail but it did not.");
+                        await Dns.GetHostEntryAsync(Configuration.Sockets.InvalidHost).ConfigureAwait(false);
+                        throw new SkipTestException("GetHostEntryAsync should fail but it did not.");
                     }
                     catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
                     {
+                        // Wait a bit to let the event source write it's log
+                        await Task.Delay(100).ConfigureAwait(false);
                     }
                     catch (Exception e)
                     {
-                        throw new SkipTestException($"GetHostEntry failed unexpectedly: {e.Message}");
+                        throw new SkipTestException($"GetHostEntryAsync failed unexpectedly: {e.Message}");
                     }
-                });
+                }).ConfigureAwait(false);
 
-                Assert.True(events.Count() > 0);
+                Assert.True(events.Count > 0, "events.Count should be > 0");
                 foreach (EventWrittenEventArgs ev in events)
                 {
                     Assert.True(ev.Payload.Count >= 3);

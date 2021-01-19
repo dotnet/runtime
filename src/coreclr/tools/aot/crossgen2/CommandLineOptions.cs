@@ -24,6 +24,7 @@ namespace ILCompiler
 
         public string CompositeRootPath;
         public bool Optimize;
+        public bool OptimizeDisabled;
         public bool OptimizeSpace;
         public bool OptimizeTime;
         public bool InputBubble;
@@ -45,6 +46,10 @@ namespace ILCompiler
         public bool Resilient;
         public bool Map;
         public bool MapCsv;
+        public bool Pdb;
+        public string PdbPath;
+        public bool PerfMap;
+        public string PerfMapPath;
         public int Parallelism;
         public int CustomPESectionAlignment;
         public string MethodLayout;
@@ -86,6 +91,7 @@ namespace ILCompiler
                 syntax.DefineOption("o|out|outputfilepath", ref OutputFilePath, SR.OutputFilePath);
                 syntax.DefineOption("crp|compositerootpath", ref CompositeRootPath, SR.CompositeRootPath);
                 syntax.DefineOption("O|optimize", ref Optimize, SR.EnableOptimizationsOption);
+                syntax.DefineOption("Od|optimize-disabled", ref OptimizeDisabled, SR.DisableOptimizationsOption);
                 syntax.DefineOption("Os|optimize-space", ref OptimizeSpace, SR.OptimizeSpaceOption);
                 syntax.DefineOption("Ot|optimize-time", ref OptimizeTime, SR.OptimizeSpeedOption);
                 syntax.DefineOption("inputbubble", ref InputBubble, SR.InputBubbleOption);
@@ -115,6 +121,10 @@ namespace ILCompiler
                 syntax.DefineOption("custom-pe-section-alignment", ref CustomPESectionAlignment, SR.CustomPESectionAlignmentOption);
                 syntax.DefineOption("map", ref Map, SR.MapFileOption);
                 syntax.DefineOption("mapcsv", ref MapCsv, SR.MapCsvFileOption);
+                syntax.DefineOption("pdb", ref Pdb, SR.PdbFileOption);
+                syntax.DefineOption("pdb-path", ref PdbPath, SR.PdbFilePathOption);
+                syntax.DefineOption("perfmap", ref PerfMap, SR.PerfMapFileOption);
+                syntax.DefineOption("perfmap-path", ref PerfMapPath, SR.PerfMapFilePathOption);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);

@@ -302,7 +302,6 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_UseIBCFile, W("UseIBCFile"), 0, "", CLRConf
 ///
 /// JIT
 ///
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_JitAlignLoops, W("JitAlignLoops"), "Aligns loop targets to 8 byte boundaries")
 CONFIG_DWORD_INFO_EX(INTERNAL_JitBreakEmit, W("JitBreakEmit"), (DWORD)-1, "", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_JitDebuggable, W("JitDebuggable"), "")
 #if !defined(DEBUG) && !defined(_DEBUG)

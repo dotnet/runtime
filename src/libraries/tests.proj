@@ -174,8 +174,10 @@
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')">
     <ProjectReference Include="$(MonoProjectRoot)netcore\sample\iOS\Program.csproj"
                       BuildInParallel="false" />
+                      <!-- TODO: remove Exclude after "tests.mobile.targets(107,5): error : Unable to compile method" fixed -->
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\**\*.Test.csproj"
-                      BuildInParallel="false" />
+                      BuildInParallel="false"
+                      Exclude="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT\iOS.Simulator.Aot.Test.csproj"/>
   </ItemGroup>
   
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Android'">

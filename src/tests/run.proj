@@ -379,8 +379,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
-      <AotCompiler>$(MonoBinDir)/cross/mono-aot-cross</AotCompiler>
-      <MonoLlvmPath>$(MonoBinDir)/cross</MonoLlvmPath>
+      <AotCompiler>$(MonoBinDir)/cross/$(PackageRID)/mono-aot-cross</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)/cross/$(PackageRID)</MonoLlvmPath>
     </PropertyGroup>
 
     <ItemGroup>

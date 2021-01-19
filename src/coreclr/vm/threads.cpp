@@ -1931,9 +1931,6 @@ FAILURE:
             END_PIN_PROFILER();
         }
 #endif // PROFILING_SUPPORTED
-
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(m_State & TS_SuspendUnstarted));
     }
 
     return res;
