@@ -68,7 +68,7 @@ internal class Utils
             {
                 if (!silent)
                 {
-                    LogError(e.Data);
+                    LogInfo(e.Data, outputMessageImportance);
                     outputBuilder.AppendLine(e.Data);
                 }
                 errorBuilder.AppendLine(e.Data);
