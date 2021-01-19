@@ -93,7 +93,7 @@ jobs:
     - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
       - name: llvmParameter
         value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true $(llvmCxxAbi)
-    - ${{ if length(parameters.monoCrossAOTTargetOS) > 0 }}:
+    - ${{ if gt(length(parameters.monoCrossAOTTargetOS),0) }}:
       - name: aotCrossParameter
         value: /p:BuildMonoCrossAOT=${{join('+',parameters.monoCrossAOTTargetOS)}} /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
     - ${{ parameters.variables }}
