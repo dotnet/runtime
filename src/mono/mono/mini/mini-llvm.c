@@ -1228,13 +1228,14 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
 
 		// printf ("\n");
-		// printf ("XXXih: module:\n");
-		// mono_llvm_dump_module(ctx->lmodule);
-		// printf ("\n");
-		// printf ("XXXih: method_name = %s\n", ctx->method_name);
+		// printf ("XXXih: convert_full failure:\n");
 		mono_llvm_dump_value (v);
 		mono_llvm_dump_value (LLVMConstNull (dtype));
 		printf ("\n");
+		// printf ("XXXih: method_name = %s\n", ctx->method_name);
+		// printf ("XXXih: module:\n");
+		// mono_llvm_dump_module(ctx->lmodule);
+		// printf ("\n");
 		g_assert_not_reached ();
 		return NULL;
 	} else {
@@ -4326,6 +4327,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
 		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
+		if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret)))
+			values [ins->dreg] = LLVMBuildBitCast(builder, lcall, type_to_llvm_type (ctx, sig->ret), "callret_cvt_simd");
 		break;
 	case LLVMArgVtypeRetAddr:
 	case LLVMArgVtypeByRef:
