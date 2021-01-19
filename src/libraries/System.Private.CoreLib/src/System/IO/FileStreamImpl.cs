@@ -14,7 +14,7 @@ namespace System.IO
         private const bool DefaultIsAsync = false;
 
         private byte[]? _buffer;
-        private int _bufferLength;
+        private readonly int _bufferLength;
         private readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
 
         /// <summary>Whether the file is opened for reading, writing, or both.</summary>
@@ -62,18 +62,20 @@ namespace System.IO
         /// <summary>Whether the file stream's handle has been exposed.</summary>
         private bool _exposedHandle;
 
-        internal FileStreamImpl(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
+        internal FileStreamImpl(SafeFileHandle handle, bool dontOwnHandle, FileAccess access, int bufferSize, bool isAsync)
         {
-            SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
+            _exposedHandle = true;
+            _bufferLength = bufferSize;
+
             try
             {
-                ValidateAndInitFromHandle(safeHandle, access, bufferSize, isAsync);
+                InitFromHandle(handle, access, isAsync);
             }
-            catch
+            catch when (dontOwnHandle)
             {
                 // We don't want to take ownership of closing passed in handles
                 // *unless* the constructor completes successfully.
-                GC.SuppressFinalize(safeHandle);
+                GC.SuppressFinalize(handle);
 
                 // This would also prevent Close from being called, but is unnecessary
                 // as we've removed the object from the finalizer queue.
@@ -81,41 +83,6 @@ namespace System.IO
                 // safeHandle.SetHandleAsInvalid();
                 throw;
             }
-
-            // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
-            // but we can't as they're readonly.
-            _access = access;
-            _useAsyncIO = isAsync;
-
-            // As the handle was passed in, we must set the handle field at the very end to
-            // avoid the finalizer closing the handle when we throw errors.
-            _fileHandle = safeHandle;
-        }
-
-        private void ValidateAndInitFromHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-        {
-            if (handle.IsInvalid)
-                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
-
-            if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-
-            if (handle.IsClosed)
-                throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.GetValueOrDefault())
-                throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
-
-            _exposedHandle = true;
-            _bufferLength = bufferSize;
-
-            InitFromHandle(handle, access, isAsync);
-        }
-
-        internal FileStreamImpl(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-        {
-            ValidateAndInitFromHandle(handle, access, bufferSize, isAsync);
 
             // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
             // but we can't as they're readonly.

@@ -40,16 +40,50 @@ namespace System.IO
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
+            SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
+            try
+            {
+                ValidateHandle(safeHandle, access, bufferSize, isAsync);
+            }
+            catch
+            {
+                // We don't want to take ownership of closing passed in handles
+                // *unless* the constructor completes successfully.
+                GC.SuppressFinalize(safeHandle);
+
+                // This would also prevent Close from being called, but is unnecessary
+                // as we've removed the object from the finalizer queue.
+                //
+                // safeHandle.SetHandleAsInvalid();
+                throw;
+            }
+
             // it might seem to have no sense now, but we plan to introduce dedicated strategies for sync and async implementations
             switch (isAsync)
             {
                 case true:
-                    _impl = new FileStreamImpl(handle, access, ownsHandle, bufferSize, true);
+                    _impl = new FileStreamImpl(safeHandle, true, access, bufferSize, true);
                     return;
                 case false:
-                    _impl = new FileStreamImpl(handle, access, ownsHandle, bufferSize, false);
+                    _impl = new FileStreamImpl(safeHandle, true, access, bufferSize, false);
                     return;
             }
+        }
+
+        private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        {
+            if (handle.IsInvalid)
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
+
+            if (access < FileAccess.Read || access > FileAccess.ReadWrite)
+                throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
+            if (bufferSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+
+            if (handle.IsClosed)
+                throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.GetValueOrDefault())
+                throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access)
@@ -64,13 +98,15 @@ namespace System.IO
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
+            ValidateHandle(handle, access, bufferSize, isAsync);
+
             switch (isAsync)
             {
                 case true:
-                    _impl = new FileStreamImpl(handle, access, bufferSize, true);
+                    _impl = new FileStreamImpl(handle, false, access, bufferSize, true);
                     return;
                 case false:
-                    _impl = new FileStreamImpl(handle, access, bufferSize, false);
+                    _impl = new FileStreamImpl(handle, false, access, bufferSize, false);
                     return;
             }
         }
