@@ -25,6 +25,9 @@
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
+
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
              TaskName="AndroidAppBuilderTask"
@@ -42,6 +45,12 @@
 
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
     </PropertyGroup>
+    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+      <AotInputAssemblies Include="$(PublishDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
+    </ItemGroup>
 
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
@@ -53,6 +62,17 @@
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" />
 
     <RemoveDir Directories="$(BundleDir)" />
+
+    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)\mono-aot-cross"
+        Mode="Full"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        UseLLVM="$(MonoEnableLLVM)"
+        LLVMPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(AssemblyName)"
@@ -80,10 +100,6 @@
   <UsingTask Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
              TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-
-  <Import Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 
   <PropertyGroup>
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
