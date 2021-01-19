@@ -512,7 +512,7 @@ namespace System.IO
 
         public override ValueTask DisposeAsync()
         {
-            if (OperatingSystem.IsWindows() && GetType() != typeof(FileStream))
+            if (GetType() != typeof(FileStream))
             {
                 return base.DisposeAsync();
             }
