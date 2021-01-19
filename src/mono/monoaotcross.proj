@@ -5,12 +5,12 @@
 
   <PropertyGroup>
     <!-- OS name is case sensitive! -->
-    <_BuildMonoCrossAOT Condition="'$(BuildMonoCrossAOT)' != ''">+$(BuildMonoCrossAOT.ToLowerInvariant())+</_BuildMonoCrossAOT>
+    <_MonoCrossAOTTargetOS Condition="'$(MonoCrossAOTTargetOS)' != ''">+$(MonoCrossAOTTargetOS.ToLowerInvariant())+</_MonoCrossAOTTargetOS>
     <_MonoGenerateOffsetsOSGroups Condition="'$(MonoGenerateOffsetsOSGroups)' != ''">+$(MonoGenerateOffsetsOSGroups.ToLowerInvariant())+</_MonoGenerateOffsetsOSGroups>
-    <_BuildMonoCrossAOT Condition="$(_MonoGenerateOffsetsOSGroups.contains('+android+'))">$(_BuildMonoCrossAOT)+android+</_BuildMonoCrossAOT>
-    <_BuildMonoCrossAOT Condition="$(_MonoGenerateOffsetsOSGroups.contains('+browser+'))">$(_BuildMonoCrossAOT)+browser+</_BuildMonoCrossAOT>
-    <MonoAotTargets Condition="$(_BuildMonoCrossAOT.contains('+android+'))">$(MonoAotTargets);Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
-    <MonoAotTargets Condition="$(_BuildMonoCrossAOT.contains('+browser+'))">$(MonoAotTargets);Browser-wasm</MonoAotTargets>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+android+'))">$(_MonoCrossAOTTargetOS)+android+</_MonoCrossAOTTargetOS>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+browser+'))">$(_MonoCrossAOTTargetOS)+browser+</_MonoCrossAOTTargetOS>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))">$(MonoAotTargets);Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);Browser-wasm</MonoAotTargets>
   </PropertyGroup>
 
   <ItemGroup>
