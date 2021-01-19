@@ -417,6 +417,9 @@ namespace System
         //
         // internal implementation details (FCALLS and utilities)
         //
+
+        // BindToMethodName is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
+        // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeType methodType, string method, DelegateBindingFlags flags);
 

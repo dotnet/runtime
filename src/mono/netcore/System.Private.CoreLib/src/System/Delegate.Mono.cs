@@ -214,6 +214,8 @@ namespace System
             return CreateDelegate_internal(type, null, info, throwOnBindFailure);
         }
 
+        // GetCandidateMethod is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
+        // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
         private static MethodInfo? GetCandidateMethod(RuntimeType type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, BindingFlags bflags, bool ignoreCase)
         {
             MethodInfo? invoke = GetDelegateInvokeMethod(type);
