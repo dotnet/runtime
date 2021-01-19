@@ -51,19 +51,12 @@ namespace System.Net.Sockets
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static Task<int> ReceiveAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
             socket.ReceiveAsync(buffers, socketFlags);
-
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static Task<SocketReceiveFromResult> ReceiveFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
             socket.ReceiveFromAsync(buffer, socketFlags, remoteEndPoint);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ValueTask<SocketReceiveFromResult> ReceiveFromAsync(this Socket socket, Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default) =>
-            socket.ReceiveFromAsync(buffer, socketFlags, remoteEndPoint, cancellationToken);
-
         public static Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
             socket.ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint);
-        public static ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(this Socket socket, Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default) =>
-            socket.ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint, cancellationToken);
-
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static Task<int> SendAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
@@ -78,7 +71,5 @@ namespace System.Net.Sockets
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static Task<int> SendToAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP) =>
             socket.SendToAsync(buffer, socketFlags, remoteEP);
-        public static ValueTask<int> SendToAsync(this Socket socket, ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken = default) =>
-            socket.SendToAsync(buffer, socketFlags, remoteEP, cancellationToken);
     }
 }

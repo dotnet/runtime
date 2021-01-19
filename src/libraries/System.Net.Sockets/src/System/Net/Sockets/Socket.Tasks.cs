@@ -340,7 +340,7 @@ namespace System.Net.Sockets
             return ReceiveFromAsync(buffer, socketFlags, remoteEndPoint, default).AsTask();
         }
 
-        internal ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken)
+        public ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default)
         {
             if (remoteEndPoint is null)
             {
@@ -385,7 +385,7 @@ namespace System.Net.Sockets
             return ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint, default).AsTask();
         }
 
-        internal ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken)
+        public ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default)
         {
             if (remoteEndPoint is null)
             {
@@ -507,7 +507,7 @@ namespace System.Net.Sockets
             return SendToAsync(buffer, socketFlags, remoteEP, default).AsTask();
         }
 
-        internal ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken)
+        public ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken = default)
         {
             if (remoteEP is null)
             {
