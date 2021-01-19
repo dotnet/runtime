@@ -800,7 +800,7 @@ protected:
     bool                m_hasArgLocDescForStructInRegs;
 #endif // (TARGET_AMD64 && UNIX_AMD64_ABI) || TARGET_ARM64
 
-    int                 m_curOfs;           // Current position of the stack iterator, in bytes
+    int                 m_ofsStack;           // Current position of the stack iterator, in bytes
 
 #ifdef TARGET_X86
     int                 m_numRegistersUsed;
@@ -1032,7 +1032,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         case IMAGE_CEE_CS_CALLCONV_C:
         case IMAGE_CEE_CS_CALLCONV_STDCALL:
             m_numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-            m_curOfs = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
+            m_ofsStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
             m_fUnmanagedCallConv = true;
             break;
 
@@ -1043,30 +1043,30 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         default:
             m_fUnmanagedCallConv = false;
             m_numRegistersUsed = numRegistersUsed;
-            m_curOfs = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
+            m_ofsStack = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
             break;
         }
 #else
         m_numRegistersUsed = numRegistersUsed;
-        m_curOfs = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
+        m_ofsStack = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
 #endif
 
 #elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
         m_idxGenReg = numRegistersUsed;
-        m_curOfs = 0;
+        m_ofsStack = 0;
         m_idxFPReg = 0;
 #else
-        m_curOfs = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
+        m_ofsStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
 #endif
 #elif defined(TARGET_ARM)
         m_idxGenReg = numRegistersUsed;
-        m_curOfs = 0;
+        m_ofsStack = 0;
 
         m_wFPRegs = 0;
 #elif defined(TARGET_ARM64)
         m_idxGenReg = numRegistersUsed;
-        m_curOfs = 0;
+        m_ofsStack = 0;
 
         m_idxFPReg = 0;
 #else
@@ -1099,8 +1099,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #ifdef FEATURE_INTERPRETER
     if (m_fUnmanagedCallConv)
     {
-        int argOfs = m_curOfs;
-        m_curOfs += StackElemSize(argSize);
+        int argOfs = m_ofsStack;
+        m_ofsStack += StackElemSize(argSize);
         return argOfs;
     }
 #endif
@@ -1109,9 +1109,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         return TransitionBlock::GetOffsetOfArgumentRegisters() + (NUM_ARGUMENT_REGISTERS - m_numRegistersUsed) * sizeof(void *);
     }
 
-    m_curOfs -= StackElemSize(argSize);
-    _ASSERTE(m_curOfs >= TransitionBlock::GetOffsetOfArgs());
-    return m_curOfs;
+    m_ofsStack -= StackElemSize(argSize);
+    _ASSERTE(m_ofsStack >= TransitionBlock::GetOffsetOfArgs());
+    return m_ofsStack;
 #elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
 
@@ -1204,15 +1204,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     m_fArgInRegisters = false;
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_curOfs;
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
 
-    m_curOfs += cbArg;
+    m_ofsStack += cbArg;
 
     return argOfs;
 #else
     // Each argument takes exactly one slot on AMD64 on Windows
-    int argOfs = m_curOfs;
-    m_curOfs += sizeof(void *);
+    int argOfs = m_ofsStack;
+    m_ofsStack += sizeof(void *);
     return argOfs;
 #endif
 #elif defined(TARGET_ARM)
@@ -1322,14 +1322,14 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         // Doubles or HFAs containing doubles need the stack aligned appropriately.
         if (fRequiresAlign64Bit)
         {
-            m_curOfs = (int)ALIGN_UP(m_curOfs, TARGET_POINTER_SIZE * 2);
+            m_ofsStack = (int)ALIGN_UP(m_ofsStack, TARGET_POINTER_SIZE * 2);
         }
 
         // Indicate the stack location of the argument to the caller.
-        int argOfs = TransitionBlock::GetOffsetOfArgs() + m_curOfs;
+        int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
 
         // Record the stack usage.
-        m_curOfs += cbArg;
+        m_ofsStack += cbArg;
 
         return argOfs;
     }
@@ -1365,9 +1365,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
         m_idxGenReg = 4;
 
-        if (m_curOfs == 0)
+        if (m_ofsStack == 0)
         {
-            m_curOfs += cbArg - cRemainingRegs * TARGET_POINTER_SIZE;
+            m_ofsStack += cbArg - cRemainingRegs * TARGET_POINTER_SIZE;
             return argOfs;
         }
     }
@@ -1376,13 +1376,13 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     {
         // The argument requires 64-bit alignment. If it is going to be passed on the stack, align
         // the next stack slot.  See step C.6 in the algorithm in the ABI spec.
-        m_curOfs = (int)ALIGN_UP(m_curOfs, TARGET_POINTER_SIZE * 2);
+        m_ofsStack = (int)ALIGN_UP(m_ofsStack, TARGET_POINTER_SIZE * 2);
     }
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_curOfs;
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
 
     // Advance the stack pointer over the argument just placed.
-    m_curOfs += cbArg;
+    m_ofsStack += cbArg;
 
     return argOfs;
 #elif defined(TARGET_ARM64)
@@ -1479,9 +1479,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 // into x0-x7, and any remaining stack arguments are placed normally.
                 int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
 
-                // Increase m_curOfs to account for the space used for the remainder of the arg after
+                // Increase m_ofsStack to account for the space used for the remainder of the arg after
                 // registers are filled.
-                m_curOfs += cbArg + (m_idxGenReg - 8) * TARGET_POINTER_SIZE;
+                m_ofsStack += cbArg + (m_idxGenReg - 8) * TARGET_POINTER_SIZE;
 
                 // We used up the remaining reg slots.
                 m_idxGenReg = 8;
@@ -1497,8 +1497,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
     }
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_curOfs;
-    m_curOfs += cbArg;
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+    m_ofsStack += cbArg;
     return argOfs;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
