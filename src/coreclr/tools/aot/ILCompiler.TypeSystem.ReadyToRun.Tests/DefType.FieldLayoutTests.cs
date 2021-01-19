@@ -36,8 +36,8 @@ namespace TypeSystemTests
         [InlineData("SequentialInt64Base")]
         public void IsZeroSizedReferenceType_NonEmptyType_ReturnsFalse(string className)
         {
-            DefType classWithSequentialBase = _testModule.GetType("Marshalling", className);
-            Assert.False(classWithSequentialBase.IsZeroSizedReferenceType);
+            DefType nonEmptyClass = _testModule.GetType("Marshalling", className);
+            Assert.False(nonEmptyClass.IsZeroSizedReferenceType);
         }
 
         [Theory]
@@ -47,8 +47,8 @@ namespace TypeSystemTests
         [InlineData("SequentialEmptyBase")]
         public void IsZeroSizedReferenceType_EmptyType_ReturnsTrue(string className)
         {
-            DefType classWithEmptyBase = _testModule.GetType("Marshalling", className);
-            Assert.True(classWithEmptyBase.IsZeroSizedReferenceType);
+            DefType emptyClass = _testModule.GetType("Marshalling", className);
+            Assert.True(emptyClass.IsZeroSizedReferenceType);
         }
     }
 }

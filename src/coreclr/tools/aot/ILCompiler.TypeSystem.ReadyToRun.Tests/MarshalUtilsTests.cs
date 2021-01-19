@@ -66,8 +66,8 @@ namespace TypeSystemTests
         [InlineData("ClassWithSequentialInt64Base")]
         public void IsBlittableType_TypeWithBlittableBase_ReturnsTrue(string className)
         {
-            TypeDesc classWithSequentialBase = _testModule.GetType("Marshalling", className);
-            Assert.True(MarshalUtils.IsBlittableType(classWithSequentialBase));
+            TypeDesc classWithBlittableBase = _testModule.GetType("Marshalling", className);
+            Assert.True(MarshalUtils.IsBlittableType(classWithBlittableBase));
         }
 
         [Theory]
