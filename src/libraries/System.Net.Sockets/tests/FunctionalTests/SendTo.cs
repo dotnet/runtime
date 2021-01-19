@@ -147,8 +147,10 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(cts.Token, ex.CancellationToken);
         }
 
-        // On Unix, flooding the kernel with sendto calls will lead to actual asynchronous completions, which allows us to test cancellation.
-        // On Windows, WSASendTo/WSASendMsg are currently not cancellable.
+        // On Unix, flooding the kernel with sendto calls will lead to actual asynchronous completions,
+        // so we can test the cancellation logic implemented in SocketAsyncContext.
+        // On Windows, WSASendTo/WSASendMsg implementations are not cancellable with CancelIoEx as of 01/2021,
+        // which means CancellationToken will only take effect if it's precancelled. This may change in the future.
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public async Task CancelDuringOperation_Throws()
