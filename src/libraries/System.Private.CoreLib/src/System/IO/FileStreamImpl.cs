@@ -132,47 +132,12 @@ namespace System.IO
 
         internal override IntPtr Handle => SafeFileHandle.DangerousGetHandle();
 
-        internal override void Lock(long position, long length)
-        {
-            if (position < 0 || length < 0)
-            {
-                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+        internal override void Lock(long position, long length) => LockInternal(position, length);
 
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
-            LockInternal(position, length);
-        }
-
-        internal override void Unlock(long position, long length)
-        {
-            if (position < 0 || length < 0)
-            {
-                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
-            UnlockInternal(position, length);
-        }
+        internal override void Unlock(long position, long length) => UnlockInternal(position, length);
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
             // TODO: https://github.com/dotnet/runtime/issues/27643 (stop doing this synchronous work!!).
             // The always synchronous data transfer between the OS and the internal buffer is intentional
             // because this is needed to allow concurrent async IO requests. Concurrent data transfer
@@ -200,16 +165,7 @@ namespace System.IO
                 ReadSpan(new Span<byte>(buffer, offset, count));
         }
 
-        public override int Read(Span<byte> buffer)
-        {
-            Debug.Assert(!_useAsyncIO);
-
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-            return ReadSpan(buffer);
-        }
+        public override int Read(Span<byte> buffer) => ReadSpan(buffer);
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

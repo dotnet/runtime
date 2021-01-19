@@ -190,9 +190,35 @@ namespace System.IO
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual IntPtr Handle => _impl.Handle;
 
-        public virtual void Lock(long position, long length) => _impl.Lock(position, length);
+        public virtual void Lock(long position, long length)
+        {
+            if (position < 0 || length < 0)
+            {
+                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
 
-        public virtual void Unlock(long position, long length) => _impl.Unlock(position, length);
+            if (_impl.IsClosed)
+            {
+                throw Error.GetFileNotOpen();
+            }
+
+            _impl.Lock(position, length);
+        }
+
+        public virtual void Unlock(long position, long length)
+        {
+            if (position < 0 || length < 0)
+            {
+                throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (_impl.IsClosed)
+            {
+                throw Error.GetFileNotOpen();
+            }
+
+            _impl.Unlock(position, length);
+        }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
@@ -202,6 +228,15 @@ namespace System.IO
             // and delegate to our base class (which will call into Flush) when we are not sure.
             if (GetType() != typeof(FileStream))
                 return base.FlushAsync(cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            if (_impl.IsClosed)
+            {
+                throw Error.GetFileNotOpen();
+            }
 
             return _impl.FlushAsync(cancellationToken);
         }
@@ -217,6 +252,11 @@ namespace System.IO
         {
             if (GetType() == typeof(FileStream) && !_impl.IsAsync)
             {
+                if (_impl.IsClosed)
+                {
+                    throw Error.GetFileNotOpen();
+                }
+
                 return _impl.Read(buffer);
             }
             else
