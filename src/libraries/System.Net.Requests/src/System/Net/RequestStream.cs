@@ -105,6 +105,11 @@ namespace System.Net
             return _buffer.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return _buffer.WriteAsync(buffer, cancellationToken);
+        }
+
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
             ValidateBufferArguments(buffer, offset, count);
