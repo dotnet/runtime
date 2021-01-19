@@ -648,7 +648,7 @@ public:
 
             if ((int)byteArgSize <= (4 - pLoc->m_idxGenReg) * TARGET_POINTER_SIZE)
             {
-                pLoc->m_cGenReg = (byteArgSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+                pLoc->m_cGenReg = ALIGN_UP(byteArgSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
             }
             else
             {
@@ -696,7 +696,7 @@ public:
         }
 
 
-        unsigned cSlots = (byteArgSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        unsigned cSlots = ALIGN_UP(byteArgSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
 
         // Question: why do not arm and x86 have similar checks?
         // Composites greater than 16 bytes are passed by reference
@@ -714,7 +714,7 @@ public:
         if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
             pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
-            pLoc->m_cGenReg = (byteArgSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;;
+            pLoc->m_cGenReg = ALIGN_UP(byteArgSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;;
         }
         else
         {
@@ -1354,7 +1354,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         if (cbArg <= cRemainingRegs * TARGET_POINTER_SIZE)
         {
             // Mark the registers just allocated as used.
-            m_idxGenReg += (cbArg + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+            m_idxGenReg += ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
             return argOfs;
         }
 
@@ -1459,7 +1459,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #if !defined(OSX_ARM64_ABI)
         _ASSERTE((cbArg% TARGET_POINTER_SIZE) == 0);
 #endif
-        const int regSlots = (cbArg + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
         // Only x0-x7 are valid argument registers (x8 is always the return buffer)
         if (m_idxGenReg + regSlots <= 8)
         {
