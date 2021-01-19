@@ -268,13 +268,6 @@ static int nreply_packets;
 
 static int packet_id = 0;
 
-/* 
- * Wire Protocol definitions
- */
-
-#define MAJOR_VERSION 3
-#define MINOR_VERSION 0
-
 /*
  * Contains additional information for an event
  */

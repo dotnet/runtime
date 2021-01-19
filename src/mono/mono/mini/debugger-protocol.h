@@ -6,6 +6,13 @@
 #define HEADER_LEN 11
 #define REPLY_PACKET 0x80
 
+/* 
+ * Wire Protocol definitions
+ */
+
+#define MAJOR_VERSION 2
+#define MINOR_VERSION 58
+
 typedef enum {
 	CMD_COMPOSITE = 100
 } CmdComposite;
@@ -252,13 +259,6 @@ typedef struct ReplyPacket {
 	int error;
 	Buffer *data;
 } ReplyPacket;
-
-/*
-FIXME:
-- Move EventKind back to debugger-agent.c as it contains sdb wire protocol constants.
-This is complicated because EventRequest has an event_kind field.
-
-*/
 
 typedef enum {
 	EVENT_KIND_VM_START = 0,
