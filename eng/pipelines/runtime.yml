@@ -495,7 +495,7 @@ jobs:
     # - windows_arm
     # - windows_arm64
     jobParameters:
-      runtimeVariant: crossandroid
+      runtimeVariant: crossaot
       dependsOn:
       - mono_android_offsets
       - mono_browser_offsets
