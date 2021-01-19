@@ -92,7 +92,9 @@ namespace System.Net.Sockets.Tests
         public async Task WhenCanceled_Throws(IPAddress loopback, bool precanceled)
         {
             using var socket = new Socket(loopback.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using var dummy = new Socket(loopback.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             socket.BindToAnonymousPort(loopback);
+            dummy.BindToAnonymousPort(loopback);
             Memory<byte> buffer = new byte[1];
 
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -100,7 +102,7 @@ namespace System.Net.Sockets.Tests
             else cts.CancelAfter(100);
 
             OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                () => socket.ReceiveFromAsync(buffer, SocketFlags.None, GetGetDummyTestEndpoint(loopback.AddressFamily), cts.Token).AsTask())
+                () => socket.ReceiveFromAsync(buffer, SocketFlags.None, dummy.LocalEndPoint, cts.Token).AsTask())
                 .TimeoutAfter(10_000);
             Assert.Equal(cts.Token, ex.CancellationToken);
         }

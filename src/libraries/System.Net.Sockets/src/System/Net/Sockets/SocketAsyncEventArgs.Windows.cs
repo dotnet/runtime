@@ -558,25 +558,33 @@ namespace System.Net.Sockets
                     _wsaRecvMsgWSABufferArrayPinned = GC.AllocateUninitializedArray<WSABuffer>(1, pinned: true);
                 }
 
-                Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
-                _singleBufferHandle = _buffer.Pin();
-                _singleBufferHandleState = SingleBufferHandleState.Set;
+                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
+                {
+                    Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
+                    _singleBufferHandleState = SingleBufferHandleState.InProcess;
 
-                _wsaRecvMsgWSABufferArrayPinned[0].Pointer = (IntPtr)_singleBufferHandle.Pointer;
-                _wsaRecvMsgWSABufferArrayPinned[0].Length = _count;
-                wsaRecvMsgWSABufferArray = _wsaRecvMsgWSABufferArrayPinned;
-                wsaRecvMsgWSABufferCount = 1;
+                    _wsaRecvMsgWSABufferArrayPinned[0].Pointer = (IntPtr)bufferPtr;
+                    _wsaRecvMsgWSABufferArrayPinned[0].Length = _count;
+                    wsaRecvMsgWSABufferArray = _wsaRecvMsgWSABufferArrayPinned;
+                    wsaRecvMsgWSABufferCount = 1;
+
+                    return Core();
+                }
             }
             else
             {
                 // Use the multi-buffer WSABuffer.
                 wsaRecvMsgWSABufferArray = _wsaBufferArrayPinned!;
                 wsaRecvMsgWSABufferCount = (uint)_bufferListInternal!.Count;
+
+                return Core();
             }
 
-            // Fill in WSAMessageBuffer.
-            unsafe
+            // Fill in WSAMessageBuffer, run WSARecvMsg and process the IOCP result.
+            // Logic is in a separate method so we can share code between the (pinned) single buffer and the multi-buffer case
+            SocketError Core()
             {
+                // Fill in WSAMessageBuffer.
                 Interop.Winsock.WSAMsg* pMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned, 0);
                 pMessage->socketAddress = PtrSocketAddressBuffer;
                 pMessage->addressLength = (uint)_socketAddress.Size;
@@ -596,26 +604,26 @@ namespace System.Net.Sockets
                     pMessage->controlBuffer.Length = _controlBufferPinned.Length;
                 }
                 pMessage->flags = _socketFlags;
-            }
 
-            NativeOverlapped* overlapped = AllocateNativeOverlapped();
-            try
-            {
-                SocketError socketError = socket.WSARecvMsg(
-                    handle,
-                    Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned, 0),
-                    out int bytesTransferred,
-                    overlapped,
-                    IntPtr.Zero);
+                NativeOverlapped* overlapped = AllocateNativeOverlapped();
+                try
+                {
+                    SocketError socketError = socket.WSARecvMsg(
+                        handle,
+                        Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned, 0),
+                        out int bytesTransferred,
+                        overlapped,
+                        IntPtr.Zero);
 
-                return ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped, cancellationToken);
-            }
-            catch
-            {
-                _singleBufferHandleState = SingleBufferHandleState.None;
-                FreeNativeOverlapped(overlapped);
-                _singleBufferHandle.Dispose();
-                throw;
+                    return ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped, cancellationToken);
+                }
+                catch
+                {
+                    _singleBufferHandleState = SingleBufferHandleState.None;
+                    FreeNativeOverlapped(overlapped);
+                    _singleBufferHandle.Dispose();
+                    throw;
+                }
             }
         }
 

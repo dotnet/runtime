@@ -415,7 +415,6 @@ namespace System.Net.Sockets
             {
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
             }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return ValueTask.FromCanceled<SocketReceiveMessageFromResult>(cancellationToken);

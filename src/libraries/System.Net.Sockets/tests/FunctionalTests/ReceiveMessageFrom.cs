@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -93,7 +94,9 @@ namespace System.Net.Sockets.Tests
         public async Task WhenCanceled_Throws(IPAddress loopback, bool precanceled)
         {
             using var socket = new Socket(loopback.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using var dummy = new Socket(loopback.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             socket.BindToAnonymousPort(loopback);
+            dummy.BindToAnonymousPort(loopback);
             Memory<byte> buffer = new byte[1];
 
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -101,13 +104,9 @@ namespace System.Net.Sockets.Tests
             else cts.CancelAfter(100);
 
             OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                () => socket.ReceiveMessageFromAsync(buffer, SocketFlags.None, GetGetDummyTestEndpoint(loopback.AddressFamily), cts.Token).AsTask())
+                () => socket.ReceiveMessageFromAsync(buffer, SocketFlags.None, dummy.LocalEndPoint, cts.Token).AsTask())
                 .TimeoutAfter(10_000);
             Assert.Equal(cts.Token, ex.CancellationToken);
-
-            IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
-                addressFamily == AddressFamily.InterNetwork ?
-                new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
         }
     }
 
@@ -124,7 +123,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true, 2)]
         public void ReceiveSentMessages_ReuseEventArgs_Success(bool ipv4, int bufferMode)
         {
-            const int DatagramsToSend = 30;
+            const int DatagramsToSend = 5;
             const int TimeoutMs = 30_000;
 
             AddressFamily family;
@@ -156,34 +155,40 @@ namespace System.Net.Sockets.Tests
             sender.Bind(new IPEndPoint(loopback, 0));
             saea.RemoteEndPoint = new IPEndPoint(any, 0);
 
+            Random random = new Random(0);
+            byte[] sendBuffer = new byte[1024];
+            random.NextBytes(sendBuffer);
+
             for (int i = 0; i < DatagramsToSend; i++)
             {
+                byte[] receiveBuffer = new byte[1024];
                 switch (bufferMode)
                 {
                     case 0: // single buffer
-                        saea.SetBuffer(new byte[1024], 0, 1024);
+                        saea.SetBuffer(receiveBuffer, 0, 1024);
                         break;
                     case 1: // single buffer in buffer list
                         saea.BufferList = new List<ArraySegment<byte>>
                         {
-                            new ArraySegment<byte>(new byte[1024])
+                            new ArraySegment<byte>(receiveBuffer)
                         };
                         break;
                     case 2: // multiple buffers in buffer list
                         saea.BufferList = new List<ArraySegment<byte>>
                         {
-                            new ArraySegment<byte>(new byte[512]),
-                            new ArraySegment<byte>(new byte[512])
+                            new ArraySegment<byte>(receiveBuffer, 0, 512),
+                            new ArraySegment<byte>(receiveBuffer, 512, 512)
                         };
                         break;
                 }
 
                 bool pending = receiver.ReceiveMessageFromAsync(saea);
-                sender.SendTo(new byte[1024], new IPEndPoint(loopback, port));
+                sender.SendTo(sendBuffer, new IPEndPoint(loopback, port));
                 if (pending) Assert.True(completed.Wait(TimeoutMs), "Expected operation to complete within timeout");
                 completed.Reset();
 
                 Assert.Equal(1024, saea.BytesTransferred);
+                AssertExtensions.SequenceEqual(sendBuffer, receiveBuffer);
                 Assert.Equal(sender.LocalEndPoint, saea.RemoteEndPoint);
                 Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, saea.ReceiveMessageFromPacketInfo.Address);
             }   
