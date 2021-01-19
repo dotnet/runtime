@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -41,8 +42,8 @@ namespace Microsoft.Extensions.Configuration
                 int value1 = 0;
                 int value2 = 0;
 
-                bool xIsInt = x != null && int.TryParse(x, out value1);
-                bool yIsInt = y != null && int.TryParse(y, out value2);
+                bool xIsInt = x != null && int.TryParse(x, NumberStyles.None, CultureInfo.InvariantCulture, out value1);
+                bool yIsInt = y != null && int.TryParse(y, NumberStyles.None, CultureInfo.InvariantCulture, out value2);
 
                 int result;
 
