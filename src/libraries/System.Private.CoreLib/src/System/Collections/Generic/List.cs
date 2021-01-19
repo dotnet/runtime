@@ -391,22 +391,26 @@ namespace System.Collections.Generic
             Array.Copy(_items, 0, array, arrayIndex, _size);
         }
 
-        // Ensures that the capacity of this list is at least the given minimum
-        // value. If the current capacity of the list is less than min, the
-        // capacity is increased to twice the current capacity or to min,
-        // whichever is larger.
-        //
-        private void EnsureCapacity(int min)
+        /// <summary>
+        /// Ensures that the capacity of this list is at least the specified <paramref name="capacity"/>.
+        /// If the current capacity of the list is less than specified <paramref name="capacity"/>,
+        /// the capacity is increased to twice the current capacity or to <paramref name="capacity"/>,
+        /// whichever is larger.
+        /// </summary>
+        /// <param name="capacity">The minimum capacity to ensure</param>
+        public int EnsureCapacity(int capacity)
         {
-            if (_items.Length < min)
+            if (_items.Length < capacity)
             {
                 int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length * 2;
                 // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
                 // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
                 if ((uint)newCapacity > Array.MaxArrayLength) newCapacity = Array.MaxArrayLength;
-                if (newCapacity < min) newCapacity = min;
+                if (newCapacity < capacity) newCapacity = capacity;
                 Capacity = newCapacity;
             }
+
+            return _items.Length;
         }
 
         public bool Exists(Predicate<T> match)
