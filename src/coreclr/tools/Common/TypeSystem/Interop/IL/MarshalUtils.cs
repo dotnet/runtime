@@ -24,7 +24,7 @@ namespace Internal.TypeSystem.Interop
                 && !baseType.IsWellKnownType(WellKnownType.ValueType);
 
             // Type is blittable only if parent is also blittable and is not empty.
-            if (hasNonTrivialParent && (!IsBlittableType(baseType) || baseType.IsZeroSized))
+            if (hasNonTrivialParent && (!IsBlittableType(baseType) || baseType.IsZeroSizedReferenceType))
             {
                 return false;
             }

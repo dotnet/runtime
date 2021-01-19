@@ -72,7 +72,7 @@ namespace TypeSystemTests
 
         [Theory]
         [InlineData("ClassWithExplicitEmptyBase")]
-        [InlineData("ClassWithExplicitSizeZeroEmptyBase")]
+        [InlineData("ClassWithExplicitEmptySizeZeroBase")]
         [InlineData("ClassWithSequentialEmptyBase")]
         public void IsBlittableType_TypeWithEmptyBase_ReturnsFalse(string className)
         {

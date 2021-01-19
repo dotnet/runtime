@@ -5,6 +5,37 @@ using System.Runtime.InteropServices;
 
 namespace Marshalling
 {
+
+    #region Simple classes
+
+    public class SimpleEmptyClass
+    {
+    }
+
+    public class SimpleByteClass
+    {
+        public byte x;
+    }
+
+    public class SimpleInt16Class
+    {
+        public short x;
+    }
+
+    public class SimpleInt32Class
+    {
+        public int x;
+    }
+
+    public class SimpleInt64Class
+    {
+        public long x;
+    }
+
+    #endregion
+
+    #region LayoutKind.Explicit classes
+
     [StructLayout(LayoutKind.Explicit)]
     public class ExplicitEmptyBase
     {
@@ -23,7 +54,7 @@ namespace Marshalling
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    public class ClassWithExplicitSizeZeroEmptyBase : ExplicitEmptySizeZeroBase
+    public class ClassWithExplicitEmptySizeZeroBase : ExplicitEmptySizeZeroBase
     {
         [FieldOffset(0)]
         public int i;
@@ -90,6 +121,10 @@ namespace Marshalling
     {
     }
 
+    #endregion
+
+    #region LayoutKind.Sequential classes
+
     [StructLayout(LayoutKind.Sequential)]
     public class ClassWithSequentialEmptyBase : SequentialEmptyBase
     {
@@ -143,4 +178,6 @@ namespace Marshalling
     {
         public int i;
     }
+
+    #endregion
 }
