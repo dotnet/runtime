@@ -39,11 +39,6 @@ namespace System.IO
             // - PathInternal.GetRootLength(pathWithoutPrefix) will return "C:", which will help to determine later if a path was rooted or not.
             int prefixAndRootLength = prefixLength + PathInternal.GetRootLength(pathWithoutPrefix);
 
-            // In a path like "\\.\C:..\folder\subfolder\file.txt":
-            // - PathInternal.GetRootLength(originalPath) will return "\\.\C:..\", which includes the extra redundant segment.
-            // - PathInternal.GetRootLength(pathWithoutPrefix) will return "C:", which will help to determine later if a path was rooted or not.
-            int prefixAndRootLength = prefixLength + PathInternal.GetRootLength(pathWithoutPrefix);
-
             // Append characters that should not be touched:
             // - "C:" - known drive, unknown root
             // - "\" - known root, unknown drive
