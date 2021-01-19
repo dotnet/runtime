@@ -4,6 +4,9 @@ include ../../wasm/wasm.mk
 
 AOT=
 
-DOTNET_PUBLISH_ARGS+=WasmDelta.csproj
+PROJECT_NAME=WasmDelta.csproj
+
+run: run-browser
+
 
 
