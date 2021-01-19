@@ -35,7 +35,12 @@ pal::string_t& extractor_t::extraction_dir()
         {
             pal::string_t current_dir = _X(".");
             pal::string_t relative_path(m_extraction_dir);
-            m_extraction_dir = pal::realpath(&current_dir);
+            if (!pal::realpath(&current_dir))
+            {
+                throw StatusCode::BundleExtractionFailure;
+            }
+
+            m_extraction_dir = current_dir;
             append_path(&m_extraction_dir, relative_path.c_str());
         }
 
