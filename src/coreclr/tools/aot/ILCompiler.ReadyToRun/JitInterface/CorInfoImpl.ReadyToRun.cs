@@ -822,6 +822,11 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.GetReadyToRunHelperCell(id);
         }
 
+        private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
+        {
+            return CorInfoHelpFunc.CORINFO_HELP_STRCNS_CURRENT_MODULE;
+        }
+
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         {
             throw new RequiresRuntimeJitException(HandleToObject(ftn).ToString());
