@@ -77,6 +77,27 @@ namespace System.Net.Sockets.Tests
     public sealed class ReceiveMessageFrom_CancellableTask : ReceiveMessageFrom<SocketHelperCancellableTask>
     {
         public ReceiveMessageFrom_CancellableTask(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [MemberData(nameof(LoopbacksAndBuffers))]
+        public async Task WhenCanceled_Throws(IPAddress loopback, bool precanceled)
+        {
+            using var socket = new Socket(loopback.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            socket.BindToAnonymousPort(loopback);
+            Memory<byte> buffer = new byte[1];
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            if (precanceled) cts.Cancel();
+            else cts.CancelAfter(10);
+
+            OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => socket.ReceiveMessageFromAsync(buffer, SocketFlags.None, GetGetDummyTestEndpoint(loopback.AddressFamily), cts.Token).AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
+                addressFamily == AddressFamily.InterNetwork ?
+                new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
+        }
     }
 
     public sealed class ReceiveMessageFrom_Eap : ReceiveMessageFrom<SocketHelperEap>
