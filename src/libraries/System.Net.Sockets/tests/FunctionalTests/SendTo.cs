@@ -84,6 +84,15 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
             Assert.Null(socket.LocalEndPoint);
         }
+
+        [Fact]
+        public async Task Disposed_Throws()
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.Dispose();
+
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => SendToAsync(socket, new byte[1], ValidUdpRemoteEndpoint));
+        }
     }
 
     public sealed class SendTo_SyncSpan : SendToBase<SocketHelperSpanSync>

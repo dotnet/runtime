@@ -52,6 +52,16 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
             }
         }
+
+        [Fact]
+        public async Task Disposed_Throws()
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.BindToAnonymousPort(IPAddress.Any);
+            socket.Dispose();
+
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => ReceiveMessageFromAsync(socket, new byte[1], new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234)));
+        }
     }
 
     public sealed class ReceiveMessageFrom_Sync : ReceiveMessageFrom<SocketHelperArraySync>

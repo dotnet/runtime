@@ -51,6 +51,16 @@ namespace System.Net.Sockets.Tests
 
             await Assert.ThrowsAnyAsync<ArgumentException>(() => ReceiveFromAsync(socket, new byte[1], null));
         }
+
+        [Fact]
+        public async Task Disposed_Throws()
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.BindToAnonymousPort(IPAddress.Any);
+            socket.Dispose();
+
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
+        }
     }
 
     public sealed class ReceiveFrom_Sync : ReceiveFrom<SocketHelperArraySync>
