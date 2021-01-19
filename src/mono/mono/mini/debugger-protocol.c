@@ -48,34 +48,34 @@ static int packet_id = 0;
  * Functions to decode protocol data
  */
 int  
-buffer_add_command_header(Buffer * data, int command_set, int command, Buffer *out)
+buffer_add_command_header (Buffer *data, int command_set, int command, Buffer *out)
 {
-	int id = mono_atomic_inc_i32(&packet_id);
+	int id = mono_atomic_inc_i32 (&packet_id);
 
 	int len = data->p - data->buf + HEADER_LEN;
-	buffer_init(out, len);
-	buffer_add_int(out, len);
-	buffer_add_int(out, id);
-	buffer_add_byte(out, 0); /* flags */
-	buffer_add_byte(out, command_set);
-	buffer_add_byte(out, command);
-	buffer_add_data(out, data->buf, data->p - data->buf);
+	buffer_init (out, len);
+	buffer_add_int (out, len);
+	buffer_add_int (out, id);
+	buffer_add_byte (out, 0); /* flags */
+	buffer_add_byte (out, command_set);
+	buffer_add_byte (out, command);
+	buffer_add_data (out, data->buf, data->p - data->buf);
 	return id;
 }
 
 void 
-decode_command_header(Buffer *recvbuf, Header *header)
+decode_command_header (Buffer *recvbuf, Header *header)
 {
-	header->len = decode_int(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-	header->id = decode_int(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-	header->flags = decode_byte(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+	header->len = decode_int (recvbuf->buf, &recvbuf->buf, recvbuf->end);
+	header->id = decode_int (recvbuf->buf, &recvbuf->buf, recvbuf->end);
+	header->flags = decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
 	if (header->flags == REPLY_PACKET) {
-		header->error = decode_byte(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-		header->error_2 = decode_byte(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+		header->error = decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
+		header->error_2 = decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
 	}
 	else {
-		header->command_set = decode_byte(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-		header->command = decode_byte(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+		header->command_set = decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
+		header->command = decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
 	}
 }
 
@@ -136,9 +136,9 @@ decode_string (guint8 *buf, guint8 **endbuf, guint8 *limit)
 }
 
 guint8*
-decode_byte_array(guint8* buf, guint8** endbuf, guint8* limit, guint32* len)
+decode_byte_array (guint8 *buf, guint8 **endbuf, guint8 *limit, guint32 *len)
 {
-	*len = decode_int(buf, &buf, limit);
+	*len = decode_int (buf, &buf, limit);
 	guint8* s;
 
 	if (len < 0) {
@@ -146,10 +146,10 @@ decode_byte_array(guint8* buf, guint8** endbuf, guint8* limit, guint32* len)
 		return NULL;
 	}
 
-	s = (guint8*)g_malloc(*len);
-	g_assert(s);
+	s = (guint8*)g_malloc (*len);
+	g_assert (s);
 
-	memcpy(s, buf, *len);
+	memcpy (s, buf, *len);
 	buf += *len;
 	*endbuf = buf;
 

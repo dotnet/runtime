@@ -6,7 +6,6 @@
 #define HEADER_LEN 11
 #define REPLY_PACKET 0x80
 
-
 typedef enum {
 	CMD_COMPOSITE = 100
 } CmdComposite;
@@ -46,8 +45,6 @@ typedef enum {
 	CMD_SET_EVENT = 64,
 	CMD_SET_POINTER = 65
 } CommandSet;
-
-
 
 typedef enum {
 	ERR_NONE = 0,
@@ -148,7 +145,6 @@ typedef enum {
 typedef enum {
 	CMD_PROPERTY_GET_INFO = 1,
 } CmdProperty;
-
 
 typedef enum {
 	CMD_METHOD_GET_NAME = 1,
@@ -257,8 +253,6 @@ typedef struct ReplyPacket {
 	Buffer *data;
 } ReplyPacket;
 
-
-
 /*
 FIXME:
 - Move EventKind back to debugger-agent.c as it contains sdb wire protocol constants.
@@ -318,7 +312,6 @@ typedef enum {
 	STEP_FILTER_DEBUGGER_NON_USER_CODE = 8
 } StepFilter;
 
-
 /*
  * IDS
  */
@@ -335,9 +328,8 @@ typedef enum {
 	ID_NUM
 } IdType;
 
-
-int buffer_add_command_header(Buffer* recvbuf, int cmd_set, int cmd, Buffer* out);
-void decode_command_header(Buffer* recvbuf, Header* header);
+int buffer_add_command_header (Buffer *recvbuf, int cmd_set, int cmd, Buffer *out);
+void decode_command_header (Buffer *recvbuf, Header *header);
 
 /*
  * Functions to decode protocol data
@@ -372,3 +364,4 @@ void buffer_free (Buffer *buf);
 const char* event_to_string (EventKind event);
 
 #endif
+
