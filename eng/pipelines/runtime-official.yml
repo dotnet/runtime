@@ -132,7 +132,7 @@ stages:
       buildConfig: release
       platforms:
       - Android_x64
-      - Browser_wasmr
+      - Browser_wasm
 
   #
   # Build Mono release Android AOT cross-compiler
