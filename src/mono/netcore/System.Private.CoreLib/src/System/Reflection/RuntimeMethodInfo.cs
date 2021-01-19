@@ -377,10 +377,6 @@ namespace System.Reflection
                 {
                     o = InternalInvoke(obj, parameters, out exc);
                 }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
-                }
                 catch (OverflowException)
                 {
                     throw;
@@ -395,10 +391,6 @@ namespace System.Reflection
                 try
                 {
                     o = InternalInvoke(obj, parameters, out exc);
-                }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
                 }
             }
 

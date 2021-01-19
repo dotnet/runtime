@@ -117,11 +117,4 @@ namespace Mono
         public T4 Item4;
         public T5 Item5;
     }
-
-    internal class NullByRefReturnException : Exception
-    {
-        public NullByRefReturnException()
-        {
-        }
-    }
 }
