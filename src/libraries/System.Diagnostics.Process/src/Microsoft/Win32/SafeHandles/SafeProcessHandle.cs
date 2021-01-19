@@ -34,11 +34,5 @@ namespace Microsoft.Win32.SafeHandles
         {
             SetHandle(existingHandle);
         }
-
-        internal void InitialSetHandle(IntPtr h)
-        {
-            Debug.Assert(IsInvalid, "Safe handle should only be set once");
-            base.handle = h;
-        }
     }
 }

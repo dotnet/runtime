@@ -601,6 +601,7 @@ namespace System.Runtime.InteropServices
         public static string GetTypeInfoName(System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object GetUniqueObjectForIUnknown(System.IntPtr unknown) { throw null; }
+        public static void InitHandle(SafeHandle safeHandle, IntPtr handle) { }
         public static bool IsComObject(object o) { throw null; }
         public static bool IsTypeVisibleFromCom(System.Type t) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
