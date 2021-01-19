@@ -354,7 +354,7 @@ namespace System.Collections.Generic
 
             if (_buckets != null)
             {
-                var array = new KeyValuePair<TKey, TValue>[Count];
+                var array = GC.AllocateUninitializedArray<KeyValuePair<TKey, TValue>>(Count);
                 CopyTo(array, 0);
                 info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
             }
@@ -489,8 +489,8 @@ namespace System.Collections.Generic
         private int Initialize(int capacity)
         {
             int size = HashHelpers.GetPrime(capacity);
-            int[] buckets = new int[size];
-            Entry[] entries = new Entry[size];
+            int[] buckets = GC.AllocateUninitializedArray<int>(size);
+            Entry[] entries = GC.AllocateUninitializedArray<Entry>(size);
 
             // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
             _freeList = -1;
@@ -744,7 +744,7 @@ namespace System.Collections.Generic
             Debug.Assert(_entries != null, "_entries should be non-null");
             Debug.Assert(newSize >= _entries.Length);
 
-            Entry[] entries = new Entry[newSize];
+            Entry[] entries = GC.AllocateUninitializedArray<Entry>(newSize);
 
             int count = _count;
             Array.Copy(_entries, entries, count);
@@ -769,7 +769,7 @@ namespace System.Collections.Generic
             }
 
             // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
-            _buckets = new int[newSize];
+            _buckets = GC.AllocateUninitializedArray<int>(newSize);
 #if TARGET_64BIT
             _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
 #endif
