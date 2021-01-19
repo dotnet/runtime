@@ -1274,7 +1274,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     m_fRequires64BitAlignment = fRequiresAlign64Bit;
 
     int cbArg = StackElemSize(argSize);
-    assert((cbArg % TARGET_POINTER_SIZE) == 0);
+    _ASSERTE((cbArg % TARGET_POINTER_SIZE) == 0);
 
     // Ignore floating point argument placement in registers if we're dealing with a vararg function (the ABI
     // specifies this so that vararg processing on the callee side is simplified).
