@@ -346,7 +346,7 @@ namespace System.Collections.Generic
 
             if (count != 0)
             {
-                T[] array = new T[count];
+                T[] array = GC.AllocateUninitializedArray<T>(count);
                 CopyTo(array, 0);
                 info.AddValue(ValuesName, array, typeof(T[]));
             }
