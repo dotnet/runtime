@@ -440,17 +440,15 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             services.AddSingleton<Thing0>();
             services.AddTransient(sp =>
             {
-                if (ThreadId == 1)
-                {
-                    Action1();
-                }
-                else
+                if (ThreadId == 2)
                 {
                     // Let Thread 1 over take Thread 2
-                    Action2();
+                    _manualResetEvent.WaitOne();
                 }
 
-                return lazy.Value;
+                Thing1 value = lazy.Value;
+                _manualResetEvent.Set();
+                return value;
             });
             services.AddSingleton<Thing2>();
 
@@ -481,16 +479,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         private ManualResetEvent _manualResetEvent = new ManualResetEvent(false);
-
-        private void Action1()
-        {
-            _manualResetEvent.Set();
-        }
-
-        private void Action2()
-        {
-            _manualResetEvent.WaitOne();
-        }
 
         [Fact]
         public async Task GetRequiredService_BiggerObjectGraphWithOpenGenerics_NoDeadlock()
@@ -528,18 +516,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             });
 
             services.AddTransient(sp =>
-            {
-                if (ThreadId == 1)
-                {
-                    Action1();
-                }
-                else
+            { 
+                if (ThreadId == 2)
                 {
                     // Let Thread 1 over take Thread 2
-                    Action2();
+                    _manualResetEvent.WaitOne();
                 }
 
-                return lazy.Value;
+                Thing4 value = lazy.Value;
+                _manualResetEvent.Set();
+                return value;
             });
             services.AddSingleton<Thing5>();
 
