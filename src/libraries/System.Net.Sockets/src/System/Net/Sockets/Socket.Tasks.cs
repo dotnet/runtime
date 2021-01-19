@@ -514,6 +514,11 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(remoteEP));
             }
 
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
             AwaitableSocketAsyncEventArgs saea =
                 Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
                 new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
