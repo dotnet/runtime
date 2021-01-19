@@ -50,6 +50,7 @@ UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code, int val);
 
+BYTE* emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst);
 BYTE* emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
 BYTE* emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
 BYTE* emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
@@ -287,7 +288,9 @@ inline emitAttr emitDecodeScale(unsigned ensz)
 /************************************************************************/
 
 public:
-void emitLoopAlign();
+void emitLoopAlign(unsigned short paddingBytes = 15);
+
+void emitLongLoopAlign(unsigned short alignmentBoundary);
 
 void emitIns(instruction ins);
 

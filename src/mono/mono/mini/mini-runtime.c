@@ -169,6 +169,11 @@ GSList *mono_interp_only_classes;
 
 static void register_icalls (void);
 static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
+#ifdef ENABLE_METADATA_UPDATE
+static void mini_metadata_update_init (MonoError *error);
+static void mini_invalidate_transformed_interp_methods (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
+#endif
+
 
 gboolean
 mono_running_on_valgrind (void)
@@ -4433,6 +4438,10 @@ mini_init (const char *filename, const char *runtime_version)
 #ifndef DISABLE_CRASH_REPORTING
 	callbacks.install_state_summarizer = mini_register_sigterm_handler;
 #endif
+#ifdef ENABLE_METADATA_UPDATE
+	callbacks.metadata_update_init = mini_metadata_update_init;
+	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
+#endif
 
 	mono_install_callbacks (&callbacks);
 
@@ -5326,3 +5335,17 @@ mono_runtime_install_custom_handlers_usage (void)
 		 "No handlers supported on current platform.\n");
 }
 #endif /* HOST_WIN32 */
+
+#ifdef ENABLE_METADATA_UPDATE
+void
+mini_metadata_update_init (MonoError *error)
+{
+	mini_get_interp_callbacks ()->metadata_update_init (error);
+}
+
+void
+mini_invalidate_transformed_interp_methods (MonoDomain *domain, MonoAssemblyLoadContext *alc G_GNUC_UNUSED, uint32_t generation G_GNUC_UNUSED)
+{
+	mini_get_interp_callbacks ()->invalidate_transformed (domain);
+}
+#endif

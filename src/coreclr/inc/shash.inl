@@ -170,6 +170,28 @@ void SHash<TRAITS>::AddOrReplace(const element_t &element)
 }
 
 template <typename TRAITS>
+BOOL SHash<TRAITS>::AddOrReplaceNoThrow(const element_t &element)
+{
+     CONTRACT(BOOL)
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        INSTANCE_CHECK;
+        static_assert(!TRAITS::s_supports_remove, "SHash::AddOrReplaceNoThrow is not implemented for SHash with support for remove operations.");
+        POSTCONDITION(TRAITS::Equals(TRAITS::GetKey(element), TRAITS::GetKey(*LookupPtr(TRAITS::GetKey(element)))));
+    }
+    CONTRACT_END;
+
+    static_assert(TRAITS::s_NoThrow, "This SHash does not support NOTHROW.");
+
+    BOOL haveSpace = CheckGrowthNoThrow();
+    if (haveSpace)
+        AddOrReplace(m_table, m_tableSize, element);
+
+    RETURN haveSpace;
+}
+
+template <typename TRAITS>
 void SHash<TRAITS>::Remove(key_t key)
 {
     CONTRACT_VOID

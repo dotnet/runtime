@@ -560,6 +560,35 @@ bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const
 }
 #endif // TARGET_X86
 
+//---------------------------------------------------------------------------
+// isNativePrimitiveStructType:
+//    Check if the given struct type is an intrinsic type that should be treated as though
+//    it is not a struct at the unmanaged ABI boundary.
+//
+// Arguments:
+//    clsHnd - the handle for the struct type.
+//
+// Return Value:
+//    true if the given struct type should be treated as a primitive for unmanaged calls,
+//    false otherwise.
+//
+bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
+{
+    if (!isIntrinsicType(clsHnd))
+    {
+        return false;
+    }
+    const char* namespaceName = nullptr;
+    const char* typeName      = getClassNameFromMetadata(clsHnd, &namespaceName);
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices") != 0)
+    {
+        return false;
+    }
+
+    return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
+}
+
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
 //     Get the "primitive" type that is is used for a struct
@@ -1013,14 +1042,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         }
     }
 #elif UNIX_X86_ABI
-    if (callConv != CorInfoCallConvExtension::Managed)
+    if (callConv != CorInfoCallConvExtension::Managed && !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
 #elif defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (callConvIsInstanceMethodCallConv(callConv))
+    if (callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
@@ -2308,7 +2337,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2615,6 +2644,29 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compDbgInfo = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO);
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
 
+#ifdef DEBUG
+    opts.compJitAlignLoopAdaptive       = JitConfig.JitAlignLoopAdaptive() == 1;
+    opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
+    opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
+
+    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+#else
+    opts.compJitAlignLoopAdaptive       = true;
+    opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+#endif
+    if (opts.compJitAlignLoopAdaptive)
+    {
+        opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
+    }
+    else
+    {
+        opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary - 1;
+    }
+
+    assert(isPow2(opts.compJitAlignLoopBoundary));
+
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns
     opts.compDbgCode = false;
@@ -2823,43 +2875,62 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     // Profile data
     //
-    fgBlockCounts                = nullptr;
+    fgPgoSchema                  = nullptr;
+    fgPgoData                    = nullptr;
+    fgPgoSchemaCount             = 0;
     fgProfileData_ILSizeMismatch = false;
     fgNumProfileRuns             = 0;
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         HRESULT hr;
-        hr = info.compCompHnd->getMethodBlockCounts(info.compMethodHnd, &fgBlockCountsCount, &fgBlockCounts,
-                                                    &fgNumProfileRuns);
+        hr = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
+                                                            &fgPgoData);
 
-        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; counts at %p, %d blocks, %d runs\n",
-                info.compFullName, hr, fgBlockCounts, fgBlockCountsCount, fgNumProfileRuns);
+        if (SUCCEEDED(hr))
+        {
+            fgNumProfileRuns = 0;
+            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
+            {
+                if (fgPgoSchema[iSchema].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::NumRuns)
+                {
+                    fgNumProfileRuns += fgPgoSchema[iSchema].Other;
+                }
+            }
 
-        // a failed result that also has a non-NULL fgBlockCounts
+            if (fgNumProfileRuns == 0)
+                fgNumProfileRuns = 1;
+        }
+
+        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema "
+                "elements, %d runs\n",
+                info.compFullName, hr, fgPgoSchema, fgPgoData, fgPgoSchemaCount, fgNumProfileRuns);
+
+        // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
         // the ILSize for the method when profile data was collected.
         //
         // We will discard the IBC data in this case
         //
-        if (FAILED(hr) && (fgBlockCounts != nullptr))
+        if (FAILED(hr) && (fgPgoSchema != nullptr))
         {
             fgProfileData_ILSizeMismatch = true;
-            fgBlockCounts                = nullptr;
+            fgPgoData                    = nullptr;
+            fgPgoSchema                  = nullptr;
         }
 #ifdef DEBUG
-        // A successful result implies a non-NULL fgBlockCounts
+        // A successful result implies a non-NULL fgPgoSchema
         //
         if (SUCCEEDED(hr))
         {
-            assert(fgBlockCounts != nullptr);
+            assert(fgPgoSchema != nullptr);
         }
 
-        // A failed result implies a NULL fgBlockCounts
+        // A failed result implies a NULL fgPgoSchema
         //   see implementation of Compiler::fgHaveProfileData()
         //
         if (FAILED(hr))
         {
-            assert(fgBlockCounts == nullptr);
+            assert(fgPgoSchema == nullptr);
         }
 #endif
     }
@@ -3913,19 +3984,17 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
         {
-            codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
-
-            // The zapper doesn't set JitFlags::JIT_FLAG_ALIGN_LOOPS, and there is
-            // no reason for it to set it as the JIT doesn't currently support loop alignment
-            // for prejitted images. (The JIT doesn't know the final address of the code, hence
+            // The JIT doesn't currently support loop alignment for prejitted images.
+            // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
-            assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS));
+
+            codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
         }
         else
         {
-            codeGen->SetAlignLoops(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS));
+            codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
         }
     }
 
@@ -5730,8 +5799,19 @@ void Compiler::compCompileFinish()
         unsigned profCallCount = 0;
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
         {
-            assert(fgBlockCounts[0].ILOffset == 0);
-            profCallCount = fgBlockCounts[0].ExecutionCount;
+            bool foundEntrypointBasicBlockCount = false;
+            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
+            {
+                if ((fgPgoSchema[iSchema].InstrumentationKind ==
+                     ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
+                    (fgPgoSchema[iSchema].ILOffset == 0))
+                {
+                    foundEntrypointBasicBlockCount = true;
+                    profCallCount                  = *(uint32_t*)(fgPgoData + fgPgoSchema[iSchema].Offset);
+                    break;
+                }
+            }
+            assert(foundEntrypointBasicBlockCount);
         }
 
         static bool headerPrinted = false;

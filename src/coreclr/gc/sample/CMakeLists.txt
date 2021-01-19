@@ -47,6 +47,8 @@ if(CLR_CMAKE_TARGET_WIN32)
     advapi32.lib)
 endif(CLR_CMAKE_TARGET_WIN32)
 
+add_definitions(-DVERIFY_HEAP)
+
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         ../windows/gcenv.windows.cpp)

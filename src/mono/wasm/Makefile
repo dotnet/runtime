@@ -6,6 +6,7 @@ escape_quote = $(subst ",\",$(1))
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver
+GECKODRIVER?=$(HOME)/.geckodriver
 
 #
 # These variables are set by wasm.proj
@@ -21,6 +22,8 @@ ICU_LIBDIR?=
 SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
 ENABLE_ES6?=false
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
+ENABLE_METADATA_UPDATE?=false
+XHARNESS_BROWSER?=chrome
 
 all: build-native icu-files source-files header-files
 
@@ -54,6 +57,7 @@ MONO_LIBS = \
 	$(MONO_BIN_DIR)/libmonosgen-2.0.a \
 	$(MONO_BIN_DIR)/libmono-ilgen.a \
 	$(MONO_BIN_DIR)/libmono-icall-table.a \
+	$(MONO_BIN_DIR)/libmono-profiler-aot.a \
 	${NATIVE_BIN_DIR}/libSystem.Native.a \
 	${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a \
 	$(ICU_LIBDIR)/libicuuc.a \
@@ -62,6 +66,9 @@ MONO_LIBS = \
 EMCC_FLAGS=--profiling-funcs -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=1 -s USE_ZLIB=1  -s FORCE_FILESYSTEM=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm
 ifneq ($(ENABLE_ES6),false)
     EMCC_FLAGS+=-s MODULARIZE=1 -s EXPORT_ES6=1
+endif
+ifeq ($(ENABLE_METADATA_UPDATE),true)
+    EMCC_FLAGS+=-DENABLE_METADATA_UPDATE=1
 endif
 
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
@@ -175,16 +182,16 @@ run-tests-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-browser-tests-%:
-	PATH="$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND=test-browser $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-debugger-tests:
 	if [ ! -z "$(TEST_FILTER)" ]; then \
 		export LC_ALL=en_US.UTF-8; \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite --filter FullyQualifiedName~$(TEST_FILTER); \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) --filter FullyQualifiedName~$(TEST_FILTER); \
 		unset LC_ALL; \
 	else \
 		export LC_ALL=en_US.UTF-8; \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(TEST_ARGS); \
+		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) $(TEST_ARGS); \
 		unset LC_ALL; \
 	fi
 

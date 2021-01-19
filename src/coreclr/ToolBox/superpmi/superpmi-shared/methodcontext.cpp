@@ -64,6 +64,7 @@ void MethodContext::Destroy()
 #include "lwmlist.h"
 
     delete cr;
+    FreeTempAllocations();
 }
 
 #define sparseAddLen(target)                                                                                           \
@@ -287,6 +288,8 @@ void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen
     unsigned int   localsize = 0;
     unsigned char  canary    = 0xff;
     unsigned char* buff3     = nullptr;
+
+    FreeTempAllocations();
 
     while (buffIndex < totalLen)
     {
@@ -5069,36 +5072,65 @@ DWORD MethodContext::repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, v
 }
 
 
-void MethodContext::recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result)
+void MethodContext::recAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData, HRESULT result)
 {
-    if (AllocMethodBlockCounts == nullptr)
-        AllocMethodBlockCounts = new LightWeightMap<DWORD, Agnostic_AllocMethodBlockCounts>();
+    if (AllocPgoInstrumentationBySchema == nullptr)
+        AllocPgoInstrumentationBySchema = new LightWeightMap<DWORDLONG, Agnostic_AllocPgoInstrumentationBySchema>();
 
-    Agnostic_AllocMethodBlockCounts value;
+    Agnostic_AllocPgoInstrumentationBySchema value;
 
-    value.address = CastPointer(*pBlockCounts);
-    value.count  = (DWORD)count;
+    value.schemaCount = countSchemaItems;
+    value.address = CastPointer(*pInstrumentationData);
+    Agnostic_PgoInstrumentationSchema* agnosticSchema = (Agnostic_PgoInstrumentationSchema*)malloc(sizeof(Agnostic_PgoInstrumentationSchema) * countSchemaItems);
+    for (UINT32 i = 0; i < countSchemaItems; i++)
+    {
+        agnosticSchema[i].Offset = pSchema[i].Offset;
+        agnosticSchema[i].InstrumentationKind = pSchema[i].InstrumentationKind;
+        agnosticSchema[i].ILOffset = pSchema[i].ILOffset;
+        agnosticSchema[i].Count = pSchema[i].Count;
+        agnosticSchema[i].Other = pSchema[i].Other;
+    }
+    value.schema_index = AllocPgoInstrumentationBySchema->AddBuffer((unsigned char*)agnosticSchema, sizeof(Agnostic_PgoInstrumentationSchema) * countSchemaItems);
+    free(agnosticSchema);
     value.result = (DWORD)result;
 
-    AllocMethodBlockCounts->Add((DWORD)0, value);
+    AllocPgoInstrumentationBySchema->Add(CastHandle(ftnHnd), value);
 }
-void MethodContext::dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value)
-{
-    printf("AllocMethodBlockCounts key %u, value addr-%016llX cnt-%u res-%08X", key, value.address, value.count, value.result);
-}
-HRESULT MethodContext::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts)
-{
-    Agnostic_AllocMethodBlockCounts value;
-    value = AllocMethodBlockCounts->Get((DWORD)0);
 
-    if (count != value.count)
+void MethodContext::dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agnostic_AllocPgoInstrumentationBySchema& value)
+{
+    printf("AllocPgoInstrumentationBySchema key ftn-%016llX, value addr-%016llX cnt-%u res-%08X", key, value.address, value.schemaCount, value.result);
+    Agnostic_PgoInstrumentationSchema* pBuf =
+        (Agnostic_PgoInstrumentationSchema*)AllocPgoInstrumentationBySchema->GetBuffer(value.schema_index);
+
+    for (UINT32 i = 0; i < value.schemaCount; i++)
     {
-        LogWarning("AllocMethodBlockCount mismatch: record %d, replay %d", value.count, count);
+        printf("  Offset %016llX ILOffset %u Kind %u Count %u Other %u\n", pBuf[i].Offset, pBuf[i].ILOffset, pBuf[i].InstrumentationKind, pBuf[i].Count, pBuf[i].Other);
+    }
+}
+
+DWORD MethodContext::repAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)
+{
+    Agnostic_AllocPgoInstrumentationBySchema value;
+    value = AllocPgoInstrumentationBySchema->Get(CastHandle(ftnHnd));
+
+    if (countSchemaItems != value.schemaCount)
+    {
+        LogWarning("AllocPgoInstrumentationBySchema mismatch: record %d, replay %d", value.schemaCount, countSchemaItems);
     }
 
     HRESULT result = (HRESULT)value.result;
 
-    // Allocate a scratch buffer, linked to method context via AllocMethodBlockCounts, so it gets
+    Agnostic_PgoInstrumentationSchema* pAgnosticSchema = (Agnostic_PgoInstrumentationSchema*)AllocPgoInstrumentationBySchema->GetBuffer(value.schema_index);
+    size_t maxOffset = 0;
+    for (UINT32 iSchema = 0; iSchema < countSchemaItems && iSchema < value.schemaCount; iSchema++)
+    {
+        pSchema[iSchema].Offset = (size_t)pAgnosticSchema[iSchema].Offset;
+        if (pSchema[iSchema].Offset > maxOffset)
+            maxOffset = pSchema[iSchema].Offset;
+    }
+
+    // Allocate a scratch buffer, linked to method context via AllocPgoInstrumentationBySchema, so it gets
     // cleaned up when the method context does.
     //
     // We won't bother recording this via AddBuffer because currently SPMI will never look at it.
@@ -5107,54 +5139,87 @@ HRESULT MethodContext::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::Block
     // Todo, perhaps: record the buffer as a compile result instead, and defer copying until
     // jit completion so we can snapshot the offsets the jit writes.
     //
-    *pBlockCounts = (ICorJitInfo::BlockCounts*)AllocMethodBlockCounts->CreateBuffer(count * sizeof(ICorJitInfo::BlockCounts));
-    cr->recAddressMap((void*)value.address, (void*)*pBlockCounts, count * (sizeof(ICorJitInfo::BlockCounts)));
+    // Add 16 bytes of represent writeable space
+    size_t bufSize = maxOffset + 16;
+    *pInstrumentationData = (BYTE*)AllocJitTempBuffer((unsigned)bufSize);
+    cr->recAddressMap((void*)value.address, (void*)*pInstrumentationData, (unsigned)bufSize);
     return result;
 }
 
-void MethodContext::recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                                            UINT32 *                     pCount,
-                                            ICorJitInfo::BlockCounts**   pBlockCounts,
-                                            UINT32 *                     pNumRuns,
-                                            HRESULT                      result)
+void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd,
+                                                    ICorJitInfo::PgoInstrumentationSchema** pSchema,
+                                                    UINT32* pCountSchemaItems,
+                                                    BYTE** pInstrumentationData,
+                                                    HRESULT result)
 {
-    if (GetMethodBlockCounts == nullptr)
-        GetMethodBlockCounts = new LightWeightMap<DWORDLONG, Agnostic_GetMethodBlockCounts>();
+    if (GetPgoInstrumentationResults == nullptr)
+        GetPgoInstrumentationResults = new LightWeightMap<DWORDLONG, Agnostic_GetPgoInstrumentationResults>();
 
-    Agnostic_GetMethodBlockCounts value;
+    Agnostic_GetPgoInstrumentationResults value;
 
-    value.count = (DWORD)*pCount;
-    value.pBlockCounts_index =
-        GetMethodBlockCounts->AddBuffer((unsigned char*)*pBlockCounts, sizeof(ICorJitInfo::BlockCounts) * (*pCount));
-    value.numRuns = (DWORD)*pNumRuns;
+    value.schemaCount = *pCountSchemaItems;
+
+    Agnostic_PgoInstrumentationSchema* agnosticSchema = (Agnostic_PgoInstrumentationSchema*)malloc(sizeof(Agnostic_PgoInstrumentationSchema) * (*pCountSchemaItems));
+    size_t maxOffset = 0;
+    for (UINT32 i = 0; i < (*pCountSchemaItems); i++)
+    {
+        if ((*pSchema)[i].Offset > maxOffset)
+            maxOffset = (*pSchema)[i].Offset;
+        agnosticSchema[i].Offset = (*pSchema)[i].Offset;
+        agnosticSchema[i].InstrumentationKind = (*pSchema)[i].InstrumentationKind;
+        agnosticSchema[i].ILOffset = (*pSchema)[i].ILOffset;
+        agnosticSchema[i].Count = (*pSchema)[i].Count;
+        agnosticSchema[i].Other = (*pSchema)[i].Other;
+    }
+    value.schema_index = GetPgoInstrumentationResults->AddBuffer((unsigned char*)agnosticSchema, sizeof(Agnostic_PgoInstrumentationSchema) * (*pCountSchemaItems));
+    free(agnosticSchema);
+
+    // This isn't strictly accurate, but I think it'll do
+    size_t bufSize = maxOffset + 16;
+
+    value.data_index = GetPgoInstrumentationResults->AddBuffer((unsigned char*)*pInstrumentationData, (unsigned)bufSize);
+    value.dataByteCount = (unsigned)bufSize;
     value.result  = (DWORD)result;
 
-    GetMethodBlockCounts->Add(CastHandle(ftnHnd), value);
+    GetPgoInstrumentationResults->Add(CastHandle(ftnHnd), value);
 }
-void MethodContext::dmpGetMethodBlockCounts(DWORDLONG key, const Agnostic_GetMethodBlockCounts& value)
+void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value)
 {
-    printf("GetMethodBlockCounts key ftn-%016llX, value cnt-%u profileBuf-", key, value.count);
-    ICorJitInfo::BlockCounts* pBuf =
-        (ICorJitInfo::BlockCounts*)GetMethodBlockCounts->GetBuffer(value.pBlockCounts_index);
-    for (DWORD i = 0; i < value.count; i++, pBuf++)
+    printf("GetMethodBlockCounts key ftn-%016llX, value schemaCnt-%u profileBufSize-%u", key, value.schemaCount, value.dataByteCount);
+    Agnostic_PgoInstrumentationSchema* pBuf =
+        (Agnostic_PgoInstrumentationSchema*)GetPgoInstrumentationResults->GetBuffer(value.schema_index);
+
+    for (UINT32 i = 0; i < value.schemaCount; i++)
     {
-        printf("{il-%u,cnt-%u}", pBuf->ILOffset, pBuf->ExecutionCount);
+        printf("  Offset %016llX ILOffset %u Kind %u Count %u Other %u\n", pBuf[i].Offset, pBuf[i].ILOffset, pBuf[i].InstrumentationKind, pBuf[i].Count, pBuf[i].Other);
     }
-    GetMethodBlockCounts->Unlock();
-    printf(" numRuns-%u result-%u", value.numRuns, value.result);
+
+    // TODO, dump actual count data
 }
-HRESULT MethodContext::repGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                                               UINT32 *                     pCount,
-                                               ICorJitInfo::BlockCounts**   pBlockCounts,
-                                               UINT32 *                     pNumRuns)
+DWORD MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd,
+                                                       ICorJitInfo::PgoInstrumentationSchema** pSchema,
+                                                       UINT32* pCountSchemaItems,
+                                                       BYTE** pInstrumentationData)
 {
-    Agnostic_GetMethodBlockCounts tempValue;
+    Agnostic_GetPgoInstrumentationResults tempValue;
 
-    tempValue = GetMethodBlockCounts->Get(CastHandle(ftnHnd));
+    tempValue = GetPgoInstrumentationResults->Get(CastHandle(ftnHnd));
 
-    *pCount        = (UINT32)tempValue.count;
-    *pBlockCounts  = (ICorJitInfo::BlockCounts*)GetMethodBlockCounts->GetBuffer(tempValue.pBlockCounts_index);
-    *pNumRuns      = (UINT32)tempValue.numRuns;
+    *pCountSchemaItems = (UINT32)tempValue.schemaCount;
+    *pInstrumentationData  = (BYTE*)GetPgoInstrumentationResults->GetBuffer(tempValue.data_index);
+
+    *pSchema = (ICorJitInfo::PgoInstrumentationSchema*)AllocJitTempBuffer(tempValue.schemaCount * sizeof(ICorJitInfo::PgoInstrumentationSchema));
+
+    Agnostic_PgoInstrumentationSchema* pAgnosticSchema = (Agnostic_PgoInstrumentationSchema*)GetPgoInstrumentationResults->GetBuffer(tempValue.schema_index);
+    for (UINT32 iSchema = 0; iSchema < tempValue.schemaCount; iSchema++)
+    {
+        (*pSchema)[iSchema].Offset = (size_t)pAgnosticSchema[iSchema].Offset;
+        (*pSchema)[iSchema].ILOffset = pAgnosticSchema[iSchema].ILOffset;
+        (*pSchema)[iSchema].InstrumentationKind = pAgnosticSchema[iSchema].InstrumentationKind;
+        (*pSchema)[iSchema].Count = pAgnosticSchema[iSchema].Count;
+        (*pSchema)[iSchema].Other = pAgnosticSchema[iSchema].Other;
+    }
+
     HRESULT result = (HRESULT)tempValue.result;
     return result;
 }
@@ -6340,7 +6405,7 @@ MethodContext::Environment MethodContext::cloneEnvironment()
     MethodContext::Environment env;
     if (GetIntConfigValue != nullptr)
     {
-        env.getIntConfigValue = new LightWeightMap<MethodContext::Agnostic_ConfigIntInfo, DWORD>(*GetIntConfigValue);
+        env.getIntConfigValue = new LightWeightMap<Agnostic_ConfigIntInfo, DWORD>(*GetIntConfigValue);
     }
     if (GetStringConfigValue != nullptr)
     {
