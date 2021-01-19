@@ -230,9 +230,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool m_fRequires64BitAlignment;  // ARM - True if the argument should always be aligned (in registers or on the stack
 
-        public int m_idxStack;     // First stack slot used (or -1)
-        public int m_cStack;       // Count of stack slots used (or 0)
-
         // Initialize to represent a non-placed argument (no register or stack slots referenced).
         public void Init()
         {
@@ -240,8 +237,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             m_cFloatReg = 0;
             m_idxGenReg = -1;
             m_cGenReg = 0;
-            m_idxStack = -1;
-            m_cStack = 0;
 
             m_fRequires64BitAlignment = false;
         }
@@ -1275,7 +1270,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 // into x0-x7, and any remaining stack arguments are placed normally.
                                 int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _arm64IdxGenReg * 8;
 
-                                // Increase m_idxStack to account for the space used for the remainder of the arg after
+                                // Increase _arm64IdxStack to account for the space used for the remainder of the arg after
                                 // register slots are filled.
                                 _arm64IdxStack += (_arm64IdxGenReg + cArgSlots - 8);
 
@@ -1517,15 +1512,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             else
                             {
                                 pLoc.m_cGenReg = (short)(4 - pLoc.m_idxGenReg);
-
-                                pLoc.m_idxStack = 0;
-                                pLoc.m_cStack = cSlots - pLoc.m_cGenReg;
                             }
-                        }
-                        else
-                        {
-                            pLoc.m_idxStack = _transitionBlock.GetArgumentIndexFromOffset(argOffset) - 4;
-                            pLoc.m_cStack = cSlots;
                         }
                         return pLoc;
                     }
@@ -1567,11 +1554,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             pLoc.m_idxGenReg = _transitionBlock.GetArgumentIndexFromOffset(argOffset);
                             pLoc.m_cGenReg = (short)cSlots;
                         }
-                        else
-                        {
-                            pLoc.m_idxStack = _transitionBlock.GetStackArgumentIndexFromOffset(argOffset);
-                            pLoc.m_cStack = cSlots;
-                        }
                         return pLoc;
                     }
 
@@ -1606,14 +1588,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         else
                         {
-                            pLoc.m_idxStack = (argOffset - _transitionBlock.OffsetOfArgs) / 8;
                             int argOnStackSize;
                             int stackElemSize = _transitionBlock.StackElemSize();
                             if (IsArgPassedByRef())
                                 argOnStackSize = stackElemSize;
                             else
                                 argOnStackSize = GetArgSize();
-                            pLoc.m_cStack = (argOnStackSize + stackElemSize - 1) / stackElemSize;
                         }
                         return pLoc;
                     }
