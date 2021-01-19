@@ -126,6 +126,36 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivityTriggeringCallerMemberNameAttribute()
+        {
+            RemoteExecutor.Invoke(() => {
+                using (ActivitySource aSource = new ActivitySource("SourceActivityTriggeringCallerMemberNameAttribute"))
+                {
+                    using ActivityListener listener = new ActivityListener();
+                    listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                    listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+
+                    ActivitySource.AddActivityListener(listener);
+
+                    string methodName = MethodBase.GetCurrentMethod().Name;
+
+                    using (Activity activity = aSource.StartActivity()) // passing default name should trigger CallerMemberName attribute.
+                    {
+                        Assert.NotNull(activity);
+                        Assert.True(methodName.IndexOf(activity.OperationName, StringComparison.Ordinal) >= 0);
+
+                        using (Activity activity1 = aSource.StartActivity(ActivityKind.Client)) // passing default name should trigger CallerMemberName attribute.
+                        {
+                            Assert.NotNull(activity1);
+                            Assert.True(methodName.IndexOf(activity1.OperationName, StringComparison.Ordinal) >= 0);
+                            Assert.Equal(ActivityKind.Client, activity1.Kind);
+                        }
+                    }
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestActivitySourceAttachedObject()
         {
             RemoteExecutor.Invoke(() => {
