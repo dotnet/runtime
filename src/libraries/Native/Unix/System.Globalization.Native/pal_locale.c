@@ -46,7 +46,11 @@ int32_t GetLocale(const UChar* localeName,
     {
         UChar c = localeName[i];
 
-        if (c > (UChar)0x7F)
+        // Some versions of ICU have a bug where '/' in name can cause infinite loop, so we preemptively
+        // detect this case for CultureNotFoundException (as '/' is anyway illegal in locale name and we
+        // expected ICU to return this error).
+
+        if (c > (UChar)0x7F || c == (UChar)'/')
         {
             *err = U_ILLEGAL_ARGUMENT_ERROR;
             return ULOC_FULLNAME_CAPACITY;

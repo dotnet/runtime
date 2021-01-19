@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -16,18 +17,26 @@ using Microsoft.Build.Utilities;
 
 public class WasmAppBuilder : Task
 {
+    [NotNull]
     [Required]
     public string? AppDir { get; set; }
+
+    [NotNull]
     [Required]
     public string? MicrosoftNetCoreAppRuntimePackDir { get; set; }
-    [Required]
-    public string? MainAssembly { get; set; }
+
+    [NotNull]
     [Required]
     public string? MainJS { get; set; }
+
+    [NotNull]
     [Required]
     public string[]? Assemblies { get; set; }
 
+    public bool EnableProfiler { get; set; }
+
     private List<string> _fileWrites = new();
+
     [Output]
     public string[]? FileWrites => _fileWrites.ToArray();
 
@@ -40,6 +49,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
+    public ITaskItem[]? ExtraFilesToDeploy { get; set; }
 
     private class WasmAppConfig
     {
@@ -51,6 +61,8 @@ public class WasmAppBuilder : Task
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remote_sources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
+        [JsonPropertyName("enable_profiler")]
+        public bool EnableProfiler { get; set; } = false;
     }
 
     private class AssetEntry
@@ -98,8 +110,6 @@ public class WasmAppBuilder : Task
 
     public override bool Execute ()
     {
-        if (!File.Exists(MainAssembly))
-            throw new ArgumentException($"File MainAssembly='{MainAssembly}' doesn't exist.");
         if (!File.Exists(MainJS))
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
@@ -120,12 +130,6 @@ public class WasmAppBuilder : Task
 
             if (asm.EndsWith("System.Private.CoreLib.dll"))
                 runtimeSourceDir = Path.GetDirectoryName(asm);
-        }
-
-        if (MainAssembly != null)
-        {
-            if (!_assemblies.Contains(MainAssembly))
-                _assemblies.Add(MainAssembly);
         }
 
         var config = new WasmAppConfig ();
@@ -227,6 +231,10 @@ public class WasmAppBuilder : Task
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
         }
+        if (EnableProfiler)
+        {
+            config.EnableProfiler = true;
+        }
 
         string monoConfigPath = Path.Join(AppDir, "mono-config.js");
         using (var sw = File.CreateText(monoConfigPath))
@@ -235,6 +243,22 @@ public class WasmAppBuilder : Task
             sw.Write($"config = {json};");
         }
         _fileWrites.Add(monoConfigPath);
+
+        if (ExtraFilesToDeploy != null)
+        {
+            foreach (ITaskItem item in ExtraFilesToDeploy!)
+            {
+                string src = item.ItemSpec;
+
+                string dstDir = Path.Combine(AppDir!, item.GetMetadata("TargetPath"));
+                if (!Directory.Exists(dstDir))
+                    Directory.CreateDirectory(dstDir);
+
+                string dst = Path.Combine(dstDir, Path.GetFileName(src));
+                if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
+                    return false;
+            }
+        }
 
         return true;
     }

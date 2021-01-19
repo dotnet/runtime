@@ -50,7 +50,6 @@ public:
         ThreadWaitSleepJoin = 32,
         ThreadSuspended = 64,
         ThreadAbortRequested = 128,
-        ThreadAborted = 256,
     };
 
     enum
@@ -98,7 +97,6 @@ public:
 #endif //FEATURE_COMINTEROP
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,          ThreadBaseObject* thread);
     static FCDECL1(void,    SetIsThreadpoolThread,          ThreadBaseObject* thread);
-    static FCDECL1(Object*, GetThreadDeserializationTracker, StackCrawlMark* stackMark);
 
     static FCDECL0(INT32,   GetCurrentProcessorNumber);
 

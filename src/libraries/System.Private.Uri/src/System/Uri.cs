@@ -1019,7 +1019,7 @@ namespace System
                 {
                     // suspecting not compressed path
                     // For a dos path we won't compress the "x:" part if found /../ sequences
-                    result = Compress(result, (ushort)(IsDosPath ? pathStart + 2 : pathStart), ref count, _syntax);
+                    Compress(result, IsDosPath ? pathStart + 2 : pathStart, ref count, _syntax);
                 }
 
                 // We don't know whether all slashes were the back ones
@@ -2731,27 +2731,26 @@ namespace System
                 {
                     mode = UnescapeMode.CopyOnly;
                 }
+
                 // NormalizedHost
                 if ((parts & UriComponents.NormalizedHost) != 0)
                 {
-                    unsafe
+                    stemp = UriHelper.StripBidiControlCharacters(stemp, stemp);
+
+                    var hostBuilder = new ValueStringBuilder(stackalloc char[512]);
+
+                    // The host may be invalid punycode (www.xn--?-pck.com),
+                    // but we shouldn't throw after the constructor.
+                    if (DomainNameHelper.TryGetUnicodeEquivalent(stemp, ref hostBuilder))
                     {
-                        fixed (char* hostPtr = stemp)
-                        {
-                            bool allAscii = false;
-                            bool atLeastOneValidIdn = false;
-                            try
-                            {
-                                // Upconvert any punycode to unicode, xn--pck -> ?
-                                stemp = DomainNameHelper.UnicodeEquivalent(
-                                    hostPtr, 0, stemp.Length, ref allAscii, ref atLeastOneValidIdn)!;
-                            }
-                            // The host may be invalid punycode (www.xn--?-pck.com),
-                            // but we shouldn't throw after the constructor.
-                            catch (UriFormatException) { }
-                        }
+                        stemp = hostBuilder.ToString();
+                    }
+                    else
+                    {
+                        hostBuilder.Dispose();
                     }
                 }
+
                 chars = UriHelper.UnescapeString(stemp, 0, stemp.Length, chars, ref count, '/', '?', '#', mode,
                     _syntax, false);
 
@@ -4543,7 +4542,7 @@ namespace System
             if (InFact(Flags.ShouldBeCompressed))
             {
                 // It will also convert back slashes if needed
-                dest = Compress(dest, (ushort)(pos + dosPathIdx), ref end, _syntax);
+                Compress(dest, pos + dosPathIdx, ref end, _syntax);
                 if (dest[pos] == '\\')
                     dest[pos] = '/';
 
@@ -4678,147 +4677,132 @@ namespace System
             end -= (int)(pch - pnew);
         }
 
+        private static void Compress(char[] dest, int start, ref int destLength, UriParser syntax)
+        {
+            destLength = start + Compress(dest.AsSpan(start, destLength - start), syntax);
+        }
+
         //
         // This will compress any "\" "/../" "/./" "///" "/..../" /XXX.../, etc found in the input
         //
         // The passed syntax controls whether to use aggressive compression or the one specified in RFC 2396
         //
-        private static char[] Compress(char[] dest, int start, ref int destLength, UriParser syntax)
+        private static int Compress(Span<char> span, UriParser syntax)
         {
-            ushort slashCount = 0;
-            ushort lastSlash = 0;
-            ushort dotCount = 0;
-            ushort removeSegments = 0;
+            int slashCount = 0;
+            int lastSlash = 0;
+            int dotCount = 0;
+            int removeSegments = 0;
 
-            unchecked
+            for (int i = span.Length - 1; i >= 0; i--)
             {
-                //ushort i == -1 and start == -1 overflow is ok here
-                ushort i = (ushort)((ushort)destLength - (ushort)1);
-                start = (ushort)(start - 1);
-
-                for (; i != start; --i)
+                char ch = span[i];
+                if (ch == '\\' && syntax.InFact(UriSyntaxFlags.ConvertPathSlashes))
                 {
-                    char ch = dest[i];
-                    if (ch == '\\' && syntax.InFact(UriSyntaxFlags.ConvertPathSlashes))
-                    {
-                        dest[i] = ch = '/';
-                    }
-
-                    //
-                    // compress multiple '/' for file URI
-                    //
-                    if (ch == '/')
-                    {
-                        ++slashCount;
-                    }
-                    else
-                    {
-                        if (slashCount > 1)
-                        {
-                            // else preserve repeated slashes
-                            lastSlash = (ushort)(i + 1);
-                        }
-                        slashCount = 0;
-                    }
-
-                    if (ch == '.')
-                    {
-                        ++dotCount;
-                        continue;
-                    }
-                    else if (dotCount != 0)
-                    {
-                        bool skipSegment = syntax.NotAny(UriSyntaxFlags.CanonicalizeAsFilePath)
-                            && (dotCount > 2 || ch != '/' || i == start);
-
-                        //
-                        // Cases:
-                        // /./                  = remove this segment
-                        // /../                 = remove this segment, mark next for removal
-                        // /....x               = DO NOT TOUCH, leave as is
-                        // x.../                = DO NOT TOUCH, leave as is, except for V2 legacy mode
-                        //
-                        if (!skipSegment && ch == '/')
-                        {
-                            if ((lastSlash == i + dotCount + 1 // "/..../"
-                                    || (lastSlash == 0 && i + dotCount + 1 == destLength)) // "/..."
-                                && (dotCount <= 2))
-                            {
-                                //
-                                //  /./ or /.<eos> or /../ or /..<eos>
-                                //
-                                // just reusing a variable slot we perform //dest.Remove(i+1, dotCount + (lastSlash==0?0:1));
-                                lastSlash = (ushort)(i + 1 + dotCount + (lastSlash == 0 ? 0 : 1));
-                                Buffer.BlockCopy(dest, lastSlash * sizeof(char), dest, (i + 1) * sizeof(char), (destLength - lastSlash) * sizeof(char));
-                                destLength -= (lastSlash - i - 1);
-
-                                lastSlash = i;
-                                if (dotCount == 2)
-                                {
-                                    //
-                                    // We have 2 dots in between like /../ or /..<eos>,
-                                    // Mark next segment for removal and remove this /../ or /..
-                                    //
-                                    ++removeSegments;
-                                }
-                                dotCount = 0;
-                                continue;
-                            }
-                        }
-                        // .NET 4.5 no longer removes trailing dots in a path segment x.../  or  x...<eos>
-                        dotCount = 0;
-
-                        //
-                        // Here all other cases go such as
-                        // x.[..]y or /.[..]x or (/x.[...][/] && removeSegments !=0)
-                    }
-
-                    //
-                    // Now we may want to remove a segment because of previous /../
-                    //
-                    if (ch == '/')
-                    {
-                        if (removeSegments != 0)
-                        {
-                            --removeSegments;
-
-                            // just reusing a variable slot we perform //dest.Remove(i+1, lastSlash - i);
-                            lastSlash = (ushort)(lastSlash + 1);
-                            Buffer.BlockCopy(dest, lastSlash * sizeof(char), dest, (i + 1) * sizeof(char), (destLength - lastSlash) * sizeof(char));
-                            destLength -= (lastSlash - i - 1);
-                        }
-                        lastSlash = i;
-                    }
+                    span[i] = ch = '/';
                 }
 
-                start = (ushort)((ushort)start + (ushort)1);
-            } //end of unchecked
+                // compress multiple '/' for file URI
+                if (ch == '/')
+                {
+                    ++slashCount;
+                }
+                else
+                {
+                    if (slashCount > 1)
+                    {
+                        // else preserve repeated slashes
+                        lastSlash = i + 1;
+                    }
+                    slashCount = 0;
+                }
 
-            if ((ushort)destLength > start && syntax.InFact(UriSyntaxFlags.CanonicalizeAsFilePath))
+                if (ch == '.')
+                {
+                    ++dotCount;
+                    continue;
+                }
+                else if (dotCount != 0)
+                {
+                    bool skipSegment = syntax.NotAny(UriSyntaxFlags.CanonicalizeAsFilePath)
+                        && (dotCount > 2 || ch != '/');
+
+                    // Cases:
+                    // /./                  = remove this segment
+                    // /../                 = remove this segment, mark next for removal
+                    // /....x               = DO NOT TOUCH, leave as is
+                    // x.../                = DO NOT TOUCH, leave as is, except for V2 legacy mode
+                    if (!skipSegment && ch == '/')
+                    {
+                        if ((lastSlash == i + dotCount + 1 // "/..../"
+                                || (lastSlash == 0 && i + dotCount + 1 == span.Length)) // "/..."
+                            && (dotCount <= 2))
+                        {
+                            //  /./ or /.<eos> or /../ or /..<eos>
+
+                            // span.Remove(i + 1, dotCount + (lastSlash == 0 ? 0 : 1));
+                            lastSlash = i + 1 + dotCount + (lastSlash == 0 ? 0 : 1);
+                            span.Slice(lastSlash).CopyTo(span.Slice(i + 1));
+                            span = span.Slice(0, span.Length - (lastSlash - i - 1));
+
+                            lastSlash = i;
+                            if (dotCount == 2)
+                            {
+                                // We have 2 dots in between like /../ or /..<eos>,
+                                // Mark next segment for removal and remove this /../ or /..
+                                ++removeSegments;
+                            }
+                            dotCount = 0;
+                            continue;
+                        }
+                    }
+                    // .NET 4.5 no longer removes trailing dots in a path segment x.../  or  x...<eos>
+                    dotCount = 0;
+
+                    // Here all other cases go such as
+                    // x.[..]y or /.[..]x or (/x.[...][/] && removeSegments !=0)
+                }
+
+                // Now we may want to remove a segment because of previous /../
+                if (ch == '/')
+                {
+                    if (removeSegments != 0)
+                    {
+                        --removeSegments;
+
+                        span.Slice(lastSlash + 1).CopyTo(span.Slice(i + 1));
+                        span = span.Slice(0, span.Length - (lastSlash - i));
+                    }
+                    lastSlash = i;
+                }
+            }
+
+            if (span.Length != 0 && syntax.InFact(UriSyntaxFlags.CanonicalizeAsFilePath))
             {
                 if (slashCount <= 1)
                 {
-                    if (removeSegments != 0 && dest[start] != '/')
+                    if (removeSegments != 0 && span[0] != '/')
                     {
                         //remove first not rooted segment
-                        lastSlash = (ushort)(lastSlash + 1);
-                        Buffer.BlockCopy(dest, lastSlash * sizeof(char), dest, start * sizeof(char), (destLength - lastSlash) * sizeof(char));
-                        destLength -= lastSlash;
+                        lastSlash++;
+                        span.Slice(lastSlash).CopyTo(span);
+                        return span.Length - lastSlash;
                     }
                     else if (dotCount != 0)
                     {
                         // If final string starts with a segment looking like .[...]/ or .[...]<eos>
                         // then we remove this first segment
-                        if (lastSlash == dotCount + 1 || (lastSlash == 0 && dotCount + 1 == destLength))
+                        if (lastSlash == dotCount || (lastSlash == 0 && dotCount == span.Length))
                         {
-                            dotCount = (ushort)(dotCount + (lastSlash == 0 ? 0 : 1));
-                            Buffer.BlockCopy(dest, dotCount * sizeof(char), dest, start * sizeof(char), (destLength - dotCount) * sizeof(char));
-                            destLength -= dotCount;
+                            dotCount += lastSlash == 0 ? 0 : 1;
+                            span.Slice(dotCount).CopyTo(span);
+                            return span.Length - dotCount;
                         }
                     }
                 }
             }
-            return dest;
+
+            return span.Length;
         }
 
         //
@@ -5023,7 +5007,7 @@ namespace System
                     if (basePart.IsDosPath)
                     {
                         // The FILE DOS path comes as /c:/path, we have to exclude first 3 chars from compression
-                        path = Compress(path, 3, ref length, basePart.Syntax);
+                        Compress(path, 3, ref length, basePart.Syntax);
                         return string.Concat(path.AsSpan(1, length - 1), extra);
                     }
                     else if (!IsWindowsSystem && basePart.IsUnixPath)
@@ -5041,7 +5025,7 @@ namespace System
                 }
             }
             //compress the path
-            path = Compress(path, basePart.SecuredPathIndex, ref length, basePart.Syntax);
+            Compress(path, basePart.SecuredPathIndex, ref length, basePart.Syntax);
             return string.Concat(left, path.AsSpan(0, length), extra);
         }
 

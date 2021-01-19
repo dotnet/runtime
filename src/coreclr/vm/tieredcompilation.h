@@ -43,7 +43,7 @@ public:
     void HandleCallCountingForFirstCall(MethodDesc* pMethodDesc);
     bool TrySetCodeEntryPointAndRecordMethodForCallCounting(MethodDesc* pMethodDesc, PCODE codeEntryPoint);
     void AsyncPromoteToTier1(NativeCodeVersion tier0NativeCodeVersion, bool *scheduleTieringBackgroundWorkRef);
-    static CORJIT_FLAGS GetJitFlags(NativeCodeVersion nativeCodeVersion);
+    static CORJIT_FLAGS GetJitFlags(PrepareCodeConfig *config);
 
 private:
     bool IsTieringDelayActive();

@@ -193,6 +193,7 @@ void CodeGen::instGen(instruction ins)
     GetEmitter()->emitIns(ins);
 
 #ifdef TARGET_XARCH
+#ifdef PSEUDORANDOM_NOP_INSERTION
     // A workaround necessitated by limitations of emitter
     // if we are scheduled to insert a nop here, we have to delay it
     // hopefully we have not missed any other prefix instructions or places
@@ -201,6 +202,7 @@ void CodeGen::instGen(instruction ins)
     {
         GetEmitter()->emitNextNop = 1;
     }
+#endif // PSEUDORANDOM_NOP_INSERTION
 #endif
 }
 
@@ -220,19 +222,6 @@ bool CodeGenInterface::instIsFP(instruction ins)
     return (instInfo[ins] & INST_FP) != 0;
 #endif
 }
-
-#ifdef TARGET_XARCH
-/*****************************************************************************
- *
- *  Generate a multi-byte NOP instruction.
- */
-
-void CodeGen::instNop(unsigned size)
-{
-    assert(size <= 15);
-    GetEmitter()->emitIns_Nop(size);
-}
-#endif
 
 /*****************************************************************************
  *
@@ -1959,6 +1948,44 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     NYI("ins_Store");
 #endif
 
+    assert(ins != INS_invalid);
+    return ins;
+}
+
+//------------------------------------------------------------------------
+// ins_StoreFromSrc: Get the machine dependent instruction for performing a store to dstType on the stack from a srcReg.
+//
+// Arguments:
+//   srcReg  - the source register for the store
+//   dstType - the destination type
+//   aligned - whether the destination is properly aligned if dstType is a SIMD type
+//
+// Return Value:
+//   the instruction to use
+//
+// Notes:
+//   The function currently does not expect float srcReg with integral dstType and will assert on such cases.
+//
+instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstType, bool aligned /*=false*/)
+{
+    bool dstIsFloatType = isFloatRegType(dstType);
+    bool srcIsFloatReg  = genIsValidFloatReg(srcReg);
+    if (srcIsFloatReg == dstIsFloatType)
+    {
+        return ins_Store(dstType, aligned);
+    }
+
+    assert(!srcIsFloatReg && dstIsFloatType && "not expecting an integer type passed in a float reg");
+    assert(!varTypeIsSmall(dstType) && "not expecting small float types");
+
+    instruction ins = INS_invalid;
+#if defined(TARGET_XARCH)
+    ins = INS_mov;
+#elif defined(TARGET_ARMARCH)
+    ins     = INS_str;
+#else
+    NYI("ins_Store");
+#endif
     assert(ins != INS_invalid);
     return ins;
 }

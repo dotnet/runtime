@@ -65,4 +65,4 @@ else()
     _install (FILES $<TARGET_PDB_FILE:superpmi-shim-counter> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
-_install (TARGETS superpmi-shim-counter DESTINATION .)
+_install (PROGRAMS $<TARGET_FILE:superpmi-shim-counter> DESTINATION .)

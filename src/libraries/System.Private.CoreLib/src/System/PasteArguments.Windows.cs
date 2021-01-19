@@ -33,7 +33,7 @@ namespace System
                     {
                         if (c == Quote)
                         {
-                            throw new ApplicationException("The argv[0] argument cannot include a double quote.");
+                            throw new ApplicationException(SR.Argv_IncludeDoubleQuote);
                         }
                         if (char.IsWhiteSpace(c))
                         {

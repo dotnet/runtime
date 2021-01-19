@@ -2715,7 +2715,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     if (param.pThread->IsRudeAbortInitiated())
     {
         // Nobody should be able to swallow rude thread abort.
-        param.throwable = CLRException::GetPreallocatedRudeThreadAbortException();
+        param.throwable = CLRException::GetBestThreadAbortException();
     }
 
 #if 0
@@ -2784,7 +2784,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
             if (pParam->pThread->GetFrame() == FRAME_TOP)
             {
                 // There is no more managed code on stack.
-                pParam->pThread->EEResetAbort(Thread::TAR_ALL);
+                pParam->pThread->ResetAbort();
             }
         }
 
@@ -6333,7 +6333,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
     }
     else if (bAsynchronousThreadStop && pThread->IsAbortRequested() && pThread->IsRudeAbort())
     {
-        result = CLRException::GetPreallocatedRudeThreadAbortException();
+        result = CLRException::GetBestThreadAbortException();
     }
     else
     {
@@ -9173,11 +9173,7 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
 
     gc.oThrowable = oThrowable;
 
-    fIsTAE = (IsExceptionOfType(kThreadAbortException,&(gc.oThrowable)) || // regular TAE
-            ((g_pPreallocatedThreadAbortException != NULL) &&
-            (gc.oThrowable == CLRException::GetPreallocatedThreadAbortException())) ||
-            ((g_pPreallocatedRudeThreadAbortException != NULL) &&
-            (gc.oThrowable == CLRException::GetPreallocatedRudeThreadAbortException())));
+    fIsTAE = IsExceptionOfType(kThreadAbortException, &gc.oThrowable);
 
     GCPROTECT_END();
 
@@ -9717,6 +9713,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     {
         OBJECTREF oCurrentThrowable;
         OBJECTREF oInnerMostExceptionThrowable;
+        U1ARRAYREF refSourceWatsonBucketArray;
     } gc;
     ZeroMemory(&gc, sizeof(gc));
 
@@ -9911,6 +9908,10 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     }
 
 phase1:
+    UINT_PTR ipForWatsonBuckets = 0;
+    gc.refSourceWatsonBucketArray = NULL;
+    bool gotWatsonBucketDetails = true;
+
     if (fAreBucketingDetailsPresent)
     {
         // Since we already have the buckets, simply bail out
@@ -9944,9 +9945,12 @@ phase1:
         }
         else
         {
+            ipForWatsonBuckets = ((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->GetIPForWatsonBuckets();
+            gc.refSourceWatsonBucketArray = ((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->GetWatsonBucketReference();
+
             // Do we have either the IP for Watson buckets or the buckets themselves?
-            fAreBucketingDetailsPresent = (((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->AreWatsonBucketsPresent() ||
-                                            ((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->IsIPForWatsonBucketsPresent());
+            fAreBucketingDetailsPresent = (gc.refSourceWatsonBucketArray != NULL ||
+                                           ipForWatsonBuckets != 0);
         }
     }
 
@@ -10032,16 +10036,12 @@ phase1:
     {
         // The inner exception object should be having either the IP for watson bucketing or the buckets themselves.
         // We shall copy over, whatever is available, to the current exception object.
-        _ASSERTE(gc.oInnerMostExceptionThrowable != NULL);
-        _ASSERTE(((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->AreWatsonBucketsPresent() ||
-                  ((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->IsIPForWatsonBucketsPresent());
-
-        if (((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->AreWatsonBucketsPresent())
+        if (gc.refSourceWatsonBucketArray != NULL)
         {
             EX_TRY
             {
                 // Copy the bucket details from innermost exception to the current exception object.
-                CopyWatsonBucketsFromThrowableToCurrentThrowable(gc.oInnerMostExceptionThrowable);
+                CopyWatsonBucketsFromThrowableToCurrentThrowable(gc.refSourceWatsonBucketArray);
             }
             EX_CATCH
             {
@@ -10050,17 +10050,24 @@ phase1:
 
             LOG((LF_EH, LL_INFO100, "SetupInitialThrowBucketDetails - Copied watson bucket details from the innermost exception\n"));
         }
-        else
+        else if (ipForWatsonBuckets != NULL)
         {
             // Copy the IP to the current exception object
-            ((EXCEPTIONREF)gc.oCurrentThrowable)->SetIPForWatsonBuckets(((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->GetIPForWatsonBuckets());
+            ((EXCEPTIONREF)gc.oCurrentThrowable)->SetIPForWatsonBuckets(ipForWatsonBuckets);
             LOG((LF_EH, LL_INFO100, "SetupInitialThrowBucketDetails - Copied watson bucket IP from the innermost exception\n"));
+        }
+        else
+        {
+            gotWatsonBucketDetails = false;
         }
     }
 
 done:
     // Set the flag that we have got the bucketing details
-    pExState->GetFlags()->SetGotWatsonBucketDetails();
+    if (gotWatsonBucketDetails)
+    {
+        pExState->GetFlags()->SetGotWatsonBucketDetails();
+    }
 
     GCPROTECT_END();
 
@@ -10069,7 +10076,7 @@ done:
 
 // This function is a wrapper to copy the watson bucket byte[] from the specified
 // throwable to the current throwable.
-void CopyWatsonBucketsFromThrowableToCurrentThrowable(OBJECTREF oThrowableFrom)
+void CopyWatsonBucketsFromThrowableToCurrentThrowable(U1ARRAYREF oManagedWatsonBuckets)
 {
 #ifndef DACCESS_COMPILE
 
@@ -10078,21 +10085,19 @@ void CopyWatsonBucketsFromThrowableToCurrentThrowable(OBJECTREF oThrowableFrom)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         THROWS;
-        PRECONDITION(oThrowableFrom != NULL);
-        PRECONDITION(!CLRException::IsPreallocatedExceptionObject(oThrowableFrom));
-        PRECONDITION(((EXCEPTIONREF)oThrowableFrom)->AreWatsonBucketsPresent());
+        PRECONDITION(oManagedWatsonBuckets != NULL);
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
 
     struct
     {
-        OBJECTREF oThrowableFrom;
+        U1ARRAYREF oSourceWatsonBuckets;
     } _gc;
 
     ZeroMemory(&_gc, sizeof(_gc));
     GCPROTECT_BEGIN(_gc);
-    _gc.oThrowableFrom = oThrowableFrom;
+    _gc.oSourceWatsonBuckets = oManagedWatsonBuckets;
 
     // Copy the watson buckets to the current throwable by NOT passing
     // the second argument that will default to NULL.
@@ -10100,7 +10105,7 @@ void CopyWatsonBucketsFromThrowableToCurrentThrowable(OBJECTREF oThrowableFrom)
     // CopyWatsonBucketsBetweenThrowables will pass that NULL to
     // CopyWatsonBucketsToThrowables that will make it copy the buckets
     // to the current throwable.
-    CopyWatsonBucketsBetweenThrowables(_gc.oThrowableFrom);
+    CopyWatsonBucketsBetweenThrowables(_gc.oSourceWatsonBuckets);
 
     GCPROTECT_END();
 
@@ -10112,7 +10117,7 @@ void CopyWatsonBucketsFromThrowableToCurrentThrowable(OBJECTREF oThrowableFrom)
 //
 // If the destination throwable is NULL, it will result in the buckets
 // being copied to the current throwable.
-void CopyWatsonBucketsBetweenThrowables(OBJECTREF oThrowableFrom, OBJECTREF oThrowableTo /*=NULL*/)
+void CopyWatsonBucketsBetweenThrowables(U1ARRAYREF oManagedWatsonBuckets, OBJECTREF oThrowableTo /*=NULL*/)
 {
 #ifndef DACCESS_COMPILE
 
@@ -10121,9 +10126,7 @@ void CopyWatsonBucketsBetweenThrowables(OBJECTREF oThrowableFrom, OBJECTREF oThr
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         THROWS;
-        PRECONDITION(oThrowableFrom != NULL);
-        PRECONDITION(!CLRException::IsPreallocatedExceptionObject(oThrowableFrom));
-        PRECONDITION(((EXCEPTIONREF)oThrowableFrom)->AreWatsonBucketsPresent());
+        PRECONDITION(oManagedWatsonBuckets != NULL);
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
@@ -10132,7 +10135,7 @@ void CopyWatsonBucketsBetweenThrowables(OBJECTREF oThrowableFrom, OBJECTREF oThr
 
     struct
     {
-        OBJECTREF oFrom;
+        U1ARRAYREF oSourceWatsonBuckets;
         OBJECTREF oTo;
         OBJECTREF oWatsonBuckets;
     } _gc;
@@ -10140,7 +10143,7 @@ void CopyWatsonBucketsBetweenThrowables(OBJECTREF oThrowableFrom, OBJECTREF oThr
     ZeroMemory(&_gc, sizeof(_gc));
     GCPROTECT_BEGIN(_gc);
 
-    _gc.oFrom = oThrowableFrom;
+    _gc.oSourceWatsonBuckets = oManagedWatsonBuckets;
     _gc.oTo = (oThrowableTo == NULL)?GetThread()->GetThrowable():oThrowableTo;
     _ASSERTE(_gc.oTo != NULL);
 
@@ -10161,8 +10164,7 @@ void CopyWatsonBucketsBetweenThrowables(OBJECTREF oThrowableFrom, OBJECTREF oThr
     else
     {
         // Get the raw array data pointer of the source array
-        U1ARRAYREF refSourceWatsonBucketArray = ((EXCEPTIONREF)_gc.oFrom)->GetWatsonBucketReference();
-        PTR_VOID pRawSourceWatsonBucketArray = dac_cast<PTR_VOID>(refSourceWatsonBucketArray->GetDataPtr());
+        PTR_VOID pRawSourceWatsonBucketArray = dac_cast<PTR_VOID>(_gc.oSourceWatsonBuckets->GetDataPtr());
 
         // Get the raw array data pointer to the destination array
         U1ARRAYREF refDestWatsonBucketArray = (U1ARRAYREF)_gc.oWatsonBuckets;
@@ -10314,6 +10316,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
     {
         OBJECTREF oCurrentThrowable;
         OBJECTREF oInnerMostExceptionThrowable;
+        U1ARRAYREF refSourceWatsonBucketArray;
     } gc;
     ZeroMemory(&gc, sizeof(gc));
     GCPROTECT_BEGIN(gc);
@@ -10488,6 +10491,8 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
         // when we get the IP for bucketing.
         if (!fCreateBucketsForExceptionBeingThrown)
         {
+            bool gotWatsonBucketDetails = true;
+
             // Preallocated exception objects do not have inner exception objects.
             // Thus, if we are here, then the current throwable cannot be
             // a preallocated exception object.
@@ -10537,15 +10542,16 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
             {
                 // Assert that the inner exception has the Watson buckets
                 _ASSERTE(gc.oInnerMostExceptionThrowable != NULL);
-                _ASSERTE(((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->AreWatsonBucketsPresent() ||
-                         ((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->IsIPForWatsonBucketsPresent());
 
-                if (((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->AreWatsonBucketsPresent())
+                gc.refSourceWatsonBucketArray = ((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->GetWatsonBucketReference();
+                UINT_PTR ipForWatsonBuckets = ((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->GetIPForWatsonBuckets();
+
+                if (gc.refSourceWatsonBucketArray != NULL)
                 {
                     // Copy the bucket information from the inner exception object to the current throwable
                     EX_TRY
                     {
-                        CopyWatsonBucketsFromThrowableToCurrentThrowable(gc.oInnerMostExceptionThrowable);
+                        CopyWatsonBucketsFromThrowableToCurrentThrowable(gc.refSourceWatsonBucketArray);
                     }
                     EX_CATCH
                     {
@@ -10554,16 +10560,23 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
                     }
                     EX_END_CATCH(SwallowAllExceptions);
                 }
-                else
+                else if (ipForWatsonBuckets != NULL)
                 {
                     // Copy the IP for Watson bucketing to the exception object
-                    ((EXCEPTIONREF)gc.oCurrentThrowable)->SetIPForWatsonBuckets(((EXCEPTIONREF)gc.oInnerMostExceptionThrowable)->GetIPForWatsonBuckets());
+                    ((EXCEPTIONREF)gc.oCurrentThrowable)->SetIPForWatsonBuckets(ipForWatsonBuckets);
+                }
+                else
+                {
+                    gotWatsonBucketDetails = false;
                 }
             }
 
-            // Set the flag that we got bucketing details for the exception
-            pCurExState->GetFlags()->SetGotWatsonBucketDetails();
-            LOG((LF_EH, LL_INFO1000, "SetStateForWatsonBucketing - Using innermost exception details for Watson bucketing for thrown exception.\n"));
+            if (gotWatsonBucketDetails)
+            {
+                // Set the flag that we got bucketing details for the exception
+                pCurExState->GetFlags()->SetGotWatsonBucketDetails();
+                LOG((LF_EH, LL_INFO1000, "SetStateForWatsonBucketing - Using innermost exception details for Watson bucketing for thrown exception.\n"));
+            }
         }
 done:;
     }
@@ -11315,16 +11328,12 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
     }
     CONTRACTL_END;
 
-    BOOL fResetThreadAbortState = FALSE;
-
     if (pThread->IsAbortRequested())
     {
 #ifndef FEATURE_EH_FUNCLETS
         if (GetNextCOMPlusSEHRecord(static_cast<EXCEPTION_REGISTRATION_RECORD *>(pEstablisherFrame)) == EXCEPTION_CHAIN_END)
         {
-            // Topmost handler and abort requested.
-            fResetThreadAbortState = TRUE;
-            LOG((LF_EH, LL_INFO100, "ResetThreadAbortState: Topmost handler resets abort as no more managed code beyond %p.\n", pEstablisherFrame));
+            _ASSERTE(!"Topmost handler and abort requested.");
         }
 #else // !FEATURE_EH_FUNCLETS
         // Get the active exception tracker
@@ -11376,17 +11385,9 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 
         if (!dataCallback.fDoWeHaveMoreManagedCodeOnStack)
         {
-            // There is no more managed code on the stack, so reset the thread abort state.
-            fResetThreadAbortState = TRUE;
-            LOG((LF_EH, LL_INFO100, "ResetThreadAbortState: Resetting thread abort state since there is no more managed code beyond stack frames:\n"));
-            LOG((LF_EH, LL_INFO100, "sf.SP = %p   ", dataCallback.sfSeedCrawlFrame.SP));
+            _ASSERTE(!"There is no more managed code on the stack, and thread abort is requested.");
         }
 #endif // !FEATURE_EH_FUNCLETS
-    }
-
-    if (fResetThreadAbortState)
-    {
-        pThread->EEResetAbort(Thread::TAR_Thread);
     }
 }
 #endif // !DACCESS_COMPILE

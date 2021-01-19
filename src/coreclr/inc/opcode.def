@@ -328,10 +328,11 @@ OPDEF(CEE_UNUSED55,                   "unused",           Pop0,               Pu
 OPDEF(CEE_UNUSED70,                   "unused",           Pop0,               Push0,       InlineNone,         IPrimitive,  2,  0xFE,    0x22,    NEXT)
 
 // These are not real opcodes, but they are handy internally in the EE
-
+#ifndef OPDEF_REAL_OPCODES_ONLY
 OPDEF(CEE_ILLEGAL,                    "illegal",          Pop0,               Push0,       InlineNone,         IInternal,   0,  MOOT,    MOOT,    META)
 OPDEF(CEE_MACRO_END,                  "endmac",           Pop0,               Push0,       InlineNone,         IInternal,   0,  MOOT,    MOOT,    META)
 OPDEF(CEE_CODE_LABEL,                 "codelabel",        Pop0,               Push0,       InlineNone,         IInternal,   0,  MOOT,    MOOT,    META)
+#endif // OPDEF_REAL_OPCODES_ONLY
 
 #ifndef OPALIAS
 #define _OPALIAS_DEFINED_
