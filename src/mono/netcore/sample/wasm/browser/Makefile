@@ -3,7 +3,9 @@ TOP=../../../../../..
 include ../wasm.mk
 
 ifneq ($(AOT),)
-DOTNET_PUBLISH_ARGS+=/p:RunAOTCompilation=true
+override MSBUILD_ARGS+=/p:RunAOTCompilation=true
 endif
 
-DOTNET_PUBLISH_ARGS+=Wasm.Browser.Sample.csproj
+PROJECT_NAME=Wasm.Browser.Sample.csproj
+
+run: run-browser
