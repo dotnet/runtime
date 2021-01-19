@@ -24,6 +24,9 @@ namespace System.Diagnostics
             }
         }
 
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
         public unsafe RandomNumberGenerator()
         {
             do
