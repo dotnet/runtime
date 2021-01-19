@@ -884,7 +884,7 @@ namespace System.Collections.Generic
             if (asSorted != null && treeSubset == null && HasEqualComparer(asSorted) && (asSorted.Count > this.Count / 2))
             {
                 // First do a merge sort to an array.
-                T[] merged = new T[asSorted.Count + this.Count];
+                T[] merged = GC.AllocateUninitializedArray<T>(asSorted.Count + this.Count);
                 int c = 0;
                 Enumerator mine = this.GetEnumerator();
                 Enumerator theirs = asSorted.GetEnumerator();
@@ -1026,7 +1026,7 @@ namespace System.Collections.Generic
             if (asSorted != null && treeSubset == null && HasEqualComparer(asSorted))
             {
                 // First do a merge sort to an array.
-                T[] merged = new T[this.Count];
+                T[] merged = GC.AllocateUninitializedArray<T>(this.Count);
                 int c = 0;
                 Enumerator mine = this.GetEnumerator();
                 Enumerator theirs = asSorted.GetEnumerator();
@@ -1590,7 +1590,7 @@ namespace System.Collections.Generic
 
             if (root != null)
             {
-                T[] items = new T[Count];
+                T[] items = GC.AllocateUninitializedArray<T>(Count);
                 CopyTo(items, 0);
                 info.AddValue(ItemsName, items, typeof(T[]));
             }
