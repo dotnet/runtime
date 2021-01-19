@@ -1800,22 +1800,24 @@ void MyICJI::reportFatalError(CorJitResult result)
 
 // allocate a basic block profile buffer where execution counts will be stored
 // for jitted basic blocks.
-HRESULT MyICJI::allocMethodBlockCounts(UINT32          count, // The number of basic blocks that we have
-                                       BlockCounts**   pBlockCounts)
+HRESULT MyICJI::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
+                                                PgoInstrumentationSchema* pSchema,
+                                                UINT32 countSchemaItems,
+                                                BYTE** pInstrumentationData)
 {
-    jitInstance->mc->cr->AddCall("allocMethodBlockCounts");
-    return jitInstance->mc->repAllocMethodBlockCounts(count, pBlockCounts);
+    jitInstance->mc->cr->AddCall("allocPgoInstrumentationBySchema");
+    return jitInstance->mc->repAllocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
 }
 
 // get profile information to be used for optimizing the current method.  The format
 // of the buffer is the same as the format the JIT passes to allocMethodBlockCounts.
-HRESULT MyICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
-                                     UINT32 *              pCount, // The number of basic blocks that we have
-                                     BlockCounts**         pBlockCounts,
-                                     UINT32 *              pNumRuns)
+HRESULT MyICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
+                                             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
+                                             UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
+                                             BYTE **                    pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
 {
-    jitInstance->mc->cr->AddCall("getMethodBlockCounts");
-    return jitInstance->mc->repGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
+    jitInstance->mc->cr->AddCall("getPgoInstrumentationResults");
+    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
 }
 
 // Get the likely implementing class for a virtual call or interface call made by ftnHnd

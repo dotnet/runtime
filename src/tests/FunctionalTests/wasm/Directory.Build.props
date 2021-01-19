@@ -10,10 +10,9 @@
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
-  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <OutputPath>$(RepoRoot)artifacts\bin\$(MSBuildProjectName)</OutputPath>
   </PropertyGroup>
 </Project>

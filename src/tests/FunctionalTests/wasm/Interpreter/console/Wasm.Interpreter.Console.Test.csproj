@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RunAOTCompilation>false</RunAOTCompilation>
-    <WasmCopyAppZipToHelixTestDir>true</WasmCopyAppZipToHelixTestDir>
-    <WasmHelixTestAppRelativeDir>\interpreter\console\</WasmHelixTestAppRelativeDir>
-    <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
-    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+    <TestRuntime>true</TestRuntime>
+    <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
 </Project>

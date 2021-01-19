@@ -221,6 +221,8 @@ public:
 
     size_type size() const;
 
+    T* data() { return m_pArray; }
+
     void swap(vector<T, Allocator>& vec);
 
 private:

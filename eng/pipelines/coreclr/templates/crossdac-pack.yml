@@ -3,7 +3,7 @@ parameters:
   buildConfig: ''
   container: ''
   crossDacPlatforms: {}
-  useCheckoutBundle: false
+  dependOnEvaluatePaths: false
   isOfficialBuild: false
   osGroup: ''
   osSubgroup: ''
@@ -29,7 +29,7 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    useCheckoutBundle: ${{ parameters.useCheckoutBundle }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     name: crossdacpack
     displayName: CrossDac Packaging

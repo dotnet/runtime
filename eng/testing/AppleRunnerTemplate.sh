@@ -7,8 +7,14 @@ ASSEMBLY_NAME=$1
 TARGET_ARCH=$2
 TARGET_OS=$3
 TEST_NAME=$4
+XHARNESS_CMD="test"
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 XCODE_PATH=$(xcode-select -p)/../..
+
+if [ -n "$5" ]; then
+    XHARNESS_CMD="run"
+    EXPECTED_EXIT_CODE="--expected-exit-code $5"
+fi
 
 if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "x86" ]]; then TARGET=ios-simulator-32; fi
 if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "x64" ]]; then TARGET=ios-simulator-64; fi
@@ -46,11 +52,12 @@ else
     HARNESS_RUNNER="dotnet xharness"
 fi
 
-$HARNESS_RUNNER ios test    \
+$HARNESS_RUNNER ios $XHARNESS_CMD    \
     --app="$EXECUTION_DIR/$TEST_NAME/$SCHEME_SDK/$TEST_NAME.app" \
     --targets="$TARGET" \
     --xcode="$XCODE_PATH"   \
-    --output-directory="$XHARNESS_OUT"
+    --output-directory="$XHARNESS_OUT" \
+    $EXPECTED_EXIT_CODE
 
 _exitCode=$?
 

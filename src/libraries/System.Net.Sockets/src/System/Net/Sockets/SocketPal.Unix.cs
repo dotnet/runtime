@@ -1797,9 +1797,9 @@ namespace System.Net.Sockets
                     SendPacketsElement e = elements[i];
                     if (e != null)
                     {
-                        if (e.Buffer != null)
+                        if (e.MemoryBuffer != null)
                         {
-                            bytesTransferred += await socket.SendAsync(new ArraySegment<byte>(e.Buffer, e.Offset, e.Count), SocketFlags.None).ConfigureAwait(false);
+                            bytesTransferred += await socket.SendAsync(e.MemoryBuffer.Value, SocketFlags.None).ConfigureAwait(false);
                         }
                         else
                         {

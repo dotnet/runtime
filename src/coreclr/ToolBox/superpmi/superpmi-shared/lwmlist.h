@@ -18,7 +18,8 @@
 #define DENSELWM(map, value) LWM(map, this_is_an_error, value)
 #endif
 
-LWM(AllocMethodBlockCounts, DWORD, Agnostic_AllocMethodBlockCounts)
+LWM(AllocPgoInstrumentationBySchema, DWORDLONG, Agnostic_AllocPgoInstrumentationBySchema)
+LWM(GetPgoInstrumentationResults, DWORDLONG, Agnostic_GetPgoInstrumentationResults)
 LWM(AppendClassName, Agnostic_AppendClassName, DWORD)
 LWM(AreTypesEquivalent, DLDL, DWORD)
 LWM(AsCorInfoType, DWORDLONG, DWORD)
@@ -54,7 +55,6 @@ LWM(GetArgNext, DWORDLONG, DWORDLONG)
 LWM(GetArgType, Agnostic_GetArgType_Key, Agnostic_GetArgType_Value)
 LWM(GetArrayInitializationData, DLD, DWORDLONG)
 LWM(GetArrayRank, DWORDLONG, DWORD)
-LWM(GetMethodBlockCounts, DWORDLONG, Agnostic_GetMethodBlockCounts)
 LWM(GetBoundaries, DWORDLONG, Agnostic_GetBoundaries)
 LWM(GetBoxHelper, DWORDLONG, DWORD)
 LWM(GetBuiltinClass, DWORD, DWORDLONG)

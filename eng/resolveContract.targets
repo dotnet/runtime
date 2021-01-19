@@ -1,32 +1,22 @@
 <Project>
   <PropertyGroup>
-    <ContractDependencyPaths Condition="'$(DisableImplicitFrameworkReferences)' == 'true' and
-                                        '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">$(MicrosoftNetCoreAppRefPackRefDir)</ContractDependencyPaths>
-    <!-- Use implementation referencepath if no contract tfm is set. -->
-    <ContractDependencyPaths Condition="'$(ContractDependencyPaths)' == ''">$(ContractDependencyPaths);@(ReferencePath->'%(RelativeDir)'->Distinct())</ContractDependencyPaths>
+    <!-- Use implementation referencepath if no contract dependency path is set.
+         This item transform is executed at the time this property is evaluated in the API Compat targets. -->
+    <ContractDependencyPaths Condition="'$(ContractDependencyPaths)' == ''">@(ReferencePath->'%(RelativeDir)'->Distinct())</ContractDependencyPaths>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
     <ContractProject Condition="'$(ContractProject)' == ''">$(LibrariesProjectRoot)$(MSBuildProjectName)\ref\$(MSBuildProjectName).csproj</ContractProject>
     <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
-    <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == '' and
-                                     '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                                     $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(NetCoreAppCurrentRefPath)$(TargetFileName)</ContractAssemblyPath>
-    <_TargetFrameworkWithoutPlatform>$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFramework)', '(-[^;]+)', ''))</_TargetFrameworkWithoutPlatform>
-    <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == ''">$([MSBuild]::NormalizePath('$(BaseOutputPath)', 'ref', '$(_TargetFrameworkWithoutPlatform)-$(Configuration)', '$(TargetFileName)'))</ContractAssemblyPath>
     <!-- Disable API compat if the project doesn't have reference assembly -->
     <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
-    <ResolvedMatchingContract Condition="Exists('$(ContractAssemblyPath)')" Include="$(ContractAssemblyPath)" />
-    <!-- If the contract doesn't exist in the default contract output path add a project reference to the contract project to resolve -->
-    <ProjectReference Condition="'@(ResolvedMatchingContract)' == ''" Include="$(ContractProject)">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>ResolvedMatchingContract</OutputItemType>
-    </ProjectReference>
+  <ItemGroup Condition="'$(HasMatchingContract)' == 'true' and '$(ContractProject)' != '' and '@(ResolvedMatchingContract)' == ''">
+    <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="ResolvedMatchingContract" />
+    <!-- We aren't referencing the contract, but make sure it's considered as an input to Compile so that if it changes we rebuild and rerun API compat -->
+    <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="CustomAdditionalCompileInputs" />
   </ItemGroup>
-
   <!-- intentionally empty since we no longer need a target -->
   <Target Name="ResolveMatchingContract" />
 
