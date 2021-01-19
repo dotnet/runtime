@@ -117,7 +117,7 @@ namespace System.Linq.Tests
             int[] first = new int[] { 1, 3, 5 };
             IQueryable<int> second = null;
             int[] third = new int[] { 1, 7, 2 };
-            AssertExtensions.Throws<ArgumentNullException>("source1", () => first.AsQueryable().Zip(second, third.AsQueryable()));
+            AssertExtensions.Throws<ArgumentNullException>("source2", () => first.AsQueryable().Zip(second, third.AsQueryable()));
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace System.Linq.Tests
             int[] first = new int[] { 1, 3, 5 };
             int[] second = new int[] { 2, 6, 8 };
             IQueryable<int> third = null;
-            AssertExtensions.Throws<ArgumentNullException>("source1", () => first.AsQueryable().Zip(second.AsQueryable(), third));
+            AssertExtensions.Throws<ArgumentNullException>("source3", () => first.AsQueryable().Zip(second.AsQueryable(), third));
         }
 
         [Fact]
