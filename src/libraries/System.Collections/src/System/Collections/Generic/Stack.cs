@@ -43,7 +43,7 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            _array = new T[capacity];
+            _array = GC.AllocateUninitializedArray<T>(capacity);
         }
 
         // Fills a Stack with the contents of a particular collection.  The items are
@@ -294,7 +294,7 @@ namespace System.Collections.Generic
             if (_size == 0)
                 return Array.Empty<T>();
 
-            T[] objArray = new T[_size];
+            T[] objArray = GC.AllocateUninitializedArray<T>(_size);
             int i = 0;
             while (i < _size)
             {
