@@ -824,7 +824,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     case TargetArchitecture.ARM64:
                         _arm64IdxGenReg = numRegistersUsed;
-                        _arm64IdxStack = 0;
+                        _arm64CurOfs = 0;
 
                         _arm64IdxFPReg = 0;
                         break;
@@ -1237,7 +1237,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
 
                         int cbArg = _transitionBlock.StackElemSize(argSize);
-                        int cArgSlots = cbArg / _transitionBlock.StackElemSize();
+                        const int generalRegSize = 8;
+                        int cArgSlots = ALIGN_UP(cbArg, generalRegSize) / _transitionBlock.StackElemSize();
 
                         if (cFPRegs > 0 && !IsVarArg)
                         {
@@ -1259,7 +1260,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             if (_arm64IdxGenReg + cArgSlots <= 8)
                             {
                                 // The entirety of the arg fits in the register slots.
-                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _arm64IdxGenReg * 8;
+                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _arm64IdxGenReg * generalRegSize;
                                 _arm64IdxGenReg += cArgSlots;
                                 return argOfsInner;
                             }
@@ -1268,11 +1269,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 // Address the Windows ARM64 varargs case where an arg is split between regs and stack.
                                 // This can happen in the varargs case because the first 64 bytes of the stack are loaded
                                 // into x0-x7, and any remaining stack arguments are placed normally.
-                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _arm64IdxGenReg * 8;
+                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _arm64IdxGenReg * generalRegSize;
 
                                 // Increase _arm64IdxStack to account for the space used for the remainder of the arg after
                                 // register slots are filled.
-                                _arm64IdxStack += (_arm64IdxGenReg + cArgSlots - 8);
+                                _arm64CurOfs += cbArg + (_arm64IdxGenReg - 8) * generalRegSize;
 
                                 // We used up the remaining reg slots.
                                 _arm64IdxGenReg = 8;
@@ -1286,8 +1287,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
                         }
 
-                        argOfs = _transitionBlock.OffsetOfArgs + _arm64IdxStack * 8;
-                        _arm64IdxStack += cArgSlots;
+                        argOfs = _transitionBlock.OffsetOfArgs + _arm64CurOfs;
+                        _arm64CurOfs += cbArg;
                         return argOfs;
                     }
 
@@ -1637,7 +1638,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _armRequires64BitAlignment; // Cached info about the current arg
 
         private int _arm64IdxGenReg;        // Next general register to be assigned a value
-        private int _arm64IdxStack;         // Next stack slot to be assigned a value
+        private int _arm64CurOfs;           // Current position of the stack iterator
         private int _arm64IdxFPReg;         // Next FP register to be assigned a value
 
         // These are enum flags in CallingConventions.h, but that's really ugly in C#, so I've changed them to bools.
