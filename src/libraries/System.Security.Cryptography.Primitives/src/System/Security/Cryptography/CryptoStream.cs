@@ -202,7 +202,7 @@ namespace System.Security.Cryptography
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckReadArguments(buffer, offset, count);
-            return ReadAsyncInternal(buffer, offset, count, cancellationToken);
+            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography
         public override int EndRead(IAsyncResult asyncResult) =>
             TaskToApm.End<int>(asyncResult);
 
-        private async Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             // To avoid a race with a stream's position pointer & generating race
             // conditions with internal buffer indexes in our own streams that
@@ -222,7 +222,7 @@ namespace System.Security.Cryptography
             await AsyncActiveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                return await ReadAsyncCore(buffer, offset, count, cancellationToken, useAsync: true).ConfigureAwait(false);
+                return await ReadAsyncCore(buffer, cancellationToken, useAsync: true).ConfigureAwait(false);
             }
             finally
             {
@@ -268,7 +268,10 @@ namespace System.Security.Cryptography
         public override int Read(byte[] buffer, int offset, int count)
         {
             CheckReadArguments(buffer, offset, count);
-            return ReadAsyncCore(buffer, offset, count, default(CancellationToken), useAsync: false).GetAwaiter().GetResult();
+            var completedValueTask = ReadAsyncCore(buffer.AsMemory(offset, count), default(CancellationToken), useAsync: false);
+            Debug.Assert(completedValueTask.IsCompleted);
+
+            return completedValueTask.GetAwaiter().GetResult();
         }
 
         private void CheckReadArguments(byte[] buffer, int offset, int count)
@@ -278,22 +281,22 @@ namespace System.Security.Cryptography
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
         }
 
-        private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken, bool useAsync)
+        private async ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken, bool useAsync)
         {
             // read <= count bytes from the input stream, transforming as we go.
             // Basic idea: first we deliver any bytes we already have in the
             // _OutputBuffer, because we know they're good.  Then, if asked to deliver
             // more bytes, we read & transform a block at a time until either there are
             // no bytes ready or we've delivered enough.
-            int bytesToDeliver = count;
-            int currentOutputIndex = offset;
+            int bytesToDeliver = buffer.Length;
+            int currentOutputIndex = 0;
             Debug.Assert(_outputBuffer != null);
             if (_outputBufferIndex != 0)
             {
                 // we have some already-transformed bytes in the output buffer
-                if (_outputBufferIndex <= count)
+                if (_outputBufferIndex <= buffer.Length)
                 {
-                    Buffer.BlockCopy(_outputBuffer, 0, buffer, offset, _outputBufferIndex);
+                    _outputBuffer.AsSpan(0, _outputBufferIndex).CopyTo(buffer.Span);
                     bytesToDeliver -= _outputBufferIndex;
                     currentOutputIndex += _outputBufferIndex;
                     int toClear = _outputBuffer.Length - _outputBufferIndex;
@@ -302,14 +305,14 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    Buffer.BlockCopy(_outputBuffer, 0, buffer, offset, count);
-                    Buffer.BlockCopy(_outputBuffer, count, _outputBuffer, 0, _outputBufferIndex - count);
-                    _outputBufferIndex -= count;
+                    _outputBuffer.AsSpan(0, buffer.Length).CopyTo(buffer.Span);
+                    Buffer.BlockCopy(_outputBuffer, buffer.Length, _outputBuffer, 0, _outputBufferIndex - buffer.Length);
+                    _outputBufferIndex -= buffer.Length;
 
                     int toClear = _outputBuffer.Length - _outputBufferIndex;
                     CryptographicOperations.ZeroMemory(new Span<byte>(_outputBuffer, _outputBufferIndex, toClear));
 
-                    return (count);
+                    return buffer.Length;
                 }
             }
             // _finalBlockTransformed == true implies we're at the end of the input stream
@@ -319,7 +322,7 @@ namespace System.Security.Cryptography
             // eventually, we'll just always return 0 here because there's no more to read
             if (_finalBlockTransformed)
             {
-                return (count - bytesToDeliver);
+                return buffer.Length - bytesToDeliver;
             }
             // ok, now loop until we've delivered enough or there's nothing available
             int amountRead = 0;
@@ -373,7 +376,7 @@ namespace System.Security.Cryptography
                         // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
                         tempOutputBuffer = ArrayPool<byte>.Shared.Rent(numWholeReadBlocks * _outputBlockSize);
                         numOutputBytes = _transform.TransformBlock(tempInputBuffer, 0, numWholeReadBlocksInBytes, tempOutputBuffer, 0);
-                        Buffer.BlockCopy(tempOutputBuffer, 0, buffer, currentOutputIndex, numOutputBytes);
+                        tempOutputBuffer.AsSpan(0, numOutputBytes).CopyTo(buffer.Span.Slice(currentOutputIndex));
 
                         // Clear what was written while we know how much that was
                         CryptographicOperations.ZeroMemory(new Span<byte>(tempOutputBuffer, 0, numOutputBytes));
@@ -429,22 +432,22 @@ namespace System.Security.Cryptography
 
                 if (bytesToDeliver >= numOutputBytes)
                 {
-                    Buffer.BlockCopy(_outputBuffer, 0, buffer, currentOutputIndex, numOutputBytes);
+                    _outputBuffer.AsSpan(0, numOutputBytes).CopyTo(buffer.Span.Slice(currentOutputIndex));
                     CryptographicOperations.ZeroMemory(new Span<byte>(_outputBuffer, 0, numOutputBytes));
                     currentOutputIndex += numOutputBytes;
                     bytesToDeliver -= numOutputBytes;
                 }
                 else
                 {
-                    Buffer.BlockCopy(_outputBuffer, 0, buffer, currentOutputIndex, bytesToDeliver);
+                    _outputBuffer.AsSpan(0, bytesToDeliver).CopyTo(buffer.Span.Slice(currentOutputIndex));
                     _outputBufferIndex = numOutputBytes - bytesToDeliver;
                     Buffer.BlockCopy(_outputBuffer, bytesToDeliver, _outputBuffer, 0, _outputBufferIndex);
                     int toClear = _outputBuffer.Length - _outputBufferIndex;
                     CryptographicOperations.ZeroMemory(new Span<byte>(_outputBuffer, _outputBufferIndex, toClear));
-                    return count;
+                    return buffer.Length;
                 }
             }
-            return count;
+            return buffer.Length;
 
         ProcessFinalBlock:
             // if so, then call TransformFinalBlock to get whatever is left
@@ -458,20 +461,20 @@ namespace System.Security.Cryptography
             // now, return either everything we just got or just what's asked for, whichever is smaller
             if (bytesToDeliver < _outputBufferIndex)
             {
-                Buffer.BlockCopy(_outputBuffer, 0, buffer, currentOutputIndex, bytesToDeliver);
+                _outputBuffer.AsSpan(0, bytesToDeliver).CopyTo(buffer.Span.Slice(currentOutputIndex));
                 _outputBufferIndex -= bytesToDeliver;
                 Buffer.BlockCopy(_outputBuffer, bytesToDeliver, _outputBuffer, 0, _outputBufferIndex);
                 int toClear = _outputBuffer.Length - _outputBufferIndex;
                 CryptographicOperations.ZeroMemory(new Span<byte>(_outputBuffer, _outputBufferIndex, toClear));
-                return (count);
+                return buffer.Length;
             }
             else
             {
-                Buffer.BlockCopy(_outputBuffer, 0, buffer, currentOutputIndex, _outputBufferIndex);
+                _outputBuffer.AsSpan(0, _outputBufferIndex).CopyTo(buffer.Span.Slice(currentOutputIndex));
                 bytesToDeliver -= _outputBufferIndex;
                 _outputBufferIndex = 0;
                 CryptographicOperations.ZeroMemory(_outputBuffer);
-                return (count - bytesToDeliver);
+                return buffer.Length - bytesToDeliver;
             }
         }
 
