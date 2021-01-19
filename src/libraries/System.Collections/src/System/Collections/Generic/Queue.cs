@@ -47,7 +47,7 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            _array = new T[capacity];
+            _array = GC.AllocateUninitializedArray<T>(capacity);
         }
 
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
@@ -317,7 +317,7 @@ namespace System.Collections.Generic
                 return Array.Empty<T>();
             }
 
-            T[] arr = new T[_size];
+            T[] arr = GC.AllocateUninitializedArray<T>(_size);
 
             if (_head < _tail)
             {
@@ -336,7 +336,7 @@ namespace System.Collections.Generic
         // must be >= _size.
         private void SetCapacity(int capacity)
         {
-            T[] newarray = new T[capacity];
+            T[] newarray = GC.AllocateUninitializedArray<T>(capacity);
             if (_size > 0)
             {
                 if (_head < _tail)
