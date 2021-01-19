@@ -147,11 +147,15 @@ stages:
       - Linux_x64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                   /p:BuildMonoCrossAOT=Android /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                   /p:BuildMonoCrossAOT=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
         nameSuffix: AndroidAOT_Mono
         runtimeVariant: crossandroid
-        dependsOn: mono_android_offsets
-        monoCrossAOTTargetOS: Android
+        dependsOn:
+        - mono_android_offsets
+        - mono_browser_offsets
+        monoCrossAOTTargetOS:
+        - Android
+        - Browser
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
