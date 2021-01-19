@@ -8,7 +8,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeFindHandle : SafeHandle
     {
-        internal SafeFindHandle() : base(IntPtr.Zero, true) { }
+        public SafeFindHandle() : base(IntPtr.Zero, true) { }
 
         protected override bool ReleaseHandle()
         {

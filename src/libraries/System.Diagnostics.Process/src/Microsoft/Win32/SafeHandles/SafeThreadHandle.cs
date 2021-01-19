@@ -20,7 +20,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeThreadHandle : SafeHandle
     {
-        internal SafeThreadHandle()
+        public SafeThreadHandle()
             : base(new IntPtr(0), true)
         {
         }

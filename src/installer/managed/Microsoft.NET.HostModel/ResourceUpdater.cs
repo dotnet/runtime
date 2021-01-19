@@ -152,7 +152,7 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         private class SafeUpdateHandle : SafeHandle
         {
-            private SafeUpdateHandle() : base(IntPtr.Zero, true)
+            public SafeUpdateHandle() : base(IntPtr.Zero, true)
             {
             }
 

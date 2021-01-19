@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Apple
 {
     internal sealed class SafeDigestCtxHandle : SafeHandle
     {
-        internal SafeDigestCtxHandle()
+        public SafeDigestCtxHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

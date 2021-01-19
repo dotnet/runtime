@@ -9,7 +9,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {
-    internal class SafeCustomLineCapHandle : SafeHandle
+    internal sealed class SafeCustomLineCapHandle : SafeHandle
     {
         // Create a SafeHandle, informing the base class
         // that this SafeHandle instance "owns" the handle,
