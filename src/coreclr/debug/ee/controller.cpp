@@ -2708,10 +2708,21 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 #ifdef FEATURE_DATABREAKPOINT
     if (stWhat & ST_SINGLE_STEP &&
         tpr != TPR_TRIGGER_ONLY_THIS &&
-        DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
+        DebuggerDataBreakpoint::IsDataBreakpoint(thread, context))
     {
-        DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
-        pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
+        if (g_pDebugger->m_isSuspendedForGarbageCollection)
+        {
+            // The debugger is not interested in Data Breakpoints during garbage collection
+            // We can safely ignore them since the Data Breakpoints are now on pinned objects
+            LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Ignoring data breakpoint while suspended for GC \n"));
+
+            used = DPOSS_USED_WITH_NO_EVENT;
+        }
+        else if(DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
+        {
+            DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
+            pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
+        }
     }
 #endif
 
@@ -8977,12 +8988,9 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
 
 #ifdef FEATURE_DATABREAKPOINT
 
-/* static */ bool DebuggerDataBreakpoint::TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
+/* static */ bool DebuggerDataBreakpoint::IsDataBreakpoint(Thread *thread, CONTEXT * pContext)
 {
-    LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
-
     bool hitDataBp = false;
-    bool result = false;
 #ifdef TARGET_UNIX
     #error Not supported
 #endif // TARGET_UNIX
@@ -8996,6 +9004,15 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
 #else // defined(TARGET_X86) || defined(TARGET_AMD64)
     #error Not supported
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+    return hitDataBp;
+}
+
+/* static */ bool DebuggerDataBreakpoint::TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
+{
+    LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
+
+    bool hitDataBp = IsDataBreakpoint(thread, pContext);
+    bool result = false;
     if (hitDataBp)
     {
         if (g_pDebugger->IsThreadAtSafePlace(thread))

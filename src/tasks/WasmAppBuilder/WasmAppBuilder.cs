@@ -5,9 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Reflection;
@@ -16,16 +18,24 @@ using Microsoft.Build.Utilities;
 
 public class WasmAppBuilder : Task
 {
+    [NotNull]
     [Required]
     public string? AppDir { get; set; }
+
+    [NotNull]
     [Required]
     public string? MicrosoftNetCoreAppRuntimePackDir { get; set; }
+
+    [NotNull]
     [Required]
     public string? MainJS { get; set; }
+
+    [NotNull]
     [Required]
     public string[]? Assemblies { get; set; }
 
     private List<string> _fileWrites = new();
+
     [Output]
     public string[]? FileWrites => _fileWrites.ToArray();
 
@@ -38,6 +48,21 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
+    public ITaskItem[]? ExtraFilesToDeploy { get; set; }
+
+    // <summary>
+    // Extra json elements to add to mono-config.js
+    //
+    // Metadata:
+    // - Value: can be a number, bool, quoted string, or json string
+    //
+    // Examples:
+    //      <WasmExtraConfig Include="enable_profiler" Value="true" />
+    //      <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
+    //      <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
+    //       <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
+    // </summary>
+    public ITaskItem[]? ExtraConfig { get; set; }
 
     private class WasmAppConfig
     {
@@ -49,6 +74,8 @@ public class WasmAppBuilder : Task
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remote_sources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
+        [JsonExtensionData]
+        public Dictionary<string, object?> Extra { get; set; } = new();
     }
 
     private class AssetEntry
@@ -218,6 +245,15 @@ public class WasmAppBuilder : Task
                     config.RemoteSources.Add(source.ItemSpec);
         }
 
+        foreach (ITaskItem extra in ExtraConfig ?? Enumerable.Empty<ITaskItem>())
+        {
+            string name = extra.ItemSpec;
+            if (!TryParseExtraConfigValue(extra, out object? valueObject))
+                return false;
+
+            config.Extra[name] = valueObject;
+        }
+
         string monoConfigPath = Path.Join(AppDir, "mono-config.js");
         using (var sw = File.CreateText(monoConfigPath))
         {
@@ -226,7 +262,68 @@ public class WasmAppBuilder : Task
         }
         _fileWrites.Add(monoConfigPath);
 
+        if (ExtraFilesToDeploy != null)
+        {
+            foreach (ITaskItem item in ExtraFilesToDeploy!)
+            {
+                string src = item.ItemSpec;
+
+                string dstDir = Path.Combine(AppDir!, item.GetMetadata("TargetPath"));
+                if (!Directory.Exists(dstDir))
+                    Directory.CreateDirectory(dstDir);
+
+                string dst = Path.Combine(dstDir, Path.GetFileName(src));
+                if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
+                    return false;
+            }
+        }
+
         return true;
+    }
+
+    private bool TryParseExtraConfigValue(ITaskItem extraItem, out object? valueObject)
+    {
+        valueObject = null;
+        string? rawValue = extraItem.GetMetadata("Value");
+        if (string.IsNullOrEmpty(rawValue))
+            return true;
+
+        if (TryConvert(rawValue, typeof(double), out valueObject) || TryConvert(rawValue, typeof(bool), out valueObject))
+            return true;
+
+        // Try parsing as a quoted string
+        if (rawValue!.Length > 1 && rawValue![0] == '"' && rawValue![^1] == '"')
+        {
+            valueObject = rawValue![1..^1];
+            return true;
+        }
+
+        // try parsing as json
+        try
+        {
+            JsonDocument jdoc = JsonDocument.Parse(rawValue);
+            valueObject = jdoc.RootElement;
+            return true;
+        }
+        catch (JsonException je)
+        {
+            Log.LogError($"ExtraConfig: {extraItem.ItemSpec} with Value={rawValue} cannot be parsed as a number, boolean, string, or json object/array: {je.Message}");
+            return false;
+        }
+    }
+
+    private static bool TryConvert(string str, Type type, out object? value)
+    {
+        value = null;
+        try
+        {
+            value = Convert.ChangeType(str, type);
+            return true;
+        }
+        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException || ex is OverflowException)
+        {
+            return false;
+        }
     }
 
     private bool FileCopyChecked(string src, string dst, string label)

@@ -253,9 +253,7 @@ public:
 
     // Data structure for a single class probe.
     //
-    // ILOffset is the IL offset in the method for the call site being probed.
-    // Currently it must be ORed with CLASS_FLAG and (for interface calls)
-    // INTERFACE_FLAG.
+    // CLASS_FLAG and INTERFACE_FLAG are placed into the Other field in the schema
     //
     // Count is the number of times a call was made at that call site.
     //
@@ -279,20 +277,69 @@ public:
         CORINFO_CLASS_HANDLE ClassTable[SIZE];
     };
 
-    // allocate a basic block profile buffer where execution counts will be stored
-    // for jitted basic blocks.
-    virtual HRESULT allocMethodBlockCounts (
-            UINT32                count,           // The number of basic blocks that we have
-            BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
+    enum class PgoInstrumentationKind
+    {
+        // Schema data types
+        None = 0,
+        FourByte = 1,
+        EightByte = 2,
+        TypeHandle = 3,
+
+        // Mask of all schema data types
+        MarshalMask = 0xF,
+
+        // ExcessAlignment
+        Align4Byte = 0x10,
+        Align8Byte = 0x20,
+        AlignPointer = 0x30,
+
+        // Mask of all schema data types
+        AlignMask = 0x30,
+
+        DescriptorMin = 0x40,
+
+        Done = None, // All instrumentation schemas must end with a record which is "Done"
+        BasicBlockIntCount = DescriptorMin | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
+        TypeHandleHistogramCount = (DescriptorMin * 1) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
+        TypeHandleHistogramTypeHandle = (DescriptorMin * 1) | TypeHandle, // TypeHandle that is part of a type histogram
+        Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
+        NumRuns = (DescriptorMin * 3) | None, // Number of runs is encoded in the Other field of the schema
+    };
+
+    struct PgoInstrumentationSchema
+    {
+        size_t Offset;
+        PgoInstrumentationKind InstrumentationKind;
+        int32_t ILOffset;
+        int32_t Count;
+        int32_t Other;
+    };
+
+    // get profile information to be used for optimizing a current method.  The format
+    // of the buffer is the same as the format the JIT passes to allocPgoInstrumentationBySchema.
+    virtual HRESULT getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE      ftnHnd,
+            PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
+            UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
+            BYTE **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
             ) = 0;
 
-    // get profile information to be used for optimizing the current method.  The format
-    // of the buffer is the same as the format the JIT passes to allocBBProfileBuffer.
-    virtual HRESULT getMethodBlockCounts(
-            CORINFO_METHOD_HANDLE ftnHnd,
-            UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
-            BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-            UINT32 *              pNumRuns         // pointer to the total number of profile scenarios run
+    // Allocate a profile buffer for use in the current process
+    // The JIT shall call this api with the schema entries other than Offset filled in.
+    // The VM is responsible for allocating the buffer, and computing the various offsets
+    // The offset calculation shall obey the following rules
+    //  1. All data fields shall be naturally aligned.
+    //  2. The first offset may be arbitrarily large.
+    //  3. The JIT may mark a schema item with an alignment flag. This may be used to increase the alignment of a field.
+    //  4. Each data entry shall be laid out without extra padding.
+    //
+    //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with 
+    //  instrumentation helper functions
+    virtual HRESULT allocPgoInstrumentationBySchema (
+            CORINFO_METHOD_HANDLE     ftnHnd,
+            PgoInstrumentationSchema *pSchema,                     // pointer to the schema table which describes the instrumentation results
+            UINT32                    countSchemaItems,            // pointer to the count schema items
+            BYTE **                   pInstrumentationData         // pointer to the actual instrumentation data
             ) = 0;
 
     // Get the likely implementing class for a virtual call or interface call made by ftnHnd

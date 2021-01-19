@@ -60,7 +60,7 @@ if (GEN_SHARED_LIB)
         ${NATIVE_LIBS_EXTRA}
     )
 
-    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
         add_custom_command(TARGET System.Native POST_BUILD
             COMMENT "Verifying System.Native entry points against entrypoints.c "
             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
@@ -74,10 +74,13 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} entrypoints.c)
+endif()
+
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
-    entrypoints.c
 )
 
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)

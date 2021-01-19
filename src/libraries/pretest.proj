@@ -1,10 +1,14 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
     <!-- Create an intermediate runsettings file to enable VSTest discovery. -->
     <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
     <CreateIntermediateRunSettingsFile>true</CreateIntermediateRunSettingsFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <!--
@@ -19,7 +23,7 @@
     <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
     <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'Browser'" />
   </ItemGroup>
-  
+
   <Target Name="BuildExternalsProject"
           BeforeTargets="Build">
     <MSBuild Targets="Build"
@@ -114,7 +118,7 @@
   </Target>
 
   <!-- Generate the runtime pack's RuntimeList.xml -->
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)"/>
   <Target Name="GenerateRuntimeListFile"
           DependsOnTargets="GetRuntimePackFiles"
           AfterTargets="BuildExternalsProject"
@@ -134,5 +138,5 @@
                              RootAttributes="@(FrameworkListRootAttribute)" />
   </Target>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 </Project>

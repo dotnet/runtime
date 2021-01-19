@@ -1445,9 +1445,9 @@ var MonoSupportLib = {
 			if (options == null)
 				options = {}
 			if (!('write_at' in options))
-				options.write_at = 'WebAssembly.Runtime::StopProfile';
+				options.write_at = 'Interop/Runtime::StopProfile';
 			if (!('send_to' in options))
-				options.send_to = 'WebAssembly.Runtime::DumpAotProfileData';
+				options.send_to = 'Interop/Runtime::DumpAotProfileData';
 			var arg = "aot:write-at-method=" + options.write_at + ",send-to-method=" + options.send_to;
 			Module.ccall ('mono_wasm_load_profiler_aot', null, ['string'], [arg]);
 		},

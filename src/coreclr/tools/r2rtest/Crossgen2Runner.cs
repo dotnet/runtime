@@ -86,6 +86,12 @@ namespace R2RTest
             // Output
             yield return $"-o:{outputFileName}";
 
+            if (_options.Pdb)
+            {
+                yield return $"--pdb";
+                yield return $"--pdb-path:{Path.GetDirectoryName(outputFileName)}";
+            }
+
             if (_options.TargetArch != null)
             {
                 yield return $"--targetarch={_options.TargetArch}";

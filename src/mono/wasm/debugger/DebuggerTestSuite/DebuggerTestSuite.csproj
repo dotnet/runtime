@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+
+    <Compile Include="..\BrowserDebugProxy\DevToolsQueue.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1157,7 +1157,43 @@ Possible constructors are: '{2}'.</value>
     <value>The local recognizer cannot activate a rule, dictation, or other stream until it is initialized. Call SetInput first.</value>
   </data>
   <data name="SapiErrorUnused0" xml:space="preserve">
-    <value>Error code not used.</value>
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused1" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused2" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused3" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused4" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused5" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused6" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused7" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused8" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused9" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused10" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused11" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
+  </data>
+  <data name="SapiErrorUnused12" xml:space="preserve">
+    <value></value> <!-- SAPI does not use this code -->
   </data>
   <data name="SapiErrorNotSupportedLang" xml:space="preserve">
     <value>The requested language is not supported.</value>
@@ -1232,7 +1268,7 @@ Possible constructors are: '{2}'.</value>
     <value>The user has chosen to disable speech from running on the machine, or the system is not set up to run speech.</value>
   </data>
   <data name="SapiErrorRecognizerNotFound" xml:space="preserve">
-    <value>No recognizer is installed. </value>
+    <value>No recognizer is installed.</value>
   </data>
   <data name="SapiErrorAudioNotFound" xml:space="preserve">
     <value>No audio device is installed.</value>
@@ -1269,5 +1305,35 @@ Possible constructors are: '{2}'.</value>
   </data>
   <data name="SapiErrorNotSupportedForInprocRecognizer" xml:space="preserve">
     <value>The method called is not supported for the in-process recognizer.</value>
+  </data>
+  <data name="SapiLexInvalidData" xml:space="preserve">
+    <value>The lexicon data is invalid or corrupted.</value>
+  </data>
+  <data name="SapiLexUnexpectedFormat" xml:space="preserve">
+    <value>The lexicon is not in the expected format.</value>
+  </data>
+  <data name="SapiNonWordTransition" xml:space="preserve">
+    <value>One of the parse transitions is not a word transition.</value>
+  </data>
+  <data name="SapiSisrAttributesNotAllowed" xml:space="preserve">
+    <value>Attributes are not allowed at the top level.</value>
+  </data>
+  <data name="SapiSisrMixedNotAllowed" xml:space="preserve">
+    <value>Mixed content is not allowed at the top level.</value>
+  </data>
+  <data name="SapiStringEmpty" xml:space="preserve">
+    <value>The string cannot be empty.</value>
+  </data>
+  <data name="SapiStringTooLong" xml:space="preserve">
+    <value>The string is too long.</value>
+  </data>
+  <data name="SapiVoiceNotFound" xml:space="preserve">
+    <value>No given voice is found.</value>
+  </data>
+  <data name="SapiErrorOverload" xml:space="preserve">
+    <value>The operation cannot be carried out due to overload and should be attempted again.</value>
+  </data>
+  <data name="SapiConfigInvalidData" xml:space="preserve">
+    <value>The data in the CFG grammar is invalid or corrupted.</value>
   </data>
 </root>
