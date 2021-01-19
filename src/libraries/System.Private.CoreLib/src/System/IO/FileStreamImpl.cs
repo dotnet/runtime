@@ -60,27 +60,12 @@ namespace System.IO
         /// <summary>Whether the file stream's handle has been exposed.</summary>
         private bool _exposedHandle;
 
-        internal FileStreamImpl(SafeFileHandle handle, bool dontOwnHandle, FileAccess access, int bufferSize, bool isAsync)
+        internal FileStreamImpl(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             _exposedHandle = true;
             _bufferLength = bufferSize;
 
-            try
-            {
-                InitFromHandle(handle, access, isAsync);
-            }
-            catch when (dontOwnHandle)
-            {
-                // We don't want to take ownership of closing passed in handles
-                // *unless* the constructor completes successfully.
-                GC.SuppressFinalize(handle);
-
-                // This would also prevent Close from being called, but is unnecessary
-                // as we've removed the object from the finalizer queue.
-                //
-                // safeHandle.SetHandleAsInvalid();
-                throw;
-            }
+            InitFromHandle(handle, access, isAsync);
 
             // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
             // but we can't as they're readonly.

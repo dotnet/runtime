@@ -44,6 +44,17 @@ namespace System.IO
             try
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
+
+                // it might seem to have no sense now, but we plan to introduce dedicated strategies for sync and async implementations
+                switch (isAsync)
+                {
+                    case true:
+                        _impl = new FileStreamImpl(safeHandle, access, bufferSize, true);
+                        return;
+                    case false:
+                        _impl = new FileStreamImpl(safeHandle, access, bufferSize, false);
+                        return;
+                }
             }
             catch
             {
@@ -56,17 +67,6 @@ namespace System.IO
                 //
                 // safeHandle.SetHandleAsInvalid();
                 throw;
-            }
-
-            // it might seem to have no sense now, but we plan to introduce dedicated strategies for sync and async implementations
-            switch (isAsync)
-            {
-                case true:
-                    _impl = new FileStreamImpl(safeHandle, true, access, bufferSize, true);
-                    return;
-                case false:
-                    _impl = new FileStreamImpl(safeHandle, true, access, bufferSize, false);
-                    return;
             }
         }
 
@@ -103,10 +103,10 @@ namespace System.IO
             switch (isAsync)
             {
                 case true:
-                    _impl = new FileStreamImpl(handle, false, access, bufferSize, true);
+                    _impl = new FileStreamImpl(handle, access, bufferSize, true);
                     return;
                 case false:
-                    _impl = new FileStreamImpl(handle, false, access, bufferSize, false);
+                    _impl = new FileStreamImpl(handle, access, bufferSize, false);
                     return;
             }
         }
