@@ -87,7 +87,7 @@ namespace System
                 {
                     // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
                     // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = Log2Ceiling((uint)maxValue);
+                    int bits = BitOperations.Log2Ceiling((uint)maxValue);
                     while (true)
                     {
                         uint result = NextUInt32() >> (sizeof(uint) * 8 - bits);
@@ -110,7 +110,7 @@ namespace System
                 {
                     // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
                     // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = Log2Ceiling(exclusiveRange);
+                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
                     while (true)
                     {
                         uint result = NextUInt32() >> (sizeof(uint) * 8 - bits);
@@ -151,7 +151,7 @@ namespace System
                 {
                     // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
                     // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = Log2Ceiling((ulong)maxValue);
+                    int bits = BitOperations.Log2Ceiling((ulong)maxValue);
                     while (true)
                     {
                         ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
@@ -179,7 +179,7 @@ namespace System
                 {
                     // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
                     // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = Log2Ceiling(exclusiveRange);
+                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
                     while (true)
                     {
                         ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);

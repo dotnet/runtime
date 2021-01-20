@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System
 {
@@ -125,7 +126,7 @@ namespace System
                 {
                     // Narrow down to the smallest range [0, 2^bits] that contains maxValue - minValue
                     // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = Log2Ceiling(exclusiveRange);
+                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
                     while (true)
                     {
                         ulong result = NextUInt64() >> (sizeof(long) * 8 - bits);
