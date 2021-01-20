@@ -32,7 +32,6 @@ public static class Program
     {
         unsafe {
             // Register a managed callback (will be called by UIButton, see main.m)
-            // Also, keep the handler alive so GC won't collect it.
             delegate* unmanaged<void> unmanagedPtr = &OnButtonClick;
             ios_register_button_click(unmanagedPtr);
         }
