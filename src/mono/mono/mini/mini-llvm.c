@@ -4700,6 +4700,24 @@ emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBloc
 		mono_llvm_emit_clear_exception_call (ctx, ctx->builder);
 	}
 
+#ifdef TARGET_WASM
+	if (ctx->cfg->lmf_var) {
+		LLVMValueRef callee;
+		LLVMValueRef args [1];
+		LLVMTypeRef sig = LLVMFunctionType1 (LLVMVoidType (), ctx->module->ptr_type, FALSE);
+
+		/*
+		 * There might be an LMF on the stack inserted to enable stack walking, see
+		 * method_needs_stack_walk (). If an exception is thrown, the LMF popping code
+		 * is not executed, so do it here.
+		 */
+		g_assert (ctx->addresses [ctx->cfg->lmf_var->dreg]);
+		callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_pop_lmf));
+		args [0] = convert (ctx, ctx->addresses [ctx->cfg->lmf_var->dreg], ctx->module->ptr_type);
+		emit_call (ctx, bb, &ctx->builder, callee, args, 1);
+	}
+#endif
+
 	LLVMBuilderRef handler_builder = create_builder (ctx);
 	LLVMBasicBlockRef target_bb = ctx->bblocks [bb->block_num].call_handler_target_bb;
 	LLVMPositionBuilderAtEnd (handler_builder, target_bb);
