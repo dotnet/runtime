@@ -1350,18 +1350,7 @@ public:
                 pTargetMD)
     {
         STANDARD_VM_CONTRACT;
-
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-        // x86 with non-IL stubs manually handles calling conventions
-        // for reverse P/Invokes with the x86 stub linker.
-        // Don't use the JIT calling convention support on reverse P/Invokes.
-        if (SF_IsForwardStub(dwStubFlags))
-        {
-            m_slIL.SetCallingConvention(unmgdCallConv, SF_IsVarArgStub(dwStubFlags));
-        }
-#else
         m_slIL.SetCallingConvention(unmgdCallConv, SF_IsVarArgStub(dwStubFlags));
-#endif
     }
 
 private:

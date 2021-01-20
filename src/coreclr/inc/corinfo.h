@@ -700,12 +700,16 @@ enum class CorInfoCallConvExtension
     // New calling conventions supported with the extensible calling convention encoding go here.
 };
 
-#ifdef UNIX_X86_ABI
+#ifdef TARGET_X86
 inline bool IsCallerPop(CorInfoCallConvExtension callConv)
 {
+#ifdef UNIX_X86_ABI
     return callConv == CorInfoCallConvExtension::Managed || callConv == CorInfoCallConvExtension::C;
-}
+#else
+    return callConv == CorInfoCallConvExtension::C;
 #endif // UNIX_X86_ABI
+}
+#endif
 
 // Determines whether or not this calling convention is an instance method calling convention.
 inline bool callConvIsInstanceMethodCallConv(CorInfoCallConvExtension callConv)

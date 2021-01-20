@@ -364,7 +364,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     bool shouldTier = false;
 #if defined(FEATURE_TIERED_COMPILATION)
     shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
-#if !defined(TARGET_X86)
     // If the method is eligible for tiering but is being
     // called from a Preemptive GC Mode thread or the method
     // has the UnmanagedCallersOnlyAttribute then the Tiered Compilation
@@ -387,7 +386,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         pConfig->SetWasTieringDisabledBeforeJitting();
         shouldTier = false;
     }
-#endif // !TARGET_X86
 #endif // FEATURE_TIERED_COMPILATION
 
     if (pConfig->MayUsePrecompiledCode())

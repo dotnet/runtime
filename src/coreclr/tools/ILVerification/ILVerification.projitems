@@ -151,6 +151,9 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\SignatureVariable.cs">
       <Link>TypeSystem\Common\SignatureVariable.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TargetArchitecture.cs">
+      <Link>TypeSystem\Common\TargetArchitecture.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TargetDetails.cs">
       <Link>TypeSystem\Common\TargetDetails.cs</Link>
     </Compile>

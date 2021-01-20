@@ -779,11 +779,7 @@ HRESULT CorHost2::CreateDelegate(
 
         if (pMD->HasUnmanagedCallersOnlyAttribute())
         {
-#ifdef TARGET_X86
-            *fnPtr = (INT_PTR)COMDelegate::ConvertToUnmanagedCallback(pMD);
-#else
             *fnPtr = pMD->GetMultiCallableAddrOfCode();
-#endif
         }
         else
         {
