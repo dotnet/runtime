@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+#if !NETCOREAPP
+using System.Diagnostics;
+#endif
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
