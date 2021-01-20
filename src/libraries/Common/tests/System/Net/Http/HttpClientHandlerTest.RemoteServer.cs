@@ -156,12 +156,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient(UseVersion.ToString()))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
-                Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
