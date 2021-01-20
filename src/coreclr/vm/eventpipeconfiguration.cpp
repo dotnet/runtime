@@ -175,7 +175,7 @@ bool EventPipeConfiguration::RegisterProvider(EventPipeProvider &provider, Event
         // Set the provider configuration and enable it if it has been requested by a session.
         EventPipeSessionProvider *pSessionProvider = GetSessionProvider(session, &provider);
         if (pSessionProvider == nullptr)
-            return false;
+            return;
 
         EventPipeProviderCallbackData eventPipeProviderCallbackData = provider.SetConfiguration(
             keywordForAllSessions,

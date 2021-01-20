@@ -20,8 +20,7 @@ namespace System.Threading
     //   enable the provider by default when the Threading or other ThreadPool-related keywords are specified for the runtime
     //   provider, and update PerfView with a trace event parser for the new provider so that it knows about the events and may
     //   use them to identify thread pool threads.
-    [EventSource(Name = "Microsoft-Windows-DotNETRuntime", Guid = "e13c0d23-ccbc-4e12-931b-d9cc2eee27e4")]
-    internal sealed class PortableThreadPoolEventSource : EventSource
+    internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
         // multiple instances of the runtime within the same process, but then it seems unlikely that both instances' thread
@@ -74,13 +73,6 @@ namespace System.Threading
             Stabilizing,
             Starvation,
             ThreadTimedOut
-        }
-
-        private PortableThreadPoolEventSource()
-            : base(
-                  new Guid(0xe13c0d23, 0xccbc, 0x4e12, 0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4),
-                  "Microsoft-Windows-DotNETRuntime")
-        {
         }
 
         [NonEvent]
@@ -330,7 +322,7 @@ namespace System.Threading
         }
 
 #pragma warning disable IDE1006 // Naming Styles
-        public static readonly PortableThreadPoolEventSource Log = new PortableThreadPoolEventSource();
+        public static readonly NativeRuntimeEventSource Log = new NativeRuntimeEventSource();
 #pragma warning restore IDE1006 // Naming Styles
     }
 }

@@ -43,9 +43,9 @@ namespace System.Threading
                     {
                         Thread.Sleep(GateThreadDelayMs);
 
-                        if (ThreadPool.EnableWorkerTracking && PortableThreadPoolEventSource.Log.IsEnabled())
+                        if (ThreadPool.EnableWorkerTracking && NativeRuntimeEventSource.Log.IsEnabled())
                         {
-                            PortableThreadPoolEventSource.Log.ThreadPoolWorkingThreadCount(
+                            NativeRuntimeEventSource.Log.ThreadPoolWorkingThreadCount(
                                 (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
                         }
 

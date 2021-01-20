@@ -36,9 +36,9 @@ namespace System.Threading
         /// <param name="handle">A description of the requested registration.</param>
         internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
-            if (PortableThreadPoolEventSource.Log.IsEnabled())
+            if (NativeRuntimeEventSource.Log.IsEnabled())
             {
-                PortableThreadPoolEventSource.Log.ThreadPoolIOEnqueue(handle);
+                NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(handle);
             }
 
             _waitThreadLock.Acquire();
@@ -75,9 +75,9 @@ namespace System.Threading
 
         internal static void CompleteWait(RegisteredWaitHandle handle, bool timedOut)
         {
-            if (PortableThreadPoolEventSource.Log.IsEnabled())
+            if (NativeRuntimeEventSource.Log.IsEnabled())
             {
-                PortableThreadPoolEventSource.Log.ThreadPoolIODequeue(handle);
+                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(handle);
             }
 
             handle.PerformCallback(timedOut);
