@@ -29,5 +29,8 @@
       <None Include="$(OutputPath)\**\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
   </Target>
+  <ItemGroup>
+     <Content Include="Microsoft.NET.ILLink.Analyzers.props" Pack="true" PackagePath="build"/>
+  </ItemGroup>
 
 </Project>
