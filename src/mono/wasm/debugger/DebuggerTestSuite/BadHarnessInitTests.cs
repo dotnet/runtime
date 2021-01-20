@@ -14,14 +14,7 @@ namespace DebuggerTests
 {
     public class BadHarnessInitTests : DebuggerTestBase
     {
-        internal Inspector insp;
-        protected Dictionary<string, string> scripts;
-
-        public BadHarnessInitTests(string driver = "debugger-driver.html") : base(driver)
-        {
-            insp = new Inspector();
-            scripts = SubscribeToScripts(insp);
-        }
+        public override async Task InitializeAsync() => await Task.CompletedTask;
 
         [Fact]
         public async Task InvalidInitCommands()
