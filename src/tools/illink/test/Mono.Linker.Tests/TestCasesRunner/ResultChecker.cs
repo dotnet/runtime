@@ -1030,7 +1030,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute (CustomAttribute inAssemblyAttribute)
 		{
-			return GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute.ConstructorArguments[0].Value.ToString (), inAssemblyAttribute.ConstructorArguments[1].Value);
+			string assemblyName;
+			if (inAssemblyAttribute.HasProperties && inAssemblyAttribute.Properties[0].Name == "ExpectationAssemblyName")
+				assemblyName = inAssemblyAttribute.Properties[0].Argument.Value.ToString ();
+			else
+				assemblyName = inAssemblyAttribute.ConstructorArguments[0].Value.ToString ();
+
+			return GetOriginalTypeFromInAssemblyAttribute (assemblyName, inAssemblyAttribute.ConstructorArguments[1].Value);
 		}
 
 		protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute (string assemblyName, object typeOrTypeName)

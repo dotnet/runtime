@@ -9,15 +9,27 @@ namespace Mono.Linker.Tests.Cases.Libraries
 	[KeptMember (".ctor()")]
 	public class CanLinkPublicApisOfLibrary
 	{
-		// Kept because by default libraries their action set to copy
 		[Kept]
 		public static void Main ()
 		{
-			// Main is needed for the test collector to find and treat as a test
 		}
 
 		[Kept]
 		public void UnusedPublicMethod ()
+		{
+		}
+
+		[Kept]
+		protected void UnusedProtectedMethod ()
+		{
+		}
+
+		[Kept]
+		protected internal void UnusedProtectedInternalMethod ()
+		{
+		}
+
+		internal void UnunsedInternalMethod ()
 		{
 		}
 

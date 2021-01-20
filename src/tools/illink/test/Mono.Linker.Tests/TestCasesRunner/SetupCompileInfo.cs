@@ -14,5 +14,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public string CompilerToUse;
 		public bool AddAsReference;
 		public bool RemoveFromLinkerInput;
+		public string OutputSubFolder;
 	}
 }

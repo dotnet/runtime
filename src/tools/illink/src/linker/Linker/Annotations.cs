@@ -52,6 +52,8 @@ namespace Mono.Linker
 		protected readonly HashSet<IMetadataTokenProvider> marked = new HashSet<IMetadataTokenProvider> ();
 		protected readonly HashSet<IMetadataTokenProvider> processed = new HashSet<IMetadataTokenProvider> ();
 		protected readonly Dictionary<TypeDefinition, TypePreserve> preserved_types = new Dictionary<TypeDefinition, TypePreserve> ();
+		protected readonly Dictionary<TypeDefinition, TypePreserveMembers> preserved_type_members = new ();
+		protected readonly Dictionary<ExportedType, TypePreserveMembers> preserved_exportedtype_members = new ();
 		protected readonly Dictionary<IMemberDefinition, List<MethodDefinition>> preserved_methods = new Dictionary<IMemberDefinition, List<MethodDefinition>> ();
 		protected readonly HashSet<IMetadataTokenProvider> public_api = new HashSet<IMetadataTokenProvider> ();
 		protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
@@ -249,11 +251,6 @@ namespace Mono.Linker
 			return processed.Contains (provider);
 		}
 
-		public bool IsPreserved (TypeDefinition type)
-		{
-			return preserved_types.ContainsKey (type);
-		}
-
 		public void SetPreserve (TypeDefinition type, TypePreserve preserve)
 		{
 			if (preserved_types.TryGetValue (type, out TypePreserve existing))
@@ -285,22 +282,47 @@ namespace Mono.Linker
 
 		public bool TryGetPreserve (TypeDefinition type, out TypePreserve preserve)
 		{
-			if (preserved_types.TryGetValue (type, out preserve)) {
-				preserve &= ~TypePreserve.AccessibilityMask;
-				return true;
-			}
-
-			return false;
+			return preserved_types.TryGetValue (type, out preserve);
 		}
 
-		public bool TryGetPreserveAccessibility (TypeDefinition type, out TypePreserve preserve)
+		public void SetMembersPreserve (TypeDefinition type, TypePreserveMembers preserve)
 		{
-			if (preserved_types.TryGetValue (type, out preserve)) {
-				preserve &= TypePreserve.AccessibilityMask;
-				return true;
-			}
+			if (preserved_type_members.TryGetValue (type, out TypePreserveMembers existing))
+				preserved_type_members[type] = CombineMembers (existing, preserve);
+			else
+				preserved_type_members.Add (type, preserve);
+		}
 
-			return false;
+		static TypePreserveMembers CombineMembers (TypePreserveMembers left, TypePreserveMembers right)
+		{
+			Debug.Assert (left != 0);
+			Debug.Assert (right != 0);
+
+			if (left == TypePreserveMembers.AllVisible)
+				return right;
+
+			if (right == TypePreserveMembers.AllVisible)
+				return left;
+
+			return TypePreserveMembers.AllVisibleOrInternal;
+		}
+
+		public bool TryGetPreservedMembers (TypeDefinition type, out TypePreserveMembers preserve)
+		{
+			return preserved_type_members.TryGetValue (type, out preserve);
+		}
+
+		public void SetMembersPreserve (ExportedType type, TypePreserveMembers preserve)
+		{
+			if (preserved_exportedtype_members.TryGetValue (type, out TypePreserveMembers existing))
+				preserved_exportedtype_members[type] = CombineMembers (existing, preserve);
+			else
+				preserved_exportedtype_members.Add (type, preserve);
+		}
+
+		public bool TryGetPreservedMembers (ExportedType type, out TypePreserveMembers preserve)
+		{
+			return preserved_exportedtype_members.TryGetValue (type, out preserve);
 		}
 
 		public bool TryGetMethodStubValue (MethodDefinition method, out object value)

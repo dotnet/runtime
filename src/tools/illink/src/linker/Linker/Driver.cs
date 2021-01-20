@@ -653,6 +653,8 @@ namespace Mono.Linker
 				p.AddStepBefore (typeof (MarkStep), new RemoveSecurityStep ());
 
 			p.AddStepBefore (typeof (MarkStep), new RemoveUnreachableBlocksStep ());
+			p.AddStepBefore (typeof (MarkStep), new MarkExportedTypesTargetStep ());
+
 			p.AddStepBefore (typeof (OutputStep), new SealerStep ());
 
 			//
@@ -669,7 +671,8 @@ namespace Mono.Linker
 			// DynamicDependencyLookupStep
 			// BodySubstituterStep [optional]
 			// RemoveSecurityStep [optional]
-			// RemoveUnreachableBlocksStep [optional]
+			// RemoveUnreachableBlocksStep
+			// MarkExportedTypesTargetStep
 			// MarkStep
 			// ReflectionBlockedStep [optional]
 			// ProcessWarningsStep

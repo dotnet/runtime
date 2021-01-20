@@ -2,12 +2,6 @@ using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-#if RootLibraryInternalsWithIVT
-[assembly: InternalsVisibleToAttribute ("somename")]
-
-[assembly: KeptAttributeAttribute (typeof (InternalsVisibleToAttribute))]
-#endif
-
 namespace Mono.Linker.Tests.Cases.Libraries
 {
 #if !NETCOREAPP
@@ -16,9 +10,12 @@ namespace Mono.Linker.Tests.Cases.Libraries
 	[Kept]
 	[KeptMember (".ctor()")]
 	[SetupLinkerLinkPublicAndFamily]
-	[Define ("RootLibraryInternalsWithIVT")]
-	public class RootLibraryInternalsWithIVT
+	[SetupLinkerDescriptorFile ("RootLibraryVisibleAndDescriptor.xml")]
+	public class RootLibraryVisibleAndDescriptor
 	{
+		[Kept]
+		private int field;
+
 		[Kept]
 		public static void Main ()
 		{
@@ -39,12 +36,16 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		{
 		}
 
-		[Kept]
-		internal void UnunsedInternalMethod ()
+		internal void UnusedInternalMethod ()
 		{
 		}
 
 		private void UnusedPrivateMethod ()
+		{
+		}
+
+		[Kept]
+		internal void UnusedInternalMethod_Descriptor ()
 		{
 		}
 	}

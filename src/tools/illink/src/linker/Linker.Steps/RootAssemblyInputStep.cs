@@ -56,8 +56,7 @@ namespace Mono.Linker.Steps
 				Annotations.AddPreservedMethod (ep.DeclaringType, ep);
 				break;
 			case AssemblyRootMode.VisibleMembers:
-				TypePreserve preserve = TypePreserve.All |
-					(HasInternalsVisibleTo (assembly) ? TypePreserve.AccessibilityVisibleOrInternal : TypePreserve.AccessibilityVisible);
+				var preserve = HasInternalsVisibleTo (assembly) ? TypePreserveMembers.AllVisibleOrInternal : TypePreserveMembers.AllVisible;
 
 				var module = assembly.MainModule;
 				if (module.HasExportedTypes)
@@ -87,17 +86,17 @@ namespace Mono.Linker.Steps
 			return assembly;
 		}
 
-		void MarkAndPreserveVisible (TypeDefinition type, TypePreserve preserve)
+		void MarkAndPreserveVisible (TypeDefinition type, TypePreserveMembers preserve)
 		{
-			switch (preserve & TypePreserve.AccessibilityMask) {
-			case TypePreserve.AccessibilityVisible when !IsTypeVisible (type):
+			switch (preserve) {
+			case TypePreserveMembers.AllVisible when !IsTypeVisible (type):
 				return;
-			case TypePreserve.AccessibilityVisibleOrInternal when !IsTypeVisibleOrInternal (type):
+			case TypePreserveMembers.AllVisibleOrInternal when !IsTypeVisibleOrInternal (type):
 				return;
 			}
 
 			Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly));
-			Annotations.SetPreserve (type, preserve);
+			Annotations.SetMembersPreserve (type, preserve);
 
 			if (!type.HasNestedTypes)
 				return;
@@ -106,18 +105,12 @@ namespace Mono.Linker.Steps
 				MarkAndPreserveVisible (nested, preserve);
 		}
 
-		void MarkAndPreserveVisible (AssemblyDefinition assembly, ExportedType type, TypePreserve preserve)
+		void MarkAndPreserveVisible (AssemblyDefinition assembly, ExportedType type, TypePreserveMembers preserve)
 		{
-			Context.MarkingHelpers.MarkExportedType (type, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, type));
-
-			TypeDefinition td = type.Resolve ();
-			if (td != null) {
-				MarkAndPreserveVisible (td, preserve);
-				return;
-			}
-
-			if (!Context.IgnoreUnresolved)
-				Context.LogError ($"Exported type '{type.Name}' cannot be rooted", 1038);
+			var di = new DependencyInfo (DependencyKind.RootAssembly, assembly);
+			Context.Annotations.Mark (type, di);
+			Context.Annotations.Mark (assembly.MainModule, di);
+			Annotations.SetMembersPreserve (type, preserve);
 		}
 
 		static bool IsTypeVisible (TypeDefinition type)

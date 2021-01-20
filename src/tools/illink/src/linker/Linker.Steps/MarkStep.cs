@@ -210,7 +210,6 @@ namespace Mono.Linker.Steps
 
 				foreach (TypeDefinition type in assembly.MainModule.Types)
 					InitializeType (type);
-
 				break;
 			}
 		}
@@ -258,8 +257,7 @@ namespace Mono.Linker.Steps
 
 		protected bool IsFullyPreserved (TypeDefinition type)
 		{
-			if (Annotations.TryGetPreserve (type, out TypePreserve preserve) && preserve == TypePreserve.All &&
-				Annotations.TryGetPreserveAccessibility (type, out preserve) && preserve == 0)
+			if (Annotations.TryGetPreserve (type, out TypePreserve preserve) && preserve == TypePreserve.All)
 				return true;
 
 			switch (Annotations.GetAction (type.Module.Assembly)) {
@@ -2281,16 +2279,31 @@ namespace Mono.Linker.Steps
 		{
 			ApplyPreserveMethods (type);
 
-			if (!Annotations.TryGetPreserve (type, out TypePreserve preserve))
-				return;
+			if (Annotations.TryGetPreserve (type, out TypePreserve preserve)) {
+				var di = new DependencyInfo (DependencyKind.TypePreserve, type);
 
-			var di = new DependencyInfo (DependencyKind.TypePreserve, type);
-
-			switch (preserve) {
-			case TypePreserve.All:
-				Annotations.TryGetPreserveAccessibility (type, out preserve);
 				switch (preserve) {
-				case TypePreserve.AccessibilityVisible:
+				case TypePreserve.All:
+					MarkFields (type, true, di);
+					MarkMethods (type, di, type);
+					return;
+
+				case TypePreserve.Fields:
+					if (!MarkFields (type, true, di, true))
+						_context.LogWarning ($"Type {type.GetDisplayName ()} has no fields to preserve", 2001, type);
+					break;
+				case TypePreserve.Methods:
+					if (!MarkMethods (type, di, type))
+						_context.LogWarning ($"Type {type.GetDisplayName ()} has no methods to preserve", 2002, type);
+					break;
+				}
+			}
+
+			if (Annotations.TryGetPreservedMembers (type, out TypePreserveMembers members)) {
+				var di = new DependencyInfo (DependencyKind.TypePreserve, type);
+
+				switch (members) {
+				case TypePreserveMembers.AllVisible:
 					if (type.HasMethods)
 						MarkMethodsIf (type.Methods, IsMethodVisible, di, type);
 
@@ -2298,7 +2311,7 @@ namespace Mono.Linker.Steps
 						MarkFieldsIf (type.Fields, IsFieldVisible, di);
 
 					break;
-				case TypePreserve.AccessibilityVisibleOrInternal:
+				case TypePreserveMembers.AllVisibleOrInternal:
 					if (type.HasMethods)
 						MarkMethodsIf (type.Methods, IsMethodVisibleOrInternal, di, type);
 
@@ -2306,21 +2319,7 @@ namespace Mono.Linker.Steps
 						MarkFieldsIf (type.Fields, IsFieldVisibleOrInternal, di);
 
 					break;
-				default:
-					MarkFields (type, true, di);
-					MarkMethods (type, di, type);
-					break;
 				}
-				break;
-
-			case TypePreserve.Fields:
-				if (!MarkFields (type, true, di, true))
-					_context.LogWarning ($"Type {type.GetDisplayName ()} has no fields to preserve", 2001, type);
-				break;
-			case TypePreserve.Methods:
-				if (!MarkMethods (type, di, type))
-					_context.LogWarning ($"Type {type.GetDisplayName ()} has no methods to preserve", 2002, type);
-				break;
 			}
 		}
 
