@@ -28,8 +28,6 @@ namespace System.Net.Http.Functional.Tests
     // to separately Dispose (or have a 'using' statement) for the handler.
     public abstract class HttpClientHandlerTest : HttpClientHandlerTestBase
     {
-        private const string HttpDefaultPort = "80";
-
         public HttpClientHandlerTest(ITestOutputHelper output) : base(output)
         {
         }
@@ -291,17 +289,16 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> DestinationHost_MemberData()
         {
-            yield return new object[] { Configuration.Http.Host };
+            yield return new object[] { "nosuchhost.invalid" };
             yield return new object[] { "1.2.3.4" };
             yield return new object[] { "[::1234]" };
         }
 
         [Theory]
-        [OuterLoop("Uses external server")]
         [MemberData(nameof(DestinationHost_MemberData))]
         public async Task ProxiedRequest_DefaultPort_PortStrippedOffInUri(string host)
         {
-            string addressUri = $"http://{host}:{HttpDefaultPort}/";
+            string addressUri = $"http://{host}:80/";
             string expectedAddressUri = $"http://{host}/";
             bool connectionAccepted = false;
 
@@ -328,13 +325,13 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(connectionAccepted);
         }
 
-        [Fact]
-        [OuterLoop("Uses external server")]
-        public async Task ProxyTunnelRequest_PortSpecified_NotStrippedOffInUri()
+        [Theory]
+        [MemberData(nameof(DestinationHost_MemberData))]
+        public async Task ProxyTunnelRequest_PortSpecified_NotStrippedOffInUri(string host)
         {
             // Https proxy request will use CONNECT tunnel, even the default 443 port is specified, it will not be stripped off.
-            string requestTarget = $"{Configuration.Http.SecureHost}:443";
-            string addressUri = $"https://{requestTarget}/";
+            string requestTarget = $"{host}:443";
+            string addressUri = $"https://{host}/";
             bool connectionAccepted = false;
 
             if (UseVersion == HttpVersion30)
@@ -364,7 +361,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [OuterLoop("Uses external server")]
         public async Task ProxyTunnelRequest_UserAgentHeaderAdded(bool addUserAgentHeader)
         {
             if (IsWinHttpHandler)
@@ -377,7 +373,8 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            string addressUri = $"https://{Configuration.Http.SecureHost}/";
+            string host = "nosuchhost.invalid";
+            string addressUri = $"https://{host}/";
             bool connectionAccepted = false;
 
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
@@ -403,7 +400,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 connectionAccepted = true;
                 List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"CONNECT {Configuration.Http.SecureHost}:443 HTTP/1.1", headers);
+                Assert.Contains($"CONNECT {host}:443 HTTP/1.1", headers);
                 if (addUserAgentHeader)
                 {
                     Assert.Contains("User-Agent: Mozilla/5.0", headers);
