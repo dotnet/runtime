@@ -385,7 +385,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DI_2D: // DI_2D   X........Nrrrrrr ssssssnnnnnddddd      Rd Rn    imr, imms   (N,r,s)
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
-            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegisterOrZR(id->idReg2()));
             assert(isValidImmNRS(emitGetInsSC(id), id->idOpSize()));
             break;
 
@@ -6955,7 +6955,7 @@ void emitter::emitIns_R_R_I_I(
         case INS_sbfm:
         case INS_ubfm:
             assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
+            assert((ins == INS_bfm) ? isGeneralRegisterOrZR(reg2) : isGeneralRegister(reg2));
             assert(isValidImmShift(imm1, size));
             assert(isValidImmShift(imm2, size));
             assert(insOptsNone(opt));
