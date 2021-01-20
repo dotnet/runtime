@@ -84,6 +84,9 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
+        - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+          - group: AzureDevOps-Artifact-Feeds-Pats
+
         - _runtimeArtifactName: ''
         - _runtimeDownloadPath: ''
         - _runtimeArtifactsPathArg: ''
@@ -125,6 +128,24 @@ jobs:
 
       steps:
       - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          - task: Bash@3
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+              arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          - task: PowerShell@2
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)\eng\common\SetupNugetSources.ps1
+              arguments: -ConfigFile $(Build.SourcesDirectory)\NuGet.config -Password $Env:Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
       - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
