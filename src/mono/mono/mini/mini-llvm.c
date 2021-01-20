@@ -1227,15 +1227,9 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 		if (LLVMGetTypeKind (stype) == LLVMVectorTypeKind && LLVMGetTypeKind (dtype) == LLVMVectorTypeKind)
 			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
 
-		// printf ("\n");
-		// printf ("XXXih: convert_full failure:\n");
 		mono_llvm_dump_value (v);
 		mono_llvm_dump_type (dtype);
 		printf ("\n");
-		// printf ("XXXih: method_name = %s\n", ctx->method_name);
-		// printf ("XXXih: module:\n");
-		// mono_llvm_dump_module(ctx->lmodule);
-		// printf ("\n");
 		g_assert_not_reached ();
 		return NULL;
 	} else {
