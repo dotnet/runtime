@@ -634,7 +634,7 @@ public:
         {
             const int floatRegOfsInBytes = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
             _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / FLOAT_REGISTER_SIZE;
+            pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
             pLoc->m_cFloatReg = ALIGN_UP(byteArgSize, FLOAT_REGISTER_SIZE) / FLOAT_REGISTER_SIZE;
             return;
         }
@@ -673,7 +673,9 @@ public:
 
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / FLOAT_REGISTER_SIZE;
+            const int floatRegOfsInBytes = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
+            _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
+            pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
 
             if (!m_argTypeHandle.IsNull() && m_argTypeHandle.IsHFA())
             {
@@ -745,7 +747,9 @@ public:
 #if defined(UNIX_AMD64_ABI)
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / FLOAT_REGISTER_SIZE;
+            const int floatRegOfsInBytes = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
+            _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
+            pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
             pLoc->m_cFloatReg = 1;
         }
         else 
