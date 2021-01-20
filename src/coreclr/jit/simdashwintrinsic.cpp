@@ -405,6 +405,21 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         }
 #endif // TARGET_X86
 
+#if defined(TARGET_XARCH)
+        case NI_VectorT256_As:
+#endif // TARGET_XARCH
+        case NI_VectorT128_As:
+        {
+            unsigned  retSimdSize;
+            var_types retBaseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &retSimdSize);
+
+            if (!varTypeIsArithmetic(retBaseType) || (retSimdSize == 0))
+            {
+                // We get here if the return type is an unsupported type
+                return nullptr;
+            }
+        }
+
         case NI_VectorT128_Dot:
         {
             if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
@@ -563,10 +578,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             assert(newobjThis == nullptr);
 
-            bool isOpExplicit = (intrinsic == NI_VectorT128_op_Explicit);
+            bool isOpExplicit = (intrinsic == NI_VectorT128_op_Explicit) || (intrinsic == NI_VectorT128_As);
 
 #if defined(TARGET_XARCH)
-            isOpExplicit |= (intrinsic == NI_VectorT256_op_Explicit);
+            isOpExplicit |= (intrinsic == NI_VectorT256_op_Explicit) || (intrinsic == NI_VectorT256_As);
 #endif
 
             if (isOpExplicit)
