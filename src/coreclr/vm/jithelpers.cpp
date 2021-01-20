@@ -5375,7 +5375,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, voi
     frame->currentThread = thread;
 
 #ifdef PROFILING_SUPPORTED
-        if (frame->pMD && CORProfilerTrackTransitions())
+        if (CORProfilerTrackTransitions())
         {
             ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_CALL);
         }
