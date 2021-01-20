@@ -5464,8 +5464,6 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
 
-    frame->pMD = nullptr;
-
     Thread* thread = GetThreadNULLOk();
 
     // If a thread instance exists and is in the
