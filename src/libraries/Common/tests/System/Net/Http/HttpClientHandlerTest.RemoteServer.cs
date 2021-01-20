@@ -61,11 +61,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task UseDefaultCredentials_SetToFalseAndServerNeedsAuth_StatusCodeUnauthorized(bool useProxy)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
             handler.UseDefaultCredentials = false;
@@ -132,11 +127,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = CredentialCache.DefaultCredentials;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -153,11 +143,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = _credential;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -174,11 +159,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             using (HttpClient client = CreateHttpClient(UseVersion.ToString()))
             {
                 Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: Username, password: Password);
@@ -195,11 +175,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
             if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1709OrGreater)
-            {
-                return;
-            }
-
-            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -224,11 +199,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersHeaderValuesAndUris))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(Configuration.Http.RemoteServer remoteServer, string name, string value, Uri uri)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 _output.WriteLine($"name={name}, value={value}");
@@ -247,11 +217,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
         public async Task GetAsync_LargeRequestHeader_HeadersAndValuesSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             // Unfortunately, our remote servers seem to have pretty strict limits (around 16K?)
             // on the total size of the request header.
             // TODO: Figure out how to reconfigure remote endpoints to allow larger request headers,
@@ -755,12 +720,6 @@ namespace System.Net.Http.Functional.Tests
             string method,
             Uri serverUri)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                // External servers do not support HTTP3 currently.
-                return;
-            }
-
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -781,12 +740,6 @@ namespace System.Net.Http.Functional.Tests
             string method,
             Uri serverUri)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                // External servers do not support HTTP3 currently.
-                return;
-            }
-
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -816,12 +769,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("12345678910", 5)]
         public async Task SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(string stringContent, int startingPosition)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                // External servers do not support HTTP3 currently.
-                return;
-            }
-
             using (var handler = new HttpMessageInvoker(CreateHttpClientHandler()))
             {
                 byte[] byteContent = Encoding.ASCII.GetBytes(stringContent);
@@ -856,12 +803,6 @@ namespace System.Net.Http.Functional.Tests
             string method,
             Uri serverUri)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                // External servers do not support HTTP3 currently.
-                return;
-            }
-
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -903,12 +844,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion30)
-            {
-                // External servers do not support HTTP3 currently.
-                return;
-            }
-
             // We don't currently have a good way to test whether HTTP/2 is supported without
             // using the same mechanism we're trying to test, so for now we allow both 2.0 and 1.1 responses.
             var request = new HttpRequestMessage(HttpMethod.Get, server);
@@ -937,12 +872,6 @@ namespace System.Net.Http.Functional.Tests
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync)
             {
-                return;
-            }
-
-            if (UseVersion == HttpVersion30)
-            {
-                // External servers do not support HTTP3 currently.
                 return;
             }
 
