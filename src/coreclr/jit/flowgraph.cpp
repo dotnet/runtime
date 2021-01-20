@@ -8687,25 +8687,38 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     GenTree* pInvokeFrameVar = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
 
-    GenTree* stubArgument;
+    GenTree* tree;
 
-    if (info.compPublishStubParam)
+    CorInfoHelpFunc reversePInvokeEnterHelper;
+
+    GenTreeCall::Use* args;
+
+    if (eeGetEEInfo()->passMethodContextToReversePInvokeHelper)
     {
-        // If we have a secret param for a Reverse P/Invoke, that means that we are in an IL stub.
-        // In this case, the method handle we pass down to the Reverse P/Invoke helper should be
-        // the target method, which is passed in the secret parameter.
-        stubArgument = gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
+        reversePInvokeEnterHelper = CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS;
+
+        GenTree* stubArgument;
+        if (info.compPublishStubParam)
+        {
+            // If we have a secret param for a Reverse P/Invoke, that means that we are in an IL stub.
+            // In this case, the method handle we pass down to the Reverse P/Invoke helper should be
+            // the target method, which is passed in the secret parameter.
+            stubArgument = gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
+        }
+        else
+        {
+            stubArgument = gtNewIconNode(0, TYP_I_IMPL);
+        }
+
+        args = gtNewCallArgs(pInvokeFrameVar, gtNewIconEmbMethHndNode(info.compMethodHnd), stubArgument);
     }
     else
     {
-        stubArgument = gtNewIconNode(0, TYP_I_IMPL);
+        reversePInvokeEnterHelper = CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER;
+        args = gtNewCallArgs(pInvokeFrameVar);
     }
 
-    GenTree* tree;
-
-    GenTreeCall::Use* args = gtNewCallArgs(pInvokeFrameVar, gtNewIconEmbMethHndNode(info.compMethodHnd), stubArgument);
-
-    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, TYP_VOID, args);
+    tree = gtNewHelperCallNode(reversePInvokeEnterHelper, TYP_VOID, args);
 
     fgEnsureFirstBBisScratch();
 

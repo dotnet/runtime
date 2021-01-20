@@ -881,6 +881,8 @@ namespace Internal.JitInterface
         // Reverse PInvoke offsets
         public uint sizeOfReversePInvokeFrame;
 
+        public byte passMethodContextToReversePInvokeHelper;
+
         // OS Page size
         public UIntPtr osPageSize;
 

@@ -592,6 +592,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
     CORINFO_HELP_CLASSPROFILE,              // Update class profile for a call site
 
+    CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, // Transition to cooperative mode and track transitions in reverse P/Invoke prolog.
+
     CORINFO_HELP_COUNT,
 };
 
@@ -1735,6 +1737,7 @@ struct CORINFO_EE_INFO
 
     // Reverse PInvoke offsets
     unsigned    sizeOfReversePInvokeFrame;
+    bool        passMethodContextToReversePInvokeHelper;
 
     // OS Page size
     size_t      osPageSize;

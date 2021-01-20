@@ -10239,6 +10239,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
     pEEInfoOut->sizeOfReversePInvokeFrame = TARGET_POINTER_SIZE * READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits;
+    pEEInfoOut->passMethodContextToReversePInvokeHelper = CORProfilerTrackTransitions();
 
     // The following assert doesn't work in cross-bitness scenarios since the pointer size differs.
 #if (defined(TARGET_64BIT) && defined(HOST_64BIT)) || (defined(TARGET_32BIT) && defined(HOST_32BIT))
