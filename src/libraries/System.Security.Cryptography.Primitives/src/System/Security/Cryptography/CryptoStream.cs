@@ -653,11 +653,23 @@ namespace System.Security.Cryptography
                 else
                 {
                     var rentedBuffer = ArrayPool<byte>.Shared.Rent(inputBuffer.Length);
-                    inputBuffer.CopyTo(rentedBuffer);
-                    int result = transform.TransformBlock(rentedBuffer, 0, inputBuffer.Length, outputBuffer, outputOffset);
-                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                    try
+                    {
+                        inputBuffer.CopyTo(rentedBuffer);
+                        int result = transform.TransformBlock(rentedBuffer, 0, inputBuffer.Length, outputBuffer, outputOffset);
+                        CryptographicOperations.ZeroMemory(rentedBuffer.AsSpan(0, inputBuffer.Length));
+                        ArrayPool<byte>.Shared.Return(rentedBuffer);
+                        rentedBuffer = null;
 
-                    return result;
+                        return result;
+                    }
+                    catch
+                    {
+                        CryptographicOperations.ZeroMemory(rentedBuffer.AsSpan(0, inputBuffer.Length));
+                        rentedBuffer = null;
+
+                        throw;
+                    }
                 }
             }
         }
