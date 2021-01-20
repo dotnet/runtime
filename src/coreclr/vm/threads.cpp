@@ -104,7 +104,7 @@ uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
 
 CONTEXT* ThreadStore::s_pOSContext = NULL;
-LPVOID ThreadStore::s_pOSContextBuffer = NULL;
+BYTE* ThreadStore::s_pOSContextBuffer = NULL;
 
 CLREvent *ThreadStore::s_pWaitForStackCrawlEvent;
 
@@ -2610,7 +2610,7 @@ Thread::~Thread()
 
     if (m_pOSContextBuffer)
     {
-        free(m_pOSContextBuffer);
+        delete[] m_pOSContextBuffer;
         m_pOSContextBuffer = NULL;
     }
     else if (m_pSavedRedirectContext)

@@ -1970,7 +1970,7 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
 #endif
 
-CONTEXT* AllocateOSContextHelper(LPVOID* contextBuffer)
+CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 {
     CONTEXT* pOSContext = NULL;
 
@@ -1994,7 +1994,7 @@ CONTEXT* AllocateOSContextHelper(LPVOID* contextBuffer)
     _ASSERTE(!success);
 
     // So now allocate a buffer of that size and call IntitializeContext again
-    LPVOID buffer = malloc(contextSize);
+    BYTE* buffer = new (nothrow)BYTE[contextSize];
     if (buffer != NULL)
     {
         success = InitializeContext(buffer, context, &pOSContext, &contextSize);
@@ -2041,7 +2041,7 @@ void ThreadStore::AllocateOSContext()
     }
 }
 
-CONTEXT *ThreadStore::GrabOSContext(LPVOID* contextBuffer)
+CONTEXT *ThreadStore::GrabOSContext(BYTE** contextBuffer)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(HoldingThreadStore());

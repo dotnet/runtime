@@ -4011,7 +4011,7 @@ private:
     // in a case when we need the redirection context to include CONTEXT_XSTATE
     // this is the buffer that contains the context parts.
     // we need the buffer so we could deallocate the whole deal.
-    LPVOID m_pOSContextBuffer;
+    BYTE* m_pOSContextBuffer;
 
 #ifdef _DEBUG
     // validate that we use only one context per thread. 
@@ -4879,7 +4879,7 @@ public:
 
 #endif
 private:
-    static LPVOID s_pOSContextBuffer;
+    static BYTE* s_pOSContextBuffer;
     static CONTEXT *s_pOSContext;
 public:
     // Pre-allocate an OS context for possible use by a redirected thread and keep in a static variable.
@@ -4893,7 +4893,7 @@ public:
     //   then we will keep the context for the next time like this.
     static void AllocateOSContext();
     // Retrieves and detaches the pre-alocated context + optional containing buffer (when CONTEXT_XSTATE is used)
-    static CONTEXT *GrabOSContext(LPVOID* contextBuffer);
+    static CONTEXT *GrabOSContext(BYTE** contextBuffer);
 
 private:
     // Thread abort needs to walk stack to decide if thread abort can proceed.
