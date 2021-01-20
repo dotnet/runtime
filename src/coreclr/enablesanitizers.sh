@@ -3,7 +3,7 @@
 if [ $# -eq 0 ]; then
     echo "Script for enabling CLang sanitizers for debug builds."
     echo "*Only tested on Ubuntu x64."
-    echo "*This script must be 'sourced' (via dot+space) so that changes to environment variables are preserved. Run like this:"    
+    echo "*This script must be 'sourced' (via dot+space) so that changes to environment variables are preserved. Run like this:"
     if [ "$(dirname $0)" = "." ]; then
         echo " . enablesanitizers.sh [options]"
     else
@@ -30,7 +30,7 @@ else
 
     for i in "$@"
         do
-            lowerI="$(echo $i | awk '{print tolower($0)}')"
+            lowerI="$(echo $i | tr "[:upper:]" "[:lower:]")"
             case $lowerI in
             asan)
                 __EnableASan=1

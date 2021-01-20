@@ -13,7 +13,6 @@ variables:
   - template: variables.yml
 
 jobs:
-  - template: /eng/pipelines/common/checkout-job.yml
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -34,7 +33,7 @@ jobs:
         testScope: outerloop
         nameSuffix: AllSubsets_Mono
         buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true
-        timeoutInMinutes: 120
+        timeoutInMinutes: 180
         isFullMatrix: ${{ variables['isFullMatrix'] }}
         # extra steps, run tests
         extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -59,7 +58,7 @@ jobs:
           testScope: outerloop
           nameSuffix: AllSubsets_Mono
           buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true
-          timeoutInMinutes: 120
+          timeoutInMinutes: 180
           isFullMatrix: ${{ variables['isFullMatrix'] }}
           # extra steps, run tests
           extraStepsTemplate: /eng/pipelines/libraries/helix.yml

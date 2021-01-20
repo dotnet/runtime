@@ -67,9 +67,17 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
                 {
                     prefix = CustomPrefix;
                 }
+                else if (key.StartsWith(_prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    // This prevents the prefix from being normalized.
+                    // We can also do a fast path branch, I guess? No point in reallocating if the prefix is empty.
+                    key = NormalizeKey(key.Substring(_prefix.Length));
+                    data[key] = entry.Value as string;
+
+                    continue;
+                }
                 else
                 {
-                    AddIfPrefixed(data, NormalizeKey(key), (string)entry.Value);
                     continue;
                 }
 

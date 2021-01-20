@@ -1,14 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     internal sealed class ObjectWriter
     {
+        private const string ObjectWriterUnreferencedCodeMessage = "ObjectWriter requires unreferenced code";
+
         private Queue<object>? _objectQueue;
         private ObjectIDGenerator? _idGenerator;
         private int _currentId;
@@ -47,6 +49,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectManager = new SerializationObjectManager(context);
         }
 
+        [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
         internal void Serialize(object graph, BinaryFormatterWriter serWriter)
         {
             if (graph == null)
@@ -109,6 +112,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal SerializationObjectManager ObjectManager => _objectManager;
 
         // Writes a given object to the stream.
+        [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
         private void Write(WriteObjectInfo objectInfo, NameInfo memberNameInfo, NameInfo typeNameInfo)
         {
             object? obj = objectInfo._obj;
@@ -198,6 +202,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Writes a given object to the stream.
+        [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
         private void Write(WriteObjectInfo objectInfo,
                            NameInfo? memberNameInfo,
                            NameInfo typeNameInfo,
@@ -248,6 +253,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
+        [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
         private void WriteMemberSetup(WriteObjectInfo objectInfo,
                                       NameInfo memberNameInfo,
                                       NameInfo typeNameInfo,
@@ -283,6 +289,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Writes the members of an object
+        [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
         private void WriteMembers(NameInfo memberNameInfo,
                                   NameInfo memberTypeNameInfo,
                                   object? memberData,
@@ -397,6 +404,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Writes out an array
+        [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
         private void WriteArray(WriteObjectInfo objectInfo, NameInfo? memberNameInfo, WriteObjectInfo? memberObjectInfo)
         {
             bool isAllocatedMemberNameInfo = false;
@@ -569,6 +577,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Writes out an array element
+        [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
         private void WriteArrayMember(WriteObjectInfo objectInfo, NameInfo arrayElemTypeNameInfo, object? data)
         {
             arrayElemTypeNameInfo._isArrayItem = true;
@@ -654,6 +663,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Iterates over a Rectangle array, for each element of the array invokes WriteArrayMember
+        [RequiresUnreferencedCode(ObjectWriterUnreferencedCodeMessage)]
         private void WriteRectangle(WriteObjectInfo objectInfo, int rank, int[] maxA, Array array, NameInfo arrayElemNameTypeInfo, int[]? lowerBoundA)
         {
             int[] currentA = new int[rank];

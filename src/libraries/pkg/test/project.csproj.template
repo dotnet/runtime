@@ -9,6 +9,8 @@
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
 
+    <!-- Suppress any SYSLIB9000 errors, as in these cases restore/build would succeed, the failure would be at run-time -->
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     <SupportFilesDir Condition="'$(SupportFilesDir)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\support</SupportFilesDir>
   </PropertyGroup>
 

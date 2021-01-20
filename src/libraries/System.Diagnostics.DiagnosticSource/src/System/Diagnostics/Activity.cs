@@ -77,7 +77,7 @@ namespace System.Diagnostics
         private byte _w3CIdFlags;
 
         private TagsLinkedList? _tags;
-        private LinkedList<KeyValuePair<string, string?>>? _baggage;
+        private BaggageLinkedList? _baggage;
         private LinkedList<ActivityLink>? _links;
         private LinkedList<ActivityEvent>? _events;
         private Dictionary<string, object>? _customProperties;
@@ -432,9 +432,33 @@ namespace System.Diagnostics
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
 
-            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
+            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new BaggageLinkedList(kvp), null) != null)
             {
-                _baggage.AddFront(kvp);
+                _baggage.Add(kvp);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add or update the Activity baggage with the input key and value.
+        /// If the input value is null
+        ///     - if the collection has any baggage with the same key, then this baggage will get removed from the collection.
+        ///     - otherwise, nothing will happen and the collection will not change.
+        /// If the input value is not null
+        ///     - if the collection has any baggage with the same key, then the value mapped to this key will get updated with the new input value.
+        ///     - otherwise, the key and value will get added as a new baggage to the collection.
+        /// </summary>
+        /// <param name="key">The baggage key name</param>
+        /// <param name="value">The baggage value mapped to the input key</param>
+        /// <returns>'this' for convenient chaining</returns>
+        public Activity SetBaggage(string key, string? value)
+        {
+            KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
+
+            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new BaggageLinkedList(kvp, set: true), null) != null)
+            {
+                _baggage.Set(kvp);
             }
 
             return this;
@@ -833,7 +857,8 @@ namespace System.Diagnostics
             // The version (00-fe) is used to indicate that this is a WC3 ID.
             return id.Length == 55 &&
                    ('0' <= id[0] && id[0] <= '9' || 'a' <= id[0] && id[0] <= 'f') &&
-                   ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
+                   ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'f') &&
+                   (id[0] != 'f' || id[1] != 'f');
         }
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
@@ -1306,9 +1331,91 @@ namespace System.Diagnostics
                 }
             }
 
-            // Note: Some customers use this GetEnumerator dynamically to avoid allocations.
+            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
             public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
             IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        private class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
+        {
+            private LinkedListNode<KeyValuePair<string, string?>>? _first;
+
+            public BaggageLinkedList(KeyValuePair<string, string?> firstValue, bool set = false) => _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, string?>>(firstValue));
+
+            public LinkedListNode<KeyValuePair<string, string?>>? First => _first;
+
+            public void Add(KeyValuePair<string, string?> value)
+            {
+                LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+
+                lock (this)
+                {
+                    newNode.Next = _first;
+                    _first = newNode;
+                }
+            }
+
+            public void Set(KeyValuePair<string, string?> value)
+            {
+                if (value.Value == null)
+                {
+                    Remove(value.Key);
+                    return;
+                }
+
+                lock (this)
+                {
+                    LinkedListNode<KeyValuePair<string, string?>>? current = _first;
+                    while (current != null)
+                    {
+                        if (current.Value.Key == value.Key)
+                        {
+                            current.Value = value;
+                            return;
+                        }
+
+                        current = current.Next;
+                    }
+
+                    LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+                    newNode.Next = _first;
+                    _first = newNode;
+                }
+            }
+
+            public void Remove(string key)
+            {
+                lock (this)
+                {
+                    if (_first == null)
+                    {
+                        return;
+                    }
+
+                    if (_first.Value.Key == key)
+                    {
+                        _first = _first.Next;
+                        return;
+                    }
+
+                    LinkedListNode<KeyValuePair<string, string?>> previous = _first;
+
+                    while (previous.Next != null)
+                    {
+                        if (previous.Next.Value.Key == key)
+                        {
+                            previous.Next = previous.Next.Next;
+                            return;
+                        }
+                        previous = previous.Next;
+                    }
+                }
+            }
+
+            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
+            public Enumerator<KeyValuePair<string, string?>> GetEnumerator() => new Enumerator<KeyValuePair<string, string?>>(_first);
+            IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
@@ -1379,13 +1486,13 @@ namespace System.Diagnostics
 
             public void Remove(string key)
             {
-                if (_first == null)
-                {
-                    return;
-                }
 
                 lock (this)
                 {
+                    if (_first == null)
+                    {
+                        return;
+                    }
                     if (_first.Value.Key == key)
                     {
                         _first = _first.Next;
@@ -1442,7 +1549,7 @@ namespace System.Diagnostics
                 }
             }
 
-            // Note: Some customers use this GetEnumerator dynamically to avoid allocations.
+            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
             public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
             IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -1463,7 +1570,7 @@ namespace System.Diagnostics
             }
         }
 
-        // Note: Some customers use this Enumerator dynamically to avoid allocations.
+        // Note: Some consumers use this Enumerator dynamically to avoid allocations.
         private struct Enumerator<T> : IEnumerator<T>
         {
             private LinkedListNode<T>? _nextNode;

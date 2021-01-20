@@ -369,6 +369,7 @@ namespace System.Threading.Tests
 
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Operation is not supported on this platform.
         public static void ValuesGetterDoesNotThrowUnexpectedExceptionWhenDisposed()
         {
             var startTest = new ManualResetEvent(false);

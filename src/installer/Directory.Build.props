@@ -1,5 +1,4 @@
 <Project>
-
   <Import Project="..\..\Directory.Build.props" />
 
   <!--
@@ -24,18 +23,9 @@
 
   <!-- Platform detection -->
   <PropertyGroup>
-    <RunningOnUnix Condition="'$(OS)'!='Windows_NT'">true</RunningOnUnix>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetArchitecture  Condition="'$(TargetArchitecture)' == '' AND '$(BuildArchitecture)' == 'arm64'">$(BuildArchitecture)</TargetArchitecture>
-    <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
-    <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
-  </PropertyGroup>
-
-
-  <PropertyGroup>
-    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
+    <RunningOnUnix Condition="'$(OS)' != 'Windows_NT'">true</RunningOnUnix>
+    <!-- Don't set platform too early as test app paths are currently hardcoded. -->
+    <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DisableSourceLink)' == 'true'">
@@ -46,14 +36,10 @@
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
     <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
   </PropertyGroup>
 
