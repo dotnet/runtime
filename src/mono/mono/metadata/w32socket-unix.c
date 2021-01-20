@@ -943,12 +943,18 @@ mono_w32socket_setsockopt (SOCKET sock, gint level, gint optname, gconstpointer 
 #if defined (__linux__)
 	else if (level == SOL_SOCKET &&
 		   (optname == SO_SNDBUF || optname == SO_RCVBUF)) {
+		
+		/*
+	         * bufsize = *((int *) optval); is undefined behaviour, so we use memcpy.
+	         * Don't worry about performance, memcpy will optimize by gcc .
+		 * or build with -fno-strict-aliasing option in gcc
+		 */
+		memcpy(&bufsize, optval, sizeof(int));
+
 		/* According to socket(7) the Linux kernel doubles the
 		 * buffer sizes "to allow space for bookkeeping
 		 * overhead."
 		 */
-		bufsize = *((int *) optval);
-
 		bufsize /= 2;
 		tmp_val = &bufsize;
 	}
