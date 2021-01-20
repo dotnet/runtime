@@ -127,7 +127,7 @@ the error code. For example:
 
 #### `IL1037`: Invalid assembly root mode '{mode}'
 
-#### `IL1038`: Exported type '{type.Name}' cannot be rooted
+#### `IL1038`: Exported type '{type.Name}' cannot be resolved
 
 ----
 ## Warning Codes

@@ -108,9 +108,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private IEnumerable<NPath> CompileBeforeTestCaseAssemblies (NPath outputDirectory, NPath[] references, string[] defines, IList<NPath> removeFromLinkerInputAssemblies)
 		{
 			foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesBefore ()) {
+				NPath outputFolder;
+				if (setupCompileInfo.OutputSubFolder == null) {
+					outputFolder = outputDirectory;
+				} else {
+					outputFolder = outputDirectory.Combine (setupCompileInfo.OutputSubFolder);
+					Directory.CreateDirectory (outputFolder.ToString ());
+				}
+
 				var options = CreateOptionsForSupportingAssembly (
 					setupCompileInfo,
-					outputDirectory,
+					outputFolder,
 					CollectSetupBeforeSourcesFiles (setupCompileInfo),
 					references,
 					defines,

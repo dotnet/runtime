@@ -341,7 +341,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AdditionalArguments = (string) ctorArguments[5].Value,
 				CompilerToUse = (string) ctorArguments[6].Value,
 				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments[7].Value : true,
-				RemoveFromLinkerInput = ctorArguments.Count >= 9 ? (bool) ctorArguments[8].Value : false
+				RemoveFromLinkerInput = ctorArguments.Count >= 9 ? (bool) ctorArguments[8].Value : false,
+				OutputSubFolder = ctorArguments.Count >= 10 ? (string) ctorArguments[9].Value : null
 			};
 		}
 

@@ -34,10 +34,6 @@ namespace Mono.Linker
 		Nothing, // This is actually Declaration
 		All,
 		Fields,
-		Methods,
-
-		AccessibilityVisible = 1 << 8,
-		AccessibilityVisibleOrInternal = 1 << 9,
-		AccessibilityMask = AccessibilityVisible | AccessibilityVisibleOrInternal,
+		Methods
 	}
 }

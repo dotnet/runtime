@@ -20,11 +20,6 @@ namespace Mono.Linker.Tests
 		[TestCase (TypePreserve.Nothing, TypePreserve.All, TypePreserve.All)]
 		[TestCase (TypePreserve.Nothing, TypePreserve.Methods, TypePreserve.Methods)]
 		[TestCase (TypePreserve.Nothing, TypePreserve.Fields, TypePreserve.Fields)]
-		[TestCase (TypePreserve.All, TypePreserve.All | TypePreserve.AccessibilityVisible, TypePreserve.All)]
-		[TestCase (TypePreserve.AccessibilityVisibleOrInternal, TypePreserve.All, TypePreserve.All)]
-		[TestCase (TypePreserve.All | TypePreserve.AccessibilityVisible, TypePreserve.All | TypePreserve.AccessibilityVisible, TypePreserve.All | TypePreserve.AccessibilityVisible)]
-		[TestCase (TypePreserve.Nothing, TypePreserve.All | TypePreserve.AccessibilityVisible, TypePreserve.All | TypePreserve.AccessibilityVisible)]
-		[TestCase (TypePreserve.All | TypePreserve.AccessibilityVisibleOrInternal, TypePreserve.Nothing, TypePreserve.All | TypePreserve.AccessibilityVisibleOrInternal)]
 		public void VerifyBehaviorOfChoosePreserveActionWhichPreservesTheMost (TypePreserve left, TypePreserve right, TypePreserve expected)
 		{
 			Assert.That (expected, Is.EqualTo (AnnotationStore.ChoosePreserveActionWhichPreservesTheMost (left, right)));

@@ -6,7 +6,6 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
 	public class KeptMemberInAssemblyAttribute : BaseInAssemblyAttribute
 	{
-
 		public KeptMemberInAssemblyAttribute (string assemblyFileName, Type type, params string[] memberNames)
 		{
 			if (string.IsNullOrEmpty (assemblyFileName))
@@ -26,5 +25,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			if (memberNames == null)
 				throw new ArgumentNullException (nameof (memberNames));
 		}
+
+		public string ExpectationAssemblyName { get; set; }
 	}
 }
