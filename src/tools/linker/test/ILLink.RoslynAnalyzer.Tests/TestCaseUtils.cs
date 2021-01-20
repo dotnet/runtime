@@ -11,7 +11,6 @@ using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
