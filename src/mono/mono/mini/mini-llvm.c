@@ -1230,7 +1230,7 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 		// printf ("\n");
 		// printf ("XXXih: convert_full failure:\n");
 		mono_llvm_dump_value (v);
-		mono_llvm_dump_value (LLVMConstNull (dtype));
+		mono_llvm_dump_type (dtype);
 		printf ("\n");
 		// printf ("XXXih: method_name = %s\n", ctx->method_name);
 		// printf ("XXXih: module:\n");
@@ -3734,6 +3734,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		switch (ainfo->storage) {
 		case LLVMArgVtypeInReg:
 		case LLVMArgVtypeByVal:
+		case LLVMArgAsIArgs:
 #ifdef ENABLE_NETCORE
 			// FIXME: Enabling this fails on windows
 		case LLVMArgVtypeAddr:
@@ -9613,6 +9614,7 @@ emit_method_inner (EmitContext *ctx)
 		linfo->rgctx_arg = TRUE;
 	else if (needs_extra_arg (ctx, cfg->method))
 		linfo->dummy_arg = TRUE;
+
 	ctx->method_type = method_type = sig_to_llvm_sig_full (ctx, sig, linfo);
 	if (!ctx_ok (ctx))
 		return;
