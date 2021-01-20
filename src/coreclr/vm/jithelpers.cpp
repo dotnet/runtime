@@ -5407,7 +5407,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 #endif // DEBUGGING_SUPPORTED
 }
 
-// The following three methods are special.
+// The following JIT_ReversePInvoke helpers are special.
 // They handle setting up Reverse P/Invoke calls and transitioning back to unmanaged code.
 // As a result, we may not have a thread in JIT_ReversePInvokeEnter and we will be in the wrong GC mode for the HCALL prolog.
 // Additionally, we set up and tear down SEH handlers when we're on x86, so we can't use dynamic contracts anyway.
