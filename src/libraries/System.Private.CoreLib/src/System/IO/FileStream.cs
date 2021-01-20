@@ -49,10 +49,10 @@ namespace System.IO
                 switch (isAsync)
                 {
                     case true:
-                        _impl = new FileStreamImpl(safeHandle, access, bufferSize, true);
+                        _impl = new FileStreamImpl(this, safeHandle, access, bufferSize, true);
                         return;
                     case false:
-                        _impl = new FileStreamImpl(safeHandle, access, bufferSize, false);
+                        _impl = new FileStreamImpl(this, safeHandle, access, bufferSize, false);
                         return;
                 }
             }
@@ -103,10 +103,10 @@ namespace System.IO
             switch (isAsync)
             {
                 case true:
-                    _impl = new FileStreamImpl(handle, access, bufferSize, true);
+                    _impl = new FileStreamImpl(this, handle, access, bufferSize, true);
                     return;
                 case false:
-                    _impl = new FileStreamImpl(handle, access, bufferSize, false);
+                    _impl = new FileStreamImpl(this, handle, access, bufferSize, false);
                     return;
             }
         }
@@ -179,11 +179,11 @@ namespace System.IO
 
             if ((options & FileOptions.Asynchronous) != 0)
             {
-                _impl = new FileStreamImpl(path, mode, access, share, bufferSize, options);
+                _impl = new FileStreamImpl(this, path, mode, access, share, bufferSize, options);
             }
             else
             {
-                _impl = new FileStreamImpl(path, mode, access, share, bufferSize, options);
+                _impl = new FileStreamImpl(this, path, mode, access, share, bufferSize, options);
             }
         }
 
@@ -524,7 +524,15 @@ namespace System.IO
             return _impl.DisposeAsync();
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => _impl.CopyToAsync(destination, bufferSize, cancellationToken);
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            if (GetType() != typeof(FileStream))
+            {
+                base.CopyToAsync(destination, bufferSize, cancellationToken);
+            }
+
+            return _impl.CopyToAsync(destination, bufferSize, cancellationToken);
+        }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
@@ -575,5 +583,8 @@ namespace System.IO
         public override bool CanSeek => _impl.CanSeek;
 
         public override long Seek(long offset, SeekOrigin origin) => _impl.Seek(offset, origin);
+
+        internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            => base.CopyToAsync(destination, bufferSize, cancellationToken);
     }
 }

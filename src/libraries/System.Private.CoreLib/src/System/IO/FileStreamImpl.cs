@@ -60,7 +60,7 @@ namespace System.IO
         /// <summary>Whether the file stream's handle has been exposed.</summary>
         private bool _exposedHandle;
 
-        internal FileStreamImpl(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        internal FileStreamImpl(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
         {
             _exposedHandle = true;
             _bufferLength = bufferSize;
@@ -77,7 +77,7 @@ namespace System.IO
             _fileHandle = handle;
         }
 
-        internal FileStreamImpl(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        internal FileStreamImpl(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options) : base(fileStream)
         {
             string fullPath = Path.GetFullPath(path);
 

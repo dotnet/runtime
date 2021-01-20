@@ -1244,7 +1244,7 @@ namespace System.IO
             // case our custom CopyToAsync implementation isn't necessarily correct.
             if (!_useAsyncIO)
             {
-                return base.CopyToAsync(destination, bufferSize, cancellationToken);
+                return _fileStream.BaseCopyToAsync(destination, bufferSize, cancellationToken);
             }
 
             ValidateCopyToArguments(destination, bufferSize);
