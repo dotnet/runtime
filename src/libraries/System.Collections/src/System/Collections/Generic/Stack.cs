@@ -288,6 +288,33 @@ namespace System.Collections.Generic
             _size++;
         }
 
+        /// <summary>
+        /// Ensures that the capacity of this Stack is at least the specified <paramref name="capacity"/>.
+        /// If the current capacity of the Stack is less than specified <paramref name="capacity"/>,
+        /// the capacity is increased to twice the current capacity or to <paramref name="capacity"/>,
+        /// whichever is larger.
+        /// </summary>
+        /// <param name="capacity">The minimum capacity to ensure</param>
+        public int EnsureCapacity(int capacity)
+        {
+            if (capacity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (_array.Length < capacity)
+            {
+                int newCapacity = (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length;
+                while (newCapacity < capacity)
+                {
+                    newCapacity *= 2;
+                }
+                Array.Resize(ref _array, newCapacity);
+            }
+
+            return _array.Length;
+        }
+
         // Copies the Stack to an array, in the same order Pop would return the items.
         public T[] ToArray()
         {

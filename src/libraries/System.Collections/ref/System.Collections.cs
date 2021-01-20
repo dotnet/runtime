@@ -324,6 +324,7 @@ namespace System.Collections.Generic
         public void CopyTo(int index, T[] array, int arrayIndex, int count) { }
         public void CopyTo(T[] array) { }
         public void CopyTo(T[] array, int arrayIndex) { }
+        public int EnsureCapacity(int capacity) { throw null; }
         public bool Exists(System.Predicate<T> match) { throw null; }
         public T? Find(System.Predicate<T> match) { throw null; }
         public System.Collections.Generic.List<T> FindAll(System.Predicate<T> match) { throw null; }
@@ -699,6 +700,7 @@ namespace System.Collections.Generic
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public int EnsureCapacity(int capacity) { throw null; }
         public T[] ToArray() { throw null; }
         public void TrimExcess() { }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
