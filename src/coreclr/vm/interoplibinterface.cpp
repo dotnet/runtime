@@ -1530,7 +1530,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     {
         GCX_COOP();
 
-        // TrackerObject support and unwrapping matches the built-in semantics that the global scenario mimics.
+        // TrackerObject support and unwrapping matches the built-in semantics that the global marshalling scenario mimics.
         int flags = CreateObjectFlags::CreateObjectFlags_TrackerObject | CreateObjectFlags::CreateObjectFlags_Unwrap;
         if ((objFromComIPFlags & ObjFromComIP::UNIQUE_OBJECT) != 0)
             flags |= CreateObjectFlags::CreateObjectFlags_UniqueInstance;
@@ -1609,16 +1609,13 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
         _ASSERTE(hr == S_OK);
     }
 
-    // TrackerObject support and unwrapping matches the built-in semantics that the global scenario mimics.
-    int flags = CreateObjectFlags::CreateObjectFlags_TrackerObject | CreateObjectFlags::CreateObjectFlags_Unwrap;
-
     // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
     return TryGetOrCreateObjectForComInstanceInternal(
         NULL /*comWrappersImpl*/,
         g_trackerSupportGlobalInstanceId,
         identity,
         NULL,
-        (CreateObjectFlags)flags,
+        CreateObjectFlags::CreateObjectFlags_TrackerObject,
         ComWrappersScenario::TrackerSupportGlobalInstance,
         NULL /*wrapperMaybe*/,
         objRef);

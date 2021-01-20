@@ -134,8 +134,8 @@ namespace InteropLib
             RETURN_IF_FAILED(checkForIdentity->QueryInterface(&identityLocal));
 
             // Set the inner if scenario dictates an update.
-            if (*innerMaybe == nullptr          // User didn't supply inner - legacy scenario sanity check.
-                && checkForIdentity != external // Target of check was changed - legacy scenario sanity check.
+            if (*innerMaybe == nullptr          // User didn't supply inner - .NET 5 API scenario sanity check.
+                && checkForIdentity != external // Target of check was changed - .NET 5 API scenario sanity check.
                 && external != identityLocal    // The supplied object doesn't match the computed identity.
                 && refTrackerInnerScenario)     // The appropriate flags were set.
             {
