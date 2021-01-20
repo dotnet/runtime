@@ -486,11 +486,13 @@ namespace System.Numerics
             for (len = value.Length; len > 0 && value[len - 1] == 0; len--);
 
             if (len == 0)
+            {
                 this = s_bnZeroInt;
-            // Values like (Int32.MaxValue+1) are stored as "0x80000000" and as such cannot be packed into _sign
+            }
             else if (len == 1 && value[0] < kuMaskHighBit)
             {
-                _sign = (negative ? -(int)value[0] : (int)value[0]);
+                // Values like (Int32.MaxValue+1) are stored as "0x80000000" and as such cannot be packed into _sign
+                _sign = negative ? -(int)value[0] : (int)value[0];
                 _bits = null;
                 // Although Int32.MinValue fits in _sign, we represent this case differently for negate
                 if (_sign == int.MinValue)
