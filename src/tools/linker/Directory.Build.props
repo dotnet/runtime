@@ -18,6 +18,7 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/mono/linker</RepositoryUrl>
     <_ToolsProjectTargets>$(ArtifactsToolsetDir)Common\Tools.proj.nuget.g.targets</_ToolsProjectTargets>
     <!-- Set this to true to build against the package instead of the submodule. -->
     <UseCecilPackage Condition="'$(UseCecilPackage)' == ''">false</UseCecilPackage>
@@ -26,4 +27,7 @@
     <DebugType Condition=" '$(IsReferenceAssembly)' == 'true' ">none</DebugType>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
 </Project>

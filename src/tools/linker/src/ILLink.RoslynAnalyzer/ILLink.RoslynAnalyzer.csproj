@@ -2,9 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
     <OutputType>Library</OutputType>
-    <Nullable>enable</Nullable>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
     <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -15,7 +13,6 @@
     <IsPackable>true</IsPackable>
     <PackageId>Microsoft.NET.ILLink.Analyzers</PackageId>
     <Authors>Microsoft</Authors>
-    <RepositoryUrl>https://github.com/mono/linker</RepositoryUrl>
     <Description>Analyzer utilities for ILLink attributes and single-file</Description>
     <NoPackageAnalysis>true</NoPackageAnalysis>
   </PropertyGroup>

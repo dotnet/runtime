@@ -6,12 +6,6 @@
     <AnalysisLevel>0</AnalysisLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <LangVersion>Latest</LangVersion>
-    <RunAnalyzers>false</RunAnalyzers>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -66,10 +60,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Security.Permissions" Version="4.5.0" />
-    <PackageReference Include="NUnit" Version="3.6.1" />
-    <PackageReference Include="NUnit.ConsoleRunner" Version="3.6.1" />
-    <PackageReference Include="NUnit.Extension.NUnitV2ResultWriter" Version="3.5.0" />
+    <PackageReference Include="System.Security.Permissions" Version="5.0.0" />
   </ItemGroup>
 
 </Project>

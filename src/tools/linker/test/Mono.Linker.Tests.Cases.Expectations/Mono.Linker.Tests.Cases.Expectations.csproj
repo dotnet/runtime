@@ -1,12 +1,2 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <LangVersion>latest</LangVersion>
-    <RunAnalyzers>false</RunAnalyzers>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-  </PropertyGroup>
-
 </Project>

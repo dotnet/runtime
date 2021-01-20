@@ -5,7 +5,6 @@
     <TargetFrameworks>net5.0;net472</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Description>MSBuild tasks for running the IL Linker</Description>
-    <LangVersion>latest</LangVersion>
     <IsPackable>true</IsPackable>
     <PackageId>Microsoft.NET.ILLink.Tasks</PackageId>
     <!-- We want to package the tasks package together with its
@@ -19,7 +18,7 @@
     <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
     <!-- Place linker and cecil alongside ILLink.Tasks in the output, for integration tests. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <RunAnalyzers>true</RunAnalyzers>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
