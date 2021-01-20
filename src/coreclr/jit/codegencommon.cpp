@@ -6283,10 +6283,11 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 #elif defined(TARGET_ARM64)
         int bytesToWrite = untrLclHi - untrLclLo;
 
-        const regNumber zeroSimdReg   = REG_ZERO_INIT_FRAME_SIMD;
-        bool            simdRegZeroed = false;
+        const regNumber zeroSimdReg          = REG_ZERO_INIT_FRAME_SIMD;
+        bool            simdRegZeroed        = false;
+        const int       simdRegPairSizeBytes = 2 * FP_REGSIZE_BYTES;
 
-        const regNumber addrReg = REG_ZERO_INIT_FRAME_ADDR;
+        regNumber addrReg = REG_ZERO_INIT_FRAME_REG1;
 
         if (addrReg == initReg)
         {
@@ -6307,6 +6308,28 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         {
             // Generates the following code:
             //
+            // When the size of the region is greater than or equal to 320 bytes
+            // **and** DC ZVA instruction use is permitted
+            // **and** the instruction block size is configured to 64 bytes:
+            //
+            //    movi    v16.16b, #0
+            //    add     x9, fp, #(untrLclLo+64)
+            //    add     x10, fp, #(untrLclHi-64)
+            //    stp     q16, q16, [x9, #-64]
+            //    stp     q16, q16, [x9, #-32]
+            //    bfm     x9, xzr, #0, #5
+            //
+            // loop:
+            //    dc      zva, x9
+            //    add     x9, x9, #64
+            //    cmp     x9, x10
+            //    blo     loop
+            //
+            //    stp     q16, q16, [x10]
+            //    stp     q16, q16, [x10, #32]
+            //
+            // Otherwise:
+            //
             //     movi    v16.16b, #0
             //     add     x9, fp, #(untrLclLo-32)
             //     mov     x10, #(bytesToWrite-64)
@@ -6317,38 +6340,77 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             //     subs    x10, x10, #64
             //     bge     loop
 
+            const int bytesUseDataCacheZeroInstruction = 320;
+
             GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, zeroSimdReg, 0, INS_OPTS_16B);
             simdRegZeroed = true;
 
-            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo - 32, addrReg);
-            addrOffset = 32;
-
-            const regNumber countReg = REG_ZERO_INIT_FRAME_COUNT;
-
-            if (countReg == initReg)
+            if ((bytesToWrite >= bytesUseDataCacheZeroInstruction) &&
+                compiler->compOpportunisticallyDependsOn(InstructionSet_Dczva))
             {
-                *pInitRegZeroed = false;
+                // The first and the last 64 bytes should be written with two stp q-reg instructions.
+                // This is in order to avoid **unintended** zeroing of the data by dc zva
+                // outside of [fp+untrLclLo, fp+untrLclHi) memory region.
+
+                genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo + 64, addrReg);
+                addrOffset = -64;
+
+                const regNumber endAddrReg = REG_ZERO_INIT_FRAME_REG2;
+
+                if (endAddrReg == initReg)
+                {
+                    *pInitRegZeroed = false;
+                }
+
+                genInstrWithConstant(INS_add, EA_PTRSIZE, endAddrReg, genFramePointerReg(), untrLclHi - 64, endAddrReg);
+
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, addrOffset);
+                addrOffset += simdRegPairSizeBytes;
+
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, addrOffset);
+                addrOffset += simdRegPairSizeBytes;
+
+                assert(addrOffset == 0);
+
+                GetEmitter()->emitIns_R_R_I_I(INS_bfm, EA_PTRSIZE, addrReg, REG_ZR, 0, 5);
+                // addrReg points at the beginning of a cache line.
+
+                GetEmitter()->emitIns_R(INS_dczva, EA_PTRSIZE, addrReg);
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, addrReg, addrReg, 64);
+                GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, addrReg, endAddrReg);
+                GetEmitter()->emitIns_J(INS_blo, NULL, -4);
+
+                addrReg      = endAddrReg;
+                bytesToWrite = 64;
             }
+            else
+            {
+                genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo - 32, addrReg);
+                addrOffset = 32;
 
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, countReg, bytesToWrite - 64);
+                const regNumber countReg = REG_ZERO_INIT_FRAME_REG2;
 
-            // TODO-ARM64-CQ: Consider using the DC ZVA (Data Cache Zero by Address) instruction.
+                if (countReg == initReg)
+                {
+                    *pInitRegZeroed = false;
+                }
 
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 32);
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 64,
-                                          INS_OPTS_PRE_INDEX);
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, countReg, bytesToWrite - 64);
 
-            GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, countReg, countReg, 64);
-            GetEmitter()->emitIns_J(INS_bge, NULL, -4);
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 32);
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, 64,
+                                              INS_OPTS_PRE_INDEX);
 
-            bytesToWrite %= 64;
+                GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, countReg, countReg, 64);
+                GetEmitter()->emitIns_J(INS_bge, NULL, -4);
+
+                bytesToWrite %= 64;
+            }
         }
         else
         {
             genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo, addrReg);
         }
-
-        const int simdRegPairSizeBytes = 2 * FP_REGSIZE_BYTES;
 
         if (bytesToWrite >= simdRegPairSizeBytes)
         {
