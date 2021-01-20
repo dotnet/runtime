@@ -95,8 +95,9 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
     }
     if (isFloatHfa)
     {
+        _ASSERTE((parmSize % 4) == 0);
         // float hfa is not considered a struct type and passed with 4-byte alignment.
-        return sizeof(float);
+        return parmSize;
     }
 #endif
 
