@@ -919,5 +919,15 @@ public struct IntStructWrapperNative
     public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
 }
 ";
+
+        public static string SafeHandleWithCustomDefaultConstructorAccessibility(bool privateCtor) => BasicParametersAndModifiers("MySafeHandle") + $@"
+class MySafeHandle : SafeHandle
+{{
+    {(privateCtor ? "private" : "public")} MySafeHandle() : base(System.IntPtr.Zero, true) {{ }}
+
+    public override bool IsInvalid => handle == System.IntPtr.Zero;
+
+    protected override bool ReleaseHandle() => true;
+}}";
     }
 }

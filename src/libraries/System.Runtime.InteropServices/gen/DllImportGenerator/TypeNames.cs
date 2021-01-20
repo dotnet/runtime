@@ -22,6 +22,8 @@ namespace Microsoft.Interop
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
 
+        public const string System_Activator = "System.Activator";
+
         public const string System_Runtime_InteropServices_StructLayoutAttribute = "System.Runtime.InteropServices.StructLayoutAttribute";
 
         public const string System_Runtime_InteropServices_MarshalAsAttribute = "System.Runtime.InteropServices.MarshalAsAttribute";

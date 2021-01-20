@@ -133,9 +133,10 @@ namespace Microsoft.Interop
                 // Since we're generating source for the method, we know that the current type
                 // has to be declared in source.
                 TypeDeclarationSyntax typeDecl = (TypeDeclarationSyntax)currType.DeclaringSyntaxReferences[0].GetSyntax();
-                // Remove current members and attributes so we don't double declare them.
+                // Remove current members, attributes, and base list so we don't double declare them.
                 typeDecl = typeDecl.WithMembers(List<MemberDeclarationSyntax>())
-                                   .WithAttributeLists(List<AttributeListSyntax>());
+                                   .WithAttributeLists(List<AttributeListSyntax>())
+                                   .WithBaseList(null);
 
                 containingTypes.Add(typeDecl);
 
@@ -162,7 +163,7 @@ namespace Microsoft.Interop
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 var param = method.Parameters[i];
-                var typeInfo = TypePositionInfo.CreateForParameter(param, defaultInfo, env.Compilation, diagnostics);
+                var typeInfo = TypePositionInfo.CreateForParameter(param, defaultInfo, env.Compilation, diagnostics, method.ContainingType);
                 typeInfo = typeInfo with 
                 {
                     ManagedIndex = i,
@@ -171,7 +172,7 @@ namespace Microsoft.Interop
                 paramsTypeInfo.Add(typeInfo);
             }
 
-            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes(), defaultInfo, env.Compilation, diagnostics);
+            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes(), defaultInfo, env.Compilation, diagnostics, method.ContainingType);
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,

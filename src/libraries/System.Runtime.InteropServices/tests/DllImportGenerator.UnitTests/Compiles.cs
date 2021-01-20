@@ -124,6 +124,8 @@ namespace DllImportGenerator.UnitTests
 
             // SafeHandle
             yield return new[] { CodeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle") };
+            yield return new[] { CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: false) };
+            yield return new[] { CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: true) };
 
             // PreserveSig
             yield return new[] { CodeSnippets.PreserveSigFalseVoidReturn };

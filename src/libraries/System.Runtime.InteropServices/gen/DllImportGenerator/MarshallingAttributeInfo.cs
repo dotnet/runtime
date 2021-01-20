@@ -103,7 +103,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
     /// </summary>
-    internal sealed record SafeHandleMarshallingInfo : MarshallingInfo;
+    internal sealed record SafeHandleMarshallingInfo(bool AccessibleDefaultConstructor) : MarshallingInfo;
 
 
     /// <summary>

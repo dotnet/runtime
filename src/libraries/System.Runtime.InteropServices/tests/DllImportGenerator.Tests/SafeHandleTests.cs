@@ -7,7 +7,7 @@ namespace DllImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
-        public class NativeExportsSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
+        public partial class NativeExportsSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             private NativeExportsSafeHandle() : base(ownsHandle: true)
             { }
@@ -18,6 +18,12 @@ namespace DllImportGenerator.IntegrationTests
                 Assert.True(didRelease);
                 return didRelease;
             }
+
+            public static NativeExportsSafeHandle CreateNewHandle() => AllocateHandle();
+
+            
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle")]
+            private static partial NativeExportsSafeHandle AllocateHandle();
         }
 
         [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "alloc_handle")]
@@ -44,6 +50,14 @@ namespace DllImportGenerator.IntegrationTests
         public void ReturnValue_CreatesSafeHandle()
         {
             using NativeExportsNE.NativeExportsSafeHandle handle = NativeExportsNE.AllocateHandle();
+            Assert.False(handle.IsClosed);
+            Assert.False(handle.IsInvalid);
+        }
+
+        [Fact]
+        public void ReturnValue_CreatesSafeHandle_DirectConstructorCall()
+        {
+            using NativeExportsNE.NativeExportsSafeHandle handle = NativeExportsNE.NativeExportsSafeHandle.CreateNewHandle();
             Assert.False(handle.IsClosed);
             Assert.False(handle.IsInvalid);
         }
