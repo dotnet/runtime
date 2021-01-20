@@ -16,6 +16,10 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
+        // This file is shared with the WinHttpHandler implementation, which supports .NET Framework
+        // So, define this so derived tests can use it.
+        public static readonly Version HttpVersion30 = new Version(3, 0);
+
         public readonly ITestOutputHelper _output;
 
         protected virtual Version UseVersion => HttpVersion.Version11;
