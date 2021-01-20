@@ -825,5 +825,5 @@ void
 mini_llvmonly_pop_lmf (MonoLMF *lmf)
 {
 	if (lmf->previous_lmf)
-		mono_set_lmf (lmf->previous_lmf);
+		mono_set_lmf ((MonoLMF*)lmf->previous_lmf);
 }
