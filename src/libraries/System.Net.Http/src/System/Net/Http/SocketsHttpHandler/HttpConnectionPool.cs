@@ -120,7 +120,7 @@ namespace System.Net.Http
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            _http3Enabled = _poolManager.Settings._maxHttpVersion >= Http3Connection.HttpVersion30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+            _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
 
             switch (kind)
             {
