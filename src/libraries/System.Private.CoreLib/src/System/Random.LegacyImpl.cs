@@ -17,8 +17,9 @@ namespace System
         /// </summary>
         private sealed class LegacyImpl : ImplBase
         {
+            /// <summary>Thread-static instance used to seed any legacy implementations created with the default ctor.</summary>
             [ThreadStatic]
-            private static Xoshiro128StarStarImpl? t_seedGenerator;
+            private static ImplBase? t_seedGenerator;
 
             /// <summary>Reference to the <see cref="Random"/> containing this implementation instance.</summary>
             /// <remarks>Used to ensure that any calls to other virtual members are performed using the Random-derived instance, if one exists.</remarks>
@@ -27,7 +28,7 @@ namespace System
             private int _inext;
             private int _inextp;
 
-            public LegacyImpl(Random parent) : this(parent, (t_seedGenerator ??= new()).Next())
+            public LegacyImpl(Random parent) : this(parent, (t_seedGenerator ??= CreateDefaultImpl()).Next())
             {
             }
 

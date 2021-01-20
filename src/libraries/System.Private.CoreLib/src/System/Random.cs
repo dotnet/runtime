@@ -24,10 +24,12 @@ namespace System
             // With no seed specified, if this is the base type, we can implement this however we like.
             // If it's a derived type, for compat we respect the previous implementation, so that overrides
             // are called as they were previously.
-            _impl =
-                GetType() != typeof(Random) ? new LegacyImpl(this) :
-                IntPtr.Size == 8 ? new Xoshiro256StarStarImpl() :
-                new Xoshiro128StarStarImpl();
+            _impl = GetType() == typeof(Random) ? CreateDefaultImpl() : new LegacyImpl(this);
+
+        /// <summary>Creates the default, optimized implementation used for `new Random()`.</summary>
+        private static ImplBase CreateDefaultImpl() => IntPtr.Size == 8 ?
+            new Xoshiro256StarStarImpl() : // optimized for 64-bit
+            new Xoshiro128StarStarImpl();  // optimized for 32-bit
 
         /// <summary>Initializes a new instance of the Random class, using the specified seed value.</summary>
         /// <param name="Seed">
