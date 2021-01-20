@@ -1045,6 +1045,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			protected class ProtectedBaseNestedType { }
 			private class PrivateBaseNestedType { }
 			public class HideBaseNestedType { }
+			public delegate int PublicDelegate ();
+			private delegate int PrivateDelegate ();
 		}
 
 		[Kept]
@@ -1057,6 +1059,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private class PrivateNestedType { }
 			[Kept]
 			public class HideNestedType { }
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			public delegate int PublicDelegate ();
+
+			private delegate int PrivateDelegate ();
 		}
 
 
@@ -1076,6 +1086,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			protected class ProtectedBaseNestedType { }
 			private class PrivateBaseNestedType { }
 			public class HideBaseNestedType { }
+			public delegate int PublicDelegate ();
+			private delegate int PrivateDelegate ();
 		}
 
 		[Kept]
@@ -1088,6 +1100,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			private class PrivateNestedType { }
 			public class HideNestedType { }
+
+			public delegate int PublicDelegate ();
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			private delegate int PrivateDelegate ();
 		}
 
 
@@ -1107,6 +1127,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			protected class ProtectedBaseNestedType { }
 			private class PrivateBaseNestedType { }
 			public class HideBaseNestedType { }
+			public delegate int PublicBaseDelegate ();
+			private delegate int PrivateBaseDelegate ();
 		}
 
 		[Kept]
@@ -1121,6 +1143,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private class PrivateNestedType { }
 			[Kept]
 			public class HideNestedType { }
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			public delegate int PublicDelegate ();
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			private delegate int PrivateDelegate ();
 		}
 
 
@@ -1694,6 +1728,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptMember (".ctor()")]
 			public class HideBaseNestedType { }
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
+			public delegate int PublicBaseDelegate ();
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
+			private delegate int PrivateBaseDelegate ();
 		}
 
 		[Kept]
@@ -1846,6 +1896,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptMember (".ctor()")]
 			public class HideNestedType { }
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
+			public delegate int PublicDelegate ();
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
+			private delegate int PrivateDelegate ();
 		}
 
 		[Kept]
