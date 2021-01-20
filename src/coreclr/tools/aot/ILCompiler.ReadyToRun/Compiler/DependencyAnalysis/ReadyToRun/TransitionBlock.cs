@@ -32,7 +32,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return Arm32TransitionBlock.Instance;
 
                 case TargetArchitecture.ARM64:
-                    return Arm64TransitionBlock.Instance;
+                    return target.OperatingSystem == TargetOS.OSX ?
+                    AppleArm64TransitionBlock.Instance :
+                    Arm64TransitionBlock.Instance;
 
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());
@@ -57,9 +59,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         public virtual bool IsX64UnixABI => false;
 
+        /// <summary>
+        /// This property is only overridden in Arm64 MacOS variant of the transition block.
+        /// </summary>
+        public virtual bool IsAppleArm64ABI => false;
+
         public abstract int PointerSize { get; }
 
-        public int StackElemSize(int size) => (((size) + PointerSize - 1) & -PointerSize);
+        public int StackElemSize(int size, bool isValueType = false, bool isFloatHfa = false)
+        {
+            Debug.Assert(isValueType || !isFloatHfa);
+            if (IsAppleArm64ABI)
+            {
+                if (!isValueType)
+                {
+                    Debug.Assert((size & (size - 1)) == 0);
+                    return size;
+                }
+                if (isFloatHfa)
+                {
+                    Debug.Assert((size % 4) == 0);
+                    return size;
+                }
+            }
+
+            return (((size) + PointerSize - 1) & -PointerSize);
+        }
 
         public abstract int NumArgumentRegisters { get; }
 
@@ -514,7 +539,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? PointerSize : 0);
         }
 
-        private sealed class Arm64TransitionBlock : TransitionBlock
+        private class Arm64TransitionBlock : TransitionBlock
         {
             public static TransitionBlock Instance = new Arm64TransitionBlock();
 
@@ -547,6 +572,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfX8Register;
 
             public override bool IsRetBuffPassedAsFirstArg => false;
+        }
+
+        private sealed class AppleArm64TransitionBlock : Arm64TransitionBlock
+        {
+            public override bool IsAppleArm64ABI => true;
         }
     }
 }

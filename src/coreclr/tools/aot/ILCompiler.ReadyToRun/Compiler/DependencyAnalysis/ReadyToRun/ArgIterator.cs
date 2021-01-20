@@ -1190,6 +1190,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         int cFPRegs = 0;
 
+                        bool isValueType = false;
+                        bool isFloatHFA = false;
+
                         switch (argType)
                         {
                             case CorElementType.ELEMENT_TYPE_R4:
@@ -1204,6 +1207,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                             case CorElementType.ELEMENT_TYPE_VALUETYPE:
                                 {
+                                    isValueType = true;
                                     // Handle HAs: packed structures of 1-4 floats, doubles, or short vectors
                                     // that are passed in FP argument registers if possible.
                                     if (_argTypeHandle.IsHomogeneousAggregate())
@@ -1212,6 +1216,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                         _argLocDescForStructInRegs.m_idxFloatReg = _arm64IdxFPReg;
 
                                         int haElementSize = _argTypeHandle.GetHomogeneousAggregateElementSize();
+                                        if (haElementSize == 4)
+                                        {
+                                            isFloatHFA = true;
+                                        }
                                         cFPRegs = argSize / haElementSize;
                                         _argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
 
@@ -1237,9 +1245,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 break;
                         }
 
-                        int cbArg = _transitionBlock.StackElemSize(argSize);
-                        const int generalRegSize = 8;
-                        int cArgSlots = ALIGN_UP(cbArg, generalRegSize) / generalRegSize;
+                        int cbArg = _transitionBlock.StackElemSize(argSize, isValueType, isFloatHFA);
 
                         if (cFPRegs > 0 && !IsVarArg)
                         {
@@ -1257,6 +1263,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         else
                         {
+                            const int generalRegSize = 8;
+                            int cArgSlots = ALIGN_UP(cbArg, generalRegSize) / generalRegSize;
                             // Only x0-x7 are valid argument registers (x8 is always the return buffer)
                             if (_arm64IdxGenReg + cArgSlots <= 8)
                             {
@@ -1316,6 +1324,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             //        LIMITED_METHOD_CONTRACT;
             return _argSize;
+        }
+
+        public bool IsValueType()
+        {
+            return (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE);
+        }
+
+        public bool IsFloatHfa()
+        {
+            if (IsValueType() && !IsVarArg && _argTypeHandle.IsHomogeneousAggregate())
+            {
+                int hfaElementSize = _argTypeHandle.GetHomogeneousAggregateElementSize();
+                return hfaElementSize == 4;
+            }
+            return false;
         }
 
         private void ForceSigWalk()
@@ -1448,14 +1471,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     else
                     {
-                        stackElemSize = _transitionBlock.StackElemSize(GetArgSize());
+                        stackElemSize = _transitionBlock.StackElemSize(GetArgSize(), IsValueType(), IsFloatHfa());
                         if (IsArgPassedByRef())
                         {
                             stackElemSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                         }
                     }
 
-                    int endOfs = ofs + stackElemSize;
+                    int argsAlignment = _transitionBlock.PointerSize;
+                    int endOfs = ALIGN_UP(ofs + stackElemSize, argsAlignment);
                     if (endOfs > maxOffset)
                     {
                         if (endOfs > TransitionBlock.MaxArgSize)
@@ -1535,8 +1559,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                             if (!_argTypeHandle.IsNull() && _argTypeHandle.IsHomogeneousAggregate())
                             {
-                                int haElementSize = _argTypeHandle.GetHomogeneousAggregateElementSize();
-                                pLoc.m_cFloatReg = GetArgSize() / haElementSize;
+                                int hfaElementSize = _argTypeHandle.GetHomogeneousAggregateElementSize();
+                                pLoc.m_cFloatReg = GetArgSize() / hfaElementSize;
                             }
                             else
                             {
