@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="PublishSingleFile"/>
+    <CompilerVisibleProperty Include="IncludeAllContentForSelfExtract"/>
+  </ItemGroup>
+</Project>
