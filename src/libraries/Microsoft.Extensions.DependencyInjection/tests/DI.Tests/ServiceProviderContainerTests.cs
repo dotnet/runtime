@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Fakes;
@@ -427,12 +428,20 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Thing1 thing1 = null;
             Thing2 thing2 = null;
             IServiceProvider sp = null;
+            var sb = new StringBuilder();
 
             // Arrange
             var services = new ServiceCollection();
 
             var lazy = new Lazy<Thing1>(() =>
             {
+                sb.Append("3");
+                _mreForThread2.Set();   // Now that thread 1 holds lazy lock, allow thread 2 to continue
+
+                // by this time, Thread 2 is holding a singleton lock for Thing2, 
+                // and Thread one holds the lazy lock
+                // the call below to resolve Thing0 does not hang
+                // since singletons do not share the same lock upon resolve anymore.
                 thing0 = sp.GetRequiredService<Thing0>();
                 return new Thing1(thing0);
             });
@@ -442,12 +451,15 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 if (ThreadId == 2)
                 {
-                    // Let Thread 1 over take Thread 2
-                    _manualResetEvent.WaitOne();
+                    sb.Append("1");
+                    _mreForThread1.Set();   // [b] Allow thread 1 to continue execution and take the lazy lock
+                    _mreForThread2.WaitOne();   // [c] Wait until thread 1 takes the lazy lock
+
+                    sb.Append("4");
                 }
 
+                // Let Thread 1 over take Thread 2
                 Thing1 value = lazy.Value;
-                _manualResetEvent.Set();
                 return value;
             });
             services.AddSingleton<Thing2>();
@@ -458,6 +470,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 ThreadId = 1;
                 using var scope1 = sp.CreateScope();
+                _mreForThread1.WaitOne(); // [a] Waits until thread 2 reaches the transient call to ensure it holds Thing2 singleton lock
+
+                sb.Append("2");
                 thing1 = scope1.ServiceProvider.GetRequiredService<Thing1>();
             });
 
@@ -476,23 +491,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(thing0);
             Assert.NotNull(thing1);
             Assert.NotNull(thing2);
+            Assert.Equal("1234", sb.ToString()); // Expected order of execution
         }
 
-        private ManualResetEvent _manualResetEvent = new ManualResetEvent(false);
+        private ManualResetEvent _mreForThread2 = new ManualResetEvent(false);
+        private ManualResetEvent _mreForThread1 = new ManualResetEvent(false);
 
         [Fact]
         public async Task GetRequiredService_BiggerObjectGraphWithOpenGenerics_NoDeadlock()
         {
-            // Thread 1: IFakeOpenGenericService<Thing4> (transient) -> Thing3 (singleton) -> Thing2 (singleton)    -> Thing1 (singleton) -> Thing0 (singleton)
-            // Thread 2: IFakeOpenGenericService<Thing5> (singleton) -> Thing4 (transient) -> Thing3 (singleton) -> Thing2 (singleton) -> Thing1 (singleton) -> Thing0 (singleton)
-
-            // 1. Thread 1 resolves the IFakeOpenGenericService<Thing4> which is a transient service
-            // 2. In parallel, Thread 2 resolves IFakeOpenGenericService<Thing5> which is a singleton
-            // 3. Thread 1 enters the factory callback for Thing4 and takes the lazy lock
-            // 4. Thread 2 takes callsite for Thing5 as a singleton lock when it resolves Thing5
-            // 5. Thread 2 enters the factory callback for Thing4 and waits on the lazy lock
-            // 6. Thread 1 calls GetRequiredService<Thing3> on the service provider, takes callsite for Thing3 all the way to Thing0 causing no deadlock
-            // (rather than taking the locks that are already taken
+            // Test is similar to GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock (but for open generics and a larger object graph)
 
             // Arrange
             List<IFakeOpenGenericService<Thing4>> constrainedThing4Services = null;
@@ -500,6 +508,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             Thing3 thing3 = null;
             IServiceProvider sp = null;
+            var sb = new StringBuilder();
 
             var services = new ServiceCollection();
 
@@ -511,6 +520,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var lazy = new Lazy<Thing4>(() =>
             {
+                sb.Append("3");
+                _mreForThread2.Set();   // Now that thread 1 holds lazy lock, allow thread 2 to continue
+
                 thing3 = sp.GetRequiredService<Thing3>();
                 return new Thing4(thing3);
             });
@@ -519,12 +531,15 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             { 
                 if (ThreadId == 2)
                 {
-                    // Let Thread 1 over take Thread 2
-                    _manualResetEvent.WaitOne();
+                    sb.Append("1");
+                    _mreForThread1.Set();   // [b] Allow thread 1 to continue execution and take the lazy lock
+                    _mreForThread2.WaitOne();   // [c] Wait until thread 1 takes the lazy lock
+
+                    sb.Append("4");
                 }
 
+                // Let Thread 1 over take Thread 2
                 Thing4 value = lazy.Value;
-                _manualResetEvent.Set();
                 return value;
             });
             services.AddSingleton<Thing5>();
@@ -536,6 +551,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 ThreadId = 1;
                 using var scope1 = sp.CreateScope();
+                _mreForThread1.WaitOne(); // Waits until thread 2 reaches the transient call to ensure it holds Thing4 singleton lock
+
+                sb.Append("2");
                 constrainedThing4Services = sp.GetServices<IFakeOpenGenericService<Thing4>>().ToList();
             });
 
@@ -549,6 +567,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Act
             await t1;
             await t2;
+
+            Assert.Equal("1234", sb.ToString()); // Expected order of execution
 
             var thing4 = sp.GetRequiredService<Thing4>();
             var thing5 = sp.GetRequiredService<Thing5>();
