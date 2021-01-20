@@ -8,6 +8,8 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     internal sealed class PolicySafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        public PolicySafeHandle() : base(true) { }
+
         internal PolicySafeHandle(IntPtr value) : base(true)
         {
             SetHandle(value);
@@ -18,7 +20,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal sealed class LsaLogonProcessSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private LsaLogonProcessSafeHandle() : base(true) { }
+        public LsaLogonProcessSafeHandle() : base(true) { }
 
         internal LsaLogonProcessSafeHandle(IntPtr value) : base(true)
         {
@@ -30,7 +32,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal sealed class LoadLibrarySafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private LoadLibrarySafeHandle() : base(true) { }
+        public LoadLibrarySafeHandle() : base(true) { }
 
         internal LoadLibrarySafeHandle(IntPtr value) : base(true)
         {

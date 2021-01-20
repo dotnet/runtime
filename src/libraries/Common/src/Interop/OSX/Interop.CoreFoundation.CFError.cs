@@ -52,7 +52,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeCFErrorHandle : SafeHandle
     {
-        internal SafeCFErrorHandle()
+        public SafeCFErrorHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

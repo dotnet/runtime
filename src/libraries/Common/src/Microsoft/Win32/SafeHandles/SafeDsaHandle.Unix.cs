@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeDsaHandle : SafeHandle
     {
-        private SafeDsaHandle() :
+        public SafeDsaHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }
