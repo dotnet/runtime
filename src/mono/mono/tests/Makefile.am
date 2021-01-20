@@ -1691,7 +1691,8 @@ CI_DISABLED_TESTS = \
 	main-returns-background-abort-resetabort.exe	\
 	assemblyresolve_event3.exe \
 	finally_guard.exe \
-	generic-xdomain.2.exe
+	generic-xdomain.2.exe \
+	localloc-noinit.exe
 
 # failing tests which we temporarily disable for PRs
 # so they don't interfere with other people's work
