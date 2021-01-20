@@ -134,6 +134,14 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			class NonPublicNestedType
 			{
 			}
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			public delegate int PublicDelegate ();
+
+			private delegate int PrivateDelegate ();
 		}
 
 		[Kept]
@@ -156,6 +164,14 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			public class PublicNestedType
 			{
 			}
+
+			public delegate int PublicDelegate ();
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			private delegate int PrivateDelegate ();
 		}
 
 		class TypeWithPublicProperty
@@ -266,6 +282,14 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 					void Method () { }
 				}
 			}
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("Invoke()")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
+			public delegate int PublicDelegate ();
 		}
 
 		public class TypeWithNone
