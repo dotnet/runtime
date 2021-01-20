@@ -2598,7 +2598,6 @@ namespace Internal.JitInterface
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
-            pEEInfoOut.passMethodContextToReversePInvokeHelper = 0; /* false */
 
             pEEInfoOut.osPageSize = new UIntPtr(0x1000);
 

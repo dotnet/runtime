@@ -2600,6 +2600,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS));
     }
 
     opts.jitFlags  = jitFlags;

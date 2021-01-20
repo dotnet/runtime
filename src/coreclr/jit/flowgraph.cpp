@@ -8693,7 +8693,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     GenTreeCall::Use* args;
 
-    if (eeGetEEInfo()->passMethodContextToReversePInvokeHelper)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS))
     {
         reversePInvokeEnterHelper = CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS;
 
@@ -8738,7 +8738,9 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
 
-    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT, TYP_VOID, gtNewCallArgs(tree));
+    CorInfoHelpFunc reversePInvokeExitHelper = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS) ? CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS : CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT;
+
+    tree = gtNewHelperCallNode(reversePInvokeExitHelper, TYP_VOID, gtNewCallArgs(tree));
 
     assert(genReturnBB != nullptr);
 
@@ -23668,6 +23670,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_INFO);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
+                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
 
                 compileFlagsForInlinee.Set(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
 

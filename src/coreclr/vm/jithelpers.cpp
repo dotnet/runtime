@@ -5494,7 +5494,7 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 #endif
 }
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
+void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -5509,10 +5509,25 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 #endif
 
 #ifdef PROFILING_SUPPORTED
-    if (frame->pMD && CORProfilerTrackTransitions())
+    if (CORProfilerTrackTransitions())
     {
         ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_RETURN);
     }
+#endif
+}
+
+void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
+{
+    _ASSERTE(frame != NULL);
+    _ASSERTE(frame->currentThread == GetThread());
+
+    // Manually inline the fast path in Thread::EnablePreemptiveGC().
+    // This is a trade off with GC suspend performance. We are opting
+    // to make this exit faster.
+    frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
+
+#ifndef FEATURE_EH_FUNCLETS
+    UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
 
