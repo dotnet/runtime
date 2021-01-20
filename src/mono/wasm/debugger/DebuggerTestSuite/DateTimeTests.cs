@@ -18,39 +18,30 @@ namespace DebuggerTests
         [InlineData("de-DE", "dddd, d. MMMM yyyy HH:mm:ss", "dddd, d. MMMM yyyy", "HH:mm:ss", "dd.MM.yyyy", "HH:mm")]
         public async Task CheckDateTimeLocale(string locale, string fdtp, string ldp, string ltp, string sdp, string stp)
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-datetime-test.cs";
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                var debugger_test_loc = "dotnet://debugger-test.dll/debugger-datetime-test.cs";
+            await SetBreakpointInMethod("debugger-test", "DebuggerTests.DateTimeTest", "LocaleTest", 15);
 
-                await SetBreakpointInMethod("debugger-test", "DebuggerTests.DateTimeTest", "LocaleTest", 15);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DateTimeTest:LocaleTest'," +
+                $"'{locale}'); }}, 1);",
+                debugger_test_loc, 25, 12, "LocaleTest",
+                locals_fn: async (locals) =>
+                {
+                    DateTimeFormatInfo dtfi = CultureInfo.GetCultureInfo(locale).DateTimeFormat;
+                    CultureInfo.CurrentCulture = new CultureInfo(locale, false);
 
-                var pause_location = await EvaluateAndCheck(
-                    "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DateTimeTest:LocaleTest'," +
-                    $"'{locale}'); }}, 1);",
-                    debugger_test_loc, 25, 12, "LocaleTest",
-                    locals_fn: async (locals) =>
+                    await CheckProps(locals, new
                     {
-                        DateTimeFormatInfo dtfi = CultureInfo.GetCultureInfo(locale).DateTimeFormat;
-                        CultureInfo.CurrentCulture = new CultureInfo(locale, false);
-
-                        await CheckProps(locals, new
-                        {
-                            fdtp = TString(fdtp),
-                            ldp = TString(ldp),
-                            ltp = TString(ltp),
-                            sdp = TString(sdp),
-                            stp = TString(stp),
-                            dt = TDateTime(new DateTime(2020, 1, 2, 3, 4, 5))
-                        }, "locals", num_fields: 8);
-                    }
-                );
-
-            });
+                        fdtp = TString(fdtp),
+                        ldp = TString(ldp),
+                        ltp = TString(ltp),
+                        sdp = TString(sdp),
+                        stp = TString(stp),
+                        dt = TDateTime(new DateTime(2020, 1, 2, 3, 4, 5))
+                    }, "locals", num_fields: 8);
+                }
+            );
         }
 
     }

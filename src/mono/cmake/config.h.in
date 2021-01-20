@@ -1,3 +1,58 @@
+#ifndef __MONO_CONFIG_H__
+#define __MONO_CONFIG_H__
+
+#ifdef _MSC_VER
+
+// FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
+#pragma warning(disable:4018) // signed/unsigned mismatch
+#pragma warning(disable:4090) // const problem
+#pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
+#pragma warning(disable:4244) // integer conversion, possible loss of data
+#pragma warning(disable:4267) // integer conversion, possible loss of data
+
+// promote warnings to errors
+#pragma warning(  error:4013) // function undefined; assuming extern returning int
+#pragma warning(  error:4022) // call and prototype disagree
+#pragma warning(  error:4047) // differs in level of indirection
+#pragma warning(  error:4098) // void return returns a value
+#pragma warning(  error:4113) // call and prototype disagree
+#pragma warning(  error:4172) // returning address of local variable or temporary
+#pragma warning(  error:4197) // top-level volatile in cast is ignored
+#pragma warning(  error:4273) // inconsistent dll linkage
+#pragma warning(  error:4293) // shift count negative or too big, undefined behavior
+#pragma warning(  error:4312) // 'type cast': conversion from 'MonoNativeThreadId' to 'gpointer' of greater size
+#pragma warning(  error:4715) // 'keyword' not all control paths return a value
+
+#include <SDKDDKVer.h>
+
+#if _WIN32_WINNT < 0x0601
+#error "Mono requires Windows 7 or later."
+#endif /* _WIN32_WINNT < 0x0601 */
+
+#ifndef HAVE_WINAPI_FAMILY_SUPPORT
+
+#define HAVE_WINAPI_FAMILY_SUPPORT
+
+/* WIN API Family support */
+#include <winapifamily.h>
+
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+	#define HAVE_CLASSIC_WINAPI_SUPPORT 1
+	#define HAVE_UWP_WINAPI_SUPPORT 0
+#elif WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
+	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
+	#define HAVE_UWP_WINAPI_SUPPORT 1
+#else
+	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
+	#define HAVE_UWP_WINAPI_SUPPORT 0
+#ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
+	#error Unsupported WINAPI family
+#endif
+#endif
+
+#endif
+#endif
+
 /* Define to the full name of this package. */
 #cmakedefine PACKAGE_NAME 1
 
@@ -386,6 +441,9 @@
 /* Some VES is available at runtime */
 #cmakedefine ENABLE_ILGEN 1
 
+/* Disable non-blittable marshalling */
+#cmakedefine DISABLE_NONBLITTABLE
+
 /* Disable SIMD intrinsics related optimizations. */
 #cmakedefine DISABLE_SIMD 1
 
@@ -463,7 +521,7 @@
 #cmakedefine HAVE_NULL_GC 1
 
 /* Length of zero length arrays */
-#cmakedefine MONO_ZERO_LEN_ARRAY 1
+#define MONO_ZERO_LEN_ARRAY @MONO_ZERO_LEN_ARRAY@
 
 /* Define to 1 if you have the <signal.h> header file. */
 #cmakedefine HAVE_SIGNAL_H 1
@@ -1018,7 +1076,13 @@
 #cmakedefine HAVE_SETPGID 1
 
 /* Define to 1 if you have the `system' function. */
+#ifdef _MSC_VER
+#if HAVE_WINAPI_FAMILY_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 #cmakedefine HAVE_SYSTEM 1
+#endif
+#else
+#cmakedefine HAVE_SYSTEM 1
+#endif
 
 /* Define to 1 if you have the `fork' function. */
 #cmakedefine HAVE_FORK 1
@@ -1375,7 +1439,7 @@
 #cmakedefine HAVE_EXECVP 1
 
 /* Name of /dev/random */
-#cmakedefine NAME_DEV_RANDOM "@NAME_DEV_RANDOM@"
+#define NAME_DEV_RANDOM @NAME_DEV_RANDOM@
 
 /* Have /dev/random */
 #cmakedefine HAVE_CRYPT_RNG 1
@@ -1600,7 +1664,7 @@
 #cmakedefine DISABLE_QCALLS 1
 
 /* Have __thread keyword */
-#cmakedefine MONO_KEYWORD_THREAD 1
+#cmakedefine MONO_KEYWORD_THREAD @MONO_KEYWORD_THREAD@
 
 /* tls_model available */
 #cmakedefine HAVE_TLS_MODEL_ATTR 1
@@ -1680,6 +1744,9 @@
 /* Version number of package */
 #define VERSION @VERSION@
 
+/* Full version number of package */
+#define FULL_VERSION @FULL_VERSION@
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #cmakedefine HAVE_DLFCN_H 1
 
@@ -1703,3 +1770,13 @@
 
 /* Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata) */
 #cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
+
+/* Enable runtime support for metadata updates */
+#cmakedefine ENABLE_METADATA_UPDATE 1
+
+#if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
+#error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.
+#endif
+
+#endif
+

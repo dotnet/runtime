@@ -49,6 +49,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
         public static async Task RoundTripAsync()
         {
             byte[] buffer;

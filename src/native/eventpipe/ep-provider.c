@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_PROVIDER_GETTER_SETTER
@@ -428,7 +427,7 @@ ep_on_error:
 }
 
 EventPipeProvider *
-provider_create (
+provider_create_register (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
 	EventPipeCallbackDataFree callback_data_free_func,
@@ -437,6 +436,15 @@ provider_create (
 {
 	ep_requires_lock_held ();
 	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data_free_func, callback_data, provider_callback_data_queue);
+}
+
+void
+provider_unregister_delete (EventPipeProvider * provider)
+{
+	ep_return_void_if_nok (provider != NULL);
+
+	ep_requires_lock_held ();
+	config_delete_provider (ep_config_get (), provider);
 }
 
 void

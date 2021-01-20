@@ -318,7 +318,7 @@ namespace System.Xml
         public bool PreserveWhitespace { get { throw null; } set { } }
         public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { throw null; } }
         public System.Xml.Schema.XmlSchemaSet Schemas { get { throw null; } set { } }
-        public virtual System.Xml.XmlResolver XmlResolver { set { } }
+        public virtual System.Xml.XmlResolver? XmlResolver { set { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanged { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanging { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeInserted { add { } remove { } }
@@ -1138,7 +1138,9 @@ namespace System.Xml
     {
         public XmlUrlResolver() { }
         public System.Net.Cache.RequestCachePolicy CachePolicy { set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public override System.Net.ICredentials? Credentials { set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public System.Net.IWebProxy? Proxy { set { } }
         public override object? GetEntity(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }

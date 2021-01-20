@@ -209,8 +209,10 @@ ICALL_TYPE(ASSEMB, "System.Reflection.Emit.AssemblyBuilder", ASSEMB_1)
 HANDLES(ASSEMB_1, "UpdateNativeCustomAttributes", ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes, void, 1, (MonoReflectionAssemblyBuilder))
 HANDLES(ASSEMB_2, "basic_init", ves_icall_AssemblyBuilder_basic_init, void, 1, (MonoReflectionAssemblyBuilder))
 
+#ifndef DISABLE_REFLECTION_EMIT
 ICALL_TYPE(CATTRB, "System.Reflection.Emit.CustomAttributeBuilder", CATTRB_1)
 HANDLES(CATTRB_1, "GetBlob", ves_icall_CustomAttributeBuilder_GetBlob, MonoArray, 7, (MonoReflectionAssembly, MonoObject, MonoArray, MonoArray, MonoArray, MonoArray, MonoArray))
+#endif
 
 ICALL_TYPE(DYNM, "System.Reflection.Emit.DynamicMethod", DYNM_1)
 HANDLES(DYNM_1, "create_dynamic_method", ves_icall_DynamicMethod_create_dynamic_method, void, 1, (MonoReflectionDynamicMethod))
@@ -323,6 +325,11 @@ HANDLES(MPROP_2, "get_default_value", ves_icall_property_info_get_default_value,
 HANDLES_REUSE_WRAPPER(MPROP_3, "get_metadata_token", ves_icall_reflection_get_token)
 HANDLES(MPROP_4, "get_property_info", ves_icall_RuntimePropertyInfo_get_property_info, void, 3, (MonoReflectionProperty, MonoPropertyInfo_ref, PInfo))
 HANDLES(MPROP_5, "internal_from_handle_type", ves_icall_System_Reflection_RuntimePropertyInfo_internal_from_handle_type, MonoReflectionProperty, 2, (MonoProperty_ptr, MonoType_ptr))
+
+#ifdef ENABLE_METADATA_UPDATE
+ICALL_TYPE(RUNF, "System.Runtime.CompilerServices.RuntimeFeature", RUNF_1)
+NOHANDLES(ICALL(RUNF_1, "LoadMetadataUpdate_internal", ves_icall_Mono_Runtime_LoadMetadataUpdate))
+#endif
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
 HANDLES(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue, MonoObject, 1, (MonoObject))

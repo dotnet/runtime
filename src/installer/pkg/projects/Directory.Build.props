@@ -81,18 +81,6 @@
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
-  <!-- Add required legal files to packages -->
-  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
-    <File Condition="Exists('$(PackageLicenseFile)')"
-          Include="$(PackageLicenseFile)" >
-      <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
-          Include="$(PackageThirdPartyNoticesFile)" >
-      <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-  </ItemGroup>
-
   <PropertyGroup>
     <RIDPropsFile Condition="'$(RIDPropsFile)' == ''">$(MSBuildThisFileDirectory)\netcoreappRIDs.props</RIDPropsFile>
   </PropertyGroup>
@@ -151,7 +139,7 @@
     <!-- During NuGet restore, grab assets for all applicable RIDs. -->
     <RuntimeIdentifiers Condition="'$(RestoreAllBuildRids)' == 'true'">@(RestoreBuildRID)</RuntimeIdentifiers>
     <!-- When resolving assets to pack, use the target runtime (if any). -->
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>

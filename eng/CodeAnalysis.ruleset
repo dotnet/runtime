@@ -316,6 +316,7 @@
     <Rule Id="SA1137" Action="None" />          <!-- Elements should have the same indentation -->
     <Rule Id="SA1139" Action="None" />          <!-- Use literal suffix notation instead of casting -->
     <Rule Id="SA1141" Action="Warning" />       <!-- Use tuple syntax -->
+    <Rule Id="SA1142" Action="Warning" />       <!-- Refer to tuple elements by name -->
     <Rule Id="SA1200" Action="None" />          <!-- Using directive should appear within a namespace declaration -->
     <Rule Id="SA1201" Action="None" />          <!-- Elements should appear in the correct order -->
     <Rule Id="SA1202" Action="None" />          <!-- Elements should be ordered by access -->
@@ -478,7 +479,7 @@
     <Rule Id="IDE0076" Action="Hidden" />       <!-- InvalidSuppressMessageAttribute -->
     <Rule Id="IDE0077" Action="Hidden" />       <!-- LegacyFormatSuppressMessageAttribute -->
     <Rule Id="IDE0078" Action="Hidden" />       <!-- UsePatternCombinators -->
-    <Rule Id="IDE0079" Action="Warning" />      <!-- RemoveUnnecessarySuppression -->
+    <Rule Id="IDE0079" Action="Hidden" />       <!-- RemoveUnnecessarySuppression -->
     <Rule Id="IDE0080" Action="Hidden" />       <!-- RemoveConfusingSuppressionForIsExpression -->
     <Rule Id="IDE0081" Action="Hidden" />       <!-- RemoveUnnecessaryByVal -->
     <Rule Id="IDE0082" Action="Warning" />      <!-- ConvertTypeOfToNameOf -->

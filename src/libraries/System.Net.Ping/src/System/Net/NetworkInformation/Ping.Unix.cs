@@ -462,7 +462,7 @@ namespace System.Net.NetworkInformation
             payload.CopyTo(result, offset + icmpHeaderSize);
 
             // offset now still points to beginning of ICMP header.
-            ushort checksum = ComputeBufferChecksum(result.AsSpan().Slice(offset));
+            ushort checksum = ComputeBufferChecksum(result.AsSpan(offset));
             // Jam the checksum into the buffer.
             result[offset + 2] = (byte)(checksum >> 8);
             result[offset + 3] = (byte)(checksum & (0xFF));

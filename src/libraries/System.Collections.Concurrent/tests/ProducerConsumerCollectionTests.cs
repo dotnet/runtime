@@ -735,7 +735,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public void ManyConcurrentAddsTakes_CollectionRemainsConsistent()
         {

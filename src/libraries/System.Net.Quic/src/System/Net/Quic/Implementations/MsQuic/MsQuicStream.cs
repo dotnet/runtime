@@ -71,7 +71,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
         {
-            Debug.Assert(connection != null);
+            Debug.Assert(connection != null, "Connection null");
 
             _ptr = nativeObjPtr;
 
@@ -166,14 +166,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (!_canWrite)
             {
-                throw new InvalidOperationException("Writing is not allowed on stream.");
+                throw new InvalidOperationException(SR.net_quic_writing_notallowed);
             }
 
             lock (_sync)
             {
                 if (_sendState == SendState.Aborted)
                 {
-                    throw new OperationCanceledException("Sending has already been aborted on the stream");
+                    throw new OperationCanceledException(SR.net_quic_sending_aborted);
                 }
             }
 
@@ -222,7 +222,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!_canRead)
             {
-                throw new InvalidOperationException("Reading is not allowed on stream.");
+                throw new InvalidOperationException(SR.net_quic_reading_notallowed);
             }
 
             if (NetEventSource.Log.IsEnabled())
@@ -936,7 +936,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         /// </summary>
         private void StartLocalStream()
         {
-            Debug.Assert(!_started);
+            Debug.Assert(!_started, "start local stream");
             uint status = MsQuicApi.Api.StreamStartDelegate(
               _ptr,
               (uint)QUIC_STREAM_START_FLAG.ASYNC);

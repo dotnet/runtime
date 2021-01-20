@@ -79,6 +79,9 @@ mono_class_get_flags (MonoClass *klass)
 		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR)
 			return TYPE_ATTRIBUTE_SEALED | TYPE_ATTRIBUTE_PUBLIC;
 		return TYPE_ATTRIBUTE_CLASS | (mono_class_get_flags (m_class_get_element_class (klass)) & TYPE_ATTRIBUTE_VISIBILITY_MASK);
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
+		break;
 	}
 	g_assert_not_reached ();
 }
@@ -174,6 +177,9 @@ mono_class_get_method_count (MonoClass *klass)
 		return m_classarray_get_method_count ((MonoClassArray*)klass);
 	case MONO_CLASS_POINTER:
 		return 0;
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
+		return 0;
 	default:
 		g_assert_not_reached ();
 		return 0;
@@ -197,6 +203,9 @@ mono_class_set_method_count (MonoClass *klass, guint32 count)
 	case MONO_CLASS_ARRAY:
 		((MonoClassArray*)klass)->method_count = count;
 		break;
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
+		break;
 	default:
 		g_assert_not_reached ();
 		break;
@@ -215,6 +224,9 @@ mono_class_get_field_count (MonoClass *klass)
 	case MONO_CLASS_GPARAM:
 	case MONO_CLASS_ARRAY:
 	case MONO_CLASS_POINTER:
+		return 0;
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
 		return 0;
 	default:
 		g_assert_not_reached ();
@@ -236,6 +248,9 @@ mono_class_set_field_count (MonoClass *klass, guint32 count)
 	case MONO_CLASS_ARRAY:
 	case MONO_CLASS_POINTER:
 		g_assert (count == 0);
+		break;
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
 		break;
 	default:
 		g_assert_not_reached ();

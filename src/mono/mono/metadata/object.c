@@ -1255,10 +1255,12 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 				mono_custom_attrs_free (ainfo);
 				return SPECIAL_STATIC_THREAD;
 			}
+#ifndef ENABLE_NETCORE
 			else if (strcmp (klass_name, "ContextStaticAttribute") == 0) {
 				mono_custom_attrs_free (ainfo);
 				return SPECIAL_STATIC_CONTEXT;
 			}
+#endif
 		}
 	}
 	mono_custom_attrs_free (ainfo);
@@ -5080,10 +5082,16 @@ mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 	MONO_STATIC_POINTER_INIT (MonoClassField, field)
 
-		field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
-		g_assert (field);
+		static gboolean inited;
+		if (!inited) {
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
+			inited = TRUE;
+		}
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
+
+	if (!field)
+		return;
 
 	MonoVTable *vt = mono_class_vtable_checked (domain, mono_defaults.appcontext_class, error);
 	return_if_nok (error);
@@ -5141,13 +5149,18 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 #ifndef ENABLE_NETCORE
 		field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "UnhandledException", NULL);
 #else
-		field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+		static gboolean inited;
+		if (!inited) {
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+			inited = TRUE;
+		}
 #endif
-		g_assert (field);
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
 
 #ifndef ENABLE_NETCORE
+	g_assert (field);
+
 	MonoDomain *root_domain;
 	MonoObjectHandle current_appdomain_delegate = MONO_HANDLE_NEW (MonoObject, NULL);
 
@@ -5172,6 +5185,9 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 		mono_threads_end_abort_protected_block ();
 	}
 #else
+	if (!field)
+		goto leave;
+
 	MonoObject *delegate = NULL;
 	MonoObjectHandle delegate_handle;
 	MonoVTable *vt = mono_class_vtable_checked (current_domain, mono_defaults.appcontext_class, error);
@@ -9454,8 +9470,18 @@ mono_class_value_size (MonoClass *klass, guint32 *align)
 	 */
 	/*g_assert (klass->valuetype);*/
 
-	size = mono_class_instance_size (klass) - MONO_ABI_SIZEOF (MonoObject);
+	/* this call inits klass if its not inited already */
+	size = mono_class_instance_size (klass);
 
+	if (m_class_has_failure (klass)) {
+		if (align)
+			*align = 1;
+		return 0;
+	}
+
+	size = size - MONO_ABI_SIZEOF (MonoObject);
+
+	g_assert (size >= 0);
 	if (align)
 		*align = m_class_get_min_align (klass);
 

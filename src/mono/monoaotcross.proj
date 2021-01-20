@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- OS name is case sensitive! -->
+    <_MonoCrossAOTTargetOS Condition="'$(MonoCrossAOTTargetOS)' != ''">+$(MonoCrossAOTTargetOS.ToLowerInvariant())+</_MonoCrossAOTTargetOS>
+    <_MonoGenerateOffsetsOSGroups Condition="'$(MonoGenerateOffsetsOSGroups)' != ''">+$(MonoGenerateOffsetsOSGroups.ToLowerInvariant())+</_MonoGenerateOffsetsOSGroups>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+android+'))">$(_MonoCrossAOTTargetOS)+android+</_MonoCrossAOTTargetOS>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+browser+'))">$(_MonoCrossAOTTargetOS)+browser+</_MonoCrossAOTTargetOS>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+tvos+'))">$(_MonoCrossAOTTargetOS)+tvos+</_MonoCrossAOTTargetOS>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+ios+'))">$(_MonoCrossAOTTargetOS)+ios+</_MonoCrossAOTTargetOS>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))">$(MonoAotTargets);Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);Browser-wasm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvOS-x64;tvOS-arm64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iOS-x64;iOS-arm64;iOS-x86;iOS-arm</MonoAotTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
+  </ItemGroup>
+
+  <Target Name="BuildMonoCrossAllTargets" AfterTargets="Build">
+    <MSBuild Targets="BuildMonoCrossTarget"
+             Projects="$(MSBuildThisFileFullPath)"
+             BuildInParallel="true"
+             Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
+  </Target>
+
+  <Target Name="BuildMonoCrossTarget">
+    <PropertyGroup>
+      <MonoAotTargetOS>$(MonoAotTargetRid.Split('-')[0])</MonoAotTargetOS>
+      <MonoAotTargetArchitecture>$(MonoAotTargetRid.Split('-')[1])</MonoAotTargetArchitecture>
+    </PropertyGroup>
+
+    <MSBuild Targets="Build"
+             Projects="$(MSBuildThisFileDirectory)llvm\llvm-init.proj"
+             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+
+    <MSBuild Targets="BuildMono"
+             Projects="$(MSBuildThisFileDirectory)mono.proj"
+             Properties="RealTargetOS=$(TargetOS);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+
+    <ItemGroup>
+      <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />
+    </ItemGroup>
+
+    <Message Text="Copying @(_MonoAOTCrossFiles) to $(RealRuntimeBinDir)cross\$(MonoAotTargetRid.ToLower())" Importance="High" />
+
+    <Copy SourceFiles="@(_MonoAOTCrossFiles)" DestinationFolder="$(RealRuntimeBinDir)cross\$(MonoAotTargetRid.ToLower())">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+  </Target>
+</Project>
