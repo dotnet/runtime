@@ -477,13 +477,13 @@ namespace System.Tests
                 Assert.Equal(9223372036854775803, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
                 Assert.Equal(375288451405801266, randOuter.NextInt64(long.MinValue, long.MaxValue));
 
-                Assert.Equal(double.Parse("0.2885307561293763", CultureInfo.InvariantCulture), randOuter.NextDouble());
-                Assert.Equal(double.Parse("0.8319616593420064", CultureInfo.InvariantCulture), randOuter.NextDouble());
-                Assert.Equal(double.Parse("0.694751074593599", CultureInfo.InvariantCulture), randOuter.NextDouble());
+                Assert.Equal(0.2885307561293763, randOuter.NextDouble());
+                Assert.Equal(0.8319616593420064, randOuter.NextDouble());
+                Assert.Equal(0.694751074593599, randOuter.NextDouble());
 
-                Assert.Equal(float.Parse("0.7749006", CultureInfo.InvariantCulture), randOuter.NextSingle());
-                Assert.Equal(float.Parse("0.13424736", CultureInfo.InvariantCulture), randOuter.NextSingle());
-                Assert.Equal(float.Parse("0.05282557", CultureInfo.InvariantCulture), randOuter.NextSingle());
+                Assert.Equal(0.7749006f, randOuter.NextSingle());
+                Assert.Equal(0.13424736f, randOuter.NextSingle());
+                Assert.Equal(0.05282557f, randOuter.NextSingle());
             }
             else
             {
@@ -538,13 +538,13 @@ namespace System.Tests
                 Assert.Equal(9223372036854775805, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
                 Assert.Equal(-1415073976784572606, randOuter.NextInt64(long.MinValue, long.MaxValue));
 
-                Assert.Equal(double.Parse("0.054582986776168796", CultureInfo.InvariantCulture), randOuter.NextDouble());
-                Assert.Equal(double.Parse("0.7599686772523376", CultureInfo.InvariantCulture), randOuter.NextDouble());
-                Assert.Equal(double.Parse("0.9113759792165226", CultureInfo.InvariantCulture), randOuter.NextDouble());
+                Assert.Equal(0.054582986776168796, randOuter.NextDouble());
+                Assert.Equal(0.7599686772523376, randOuter.NextDouble());
+                Assert.Equal(0.9113759792165226, randOuter.NextDouble());
 
-                Assert.Equal(float.Parse("0.3010761", CultureInfo.InvariantCulture), randOuter.NextSingle());
-                Assert.Equal(float.Parse("0.8162224", CultureInfo.InvariantCulture), randOuter.NextSingle());
-                Assert.Equal(float.Parse("0.5866389", CultureInfo.InvariantCulture), randOuter.NextSingle());
+                Assert.Equal(0.3010761f, randOuter.NextSingle());
+                Assert.Equal(0.8162224f, randOuter.NextSingle());
+                Assert.Equal(0.5866389f, randOuter.NextSingle());
             }
         }
 
