@@ -217,9 +217,8 @@ namespace System
             }
 
             public override double NextDouble() =>
-                // See comment in Xoshiro256StarStarImpl. But creating 64 random bits is expensive compared to the
-                // legacy implementation that only created 31, so for now we stick with the same 31 bits.
-                (NextUInt32() >> 1) * (1.0 / (1u << 31));
+                // See comment in Xoshiro256StarStarImpl.
+                (NextUInt64() >> 11) * (1.0 / (1ul << 53));
 
             public override float NextSingle() =>
                 // See comment in Xoshiro256StarStarImpl.

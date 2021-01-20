@@ -538,13 +538,13 @@ namespace System.Tests
                 Assert.Equal(9223372036854775805, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
                 Assert.Equal(-1415073976784572606, randOuter.NextInt64(long.MinValue, long.MaxValue));
 
-                Assert.Equal(double.Parse("0.054582986515015364", CultureInfo.InvariantCulture), randOuter.NextDouble());
-                Assert.Equal(double.Parse("0.1216454659588635", CultureInfo.InvariantCulture), randOuter.NextDouble());
-                Assert.Equal(double.Parse("0.7599686770699918", CultureInfo.InvariantCulture), randOuter.NextDouble());
+                Assert.Equal(double.Parse("0.054582986776168796", CultureInfo.InvariantCulture), randOuter.NextDouble());
+                Assert.Equal(double.Parse("0.7599686772523376", CultureInfo.InvariantCulture), randOuter.NextDouble());
+                Assert.Equal(double.Parse("0.9113759792165226", CultureInfo.InvariantCulture), randOuter.NextDouble());
 
-                Assert.Equal(float.Parse("0.78316945", CultureInfo.InvariantCulture), randOuter.NextSingle());
-                Assert.Equal(float.Parse("0.91137594", CultureInfo.InvariantCulture), randOuter.NextSingle());
-                Assert.Equal(float.Parse("0.094940424", CultureInfo.InvariantCulture), randOuter.NextSingle());
+                Assert.Equal(float.Parse("0.3010761", CultureInfo.InvariantCulture), randOuter.NextSingle());
+                Assert.Equal(float.Parse("0.8162224", CultureInfo.InvariantCulture), randOuter.NextSingle());
+                Assert.Equal(float.Parse("0.5866389", CultureInfo.InvariantCulture), randOuter.NextSingle());
             }
         }
 
