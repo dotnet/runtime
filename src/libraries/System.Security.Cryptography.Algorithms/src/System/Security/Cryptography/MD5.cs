@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
 
@@ -26,6 +27,7 @@ namespace System.Security.Cryptography
 
         public static new MD5 Create() => new Implementation();
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new MD5? Create(string algName) => (MD5?)CryptoConfig.CreateFromName(algName);
 
         /// <summary>
