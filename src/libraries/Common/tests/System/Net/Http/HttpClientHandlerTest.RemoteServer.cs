@@ -23,7 +23,6 @@ namespace System.Net.Http.Functional.Tests
         private const string ExpectedContent = "Test content";
         private const string Username = "testuser";
         private const string Password = "password";
-        private const string HttpDefaultPort = "80";
 
         private readonly NetworkCredential _credential = new NetworkCredential(Username, Password);
 
@@ -660,7 +659,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Takes several seconds")]
+        [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_RedirectWith307_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
@@ -675,7 +674,7 @@ namespace System.Net.Http.Functional.Tests
             await PostAsync_Redirect_LargePayload_Helper(remoteServer, 307, true);
         }
 
-        [OuterLoop("Takes several seconds")]
+        [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_RedirectWith302_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
