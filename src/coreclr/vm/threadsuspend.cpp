@@ -1974,7 +1974,7 @@ CONTEXT* AllocateOSContextHelper(LPVOID* contextBuffer)
 {
     CONTEXT* pOSContext = NULL;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)  
+#if !defined(TARGET_UNIX) && (defined(TARGET_X86) || defined(TARGET_AMD64))
     DWORD context = CONTEXT_COMPLETE;
     BOOL supportsAVX = FALSE;
 
