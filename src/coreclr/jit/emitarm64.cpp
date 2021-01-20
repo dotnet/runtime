@@ -915,6 +915,12 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
             break;
 
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+            datasize = id->idOpSize();
+            assert(isGeneralRegister(id->idReg1()));
+            assert(datasize == EA_8BYTE);
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -3681,6 +3687,14 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
             id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_BR_1A;
+            break;
+
+        case INS_dczva:
+            assert(isGeneralRegister(reg));
+            assert(attr == EA_8BYTE);
+            id = emitNewInstrSmall(attr);
+            id->idReg1(reg);
+            fmt = IF_SR_1A;
             break;
 
         default:
@@ -11372,6 +11386,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+            assert(insOptsNone(id->idInsOpt()));
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeReg_Rt(id->idReg1()); // ttttt
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -13291,6 +13312,10 @@ void emitter::emitDispIns(
 
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
             emitDispBarrier((insBarrier)emitGetInsSC(id));
+            break;
+
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+            emitDispReg(id->idReg1(), size, false);
             break;
 
         default:
@@ -15362,6 +15387,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SI_0A: // brk   imm16
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_SR_1A:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_1C;
             break;
