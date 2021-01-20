@@ -39,6 +39,11 @@ namespace System.Diagnostics
                 _s1 = *(g1p + 1);
                 _s2 = *g2p;
                 _s3 = *(g2p + 1);
+
+                // Guid uses the 4 most significant bits of the first long as the version which would be fixed and not randomized.
+                // Let's randomize these bits using the 4 most significant bits from the second long.
+                _s0 = (_s0 & 0x0FFFFFFFFFFFFFFF) | (_s1 & 0xF000000000000000);
+                _s2 = (_s2 & 0x0FFFFFFFFFFFFFFF) | (_s3 & 0xF000000000000000);
             }
             while ((_s0 | _s1 | _s2 | _s3) == 0);
         }
