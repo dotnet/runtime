@@ -605,13 +605,10 @@ public:
 
         pLoc->Init();
 
-        int cSlots = (GetArgSize() + 3) / 4;
-        const unsigned byteArgSize = StackElemSize(GetArgSize());
         if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
             pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
-            _ASSERTE(cSlots == 1);
-            _ASSERTE(byteArgSize <= TARGET_POINTER_SIZE);
+            _ASSERTE(GetArgSize() <= TARGET_POINTER_SIZE);
             pLoc->m_cGenReg = 1;
         }
         else
@@ -632,13 +629,13 @@ public:
 
         pLoc->m_fRequires64BitAlignment = m_fRequires64BitAlignment;
 
-        const unsigned byteArgSize = StackElemSize(GetArgSize());
-        int cSlots = (GetArgSize() + 3) / 4;
+        const int byteArgSize = GetArgSize();
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
+            const int floatRegOfsInBytes = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
+            _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
             pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / FLOAT_REGISTER_SIZE;
-            _ASSERTE(byteArgSize / FLOAT_REGISTER_SIZE == cSlots);
-            pLoc->m_cFloatReg = byteArgSize / FLOAT_REGISTER_SIZE;
+            pLoc->m_cFloatReg = ALIGN_UP(byteArgSize, FLOAT_REGISTER_SIZE) / FLOAT_REGISTER_SIZE;
             return;
         }
 
@@ -646,7 +643,7 @@ public:
         {
             pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
 
-            if ((int)byteArgSize <= (4 - pLoc->m_idxGenReg) * TARGET_POINTER_SIZE)
+            if (byteArgSize <= (4 - pLoc->m_idxGenReg) * TARGET_POINTER_SIZE)
             {
                 pLoc->m_cGenReg = ALIGN_UP(byteArgSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
             }
@@ -654,13 +651,13 @@ public:
             {
                 pLoc->m_cGenReg = 4 - pLoc->m_idxGenReg;
                 pLoc->m_byteStackIndex = 0;
-                pLoc->m_byteStackSize = byteArgSize - pLoc->m_cGenReg * TARGET_POINTER_SIZE;
+                pLoc->m_byteStackSize = StackElemSize(byteArgSize) - pLoc->m_cGenReg * TARGET_POINTER_SIZE;
             }
         }
         else
         {
             pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
-            pLoc->m_byteStackSize = byteArgSize;
+            pLoc->m_byteStackSize = StackElemSize(byteArgSize);
         }
     }
 #endif // TARGET_ARM
@@ -672,9 +669,6 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         pLoc->Init();
-
-        const bool isValueType = (m_argType == ELEMENT_TYPE_VALUETYPE);
-        unsigned byteArgSize = StackElemSize(GetArgSize(), isValueType, m_argTypeHandle.IsFloatHfa());
 
 
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
@@ -695,15 +689,13 @@ public:
             return;
         }
 
-
-        unsigned cSlots = ALIGN_UP(byteArgSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+        unsigned byteArgSize = GetArgSize();
 
         // Question: why do not arm and x86 have similar checks?
         // Composites greater than 16 bytes are passed by reference
         if ((GetArgType() == ELEMENT_TYPE_VALUETYPE) && (byteArgSize > ENREGISTERED_PARAMTYPE_MAXSIZE))
         {
             byteArgSize = TARGET_POINTER_SIZE;
-            cSlots = 1;
         }
 
 
@@ -719,7 +711,9 @@ public:
         else
         {
             pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
-            pLoc->m_byteStackSize = byteArgSize;
+            const bool isValueType = (m_argType == ELEMENT_TYPE_VALUETYPE);
+            const bool isFloatHfa = (isValueType && !m_argTypeHandle.IsNull() && m_argTypeHandle.IsHFA());
+            pLoc->m_byteStackSize = StackElemSize(byteArgSize, isValueType, isFloatHfa);
         }
     }
 #endif // TARGET_ARM64
