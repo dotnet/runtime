@@ -43,8 +43,8 @@ namespace ILCompiler.DependencyAnalysis.X64
         {
             if (node.RepresentsIndirectionCell)
             {
-                Builder.EmitByte(0x67);
-                Builder.EmitByte(0x48);
+                AddrMode rexAddrMode = new AddrMode(Register.RAX, null, 0, 0, AddrModeSize.Int64);
+                EmitRexPrefix(regDst, ref rexAddrMode);
                 Builder.EmitByte(0x8B);
                 Builder.EmitByte((byte)(0x00 | ((byte)regDst << 3) | 0x05));
                 Builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_REL32);

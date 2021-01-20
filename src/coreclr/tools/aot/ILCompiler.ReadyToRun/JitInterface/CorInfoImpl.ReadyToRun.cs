@@ -801,7 +801,7 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_STRCNS_CURRENT_MODULE:
                     id = ReadyToRunHelper.GetString;
-                    break;
+                    return _compilation.NodeFactory.ImportThunk(ReadyToRunHelper.GetString, _compilation.NodeFactory.HelperImports, useVirtualCall: false);
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
