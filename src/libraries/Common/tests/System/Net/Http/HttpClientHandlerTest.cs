@@ -164,7 +164,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         public async Task UseDefaultCredentials_SetToFalseAndServerNeedsAuth_StatusCodeUnauthorized(bool useProxy)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -235,7 +235,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -269,7 +269,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -340,7 +340,7 @@ namespace System.Net.Http.Functional.Tests
             string ipv6Address = "http://" + host;
             bool connectionAccepted = false;
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -373,7 +373,7 @@ namespace System.Net.Http.Functional.Tests
             string uri = "http://" + host;
             bool connectionAccepted = false;
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -412,7 +412,7 @@ namespace System.Net.Http.Functional.Tests
             string expectedAddressUri = $"http://{host}/";
             bool connectionAccepted = false;
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -444,7 +444,7 @@ namespace System.Net.Http.Functional.Tests
             string addressUri = $"https://{requestTarget}/";
             bool connectionAccepted = false;
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -479,7 +479,7 @@ namespace System.Net.Http.Functional.Tests
                 return; // Skip test since the fix is only in SocketsHttpHandler.
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -569,7 +569,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -590,7 +590,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -611,7 +611,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized()
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -665,7 +665,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -690,7 +690,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersHeaderValuesAndUris))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(Configuration.Http.RemoteServer remoteServer, string name, string value, Uri uri)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -713,7 +713,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
         public async Task GetAsync_LargeRequestHeader_HeadersAndValuesSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -789,7 +789,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Content-Length      ")]
         public async Task GetAsync_InvalidHeaderNameValue_ThrowsHttpRequestException(string invalidHeader)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -1650,7 +1650,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // TODO: Active issue
                 return;
@@ -1718,7 +1718,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task GetAsync_StatusCodeOutOfRange_ExpectedException(int statusCode)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // TODO: Try to make this test version-agnostic
                 return;
@@ -2039,7 +2039,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // TODO: ActiveIssue
                 return;
@@ -2090,7 +2090,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // TODO: ActiveIssue
                 return;
@@ -2165,7 +2165,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // TODO: ActiveIssue
                 return;
@@ -2215,7 +2215,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -2268,7 +2268,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // TODO: ActiveIssue
                 return;
@@ -2309,7 +2309,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // TODO: ActiveIssue
                 return;
@@ -2395,7 +2395,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // TODO: Make this version-indepdendent
                 return;
@@ -2569,7 +2569,7 @@ namespace System.Net.Http.Functional.Tests
             string method,
             Uri serverUri)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
@@ -2595,7 +2595,7 @@ namespace System.Net.Http.Functional.Tests
             string method,
             Uri serverUri)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
@@ -2630,7 +2630,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("12345678910", 5)]
         public async Task SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(string stringContent, int startingPosition)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
@@ -2670,7 +2670,7 @@ namespace System.Net.Http.Functional.Tests
             string method,
             Uri serverUri)
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
@@ -2718,7 +2718,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
@@ -2732,7 +2732,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
@@ -2752,7 +2752,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
@@ -2775,7 +2775,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
@@ -2816,7 +2816,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -2844,7 +2844,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
