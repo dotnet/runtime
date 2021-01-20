@@ -5360,7 +5360,7 @@ EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 #endif
 
 // This is a slower version of the reverse PInvoke enter function.
-NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame)
+NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* traceAddr)
 {
     _ASSERTE(frame != NULL);
 
@@ -5382,9 +5382,18 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame)
 #endif
 
     thread->DisablePreemptiveGC();
+#ifdef DEBUGGING_SUPPORTED
+    // If the debugger is attached, we use this opportunity to see if
+    // we're disabling preemptive GC on the way into the runtime from
+    // unmanaged code. We end up here because
+    // Increment/DecrementTraceCallCount() will bump
+    // g_TrapReturningThreads for us.
+    if (CORDebuggerTraceCall())
+        g_pDebugInterface->TraceCall((const BYTE*)traceAddr);
+#endif // DEBUGGING_SUPPORTED
 }
 
-NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame)
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* traceAddr)
 {
     frame->currentThread->RareDisablePreemptiveGC();
 #ifdef DEBUGGING_SUPPORTED
@@ -5394,7 +5403,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame)
     // Increment/DecrementTraceCallCount() will bump
     // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE*)frame->pMD->GetMultiCallableAddrOfCode());
+        g_pDebugInterface->TraceCall((const BYTE*)traceAddr);
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -5408,6 +5417,8 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame)
 void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
 {
     _ASSERTE(frame != NULL && handle != NULL);
+
+    void* traceAddr = _ReturnAddress();
 
     MethodDesc* pMD = GetMethod(handle);
     if (pMD->IsILStub() && secretArg != NULL)
@@ -5436,12 +5447,12 @@ void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame, CO
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
         {
-            JIT_ReversePInvokeEnterRare2(frame);
+            JIT_ReversePInvokeEnterRare2(frame, traceAddr);
         }
     }
     else
     {
-        JIT_ReversePInvokeEnterRare(frame);
+        JIT_ReversePInvokeEnterRare(frame, traceAddr);
     }
 
 #ifndef FEATURE_EH_FUNCLETS
