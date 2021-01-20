@@ -20,10 +20,22 @@ jobs:
   - name: SignType
     value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
+  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+    - group: AzureDevOps-Artifact-Feeds-Pats
+
   steps:
   - checkout: self
     clean: true
     fetchDepth: 20
+
+  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+    - task: PowerShell@2
+      displayName: Setup Private Feeds Credentials
+      inputs:
+        filePath: $(Build.SourcesDirectory)\eng\common\SetupNugetSources.ps1
+        arguments: -ConfigFile $(Build.SourcesDirectory)\NuGet.config -Password $Env:Token
+      env:
+        Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@0

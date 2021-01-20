@@ -45,7 +45,7 @@ jobs:
       dependsOn: ${{ parameters.dependsOn }}
 
     ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-      dependsOn: 
+      dependsOn:
       - evaluate_paths
       - ${{ if ne(parameters.dependsOn,'') }}:
         - ${{ parameters.dependsOn }}
@@ -53,7 +53,7 @@ jobs:
     variables:
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
-      
+
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
         - name: _osParameter
           value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
@@ -78,6 +78,9 @@ jobs:
         - name: ANDROID_OPENSSL_AAR
           value: /tmp/openssl-android
 
+      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        - group: AzureDevOps-Artifact-Feeds-Pats
+
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
@@ -85,6 +88,24 @@ jobs:
     - checkout: self
       clean: true
       fetchDepth: $(checkoutFetchDepth)
+
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - task: Bash@3
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - task: PowerShell@2
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)\eng\common\SetupNugetSources.ps1
+            arguments: -ConfigFile $(Build.SourcesDirectory)\NuGet.config -Password $Env:Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml

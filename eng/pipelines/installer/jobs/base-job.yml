@@ -185,6 +185,9 @@ jobs:
     - name: MSBuildScript
       value: /root/runtime/eng/common/msbuild.sh
 
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        - group: AzureDevOps-Artifact-Feeds-Pats
+
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: BuildScript
         value: ./eng/install-nuget-credprovider-then-build.sh --subset host+packs
@@ -352,6 +355,24 @@ jobs:
     clean: true
     fetchDepth: $(checkoutFetchDepth)
 
+  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - task: Bash@3
+        displayName: Setup Private Feeds Credentials
+        inputs:
+          filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+          arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+        env:
+          Token: $(dn-bot-dnceng-artifact-feeds-rw)
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - task: PowerShell@2
+        displayName: Setup Private Feeds Credentials
+        inputs:
+          filePath: $(Build.SourcesDirectory)\eng\common\SetupNugetSources.ps1
+          arguments: -ConfigFile $(Build.SourcesDirectory)\NuGet.config -Password $Env:Token
+        env:
+          Token: $(dn-bot-dnceng-artifact-feeds-rw)
+
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
@@ -393,7 +414,7 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
         parameters:
-          filesToSign: 
+          filesToSign:
           - name: dotnet
             path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
             entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
@@ -405,7 +426,7 @@ jobs:
       displayName: Build and Package
       continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
-  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
     - script: |
         du -sh $(Build.SourcesDirectory)/*
         df -h
