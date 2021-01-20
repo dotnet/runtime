@@ -1970,86 +1970,86 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
 #endif
 
+CONTEXT* AllocateOSContextHelper(LPVOID* contextBuffer)
+{
+    CONTEXT* pOSContext = NULL;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)  
+    DWORD context = CONTEXT_COMPLETE;
+    BOOL supportsAVX = FALSE;
+
+    // Determine if the processor supports AVX so we could 
+    // retrieve extended registers
+    DWORD64 FeatureMask = GetEnabledXStateFeatures();
+    if ((FeatureMask & XSTATE_MASK_AVX) != 0)
+    {
+        context = context | CONTEXT_XSTATE;
+        supportsAVX = TRUE;
+    }
+
+    // Retrieve contextSize by passing NULL for Buffer
+    DWORD contextSize = 0;
+    // The initialize call should fail but return contextSize
+    BOOL success = InitializeContext(NULL, context, NULL, &contextSize);
+    _ASSERTE(!success);
+
+    // So now allocate a buffer of that size and call IntitializeContext again
+    LPVOID buffer = malloc(contextSize);
+    if (buffer != NULL)
+    {
+        success = InitializeContext(buffer, context, &pOSContext, &contextSize);
+        // if AVX is supported set the appropriate features mask in the context
+        if (success == TRUE && supportsAVX)
+        {
+            // This should not normally fail.
+            // The system silently ignores any feature specified in the FeatureMask
+            // which is not enabled on the processor.
+            success = SetXStateFeaturesMask(pOSContext, XSTATE_MASK_AVX);
+        }
+
+        if (!success)
+        {
+            free(buffer);
+            buffer = NULL;
+        }
+    }
+
+    if (!success)
+    {
+        pOSContext = NULL;
+    }
+
+    *contextBuffer = buffer;
+
+#else 
+    pOSContext = new (nothrow) CONTEXT();
+    pOSContext->ContextFlags = CONTEXT_COMPLETE;
+    *contextBuffer = NULL;
+#endif
+
+    return pOSContext;
+}
+
 void ThreadStore::AllocateOSContext()
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(HoldingThreadStore());
-    if (s_pOSContext == NULL
-#ifdef _DEBUG
-        || s_pOSContext == (CONTEXT*)0x1
-#endif
-       )
-    {
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)  
-        DWORD context = CONTEXT_COMPLETE;
-        BOOL supportsAVX = FALSE;
-
-        // Determine if the processor supports AVX so we could 
-        // retrieve extended registers
-        DWORD64 FeatureMask = GetEnabledXStateFeatures();
-        if ((FeatureMask & XSTATE_MASK_AVX) != 0)
-        {
-            context = context | CONTEXT_XSTATE;
-            supportsAVX = TRUE;
-        }
-
-        // Retrieve contextSize by passing NULL for Buffer
-        DWORD contextSize = 0;
-        BOOL success = InitializeContext(NULL,
-                                   context,
-                                   NULL,
-                                   &contextSize);
-
-        // The initialize call should fail but return contextSize
-        // So now allocate a buffer of that size and call IntitializeContext again
-        if (success == FALSE)
-        {
-            LPVOID contextBuffer = malloc(contextSize);
-            if (contextBuffer != NULL)
-            {
-                success = InitializeContext(contextBuffer,
-                                            context,
-                                            &s_pOSContext,
-                                            &contextSize);
-
-                // if AVX is supported set the appropriate features mask in the context
-                if (success == TRUE && supportsAVX)
-                {
-                    success = SetXStateFeaturesMask(s_pOSContext, XSTATE_MASK_AVX);
-                    if (success == FALSE)
-                    {
-                        s_pOSContext = NULL;
-                    }                            
-                }
-            }
-        }
-#else 
-        s_pOSContext = new (nothrow) CONTEXT();
-        s_pOSContext->ContextFlags = CONTEXT_COMPLETE;
-#endif
-
-    }
-#ifdef _DEBUG
     if (s_pOSContext == NULL)
     {
-        s_pOSContext = (CONTEXT*)0x1;
+        s_pOSContext = AllocateOSContextHelper(&s_pOSContextBuffer);
     }
-#endif
 }
 
-CONTEXT *ThreadStore::GrabOSContext()
+CONTEXT *ThreadStore::GrabOSContext(LPVOID* contextBuffer)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(HoldingThreadStore());
+
     CONTEXT *pContext = s_pOSContext;
+    *contextBuffer = s_pOSContextBuffer;
     s_pOSContext = NULL;
-#ifdef _DEBUG
-    if (pContext == (CONTEXT*)0x1)
-    {
-        pContext = NULL;
-    }
-#endif
+    s_pOSContextBuffer = NULL;
     return pContext;
 }
 
@@ -2502,16 +2502,8 @@ void RedirectedThreadFrame::ExceptionUnwind()
 
     Thread* pThread = GetThread();
 
-    if (pThread->GetSavedRedirectContext())
-    {
-        delete m_Regs;
-    }
-    else
-    {
-        // Save it for future use to avoid repeatedly new'ing
-        pThread->SetSavedRedirectContext(m_Regs);
-    }
-
+    // Allow future use to avoid repeatedly new'ing
+    pThread->UnmarkRedirectContextInUse(m_Regs);
     m_Regs = NULL;
 }
 
@@ -2591,15 +2583,9 @@ int RedirectedHandledJITCaseExceptionFilter(
     ReplaceExceptionContextRecord(pExcepPtrs->ContextRecord, pCtx);
 
     DWORD espValue = pCtx->Esp;
-    if (pThread->GetSavedRedirectContext())
-    {
-        delete pCtx;
-    }
-    else
-    {
-        // Save it for future use to avoid repeatedly new'ing
-        pThread->SetSavedRedirectContext(pCtx);
-    }
+
+    // Allow future use to avoid repeatedly new'ing
+    pThread->UnmarkRedirectContextInUse(pCtx);
 
     /////////////////////////////////////////////////////////////////////////////
     // NOTE: Ugly, ugly workaround.
@@ -2692,9 +2678,8 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     __try
 #endif // TARGET_X86
     {
-        // Make sure this thread doesn't reuse the context memory in re-entrancy cases
-        _ASSERTE(pThread->GetSavedRedirectContext() != NULL);
-        pThread->SetSavedRedirectContext(NULL);
+        // Make sure this thread doesn't reuse the context memory.
+        pThread->MarkRedirectContextInUse(pCtx);
 
         // Link in the frame
         frame.Push();
@@ -2787,19 +2772,8 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         frame.Pop();
 
         {
-            // Free the context struct if we already have one cached
-            if (pThread->GetSavedRedirectContext())
-            {
-                CONTEXT* pCtxTemp = (CONTEXT*)_alloca(sizeof(CONTEXT));
-                memcpy(pCtxTemp, pCtx, sizeof(CONTEXT));
-                delete pCtx;
-                pCtx = pCtxTemp;
-            }
-            else
-            {
-                // Save it for future use to avoid repeatedly new'ing
-                pThread->SetSavedRedirectContext(pCtx);
-            }
+            // Allow future use of the context
+            pThread->UnmarkRedirectContextInUse(pCtx);
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
             if (pThread->m_fPreemptiveGCDisabledForGCStress)
@@ -2912,49 +2886,23 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 
     _ASSERTE(HandledJITCase());
     _ASSERTE(GetThread() != this);
+    _ASSERTE(ThreadStore::HoldingThreadStore());
 
     ////////////////////////////////////////////////////////////////
     // Acquire a context structure to save the thread state into
 
-    // We need to distinguish between two types of callers:
-    // - Most callers, including GC, operate while holding the ThreadStore
+    // All callers, including suspension, operate while holding the ThreadStore
     //   lock.  This means that we can pre-allocate a context structure
     //   globally in the ThreadStore and use it in this function.
-    // - Some callers (currently only YieldTask) cannot take the ThreadStore
-    //   lock.  Therefore we always allocate a SavedRedirectContext in the
-    //   Thread constructor.  (Since YieldTask currently is the only caller
-    //   that does not hold the ThreadStore lock, we only do this when
-    //   we're hosted.)
 
     // Check whether we have a SavedRedirectContext we can reuse:
     CONTEXT *pCtx = GetSavedRedirectContext();
 
-    // If we've never allocated a context for this thread, do so now
+    // If we've never assigned a context for this thread, do so now
     if (!pCtx)
     {
-        // If our caller took the ThreadStore lock, then it pre-allocated
-        // a context in the ThreadStore:
-        if (ThreadStore::HoldingThreadStore())
-        {
-            pCtx = ThreadStore::GrabOSContext();
-        }
-
-        if (!pCtx)
-        {
-            // Even when our caller is YieldTask, we can find a NULL
-            // SavedRedirectContext in this function:  Consider the scenario
-            // where GC is in progress and has already redirected a thread.
-            // That thread will set its SavedRedirectContext to NULL to enable
-            // reentrancy.  Now assume that the host calls YieldTask for the
-            // redirected thread.  In this case, this function will simply
-            // fail, but that is fine:  The redirected thread will check,
-            // before it resumes execution, whether it should yield.
-            return (FALSE);
-        }
-
-        // Save the pointer for the redirect function
-        _ASSERTE(GetSavedRedirectContext() == NULL);
-        SetSavedRedirectContext(pCtx);
+        pCtx = m_pSavedRedirectContext = ThreadStore::GrabOSContext(&m_pOSContextBuffer);
+        _ASSERTE(GetSavedRedirectContext() != NULL);
     }
 
     //////////////////////////////////////
@@ -3034,9 +2982,6 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     }
     CONTRACTL_END;
 
-    // REVISIT_TODO need equivalent of this for the current thread
-    //_ASSERTE(HandledJITCase());
-
     _ASSERTE(GetThread() == this);
     _ASSERTE(PreemptiveGCDisabledOther());
     _ASSERTE(IsAddrOfRedirectFunc(pTgt));
@@ -3051,27 +2996,44 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     // Check to see if we've already got memory allocated for this purpose.
     CONTEXT *pCtx = GetSavedRedirectContext();
 
-    // If we've never allocated a context for this thread, do so now
+    // If we've never assigned a context for this thread, do so now
     if (!pCtx)
     {
-        pCtx = new (nothrow) CONTEXT();
-
-        if (!pCtx)
-            return (FALSE);
-
-        // Save the pointer for the redirect function
-        _ASSERTE(GetSavedRedirectContext() == NULL);
-        SetSavedRedirectContext(pCtx);
+        pCtx = m_pSavedRedirectContext = AllocateOSContextHelper(&m_pOSContextBuffer);
+        _ASSERTE(GetSavedRedirectContext() != NULL);
     }
 
     //////////////////////////////////////
     // Get and save the thread's context
 
+    _ASSERTE((pCtx->ContextFlags & CONTEXT_XSTATE) ==
+        (pCurrentThreadCtx->ContextFlags & CONTEXT_XSTATE));
+
     CopyMemory(pCtx, pCurrentThreadCtx, sizeof(CONTEXT));
 
-    // Clear any new bits we don't understand (like XSAVE) in case we pass
+    if (pCurrentThreadCtx->ContextFlags & CONTEXT_XSTATE)
+    {
+        // copy AVX feature, if enabled
+        DWORD length;
+        PVOID pSrcAvx = LocateXStateFeature(pCurrentThreadCtx, XSTATE_MASK_AVX, &length);
+        if (pSrcAvx)
+        {
+            DWORD length1;
+            PVOID pDstAvx = LocateXStateFeature(pCtx, XSTATE_MASK_AVX, &length1);
+            _ASSERTE(pDstAvx);
+            _ASSERTE(length = length1);
+            CopyMemory(pDstAvx, pSrcAvx, length1);
+        }
+        else
+        {
+            // if source does not have AVX feature, the destination should not have it either.
+            _ASSERTE(!LocateXStateFeature(pCtx, XSTATE_MASK_AVX, &length));
+        }
+    }
+
+    // Clear any new bits we don't understand in case we pass
     // this context to RtlRestoreContext (like for gcstress)
-    pCtx->ContextFlags &= CONTEXT_ALL;
+    pCtx->ContextFlags &= (CONTEXT_COMPLETE | CONTEXT_XSTATE);
 
     // Ensure that this flag is set for the next time through the normal path,
     // RedirectThreadAtHandledJITCase.
@@ -3454,11 +3416,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 continue;
             }
 
-            // We can not allocate memory after we suspend a thread.
-            // Otherwise, we may deadlock the process, because the thread we just suspended
-            // might hold locks we would need to acquire while allocating.
-            ThreadStore::AllocateOSContext();
-
 #ifdef TIME_SUSPEND
             DWORD startSuspend = g_SuspendStatistics.GetTime();
 #endif
@@ -3466,6 +3423,11 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             //
             // Suspend the native thread.
             //
+
+            // We can not allocate memory after we suspend a thread.
+            // Otherwise, we may deadlock the process, because the thread we just suspended
+            // might hold locks we would need to acquire while allocating.
+            ThreadStore::AllocateOSContext();
             Thread::SuspendThreadResult str = thread->SuspendThread(/*fOneTryOnly*/ TRUE);
 
             // We should just always build with this TIME_SUSPEND stuff, and report the results via ETW.
@@ -4215,10 +4177,6 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
     RetrySuspension:
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
-        // We can not allocate memory after we suspend a thread.
-        // Otherwise, we may deadlock the process when CLR is hosted.
-        ThreadStore::AllocateOSContext();
-
 #ifdef DISABLE_THREADSUSPEND
         // On platforms that do not support safe thread suspension we have
         // to rely on the GCPOLL mechanism.
@@ -4232,6 +4190,9 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
         SuspendThreadResult str = STR_Success;
         FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
 #else
+        // We can not allocate memory after we suspend a thread.
+        // Otherwise, we may deadlock if suspended thread holds allocator locks.
+        ThreadStore::AllocateOSContext();
         SuspendThreadResult str = thread->SuspendThread();
 #endif // DISABLE_THREADSUSPEND
 
@@ -4415,9 +4376,8 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
 
 RetrySuspension:
         // We can not allocate memory after we suspend a thread.
-        // Otherwise, we may deadlock the process when CLR is hosted.
+        // Otherwise, we may deadlock if the suspended thread holds allocator locks.
         ThreadStore::AllocateOSContext();
-
         SuspendThreadResult str = thread->SuspendThread();
 
         if (str == STR_Failure || str == STR_UnstartedOrDead)
@@ -5964,7 +5924,7 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         // If the thread is at a GC safe point, push a RedirectedThreadFrame with
         // the interrupted context and pulse the GC mode so that GC can proceed.
         FrameWithCookie<RedirectedThreadFrame> frame(interruptedContext);
-        pThread->SetSavedRedirectContext(NULL);
+        pThread->MarkRedirectContextInUse(interruptedContext);
 
         frame.Push(pThread);
 
