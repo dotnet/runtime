@@ -720,8 +720,9 @@ namespace System.Numerics
 
             if (trivialDividend && trivialDivisor)
             {
-                remainder = dividend._sign % divisor._sign;
-                return dividend._sign / divisor._sign;
+                BigInteger quotient;
+                (quotient, remainder) = Math.DivRem(dividend._sign, divisor._sign);
+                return quotient;
             }
 
             if (trivialDividend)
