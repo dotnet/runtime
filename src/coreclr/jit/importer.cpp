@@ -13487,14 +13487,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Work is evidently required, add cast node
                 else
                 {
-                    GenTree* castOp = op1;
                     if (callNode)
                     {
-                        op1 = gtNewCastNodeL(type, castOp, uns, lclTyp);
+                        op1 = gtNewCastNodeL(type, op1, uns, lclTyp);
                     }
                     else
                     {
-                        op1 = gtNewCastNode(type, castOp, uns, lclTyp);
+                        op1 = gtNewCastNode(type, op1, uns, lclTyp);
                     }
 
                     if (ovfl)
@@ -13502,7 +13501,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1->gtFlags |= (GTF_OVERFLOW | GTF_EXCEPT);
                     }
 
-                    if (castOp->OperIsConst() && opts.OptimizationEnabled())
+                    if (op1->gtGetOp1()->OperIsConst() && opts.OptimizationEnabled())
                     {
                         // Try and fold the introduced cast
                         op1 = gtFoldExprConst(op1);
