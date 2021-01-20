@@ -398,9 +398,9 @@ enum ReadyToRunRuntimeConstants : DWORD
 {
     READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11,
 #ifdef TARGET_X86
-    READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2,
-#else
     READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 5,
+#else
+    READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2,
 #endif
 };
 
