@@ -800,7 +800,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.ReversePInvokeExit;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_STRCNS_CURRENT_MODULE:
-                    id = ReadyToRunHelper.GetString;
                     return _compilation.NodeFactory.ImportThunk(ReadyToRunHelper.GetString, _compilation.NodeFactory.HelperImports, useVirtualCall: false);
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
