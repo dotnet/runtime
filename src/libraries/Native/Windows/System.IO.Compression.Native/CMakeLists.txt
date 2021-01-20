@@ -90,7 +90,7 @@ if (GEN_SHARED_LIB)
     )
 endif()
 
-add_library(System.IO.Compression.Native-static
+add_library(System.IO.Compression.Native-Static
     STATIC
     ${NATIVECOMPRESSION_SOURCES}
 )
@@ -99,13 +99,13 @@ add_library(System.IO.Compression.Native-static
 if (GEN_SHARED_LIB)
     SET_TARGET_PROPERTIES(System.IO.Compression.Native PROPERTIES LINK_OPTIONS "${__LinkArgs};${__SharedLinkArgs}")
 endif()
-SET_TARGET_PROPERTIES(System.IO.Compression.Native-static PROPERTIES STATIC_LIBRARY_OPTIONS "${__LinkArgs}")
+SET_TARGET_PROPERTIES(System.IO.Compression.Native-Static PROPERTIES STATIC_LIBRARY_OPTIONS "${__LinkArgs}")
 
 # Allow specification of libraries that should be linked against
 if (GEN_SHARED_LIB)
     target_link_libraries(System.IO.Compression.Native ${__LinkLibraries})
 endif()
-target_link_libraries(System.IO.Compression.Native-static ${__LinkLibraries})
+target_link_libraries(System.IO.Compression.Native-Static ${__LinkLibraries})
 
 if (GEN_SHARED_LIB)
     GENERATE_EXPORT_HEADER( System.IO.Compression.Native
@@ -119,4 +119,4 @@ if (GEN_SHARED_LIB)
     install (FILES $<TARGET_PDB_FILE:System.IO.Compression.Native> DESTINATION .)
 endif()
 
-install (TARGETS System.IO.Compression.Native-static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
