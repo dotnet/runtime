@@ -4,6 +4,7 @@
   <UsingTask TaskName="WasmAOT" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
       Required public items/properties:
@@ -16,6 +17,7 @@
       - $(WasmMainAssemblyFileName)- Defaults to $(TargetFileName)
       - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
       - $(WasmNativeStrip)   - Whenever to strip the native executable. Defaults to true.
+      - $(WasmLinkIcalls)    - Whenever to link out unused icalls. Defaults to $(WasmBuildNative).
       - $(RunAOTCompilation) - Defaults to false.
       - $(WasmDebugLevel)
 
@@ -48,7 +50,9 @@
   <PropertyGroup>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+    <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
     <WasmNativeStrip>true</WasmNativeStrip>
+    <_CrossCompilerPath>$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross</_CrossCompilerPath>
   </PropertyGroup>
 
   <Target Name="WasmBuildApp" AfterTargets="Publish" />
@@ -213,6 +217,16 @@
      Modules="@(_WasmPInvokeModules)"
      Assemblies="@(_WasmAssemblies)"
      OutputPath="$(_WasmIntermediateOutputPath)pinvoke-table.h" />
+
+   <!-- ICall table generation -->
+   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command="$(_CrossCompilerPath) --print-icall-table > $(WasmBuildDir)/runtime-icall-table.h" />
+   <IcallTableGenerator Condition="'$(WasmLinkIcalls)' == 'true'"
+     RuntimeIcallTableFile="$(WasmBuildDir)/runtime-icall-table.h"
+     Assemblies="@(_WasmPInvokeAssemblies)"
+     OutputPath="$(WasmBuildDir)/icall-table.h" />
+   <PropertyGroup>
+     <EmccFlags Condition="'$(WasmLinkIcalls)' == 'true'">$(EmccFlags) -DLINK_ICALLS=1</EmccFlags>
+   </PropertyGroup>
 
    <ItemGroup>
      <_WasmRuntimePackNativeLibs Include="libmono-ee-interp.a"/>
