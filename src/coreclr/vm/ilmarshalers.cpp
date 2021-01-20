@@ -3350,13 +3350,24 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
     else
     {
         // nothing to do but pass the value along
-        // note that on x86 the argument comes by-value but is converted to pointer by the UM thunk
-        // so that we don't make copies that would not be accounted for by copy ctors
+        // note that on x86 the argument comes by-value
+        // but on other platforms it comes by-reference
+#ifdef TARGET_X86
+        LocalDesc locDesc(pargs->mm.m_pMT);
+        pslIL->SetStubTargetArgType(&locDesc);
+
+        DWORD       dwNewValueTypeLocal;
+        dwNewValueTypeLocal = pslIL->NewLocal(locDesc);
+        pslILDispatch->EmitLDARG(argidx);
+        pslILDispatch->EmitSTLOC(dwNewValueTypeLocal);
+        pslILDispatch->EmitLDLOCA(dwNewValueTypeLocal);
+#else
         LocalDesc   locDesc(pargs->mm.m_pMT);
         locDesc.MakeCopyConstructedPointer();
 
-        pslIL->SetStubTargetArgType(&locDesc);              // native type is a pointer
+        pslIL->SetStubTargetArgType(&locDesc);
         pslILDispatch->EmitLDARG(argidx);
+#endif
 
         return OVERRIDDEN;
     }

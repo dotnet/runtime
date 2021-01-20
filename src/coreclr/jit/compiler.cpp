@@ -6184,10 +6184,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     {
         bool unused;
         info.compCallConv = info.compCompHnd->getUnmanagedCallConv(methodInfo->ftn, nullptr, &unused);
+        info.compArgOrder = Target::g_tgtUnmanagedArgOrder;
     }
     else
     {
         info.compCallConv = CorInfoCallConvExtension::Managed;
+        info.compArgOrder = Target::g_tgtArgOrder;
     }
 
     info.compIsVarArgs = false;
