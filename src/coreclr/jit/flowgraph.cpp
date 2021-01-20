@@ -8715,7 +8715,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
     else
     {
         reversePInvokeEnterHelper = CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER;
-        args = gtNewCallArgs(pInvokeFrameVar);
+        args                      = gtNewCallArgs(pInvokeFrameVar);
     }
 
     tree = gtNewHelperCallNode(reversePInvokeEnterHelper, TYP_VOID, args);
@@ -8738,7 +8738,9 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
 
-    CorInfoHelpFunc reversePInvokeExitHelper = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS) ? CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS : CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT;
+    CorInfoHelpFunc reversePInvokeExitHelper = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS)
+                                                   ? CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS
+                                                   : CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT;
 
     tree = gtNewHelperCallNode(reversePInvokeExitHelper, TYP_VOID, gtNewCallArgs(tree));
 
