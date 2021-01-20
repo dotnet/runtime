@@ -1962,6 +1962,8 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
 #endif
 }
 
+typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
+PINITIALIZECONTEXT2 pfnInitializeContext2 = NULL;
 
 #ifdef TARGET_X86
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
@@ -1978,6 +1980,12 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     DWORD context = CONTEXT_COMPLETE;
     BOOL supportsAVX = FALSE;
 
+    if (pfnInitializeContext2 == NULL)
+    {
+        HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
+        pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
+    }
+
     // Determine if the processor supports AVX so we could 
     // retrieve extended registers
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
@@ -1989,15 +1997,22 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 
     // Retrieve contextSize by passing NULL for Buffer
     DWORD contextSize = 0;
+    ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX;
     // The initialize call should fail but return contextSize
-    BOOL success = InitializeContext(NULL, context, NULL, &contextSize);
+    BOOL success = pfnInitializeContext2 ?
+        pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
+        InitializeContext(NULL, context, NULL, &contextSize);
+
     _ASSERTE(!success);
 
     // So now allocate a buffer of that size and call IntitializeContext again
     BYTE* buffer = new (nothrow)BYTE[contextSize];
     if (buffer != NULL)
     {
-        success = InitializeContext(buffer, context, &pOSContext, &contextSize);
+        success = pfnInitializeContext2 ?
+            pfnInitializeContext2(buffer, context, &pOSContext, &contextSize, xStateCompactionMask):
+            InitializeContext(buffer, context, &pOSContext, &contextSize);
+
         // if AVX is supported set the appropriate features mask in the context
         if (success == TRUE && supportsAVX)
         {
