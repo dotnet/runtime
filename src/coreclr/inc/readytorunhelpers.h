@@ -110,13 +110,11 @@ HELPER(READYTORUN_HELPER_CheckedWriteBarrier_EBP,   CORINFO_HELP_CHECKED_ASSIGN_
 HELPER(READYTORUN_HELPER_EndCatch,                  CORINFO_HELP_ENDCATCH,                          OPTIMIZEFORSIZE)
 #endif
 
-HELPER(READYTORUN_HELPER_PInvokeBegin,                        CORINFO_HELP_JIT_PINVOKE_BEGIN,                 )
-HELPER(READYTORUN_HELPER_PInvokeEnd,                          CORINFO_HELP_JIT_PINVOKE_END,                   )
-HELPER(READYTORUN_HELPER_GCPoll,                              CORINFO_HELP_POLL_GC,                           )
-HELPER(READYTORUN_HELPER_ReversePInvokeEnter,                 CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER,         )
-HELPER(READYTORUN_HELPER_ReversePInvokeExit,                  CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,          )
-HELPER(READYTORUN_HELPER_ReversePInvokeEnterTrackTransitions, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS,         )
-HELPER(READYTORUN_HELPER_ReversePInvokeExitTrackTransitions,  CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS,         )
+HELPER(READYTORUN_HELPER_PInvokeBegin,              CORINFO_HELP_JIT_PINVOKE_BEGIN,                 )
+HELPER(READYTORUN_HELPER_PInvokeEnd,                CORINFO_HELP_JIT_PINVOKE_END,                   )
+HELPER(READYTORUN_HELPER_GCPoll,                    CORINFO_HELP_POLL_GC,                           )
+HELPER(READYTORUN_HELPER_ReversePInvokeEnter,       CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER,         )
+HELPER(READYTORUN_HELPER_ReversePInvokeExit,        CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,          )
 
 HELPER(READYTORUN_HELPER_MonitorEnter,              CORINFO_HELP_MON_ENTER,                         )
 HELPER(READYTORUN_HELPER_MonitorExit,               CORINFO_HELP_MON_EXIT,                          )
