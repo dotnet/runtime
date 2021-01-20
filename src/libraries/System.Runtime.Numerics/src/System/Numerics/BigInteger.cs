@@ -586,8 +586,7 @@ namespace System.Numerics
             else
             {
                 _sign = -1;
-                value = value.Slice(0, len);
-                _bits = value.ToArray();
+                _bits = value.Slice(0, len).ToArray();
             }
             AssertValid();
             return;
