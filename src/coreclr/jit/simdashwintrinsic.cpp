@@ -418,6 +418,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 // We get here if the return type is an unsupported type
                 return nullptr;
             }
+            break;
         }
 
         case NI_VectorT128_Dot:
