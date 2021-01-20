@@ -288,7 +288,6 @@ jobs:
           eq(variables['monoContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
-
 #
 # Build the whole product using Mono and run libraries tests
 #
