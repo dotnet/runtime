@@ -982,8 +982,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         _fX64UnixArgInRegisters = false;
 
-                        argOfs = _transitionBlock.OffsetOfArgs + _x64UnixIdxStack * 8;
-                        int cArgSlots = cbArg / _transitionBlock.StackElemSize();
+                        const int x64UnixStackSlotSize = 8;
+                        argOfs = _transitionBlock.OffsetOfArgs + _x64UnixIdxStack * x64UnixStackSlotSize;
+                        int cArgSlots = cbArg / x64UnixStackSlotSize;
 
                         _x64UnixIdxStack += cArgSlots;
                         return argOfs;
@@ -1238,7 +1239,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         int cbArg = _transitionBlock.StackElemSize(argSize);
                         const int generalRegSize = 8;
-                        int cArgSlots = ALIGN_UP(cbArg, generalRegSize) / _transitionBlock.StackElemSize();
+                        int cArgSlots = ALIGN_UP(cbArg, generalRegSize) / generalRegSize;
 
                         if (cFPRegs > 0 && !IsVarArg)
                         {
@@ -1440,15 +1441,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         else
                         {
                             // All stack arguments take just one stack slot on AMD64 because of arguments bigger 
-                            // than a stack slot are passed by reference. 
-                            stackElemSize = _transitionBlock.StackElemSize();
+                            // than a stack slot are passed by reference.
+                            const int x64StackSlotSize = 8;
+                            stackElemSize = x64StackSlotSize;
                         }
                     }
                     else
                     {
                         stackElemSize = _transitionBlock.StackElemSize(GetArgSize());
                         if (IsArgPassedByRef())
-                            stackElemSize = _transitionBlock.StackElemSize();
+                        {
+                            stackElemSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
+                        }
                     }
 
                     int endOfs = ofs + stackElemSize;
@@ -1590,9 +1594,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         else
                         {
                             int argOnStackSize;
-                            int stackElemSize = _transitionBlock.StackElemSize();
                             if (IsArgPassedByRef())
-                                argOnStackSize = stackElemSize;
+                                argOnStackSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                             else
                                 argOnStackSize = GetArgSize();
                         }

@@ -59,9 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public abstract int PointerSize { get; }
 
-        public int StackElemSize() => PointerSize;
-
-        public int StackElemSize(int size) => (((size) + StackElemSize() - 1) & -StackElemSize());
+        public int StackElemSize(int size) => (((size) + PointerSize - 1) & -PointerSize);
 
         public abstract int NumArgumentRegisters { get; }
 
@@ -133,12 +131,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(!IsX86);
             return ((offset - OffsetOfArgumentRegisters) / PointerSize);
-        }
-
-        public int GetStackArgumentIndexFromOffset(int offset)
-        {
-            Debug.Assert(!IsX86);
-            return (offset - OffsetOfArgs) / StackElemSize();
         }
 
         /// <summary>
