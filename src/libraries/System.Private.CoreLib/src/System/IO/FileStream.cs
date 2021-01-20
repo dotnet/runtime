@@ -49,10 +49,10 @@ namespace System.IO
                 switch (isAsync)
                 {
                     case true:
-                        _impl = new FileStreamImpl(this, safeHandle, access, bufferSize, true);
+                        _impl = WrapForDerivedType(new FileStreamImpl(this, safeHandle, access, bufferSize, true));
                         return;
                     case false:
-                        _impl = new FileStreamImpl(this, safeHandle, access, bufferSize, false);
+                        _impl = WrapForDerivedType(new FileStreamImpl(this, safeHandle, access, bufferSize, false));
                         return;
                 }
             }
@@ -86,6 +86,9 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
         }
 
+        private FileStreamStrategy WrapForDerivedType(FileStreamStrategy impl)
+            => GetType() == typeof(FileStream) ? impl : new DerivedFileStreamImpl(this, impl);
+
         public FileStream(SafeFileHandle handle, FileAccess access)
             : this(handle, access, DefaultBufferSize)
         {
@@ -103,10 +106,10 @@ namespace System.IO
             switch (isAsync)
             {
                 case true:
-                    _impl = new FileStreamImpl(this, handle, access, bufferSize, true);
+                    _impl = WrapForDerivedType(new FileStreamImpl(this, handle, access, bufferSize, true));
                     return;
                 case false:
-                    _impl = new FileStreamImpl(this, handle, access, bufferSize, false);
+                    _impl = WrapForDerivedType(new FileStreamImpl(this, handle, access, bufferSize, false));
                     return;
             }
         }
@@ -179,11 +182,11 @@ namespace System.IO
 
             if ((options & FileOptions.Asynchronous) != 0)
             {
-                _impl = new FileStreamImpl(this, path, mode, access, share, bufferSize, options);
+                _impl = WrapForDerivedType(new FileStreamImpl(this, path, mode, access, share, bufferSize, options));
             }
             else
             {
-                _impl = new FileStreamImpl(this, path, mode, access, share, bufferSize, options);
+                _impl = WrapForDerivedType(new FileStreamImpl(this, path, mode, access, share, bufferSize, options));
             }
         }
 
@@ -222,13 +225,6 @@ namespace System.IO
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Flush() which a subclass might have overridden.  To be safe
-            // we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Flush) when we are not sure.
-            if (GetType() != typeof(FileStream))
-                return base.FlushAsync(cancellationToken);
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
@@ -241,6 +237,9 @@ namespace System.IO
             return _impl.FlushAsync(cancellationToken);
         }
 
+        internal Task BaseFlushAsync(CancellationToken cancellationToken)
+            => base.FlushAsync(cancellationToken);
+
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateReadWriteArgs(buffer, offset, count);
@@ -248,41 +247,13 @@ namespace System.IO
             return _impl.Read(buffer, offset, count);
         }
 
-        public override int Read(Span<byte> buffer)
-        {
-            if (GetType() == typeof(FileStream) && !_impl.IsAsync)
-            {
-                if (_impl.IsClosed)
-                {
-                    throw Error.GetFileNotOpen();
-                }
+        public override int Read(Span<byte> buffer) => _impl.Read(buffer);
 
-                return _impl.Read(buffer);
-            }
-            else
-            {
-                // This type is derived from FileStream and/or the stream is in async mode.  If this is a
-                // derived type, it may have overridden Read(byte[], int, int) prior to this Read(Span<byte>)
-                // overload being introduced.  In that case, this Read(Span<byte>) overload should use the behavior
-                // of Read(byte[],int,int) overload.  Or if the stream is in async mode, we can't call the
-                // synchronous ReadSpan, so we similarly call the base Read, which will turn delegate to
-                // Read(byte[],int,int), which will do the right thing if we're in async mode.
-                return base.Read(buffer);
-            }
-        }
+        internal int BaseRead(Span<byte> buffer) => base.Read(buffer);
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-
-            if (GetType() != typeof(FileStream))
-            {
-                // If we have been inherited into a subclass, the following implementation could be incorrect
-                // since it does not call through to Read() which a subclass might have overridden.
-                // To be safe we will only use this implementation in cases where we know it is safe to do so,
-                // and delegate to our base class (which will call into Read/ReadAsync) when we are not sure.
-                return base.ReadAsync(buffer, offset, count, cancellationToken);
-            }
 
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<int>(cancellationToken);
@@ -293,15 +264,11 @@ namespace System.IO
             return _impl.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
+        internal Task<int> BaseReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => base.ReadAsync(buffer, offset, count, cancellationToken);
+
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (GetType() != typeof(FileStream))
-            {
-                // If this isn't a concrete FileStream, a derived type may have overridden ReadAsync(byte[],...),
-                // which was introduced first, so delegate to the base which will delegate to that.
-                return base.ReadAsync(buffer, cancellationToken);
-            }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return ValueTask.FromCanceled<int>(cancellationToken);
@@ -315,6 +282,9 @@ namespace System.IO
             return _impl.ReadAsync(buffer, cancellationToken);
         }
 
+        internal ValueTask<int> BaseReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => base.ReadAsync(buffer, cancellationToken);
+
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateReadWriteArgs(buffer, offset, count);
@@ -322,41 +292,13 @@ namespace System.IO
             _impl.Write(buffer, offset, count);
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer)
-        {
-            if (GetType() == typeof(FileStream) && !_impl.IsAsync)
-            {
-                if (_impl.IsClosed)
-                {
-                    throw Error.GetFileNotOpen();
-                }
+        public override void Write(ReadOnlySpan<byte> buffer) => _impl.Write(buffer);
 
-                _impl.Write(buffer);
-            }
-            else
-            {
-                // This type is derived from FileStream and/or the stream is in async mode.  If this is a
-                // derived type, it may have overridden Write(byte[], int, int) prior to this Write(ReadOnlySpan<byte>)
-                // overload being introduced.  In that case, this Write(ReadOnlySpan<byte>) overload should use the behavior
-                // of Write(byte[],int,int) overload.  Or if the stream is in async mode, we can't call the
-                // synchronous WriteSpan, so we similarly call the base Write, which will turn delegate to
-                // Write(byte[],int,int), which will do the right thing if we're in async mode.
-                base.Write(buffer);
-            }
-        }
+        internal void BaseWrite(ReadOnlySpan<byte> buffer) => base.Write(buffer);
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-
-            if (GetType() != typeof(FileStream))
-            {
-                // If we have been inherited into a subclass, the following implementation could be incorrect
-                // since it does not call through to Write() or WriteAsync() which a subclass might have overridden.
-                // To be safe we will only use this implementation in cases where we know it is safe to do so,
-                // and delegate to our base class (which will call into Write/WriteAsync) when we are not sure.
-                return base.WriteAsync(buffer, offset, count, cancellationToken);
-            }
 
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
@@ -367,15 +309,11 @@ namespace System.IO
             return _impl.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
+        internal Task BaseWriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => base.WriteAsync(buffer, offset, count, cancellationToken);
+
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (GetType() != typeof(FileStream))
-            {
-                // If this isn't a concrete FileStream, a derived type may have overridden WriteAsync(byte[],...),
-                // which was introduced first, so delegate to the base which will delegate to that.
-                return base.WriteAsync(buffer, cancellationToken);
-            }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return ValueTask.FromCanceled(cancellationToken);
@@ -388,6 +326,9 @@ namespace System.IO
 
             return _impl.WriteAsync(buffer, cancellationToken);
         }
+
+        internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            => base.WriteAsync(buffer, cancellationToken);
 
         /// <summary>
         /// Clears buffers for this stream and causes any buffered data to be written to the file.
@@ -514,25 +455,15 @@ namespace System.IO
             }
         }
 
-        public override ValueTask DisposeAsync()
-        {
-            if (GetType() != typeof(FileStream))
-            {
-                return base.DisposeAsync();
-            }
+        public override ValueTask DisposeAsync() => _impl.DisposeAsync();
 
-            return _impl.DisposeAsync();
-        }
+        internal ValueTask BaseDisposeAsync() => base.DisposeAsync();
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-        {
-            if (GetType() != typeof(FileStream))
-            {
-                base.CopyToAsync(destination, bufferSize, cancellationToken);
-            }
+            => _impl.CopyToAsync(destination, bufferSize, cancellationToken);
 
-            return _impl.CopyToAsync(destination, bufferSize, cancellationToken);
-        }
+        internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            => base.CopyToAsync(destination, bufferSize, cancellationToken);
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
@@ -584,7 +515,6 @@ namespace System.IO
 
         public override long Seek(long offset, SeekOrigin origin) => _impl.Seek(offset, origin);
 
-        internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-            => base.CopyToAsync(destination, bufferSize, cancellationToken);
+
     }
 }

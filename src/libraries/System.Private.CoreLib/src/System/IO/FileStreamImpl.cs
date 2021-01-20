@@ -148,7 +148,20 @@ namespace System.IO
                 ReadSpan(new Span<byte>(buffer, offset, count));
         }
 
-        public override int Read(Span<byte> buffer) => ReadSpan(buffer);
+        public override int Read(Span<byte> buffer)
+        {
+            if (!_useAsyncIO)
+            {
+                if (_fileHandle.IsClosed)
+                {
+                    throw Error.GetFileNotOpen();
+                }
+
+                return ReadSpan(buffer);
+            }
+
+            return _fileStream.BaseRead(buffer);
+        }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -213,7 +226,22 @@ namespace System.IO
             }
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer) => WriteSpan(buffer);
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            if (!_useAsyncIO)
+            {
+                if (_fileHandle.IsClosed)
+                {
+                    throw Error.GetFileNotOpen();
+                }
+
+                WriteSpan(buffer);
+            }
+            else
+            {
+                _fileStream.BaseWrite(buffer);
+            }
+        }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
