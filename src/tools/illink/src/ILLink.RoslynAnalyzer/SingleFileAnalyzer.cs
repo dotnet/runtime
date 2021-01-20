@@ -20,7 +20,7 @@ namespace ILLink.RoslynAnalyzer
 		public const string IL3000 = nameof (IL3000);
 		public const string IL3001 = nameof (IL3001);
 
-		private static readonly DiagnosticDescriptor LocationRule = new DiagnosticDescriptor (
+		static readonly DiagnosticDescriptor s_locationRule = new DiagnosticDescriptor (
 			IL3000,
 			new LocalizableResourceString (nameof (Resources.AvoidAssemblyLocationInSingleFileTitle),
 				Resources.ResourceManager, typeof (Resources)),
@@ -31,7 +31,7 @@ namespace ILLink.RoslynAnalyzer
 			isEnabledByDefault: true,
 			helpLinkUri: "https://docs.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3000");
 
-		private static readonly DiagnosticDescriptor GetFilesRule = new DiagnosticDescriptor (
+		static readonly DiagnosticDescriptor s_getFilesRule = new DiagnosticDescriptor (
 			IL3001,
 			new LocalizableResourceString (nameof (Resources.AvoidAssemblyGetFilesInSingleFileTitle),
 				Resources.ResourceManager, typeof (Resources)),
@@ -42,7 +42,7 @@ namespace ILLink.RoslynAnalyzer
 			isEnabledByDefault: true,
 			helpLinkUri: "https://docs.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/il3001");
 
-		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (LocationRule, GetFilesRule);
+		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_locationRule, s_getFilesRule);
 
 		public override void Initialize (AnalysisContext context)
 		{
@@ -90,7 +90,7 @@ namespace ILLink.RoslynAnalyzer
 						return;
 					}
 
-					operationContext.ReportDiagnostic (Diagnostic.Create (LocationRule, access.Syntax.GetLocation (), property));
+					operationContext.ReportDiagnostic (Diagnostic.Create (s_locationRule, access.Syntax.GetLocation (), property));
 				}, OperationKind.PropertyReference);
 
 				context.RegisterOperationAction (operationContext => {
@@ -100,7 +100,7 @@ namespace ILLink.RoslynAnalyzer
 						return;
 					}
 
-					operationContext.ReportDiagnostic (Diagnostic.Create (GetFilesRule, invocation.Syntax.GetLocation (), targetMethod));
+					operationContext.ReportDiagnostic (Diagnostic.Create (s_getFilesRule, invocation.Syntax.GetLocation (), targetMethod));
 				}, OperationKind.Invocation);
 
 				return;
