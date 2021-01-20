@@ -13479,6 +13479,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                  */
 
                 type = genActualType(lclTyp);
+
                 // If this is a no-op cast, just use op1.
                 if (!ovfl && (type == op1->TypeGet()) && (genTypeSize(type) == genTypeSize(lclTyp)))
                 {
