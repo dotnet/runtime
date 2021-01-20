@@ -1,21 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -31,37 +28,7 @@ namespace System.Net.Http.Functional.Tests
     // to separately Dispose (or have a 'using' statement) for the handler.
     public abstract class HttpClientHandlerTest : HttpClientHandlerTestBase
     {
-        private const string ExpectedContent = "Test content";
-        private const string Username = "testuser";
-        private const string Password = "password";
         private const string HttpDefaultPort = "80";
-
-        private readonly NetworkCredential _credential = new NetworkCredential(Username, Password);
-
-        public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
-        public static readonly object[][] Http2NoPushServers = Configuration.Http.Http2NoPushServers;
-
-        // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
-        //     "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"
-        public static readonly IEnumerable<object[]> HttpMethods =
-            GetMethods("GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE", "CUSTOM1");
-        public static readonly IEnumerable<object[]> HttpMethodsThatAllowContent =
-            GetMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "CUSTOM1");
-        public static readonly IEnumerable<object[]> HttpMethodsThatDontAllowContent =
-            GetMethods("HEAD", "TRACE");
-
-        private static bool IsWindows10Version1607OrGreater => PlatformDetection.IsWindows10Version1607OrGreater;
-
-        private static IEnumerable<object[]> GetMethods(params string[] methods)
-        {
-            foreach (string method in methods)
-            {
-                foreach (Uri serverUri in Configuration.Http.EchoServerList)
-                {
-                    yield return new object[] { method, serverUri };
-                }
-            }
-        }
 
         public HttpClientHandlerTest(ITestOutputHelper output) : base(output)
         {
