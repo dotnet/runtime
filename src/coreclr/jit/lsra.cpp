@@ -4562,7 +4562,7 @@ RegRecord* LinearScan::findAnotherHalfRegRec(RegRecord* regRec)
 //    None
 //
 // Return Value:
-//    A register number which forms same double register with regRec
+//    A register number which forms same double register with regNum.
 //
 regNumber LinearScan::findAnotherHalfRegNum(regNumber regNum)
 {
