@@ -4,15 +4,16 @@
           AfterTargets="Build"
           DependsOnTargets="SetCommonILLinkArgs">
 
-    <Message Text="Trimming shared framework assemblies with ILLinker..." Importance="high" />
+    <Message Text="Trimming $(PackageRID) runtime pack assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
     </PropertyGroup>
 
     <PropertyGroup>
-      <!-- default action for core assemblies -->
+      <!-- Link all assemblies -->
       <ILLinkArgs>$(ILLinkArgs) -c link</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs) -u link</ILLinkArgs>
       <!-- update debug symbols -->
       <ILLinkArgs>$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- suppress warnings with the following codes:
@@ -45,20 +46,14 @@
       <_DependencyDirectories Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir.TrimEnd('\'))" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <ILLinkArgs>$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
-    </PropertyGroup>
-
     <ItemGroup>
-      <_AssembliesToLink Include="System.Private.CoreLib" />
-
       <_LibrariesToLink Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
-      <_AssembliesToLink Include="@(_LibrariesToLink->'%(FileName)')" />
-    </ItemGroup>
+      <_LibrariesToLink Include="$(SystemPrivateCoreLibPath)" />
 
-    <PropertyGroup>
-      <ILLinkArgs>$(ILLinkArgs) -r @(_AssembliesToLink->'%(Identity)', ' -r ')</ILLinkArgs>
-    </PropertyGroup>
+      <RootAssemblies Include="@(_LibrariesToLink)">
+        <RootMode>visible</RootMode>
+      </RootAssemblies>
+    </ItemGroup>
 
     <PropertyGroup>
       <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
@@ -90,8 +85,8 @@
       <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
     </PropertyGroup>
 
-    <ILLink AssemblyPaths="$(_AssemblyPaths)"
-        RootAssemblyNames=""
+    <ILLink AssemblyPaths=""
+        RootAssemblyNames="@(RootAssemblies)"
         OutputDirectory="$(LibrariesTrimmedArtifactsPath)"
         ExtraArgs="$(ILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
