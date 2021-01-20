@@ -61,7 +61,15 @@ mono_llvm_dump_module (LLVMModuleRef module)
 {
 	/* Same as LLVMDumpModule (), but print to stdout */
 	fflush (stdout);
-	outs () << (*unwrap (module));
+	outs () << (*unwrap (module)) << "\n";
+	outs ().flush ();
+}
+
+void
+mono_llvm_dump_type (LLVMTypeRef type)
+{
+	fflush (stdout);
+	outs () << (*unwrap (type)) << "\n";
 	outs ().flush ();
 }
 
