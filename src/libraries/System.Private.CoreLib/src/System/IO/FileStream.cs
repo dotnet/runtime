@@ -392,7 +392,11 @@ namespace System.IO
         /// <summary>
         /// Clears buffers for this stream and causes any buffered data to be written to the file.
         /// </summary>
-        public override void Flush() => _impl.Flush();
+        public override void Flush()
+        {
+            // Make sure that we call through the public virtual API
+            Flush(flushToDisk: false);
+        }
 
         /// <summary>
         /// Clears buffers for this stream, and if <param name="flushToDisk"/> is true,
