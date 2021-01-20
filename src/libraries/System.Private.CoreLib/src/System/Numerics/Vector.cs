@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
@@ -1444,14 +1443,14 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">
         /// The type of <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> is not supported.
         /// </exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<TTo> As<TFrom, TTo>(Vector<TFrom> vector)
             where TFrom : struct
             where TTo : struct
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedVectorBaseType<TTo>();
-
-            Debug.Assert(Vector<TFrom>.Count * Unsafe.SizeOf<TFrom>() == Vector<TTo>.Count * Unsafe.SizeOf<TTo>());
 
             return Unsafe.As<Vector<TFrom>, Vector<TTo>>(ref vector);
         }
