@@ -88,8 +88,9 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 #if defined(OSX_ARM64_ABI)
     if (!isValueType)
     {
+        // The primitive types' sizes are expected to be powers of 2.
+        _ASSERTE((parmSize & (parmSize - 1)) == 0);
         // No padding/alignment for primitive types.
-        _ASSERTE((((parmSize & (parmSize - 1)) == 0));
         return parmSize;
     }
     if (isFloatHfa)
