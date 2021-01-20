@@ -101,7 +101,7 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 #endif
 
     const unsigned stackSlotSize = sizeof(void*);
-    return (parmSize + stackSlotSize - 1) & ~(stackSlotSize - 1);
+    return ALIGN_UP(parmSize, stackSlotSize);
 }
 
 //
