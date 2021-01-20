@@ -176,7 +176,8 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConfigurationNotSupportedTitle", resourceCulture);
             }
         }
-
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
         internal static string ConvertToGeneratedDllImportDescription {
@@ -185,6 +186,7 @@ namespace Microsoft.Interop {
             }
         }
         
+        /// <summary>
         ///   Looks up a localized string similar to Mark the method &apos;{0}&apos; with &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
         internal static string ConvertToGeneratedDllImportMessage {
@@ -192,7 +194,16 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConvertToGeneratedDllImportMessage", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos;.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportNoPreprocessor {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportNoPreprocessor", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to Use &apos;GeneratedDllImportAttribute&apos; instead of &apos;DllImportAttribute&apos; to generate P/Invoke marshalling code at compile time.
         /// </summary>
@@ -201,7 +212,25 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("ConvertToGeneratedDllImportTitle", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Conversion to &apos;GeneratedDllImport&apos; may change behavior and compatibility. See {0} for more information..
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportWarning {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Convert to &apos;GeneratedDllImport&apos; under a preprocessor define.
+        /// </summary>
+        internal static string ConvertToGeneratedDllImportWithPreprocessor {
+            get {
+                return ResourceManager.GetString("ConvertToGeneratedDllImportWithPreprocessor", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to The specified parameter needs to be marshalled from managed to native, but the native type &apos;{0}&apos; does not support it..
         /// </summary>
@@ -210,7 +239,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CustomTypeMarshallingManagedToNativeUnsupported", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The specified parameter needs to be marshalled from native to managed, but the native type &apos;{0}&apos; does not support it..
         /// </summary>
@@ -219,7 +248,7 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("CustomTypeMarshallingNativeToManagedUnsupported", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Methods marked with &apos;GeneratedDllImportAttribute&apos; should be &apos;static&apos; and &apos;partial&apos;. P/Invoke source generation will ignore methods that are not &apos;static&apos; and &apos;partial&apos;..
         /// </summary>
@@ -300,8 +329,9 @@ namespace Microsoft.Interop {
                 return ResourceManager.GetString("InOutAttributeByRefNotSupported", resourceCulture);
             }
         }
+        
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;[In]&apos; and &apos;[Out]&apos; attributes on this parameter are unsupported on this parameter..
+        ///   Looks up a localized string similar to The provided &apos;[In]&apos; and &apos;[Out]&apos; attributes on this parameter are unsupported on this parameter..
         /// </summary>
         internal static string InOutAttributeMarshalerNotSupported {
             get {

@@ -1,15 +1,10 @@
 
-using System.Collections.Immutable;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.CSharp.Testing.XUnit;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 
 namespace DllImportGenerator.UnitTests.Verifiers
 {
@@ -40,54 +35,9 @@ namespace DllImportGenerator.UnitTests.Verifiers
             await test.RunAsync(CancellationToken.None);
         }
 
-        internal class Test : CSharpAnalyzerTest<TAnalyzer, XUnitVerifier>
-        {
-            public Test()
-            {
-                var (refAssem, ancillary) = TestUtils.GetReferenceAssemblies();
-                ReferenceAssemblies = refAssem;
-                SolutionTransforms.Add((solution, projectId) =>
-                {
-                    var project = solution.GetProject(projectId)!;
-                    var compilationOptions = project.CompilationOptions!;
-
-                    var diagnosticOptions = compilationOptions.SpecificDiagnosticOptions.SetItems(CSharpVerifierHelper.NullableWarnings);
-
-                    // Explicitly enable diagnostics that are not enabled by default
-                    var enableAnalyzersOptions = new System.Collections.Generic.Dictionary<string, ReportDiagnostic>();
-                    foreach (var analyzer in GetDiagnosticAnalyzers().ToImmutableArray())
-                    {
-                        foreach (var diagnostic in analyzer.SupportedDiagnostics)
-                        {
-                            if (diagnostic.IsEnabledByDefault)
-                                continue;
-
-                            // Map the default severity to the reporting behaviour.
-                            // We cannot simply use ReportDiagnostic.Default here, as diagnostics that are not enabled by default
-                            // are treated as suppressed (regardless of their default severity).
-                            var report = diagnostic.DefaultSeverity switch
-                            {
-                                DiagnosticSeverity.Error => ReportDiagnostic.Error,
-                                DiagnosticSeverity.Warning => ReportDiagnostic.Warn,
-                                DiagnosticSeverity.Info => ReportDiagnostic.Info,
-                                DiagnosticSeverity.Hidden => ReportDiagnostic.Hidden,
-                                _ => ReportDiagnostic.Default
-                            };
-                            enableAnalyzersOptions.Add(diagnostic.Id, report);
-                        }
-                    }
-
-                    compilationOptions = compilationOptions.WithSpecificDiagnosticOptions(
-                        compilationOptions.SpecificDiagnosticOptions
-                            .SetItems(CSharpVerifierHelper.NullableWarnings)
-                            .AddRange(enableAnalyzersOptions));
-                    solution = solution.WithProjectCompilationOptions(projectId, compilationOptions);
-                    solution = solution.WithProjectMetadataReferences(projectId, project.MetadataReferences.Concat(ImmutableArray.Create(ancillary)));
-                    solution = solution.WithProjectParseOptions(projectId, ((CSharpParseOptions)project.ParseOptions!).WithLanguageVersion(LanguageVersion.Preview));
-
-                    return solution;
-                });
-            }
-        }
+        // Code fix tests support both analyzer and code fix testing. This test class is derived from the code fix test
+        // to avoid the need to maintain duplicate copies of the customization work.
+        internal class Test : CSharpCodeFixVerifier<TAnalyzer, EmptyCodeFixProvider>.Test
+        { }
     }
 }

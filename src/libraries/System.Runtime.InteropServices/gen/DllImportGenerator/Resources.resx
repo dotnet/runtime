@@ -162,8 +162,18 @@
   <data name="ConvertToGeneratedDllImportMessage" xml:space="preserve">
     <value>Mark the method '{0}' with 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
   </data>
+  <data name="ConvertToGeneratedDllImportNoPreprocessor" xml:space="preserve">
+    <value>Convert to 'GeneratedDllImport'</value>
+  </data>
   <data name="ConvertToGeneratedDllImportTitle" xml:space="preserve">
     <value>Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
+  </data>
+  <data name="ConvertToGeneratedDllImportWarning" xml:space="preserve">
+    <value>Conversion to 'GeneratedDllImport' may change behavior and compatibility. See {0} for more information.</value>
+    <comment>{0} is a documentation link</comment>
+  </data>
+  <data name="ConvertToGeneratedDllImportWithPreprocessor" xml:space="preserve">
+    <value>Convert to 'GeneratedDllImport' under a preprocessor define</value>
   </data>
   <data name="CustomTypeMarshallingManagedToNativeUnsupported" xml:space="preserve">
     <value>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</value>
