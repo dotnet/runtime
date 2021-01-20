@@ -420,7 +420,7 @@ namespace System.Net.Sockets
         // On .NET Framework, this property functions as a socket-level switch between IOCP-based and Win32 event based async IO.
         // On that platform, setting UseOnlyOverlappedIO = true prevents assigning a completion port to the socket,
         // allowing calls to DuplicateAndClose() even after performing asynchronous IO.
-        // .NET (Core) Windows sockets are entirely IOCP-based, and the concept of "overlapped IO" 
+        // .NET (Core) Windows sockets are entirely IOCP-based, and the concept of "overlapped IO"
         // does not exist on other platforms, therefore UseOnlyOverlappedIO is a dummy, compat-only property.
         public bool UseOnlyOverlappedIO
         {
