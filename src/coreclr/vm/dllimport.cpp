@@ -1626,24 +1626,7 @@ void NDirectStubLinker::SetCallingConvention(CorInfoCallConvExtension unmngCallC
     else
 #endif // !TARGET_X86
     {
-        CorCallingConvention uNativeCallingConv = (CorCallingConvention)0;
-        switch (unmngCallConv)
-        {
-            case CorInfoCallConvExtension::C:
-                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_C;
-                break;
-            case CorInfoCallConvExtension::Stdcall:
-                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_STDCALL;
-                break;
-            case CorInfoCallConvExtension::Thiscall:
-                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_THISCALL;
-                break;
-            default:
-                _ASSERTE(!"Invalid calling convention.");
-                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_STDCALL;
-                break;
-        }
-        SetStubTargetCallingConv(uNativeCallingConv);
+        SetStubTargetCallingConv(unmngCallConv);
     }
 }
 
@@ -2982,10 +2965,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     }
     else if (hr == S_FALSE)
     {
-        // Do the same WinAPI to StdCall or CDecl for the signature calling convention as well. We need
-        // to do this before we check to make sure the PInvoke map calling convention and the
-        // signature calling convention match for compatibility reasons.
-        sigCallConv = GetDefaultCallConv(bIsVarArg);
+        sigCallConv = CorInfoCallConvExtension::Managed;
     }
 
     if (callConv != CorInfoCallConvExtension::Managed && sigCallConv != CorInfoCallConvExtension::Managed && callConv != sigCallConv)
