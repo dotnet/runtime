@@ -57,7 +57,7 @@ if [[ "$cpuname" == "unknown" ]]; then
 fi
 
 case $cpuname in
-  aarch64)
+  aarch64|arm64)
     buildarch=arm64
     ;;
   amd64|x86_64)
