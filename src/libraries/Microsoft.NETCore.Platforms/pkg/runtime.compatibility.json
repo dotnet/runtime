@@ -2102,6 +2102,23 @@
     "any",
     "base"
   ],
+  "exherbo": [
+    "exherbo",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "exherbo-x64": [
+    "exherbo-x64",
+    "exherbo",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora": [
     "fedora",
     "linux",
