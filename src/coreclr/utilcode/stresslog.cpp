@@ -794,7 +794,7 @@ void StressLog::LogMsg(unsigned level, unsigned facility, int cArgs, const char*
 }
 
 /* static */
-void StressLog::LogMsgVA(unsigned level, unsigned facility, int cArgs, const char* format, va_list args)
+void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &msg)
 {
     STATIC_CONTRACT_SUPPORTS_DAC;
 #ifndef DACCESS_COMPILE
@@ -809,7 +809,7 @@ void StressLog::LogMsgVA(unsigned level, unsigned facility, int cArgs, const cha
     // set the stress log config parameter.
     CONTRACT_VIOLATION(TakesLockViolation);
 
-    _ASSERTE(cArgs >= 0 && cArgs <= 63);
+    _ASSERTE(msg.m_cArgs >= 0 && msg.m_cArgs <= 63);
 
     if (InlinedStressLogOn(facility, level))
     {
@@ -822,7 +822,7 @@ void StressLog::LogMsgVA(unsigned level, unsigned facility, int cArgs, const cha
             if (msgs == 0)
                 return;
         }
-        msgs->LogMsg(facility, cArgs, format, args);
+        msgs->LogMsg(facility, msg.m_cArgs, msg.m_format, (va_list)msg.m_args);
     }
 
     // Stress Log ETW feature available only on the desktop versions of the runtime

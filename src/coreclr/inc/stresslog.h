@@ -257,6 +257,8 @@
 
 class ThreadStressLog;
 
+struct StressLogMsg;
+
 /*************************************************************************************/
 /* a log is a circular queue of messages */
 
@@ -351,7 +353,7 @@ public:
 
     static void LogMsg(unsigned level, unsigned facility, int cArgs, const char* format, ... );
 
-    static void LogMsgVA(unsigned level, unsigned facility, int cArgs, const char* format, va_list args);
+    static void LogMsg(unsigned level, unsigned facility, const StressLogMsg &msg);
 
     static void AddModule(uint8_t* moduleBase);
 
@@ -919,6 +921,13 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
     curPtr = (StressMsg*)((char*)curWriteChunk->EndPtr () - sizeof(StressMsg) - cArgs * sizeof(void*));
     return curPtr;
 }
+
+struct StressLogMsg
+{
+    int m_cArgs;
+    const char* m_format;
+    void* m_args[16];
+};
 
 #else   // STRESS_LOG
 

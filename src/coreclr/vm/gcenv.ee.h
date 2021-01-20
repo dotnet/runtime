@@ -83,7 +83,7 @@ public:
 
     void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
 
-    void StressLogMsg(unsigned level, unsigned facility, int cArgs, const char* format, va_list args);
+    void LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg);
 };
 
 } // namespace standalone

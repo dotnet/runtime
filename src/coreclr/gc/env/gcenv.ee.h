@@ -90,7 +90,7 @@ public:
 
     static void VerifySyncTableEntry();
     static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
-    static void StressLogMsg(unsigned level, unsigned facility, int cArgs, const char* format, va_list args);
+    static void LogStressMsg(unsigned level, unsigned facility, const StressLogMsg &msg);
 };
 
 #endif // __GCENV_EE_H__

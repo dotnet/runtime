@@ -11,6 +11,8 @@
 // will be fowarded to this interface instance.
 extern IGCToCLR* g_theGCToCLR;
 
+struct StressLogMsg;
+
 // When we are building the GC in a standalone environment, we
 // will be dispatching virtually against g_theGCToCLR to call
 // into the EE. This class provides an identical API to the existing
@@ -294,10 +296,9 @@ inline void GCToEEInterface::UpdateGCEventStatus(int publicLevel, int publicKeyw
 #endif // __linux__
 }
 
-inline void GCToEEInterface::StressLogMsg(unsigned level, unsigned facility, int cArgs, const char* format, va_list args)
+inline void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const StressLogMsg & msg)
 {
-    assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->StressLogMsg(level, facility, cArgs, format, args);
+    g_theGCToCLR->LogStressMsg(level, facility, msg);
 }
 
 #endif // __GCTOENV_EE_STANDALONE_INL__

@@ -20,6 +20,8 @@ enum EtwGCRootKind
     kEtwGCRootKindOther =               3,
 };
 
+struct StressLogMsg;
+
 // This interface provides functions that the GC can use to fire events.
 // Events fired on this interface are split into two categories: "known"
 // events and "dynamic" events. Known events are events that are baked-in
@@ -423,7 +425,7 @@ public:
     void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLEvel, int privateKeywords) = 0;
 
     virtual
-    void StressLogMsg(unsigned level, unsigned facility, int cArgs, const char* format, va_list args) = 0;
+    void LogStressMsg(unsigned level, unsigned facility, const StressLogMsg& msg) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

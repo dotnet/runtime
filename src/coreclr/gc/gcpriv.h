@@ -270,7 +270,11 @@ void GCLog (const char *fmt, ... );
 // wanting to inspect GC logs on unmodified builds, we can use this define here
 // to do so.
 //#define dprintf(l, x)
+#ifdef BUILD_AS_STANDALONE
+#define dprintf(l,x) STRESS_LOG_VA(l,x);
+#else //BUILD_AS_STANDALONE
 #define dprintf(l,x) STRESS_LOG_VA(x);
+#endif //BUILD_AS_STANDALONE
 
 #endif //SIMPLE_DPRINTF
 
