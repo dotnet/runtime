@@ -2,23 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Reflection;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
-        public static readonly Version HttpVersion30 = new Version(3, 0);
-
         public readonly ITestOutputHelper _output;
 
         protected virtual Version UseVersion => HttpVersion.Version11;
