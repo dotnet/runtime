@@ -131,7 +131,6 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            //var result = new AuthenticationHeaderValue();
             string? targetScheme = null;
             switch (schemeLength)
             {
