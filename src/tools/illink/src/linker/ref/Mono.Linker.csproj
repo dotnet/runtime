@@ -1,8 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <AssemblyName>illink</AssemblyName>
+    <Description>IL Linker</Description>
+
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
-    <TargetFramework>net5.0</TargetFramework>
+    <!-- Crashes roslyn with InvalidOperationException: Cannot enqueue data after PromiseNotToEnqueue -->
+    <RunAnalyzers>false</RunAnalyzers>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

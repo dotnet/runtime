@@ -2,16 +2,19 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <Nullable>disable</Nullable>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <AssemblyName>illink</AssemblyName>
+    <Description>IL Linker</Description>
+    <PackageId>Microsoft.NET.ILLink</PackageId>
     <IsPackable>true</IsPackable>
     <!-- Nuget issues a warning about missing <reference> items in the generated nuspec,
          used for packages.config which we do not support. -->
     <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <RootNamespace>Mono.Linker</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

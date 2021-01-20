@@ -22,8 +22,7 @@ namespace TLens.Analyzers
 				switch (instr.OpCode.Code) {
 				case Code.Call:
 				case Code.Newobj:
-					MethodReference mr = instr.Operand as MethodReference;
-					if (mr == null)
+					if (instr.Operand is not MethodReference mr)
 						throw new NotImplementedException ();
 
 					var md = mr.Resolve ();
