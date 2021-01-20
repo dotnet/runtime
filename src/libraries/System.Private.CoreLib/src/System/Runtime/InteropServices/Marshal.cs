@@ -1002,6 +1002,10 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="safeHandle"><see cref="SafeHandle"/> instance to update</param>
         /// <param name="handle">Pre-existing handle</param>
-        public static void InitHandle(SafeHandle safeHandle, IntPtr handle) => safeHandle.SetHandle(handle);
+        public static void InitHandle(SafeHandle safeHandle, IntPtr handle) 
+        {
+            // To help maximize performance of P/Invokes, don't check if safeHandle is null.
+            safeHandle.SetHandle(handle);
+        }
     }
 }
