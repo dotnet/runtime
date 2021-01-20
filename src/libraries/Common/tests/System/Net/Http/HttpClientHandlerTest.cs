@@ -1832,7 +1832,6 @@ namespace System.Net.Http.Functional.Tests
 
         #region Version tests
 
-        [OuterLoop("Uses external server")]
         [Fact]
         public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
         {
@@ -1842,43 +1841,23 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion30)
-            {
-                // External servers do not support HTTP3 currently.
-                return;
-            }
-
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 0));
             Assert.Equal(new Version(1, 0), receivedRequestVersion);
         }
 
-        [OuterLoop("Uses external server")]
         [Fact]
         public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                // External servers do not support HTTP3 currently.
-                return;
-            }
-
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 1));
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
-        [OuterLoop("Uses external server")]
         [Fact]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
             // SocketsHttpHandler treats 0.0 as a bad version, and throws.
             if (!IsWinHttpHandler)
             {
-                return;
-            }
-
-            if (UseVersion == HttpVersion30)
-            {
-                // External servers do not support HTTP3 currently.
                 return;
             }
 
