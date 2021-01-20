@@ -1639,6 +1639,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("REVERSE_PINVOKE_EXIT");
                     break;
 
+                case ReadyToRunHelper.ReversePInvokeEnterTrackTransitions:
+                    builder.Append("REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS");
+                    break;
+
+                case ReadyToRunHelper.ReversePInvokeExitTrackTransitions:
+                    builder.Append("REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS");
+                    break;
+
                 // Get string handle lazily
                 case ReadyToRunHelper.GetString:
                     builder.Append("GET_STRING");

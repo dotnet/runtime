@@ -795,9 +795,17 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
                     id = ReadyToRunHelper.ReversePInvokeEnter;
                     break;
+                
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
+                    id = ReadyToRunHelper.ReversePInvokeEnterTrackTransitions;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
                     id = ReadyToRunHelper.ReversePInvokeExit;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS:
+                    id = ReadyToRunHelper.ReversePInvokeExitTrackTransitions;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
