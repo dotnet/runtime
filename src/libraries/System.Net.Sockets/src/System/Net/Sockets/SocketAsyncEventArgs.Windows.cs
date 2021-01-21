@@ -615,13 +615,14 @@ namespace System.Net.Sockets
                         overlapped,
                         IntPtr.Zero);
 
-                    return ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped, cancellationToken);
+                    return _bufferList == null ?
+                        ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped, cancellationToken) :
+                        ProcessIOCPResult(socketError == SocketError.Success, bytesTransferred, overlapped);
                 }
                 catch
                 {
                     _singleBufferHandleState = SingleBufferHandleState.None;
                     FreeNativeOverlapped(overlapped);
-                    _singleBufferHandle.Dispose();
                     throw;
                 }
             }
