@@ -90,6 +90,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // It's allowed to shutdown() UDP sockets on Windows, however on Unix this will lead to ENOTCONN
         [Theory]
         [InlineData(SocketShutdown.Both)]
         [InlineData(SocketShutdown.Receive)]
@@ -103,9 +104,9 @@ namespace System.Net.Sockets.Tests
                 .TimeoutAfter(10_000);
 
             Assert.Equal(SocketError.Shutdown, exception.SocketErrorCode);
-            _output.WriteLine($"{exception.GetType()} -- {exception.Message}");
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // It's allowed to shutdown() UDP sockets on Windows, however on Unix this will lead to ENOTCONN
         [Fact]
         public async Task ShutdownSend_ReceiveFromShouldSucceed()
         {
