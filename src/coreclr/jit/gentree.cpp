@@ -3703,6 +3703,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 costSz = 12;
                                 break;
 
+                            case NI_System_Math_Abs:
+                                costEx = 5;
+                                costSz = 15;
+                                break;
+
                             case NI_System_Math_Acos:
                             case NI_System_Math_Acosh:
                             case NI_System_Math_Asin:
@@ -3716,29 +3721,33 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             case NI_System_Math_Cosh:
                             case NI_System_Math_Exp:
                             case NI_System_Math_Floor:
+                            case NI_System_Math_FusedMultiplyAdd:
                             case NI_System_Math_Log10:
                             case NI_System_Math_Pow:
+                            case NI_System_Math_Round:
                             case NI_System_Math_Sin:
                             case NI_System_Math_Sinh:
                             case NI_System_Math_Sqrt:
                             case NI_System_Math_Tan:
                             case NI_System_Math_Tanh:
+                            {
                                 // Giving intrinsics a large fixed execution cost is because we'd like to CSE
                                 // them, even if they are implemented by calls. This is different from modeling
-                                // user calls since we never CSE user calls.
-                                costEx = 36;
-                                costSz = 4;
-                                break;
+                                // user calls since we never CSE user calls. We don't do this for target intrinsics
+                                // however as they typically represent single instruction calls
 
-                            case NI_System_Math_Abs:
-                                costEx = 5;
-                                costSz = 15;
+                                if (IsIntrinsicImplementedByUserCall(intrinsic->gtIntrinsicName))
+                                {
+                                    costEx = 36;
+                                    costSz = 4;
+                                }
+                                else
+                                {
+                                    costEx = 3;
+                                    costSz = 4;
+                                }
                                 break;
-
-                            case NI_System_Math_Round:
-                                costEx = 3;
-                                costSz = 4;
-                                break;
+                            }
                         }
                     }
                     else
@@ -11571,6 +11580,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             {
                 // named intrinsic
                 assert(intrinsic->gtIntrinsicName != NI_Illegal);
+
                 switch (intrinsic->gtIntrinsicName)
                 {
                     case NI_System_Math_Abs:
@@ -11614,6 +11624,9 @@ void Compiler::gtDispTree(GenTree*     tree,
                         break;
                     case NI_System_Math_Floor:
                         printf(" floor");
+                        break;
+                    case NI_System_Math_FusedMultiplyAdd:
+                        printf(" fma");
                         break;
                     case NI_System_Math_Log10:
                         printf(" log10");

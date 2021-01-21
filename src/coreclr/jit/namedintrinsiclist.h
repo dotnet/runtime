@@ -12,8 +12,7 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Enum_HasFlag,
 
-// Begin System.Math(F)
-
+    NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
     NI_System_Math_Acos,
     NI_System_Math_Acosh,
@@ -37,8 +36,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Sqrt,
     NI_System_Math_Tan,
     NI_System_Math_Tanh,
-
-// End System.Math(F)
+    NI_SYSTEM_MATH_END,
 
     NI_System_Collections_Generic_EqualityComparer_get_Default,
     NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness,

@@ -4362,6 +4362,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callType, 16);
 
                     retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callType, 16);
+                    break;
                 }
 #elif defined(TARGET_ARM64)
                 if (compExactlyDependsOn(InstructionSet_AdvSimd))
@@ -4393,8 +4394,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                                        callType, simdSize);
 
                     retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callType, simdSize);
+                    break;
                 }
 #endif
+
+                // TODO-CQ-XArch: Ideally we would create a GT_INTRINSIC node for fma, however, that currently
+                // requires more extensive changes to valuenum to support methods with 3 operands
+
+                // We want to generate a GT_INTRINSIC node in the case the call can't be treated as
+                // a target intrinsic so that we can still benefit from CSE and constant folding.
+
                 break;
             }
 #endif // FEATURE_HW_INTRINSICS
@@ -20541,13 +20550,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     {
         // AMD64/x86 has SSE2 instructions to directly compute sqrt/abs and SSE4.1
         // instructions to directly compute round/ceiling/floor.
-        //
-        // TODO: Because the x86 backend only targets SSE for floating-point code,
-        //       it does not treat Sine, Cosine, or Round as intrinsics (JIT32
-        //       implemented those intrinsics as x87 instructions). If this poses
-        //       a CQ problem, it may be necessary to change the implementation of
-        //       the helper calls to decrease call overhead or switch back to the
-        //       x87 instructions. This is tracked by #7097.
+
         case NI_System_Math_Abs:
         case NI_System_Math_Sqrt:
             return true;
@@ -20556,6 +20559,16 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Floor:
         case NI_System_Math_Round:
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
+
+        case NI_System_Math_FusedMultiplyAdd:
+        {
+            // AMD64/x86 has FMA3 instructions to directly compute fma. However, in
+            // the scenario where it is supported we should have generated GT_HWINTRINSIC
+            // noodes in place of the GT_INTRINSIC node.
+
+            assert(!compiler->compIsaSupportedDebugOnly(InstructionSet_FMA));
+            return false;
+        }
 
         default:
             return false;
@@ -20569,6 +20582,16 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             return true;
+
+        case NI_System_Math_FusedMultiplyAdd:
+        {
+            // ARM64 has AdvSimd instructions to directly compute fma. However, in
+            // the scenario where it is supported we should have generated GT_HWINTRINSIC
+            // noodes in place of the GT_INTRINSIC node.
+
+            assert(!compiler->compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
+            return false;
+        }
 
         default:
             return false;
@@ -20623,6 +20646,7 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Cosh:
         case NI_System_Math_Exp:
         case NI_System_Math_Floor:
+        case NI_System_Math_FusedMultiplyAdd:
         case NI_System_Math_Log10:
         case NI_System_Math_Pow:
         case NI_System_Math_Round:
@@ -20631,10 +20655,16 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Sqrt:
         case NI_System_Math_Tan:
         case NI_System_Math_Tanh:
+        {
+            assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END));
             return true;
+        }
 
         default:
+        {
+            assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END));
             return false;
+        }
     }
 }
 
