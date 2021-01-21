@@ -12695,6 +12695,10 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
             COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(ftn);
 
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+        if (CORProfilerTrackTransitions())
+        {
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
+        }
     }
 
     return flags;
