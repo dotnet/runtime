@@ -73,6 +73,11 @@ def getCSharpTypeFromManifestType(manifestType):
 
 def generateEvent(eventNode, providerNode, outputFile, stringTable):
 
+    # For Threading events, they are defined manually
+    keywords = eventNode.getAttribute("keywords")
+    if keywords and "Threading" in keywords:
+        return
+
     evtLevel = eventNode.getAttribute("level")[4:]
     evtKeywords = ""
     # Write the event attribute.
