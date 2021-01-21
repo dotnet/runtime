@@ -33,7 +33,7 @@ namespace System.IO
             _useFastUtf8 = true;
         }
 
-        // BinaryWriter never emits a BOM, so can use 'Encoding.UTF8' fast singleton
+        // BinaryWriter never emits a BOM, so can use Encoding.UTF8 fast singleton
         public BinaryWriter(Stream output) : this(output, Encoding.UTF8, false)
         {
         }
@@ -182,18 +182,31 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_SurrogatesNotAllowedAsSingleChar);
             }
 
+            Span<byte> buffer = stackalloc byte[8]; // reasonable guess for worst-case expansion for any arbitrary encoding
+
             if (_useFastUtf8)
             {
-                Span<byte> buffer = stackalloc byte[Rune.MaxUtf8BytesPerRune];
                 int utf8ByteCount = rune.EncodeToUtf8(buffer);
                 OutStream.Write(buffer.Slice(0, utf8ByteCount));
             }
             else
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(_encoding.GetMaxByteCount(1));
-                int byteCount = _encoding.GetBytes(MemoryMarshal.CreateReadOnlySpan(ref ch, 1), buffer);
-                OutStream.Write(buffer, 0, byteCount);
-                ArrayPool<byte>.Shared.Return(buffer);
+                byte[]? rented = null;
+                int maxByteCount = _encoding.GetMaxByteCount(1);
+
+                if (maxByteCount > buffer.Length)
+                {
+                    rented = ArrayPool<byte>.Shared.Rent(maxByteCount);
+                    buffer = rented;
+                }
+
+                int actualByteCount = _encoding.GetBytes(MemoryMarshal.CreateReadOnlySpan(ref ch, 1), buffer);
+                OutStream.Write(buffer.Slice(0, actualByteCount));
+
+                if (rented != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
             }
         }
 
@@ -413,7 +426,10 @@ namespace System.IO
 
             if (chars.Length <= MaxArrayCutoff)
             {
-                int maxByteCount = _encoding.GetMaxByteCount(chars.Length); // Get[Actual]ByteCount walks the data, which we don't want to do
+                // GetByteCount may walk the buffer contents, resulting in 2 passes over the data.
+                // We prefer GetMaxByteCount because it's a constant-time operation.
+
+                int maxByteCount = _encoding.GetMaxByteCount(chars.Length);
                 if (maxByteCount <= MaxArrayCutoff)
                 {
                     rented = ArrayPool<byte>.Shared.Rent(maxByteCount);
