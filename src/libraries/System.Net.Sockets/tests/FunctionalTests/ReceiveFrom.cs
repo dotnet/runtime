@@ -53,6 +53,25 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReceiveSent_TCP_Success(bool ipv6)
+        {
+            (Socket sender, Socket receiver) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            using (sender)
+            using (receiver)
+            {
+                byte[] sendBuffer = { 1, 2, 3 };
+                sender.Send(sendBuffer);
+
+                byte[] receiveBuffer = new byte[3];
+                var r = await ReceiveFromAsync(receiver, receiveBuffer, sender.LocalEndPoint);
+                Assert.Equal(3, r.ReceivedBytes);
+                AssertExtensions.SequenceEqual(sendBuffer, receiveBuffer);
+            }
+        }
+
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ClosedBeforeOperation_Throws_ObjectDisposedException(bool closeOrDispose)
