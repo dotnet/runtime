@@ -6340,7 +6340,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             //     subs    x10, x10, #64
             //     bge     loop
 
-            const int bytesUseDataCacheZeroInstruction = 320;
+            const int bytesUseDataCacheZeroInstruction = 256;
 
             GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, zeroSimdReg, 0, INS_OPTS_16B);
             simdRegZeroed = true;
