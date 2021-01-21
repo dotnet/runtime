@@ -41,12 +41,6 @@ namespace System.IO
             }
         }
 
-        internal static void Initialize(ref FileStatus status, bool isDirectory)
-        {
-            status.InitiallyDirectory = isDirectory;
-            status._fileStatusInitialized = -1;
-        }
-
         internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
         {
             // IMPORTANT: Attribute logic must match the logic in FileSystemEntry
@@ -132,6 +126,12 @@ namespace System.IO
         {
             EnsureStatInitialized(path, continueOnError);
             return _fileStatus.Size;
+        }
+
+        internal static void Initialize(ref FileStatus status, bool isDirectory)
+        {
+            status.InitiallyDirectory = isDirectory;
+            status._fileStatusInitialized = -1;
         }
 
         internal void Invalidate() =>
