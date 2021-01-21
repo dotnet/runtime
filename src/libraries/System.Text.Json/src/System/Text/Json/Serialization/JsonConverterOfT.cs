@@ -320,7 +320,7 @@ namespace System.Text.Json.Serialization
             {
                 ReferenceResolver resolver = state.ReferenceResolver;
                 // Write null to break reference cycles.
-                if (resolver.ContainsReferenceForCycleDetection(value))
+                if (resolver.ContainsReferenceForCycleDetection(value!))
                 {
                     writer.WriteNullValue();
                     return true;
