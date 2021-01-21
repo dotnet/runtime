@@ -62,19 +62,16 @@ namespace System.IO
 
         public override int Read(byte[] buffer, int offset, int count) => _impl.Read(buffer, offset, count);
 
-        // This type is derived from FileStream and/or the stream is in async mode.  If this is a
-        // derived type, it may have overridden Read(byte[], int, int) prior to this Read(Span<byte>)
+        // If this is a derived type, it may have overridden Read(byte[], int, int) prior to this Read(Span<byte>)
         // overload being introduced.  In that case, this Read(Span<byte>) overload should use the behavior
-        // of Read(byte[],int,int) overload.  Or if the stream is in async mode, we can't call the
-        // synchronous ReadSpan, so we similarly call the base Read, which will turn delegate to
-        // Read(byte[],int,int), which will do the right thing if we're in async mode.
+        // of Read(byte[],int,int) overload.
         public override int Read(Span<byte> buffer)
             => _fileStream.BaseRead(buffer);
 
-        // If we have been inherited into a subclass, the following implementation could be incorrect
+        // If we have been inherited into a subclass, the Strategy implementation could be incorrect
         // since it does not call through to Read() which a subclass might have overridden.
         // To be safe we will only use this implementation in cases where we know it is safe to do so,
-        // and delegate to our base class (which will call into Read/ReadAsync) when we are not sure.
+        // and delegate to FileStream base class (which will call into Read/ReadAsync) when we are not sure.
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             => _fileStream.BaseReadAsync(buffer, offset, count, cancellationToken);
 
@@ -104,16 +101,13 @@ namespace System.IO
 
         public override void Write(byte[] buffer, int offset, int count) => _impl.Write(buffer, offset, count);
 
-        // This type is derived from FileStream and/or the stream is in async mode.  If this is a
-        // derived type, it may have overridden Write(byte[], int, int) prior to this Write(ReadOnlySpan<byte>)
-        // overload being introduced.  In that case, this Write(ReadOnlySpan<byte>) overload should use the behavior
-        // of Write(byte[],int,int) overload.  Or if the stream is in async mode, we can't call the
-        // synchronous WriteSpan, so we similarly call the base Write, which will turn delegate to
-        // Write(byte[],int,int), which will do the right thing if we're in async mode.
+        // If this is a derived type, it may have overridden Write(byte[], int, int) prior to this Write(ReadOnlySpan<byte>)
+        // overload being introduced. In that case, this Write(ReadOnlySpan<byte>) overload should use the behavior
+        // of Write(byte[],int,int) overload.
         public override void Write(ReadOnlySpan<byte> buffer)
             => _fileStream.BaseWrite(buffer);
 
-        // If we have been inherited into a subclass, the following implementation could be incorrect
+        // If we have been inherited into a subclass, the Strategy implementation could be incorrect
         // since it does not call through to Write() or WriteAsync() which a subclass might have overridden.
         // To be safe we will only use this implementation in cases where we know it is safe to do so,
         // and delegate to our base class (which will call into Write/WriteAsync) when we are not sure.

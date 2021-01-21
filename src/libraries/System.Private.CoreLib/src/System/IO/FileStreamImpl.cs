@@ -160,7 +160,9 @@ namespace System.IO
                 return ReadSpan(buffer);
             }
 
-            return _fileStream.BaseRead(buffer);
+            // If the stream is in async mode, we can't call the synchronous ReadSpan, so we similarly call the base Read,
+            // which will turn delegate to Read(byte[],int,int), which will do the right thing if we're in async mode.
+            return base.Read(buffer);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -239,7 +241,9 @@ namespace System.IO
             }
             else
             {
-                _fileStream.BaseWrite(buffer);
+                // If the stream is in async mode, we can't call the synchronous WriteSpan, so we similarly call the base Write,
+                // which will turn delegate to Write(byte[],int,int), which will do the right thing if we're in async mode.
+                base.Write(buffer);
             }
         }
 
