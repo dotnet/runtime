@@ -196,7 +196,7 @@ namespace System.Text.Json.Serialization
                         ref reader);
                 }
 
-                if (CanBePolymorphic && options.ReferenceHandler != null && value is JsonElement element)
+                if (CanBePolymorphic && JsonSerializer.IsPreserveReferencesEnabled(options) && value is JsonElement element)
                 {
                     // Edge case where we want to lookup for a reference when parsing into typeof(object)
                     // instead of return `value` as a JsonElement.
@@ -303,23 +303,47 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
+            bool ignoreCyclesEnabled = JsonSerializer.IsIgnoreCyclesEnabled(options);
+            bool ignoreCyclesPopReference = false;
+
+            if (CanBeNull && IsNull(value))
+            {
+                if (!HandleNullOnWrite)
+                {
+                    // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
+                    // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
+                    writer.WriteNullValue();
+                    return true;
+                }
+            }
+            else if (ignoreCyclesEnabled && !IsValueType)
+            {
+                ReferenceResolver resolver = state.ReferenceResolver;
+                // Write null to break reference cycles.
+                if (resolver.ContainsReferenceForCycleDetection(value))
+                {
+                    writer.WriteNullValue();
+                    return true;
+                }
+                // For boxed reference types: do not push when boxed in order to avoid false positives when we run above check for the converter of the unboxed value.
+                if (!CanBePolymorphic)
+                {
+                    resolver.PushReferenceForCycleDetection(value);
+                    ignoreCyclesPopReference = true;
+                }
+            }
+
             if (CanBePolymorphic)
             {
                 if (value == null)
                 {
-                    if (!HandleNullOnWrite)
-                    {
-                        writer.WriteNullValue();
-                    }
-                    else
-                    {
-                        Debug.Assert(ClassType == ClassType.Value);
-                        Debug.Assert(!state.IsContinuation);
+                    Debug.Assert(ClassType == ClassType.Value);
+                    Debug.Assert(!state.IsContinuation);
+                    Debug.Assert(HandleNullOnWrite);
 
-                        int originalPropertyDepth = writer.CurrentDepth;
-                        Write(writer, value, options);
-                        VerifyWrite(originalPropertyDepth, writer);
-                    }
+                    int originalPropertyDepth = writer.CurrentDepth;
+                    Write(writer, value, options);
+                    VerifyWrite(originalPropertyDepth, writer);
 
                     return true;
                 }
@@ -339,17 +363,24 @@ namespace System.Text.Json.Serialization
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                     if (jsonConverter != this)
                     {
+                        if (ignoreCyclesEnabled && jsonConverter.IsValueType)
+                        {
+                            // For boxed value types: push the value before it gets unboxed.
+                            state.ReferenceResolver.PushReferenceForCycleDetection(value);
+                            ignoreCyclesPopReference = true;
+                        }
+
                         // We found a different converter; forward to that.
-                        return jsonConverter.TryWriteAsObject(writer, value, options, ref state);
+                        bool success2 = jsonConverter.TryWriteAsObject(writer, value, options, ref state);
+
+                        if (ignoreCyclesPopReference)
+                        {
+                            state.ReferenceResolver.PopReferenceForCycleDetection();
+                        }
+
+                        return success2;
                     }
                 }
-            }
-            else if (CanBeNull && !HandleNullOnWrite && IsNull(value))
-            {
-                // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
-                // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
-                writer.WriteNullValue();
-                return true;
             }
 
             if (ClassType == ClassType.Value)
@@ -389,6 +420,11 @@ namespace System.Text.Json.Serialization
             }
 
             state.Pop(success);
+
+            if (ignoreCyclesPopReference)
+            {
+                state.ReferenceResolver.PopReferenceForCycleDetection();
+            }
 
             return success;
         }

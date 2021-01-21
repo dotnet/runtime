@@ -17,6 +17,14 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
             }
 
+            // Root object is a boxed value type.
+            // Since value types are ignored when detecting cycles
+            // We need to push it before it gets unboxed.
+            if (value != null && IsValueType && JsonSerializer.IsIgnoreCyclesEnabled(options))
+            {
+                state.ReferenceResolver.PushReferenceForCycleDetection(value);
+            }
+
             T actualValue = (T)value!;
             return WriteCore(writer, actualValue, options, ref state);
         }

@@ -89,7 +89,7 @@ namespace System.Text.Json
 
             Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
 
-            bool preserveReferences = options.ReferenceHandler != null;
+            bool preserveReferences = JsonSerializer.IsPreserveReferencesEnabled(options);
             if (preserveReferences)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);

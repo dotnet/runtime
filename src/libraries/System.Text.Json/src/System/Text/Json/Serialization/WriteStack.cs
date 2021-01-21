@@ -75,7 +75,7 @@ namespace System.Text.Json
 
             if (options.ReferenceHandler != null)
             {
-                ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: true);
+                ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
             }
 
             SupportContinuation = supportContinuation;
