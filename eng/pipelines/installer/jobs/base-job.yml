@@ -76,6 +76,9 @@ jobs:
   - name: SignType
     value: test
 
+  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+    - group: AzureDevOps-Artifact-Feeds-Pats
+
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - name: SignType
@@ -184,9 +187,6 @@ jobs:
       value: ./build.sh
     - name: MSBuildScript
       value: /root/runtime/eng/common/msbuild.sh
-
-    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        - group: AzureDevOps-Artifact-Feeds-Pats
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: BuildScript
