@@ -871,5 +871,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("s: 1 length: 1", HelperMarshal._stringResource);
             Assert.Equal("1", HelperMarshal._stringResource2);
         }
+        
+        [Fact]
+        public static void MarshalDateTime()
+        {
+            int year = 1937, month = 7, day = 2, hour = 5, minute = 35, second = 2, millisecond = 0;
+            var expected = new DateTime(
+                year, month, day, hour, minute, second, millisecond, DateTimeKind.Utc
+            );
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                // $"var dt = new Date({year}, {month - 1}, {day}, {hour}, {minute}, {second}, {millisecond});\r\n" +
+                "var dt = new Date('1937-07-02T05:35:02.0000000Z');\r\n" +
+                "App.call_test_method ('InvokeDateTime', [ dt ], 'o');"
+            );
+            Assert.Equal(expected, HelperMarshal._dateTimeValue);
+        }
     }
 }

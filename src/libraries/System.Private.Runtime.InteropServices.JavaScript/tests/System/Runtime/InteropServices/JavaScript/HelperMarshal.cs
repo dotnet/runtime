@@ -103,6 +103,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return obj;
         }
 
+        internal static DateTime _dateTimeValue;
+        private static void InvokeDateTime(object boxed)
+        {
+            if (!(boxed is DateTime))
+                Console.WriteLine("boxed value was of type " + boxed.GetType());
+            _dateTimeValue = (DateTime)boxed;
+        }
+
         internal static object _marshalledObject;
         private static object InvokeMarshalObj()
         {
