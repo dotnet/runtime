@@ -2787,6 +2787,10 @@ protected:
 struct ReversePInvokeFrame
 {
     Thread* currentThread;
+    MethodDesc* pMD;
+#ifndef FEATURE_EH_FUNCLETS
+    FrameHandlerExRecord record;
+#endif
 };
 
 #if defined(TARGET_X86) && defined(FEATURE_COMINTEROP)

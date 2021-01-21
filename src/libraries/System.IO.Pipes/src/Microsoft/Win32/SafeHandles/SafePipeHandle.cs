@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafePipeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafePipeHandle()
+        public SafePipeHandle()
             : this(new IntPtr(DefaultInvalidHandle), true)
         {
         }

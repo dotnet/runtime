@@ -64,6 +64,9 @@ mono_llvm_dump_value (LLVMValueRef value);
 void
 mono_llvm_dump_module (LLVMModuleRef module);
 
+void
+mono_llvm_dump_type (LLVMTypeRef type);
+
 LLVMValueRef
 mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, 
 						LLVMValueRef ArraySize,

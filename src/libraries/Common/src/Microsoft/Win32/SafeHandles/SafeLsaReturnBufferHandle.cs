@@ -9,7 +9,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeLsaReturnBufferHandle : SafeBuffer
     {
-        private SafeLsaReturnBufferHandle() : base(true) { }
+        public SafeLsaReturnBufferHandle() : base(true) { }
 
         // 0 is an Invalid Handle
         internal SafeLsaReturnBufferHandle(IntPtr handle) : base(true)

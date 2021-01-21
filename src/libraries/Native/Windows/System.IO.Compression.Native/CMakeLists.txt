@@ -74,7 +74,6 @@ set (NATIVECOMPRESSION_SOURCES
     ../../AnyOS/brotli/enc/metablock.c
     ../../AnyOS/brotli/enc/static_dict.c
     ../../AnyOS/brotli/enc/utf8_util.c
-    ../../AnyOS/System.IO.Compression.Native/entrypoints.c
 )
 
 #Include Brotli include files
@@ -88,6 +87,10 @@ if (GEN_SHARED_LIB)
         # This will add versioning to the library
         ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc
     )
+endif()
+
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVECOMPRESSION_SOURCES ${NATIVECOMPRESSION_SOURCES} ../../AnyOS/System.IO.Compression.Native/entrypoints.c)
 endif()
 
 add_library(System.IO.Compression.Native-Static

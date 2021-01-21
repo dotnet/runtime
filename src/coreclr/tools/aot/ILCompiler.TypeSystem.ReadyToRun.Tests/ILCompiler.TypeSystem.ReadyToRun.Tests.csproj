@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
     <!-- Make sure the test data gets built -->
     <ProjectReference Include="CoreTestAssembly\CoreTestAssembly.csproj">
@@ -41,6 +42,7 @@
     <Compile Include="GCPointerMapTests.cs" />
     <Compile Include="GenericTypeAndMethodTests.cs" />
     <Compile Include="CastingTests.cs" />
+    <Compile Include="DefType.FieldLayoutTests.cs" />
     <Compile Include="HashcodeTests.cs" />
     <Compile Include="ILDisassemblerTests.cs" />
     <Compile Include="InterfacesTests.cs" />
@@ -58,5 +60,6 @@
     <Compile Include="TestTypeSystemContext.cs" />
     <Compile Include="WellKnownTypeTests.cs" />
     <Compile Include="ExceptionStringTests.cs" />
+    <Compile Include="MarshalUtilsTests.cs" />
   </ItemGroup>
 </Project>

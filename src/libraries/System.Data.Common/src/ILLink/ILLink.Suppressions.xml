@@ -133,5 +133,17 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Data.DataColumn.get_DefaultValue</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.DataSet.DeserializeDataSetSchema(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext,System.Data.SerializationFormat,System.Data.SchemaSerializationMode)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.DataSet.SerializeDataSet(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext,System.Data.SerializationFormat)</property>
+    </attribute>
   </assembly>
 </linker>

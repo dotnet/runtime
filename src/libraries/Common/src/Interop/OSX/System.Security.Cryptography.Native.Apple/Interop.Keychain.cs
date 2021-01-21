@@ -292,7 +292,7 @@ namespace System.Security.Cryptography.Apple
 {
     internal class SafeKeychainItemHandle : SafeHandle
     {
-        internal SafeKeychainItemHandle()
+        public SafeKeychainItemHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -310,7 +310,7 @@ namespace System.Security.Cryptography.Apple
 
     internal class SafeKeychainHandle : SafeHandle
     {
-        internal SafeKeychainHandle()
+        public SafeKeychainHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

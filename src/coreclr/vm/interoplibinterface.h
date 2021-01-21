@@ -30,6 +30,7 @@ public: // Native QCalls for the abstract ComWrappers managed type.
         _In_ QCall::ObjectHandleOnStack comWrappersImpl,
         _In_ INT64 wrapperId,
         _In_ void* externalComObject,
+        _In_opt_ void* innerMaybe,
         _In_ INT32 flags,
         _In_ QCall::ObjectHandleOnStack wrapperMaybe,
         _Inout_ QCall::ObjectHandleOnStack retValue);

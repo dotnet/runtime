@@ -502,7 +502,7 @@ namespace System.Reflection.Emit
     //--------------------------------------------------------------------------------------
     internal sealed class PunkSafeHandle : SafeHandle
     {
-        internal PunkSafeHandle()
+        public PunkSafeHandle()
             : base((IntPtr)0, true)
         {
         }

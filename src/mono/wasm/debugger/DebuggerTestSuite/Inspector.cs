@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,9 @@ namespace DebuggerTests
 {
     class Inspector
     {
+        // https://console.spec.whatwg.org/#formatting-specifiers
+        private static Regex _consoleArgsRegex = new(@"(%[sdifoOc])", RegexOptions.Compiled);
+
         private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
 
         Dictionary<string, TaskCompletionSource<JObject>> notifications = new Dictionary<string, TaskCompletionSource<JObject>>();
@@ -106,6 +110,40 @@ namespace DebuggerTests
             }
         }
 
+        private static string FormatConsoleAPICalled(JObject args)
+        {
+            string? type = args?["type"]?.Value<string>();
+            List<string> consoleArgs = new();
+            foreach (JToken? arg in args?["args"] ?? Enumerable.Empty<JToken?>())
+            {
+                if (arg?["value"] != null)
+                    consoleArgs.Add(arg!["value"]!.ToString());
+            }
+
+            int position = 1;
+            string first = consoleArgs[0];
+            string output = _consoleArgsRegex.Replace(first, (_) => $"{consoleArgs[position++]}");
+            if (position == 1)
+            {
+                // first arg wasn't a format string so concat things together
+                // with a space instead.
+                StringBuilder builder = new StringBuilder(first);
+                for (position = 1; position < consoleArgs.Count(); position++)
+                {
+                    builder.Append(" ");
+                    builder.Append(consoleArgs[position]);
+                }
+                output = builder.ToString();
+            }
+            else
+            {
+                if (output.Length > 0 && output[^1] == '\n')
+                    output = output[..^1];
+            }
+
+            return $"console.{type}: {output}";
+        }
+
         async Task OnMessage(string method, JObject args, CancellationToken token)
         {
             switch (method)
@@ -117,7 +155,7 @@ namespace DebuggerTests
                     NotifyOf(READY, args);
                     break;
                 case "Runtime.consoleAPICalled":
-                    _logger.LogInformation("CWL: {0}", args["args"]);
+                    _logger.LogInformation(FormatConsoleAPICalled(args));
                     break;
             }
             if (eventListeners.TryGetValue(method, out var listener))
@@ -128,40 +166,6 @@ namespace DebuggerTests
             {
                 _logger.LogDebug($"Failing all waiters because: {method}: {args}");
                 FailAllWaiters(new ArgumentException(args.ToString()));
-            }
-        }
-
-        public async Task Ready(Func<InspectorClient, CancellationToken, Task>? cb = null, TimeSpan? span = null)
-        {
-            try
-            {
-                Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (_client, _token) =>
-                {
-                    Func<string, (string, Task<Result>)> getInitCmdFn = (cmd_name) => (cmd_name, _client.SendCommand(cmd_name, null, _token));
-                    return new List<(string, Task<Result>)>
-                    {
-                        getInitCmdFn("Profiler.enable"),
-                        getInitCmdFn("Runtime.enable"),
-                        getInitCmdFn("Debugger.enable"),
-                        getInitCmdFn("Runtime.runIfWaitingForDebugger")
-                    };
-                };
-
-                await OpenSessionAsync(fn, span);
-                if (cb != null)
-                    await cb(Client, _cancellationTokenSource.Token).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                if (_logger != null)
-                    _logger.LogError(ex.ToString());
-                else
-                    Console.WriteLine(ex);
-                throw;
-            }
-            finally
-            {
-                await ShutdownAsync().ConfigureAwait(false);
             }
         }
 
@@ -263,7 +267,6 @@ namespace DebuggerTests
 
             try
             {
-                _logger?.LogDebug($"- test done,. let's close the client");
                 await Client.Shutdown(_cancellationTokenSource.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
