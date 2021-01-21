@@ -36,5 +36,11 @@ namespace System.Threading
         {
             Debug.Assert(Monitor.IsEntered(this));
         }
+
+        [Conditional("DEBUG")]
+        public void VerifyIsNotLocked()
+        {
+            Debug.Assert(!Monitor.IsEntered(this));
+        }
     }
 }

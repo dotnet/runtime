@@ -161,6 +161,13 @@ namespace System.Runtime.InteropServices
             success = true;
         }
 
+        // Used by internal callers to avoid declaring a bool to pass by ref
+        internal void DangerousAddRef()
+        {
+            bool success = false;
+            DangerousAddRef(ref success);
+        }
+
         public void DangerousRelease() => InternalRelease(disposeOrFinalizeOperation: false);
 
         private void InternalRelease(bool disposeOrFinalizeOperation)

@@ -429,6 +429,8 @@ namespace System.Threading
             WaitMultiple(waitHandles, false, millisecondsTimeout);
         internal static int WaitAny(ReadOnlySpan<SafeWaitHandle> safeWaitHandles, int millisecondsTimeout) =>
             WaitAnyMultiple(safeWaitHandles, millisecondsTimeout);
+        internal static int WaitAny(ReadOnlySpan<WaitHandle> waitHandles, int millisecondsTimeout) =>
+            WaitMultiple(waitHandles, false, millisecondsTimeout);
         public static int WaitAny(WaitHandle[] waitHandles, TimeSpan timeout) =>
             WaitMultiple(waitHandles, false, ToTimeoutMilliseconds(timeout));
         public static int WaitAny(WaitHandle[] waitHandles) =>

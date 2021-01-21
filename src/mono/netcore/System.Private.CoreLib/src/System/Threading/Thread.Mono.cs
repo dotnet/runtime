@@ -74,6 +74,9 @@ namespace System.Threading
         private StartHelper? _startHelper;
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
+#if TARGET_UNIX
+        internal WaitSubsystem.ThreadWaitInfo _waitInfo;
+#endif
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
@@ -82,7 +85,7 @@ namespace System.Threading
 
         private Thread()
         {
-            InitInternal(this);
+            Initialize();
         }
 
         ~Thread()
@@ -205,10 +208,14 @@ namespace System.Threading
             return JoinInternal(this, millisecondsTimeout);
         }
 
+        [MemberNotNull(nameof(_waitInfo))]
         private void Initialize()
         {
             InitInternal(this);
 
+#if TARGET_UNIX
+            _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
+#endif
             // TODO: This can go away once the mono/mono mirror is disabled
             stack_size = _startHelper!._maxStackSize;
         }
@@ -287,6 +294,22 @@ namespace System.Threading
             if ((state & ThreadState.Stopped) != 0)
                 throw new ThreadStateException("Thread is dead; state can not be accessed.");
             return state;
+        }
+
+        internal void SetWaitSleepJoinState()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert((GetState(this) & ThreadState.WaitSleepJoin) == 0);
+
+            SetState(this, ThreadState.WaitSleepJoin);
+        }
+
+        internal void ClearWaitSleepJoinState()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert((GetState(this) & ThreadState.WaitSleepJoin) != 0);
+
+            ClrState(this, ThreadState.WaitSleepJoin);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

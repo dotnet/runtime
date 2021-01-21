@@ -262,9 +262,14 @@
       <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.Unix.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.Unix.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.Unix.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\WaitSubsystem.HandleManager.Unix.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\WaitSubsystem.Unix.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
 
       <Compile Include="$(BclSourcesRoot)\System\IO\MonoIOError.cs" />
   </ItemGroup>
