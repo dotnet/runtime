@@ -1239,12 +1239,10 @@ namespace System.IO
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // If we're in sync mode, just use the shared CopyToAsync implementation that does
-            // typical read/write looping.  We also need to take this path if this is a derived
-            // instance from FileStream, as a derived type could have overridden ReadAsync, in which
-            // case our custom CopyToAsync implementation isn't necessarily correct.
+            // typical read/write looping.
             if (!_useAsyncIO)
             {
-                return _fileStream.BaseCopyToAsync(destination, bufferSize, cancellationToken);
+                return base.CopyToAsync(destination, bufferSize, cancellationToken);
             }
 
             ValidateCopyToArguments(destination, bufferSize);

@@ -136,6 +136,9 @@ namespace System.IO
         public override Task FlushAsync(CancellationToken cancellationToken)
             => _fileStream.BaseFlushAsync(cancellationToken);
 
+        // We also need to take this path if this is a derived
+        // instance from FileStream, as a derived type could have overridden ReadAsync, in which
+        // case our custom CopyToAsync implementation isn't necessarily correct.
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => _fileStream.BaseCopyToAsync(destination, bufferSize, cancellationToken);
 

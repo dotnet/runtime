@@ -266,7 +266,7 @@ namespace System.IO
                 // internal helper that bypasses delegating to BeginWrite, since we already know this is FileStream
                 // rather than something derived from it and what our BeginWrite implementation is going to do.
                 return MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment) ?
-                    new ValueTask((Task)BeginWriteInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
+                    new ValueTask((Task)base.BeginWriteInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
                     base.WriteAsync(buffer, cancellationToken);
             }
 
