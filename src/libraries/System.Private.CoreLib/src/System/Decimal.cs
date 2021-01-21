@@ -587,16 +587,14 @@ namespace System
             return true;
         }
 
-        internal static void GetBytes(in decimal d, byte[] buffer)
+        internal static void GetBytes(in decimal d, Span<byte> buffer)
         {
-            Debug.Assert(buffer != null && buffer.Length >= 16, "[GetBytes]buffer != null && buffer.Length >= 16");
+            Debug.Assert(buffer.Length >= 16, "buffer.Length >= 16");
 
-            Span<byte> span = buffer;
-
-            BinaryPrimitives.WriteInt32LittleEndian(span, (int)d.Low);
-            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), (int)d.Mid);
-            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(8), (int)d.High);
-            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(12), d._flags);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer, (int)d.Low);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(4), (int)d.Mid);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(8), (int)d.High);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(12), d._flags);
         }
 
         internal static decimal ToDecimal(ReadOnlySpan<byte> span)
