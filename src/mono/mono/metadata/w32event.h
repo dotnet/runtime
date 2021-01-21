@@ -36,10 +36,6 @@ ICALL_EXPORT
 gboolean
 ves_icall_System_Threading_Events_ResetEvent_internal (gpointer handle);
 
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Events_CloseEvent_internal (gpointer handle);
-
 typedef struct MonoW32HandleNamedEvent MonoW32HandleNamedEvent;
 
 MonoW32HandleNamespace*
