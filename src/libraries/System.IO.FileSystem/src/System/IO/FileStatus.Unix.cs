@@ -47,11 +47,26 @@ namespace System.IO
                 Refresh(path);
             }
 
-            if (_initializedMainCache != 0 && !continueOnError)
+            if (!continueOnError)
             {
-                int errno = _initializedMainCache;
-                _initializedMainCache = -1;
-                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
+                int errno = 0;
+
+                // Lstat should always be initialized by Refresh
+                if (_initializedMainCache != 0)
+                {
+                    errno = _initializedMainCache;
+                }
+                // Stat is optionally initialized when Refresh detects object is a symbolic link
+                else if (_initializedSecondaryCache != 0 && _initializedSecondaryCache != -1)
+                {
+                    errno = _initializedSecondaryCache;
+                }
+
+                if (errno != 0)
+                {
+                    Invalidate();
+                    throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
+                }
             }
         }
 
