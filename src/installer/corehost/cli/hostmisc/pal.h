@@ -185,10 +185,6 @@ namespace pal
     #define __stdcall  /* nothing */
     #if !defined(TARGET_FREEBSD)
         #define __fastcall /* nothing */
-    #else
-        #include <sys/types.h>
-        #include <sys/sysctl.h>
-        #include <sys/param.h>
     #endif
     #define STDMETHODCALLTYPE __stdcall
 

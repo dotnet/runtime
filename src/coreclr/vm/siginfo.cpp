@@ -2598,7 +2598,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
 // Returns size of that element in bytes. This is the minimum size that a
 // field of this type would occupy inside an object.
 //
-UINT SigPointer::SizeOf(Module* pModule, const SigTypeContext *pTypeContext) const
+UINT SigPointer::SizeOf(Module* pModule, const SigTypeContext *pTypeContext, TypeHandle* pTypeHandle) const
 {
     CONTRACTL
     {
@@ -2613,9 +2613,8 @@ UINT SigPointer::SizeOf(Module* pModule, const SigTypeContext *pTypeContext) con
     }
     CONTRACTL_END
 
-    TypeHandle thValueType;
-    CorElementType etype = PeekElemTypeNormalized(pModule, pTypeContext, &thValueType);
-    return MetaSig::GetElemSize(etype, thValueType);
+    CorElementType etype = PeekElemTypeNormalized(pModule, pTypeContext, pTypeHandle);
+    return MetaSig::GetElemSize(etype, *pTypeHandle);
 }
 
 #ifndef DACCESS_COMPILE
@@ -5321,7 +5320,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     _In_ CORINFO_MODULE_HANDLE pModule,
     _In_ PCCOR_SIGNATURE pSig,
     _In_ ULONG cSig,
-    _Out_ CorUnmanagedCallingConvention *callConvOut,
+    _Out_ CorInfoCallConvExtension *callConvOut,
     _Out_ bool* suppressGCTransitionOut,
     _Out_ UINT *errorResID)
 {
@@ -5350,7 +5349,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     PCCOR_SIGNATURE pWalk = sigPtr.GetPtr();
     _ASSERTE(pWalk <= pSig + cSig);
 
-    *callConvOut = (CorUnmanagedCallingConvention)0;
+    *callConvOut = CorInfoCallConvExtension::Managed;
     bool found = false;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
@@ -5387,12 +5386,12 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 
         const struct {
             LPCSTR name;
-            CorUnmanagedCallingConvention value;
+            CorInfoCallConvExtension value;
         } knownCallConvs[] = {
-            { CMOD_CALLCONV_NAME_CDECL,     IMAGE_CEE_UNMANAGED_CALLCONV_C },
-            { CMOD_CALLCONV_NAME_STDCALL,   IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL },
-            { CMOD_CALLCONV_NAME_THISCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL },
-            { CMOD_CALLCONV_NAME_FASTCALL,  IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL } };
+            { CMOD_CALLCONV_NAME_CDECL,     CorInfoCallConvExtension::C },
+            { CMOD_CALLCONV_NAME_STDCALL,   CorInfoCallConvExtension::Stdcall },
+            { CMOD_CALLCONV_NAME_THISCALL,  CorInfoCallConvExtension::Thiscall },
+            { CMOD_CALLCONV_NAME_FASTCALL,  CorInfoCallConvExtension::Fastcall } };
 
         for (const auto &callConv : knownCallConvs)
         {

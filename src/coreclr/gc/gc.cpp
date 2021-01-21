@@ -23108,11 +23108,13 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // null out the target of long weakref that were not promoted.
     GCScan::GcWeakPtrScan (GCHeap::Promote, condemned_gen_number, max_generation, &sc);
 
-#if defined(MULTIPLE_HEAPS) && defined(MARK_LIST)
+#ifdef MULTIPLE_HEAPS
+#ifdef MARK_LIST
     size_t total_mark_list_size = sort_mark_list();
     // first thread to finish sorting will scan the sync syncblk cache
+#endif //MARK_LIST
     if ((syncblock_scan_p == 0) && (Interlocked::Increment(&syncblock_scan_p) == 1))
-#endif //MULTIPLE_HEAPS && MARK_LIST
+#endif //MULTIPLE_HEAPS
     {
         // scan for deleted entries in the syncblk cache
         GCScan::GcWeakPtrScanBySingleThread(condemned_gen_number, max_generation, &sc);
