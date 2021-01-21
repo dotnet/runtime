@@ -476,9 +476,7 @@ namespace System.Numerics
                     n = format[i++] - '0';
                     while (i < format.Length && format[i] >= '0' && format[i] <= '9')
                     {
-                        n = n * 10 + (format[i++] - '0');
-                        if (n >= 10)
-                            break;
+                        n = checked(n * 10 + (format[i++] - '0'));
                     }
                 }
                 if (i >= format.Length || format[i] == '\0')

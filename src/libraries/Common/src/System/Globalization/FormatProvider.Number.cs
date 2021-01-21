@@ -684,9 +684,9 @@ namespace System.Globalization
                         // digits.  Further, for compat, we need to stop when we hit a null char.
                         int n = 0;
                         int i = 1;
-                        while (i < format.Length && (((uint)format[i] - '0') < 10) && n < 10)
+                        while (i < format.Length && (((uint)format[i] - '0') < 10))
                         {
-                            n = (n * 10) + format[i++] - '0';
+                            n = checked((n * 10) + format[i++] - '0');
                         }
 
                         // If we're at the end of the digits rather than having stopped because we hit something
