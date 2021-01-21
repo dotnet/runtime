@@ -780,6 +780,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_INT64 26
 #define MARSHAL_TYPE_UINT64 27
 #define MARSHAL_TYPE_CHAR 28
+#define MARSHAL_TYPE_STRING_INTERNED 29
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -889,6 +890,12 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if (
+		(klass == mono_get_string_class ()) &&
+		(mono_string_is_interned (obj) == obj)
+	)
+		return MARSHAL_TYPE_STRING_INTERNED;
+
 	MonoType *type = mono_class_get_type (klass);
 	obj = NULL;
 
@@ -912,6 +919,14 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if (
+		(klass == mono_get_string_class ()) &&
+		(mono_string_is_interned (obj) == obj)
+	) {
+		*resultL = 0;
+		return MARSHAL_TYPE_STRING_INTERNED;
+	}
+
 	MonoType *type = mono_class_get_type (klass), *original_type = type;
 
 	if (mono_class_is_enum (klass))
@@ -1069,4 +1084,10 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enable_on_demand_gc (int enable)
 {
 	mono_wasm_enable_gc = enable ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_intern_string (MonoString *string) 
+{
+	return mono_string_intern (string);
 }
