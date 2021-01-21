@@ -32,6 +32,12 @@ namespace System.IO
         // Is a directory as of the last refresh
         internal bool _isDirectory;
 
+        // Checks if the main path (without following symbolic links) has the hidden attribute
+        // Only call if Refresh has been successfully called at least once
+        private bool HasHiddenFlag =>
+            (_mainCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
+
+        // Checks if the main path (without following symbolic links) has the read-only attribute
         // Only call if Refresh has been successfully called at least once
         private bool HasReadOnlyFlag
         {
@@ -67,6 +73,7 @@ namespace System.IO
             }
         }
 
+        // Checks if the main path is a symbolic link
         // Only call if Refresh has been successfully called at least once
         private bool HasSymbolicLinkFlag =>
             (_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
@@ -138,7 +145,7 @@ namespace System.IO
             }
 
             // If the filename starts with a period or has UF_HIDDEN flag set, it's hidden.
-            if (fileName.Length > 0 && (fileName[0] == '.' || (_mainCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN))
+            if (fileName.Length > 0 && (fileName[0] == '.' || HasHiddenFlag))
             {
                 attributes |= FileAttributes.Hidden;
             }
@@ -206,6 +213,12 @@ namespace System.IO
         {
             _initializedMainCache = -1;
             _initializedSecondaryCache = -1;
+        }
+
+        internal bool IsHidden(ReadOnlySpan<char> path, bool continueOnError = false)
+        {
+            EnsureStatInitialized(path, continueOnError);
+            return HasHiddenFlag;
         }
 
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -320,9 +333,10 @@ namespace System.IO
 
             if (Interop.Sys.CanSetHiddenFlag)
             {
+                bool isHidden = HasHiddenFlag;
                 if ((attributes & FileAttributes.Hidden) != 0)
                 {
-                    if ((_mainCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == 0)
+                    if (!isHidden)
                     {
                         // If Hidden flag is set and cached file status does not have the flag set then set it
                         Interop.CheckIo(Interop.Sys.LChflags(path, (_mainCache.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
@@ -330,7 +344,7 @@ namespace System.IO
                 }
                 else
                 {
-                    if ((_mainCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN)
+                    if (isHidden)
                     {
                         // If Hidden flag is not set and cached file status does have the flag set then remove it
                         Interop.CheckIo(Interop.Sys.LChflags(path, (_mainCache.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
