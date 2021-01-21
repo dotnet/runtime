@@ -2614,14 +2614,16 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
         {
             noway_assert(lvaTable[i].lvIsStructField);
             lvaTable[i].lvLiveInOutOfHndlr = 1;
-            if (!lvaEnregEHVars)
+            // For now, only enregister an EH Var if it is a single def.
+            if (!lvaEnregEHVars || !lvaTable[i].lvSingleDef)
             {
                 lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
             }
         }
     }
 
-    if (!lvaEnregEHVars)
+    // For now, only enregister an EH Var if it is a single def.
+    if (!lvaEnregEHVars || !varDsc->lvSingleDef)
     {
         lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
     }
@@ -7314,7 +7316,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("V");
         }
-        if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
+        if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr && varDsc->lvSingleDef)
         {
             printf("H");
         }
