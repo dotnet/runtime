@@ -61,10 +61,10 @@
       This was done becasue GC Trace uses dprintf which dosen't contain info on how many arguments are
       getting passed in and using va_args would require parsing the format string during the GC
 */
-#define STRESS_LOG_VA(msg) do {                                               \
-            if (StressLog::LogOn(LF_GC, LL_ALWAYS))                           \
-                StressLog::LogMsgOL msg;                                      \
-            LOGALWAYS(msg);                                                   \
+#define STRESS_LOG_VA(dprintfLevel,msg) do {                                                        \
+            if (StressLog::LogOn(LF_GC, LL_ALWAYS))                                                 \
+                StressLog::LogMsg(LL_ALWAYS, LF_ALWAYS|(dprintfLevel<<16)|LF_GC, StressLogMsg msg); \
+            LOGALWAYS(msg);                                                                         \
             } while(0)
 
 #define STRESS_LOG0(facility, level, msg) do {                                \
@@ -884,14 +884,12 @@ inline StressMsg* ThreadStressLog::AdvanceWrite(int cArgs) {
     //wrap around if we need to
     if (p < (StressMsg*)curWriteChunk->StartPtr ())
     {
-       curPtr = AdvWritePastBoundary(cArgs);
+       return AdvWritePastBoundary(cArgs);
     }
     else
     {
-        curPtr = p;
+        return p;
     }
-
-    return curPtr;
 }
 
 // It's the factored-out slow codepath for AdvanceWrite() and
@@ -918,8 +916,7 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
         writeHasWrapped = TRUE;
    }
 #endif //STRESS_LOG_READONLY
-    curPtr = (StressMsg*)((char*)curWriteChunk->EndPtr () - sizeof(StressMsg) - cArgs * sizeof(void*));
-    return curPtr;
+    return (StressMsg*)((char*)curWriteChunk->EndPtr () - sizeof(StressMsg) - cArgs * sizeof(void*));
 }
 
 struct StressLogMsg
@@ -927,11 +924,165 @@ struct StressLogMsg
     int m_cArgs;
     const char* m_format;
     void* m_args[16];
+
+    StressLogMsg(const char* format) : m_cArgs(0), m_format(format)
+    {
+    }
+
+    template < typename T1 >
+    StressLogMsg(const char* format, T1 data1) : m_cArgs(1), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+    }
+
+    template < typename T1, typename T2 >
+    StressLogMsg(const char* format, T1 data1, T2 data2) : m_cArgs(2), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+    }
+
+    template < typename T1, typename T2, typename T3 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3) : m_cArgs(3), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4) : m_cArgs(4), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5) : m_cArgs(5), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6) : m_cArgs(6), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7) : m_cArgs(7), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8) : m_cArgs(8), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9) : m_cArgs(9), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+        m_args[8] = (void*)(size_t)data9;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10) : m_cArgs(10), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+        m_args[8] = (void*)(size_t)data9;
+        m_args[9] = (void*)(size_t)data10;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11) : m_cArgs(11), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+        m_args[8] = (void*)(size_t)data9;
+        m_args[9] = (void*)(size_t)data10;
+        m_args[10] = (void*)(size_t)data11;
+    }
+
+    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12 >
+    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11, T12 data12) : m_cArgs(12), m_format(format)
+    {
+        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*) && sizeof(T12) <= sizeof(void*));
+        m_args[0] = (void*)(size_t)data1;
+        m_args[1] = (void*)(size_t)data2;
+        m_args[2] = (void*)(size_t)data3;
+        m_args[3] = (void*)(size_t)data4;
+        m_args[4] = (void*)(size_t)data5;
+        m_args[5] = (void*)(size_t)data6;
+        m_args[6] = (void*)(size_t)data7;
+        m_args[7] = (void*)(size_t)data8;
+        m_args[8] = (void*)(size_t)data9;
+        m_args[9] = (void*)(size_t)data10;
+        m_args[10] = (void*)(size_t)data11;
+        m_args[11] = (void*)(size_t)data12;
+    }
 };
 
 #else   // STRESS_LOG
 
-#define STRESS_LOG_VA(msg)                                              do { } while(0)
+#define STRESS_LOG_VA(level,msg)                                        do { } while(0)
 #define STRESS_LOG0(facility, level, msg)                               do { } while(0)
 #define STRESS_LOG1(facility, level, msg, data1)                        do { } while(0)
 #define STRESS_LOG2(facility, level, msg, data1, data2)                 do { } while(0)

@@ -700,6 +700,9 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
         msg->args[i] = data;
     }
 
+    // only store curPtr once the msg is complete
+    curPtr = msg;
+
 #ifdef _DEBUG
     if (!IsValid () || threadId != GetCurrentThreadId ())
         DebugBreak();
