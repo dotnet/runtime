@@ -465,31 +465,27 @@ struct Agnostic_IsCompatibleDelegate
 
 struct Agnostic_PgoInstrumentationSchema
 {
-    DWORDLONG Offset;
-    ICorJitInfo::PgoInstrumentationKind InstrumentationKind;
-    int32_t ILOffset;
-    int32_t Count;
-    int32_t Other;
+    DWORDLONG Offset;          // size_t
+    DWORD InstrumentationKind; // ICorJitInfo::PgoInstrumentationKind
+    DWORD ILOffset;            // int32_t
+    DWORD Count;               // int32_t
+    DWORD Other;               // int32_t
 };
 
 struct Agnostic_AllocPgoInstrumentationBySchema
 {
-    DWORDLONG address;
-    DWORD count;
+    DWORDLONG instrumentationDataAddress;
     DWORD schema_index;
-    DWORD schemaCount;
+    DWORD countSchemaItems;
     DWORD result;
 };
 
 struct Agnostic_GetPgoInstrumentationResults
 {
-    DWORD count;
-    DWORD pBlockCounts_index;
-    DWORD numRuns;
-    DWORD schemaCount;
-    DWORD dataByteCount;
+    DWORD countSchemaItems;
     DWORD schema_index;
     DWORD data_index;
+    DWORD dataByteCount;
     DWORD result;
 };
 
