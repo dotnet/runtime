@@ -249,7 +249,6 @@ namespace System.Text.Json.Serialization.Converters
                     else
                     {
                         writer.WriteStartArray();
-
                     }
 
                     state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
