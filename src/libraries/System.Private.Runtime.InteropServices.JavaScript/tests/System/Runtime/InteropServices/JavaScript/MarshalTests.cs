@@ -887,5 +887,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             );
             Assert.Equal(expected, HelperMarshal._dateTimeValue);
         }
+
+        [Fact]
+        public static void MarshalUri()
+        {
+            var expected = new System.Uri("https://www.example.com/");
+            HelperMarshal._uriValue = default(System.Uri);
+            Runtime.InvokeJS(
+                @"var uri = 'https://www.example.com/';
+                App.call_test_method ('InvokeUri', [ uri ], 'u');"
+            );
+            Assert.Equal(expected, HelperMarshal._uriValue);
+        }
     }
 }

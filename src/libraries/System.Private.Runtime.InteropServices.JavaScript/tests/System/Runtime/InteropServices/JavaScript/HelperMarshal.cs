@@ -111,6 +111,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _dateTimeValue = (DateTime)boxed;
         }
 
+        internal static System.Uri _uriValue;
+        private static void InvokeUri(System.Uri uri)
+        {
+            _uriValue = uri;
+        }
+
         internal static object _marshalledObject;
         private static object InvokeMarshalObj()
         {
