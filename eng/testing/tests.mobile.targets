@@ -105,6 +105,8 @@
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(PublishDir)*.dll" />
     </ItemGroup>
 
+    <RemoveDir Directories="$(BundleDir)" />
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)\mono-aot-cross"
         Mode="Full"
@@ -119,7 +121,6 @@
 
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
-    <RemoveDir Directories="$(BundleDir)" />
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
@@ -170,7 +171,7 @@
            as a root -->
       <TrimmerRootAssembly
           Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('TestRunner.dll'))"
-          Include="%(ResolvedFileToPublish.FileName)" />
+          Include="%(ResolvedFileToPublish.FullPath)" />
     </ItemGroup>
 
     <ItemGroup>

@@ -28,11 +28,21 @@ PATH=/Users/<your_user>/.jsvu/:$PATH V8
 ### Using Browser Instance
 It's possible to run tests in a browser instance:
 
+#### Chrome
 - An installation of [ChromeDriver - WebDriver for Chrome](https://chromedriver.chromium.org) is required.  Make sure to read [Downloads/Version Selection](https://chromedriver.chromium.org/downloads/version-selection) to setup a working installation of ChromeDriver.
 - Include the [ChromeDriver - WebDriver for Chrome](https://chromedriver.chromium.org) location in your PATH environment.  Default is `/Users/<your_user>/.chromedriver`
 
 ```bash
 PATH=/Users/<your_user>/.chromedriver:$PATH
+```
+
+#### Gecko / Firefox
+
+- Requires gecko driver [Github repository of Mozilla](https://github.com/mozilla/geckodriver/releases)
+- Include the [Github repository of Mozilla](https://github.com/mozilla/geckodriver/releases) location in your PATH environment.  Default is `/Users/<your_user>/.geckodriver`
+
+```bash
+PATH=/Users/<your_user>/.geckodriver:$PATH
 ```
 
 ## Building Libs and Tests for WebAssembly
@@ -101,6 +111,26 @@ To run all tests, including "outer loop" tests (which are typically slower and i
     MSBUILD_ARGS=/p:OuterLoop=true make -C src/mono/wasm/ run-browser-tests-System.AppContext
     ```
 
+### Running tests using different Browsers
+It's possible to set a Browser explicitly by adding `--browser=` command line argument to `XHARNESS_COMMAND`:
+
+- CLI
+    ```
+    XHARNESS_COMMAND="test-browser --browser=safari" ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+    ```
+
+- Makefile target `run-browser-tests-<test>`
+
+    ```
+    XHARNESS_BROWSER=firefox make -C src/mono/wasm/ run-browser-tests-System.AppContext
+    ```
+
+At the moment supported values are:
+- `chrome`
+- `safari`
+- `firefox`
+
+By default, `chrome` browser is used.
 
 ## Kicking off outer loop tests from GitHub Interface
 

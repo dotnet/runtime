@@ -1132,29 +1132,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
-#if defined(TARGET_X86)
-// Marshals a managed method to an unmanaged callback.
-PCODE COMDelegate::ConvertToUnmanagedCallback(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(pMD != NULL);
-        PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END;
-
-    // Get UMEntryThunk from the thunk cache.
-    UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
-
-    PCODE pCode = (PCODE)pUMEntryThunk->GetCode();
-    _ASSERTE(pCode != NULL);
-    return pCode;
-}
-#endif // defined(TARGET_X86)
-
 // Marshals a delegate to a unmanaged callback.
 LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 {

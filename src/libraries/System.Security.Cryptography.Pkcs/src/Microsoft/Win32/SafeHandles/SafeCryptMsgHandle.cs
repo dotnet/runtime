@@ -9,7 +9,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeCryptMsgHandle : SafeHandle
     {
-        private SafeCryptMsgHandle() :
+        public SafeCryptMsgHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

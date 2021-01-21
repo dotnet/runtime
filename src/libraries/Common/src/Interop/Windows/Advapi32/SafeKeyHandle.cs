@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
         private bool _fPublicOnly;
         private SafeProvHandle? _parent;
 
-        private SafeKeyHandle() : base(true)
+        public SafeKeyHandle() : base(true)
         {
             SetHandle(IntPtr.Zero);
             _keySpec = 0;

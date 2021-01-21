@@ -235,7 +235,29 @@ void Compiler::lvaInitTypeRef()
     //-------------------------------------------------------------------------
 
     InitVarDscInfo varDscInfo;
-    varDscInfo.Init(lvaTable, hasRetBuffArg);
+#ifdef TARGET_X86
+    // x86 unmanaged calling conventions limit the number of registers supported
+    // for accepting arguments. As a result, we need to modify the number of registers
+    // when we emit a method with an unmanaged calling convention.
+    switch (info.compCallConv)
+    {
+        case CorInfoCallConvExtension::Thiscall:
+            // In thiscall the this parameter goes into a register.
+            varDscInfo.Init(lvaTable, hasRetBuffArg, 1, 0);
+            break;
+        case CorInfoCallConvExtension::C:
+        case CorInfoCallConvExtension::Stdcall:
+            varDscInfo.Init(lvaTable, hasRetBuffArg, 0, 0);
+            break;
+        case CorInfoCallConvExtension::Managed:
+        case CorInfoCallConvExtension::Fastcall:
+        default:
+            varDscInfo.Init(lvaTable, hasRetBuffArg, MAX_REG_ARG, MAX_FLOAT_REG_ARG);
+            break;
+    }
+#else
+    varDscInfo.Init(lvaTable, hasRetBuffArg, MAX_REG_ARG, MAX_FLOAT_REG_ARG);
+#endif
 
     lvaInitArgs(&varDscInfo);
 
@@ -513,14 +535,16 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         info.compRetBuffArg = varDscInfo->varNum;
         varDsc->lvType      = TYP_BYREF;
         varDsc->lvIsParam   = 1;
-        varDsc->lvIsRegArg  = 1;
+        varDsc->lvIsRegArg  = 0;
 
         if (useFixedRetBufReg && hasFixedRetBuffReg())
         {
+            varDsc->lvIsRegArg = 1;
             varDsc->SetArgReg(theFixedRetBuffReg());
         }
-        else
+        else if (varDscInfo->canEnreg(TYP_INT))
         {
+            varDsc->lvIsRegArg     = 1;
             unsigned retBuffArgNum = varDscInfo->allocRegArg(TYP_INT);
             varDsc->SetArgReg(genMapIntRegArgNumToRegNum(retBuffArgNum));
         }
@@ -557,10 +581,10 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         }
 #endif // FEATURE_SIMD
 
-        assert(isValidIntArgReg(varDsc->GetArgReg()));
+        assert(!varDsc->lvIsRegArg || isValidIntArgReg(varDsc->GetArgReg()));
 
 #ifdef DEBUG
-        if (verbose)
+        if (varDsc->lvIsRegArg && verbose)
         {
             printf("'__retBuf'  passed in register %s\n", getRegName(varDsc->GetArgReg()));
         }
@@ -591,7 +615,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #if defined(TARGET_X86)
     // Only (some of) the implicit args are enregistered for varargs
-    varDscInfo->maxIntRegArgNum = info.compIsVarArgs ? varDscInfo->intRegArgNum : MAX_REG_ARG;
+    if (info.compIsVarArgs)
+    {
+        varDscInfo->maxIntRegArgNum = varDscInfo->intRegArgNum;
+    }
 #elif defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     // On System V type environment the float registers are not indexed together with the int ones.
     varDscInfo->floatRegArgNum = varDscInfo->intRegArgNum;
@@ -5345,7 +5372,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         This is all relative to our Virtual '0'
      */
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_L2R)
+    if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
         argOffs = compArgSize;
     }
@@ -5357,9 +5384,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     noway_assert(compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
 #endif
 
-#ifdef TARGET_X86
-    argOffs -= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
-#endif
+    if (info.compArgOrder == Target::ARG_ORDER_L2R)
+    {
+        argOffs -= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
+    }
 
     // Update the arg initial register locations.
     lvaUpdateArgsWithInitialReg();
@@ -5398,11 +5426,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     if (info.compRetBuffArg != BAD_VAR_NUM)
     {
         noway_assert(lclNum == info.compRetBuffArg);
-        noway_assert(lvaTable[lclNum].lvIsRegArg);
-#ifndef TARGET_X86
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
-#endif // TARGET_X86
         lclNum++;
     }
 
@@ -5553,7 +5578,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     noway_assert(lclNum < info.compArgsCount);
     noway_assert(argSize);
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_L2R)
+    if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
         argOffs -= argSize;
     }
@@ -5621,7 +5646,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
     }
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
+    if (info.compArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
     {
         argOffs += argSize;
     }
@@ -5646,7 +5671,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     noway_assert(lclNum < info.compArgsCount);
     noway_assert(argSize);
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_L2R)
+    if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
         argOffs -= argSize;
     }
@@ -5925,7 +5950,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
     }
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
+    if (info.compArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
     {
         argOffs += argSize;
     }

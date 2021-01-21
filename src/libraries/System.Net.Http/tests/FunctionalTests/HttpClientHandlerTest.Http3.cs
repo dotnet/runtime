@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
-        protected override Version UseVersion => HttpVersion30;
+        protected override Version UseVersion => HttpVersion.Version30;
 
         public HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output)
         {
@@ -35,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion30,
+                Version = HttpVersion.Version30,
                 VersionPolicy = HttpVersionPolicy.RequestVersionExact
             };
             using HttpResponseMessage response = await client.SendAsync(request).TimeoutAfter(20_000);
@@ -57,7 +57,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion30,
+                Version = HttpVersion.Version30,
                 VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
             })
             {
@@ -72,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(uri, UriKind.Absolute),
-                Version = HttpVersion30,
+                Version = HttpVersion.Version30,
                 VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
             })
             {

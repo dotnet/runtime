@@ -93,6 +93,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GetTypeInfoNameTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\InitHandleTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseTests.cs" />

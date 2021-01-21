@@ -17335,6 +17335,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
 #endif
+#if defined(TARGET_X86)
+        else if (info.compCallConv != CorInfoCallConvExtension::Managed)
+        {
+            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
+        }
+#endif
         else
         {
             // return void

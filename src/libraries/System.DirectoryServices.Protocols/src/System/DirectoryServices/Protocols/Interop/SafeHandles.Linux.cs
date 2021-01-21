@@ -9,7 +9,7 @@ namespace System.DirectoryServices.Protocols
     {
         internal bool _needDispose;
 
-        internal ConnectionHandle()
+        public ConnectionHandle()
             :base(true)
         {
             Interop.Ldap.ldap_initialize(out handle, null);
@@ -44,7 +44,7 @@ namespace System.DirectoryServices.Protocols
 
     internal sealed class SafeBerHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeBerHandle() : base(true)
+        public SafeBerHandle() : base(true)
         {
             SetHandle(Interop.Ldap.ber_alloc(1));
             if (handle == IntPtr.Zero)

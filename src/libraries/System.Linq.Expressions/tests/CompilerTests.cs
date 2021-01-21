@@ -27,8 +27,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(n, f());
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ClassData(typeof(CompilationTypes))]
         [OuterLoop("May fail with SO on Debug JIT")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CompileDeepTree_NoStackOverflowFast(bool useInterpreter)
         {
             Expression e = Expression.Constant(0);

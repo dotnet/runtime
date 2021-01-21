@@ -8050,6 +8050,7 @@ call_end:
 
 #ifdef TARGET_WASM
 			if (common_call && needs_stack_walk)
+				/* If an exception is thrown, the LMF is popped by a call to mini_llvmonly_pop_lmf () */
 				emit_pop_lmf (cfg);
 #endif
 
@@ -11665,6 +11666,17 @@ mono_ldptr:
 	if (cfg->compile_aot)
 		/* FIXME: The plt slots require a GOT var even if the method doesn't use it */
 		mono_get_got_var (cfg);
+#endif
+
+#ifdef TARGET_WASM
+	if (cfg->lmf_var) {
+		// mini_llvmonly_pop_lmf () might be called before emit_push_lmf () so initialize the LMF
+		cfg->cbb = init_localsbb;
+		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
+		int lmf_reg = ins->dreg;
+
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_IMM, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), 0);
+	}
 #endif
 
 	if (cfg->method == method && cfg->got_var)

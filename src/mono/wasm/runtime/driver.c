@@ -48,6 +48,7 @@ void mono_icall_table_init (void);
 void mono_aot_register_module (void **aot_info);
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
+int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
@@ -466,9 +467,6 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
-#ifdef ENABLE_METADATA_UPDATE
-	interp_opts = "-inline"; /* FIXME: EnC hack - make this configurable */
-#endif
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
@@ -505,6 +503,12 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
+#ifdef ENABLE_METADATA_UPDATE
+	if (monoeg_g_hasenv ("MONO_METADATA_UPDATE")) {
+		interp_opts = "-inline";
+	}
+#endif
+
 	/*
 	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
 	 * debug_level == 0 disables debugging and enables interpreter optimizations
@@ -517,6 +521,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		interp_opts = "-all";
 		mono_wasm_enable_debugging (debug_level);
 	}
+
 #endif
 
 #ifdef LINK_ICALLS

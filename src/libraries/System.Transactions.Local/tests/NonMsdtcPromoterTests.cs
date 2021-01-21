@@ -2148,7 +2148,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Blocking Clone Completed After Commit.
         /// </summary>
         [OuterLoop] // long delay
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcBlockingCloneCompletedAfterCommit(bool promote)
@@ -2161,7 +2161,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Timeout.
         /// </summary>
         [OuterLoop] // long timeout
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcTimeout(bool promote)
