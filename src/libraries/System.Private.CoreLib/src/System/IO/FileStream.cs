@@ -180,14 +180,7 @@ namespace System.IO
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }
 
-            if ((options & FileOptions.Asynchronous) != 0)
-            {
-                _impl = WrapForDerivedType(new FileStreamImpl(this, path, mode, access, share, bufferSize, options));
-            }
-            else
-            {
-                _impl = WrapForDerivedType(new FileStreamImpl(this, path, mode, access, share, bufferSize, options));
-            }
+            _impl = WrapForDerivedType(new FileStreamImpl(this, path, mode, access, share, bufferSize, options));
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
