@@ -164,11 +164,14 @@ namespace System.IO
         internal static void Initialize(ref FileStatus status, bool isDirectory)
         {
             status.InitiallyDirectory = isDirectory;
-            status._initializedMainCache = -1;
+            status.Invalidate();
         }
 
-        internal void Invalidate() =>
+        internal void Invalidate()
+        {
             _initializedMainCache = -1;
+            _initializedSecondaryCache = -1;
+        }
 
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
