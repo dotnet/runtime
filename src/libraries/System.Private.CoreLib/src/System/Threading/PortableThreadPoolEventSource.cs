@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
-namespace System.Threading
+namespace System.Diagnostics.Tracing
 {
     // Currently with EventPipe there isn't a way to move events from the native side to the managed side and get the same
     // experience. For now, the same provider name and guid are used as the native side and a temporary change has been made to
@@ -55,12 +56,6 @@ namespace System.Threading
             public const EventOpcode Sample = (EventOpcode)100;
             public const EventOpcode Adjustment = (EventOpcode)101;
             public const EventOpcode Stats = (EventOpcode)102;
-        }
-
-        public static class Keywords // this name and visibility is important for EventSource
-        {
-            public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
-            public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;
         }
 
         public enum ThreadAdjustmentReasonMap : uint

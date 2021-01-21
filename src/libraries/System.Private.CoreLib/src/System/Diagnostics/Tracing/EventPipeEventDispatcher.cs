@@ -196,7 +196,7 @@ namespace System.Diagnostics.Tracing
                         m_dispatchTaskWaitHandle.WaitOne();
                     }
 
-                    Thread.Sleep(10);
+                    Task.Delay(10);
                 }
             }
         }
