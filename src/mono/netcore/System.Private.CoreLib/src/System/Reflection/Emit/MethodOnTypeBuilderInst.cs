@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Reflection.Emit/MethodOnTypeBuilderInst.cs
 //
@@ -99,6 +100,9 @@ namespace System.Reflection.Emit
         }
 
         // Called from the runtime to return the corresponding finished MethodInfo object
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "MethodOnTypeBuilderInst is Reflection.Emit's underlying implementation of MakeGenericMethod. " +
+                "Callers of the outer calls to MakeGenericMethod will be warned as appropriate.")]
         internal MethodInfo RuntimeResolve()
         {
             Type type = instantiation.InternalResolve();

@@ -13,7 +13,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         private SafeHandle? _parent;
 
-        private SafeBioHandle() :
+        public SafeBioHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

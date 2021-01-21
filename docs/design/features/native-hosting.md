@@ -18,10 +18,10 @@ App (native or .NET Core both) which needs to use some of the other services pro
 
 ## Existing support
 * **C-style ABI in `coreclr`**
-`coreclr` exposes ABI to host the .NET runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/hosts/inc/coreclrhost.h) for the exposed functions.
+`coreclr` exposes ABI to host the .NET runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/hosts/inc/coreclrhost.h) for the exposed functions.
 This API requires the native host to locate the runtime and to fully specify all startup parameters for the runtime. There's no inherent interoperability between these APIs and the .NET SDK.
 * **COM-style ABI in `coreclr`**
-`coreclr` exposes COM-style ABI to host the .NET runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/pal/prebuilt/inc/mscoree.h) for more details.
+`coreclr` exposes COM-style ABI to host the .NET runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/pal/prebuilt/inc/mscoree.h) for more details.
 Similarly to the C-style ABI the COM-style ABI also requires the native host to locate the runtime and to fully specify all startup parameters.
 There's no inherent interoperability between these APIs and the .NET SDK.
 The COM-style ABI is deprecated and should not be used going forward.

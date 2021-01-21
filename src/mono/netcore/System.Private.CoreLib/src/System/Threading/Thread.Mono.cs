@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -33,9 +34,6 @@ namespace System.Threading
         private IntPtr debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
         private UIntPtr static_data; /* GC-tracked */
         private IntPtr runtime_thread_info;
-        /* current System.Runtime.Remoting.Contexts.Context instance
-           keep as an object to avoid triggering its class constructor when not needed */
-        private object? current_appcontext;
         private object? root_domain_thread;
         internal byte[]? _serialized_principal;
         internal int _serialized_principal_version;
@@ -73,11 +71,14 @@ namespace System.Threading
 #pragma warning restore 169, 414, 649
 
         private string? _name;
-        private Delegate? m_start;
-        private object? m_start_arg;
-        private CultureInfo? culture, ui_culture;
+        private StartHelper? _startHelper;
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
+
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
 
         private Thread()
         {
@@ -123,6 +124,7 @@ namespace System.Threading
                 else
                 {
                     ClrState(this, ThreadState.Background);
+                    _mayNeedResetForThreadPool = true;
                 }
             }
         }
@@ -162,18 +164,14 @@ namespace System.Threading
             {
                 // TODO: arguments check
                 SetPriority(this, (int)value);
+                if (value != ThreadPriority.Normal)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
             }
         }
 
         public ThreadState ThreadState => GetState(this);
-
-        private void Create(ThreadStart start) => SetStartHelper((Delegate)start, 0); // 0 will setup Thread with default stackSize
-
-        private void Create(ThreadStart start, int maxStackSize) => SetStartHelper((Delegate)start, maxStackSize);
-
-        private void Create(ParameterizedThreadStart start) => SetStartHelper((Delegate)start, 0);
-
-        private void Create(ParameterizedThreadStart start, int maxStackSize) => SetStartHelper((Delegate)start, maxStackSize);
 
         public ApartmentState GetApartmentState() => ApartmentState.Unknown;
 
@@ -207,30 +205,12 @@ namespace System.Threading
             return JoinInternal(this, millisecondsTimeout);
         }
 
-        internal void ResetThreadPoolThread()
+        private void Initialize()
         {
-            if (_name != null)
-                Name = null;
+            InitInternal(this);
 
-            if ((state & ThreadState.Background) == 0)
-                IsBackground = true;
-
-            if ((ThreadPriority)priority != ThreadPriority.Normal)
-                Priority = ThreadPriority.Normal;
-        }
-
-        private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
-        {
-            if (uiCulture)
-                ui_culture = value;
-            else
-                culture = value;
-        }
-
-        private void SetStartHelper(Delegate start, int maxStackSize)
-        {
-            m_start = start;
-            stack_size = maxStackSize;
+            // TODO: This can go away once the mono/mono mirror is disabled
+            stack_size = _startHelper!._maxStackSize;
         }
 
         public static void SpinWait(int iterations)
@@ -252,43 +232,28 @@ namespace System.Threading
 
         internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
-        [UnsupportedOSPlatform("browser")]
-        public void Start()
-        {
-            StartInternal(this);
-        }
-
-        [UnsupportedOSPlatform("browser")]
-        public void Start(object parameter)
-        {
-            if (m_start is ThreadStart)
-                throw new InvalidOperationException(SR.InvalidOperation_ThreadWrongThreadStart);
-
-            m_start_arg = parameter;
-            StartInternal(this);
-        }
-
         // Called from the runtime
         internal void StartCallback()
         {
-            if (culture != null)
-                CurrentCulture = culture;
-            if (ui_culture != null)
-                CurrentUICulture = ui_culture;
-            if (m_start is ThreadStart del)
-            {
-                m_start = null;
-                del();
-            }
-            else
-            {
-                var pdel = (ParameterizedThreadStart)m_start!;
-                object? arg = m_start_arg;
-                m_start = null;
-                m_start_arg = null;
-                pdel(arg);
-            }
+            StartHelper? startHelper = _startHelper;
+            Debug.Assert(startHelper != null);
+            _startHelper = null;
+
+            startHelper.Run();
         }
+
+        // Called from the runtime
+        internal static void ThrowThreadStartException(Exception ex) => throw new ThreadStartException(ex);
+
+        private void StartCore()
+        {
+             StartInternal(this);
+        }
+
+        [DynamicDependency(nameof(StartCallback))]
+        [DynamicDependency(nameof(ThrowThreadStartException))]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void StartInternal(Thread runtime_thread);
 
         partial void ThreadNameChanged(string? value)
         {
@@ -301,7 +266,20 @@ namespace System.Threading
             return YieldInternal();
         }
 
-        private bool TrySetApartmentStateUnchecked(ApartmentState state) => state == ApartmentState.Unknown;
+        private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
+        {
+             if (state != ApartmentState.Unknown)
+             {
+                if (throwOnError)
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+                }
+
+                return false;
+             }
+
+             return true;
+        }
 
         private ThreadState ValidateThreadState()
         {
@@ -362,13 +340,6 @@ namespace System.Threading
         private static void SpinWait_nop()
         {
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Thread CreateInternal();
-
-        [DynamicDependency(nameof(StartCallback))]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void StartInternal(Thread runtime_thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool JoinInternal(Thread thread, int millisecondsTimeout);

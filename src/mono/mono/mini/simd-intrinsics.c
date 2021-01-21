@@ -877,27 +877,9 @@ mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 		}
 	}
 }
-
-void
-mono_simd_decompose_intrinsics (MonoCompile *cfg)
-{
-	MonoBasicBlock *bb;
-	MonoInst *ins;
-
-	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		for (ins = bb->code; ins; ins = ins->next) {
-			mono_simd_decompose_intrinsic (cfg, bb, ins);
-		}
-	}
-}
 #else
 void
 mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
-{
-}
-
-void
-mono_simd_decompose_intrinsics (MonoCompile *cfg)
 {
 }
 #endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
@@ -2658,4 +2640,5 @@ on_exit:
 }
 
 #endif /* DISABLE_JIT */
+MONO_EMPTY_SOURCE_FILE (simd_intrinsics);
 #endif /* MONO_ARCH_SIMD_INTRINSICS */

@@ -120,10 +120,42 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new CultureInfo(name).TextInfo.IsRightToLeft);
         }
 
-        [Fact]
-        public void ListSeparator_EnUS()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData("ar-SA", ";")]
+        [InlineData("as-IN", ",")]
+        [InlineData("ba-RU", ";")]
+        [InlineData("bs-cyrl-BA", ";")]
+        [InlineData("de-DE", ";")]
+        [InlineData("dv-MV", "\u060C")]
+        [InlineData("en-GB", ",")]
+        [InlineData("en-US", ",")]
+        [InlineData("es-ES", ";")]
+        [InlineData("es-MX", ",")]
+        [InlineData("fa-IR", "\u061B")]
+        [InlineData("fr-FR", ";")]
+        [InlineData("hr-HR", ";")]
+        [InlineData("it-IT", ";")]
+        [InlineData("ko-KR", ",")]
+        [InlineData("ku-arab-iq", "\u061B")]
+        [InlineData("nl-NL", ";")]
+        [InlineData("pl-pl", ";")]
+        [InlineData("pt-PT", ";")]
+        [InlineData("ru-RU", ";")]
+        [InlineData("sv-SE", ";")]
+        [InlineData("th-TH", ",")]
+        [InlineData("ja-jp", ",")]
+        [InlineData("zh-CN", ",")]
+        [InlineData("", ",")]
+        public void ListSeparatorTest(string cultureName, string separator)
         {
-            Assert.NotEqual(string.Empty, new CultureInfo("en-US").TextInfo.ListSeparator);
+            try
+            {
+                Assert.Equal(separator, CultureInfo.GetCultureInfo(cultureName).TextInfo.ListSeparator);
+            }
+            catch (CultureNotFoundException)
+            {
+                // Ignore the cultures we cannot create on downlevel versions.
+            }
         }
 
         [Theory]

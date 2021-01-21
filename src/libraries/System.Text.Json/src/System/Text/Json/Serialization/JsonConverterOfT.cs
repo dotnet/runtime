@@ -204,7 +204,7 @@ namespace System.Text.Json.Serialization
 
                     if (JsonSerializer.TryGetReferenceFromJsonElement(ref state, element, out object? referenceValue))
                     {
-                        value = (T)referenceValue;
+                        value = (T?)referenceValue;
                     }
                 }
 
@@ -289,10 +289,12 @@ namespace System.Text.Json.Serialization
 
         internal override sealed bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
         {
-            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T typedValue);
+            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;
             return success;
         }
+
+        internal virtual bool IsNull(in T value) => value == null;
 
         internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
@@ -342,7 +344,7 @@ namespace System.Text.Json.Serialization
                     }
                 }
             }
-            else if (value == null && !HandleNullOnWrite)
+            else if (CanBeNull && !HandleNullOnWrite && IsNull(value))
             {
                 // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
                 // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.

@@ -4,7 +4,6 @@
        needed by the IL SDK. -->
 
   <PropertyGroup>
-    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
-    <ProjectAssetsFile>$(TestSourceDir)Common\ilasm\obj\project.assets.json</ProjectAssetsFile>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
   </PropertyGroup>
 </Project>

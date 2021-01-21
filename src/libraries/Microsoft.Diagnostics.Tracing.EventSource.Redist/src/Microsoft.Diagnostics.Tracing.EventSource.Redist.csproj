@@ -2,9 +2,10 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.Diagnostics.Tracing.EventSource</AssemblyName>
     <DefineConstants>$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;TARGET_WINDOWS</DefineConstants>
-    <TargetFrameworks>net461-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>net461-windows</TargetFrameworks>
     <Nullable>enable</Nullable>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -23,6 +24,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventUnregister.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteString.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs" />
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\ActivityTracker.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\CounterGroup.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\CounterPayload.cs" />

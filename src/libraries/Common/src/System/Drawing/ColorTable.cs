@@ -3,6 +3,7 @@
 
 #nullable enable
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Drawing
@@ -19,7 +20,9 @@ namespace System.Drawing
             return colors;
         }
 
-        private static void FillWithProperties(Dictionary<string, Color> dictionary, Type typeWithColors)
+        private static void FillWithProperties(
+            Dictionary<string, Color> dictionary,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] Type typeWithColors) // can remove NonPublicProperties once https://github.com/mono/linker/issues/1724 is fixed
         {
             foreach (PropertyInfo prop in typeWithColors.GetProperties(BindingFlags.Public | BindingFlags.Static))
             {

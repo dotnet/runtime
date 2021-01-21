@@ -55,7 +55,7 @@ namespace System.Globalization
 
         internal override CalendarId ID => CalendarId.PERSIAN;
 
-        private long GetAbsoluteDatePersian(int year, int month, int day)
+        private static long GetAbsoluteDatePersian(int year, int month, int day)
         {
             if (year < 1 || year > MaxCalendarYear || month < 1 || month > 12)
             {

@@ -5,23 +5,16 @@ if !ENABLE_MSVC_ONLY
 if HOST_WIN32
 win32_sources = \
 	console-win32.c \
-	console-win32-internals.h \
-	cominterop-win32-internals.h \
 	w32file-win32.c \
-	w32file-win32-internals.h \
 	icall-windows.c \
-	icall-windows-internals.h \
 	marshal-windows.c \
-	marshal-windows-internals.h \
 	mono-security-windows.c \
-	mono-security-windows-internals.h \
 	w32mutex-win32.c \
 	w32semaphore-win32.c \
 	w32event-win32.c \
 	w32process-win32.c \
 	w32socket-win32.c \
-	w32error-win32.c \
-	w32subset.h
+	w32error-win32.c
 
 platform_sources = $(win32_sources)
 
@@ -89,10 +82,6 @@ endif
 
 if !ENABLE_ILGEN
 ilgen_libraries = libmono-ilgen.la
-endif
-
-if ENABLE_PERFTRACING
-eventpipe_libs = $(top_builddir)/mono/eventpipe/libeventpipe.la
 endif
 
 BUNDLE_ZLIB_PATH=$(top_builddir)/mono/zlib/libz.la
@@ -189,7 +178,7 @@ if BITCODE
 if WASM
 libmono_icall_table_la_LIBADD = # empty to avoid duplicate symbols when enabling dynamic linking
 else
-libmono_icall_table_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la $(eventpipe_libs) libmonoruntimesgen.la
+libmono_icall_table_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
 endif
 endif
 endif
@@ -213,7 +202,7 @@ if BITCODE
 if WASM
 libmono_ilgen_la_LIBADD =  # empty to avoid duplicate symbols when enabling dynamic linking
 else
-libmono_ilgen_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la $(eventpipe_libs) libmonoruntimesgen.la
+libmono_ilgen_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
 endif
 endif
 endif
@@ -280,6 +269,7 @@ common_sources = \
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
+	environment-internals.h		\
 	icall-eventpipe.c	\
 	exception.c		\
 	exception.h		\
@@ -314,12 +304,15 @@ common_sources = \
 	marshal.c		\
 	marshal.h		\
 	marshal-internals.h \
+	marshal-noilgen.c	\
 	mempool.c		\
 	mempool.h		\
 	mempool-internals.h	\
 	metadata.c		\
 	metadata-verify.c	\
 	metadata-internals.h	\
+	metadata-update.h	\
+	metadata-update.c	\
 	method-builder.h 	\
 	method-builder-internals.h 	\
 	method-builder.c 	\

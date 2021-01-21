@@ -22,7 +22,7 @@ WARNING:   When setting properties based on their current state (for example:
     <BashScriptSnippetGen>$(BashScriptSnippetGen);GetCrossgenBashScript</BashScriptSnippetGen>
     <BatchScriptSnippetGen>$(BatchScriptSnippetGen);GetCrossgenBatchScript</BatchScriptSnippetGen>
   </PropertyGroup>
-  
+
   <!--
     This returns the portion of the execution script that generates the required lines to crossgen the test executable.
 
@@ -69,95 +69,102 @@ fi
 
 # CrossGen2 Script
 if [ ! -z ${RunCrossGen2+x} ]%3B then
+  compilationDoneFlagFile="IL-CG2/done"
+  if [ -d IL-CG2 ]%3B then
+    while [ ! -f $compilationDoneFlagFile ]%3B
+    do
+      echo "Waiting for concurrent Crossgen2 compilation: $compilationDoneFlagFile"
+      sleep 5%3B
+    done
+  else
     TakeLock
-    if [ ! -d IL ]%3B then
-      mkdir IL
+    if [ ! -d IL-CG2 ]%3B then
+      mkdir IL-CG2
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        cp $(MSBuildProjectName).dll IL/
+        cp $(MSBuildProjectName).dll IL-CG2/
         cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
       else
-        cp *.dll IL/
+        cp *.dll IL-CG2/
       fi
-    fi
 
-    ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
+      ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
 
-    if [ ! -z ${LargeVersionBubble+x} ]%3B then
-        ExtraCrossGen2Args+=" --inputbubble"
-    fi
-
-    __cg2ExitCode=0
-
-   OneFileCrossgen2() {
-      __OutputFile=$1
-
-      __ResponseFile="$__OutputFile.rsp"
-      rm $__ResponseFile
-
-      # Suppress the GC stress COMPlus for the duration of Crossgen2 execution
-      local gcStressModeToRestore=$COMPlus_GCStress;
-      local heapVerifyModeToRestore=$COMPlus_HeapVerify;
-      local readyToRunModeToRestore=$COMPlus_ReadyToRun;
-      export COMPlus_GCStress=
-      export COMPlus_HeapVerify=
-      export COMPlus_ReadyToRun=
-
-      __Command=$_DebuggerFullPath
-      # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
-      if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-          __Command+=" $__TestDotNetCmd"
-      else
-          __Command+=" dotnet"
+      if [ ! -z ${LargeVersionBubble+x} ]%3B then
+          ExtraCrossGen2Args+=" --inputbubble"
       fi
-      __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
-      __Command+=" @$__ResponseFile"
-      __Command+=" $ExtraCrossGen2Args"
 
-      echo $2 >> $__ResponseFile
+      __cg2ExitCode=0
 
-      echo -o:$__OutputFile>>$__ResponseFile
-      echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
-      echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
-      echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
-      echo --verify-type-and-field-layout>>$__ResponseFile
-      echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
-      echo -O>>$__ResponseFile
+      OneFileCrossgen2() {
+        __OutputFile=$1
 
-      echo "Response file: $__ResponseFile"
-      cat $__ResponseFile
-      echo "Running CrossGen2: $__Command"
-      $__Command
-      __cg2ExitCode=$?
+        __ResponseFile="$__OutputFile.rsp"
+        rm $__ResponseFile
 
-      export COMPlus_GCStress=$gcStressModeToRestore
-      export COMPlus_HeapVerify=$heapVerifyModeToRestore
-      export COMPlus_ReadyToRun=$readyToRunModeToRestore
-  }
+        # Suppress the GC stress COMPlus for the duration of Crossgen2 execution
+        local gcStressModeToRestore=$COMPlus_GCStress;
+        local heapVerifyModeToRestore=$COMPlus_HeapVerify;
+        local readyToRunModeToRestore=$COMPlus_ReadyToRun;
+        export COMPlus_GCStress=
+        export COMPlus_HeapVerify=
+        export COMPlus_ReadyToRun=
 
-    if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        ExtraCrossGen2Args+=" --composite"
-        OneFileCrossgen2 "$PWD/composite-r2r.dll" "$PWD/IL/*.dll"
-    else
-        ExtraCrossGen2Args+= -r:$PWD/IL/*.dll
-      for dllFile in $PWD/IL/*.dll
-      do
-        echo $dllFile
-        bareFileName="${dllFile##*/}"
-        OneFileCrossgen2 "$PWD/$bareFileName" "$dllFile"
-        if [ $__cg2ExitCode -ne 0 ]; then
-          break
+        __Command=$_DebuggerFullPath
+        # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+        if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+            __Command+=" $__TestDotNetCmd"
+        else
+            __Command+=" dotnet"
         fi
-      done
+        __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
+        __Command+=" @$__ResponseFile"
+        __Command+=" $ExtraCrossGen2Args"
+
+        echo $2 >> $__ResponseFile
+
+        echo -o:$__OutputFile>>$__ResponseFile
+        echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
+        echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
+        echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
+        echo --verify-type-and-field-layout>>$__ResponseFile
+        echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
+
+        echo "Response file: $__ResponseFile"
+        cat $__ResponseFile
+        echo "Running CrossGen2: $__Command"
+        $__Command
+        __cg2ExitCode=$?
+
+        export COMPlus_GCStress=$gcStressModeToRestore
+        export COMPlus_HeapVerify=$heapVerifyModeToRestore
+        export COMPlus_ReadyToRun=$readyToRunModeToRestore
+      }
+
+      if [ ! -z ${CompositeBuildMode+x} ]%3B then
+          ExtraCrossGen2Args+=" --composite"
+          OneFileCrossgen2 "$PWD/composite-r2r.dll" "$PWD/IL-CG2/*.dll"
+      else
+          ExtraCrossGen2Args+= -r:$PWD/IL-CG2/*.dll
+        for dllFile in $PWD/IL-CG2/*.dll
+        do
+          echo $dllFile
+          bareFileName="${dllFile##*/}"
+          OneFileCrossgen2 "$PWD/$bareFileName" "$dllFile"
+          if [ $__cg2ExitCode -ne 0 ]; then
+            break
+          fi
+        done
+      fi
+
+      echo "Crossgen2 compilation finished, exit code $__cg2ExitCode" >> $compilationDoneFlagFile
+      if [ $__cg2ExitCode -ne 0 ]; then
+        echo Crossgen2 failed with exitcode: $__cg2ExitCode
+        ReleaseLock
+        exit 1
+      fi
     fi
-
-    if [ $__cg2ExitCode -ne 0 ]; then
-      echo Crossgen2 failed with exitcode: $__cg2ExitCode
-      ReleaseLock
-      exit 1
-    fi
-
-
     ReleaseLock
+  fi
 fi
         ]]>
       </CrossgenBashScript>
@@ -207,29 +214,34 @@ if defined RunCrossGen2 (
     set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CrossGen2TestExtraArguments)
 
     if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
-    call :TakeLock
     set CrossGen2Status=0
-    if not exist "IL" (
-        mkdir IL
-        if defined CompositeBuildMode (
-          copy *.dll IL\
-        ) else (
-          copy *.dll IL\
-        )
+    set compilationDoneFlagFile=!ScriptPath!IL-CG2\done
+    if exist "IL-CG2" (
+      REM We may have come in the middle of a concurrent CG2 compilation, wait for it to finish
+      :ProbeCompilationFinished
+      if exist "!compilationDoneFlagFile!" goto :DoneCrossgen2OperationsNoRelease
+      echo Waiting for concurrent Crossgen2 compilation^: !compilationDoneFlagFile!
+      timeout /t 5 /nobreak
+      goto :ProbeCompilationFinished
     )
+    call :TakeLock
+    if exist "IL-CG2" goto :DoneCrossgen2Operations
+
+    mkdir IL-CG2
+    copy *.dll IL-CG2\
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
         set __OutputFile=!scriptPath!\composite-r2r.dll
         rem In composite mode, treat all dll's in the test folder as rooting inputs
-        set __InputFile=!scriptPath!IL\*.dll
+        set __InputFile=!scriptPath!IL-CG2\*.dll
         call :CompileOneFileCrossgen2
         IF NOT !CrossGen2Status!==0 goto :DoneCrossgen2Operations
     ) else (
         for %%I in (!scriptPath!\*.dll) do (
-            set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL\*.dll
+            set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
             set __OutputFile=!scriptPath!\%%~nI.dll
-            set __InputFile=!scriptPath!IL\%%~nI.dll
+            set __InputFile=!scriptPath!IL-CG2\%%~nI.dll
             call :CompileOneFileCrossgen2
             IF NOT !CrossGen2Status!==0 (
               IF NOT !CrossGen2Status!==2 goto :DoneCrossgen2Operations
@@ -266,11 +278,14 @@ if defined RunCrossGen2 (
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
-    echo -O>>!__ResponseFile!
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\netstandard.dll>>!__ResponseFile!
+
+    if not "$(__CreatePdb)" == "" (
+        echo --pdb>>!__ResponseFile!
+    )
 
     echo Response file: !__ResponseFile!
     type !__ResponseFile!
@@ -285,7 +300,9 @@ if defined RunCrossGen2 (
     Exit /b 0
 
 :DoneCrossgen2Operations
+    echo Crossgen2 compilation finished, exit code !CrossGen2Status!>>!compilationDoneFlagFile!
     call :ReleaseLock
+:DoneCrossgen2OperationsNoRelease
     IF NOT !CrossGen2Status!==0 (
         ECHO Crossgen2 failed with exitcode - !CrossGen2Status!
         Exit /b 1
@@ -297,7 +314,4 @@ if defined RunCrossGen2 (
       <CLRTestBatchPreCommands>$(CLRTestBatchPreCommands);$(CrossgenBatchScript)</CLRTestBatchPreCommands>
     </PropertyGroup>
   </Target>
-
-
-
 </Project>

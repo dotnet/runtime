@@ -28,7 +28,7 @@ usage()
   echo "  --help (-h)                     Print help and exit."
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
-  echo "  --os                            Target operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
+  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
   echo "                                  Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -36,6 +36,8 @@ usage()
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
   echo "                                  compiled with optimizations enabled."
   echo "                                  [Default: Debug]"
+  echo "  -runtimeFlavor (-rf)            Runtime flavor: CoreCLR or Mono."
+  echo "                                  [Default: CoreCLR]"
   echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
@@ -60,8 +62,8 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net5.0 or net48."
-  echo "                             [Default: net5.0]"
+  echo "  --framework (-f)           Build framework: net6.0 or net48."
+  echo "                             [Default: net6.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -74,6 +76,8 @@ usage()
   echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
+  echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
+  echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -130,8 +134,8 @@ initDistroRid()
     local isCrossBuild="$3"
     local isPortableBuild="$4"
 
-    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
-    if (( isCrossBuild == 1 )); then
+    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
+    if [[ $isCrossBuild == 1 && "$targetOs" != "OSX" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
     initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
@@ -150,13 +154,15 @@ portableBuild=1
 
 source $scriptroot/native/init-os-and-arch.sh
 
+hostArch=$arch
+
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 firstArgumentChecked=0
 
 while [[ $# > 0 ]]; do
-  opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
+  opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
 
   if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
     if [ $opt == "help" ]; then
@@ -172,7 +178,7 @@ while [[ $# > 0 ]]; do
   firstArgumentChecked=1
 
   case "$opt" in
-     -help|-h)
+     -help|-h|-\?|/?)
       usage
       exit 0
       ;;
@@ -182,7 +188,7 @@ while [[ $# > 0 ]]; do
         showSubsetHelp
         exit 0
       else
-        passedSubset="$(echo "$2" | awk '{print tolower($0)}')"
+        passedSubset="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
         if [ $passedSubset == "help" ]; then
           showSubsetHelp
           exit 0
@@ -197,7 +203,7 @@ while [[ $# > 0 ]]; do
         echo "No architecture supplied. See help (--help) for supported architectures." 1>&2
         exit 1
       fi
-      passedArch="$(echo "$2" | awk '{print tolower($0)}')"
+      passedArch="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedArch" in
         x64|x86|arm|armel|arm64|wasm)
           arch=$passedArch
@@ -216,7 +222,7 @@ while [[ $# > 0 ]]; do
         echo "No configuration supplied. See help (--help) for supported configurations." 1>&2
         exit 1
       fi
-      passedConfig="$(echo "$2" | awk '{print tolower($0)}')"
+      passedConfig="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedConfig" in
         debug|release|checked)
           val="$(tr '[:lower:]' '[:upper:]' <<< ${passedConfig:0:1})${passedConfig:1}"
@@ -236,7 +242,7 @@ while [[ $# > 0 ]]; do
         echo "No framework supplied. See help (--help) for supported frameworks." 1>&2
         exit 1
       fi
-      val="$(echo "$2" | awk '{print tolower($0)}')"
+      val="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       arguments="$arguments /p:BuildTargetFramework=$val"
       shift 2
       ;;
@@ -246,10 +252,10 @@ while [[ $# > 0 ]]; do
         echo "No target operating system supplied. See help (--help) for supported target operating systems." 1>&2
         exit 1
       fi
-      passedOS="$(echo "$2" | awk '{print tolower($0)}')"
+      passedOS="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedOS" in
-        windows_nt)
-          os="Windows_NT" ;;
+        windows)
+          os="windows" ;;
         linux)
           os="Linux" ;;
         freebsd)
@@ -270,7 +276,7 @@ while [[ $# > 0 ]]; do
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac
@@ -307,7 +313,7 @@ while [[ $# > 0 ]]; do
         echo "No runtime configuration supplied. See help (--help) for supported runtime configurations." 1>&2
         exit 1
       fi
-      passedRuntimeConf="$(echo "$2" | awk '{print tolower($0)}')"
+      passedRuntimeConf="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedRuntimeConf" in
         debug|release|checked)
           val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeConf:0:1})${passedRuntimeConf:1}"
@@ -322,12 +328,32 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
+     -runtimeflavor|-rf)
+      if [ -z ${2+x} ]; then
+        echo "No runtime flavor supplied. See help (--help) for supported runtime flavors." 1>&2
+        exit 1
+      fi
+      passedRuntimeFlav="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      case "$passedRuntimeFlav" in
+        coreclr|mono)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeFlav:0:1})${passedRuntimeFlav:1}"
+          ;;
+        *)
+          echo "Unsupported runtime flavor '$2'."
+          echo "The allowed values are CoreCLR and Mono."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:RuntimeFlavor=$val"
+      shift 2
+      ;;
+
      -librariesconfiguration|-lc)
       if [ -z ${2+x} ]; then
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
         exit 1
       fi
-      passedLibConf="$(echo "$2" | awk '{print tolower($0)}')"
+      passedLibConf="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedLibConf" in
         debug|release)
           val="$(tr '[:lower:]' '[:upper:]' <<< ${passedLibConf:0:1})${passedLibConf:1}"
@@ -372,12 +398,44 @@ while [[ $# > 0 ]]; do
         echo "No value for portablebuild is supplied. See help (--help) for supported values." 1>&2
         exit 1
       fi
-      passedPortable="$(echo "$2" | awk '{print tolower($0)}')"
+      passedPortable="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       if [ "$passedPortable" = false ]; then
         portableBuild=0
         arguments="$arguments /p:PortableBuild=false"
       fi
       shift 2
+      ;;
+
+     -keepnativesymbols)
+      if [ -z ${2+x} ]; then
+        echo "No value for keepNativeSymbols is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      passedKeepNativeSymbols="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      if [ "$passedKeepNativeSymbols" = true ]; then
+        arguments="$arguments /p:KeepNativeSymbols=true"
+      fi
+      shift 2
+      ;;
+
+
+      -ninja)
+      if [ -z ${2+x} ]; then
+        arguments="$arguments /p:Ninja=true"
+        shift 1
+      else
+        ninja="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+        if [ "$ninja" = true ]; then
+          arguments="$arguments /p:Ninja=true"
+          shift 2
+        elif [ "$ninja" = false ]; then
+          arguments="$arguments /p:Ninja=false"
+          shift 2
+        else
+          arguments="$arguments /p:Ninja=true"
+          shift 1
+        fi
+      fi
       ;;
 
       *)
@@ -401,6 +459,6 @@ initDistroRid $os $arch $crossBuild $portableBuild
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
-arguments="$arguments /p:TargetArchitecture=$arch"
+arguments="$arguments /p:TargetArchitecture=$arch /p:BuildArchitecture=$hostArch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 "$scriptroot/common/build.sh" $arguments

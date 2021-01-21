@@ -250,7 +250,8 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact, OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop]
         public static void VeryLargeAmountOfEnumsToSerialize()
         {
             // Ensure we don't throw OutOfMemoryException.
@@ -314,6 +315,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact, OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static void VeryLargeAmountOfEnumDictionaryKeysToSerialize()
         {
             // Ensure we don't throw OutOfMemoryException.

@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,6 +33,7 @@ namespace System.Net.Http
             _disposeHandler = disposeHandler;
         }
 
+        [UnsupportedOSPlatformAttribute("browser")]
         public virtual HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {

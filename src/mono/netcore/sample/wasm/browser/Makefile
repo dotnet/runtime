@@ -1,16 +1,11 @@
 TOP=../../../../../..
 
-DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
+include ../wasm.mk
 
-CONFIG?=Release
+ifneq ($(AOT),)
+override MSBUILD_ARGS+=/p:RunAOTCompilation=true
+endif
 
-all: build
+PROJECT_NAME=Wasm.Browser.Sample.csproj
 
-build:
-	$(TOP)/.dotnet/dotnet build $(DOTNET_Q_ARGS) /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) WasmSample.csproj
-
-clean:
-	rm -rf bin
-
-run:
-	cd bin/$(CONFIG)/publish && python3 server.py
+run: run-browser

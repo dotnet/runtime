@@ -11,9 +11,24 @@ using System.Runtime.Loader;
 
 class Program
 {
+    class TestALC : AssemblyLoadContext
+    {
+        AssemblyLoadContext m_parentALC;
+        public TestALC(AssemblyLoadContext parentALC) : base("test", isCollectible: true)
+        {
+            m_parentALC = parentALC;
+        }
+
+        protected override Assembly Load(AssemblyName name)
+        {
+            return m_parentALC.LoadFromAssemblyName(name);
+        }
+    }
+
     static int Main(string[] args)
     {
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
+        var currentALC = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+        var alc = new TestALC(currentALC);
         var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Unloaded.dll"));
 
         var accessor = (IStaticTest)Activator.CreateInstance(a.GetType("StaticTest"));

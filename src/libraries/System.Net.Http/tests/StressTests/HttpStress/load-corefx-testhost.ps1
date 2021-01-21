@@ -29,7 +29,7 @@ function Find-Os()
 {
     if (!$(test-path variable:IsWindows) -or $IsWindows)
     {
-        return "Windows_NT"
+        return "windows"
     } 
     else
     {
@@ -137,7 +137,7 @@ function Set-Sdk-Environment()
         Copy-Aspnetcore-Bits $candidate_path
     }
 
-    $pathSeparator=if($os -eq "Windows_NT") { ";" } else { ":" }
+    $pathSeparator=if($os -eq "windows") { ";" } else { ":" }
     
     $env:DOTNET_ROOT=$candidate_path
     $env:DOTNET_CLI_HOME=$candidate_path

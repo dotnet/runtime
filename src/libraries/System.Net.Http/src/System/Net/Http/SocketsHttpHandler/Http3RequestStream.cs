@@ -743,7 +743,7 @@ namespace System.Net.Http
 
                 _recvBuffer.Discard(bytesRead);
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace($"Received frame {frameType} of length {payloadLength}.");
                 }
@@ -808,6 +808,9 @@ namespace System.Net.Http
                 _recvBuffer.Discard(processLength);
                 headersLength -= processLength;
             }
+
+            // Reset decoder state. Require because one decoder instance is reused to decode headers and trailers.
+            _headerDecoder.Reset();
         }
 
         private static ReadOnlySpan<byte> StatusHeaderNameBytes => new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
@@ -886,7 +889,7 @@ namespace System.Net.Http
 
                 _response = new HttpResponseMessage()
                 {
-                    Version = Http3Connection.HttpVersion30,
+                    Version = HttpVersion.Version30,
                     RequestMessage = _request,
                     Content = new HttpConnectionResponseContent(),
                     StatusCode = (HttpStatusCode)statusCode
@@ -1171,7 +1174,7 @@ namespace System.Net.Http
             private Http3RequestStream? _stream;
             private HttpResponseMessage? _response;
 
-            public override bool CanRead => true;
+            public override bool CanRead => _stream != null;
 
             public override bool CanWrite => false;
 
@@ -1256,7 +1259,7 @@ namespace System.Net.Http
 
             public override bool CanRead => false;
 
-            public override bool CanWrite => true;
+            public override bool CanWrite => _stream != null;
 
             public Http3WriteStream(Http3RequestStream stream)
             {

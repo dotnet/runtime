@@ -79,12 +79,13 @@ namespace System.Reflection.Emit
         public override object Invoke(object? obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? parameters, System.Globalization.CultureInfo? culture) { throw null; }
         public override object Invoke(System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? parameters, System.Globalization.CultureInfo? culture) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
+        public override int MetadataToken { get { throw null; } }
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
         public void SetImplementationFlags(System.Reflection.MethodImplAttributes attributes) { }
         public override string ToString() { throw null; }
     }
-    public sealed partial class EnumBuilder : System.Type
+    public sealed partial class EnumBuilder : System.Reflection.TypeInfo
     {
         internal EnumBuilder() { }
         public override System.Reflection.Assembly Assembly { get { throw null; } }
@@ -105,6 +106,7 @@ namespace System.Reflection.Emit
         public override System.RuntimeTypeHandle TypeHandle { get { throw null; } }
         public System.Reflection.Emit.FieldBuilder UnderlyingField { get { throw null; } }
         public override System.Type UnderlyingSystemType { get { throw null; } }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Reflection.TypeInfo? CreateTypeInfo() { throw null; }
         public System.Reflection.Emit.FieldBuilder DefineLiteral(string literalName, object? literalValue) { throw null; }
         protected override System.Reflection.TypeAttributes GetAttributeFlagsImpl() { throw null; }
@@ -179,6 +181,7 @@ namespace System.Reflection.Emit
         public override System.Type? DeclaringType { get { throw null; } }
         public override System.RuntimeFieldHandle FieldHandle { get { throw null; } }
         public override System.Type FieldType { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
@@ -192,7 +195,7 @@ namespace System.Reflection.Emit
         public void SetOffset(int iOffset) { }
         public override void SetValue(object? obj, object? val, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, System.Globalization.CultureInfo? culture) { }
     }
-    public sealed partial class GenericTypeParameterBuilder : System.Type
+    public sealed partial class GenericTypeParameterBuilder : System.Reflection.TypeInfo
     {
         internal GenericTypeParameterBuilder() { }
         public override System.Reflection.Assembly Assembly { get { throw null; } }
@@ -213,6 +216,7 @@ namespace System.Reflection.Emit
         public override bool IsSZArray { get { throw null; } }
         public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsVariableBoundArray { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override string? Namespace { get { throw null; } }
@@ -298,6 +302,7 @@ namespace System.Reflection.Emit
         public override bool IsSecurityCritical { get { throw null; } }
         public override bool IsSecuritySafeCritical { get { throw null; } }
         public override bool IsSecurityTransparent { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
         public override System.RuntimeMethodHandle MethodHandle { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
@@ -422,7 +427,7 @@ namespace System.Reflection.Emit
         public override void SetValue(object? obj, object? value, object?[]? index) { }
         public override void SetValue(object? obj, object? value, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? index, System.Globalization.CultureInfo? culture) { }
     }
-    public sealed partial class TypeBuilder : System.Type
+    public sealed partial class TypeBuilder : System.Reflection.TypeInfo
     {
         internal TypeBuilder() { }
         public const int UnspecifiedTypeSize = 0;
@@ -446,6 +451,7 @@ namespace System.Reflection.Emit
         public override bool IsSZArray { get { throw null; } }
         public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsVariableBoundArray { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override string? Namespace { get { throw null; } }
@@ -455,7 +461,9 @@ namespace System.Reflection.Emit
         public override System.RuntimeTypeHandle TypeHandle { get { throw null; } }
         public override System.Type UnderlyingSystemType { get { throw null; } }
         public void AddInterfaceImplementation([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type interfaceType) { }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Type? CreateType() { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Reflection.TypeInfo? CreateTypeInfo() { throw null; }
         public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes) { throw null; }
         public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes, System.Type[][]? requiredCustomModifiers, System.Type[][]? optionalCustomModifiers) { throw null; }

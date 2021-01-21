@@ -1,0 +1,96 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+
+  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
+    <FileSeparatorChar>\</FileSeparatorChar>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <FileSeparatorChar>/</FileSeparatorChar>
+  </PropertyGroup>
+
+    <!-- The directory structure of pmiAssembliesPayload is
+         source\workitem\pmiAssembliesDirectory\<machine_specific_load_0>\binaries
+         source\workitem\pmiAssembliesDirectory\<machine_specific_load_1>\binaries
+         ...
+         source\workitem\pmiAssembliesDirectory\<machine_specific_load_N>\binaries
+
+         PmiAssembliesPayload - Path that will be sent to helix machine to run collection on
+         PmiAssembliesDirectory - Path on helix machine itself where superpmi.py will discover the sent assemblies.
+    -->
+  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
+    <Python>%HELIX_PYTHONPATH%</Python>
+    <PmiAssembliesPayload>$(WorkItemDirectory)\pmiAssembliesDirectory</PmiAssembliesPayload>
+    <PmiAssembliesDirectory>%HELIX_WORKITEM_PAYLOAD%\binaries</PmiAssembliesDirectory>
+    <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
+    <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll </WorkItemCommand>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <Python>$HELIX_PYTHONPATH</Python>
+    <PmiAssembliesPayload>$(WorkItemDirectory)/pmiAssembliesDirectory</PmiAssembliesPayload>
+    <PmiAssembliesDirectory>$HELIX_WORKITEM_PAYLOAD/binaries</PmiAssembliesDirectory>
+    <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
+    <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
+    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll </WorkItemCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
+    <WorkItemCommand>$(Python) $(WorkItemCommand) -assemblies $(PmiAssembliesDirectory) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
+    <EnableXUnitReporter>false</EnableXUnitReporter>
+    <WorkItemTimeout>5:00</WorkItemTimeout>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">
+      <PayloadDirectory>%(Identity)</PayloadDirectory>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(InputArtifacts)))"/>
+    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="%(Filename)" PartitionId="%(Filename)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <HelixWorkItem Include="@(Partition)">
+      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
+      <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)$(CollectionName)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
+      <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
+    </HelixWorkItem>
+  </ItemGroup>
+    <!--
+    This is useful for local testing to print the produced helix items
+    To use this when you are changing how items are produced, uncomment the target
+    and replace the Project item at the top of the file with this:
+    <Project DefaultTargets="printItems">
+
+    Once you've done that you can run this to see the results:
+    dotnet msbuild .\superpmi.proj /v:n
+   -->
+<!--    
+   <PropertyGroup>
+     <HelixTargetQueues>Some_Queue</HelixTargetQueues>
+     <InputArtifacts>D:\git\runtime\workitem\pmiAssembliesDirectory\libraries</InputArtifacts>
+     <MchFileTag>x64.checked</MchFileTag>
+     <CollectionName>libraries</CollectionName>
+   </PropertyGroup>
+  <Target Name="printItems">
+        <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
+     dir: %(HelixWorkItem.PayloadDirectory)
+     pre: %(HelixWorkItem.PreCommands)
+     command: %(HelixWorkItem.Command)
+     post: %(HelixWorkItem.PostCommands)
+     timeout: %(HelixWorkItem.Timeout)  '"/>
+  </Target> -->
+  
+
+</Project>

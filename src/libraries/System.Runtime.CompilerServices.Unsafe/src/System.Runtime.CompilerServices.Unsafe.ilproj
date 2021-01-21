@@ -22,9 +22,10 @@
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
-                        '$(TargetFramework)' == 'netcoreapp2.0'">
-    <Reference Include="System.Runtime" />
+  <ItemGroup>
+    <!-- mscorlib is passed in as an explicit reference from C# targets but not via the IL SDK. -->
+    <Reference Include="$(CoreAssembly)"
+               Condition="!$(TargetFramework.StartsWith('netstandard'))" />
   </ItemGroup>
 
   <Target Name="GenerateVersionFile"
@@ -33,7 +34,8 @@
           Outputs="'$(VersionFilePath)">
    <PropertyGroup>
       <IncludePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'version'))</IncludePath>
-      <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath)</IlasmFlags>
+      <IncludePathTrimmed>$(IncludePath.TrimEnd('\'))</IncludePathTrimmed>
+      <IlasmFlags>$(IlasmFlags) -INCLUDE="$(IncludePathTrimmed)"</IlasmFlags>
       <VersionFilePath Condition="'$(VersionFilePath)' == ''">$([MSBuild]::NormalizePath('$(IncludePath)', 'version.h'))</VersionFilePath>
       <_AssemblyVersion>$(AssemblyVersion.Replace('.', ':'))</_AssemblyVersion>
       <_coreAssemblyName Condition="'%(ReferencePath.FileName)' == '$(CoreAssembly)'">%(ReferencePath.FusionName)</_coreAssemblyName>

@@ -1455,7 +1455,7 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 
 #define G_HAVE_API_SUPPORT(x) (x)
 #define G_UNSUPPORTED_API "%s:%d: '%s' not supported.", __FILE__, __LINE__
-#define g_unsupported_api(name) G_STMT_START { g_warning (G_UNSUPPORTED_API, name); } G_STMT_END
+#define g_unsupported_api(name) G_STMT_START { g_debug (G_UNSUPPORTED_API, name); } G_STMT_END
 
 #if _WIN32
 // g_free the result

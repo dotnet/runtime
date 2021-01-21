@@ -166,6 +166,7 @@ namespace Internal.Cryptography.Pal.Windows
                 // 3) PNSE.
                 // 4) Defer to cert.Get{R|D}SAPrivateKey if not silent, throw otherwise.
                 CspParameters cspParams = handle.GetProvParameters();
+                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                 Debug.Assert((cspParams.Flags & CspProviderFlags.UseExistingKey) != 0);
                 cspParams.KeyNumber = (int)keySpec;
 

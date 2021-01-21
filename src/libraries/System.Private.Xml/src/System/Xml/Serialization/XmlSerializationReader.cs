@@ -171,7 +171,7 @@ namespace System.Xml.Serialization
                 if (_d == null)
                 {
                     _d = new XmlDocument(_r.NameTable);
-                    _d.SetBaseURI(_r.BaseURI!); // TODO-NULLABLE: string.Empty should be passed in case of null URI
+                    _d.SetBaseURI(_r.BaseURI);
                 }
                 return _d;
             }
@@ -1346,7 +1346,7 @@ namespace System.Xml.Serialization
 
         protected Exception CreateMissingIXmlSerializableType(string? name, string? ns, string? clrType)
         {
-            return new InvalidOperationException(SR.Format(SR.XmlSerializableMissingClrType, name, ns, typeof(XmlIncludeAttribute).Name, clrType));
+            return new InvalidOperationException(SR.Format(SR.XmlSerializableMissingClrType, name, ns, nameof(XmlIncludeAttribute), clrType));
             //XmlSerializableMissingClrType= Type '{0}' from namespace '{1}' doesnot have corresponding IXmlSerializable type. Please consider adding {2} to '{3}'.
         }
 

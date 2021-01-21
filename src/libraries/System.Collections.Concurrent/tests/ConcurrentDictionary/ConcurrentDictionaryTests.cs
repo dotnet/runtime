@@ -1032,7 +1032,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [OuterLoop("Runs for several seconds")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConcurrentWriteRead_NoTornValues()
         {
             var cd = new ConcurrentDictionary<int, KeyValuePair<long, long>>();

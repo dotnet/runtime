@@ -7,9 +7,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -588,17 +590,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 else if (reader.TokenType == JsonTokenType.String)
                 {
-#if BUILDING_INBOX_LIBRARY
-                    Assert.False(reader.ValueSpan.Contains((byte)'\\'));
-#else
-                    foreach (byte val in reader.ValueSpan)
-                    {
-                        if (val == (byte)'\\')
-                        {
-                            Assert.True(false, "Unexpected escape token.");
-                        }
-                    }
-#endif
+                    Assert.True(reader.ValueSpan.IndexOf((byte)'\\') == -1);
                 }
                 else
                 {
@@ -609,6 +601,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39674", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
         public static void DictionariesRoundTrip()
         {
             RunAllDictionariessRoundTripTest(JsonNumberTestData.ULongs);
@@ -636,13 +629,13 @@ namespace System.Text.Json.Serialization.Tests
 
             string jsonNumbersAsStrings = jsonBuilder_NumbersAsStrings.ToString();
 
-            foreach (Type type in CollectionTestTypes.DeserializableDictionaryTypes<T>())
+            foreach (Type type in CollectionTestTypes.DeserializableDictionaryTypes<string, T>())
             {
                 object obj = JsonSerializer.Deserialize(jsonNumbersAsStrings, type, s_optionReadAndWriteFromStr);
                 JsonTestHelper.AssertJsonEqual(jsonNumbersAsStrings, JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr));
             }
 
-            foreach (Type type in CollectionTestTypes.DeserializableNonDictionaryTypes<T>())
+            foreach (Type type in CollectionTestTypes.DeserializableNonGenericDictionaryTypes())
             {
                 Dictionary<T, T> dict = JsonSerializer.Deserialize<Dictionary<T, T>>(jsonNumbersAsStrings, s_optionReadAndWriteFromStr);
 
@@ -755,6 +748,10 @@ namespace System.Text.Json.Serialization.Tests
             PerformFloatingPointSerialization("Infinity");
             PerformFloatingPointSerialization("-Infinity");
 
+            PerformFloatingPointSerialization("\u004EaN"); // NaN
+            PerformFloatingPointSerialization("Inf\u0069ni\u0074y"); // Infinity
+            PerformFloatingPointSerialization("\u002DInf\u0069nity"); // -Infinity
+
             static void PerformFloatingPointSerialization(string testString)
             {
                 string testStringAsJson = $@"""{testString}""";
@@ -814,19 +811,29 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("-infinitY")]
         [InlineData("-INFINITY")]
         [InlineData(" NaN")]
+        [InlineData("NaN ")]
         [InlineData(" Infinity")]
         [InlineData(" -Infinity")]
-        [InlineData("NaN ")]
         [InlineData("Infinity ")]
         [InlineData("-Infinity ")]
         [InlineData("a-Infinity")]
         [InlineData("NaNa")]
         [InlineData("Infinitya")]
         [InlineData("-Infinitya")]
+#pragma warning disable xUnit1025 // Theory method 'FloatingPointConstants_Fail' on test class 'NumberHandlingTests' has InlineData duplicate(s)
+        [InlineData("\u006EaN")] // "naN"
+        [InlineData("\u0020Inf\u0069ni\u0074y")] // " Infinity"
+        [InlineData("\u002BInf\u0069nity")] // "+Infinity"
+#pragma warning restore xUnit1025
         public static void FloatingPointConstants_Fail(string testString)
         {
             string testStringAsJson = $@"""{testString}""";
-            string testJson = @$"{{""FloatNumber"":{testStringAsJson},""DoubleNumber"":{testStringAsJson}}}";
+
+            string testJson = @$"{{""FloatNumber"":{testStringAsJson}}}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionsAllowFloatConstants));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionReadFromStr));
+
+            testJson = @$"{{""DoubleNumber"":{testStringAsJson}}}";
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionsAllowFloatConstants));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithNumbers>(testJson, s_optionReadFromStr));
         }
@@ -1031,21 +1038,7 @@ namespace System.Text.Json.Serialization.Tests
                 else
                 {
                     Assert.Equal(JsonTokenType.String, reader.TokenType);
-#if BUILDING_INBOX_LIBRARY
-                    Assert.True(reader.ValueSpan.Contains((byte)'\\'));
-#else
-                    bool foundBackSlash = false;
-                    foreach (byte val in reader.ValueSpan)
-                    {
-                        if (val == (byte)'\\')
-                        {
-                            foundBackSlash = true;
-                            break;
-                        }
-                    }
-
-                    Assert.True(foundBackSlash, "Expected escape token.");
-#endif
+                    Assert.True(reader.ValueSpan.IndexOf((byte)'\\') != -1);
                 }
             }
         }
@@ -1063,17 +1056,7 @@ namespace System.Text.Json.Serialization.Tests
                 else
                 {
                     Assert.Equal(JsonTokenType.String, reader.TokenType);
-#if BUILDING_INBOX_LIBRARY
-                    Assert.False(reader.ValueSpan.Contains((byte)'\\'));
-#else
-                    foreach (byte val in reader.ValueSpan)
-                    {
-                        if (val == (byte)'\\')
-                        {
-                            Assert.True(false, "Unexpected escape token.");
-                        }
-                    }
-#endif
+                    Assert.True(reader.ValueSpan.IndexOf((byte)'\\') == -1);
                 }
             }
         }
@@ -1436,12 +1419,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Attribute_OnType_NotRecursive()
         {
-            // Recursive behavior would allow a string number.
-            // This is not supported.
+            // Recursive behavior, where number handling setting on a property is applied to subsequent
+            // properties in its type closure, would allow a string number. This is not supported.
             string json = @"{""NestedClass"":{""MyInt"":""1""}}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<AttributeOnFirstLevel>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<AttributeAppliedToFirstLevelProp>(json));
 
-            var obj = new AttributeOnFirstLevel
+            var obj = new AttributeAppliedToFirstLevelProp
             {
                 NestedClass = new BadProperty { MyInt = 1 }
             };
@@ -1449,7 +1432,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
-        public class AttributeOnFirstLevel
+        public class AttributeAppliedToFirstLevelProp
         {
             public BadProperty NestedClass { get; set; }
         }
@@ -1638,6 +1621,121 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("handling", ex.ToString());
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonNumberHandlingAttribute((JsonNumberHandling)(8)));
+        }
+    }
+
+    public class NumberHandlingTests_StreamOverload : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_StreamOverload() : base(DeserializationWrapper.StreamDeserializer) { }
+    }
+
+    public class NumberHandlingTests_SyncOverload : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_SyncOverload() : base(DeserializationWrapper.StringDeserializer) { }
+    }
+
+    public abstract class NumberHandlingTests_OverloadSpecific
+    {
+        private DeserializationWrapper Deserializer { get; }
+
+        public NumberHandlingTests_OverloadSpecific(DeserializationWrapper deserializer)
+        {
+            Deserializer = deserializer;
+        }
+
+        [Theory]
+        [MemberData(nameof(NumberHandling_ForPropsReadAfter_DeserializingCtorParams_TestData))]
+        public async Task NumberHandling_ForPropsReadAfter_DeserializingCtorParams(string json)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            };
+
+            Result result = await Deserializer.DeserializeWrapper<Result>(json, options);
+            JsonTestHelper.AssertJsonEqual(json, JsonSerializer.Serialize(result, options));
+        }
+
+        private static IEnumerable<object[]> NumberHandling_ForPropsReadAfter_DeserializingCtorParams_TestData()
+        {
+            yield return new object[]
+            {
+                @"{
+                    ""album"": {
+                        ""userPlayCount"": ""123"",
+                        ""name"": ""the name of the album"",
+                        ""artist"": ""the name of the artist"",
+                        ""wiki"": {
+                            ""summary"": ""a summary of the album""
+                        }
+                    }
+                }"
+            };
+
+            yield return new object[]
+            {
+                @"{
+                    ""album"": {
+                        ""name"": ""the name of the album"",
+                        ""userPlayCount"": ""123"",
+                        ""artist"": ""the name of the artist"",
+                        ""wiki"": {
+                            ""summary"": ""a summary of the album""
+                        }
+                    }
+                }"
+            };
+
+            yield return new object[]
+            {
+                @"{
+                    ""album"": {
+                        ""name"": ""the name of the album"",
+                        ""artist"": ""the name of the artist"",
+                        ""userPlayCount"": ""123"",
+                        ""wiki"": {
+                            ""summary"": ""a summary of the album""
+                        }
+                    }
+                }"
+            };
+
+            yield return new object[]
+            {
+                @"{
+                    ""album"": {
+                        ""name"": ""the name of the album"",
+                        ""artist"": ""the name of the artist"",
+                        ""wiki"": {
+                            ""summary"": ""a summary of the album""
+                        },
+                        ""userPlayCount"": ""123""
+                    }
+                }"
+            };
+        }
+
+        public class Result
+        {
+            public Album Album { get; init; }
+        }
+
+        public class Album
+        {
+            public Album(string name, string artist)
+            {
+                Name = name;
+                Artist = artist;
+            }
+
+            public string Name { get; init; }
+            public string Artist { get; init; }
+
+            public long? userPlayCount { get; init; }
+
+            [JsonExtensionData]
+            public Dictionary<string, JsonElement> ExtensionData { get; set; }
         }
     }
 }

@@ -1,21 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit" Version="2.4.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
-
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+
+    <Compile Include="..\BrowserDebugProxy\DevToolsQueue.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BrowserDebugHost\BrowserDebugHost.csproj" />
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
+    <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

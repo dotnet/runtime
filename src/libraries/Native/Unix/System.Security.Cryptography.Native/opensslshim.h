@@ -73,6 +73,8 @@
 #define NEED_OPENSSL_1_0 true
 #define NEED_OPENSSL_1_1 true
 
+void InitializeOpenSSLShim(void);
+
 #if !HAVE_OPENSSL_EC2M
 // In portable build, we need to support the following functions even if they were not present
 // on the build OS. The shim will detect their presence at runtime.
@@ -246,8 +248,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(d2i_BASIC_CONSTRAINTS) \
     REQUIRED_FUNCTION(d2i_EXTENDED_KEY_USAGE) \
     REQUIRED_FUNCTION(d2i_OCSP_RESPONSE) \
-    REQUIRED_FUNCTION(d2i_PKCS12) \
-    REQUIRED_FUNCTION(d2i_PKCS12_bio) \
     REQUIRED_FUNCTION(d2i_PKCS12_fp) \
     REQUIRED_FUNCTION(d2i_PKCS7) \
     REQUIRED_FUNCTION(d2i_PKCS7_bio) \
@@ -396,7 +396,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(i2d_ASN1_TYPE) \
     REQUIRED_FUNCTION(i2d_OCSP_REQUEST) \
     REQUIRED_FUNCTION(i2d_OCSP_RESPONSE) \
-    REQUIRED_FUNCTION(i2d_PKCS12) \
     REQUIRED_FUNCTION(i2d_PKCS7) \
     REQUIRED_FUNCTION(i2d_X509) \
     REQUIRED_FUNCTION(i2d_X509_PUBKEY) \
@@ -438,7 +437,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(PEM_read_bio_X509_AUX) \
     REQUIRED_FUNCTION(PEM_read_bio_X509_CRL) \
     REQUIRED_FUNCTION(PEM_write_bio_X509_CRL) \
-    REQUIRED_FUNCTION(PKCS12_create) \
     REQUIRED_FUNCTION(PKCS12_free) \
     REQUIRED_FUNCTION(PKCS12_parse) \
     REQUIRED_FUNCTION(PKCS7_sign) \
@@ -660,8 +658,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define d2i_BASIC_CONSTRAINTS d2i_BASIC_CONSTRAINTS_ptr
 #define d2i_EXTENDED_KEY_USAGE d2i_EXTENDED_KEY_USAGE_ptr
 #define d2i_OCSP_RESPONSE d2i_OCSP_RESPONSE_ptr
-#define d2i_PKCS12 d2i_PKCS12_ptr
-#define d2i_PKCS12_bio d2i_PKCS12_bio_ptr
 #define d2i_PKCS12_fp d2i_PKCS12_fp_ptr
 #define d2i_PKCS7 d2i_PKCS7_ptr
 #define d2i_PKCS7_bio d2i_PKCS7_bio_ptr
@@ -810,7 +806,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define i2d_ASN1_TYPE i2d_ASN1_TYPE_ptr
 #define i2d_OCSP_REQUEST i2d_OCSP_REQUEST_ptr
 #define i2d_OCSP_RESPONSE i2d_OCSP_RESPONSE_ptr
-#define i2d_PKCS12 i2d_PKCS12_ptr
 #define i2d_PKCS7 i2d_PKCS7_ptr
 #define i2d_X509 i2d_X509_ptr
 #define i2d_X509_PUBKEY i2d_X509_PUBKEY_ptr
@@ -852,7 +847,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define PEM_read_bio_X509_AUX PEM_read_bio_X509_AUX_ptr
 #define PEM_read_bio_X509_CRL PEM_read_bio_X509_CRL_ptr
 #define PEM_write_bio_X509_CRL PEM_write_bio_X509_CRL_ptr
-#define PKCS12_create PKCS12_create_ptr
 #define PKCS12_free PKCS12_free_ptr
 #define PKCS12_parse PKCS12_parse_ptr
 #define PKCS7_sign PKCS7_sign_ptr
@@ -1092,7 +1086,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_is_init_finished local_SSL_is_init_finished
 #define X509_CRL_get0_nextUpdate local_X509_CRL_get0_nextUpdate
 #define X509_NAME_get0_der local_X509_NAME_get0_der
-#define X509_new local_X509_new
 #define X509_PUBKEY_get0_param local_X509_PUBKEY_get0_param
 #define X509_STORE_CTX_get0_cert local_X509_STORE_CTX_get0_cert
 #define X509_STORE_CTX_get0_chain local_X509_STORE_CTX_get0_chain

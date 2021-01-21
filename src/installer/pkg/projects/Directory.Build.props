@@ -1,6 +1,5 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <PackagePlatform>AnyCPU</PackagePlatform>
@@ -46,22 +45,9 @@
     <RestoreAllBuildRids Condition="'$(RestoreAllBuildRids)' == ''">true</RestoreAllBuildRids>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <VSInsertionProductName>NetCore</VSInsertionProductName>
-    <VSInsertionCommonPrefix>VS.Redist.Common</VSInsertionCommonPrefix>
-  </PropertyGroup>
-
-  <!-- Most packages need the host to be built first. -->
+  <!-- Host packages need the host to be built first. -->
   <ItemGroup Condition="'$(DisableOrderDependencies)' != 'true'">
     <OrderProjectReference Include="@(CorehostProjectToBuild)" />
-    <!-- NETCoreApp depproj requires binaries (CoreCLR, Libraries, Host) to be signed. -->
-    <OrderProjectReference
-      Condition="'$(MSBuildProjectExtension)' == '.depproj'"
-      Include="$(SigningToolsDir)\SignBinaries.proj" />
-    <!-- Pkgproj requires its depproj crossgen outputs to be signed. -->
-    <OrderProjectReference
-      Condition="'$(MSBuildProjectExtension)' == '.pkgproj'"
-      Include="$(SigningToolsDir)\SignR2RBinaries.proj" />
   </ItemGroup>
 
   <!-- In *.proj projects, the current phase's name is the same as the project name. -->
@@ -94,18 +80,6 @@
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(PackageTargetFramework)</TargetFramework>
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
-
-  <!-- Add required legal files to packages -->
-  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
-    <File Condition="Exists('$(PackageLicenseFile)')"
-          Include="$(PackageLicenseFile)" >
-      <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
-          Include="$(PackageThirdPartyNoticesFile)" >
-      <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-  </ItemGroup>
 
   <PropertyGroup>
     <RIDPropsFile Condition="'$(RIDPropsFile)' == ''">$(MSBuildThisFileDirectory)\netcoreappRIDs.props</RIDPropsFile>
@@ -165,8 +139,10 @@
     <!-- During NuGet restore, grab assets for all applicable RIDs. -->
     <RuntimeIdentifiers Condition="'$(RestoreAllBuildRids)' == 'true'">@(RestoreBuildRID)</RuntimeIdentifiers>
     <!-- When resolving assets to pack, use the target runtime (if any). -->
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 
-  <Import Project="$(RepoRoot)eng\native\naming.props" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
 </Project>

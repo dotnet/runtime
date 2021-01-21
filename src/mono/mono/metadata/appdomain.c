@@ -74,6 +74,11 @@
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
+
+#ifdef ENABLE_PERFTRACING
+#include <eventpipe/ds-server.h>
+#endif
+
 #ifdef HOST_WIN32
 #include <direct.h>
 #endif
@@ -137,12 +142,14 @@ add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
 
 #endif
 
+#ifndef ENABLE_NETCORE
 static MonoAppDomainHandle
 mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHandle setup, MonoError *error);
 
 static MonoDomain *
 mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_file, MonoError *error);
 
+#endif
 
 static void
 mono_context_set_default_context (MonoDomain *domain);
@@ -158,8 +165,17 @@ static GENERATE_GET_CLASS_WITH_CACHE (assembly, "System.Reflection", "Assembly")
 static GENERATE_GET_CLASS_WITH_CACHE (app_context, "System", "AppContext");
 #endif
 
+#ifndef ENABLE_NETCORE
 GENERATE_GET_CLASS_WITH_CACHE (appdomain, MONO_APPDOMAIN_CLASS_NAME_SPACE, MONO_APPDOMAIN_CLASS_NAME);
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_setup, MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE, MONO_APPDOMAIN_SETUP_CLASS_NAME);
+#else
+MonoClass*
+mono_class_get_appdomain_class (void)
+{
+	return mono_defaults.object_class;
+}
+#endif
+
 
 static MonoDomain *
 mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain);
@@ -302,7 +318,6 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 {
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoAppDomainSetupHandle setup;
 	MonoAppDomainHandle ad;
 
 	error_init (error);
@@ -330,21 +345,34 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_thread_init (start_cb, attach_cb);
 
 	if (!mono_runtime_get_no_exec ()) {
-		MonoClass *klass = mono_class_get_appdomain_setup_class ();
+		MonoClass *klass;
+#ifndef ENABLE_NETCORE
+		klass = mono_class_get_appdomain_setup_class ();
+		MonoAppDomainSetupHandle setup;
 		setup = MONO_HANDLE_CAST (MonoAppDomainSetup, mono_object_new_pinned_handle (domain, klass, error));
 		goto_if_nok (error, exit);
+#endif
 
 		klass = mono_class_get_appdomain_class ();
 
 		ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_pinned_handle (domain, klass, error));
 		goto_if_nok (error, exit);
 
+#ifndef ENABLE_NETCORE
 		MONO_HANDLE_SETVAL (ad, data, MonoDomain*, domain);
+#endif
 		domain->domain = MONO_HANDLE_RAW (ad);
+#ifndef ENABLE_NETCORE
 		domain->setup = MONO_HANDLE_RAW (setup);
+#endif
 	}
 
-	mono_thread_attach (domain);
+	mono_thread_internal_attach (domain);
+
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
+	ds_server_init ();
+	ds_server_pause_for_diagnostics_monitor ();
+#endif
 
 	mono_type_initialization_init ();
 
@@ -575,6 +603,8 @@ mono_runtime_quit_internal (void)
 		quit_function (mono_get_root_domain (), NULL);
 }
 
+#ifndef ENABLE_NETCORE
+
 /**
  * mono_domain_create_appdomain:
  * \param friendly_name The friendly name of the appdomain to create
@@ -609,6 +639,7 @@ mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_f
 	error_init (error);
 	MonoDomain *result = NULL;
 
+#ifndef ENABLE_NETCORE
 	MonoClass *klass = mono_class_get_appdomain_setup_class ();
 	MonoAppDomainSetupHandle setup = MONO_HANDLE_CAST (MonoAppDomainSetup, mono_object_new_handle (mono_domain_get (), klass, error));
 	goto_if_nok (error, leave);
@@ -620,15 +651,22 @@ mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_f
 		config_file = MONO_HANDLE_NEW (MonoString, NULL);
 	}
 	MONO_HANDLE_SET (setup, configuration_file, config_file);
+#endif
 
 	MonoAppDomainHandle ad;
+#ifndef ENABLE_NETCORE
 	ad = mono_domain_create_appdomain_internal (friendly_name, setup, error);
+#else
+	ad = MONO_HANDLE_CAST (MonoAppDomain, NULL_HANDLE);
+#endif
 	goto_if_nok (error, leave);
 
 	result = mono_domain_from_appdomain_handle (ad);
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
+
+#endif
 
 /**
  * mono_domain_set_config:
@@ -645,6 +683,7 @@ leave:
 void
 mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *config_file_name)
 {
+#ifndef ENABLE_NETCORE
 	HANDLE_FUNCTION_ENTER ();
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
@@ -652,8 +691,12 @@ mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *co
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN ();
+#else
+	g_assert_not_reached ();
+#endif
 }
 
+#ifndef ENABLE_NETCORE
 gboolean
 mono_domain_set_config_checked (MonoDomain *domain, const char *base_dir, const char *config_file_name, MonoError *error)
 {
@@ -669,7 +712,9 @@ mono_domain_set_config_checked (MonoDomain *domain, const char *base_dir, const 
 leave:
 	return is_ok (error);
 }
+#endif
 
+#ifndef ENABLE_NETCORE
 static MonoAppDomainSetupHandle
 copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetupHandle setup, MonoError *error)
 {
@@ -731,7 +776,9 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetupHandle setup, MonoE
 leave:
 	HANDLE_FUNCTION_RETURN_REF (MonoAppDomainSetup, result);
 }
+#endif
 
+#ifndef ENABLE_NETCORE
 static MonoAppDomainHandle
 mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHandle setup, MonoError *error)
 {
@@ -774,7 +821,6 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 			MONO_HANDLE_SET (setup, application_base, s);
 		}
 	}
-
 	mono_context_init_checked (data, error);
 	goto_if_nok (error, leave);
 
@@ -805,6 +851,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 leave:
 	HANDLE_FUNCTION_RETURN_REF (MonoAppDomain, result);
 }
+#endif
 
 /**
  * mono_domain_has_type_resolve:
@@ -890,13 +937,21 @@ mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, M
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		method = mono_class_get_method_from_name_checked (alc_class, "OnTypeResolve", -1, 0, error);
+		static gboolean inited;
+		// avoid repeatedly calling mono_class_get_method_from_name_checked
+		if (!inited) {
+			ERROR_DECL (local_error);
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			method = mono_class_get_method_from_name_checked (alc_class, "OnTypeResolve", -1, 0, local_error);
+			mono_error_cleanup (local_error);
+			inited = TRUE;
+		}
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
-	goto_if_nok (error, return_null);
+	if (!method)
+		goto return_null;
 
 	g_assert (domain);
 	g_assert (MONO_HANDLE_BOOL (name));
@@ -1141,6 +1196,7 @@ ves_icall_System_AppDomain_SetData (MonoAppDomainHandle ad, MonoStringHandle nam
 	mono_domain_unlock (add);
 }
 
+#ifndef ENABLE_NETCORE
 MonoAppDomainSetupHandle
 ves_icall_System_AppDomain_getSetup (MonoAppDomainHandle ad, MonoError *error)
 {
@@ -1151,6 +1207,7 @@ ves_icall_System_AppDomain_getSetup (MonoAppDomainHandle ad, MonoError *error)
 
 	return MONO_HANDLE_NEW (MonoAppDomainSetup, domain->setup);
 }
+#endif
 
 MonoStringHandle
 ves_icall_System_AppDomain_getFriendlyName (MonoAppDomainHandle ad, MonoError *error)
@@ -1190,6 +1247,7 @@ ves_icall_System_CLRConfig_CheckThrowUnobservedTaskExceptions (MonoError *error)
 }
 #endif
 
+#ifndef ENABLE_NETCORE
 static char*
 get_attribute_value (const gchar **attribute_names, 
 		     const gchar **attribute_values, 
@@ -1328,6 +1386,7 @@ mono_domain_set_options_from_config (MonoDomain *domain)
 		g_free (config_file_name);
 	g_free (config_file_path);
 }
+#endif
 
 #ifndef ENABLE_NETCORE
 MonoAppDomainHandle
@@ -1466,14 +1525,21 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
 		ERROR_DECL (local_error);
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyResolve", -1, 0, local_error);
-		mono_error_assert_ok (local_error);
+		static gboolean inited;
+		if (!inited) {
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyResolve", -1, 0, local_error);
+			inited = TRUE;
+		}
+		mono_error_cleanup (local_error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
-	g_assert (method);
+	if (!method) {
+		ret = NULL;
+		goto leave;
+	}
 
 	MonoReflectionAssemblyHandle requesting_handle;
 	if (requesting) {
@@ -1603,12 +1669,19 @@ mono_domain_fire_assembly_load_event (MonoDomain *domain, MonoAssembly *assembly
 #ifdef ENABLE_NETCORE
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
-		g_assert (alc_class);
-		method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyLoad", -1, 0, error);
+		static gboolean inited;
+		if (!inited) {
+			ERROR_DECL (local_error);
+			MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+			g_assert (alc_class);
+			method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyLoad", -1, 0, local_error);
+			mono_error_cleanup (local_error);
+			inited = TRUE;
+		}
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
-	goto_if_nok (error, exit);
+	if (!method)
+		goto exit;
 
 	MonoReflectionAssemblyHandle assembly_handle;
 	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
@@ -1701,6 +1774,7 @@ mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assemb
 	return FALSE;
 }
 
+#ifndef ENABLE_NETCORE
 /*
  * LOCKING: Acquires the domain assemblies lock.
  */
@@ -1851,6 +1925,7 @@ exit:
 	mono_domain_assemblies_unlock (domain);
 	HANDLE_FUNCTION_RETURN ();
 }
+#endif
 
 #ifdef DISABLE_SHADOW_COPY
 gboolean
@@ -2318,6 +2393,7 @@ mono_domain_from_appdomain (MonoAppDomain *appdomain_raw)
 MonoDomain *
 mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain)
 {
+#ifndef ENABLE_NETCORE
 	HANDLE_FUNCTION_ENTER ();
 	MonoDomain *dom = NULL;
 	if (MONO_HANDLE_IS_NULL (appdomain))
@@ -2333,6 +2409,9 @@ mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain)
 
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (dom);
+#else
+	return mono_get_root_domain ();
+#endif
 }
 
 
@@ -2779,33 +2858,20 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 {
 	MonoAssembly *ass;
 	MonoReflectionAssemblyHandle refass = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
-	MonoDomain *domain = MONO_HANDLE_GETVAL(ad, data);
-	guint32 raw_assembly_len = mono_array_handle_length (raw_assembly);
-
-	/* Copy the data ourselves to unpin the raw assembly byte array as soon as possible */
-	guint8 *assembly_data = (guint8*) g_try_malloc (raw_assembly_len);
-	if (!assembly_data) {
-		mono_error_set_out_of_memory (error, "Could not allocate %ud bytes to copy raw assembly data", raw_assembly_len);
-		return refass;
-	}
-	MonoGCHandle gchandle;
-	mono_byte *raw_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_assembly, gchar, 0, &gchandle);
-	memcpy (assembly_data, raw_data, raw_assembly_len);
-	mono_gchandle_free_internal (gchandle); /* unpin */
-	MONO_HANDLE_ASSIGN (raw_assembly, NULL_HANDLE); /* don't reference the data anymore */
-	
+	MonoDomain *domain = MONO_HANDLE_GETVAL (ad, data);
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 
-	mono_byte *raw_symbol_data = NULL;
-	guint32 symbol_len = 0;
-	MonoGCHandle symbol_gchandle = 0;
+	guint8 *raw_assembly_ptr = (guint8 *)mono_array_handle_addr (raw_assembly, sizeof (guint8), 0);
+	guint32 raw_assembly_len = mono_array_handle_length (raw_assembly);
+
+	guint8 *raw_symbols_ptr = NULL;
+	guint32 raw_symbols_len = 0;
 	if (!MONO_HANDLE_IS_NULL (raw_symbol_store)) {
-		symbol_len = mono_array_handle_length (raw_symbol_store);
-		raw_symbol_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_symbol_store, mono_byte, 0, &symbol_gchandle);
+		raw_symbols_ptr = (guint8 *)mono_array_handle_addr (raw_symbol_store, sizeof (guint8), 0);
+		raw_symbols_len = mono_array_handle_length (raw_symbol_store);
 	}
 
-	ass = mono_alc_load_raw_bytes (alc, assembly_data, raw_assembly_len, raw_symbol_data, symbol_len, refonly, error);
-	mono_gchandle_free_internal (symbol_gchandle);
+	ass = mono_alc_load_raw_bytes (alc, raw_assembly_ptr, raw_assembly_len, raw_symbols_ptr, raw_symbols_len, refonly, error);
 	goto_if_nok (error, leave);
 
 	refass = mono_assembly_get_object_handle (domain, ass, error);
@@ -2822,7 +2888,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 {
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status;
-	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, FALSE, NULL, refonly, FALSE, NULL, NULL);
+	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, TRUE, NULL, refonly, FALSE, NULL, NULL);
 
 	if (!image) {
 		mono_error_set_bad_image_by_name (error, "In memory assembly", "0x%p", assembly_data);
@@ -2832,6 +2898,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 	if (raw_symbol_data)
 		mono_debug_open_image_from_memory (image, raw_symbol_data, raw_symbol_len);
 
+#ifndef ENABLE_NETCORE
 	MonoAssembly* redirected_asm = NULL;
 	MonoImageOpenStatus new_status = MONO_IMAGE_OK;
 	// http://blogs.microsoft.co.il/sasha/2010/06/09/assemblyreflectiononlyload-ignores-assembly-binding-redirects/
@@ -2844,6 +2911,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 		mono_error_set_bad_image_by_name (error, "In Memory assembly", "0x%p was assembly binding redirected to another assembly that failed to load", assembly_data);
 		return ass;
 	}
+#endif
 
 	MonoAssemblyLoadRequest req;
 	mono_assembly_request_prepare_load (&req, refonly? MONO_ASMCTX_REFONLY : MONO_ASMCTX_INDIVIDUAL, alc);
@@ -3510,4 +3578,3 @@ mono_runtime_install_appctx_properties (void)
 }
 
 #endif
-

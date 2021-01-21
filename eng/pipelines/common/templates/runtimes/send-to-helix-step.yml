@@ -25,6 +25,8 @@ parameters:
   gcSimulatorTests: ''
   runtimeFlavorDisplayName: 'CoreCLR'
   runtimeVariant: ''
+  shouldContinueOnError: false
+
 
 steps:
 - template: send-to-helix-inner-step.yml
@@ -33,6 +35,7 @@ steps:
     restoreParams: /p:DotNetPublishToBlobFeed=true -restore -projects $(Build.SourcesDirectory)$(dir)eng$(dir)empty.csproj
     sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }}
     condition: and(succeeded(), ${{ parameters.condition }})
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     displayName: ${{ parameters.displayName }}
     environment:
       _Creator: ${{ parameters.creator }}

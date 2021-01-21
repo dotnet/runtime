@@ -16,7 +16,7 @@ Below is a list of all the various options we pivot the project builds on:
 
 - **Target Frameworks:** .NETFramework, .NETStandard, .NETCoreApp
 - **Platform Runtimes:** .NETFramework (aka CLR/Desktop), CoreCLR, Mono
-- **OS:** Windows_NT, Linux, OSX, FreeBSD, AnyOS
+- **OS:** windows, Linux, OSX, FreeBSD, AnyOS
 - **Flavor:** Debug, Release
 
 ## Individual build properties
@@ -26,7 +26,7 @@ The following are the properties associated with each build pivot
 - `$(TargetOS) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(Configuration) -> Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
-- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/master/src/libraries/pkg/Microsoft.NETCore.Platforms) for more info.
+- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/master/src/libraries/Microsoft.NETCore.Platforms) for more info.
 
 ## Aggregate build properties
 Each project will define a set of supported TargetFrameworks
@@ -52,7 +52,7 @@ Pure netstandard configuration:
 All supported targets with unique windows/unix build for netcoreapp:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;net461-Windows_NT</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;net461-windows</TargetFrameworks>
 <PropertyGroup>
 ```
 
@@ -73,7 +73,7 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 
 ## Supported full build settings
 - .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
-- .NET Framework latest -> `net48-Windows_NT`
+- .NET Framework latest -> `net48-windows`
 
 # Library project guidelines
 
@@ -100,7 +100,7 @@ Example:
 Example:
 ```
 <PropertyGroup>
-  <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Unix</TargetFrameworks>
+  <TargetFrameworks>netstandard2.0-windows;netstandard2.0-Unix</TargetFrameworks>
 </PropertyGroup>
 <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))>...</ItemGroup>
 ```

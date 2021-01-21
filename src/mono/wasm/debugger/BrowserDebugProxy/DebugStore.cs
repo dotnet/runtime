@@ -268,7 +268,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override int GetHashCode() => assembly.GetHashCode() ^ document.GetHashCode();
 
-        public static bool operator ==(SourceId a, SourceId b) => ((object)a == null) ? (object)b == null : a.Equals(b);
+        public static bool operator ==(SourceId a, SourceId b) => a is null ? b is null : a.Equals(b);
 
         public static bool operator !=(SourceId a, SourceId b) => !a.Equals(b);
     }
@@ -323,9 +323,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             SequencePoint prev = null;
             foreach (SequencePoint sp in DebugInformation.SequencePoints)
             {
-                if (sp.Offset > pos)
+                if (sp.Offset > pos) {
+                    //get the earlier line number if the offset is in a hidden sequence point and has a earlier line number available
+                    // if is doesn't continue and get the next line number that is not in a hidden sequence point
+                    if (sp.IsHidden && prev == null)
+                        continue;
                     break;
-                prev = sp;
+                }
+
+                if (!sp.IsHidden)
+                    prev = sp;
             }
 
             if (prev != null)

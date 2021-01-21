@@ -1,5 +1,5 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Diagnostics;
@@ -150,9 +150,9 @@ namespace Microsoft.NET.HostModel
         /// native resources for the update handle without updating
         /// the target file.
         /// </summary>
-        private class SafeUpdateHandle : SafeHandle
+        private sealed class SafeUpdateHandle : SafeHandle
         {
-            private SafeUpdateHandle() : base(IntPtr.Zero, true)
+            public SafeUpdateHandle() : base(IntPtr.Zero, true)
             {
             }
 
@@ -190,8 +190,7 @@ namespace Microsoft.NET.HostModel
                 {
                     int lastWin32Error = Marshal.GetLastWin32Error();
 
-                    if ((handle.IsInvalid && lastWin32Error == 0) ||
-                        lastWin32Error == Kernel32.ERROR_CALL_NOT_IMPLEMENTED)
+                    if (handle.IsInvalid && (lastWin32Error == 0 || lastWin32Error == Kernel32.ERROR_CALL_NOT_IMPLEMENTED))
                     {
                         return false;
                     }

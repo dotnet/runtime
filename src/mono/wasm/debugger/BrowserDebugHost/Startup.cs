@@ -150,7 +150,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return;
                     }
 
-                    var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path.ToString()}");
+                    var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path}");
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(

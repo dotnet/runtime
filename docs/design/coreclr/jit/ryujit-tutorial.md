@@ -6,7 +6,7 @@
 - An implementation of the Common Language Infrastructure [ECMA 335]
   - Supports multiple languages, including C#, F# and VB
 - RyuJIT is the "next generation" just in time compiler for .NET
-- Sources are at https://github.com/dotnet/runtime/tree/master/src/coreclr/src/jit
+- Sources are at https://github.com/dotnet/runtime/tree/master/src/coreclr/jit
 
 #### Notes
 For context, the .NET runtime has been around since about the turn of the millennium. It is a virtual machine that supports the execution of a number of languages, primarily C#, Visual Basic, and F#.
@@ -661,7 +661,7 @@ Recognize "Intrinsic" (SampleStep1 shelveset)
   - instrsxarch.h: encoding
   - codegenxarch.cpp: generate instruction
   - importer.cpp: name recognition
-- set COMPLUS_JitDump
+- set COMPlus_JitDump
 - Run & capture jitdump2.out, search for CountBits, then look at disassembly
 
 Add Pattern Recognition (SampleStep2 shelveset):

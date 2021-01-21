@@ -108,9 +108,6 @@
 #define getifaddrs Qp2getifaddrs
 #endif
 
-#if defined(_MSC_VER) && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
-#include <MSWSock.h>
-#endif
 #include "icall-decl.h"
 
 #define LOGDEBUG(...)  
@@ -1341,8 +1338,6 @@ ves_icall_System_Net_Sockets_Socket_Connect_icall (gsize sock, MonoObjectHandle 
 	g_free (sa);
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
-
 void
 ves_icall_System_Net_Sockets_Socket_Disconnect_icall (gsize sock, MonoBoolean reuse, gint32 *werror)
 {
@@ -1350,8 +1345,6 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_icall (gsize sock, MonoBoolean re
 
 	*werror = mono_w32socket_disconnect (sock, reuse);
 }
-
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
 
 MonoBoolean
 ves_icall_System_Net_Sockets_Socket_Duplicate_icall (gpointer handle, gint32 targetProcessId, gpointer *duplicate_handle, gint32 *werror)
@@ -2559,8 +2552,6 @@ ves_icall_System_Net_Dns_GetHostName (MonoStringHandleOut h_name, MonoError *err
 	return TRUE;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
-
 MonoBoolean
 ves_icall_System_Net_Sockets_Socket_SendFile_icall (gsize sock, MonoStringHandle filename, MonoArrayHandle pre_buffer, MonoArrayHandle post_buffer, gint flags, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
@@ -2614,8 +2605,6 @@ ves_icall_System_Net_Sockets_Socket_SendFile_icall (gsize sock, MonoStringHandle
 
 	return ret;
 }
-
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
 
 void
 mono_network_init (void)

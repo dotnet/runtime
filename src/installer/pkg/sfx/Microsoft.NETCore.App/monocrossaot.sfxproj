@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <_MonoCrossAOTTargetOS Condition="'$(MonoCrossAOTTargetOS)' != ''">+$(MonoCrossAOTTargetOS.ToLowerInvariant())+</_MonoCrossAOTTargetOS>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))">$(MonoAotTargets);android-x64;android-arm64;android-x86;android-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);browser-wasm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvos-x64;tvos-arm64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);ios-x64;ios-arm64;ios-x86;ios-arm</MonoAotTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" Build="false" />
+  </ItemGroup>
+
+  <Target Name="BuildMonoCrossAllTargets" AfterTargets="Build">
+    <MSBuild Targets="BuildMonoCrossTarget"
+             Projects="$(MSBuildThisFileFullPath)"
+             BuildInParallel="true"
+             Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
+  </Target>
+
+  <Target Name="BuildMonoCrossTarget">
+    <MSBuild Targets="GenerateNuspec"
+             Projects="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+             Properties="TargetCrossRid=$(MonoAotTargetRid)" />
+  </Target>
+</Project>

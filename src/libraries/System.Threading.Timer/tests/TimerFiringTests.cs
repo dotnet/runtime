@@ -62,7 +62,7 @@ namespace System.Threading.Tests
         }
 
         [OuterLoop("Several second delays")]
-        [Theory] // values chosen based on knowing the 333 pivot used in implementation
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // values chosen based on knowing the 333 pivot used in implementation
         [InlineData(1, 1)]
         [InlineData(50, 50)]
         [InlineData(250, 50)]
@@ -284,7 +284,7 @@ namespace System.Threading.Tests
                                }));
         }
 
-        [PlatformSpecific(~TestPlatforms.OSX)] // macOS in CI appears to have a lot more variation
+        [PlatformSpecific(~TestPlatforms.OSX & ~TestPlatforms.Browser)] // macOS and Browser in CI appears to have a lot more variation
         [OuterLoop("Takes several seconds")]
         [Theory] // selection based on 333ms threshold used by implementation
         [InlineData(new int[] { 15 })]
@@ -359,6 +359,59 @@ namespace System.Threading.Tests
                 }
 
                 return;
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void TimersCreatedConcurrentlyOnDifferentThreadsAllFire()
+        {
+            int processorCount = Environment.ProcessorCount;
+
+            int timerTickCount = 0;
+            TimerCallback timerCallback = data => Interlocked.Increment(ref timerTickCount);
+
+            var threadStarted = new AutoResetEvent(false);
+            var createTimers = new ManualResetEvent(false);
+            var timers = new Timer[processorCount];
+            Action<object> createTimerThreadStart = data =>
+            {
+                int i = (int)data;
+                var sw = new Stopwatch();
+                threadStarted.Set();
+                createTimers.WaitOne();
+
+                // Use the CPU a bit around creating the timer to try to have some of these threads run concurrently
+                sw.Restart();
+                do
+                {
+                    Thread.SpinWait(1000);
+                } while (sw.ElapsedMilliseconds < 10);
+
+                timers[i] = new Timer(timerCallback, null, 1, Timeout.Infinite);
+
+                // Use the CPU a bit around creating the timer to try to have some of these threads run concurrently
+                sw.Restart();
+                do
+                {
+                    Thread.SpinWait(1000);
+                } while (sw.ElapsedMilliseconds < 10);
+            };
+
+            var waitsForThread = new Action[timers.Length];
+            for (int i = 0; i < timers.Length; ++i)
+            {
+                var t = ThreadTestHelpers.CreateGuardedThread(out waitsForThread[i], createTimerThreadStart);
+                t.IsBackground = true;
+                t.Start(i);
+                threadStarted.CheckedWait();
+            }
+
+            createTimers.Set();
+            ThreadTestHelpers.WaitForCondition(() => timerTickCount == timers.Length);
+
+            foreach (var waitForThread in waitsForThread)
+            {
+                waitForThread();
             }
         }
 

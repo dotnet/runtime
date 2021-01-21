@@ -102,16 +102,16 @@ namespace System.Security.Cryptography
 
         public bool Equals(RSAEncryptionPadding? other)
         {
-            return !object.ReferenceEquals(other, null)
+            return other is not null
                 && _mode == other._mode
                 && _oaepHashAlgorithm == other._oaepHashAlgorithm;
         }
 
         public static bool operator ==(RSAEncryptionPadding? left, RSAEncryptionPadding? right)
         {
-            if (object.ReferenceEquals(left, null))
+            if (left is null)
             {
-                return object.ReferenceEquals(right, null);
+                return right is null;
             }
 
             return left.Equals(right);

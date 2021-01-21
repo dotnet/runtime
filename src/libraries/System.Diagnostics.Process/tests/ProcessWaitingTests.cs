@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -448,7 +449,7 @@ namespace System.Diagnostics.Tests
         {
             const string expectedSignal = "Signal";
             const string successResponse = "Success";
-            const int timeout = 5 * 1000;
+            const int timeout = 30 * 1000; // 30 seconds, to allow for very slow machines
 
             using Process p = CreateProcessPortable(RemotelyInvokable.WriteLineReadLine);
             p.StartInfo.RedirectStandardInput = true;
@@ -490,6 +491,54 @@ namespace System.Diagnostics.Tests
                 Assert.True(p.HasExited, "Process has not exited");
             }
             Assert.Equal(RemotelyInvokable.SuccessExitCode, p.ExitCode);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void WaitForExit_AfterProcessExit_ShouldConsumeOutputDataReceived()
+        {
+            const string message = "test";
+            using Process p = CreateProcessPortable(RemotelyInvokable.Echo, message);
+
+            int linesReceived = 0;
+            p.OutputDataReceived += (_, e) => { if (e.Data is not null) linesReceived++; };
+            p.StartInfo.RedirectStandardOutput = true;
+
+            Assert.True(p.Start());
+
+            // Give time for the process (cmd) to terminate
+            while (!p.HasExited)
+            {
+                Thread.Sleep(20);
+            }
+
+            p.BeginOutputReadLine();
+            p.WaitForExit();
+
+            Assert.Equal(1, linesReceived);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task WaitForExitAsync_AfterProcessExit_ShouldConsumeOutputDataReceived()
+        {
+            const string message = "test";
+            using Process p = CreateProcessPortable(RemotelyInvokable.Echo, message);
+
+            int linesReceived = 0;
+            p.OutputDataReceived += (_, e) => { if (e.Data is not null) linesReceived++; };
+            p.StartInfo.RedirectStandardOutput = true;
+
+            Assert.True(p.Start());
+
+            // Give time for the process (cmd) to terminate
+            while (!p.HasExited)
+            {
+                Thread.Sleep(20);
+            }
+
+            p.BeginOutputReadLine();
+            await p.WaitForExitAsync();
+
+            Assert.Equal(1, linesReceived);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -590,14 +639,15 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task WaitAsyncForProcess()
         {
-            Process p = CreateSleepProcess(WaitInMS);
-            p.Start();
+            Process p = CreateDefaultProcess();
 
             Task processTask = p.WaitForExitAsync();
-            Task delayTask = Task.Delay(WaitInMS * 2);
+            Assert.False(p.HasExited);
+            Assert.False(processTask.IsCompleted);
 
-            Task result = await Task.WhenAny(processTask, delayTask);
-            Assert.Equal(processTask, result);
+            p.Kill();
+            await processTask;
+
             Assert.True(p.HasExited);
         }
 

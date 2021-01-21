@@ -15,8 +15,7 @@ namespace System.Net.Http
 {
     internal sealed class Http3Connection : HttpConnectionBase, IDisposable
     {
-        // TODO: once HTTP/3 is standardized, create APIs for these.
-        public static readonly Version HttpVersion30 = new Version(3, 0);
+        // TODO: once HTTP/3 is standardized, create APIs for this.
         public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3-29");
 
         private readonly HttpConnectionPool _pool;
@@ -158,6 +157,8 @@ namespace System.Net.Http
 
         public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            Debug.Assert(async);
+
             // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
 
             TaskCompletionSourceWithCancellation<bool>? waitForAvailableStreamTcs = null;

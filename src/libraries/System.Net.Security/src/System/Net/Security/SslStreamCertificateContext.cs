@@ -33,21 +33,27 @@ namespace System.Net.Security
                 chain.ChainPolicy.DisableCertificateDownloads = offline;
                 bool chainStatus = chain.Build(target);
 
-                if (!chainStatus && NetEventSource.IsEnabled)
+                if (!chainStatus && NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
                 }
 
-                int count = chain.ChainElements.Count - (TrimRootCertificate ? 1 : 2);
-                foreach (X509ChainStatus status in chain.ChainStatus)
+                int count = chain.ChainElements.Count - 1;
+#pragma warning disable 0162 // Disable unreachable code warning. TrimRootCertificate is const bool = false on some platforms
+                if (TrimRootCertificate)
                 {
-                    if (status.Status.HasFlag(X509ChainStatusFlags.PartialChain))
+                    count--;
+                    foreach (X509ChainStatus status in chain.ChainStatus)
                     {
-                        // The last cert isn't a root cert
-                        count++;
-                        break;
+                        if (status.Status.HasFlag(X509ChainStatusFlags.PartialChain))
+                        {
+                            // The last cert isn't a root cert
+                            count++;
+                            break;
+                        }
                     }
                 }
+#pragma warning restore 0162
 
                 // Count can be zero for a self-signed certificate, or a cert issued directly from a root.
                 if (count > 0 && chain.ChainElements.Count > 1)
