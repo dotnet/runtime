@@ -352,6 +352,29 @@ namespace System.IO
         internal void SetLastWriteTime(string path, DateTimeOffset time) =>
             SetAccessOrWriteTime(path, time, isAccessTime: false);
 
+        // Receives the return value of a stat or lstat call.
+        // If the call is unsuccessful, returns a positive number representing the last error info.
+        // If the call is successful, returns 0.
+        private int VerifyStatCall(int returnValue)
+        {
+            // stat and lstat return -1 on error, 0 on success
+            if (returnValue < 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                // This should never set the error if the file can't be found.
+                // (see the Windows refresh passing returnErrorOnNotFound: false).
+                if (errorInfo.Error != Interop.Error.ENOENT && // A component of the path does not exist, or path is an empty string
+                    errorInfo.Error != Interop.Error.ENOTDIR)  // A component of the path prefix of path is not a directory
+                {
+                    // Expect a positive integer
+                    return errorInfo.RawErrno;
+                }
+            }
+
+            return 0;
+        }
+
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds) =>
             DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
     }
