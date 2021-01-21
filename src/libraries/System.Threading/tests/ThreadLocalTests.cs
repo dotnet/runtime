@@ -367,9 +367,8 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Operation is not supported on this platform.
         public static void ValuesGetterDoesNotThrowUnexpectedExceptionWhenDisposed()
         {
             var startTest = new ManualResetEvent(false);
