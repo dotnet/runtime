@@ -206,6 +206,7 @@ namespace System.Security.Cryptography
             return ReadAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
+        /// <inheritdoc/>
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (!CanRead)
@@ -565,7 +566,7 @@ namespace System.Security.Cryptography
                 {
                     // not enough to transform a block, so just copy the bytes into the _InputBuffer
                     // and return
-                    buffer.Slice(0, buffer.Length).CopyTo(_inputBuffer.AsMemory(_inputBufferIndex));
+                    buffer.CopyTo(_inputBuffer.AsMemory(_inputBufferIndex));
                     _inputBufferIndex += buffer.Length;
                     return;
                 }
@@ -667,27 +668,109 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    var rentedBuffer = ArrayPool<byte>.Shared.Rent(inputBuffer.Length);
+                    // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
+                    byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(inputBuffer.Length);
                     int result = default;
-                    try
+
+                    // Pin the rented buffer for security.
+                    fixed (byte* _ = &rentedBuffer[0])
                     {
-                        // Pin the rented buffer for security.
-                        fixed (byte* _ = &rentedBuffer[0])
+                        try
                         {
                             inputBuffer.CopyTo(rentedBuffer);
                             result = transform.TransformBlock(rentedBuffer, 0, inputBuffer.Length, outputBuffer, outputOffset);
                         }
+                        finally
+                        {
+                            CryptographicOperations.ZeroMemory(rentedBuffer.AsSpan(0, inputBuffer.Length));
+                        }
                     }
-                    finally
-                    {
-                        CryptographicOperations.ZeroMemory(rentedBuffer.AsSpan(0, inputBuffer.Length));
-                    }
-                    ArrayPool<byte>.Shared.Return(rentedBuffer);
-                    rentedBuffer = null;
 
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                    rentedBuffer = null!;
                     return result;
                 }
             }
+        }
+
+        /// <inheritdoc/>
+        public unsafe override void CopyTo(Stream destination, int bufferSize)
+        {
+            CheckCopyToArguments(destination, bufferSize);
+
+            // Use ArrayPool<byte>.Shared instead of CryptoPool because the array is passed out.
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            // Pin the array for security.
+            fixed (byte* _ = &rentedBuffer[0])
+            {
+                try
+                {
+                    int bytesRead;
+                    do
+                    {
+                        bytesRead = Read(rentedBuffer, 0, bufferSize);
+                        destination.Write(rentedBuffer, 0, bytesRead);
+                    } while (bytesRead > 0);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(rentedBuffer.AsSpan(0, bufferSize));
+                }
+            }
+            ArrayPool<byte>.Shared.Return(rentedBuffer);
+            rentedBuffer = null!;
+        }
+
+        /// <inheritdoc/>
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            CheckCopyToArguments(destination, bufferSize);
+            return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
+        }
+
+        private async Task CopyToAsyncInternal(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            // Use ArrayPool<byte>.Shared instead of CryptoPool because the array is passed out.
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            // Pin the array for security.
+            GCHandle pinHandle = GCHandle.Alloc(rentedBuffer, GCHandleType.Pinned);
+            try
+            {
+                int bytesRead;
+                do
+                {
+                    bytesRead = await ReadAsync(rentedBuffer.AsMemory(0, bufferSize), cancellationToken).ConfigureAwait(false);
+                    await destination.WriteAsync(rentedBuffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+                } while (bytesRead > 0);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(rentedBuffer.AsSpan(0, bufferSize));
+                pinHandle.Free();
+            }
+            ArrayPool<byte>.Shared.Return(rentedBuffer);
+            rentedBuffer = null!;
+        }
+
+        private void CheckCopyToArguments(Stream destination, int bufferSize)
+        {
+            if (destination is null)
+                throw new ArgumentNullException(nameof(destination));
+
+            EnsureNotDisposed(destination, nameof(destination));
+
+            if (!destination.CanWrite)
+                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            if (bufferSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            if (!CanRead)
+                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        }
+
+        private static void EnsureNotDisposed(Stream stream, string objectName)
+        {
+            if (!stream.CanRead && !stream.CanWrite)
+                throw new ObjectDisposedException(objectName);
         }
 
         public void Clear()
