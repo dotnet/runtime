@@ -211,26 +211,27 @@ namespace System.IO
             // If it is a symlink, then subsequently get details on the target of the symlink,
             // storing those results separately.  We only report failure if the initial
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
-            _initializedMainCache = VerifyStatCall(Interop.Sys.LStat(path, out _mainCache));
-            if (_initializedMainCache != 0)
+            if (!VerifyStatCall(Interop.Sys.LStat(path, out _mainCache), out _initializedMainCache))
             {
                 _exists = false;
                 return;
             }
 
-            _exists = true;
-
             // IMPORTANT: Is directory logic must match the logic in FileSystemEntry
             _isDirectory = (_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
 
             // If we're a symlink, attempt to check the target to see if it is a directory
-            if ((_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK &&
-                Interop.Sys.Stat(path, out Interop.Sys.FileStatus targetStatus) >= 0)
+            if ((_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
             {
-                _isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+                if (!VerifyStatCall(Interop.Sys.Stat(path, out _secondaryCache), out _initializedSecondaryCache))
+                {
+                    _exists = false;
+                    return;
+                }
+                _isDirectory = (_secondaryCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
 
-            _initializedMainCache = 0;
+            _exists = true;
         }
 
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
@@ -371,8 +372,10 @@ namespace System.IO
         // Receives the return value of a stat or lstat call.
         // If the call is unsuccessful, returns a positive number representing the last error info.
         // If the call is successful, returns 0.
-        private int VerifyStatCall(int returnValue)
+        private bool VerifyStatCall(int returnValue, out int initialized)
         {
+            initialized = 0;
+
             // stat and lstat return -1 on error, 0 on success
             if (returnValue < 0)
             {
@@ -384,11 +387,12 @@ namespace System.IO
                     errorInfo.Error != Interop.Error.ENOTDIR)  // A component of the path prefix of path is not a directory
                 {
                     // Expect a positive integer
-                    return errorInfo.RawErrno;
+                    initialized = errorInfo.RawErrno;
                 }
+                return false;
             }
 
-            return 0;
+            return true;
         }
 
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds) =>
