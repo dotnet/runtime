@@ -1139,7 +1139,8 @@ socket_transport_connect (const char *address)
 				MONO_EXIT_GC_SAFE;
 			}
 			elapsedTime = difftime (time (NULL), startTime) * 1000;
-			sleep (5);
+			if (rp == 0)
+				sleep (1);
 		} while ((elapsedTime < agent_config.timeout) && (rp == 0));
 		
 
