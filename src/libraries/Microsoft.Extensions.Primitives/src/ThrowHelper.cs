@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Primitives
 {
@@ -84,7 +83,8 @@ namespace Microsoft.Extensions.Primitives
         index,
         value,
         capacity,
-        separators
+        separators,
+        comparisonType
     }
 
     internal enum ExceptionResource

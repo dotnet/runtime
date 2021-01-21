@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Primitives
@@ -147,11 +146,15 @@ namespace Microsoft.Extensions.Primitives
         /// </returns>
         public static int Compare(StringSegment a, StringSegment b, StringComparison comparisonType)
         {
-            // Use CompareInfo.Compare instead of MemoryExtensions.CompareTo because we need
-            // to distinguish between null and empty StringSegment values.
-
-            CompareInfo compareInfo = GetCompareInfo(comparisonType, out CompareOptions compareOptions);
-            return compareInfo.Compare(a.Buffer, a.Offset, a.Length, b.Buffer, b.Offset, b.Length, compareOptions);
+            if (a.HasValue && b.HasValue)
+            {
+                return a.AsSpan().CompareTo(b.AsSpan(), comparisonType);
+            }
+            else
+            {
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return !a.HasValue ? (b.HasValue ? -1 : 0) : 1; // null sorts less than non-null, and two nulls sort as equal
+            }
         }
 
         /// <inheritdoc />
@@ -175,7 +178,15 @@ namespace Microsoft.Extensions.Primitives
         /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
         public bool Equals(StringSegment other, StringComparison comparisonType)
         {
-            return Compare(this, other, comparisonType) == 0;
+            if (HasValue && other.HasValue)
+            {
+                return AsSpan().Equals(other.AsSpan(), comparisonType);
+            }
+            else
+            {
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return !HasValue && !other.HasValue; // only return true if both are null
+            }
         }
 
         // This handles StringSegment.Equals(string, StringSegment, StringComparison) and StringSegment.Equals(StringSegment, string, StringComparison)
@@ -222,6 +233,7 @@ namespace Microsoft.Extensions.Primitives
 
             if (!HasValue)
             {
+                CheckStringComparison(comparisonType); // must arg check before returning
                 return false;
             }
 
@@ -298,6 +310,7 @@ namespace Microsoft.Extensions.Primitives
 
             if (!HasValue)
             {
+                CheckStringComparison(comparisonType); // must arg check before returning
                 return false;
             }
 
@@ -323,6 +336,7 @@ namespace Microsoft.Extensions.Primitives
 
             if (!HasValue)
             {
+                CheckStringComparison(comparisonType); // must arg check before returning
                 return false;
             }
 
@@ -618,30 +632,12 @@ namespace Microsoft.Extensions.Primitives
             return Value ?? string.Empty;
         }
 
-        private static CompareInfo GetCompareInfo(StringComparison comparisonType, out CompareOptions compareOptions)
+        private static void CheckStringComparison(StringComparison comparisonType)
         {
-            switch (comparisonType)
+            // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
+            if ((uint)comparisonType > (uint)StringComparison.OrdinalIgnoreCase)
             {
-                case StringComparison.CurrentCulture:
-                case StringComparison.CurrentCultureIgnoreCase:
-                    compareOptions = (CompareOptions)((int)comparisonType & 1);
-                    return CultureInfo.CurrentCulture.CompareInfo;
-
-                case StringComparison.InvariantCulture:
-                case StringComparison.InvariantCultureIgnoreCase:
-                    compareOptions = (CompareOptions)((int)comparisonType & 1);
-                    return CultureInfo.InvariantCulture.CompareInfo;
-
-                case StringComparison.Ordinal:
-                    compareOptions = CompareOptions.Ordinal;
-                    return CultureInfo.InvariantCulture.CompareInfo;
-
-                case StringComparison.OrdinalIgnoreCase:
-                    compareOptions = CompareOptions.OrdinalIgnoreCase;
-                    return CultureInfo.InvariantCulture.CompareInfo;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(comparisonType));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.comparisonType);
             }
         }
 
