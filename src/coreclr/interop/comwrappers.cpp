@@ -765,17 +765,6 @@ void NativeObjectWrapperContext::Destroy(_In_ NativeObjectWrapperContext* wrappe
     InteropLibImports::MemFree(wrapper, AllocScenario::NativeObjectWrapper);
 }
 
-namespace
-{
-    // State ownership mechanism.
-    enum : int
-    {
-        TrackerObjectState_NotSet = 0,
-        TrackerObjectState_SetNoRelease = 1,
-        TrackerObjectState_SetForRelease = 2,
-    };
-}
-
 NativeObjectWrapperContext::NativeObjectWrapperContext(
     _In_ void* runtimeContext,
     _In_opt_ IReferenceTracker* trackerObject,
@@ -783,13 +772,13 @@ NativeObjectWrapperContext::NativeObjectWrapperContext(
     : _trackerObject{ trackerObject }
     , _runtimeContext{ runtimeContext }
     , _trackerObjectDisconnected{ FALSE }
-    , _trackerObjectState{ (trackerObject == nullptr ? TrackerObjectState_NotSet : TrackerObjectState_SetForRelease) }
+    , _trackerObjectState{ (trackerObject == nullptr ? TrackerObjectState::NotSet : TrackerObjectState::SetForRelease) }
     , _nativeObjectAsInner{ nativeObjectAsInner }
 #ifdef _DEBUG
     , _sentinel{ LiveContextSentinel }
 #endif
 {
-    if (_trackerObjectState == TrackerObjectState_SetForRelease)
+    if (_trackerObjectState == TrackerObjectState::SetForRelease)
         (void)_trackerObject->AddRef();
 }
 
@@ -813,7 +802,7 @@ void* NativeObjectWrapperContext::GetRuntimeContext() const noexcept
 
 IReferenceTracker* NativeObjectWrapperContext::GetReferenceTracker() const noexcept
 {
-    return ((_trackerObjectState == TrackerObjectState_NotSet) ? nullptr : _trackerObject);
+    return ((_trackerObjectState == TrackerObjectState::NotSet) ? nullptr : _trackerObject);
 }
 
 // See TrackerObjectManager::AfterWrapperCreated() for AddRefFromTrackerSource() usage.
@@ -823,7 +812,7 @@ void NativeObjectWrapperContext::DisconnectTracker() noexcept
 {
     // Return if already disconnected or the tracker isn't set.
     if (FALSE != ::InterlockedCompareExchange((LONG*)&_trackerObjectDisconnected, TRUE, FALSE)
-        || _trackerObjectState == TrackerObjectState_NotSet)
+        || _trackerObjectState == TrackerObjectState::NotSet)
     {
         return;
     }
@@ -835,7 +824,7 @@ void NativeObjectWrapperContext::DisconnectTracker() noexcept
     (void)_trackerObject->ReleaseFromTrackerSource(); // IUnknown
 
     // Disconnect from the tracker.
-    if (_trackerObjectState == TrackerObjectState_SetForRelease)
+    if (_trackerObjectState == TrackerObjectState::SetForRelease)
     {
         (void)_trackerObject->ReleaseFromTrackerSource(); // IReferenceTracker
         (void)_trackerObject->Release();
@@ -844,11 +833,11 @@ void NativeObjectWrapperContext::DisconnectTracker() noexcept
 
 void NativeObjectWrapperContext::HandleReferenceTrackerAggregation() noexcept
 {
-    _ASSERTE(_trackerObjectState == TrackerObjectState_SetForRelease && _trackerObject != nullptr);
+    _ASSERTE(_trackerObjectState == TrackerObjectState::SetForRelease && _trackerObject != nullptr);
 
     // Aggregation with an IReferenceTracker instance creates an extra AddRef()
     // on the outer (e.g. MOW) so we clean up that issue here.
-    _trackerObjectState = TrackerObjectState_SetNoRelease;
+    _trackerObjectState = TrackerObjectState::SetNoRelease;
 
     (void)_trackerObject->ReleaseFromTrackerSource(); // IReferenceTracker
     (void)_trackerObject->Release();

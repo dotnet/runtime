@@ -131,13 +131,21 @@ ABI_ASSERT(ManagedObjectWrapperRefCountOffset() == offsetof(InteropLib::ABI::Man
 // ABI contract. This below offset is assumed in managed code.
 ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 
+// State ownership mechanism.
+enum class TrackerObjectState
+{
+    NotSet,
+    SetNoRelease,
+    SetForRelease,
+};
+
 // Class for connecting a native COM object to a managed object instance
 class NativeObjectWrapperContext
 {
     IReferenceTracker* _trackerObject;
     void* _runtimeContext;
     Volatile<BOOL> _trackerObjectDisconnected;
-    int _trackerObjectState;
+    TrackerObjectState _trackerObjectState;
     IUnknown* _nativeObjectAsInner;
 
 #ifdef _DEBUG
