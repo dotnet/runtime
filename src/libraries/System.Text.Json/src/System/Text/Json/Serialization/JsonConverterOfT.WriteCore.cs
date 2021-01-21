@@ -11,18 +11,19 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            // Value types can never have a null except for Nullable<T>.
-            if (value == null && IsValueType && Nullable.GetUnderlyingType(TypeToConvert) == null)
+            if (IsValueType)
             {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-            }
+                // Value types can never have a null except for Nullable<T>.
+                if (value == null && Nullable.GetUnderlyingType(TypeToConvert) == null)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                }
 
-            // Root object is a boxed value type.
-            // Since value types are ignored when detecting cycles
-            // We need to push it before it gets unboxed.
-            if (value != null && IsValueType && JsonSerializer.IsIgnoreCyclesEnabled(options))
-            {
-                state.ReferenceResolver.PushReferenceForCycleDetection(value);
+                // Root object is a boxed value type, we need to push it to the reference stack before it gets unboxed here.
+                if (value != null && JsonSerializer.IsIgnoreCyclesEnabled(options))
+                {
+                    state.ReferenceResolver.PushReferenceForCycleDetection(value);
+                }
             }
 
             T actualValue = (T)value!;
