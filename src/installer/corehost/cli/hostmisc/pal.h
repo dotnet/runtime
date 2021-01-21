@@ -107,7 +107,7 @@ namespace pal
     #ifdef EXPORT_SHARED_API
         #define SHARED_API extern "C" __declspec(dllexport)
     #else
-        #define SHARED_API
+        #define SHARED_API extern "C"
     #endif
 
     #define STDMETHODCALLTYPE __stdcall
@@ -178,7 +178,7 @@ namespace pal
     #ifdef EXPORT_SHARED_API
         #define SHARED_API extern "C" __attribute__((__visibility__("default")))
     #else
-        #define SHARED_API
+        #define SHARED_API extern "C"
     #endif
 
     #define __cdecl    /* nothing */

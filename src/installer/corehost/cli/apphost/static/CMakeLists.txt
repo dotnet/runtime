@@ -33,7 +33,7 @@ set(HEADERS
 
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
-add_definitions(-DEXPORT_SHARED_API=1)
+remove_definitions(-DEXPORT_SHARED_API)
 add_definitions(-DHOSTPOLICY_EMBEDDED)
 add_definitions(-DNATIVE_LIBS_EMBEDDED)
 
