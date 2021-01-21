@@ -11,6 +11,13 @@
 
 #include <pthread.h>
 
+#include <time.h>
+#include <sys/time.h>
+
+#if HAVE_MACH_ABSOLUTE_TIME
+#include <mach/mach_time.h>
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition
 
@@ -117,6 +124,49 @@ void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
     (void)error; // unused in release build
 
     SetIsLocked(monitor, true);
+}
+
+uint32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor* monitor, int32_t timeoutMilliseconds)
+{
+    assert(monitor != NULL);
+    assert(timeoutMilliseconds >= -1);
+
+    if (timeoutMilliseconds < 0)
+    {
+        SystemNative_LowLevelMonitor_Wait(monitor);
+        return true;
+    }
+
+    SetIsLocked(monitor, false);
+
+    struct timespec ts;
+    int error;
+
+#if HAVE_MACH_ABSOLUTE_TIME
+    memset (&ts, 0, sizeof(struct timespec));
+    ts.tv_sec = timeoutMilliseconds / 1000;
+    ts.tv_nsec = (timeoutMilliseconds % 1000) * 1000 * 1000;
+
+    error = pthread_cond_timedwait_relative_np(&monitor->Condition, &monitor->Mutex, &ts);
+#else
+    error = clock_gettime(CLOCK_MONOTONIC, &ts);
+    assert(error == 0);
+
+    ts.tv_sec += timeoutMilliseconds / 1000;
+    ts.tv_nsec += (timeoutMilliseconds % 1000) * 1000 * 1000;
+    if (ts.tv_nsec >= 1000 * 1000 * 1000) {
+        ts.tv_nsec -= 1000 * 1000 * 1000;
+        ts.tv_sec ++;
+    }
+
+    error = pthread_cond_timedwait(&monitor->Condition, &monitor->Mutex, &ts);
+#endif
+
+    assert(error == 0 || error == ETIMEDOUT);
+
+    SetIsLocked(monitor, true);
+
+    return error == 0;
 }
 
 void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
