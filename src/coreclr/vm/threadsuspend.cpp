@@ -1965,12 +1965,7 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
 PINITIALIZECONTEXT2 pfnInitializeContext2 = NULL;
 
-#ifdef TARGET_X86
-#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
-                          CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
-#else
-#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
-#endif
+#define CONTEXT_COMPLETE CONTEXT_ALL | CONTEXT_EXCEPTION_REQUEST
 
 CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 {
@@ -2003,9 +1998,9 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
         pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
         InitializeContext(NULL, context, NULL, &contextSize);
 
-    _ASSERTE(!success);
+    _ASSERTE(!success && GetLastError() == ERROR_INSUFFICIENT_BUFFER);
 
-    // So now allocate a buffer of that size and call IntitializeContext again
+    // So now allocate a buffer of that size and call InitializeContext again
     BYTE* buffer = new (nothrow)BYTE[contextSize];
     if (buffer != NULL)
     {
@@ -2014,7 +2009,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
             InitializeContext(buffer, context, &pOSContext, &contextSize);
 
         // if AVX is supported set the appropriate features mask in the context
-        if (success == TRUE && supportsAVX)
+        if (success && supportsAVX)
         {
             // This should not normally fail.
             // The system silently ignores any feature specified in the FeatureMask
@@ -2024,7 +2019,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 
         if (!success)
         {
-            free(buffer);
+            delete[] buffer;
             buffer = NULL;
         }
     }
@@ -2037,7 +2032,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     *contextBuffer = buffer;
 
 #else 
-    pOSContext = new (nothrow) CONTEXT();
+    pOSContext = new (nothrow) CONTEXT;
     pOSContext->ContextFlags = CONTEXT_COMPLETE;
     *contextBuffer = NULL;
 #endif
