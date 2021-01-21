@@ -3703,26 +3703,26 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 costSz = 12;
                                 break;
 
-                            case NI_System_Math_Sin:
-                            case NI_System_Math_Cos:
-                            case NI_System_Math_Sqrt:
-                            case NI_System_Math_Cbrt:
-                            case NI_System_Math_Cosh:
-                            case NI_System_Math_Sinh:
-                            case NI_System_Math_Tan:
-                            case NI_System_Math_Tanh:
-                            case NI_System_Math_Asin:
-                            case NI_System_Math_Asinh:
                             case NI_System_Math_Acos:
                             case NI_System_Math_Acosh:
+                            case NI_System_Math_Asin:
+                            case NI_System_Math_Asinh:
                             case NI_System_Math_Atan:
                             case NI_System_Math_Atanh:
                             case NI_System_Math_Atan2:
+                            case NI_System_Math_Cbrt:
+                            case NI_System_Math_Ceiling:
+                            case NI_System_Math_Cos:
+                            case NI_System_Math_Cosh:
+                            case NI_System_Math_Exp:
+                            case NI_System_Math_Floor:
                             case NI_System_Math_Log10:
                             case NI_System_Math_Pow:
-                            case NI_System_Math_Exp:
-                            case NI_System_Math_Ceiling:
-                            case NI_System_Math_Floor:
+                            case NI_System_Math_Sin:
+                            case NI_System_Math_Sinh:
+                            case NI_System_Math_Sqrt:
+                            case NI_System_Math_Tan:
+                            case NI_System_Math_Tanh:
                                 // Giving intrinsics a large fixed execution cost is because we'd like to CSE
                                 // them, even if they are implemented by calls. This is different from modeling
                                 // user calls since we never CSE user calls.
@@ -11573,41 +11573,8 @@ void Compiler::gtDispTree(GenTree*     tree,
                 assert(intrinsic->gtIntrinsicName != NI_Illegal);
                 switch (intrinsic->gtIntrinsicName)
                 {
-                    case NI_System_Math_Sin:
-                        printf(" sin");
-                        break;
-                    case NI_System_Math_Cos:
-                        printf(" cos");
-                        break;
-                    case NI_System_Math_Cbrt:
-                        printf(" cbrt");
-                        break;
-                    case NI_System_Math_Sqrt:
-                        printf(" sqrt");
-                        break;
                     case NI_System_Math_Abs:
                         printf(" abs");
-                        break;
-                    case NI_System_Math_Round:
-                        printf(" round");
-                        break;
-                    case NI_System_Math_Cosh:
-                        printf(" cosh");
-                        break;
-                    case NI_System_Math_Sinh:
-                        printf(" sinh");
-                        break;
-                    case NI_System_Math_Tan:
-                        printf(" tan");
-                        break;
-                    case NI_System_Math_Tanh:
-                        printf(" tanh");
-                        break;
-                    case NI_System_Math_Asin:
-                        printf(" asin");
-                        break;
-                    case NI_System_Math_Asinh:
-                        printf(" asinh");
                         break;
                     case NI_System_Math_Acos:
                         printf(" acos");
@@ -11615,14 +11582,38 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case NI_System_Math_Acosh:
                         printf(" acosh");
                         break;
+                    case NI_System_Math_Asin:
+                        printf(" asin");
+                        break;
+                    case NI_System_Math_Asinh:
+                        printf(" asinh");
+                        break;
                     case NI_System_Math_Atan:
                         printf(" atan");
+                        break;
+                    case NI_System_Math_Atanh:
+                        printf(" atanh");
                         break;
                     case NI_System_Math_Atan2:
                         printf(" atan2");
                         break;
-                    case NI_System_Math_Atanh:
-                        printf(" atanh");
+                    case NI_System_Math_Cbrt:
+                        printf(" cbrt");
+                        break;
+                    case NI_System_Math_Ceiling:
+                        printf(" ceiling");
+                        break;
+                    case NI_System_Math_Cos:
+                        printf(" cos");
+                        break;
+                    case NI_System_Math_Cosh:
+                        printf(" cosh");
+                        break;
+                    case NI_System_Math_Exp:
+                        printf(" exp");
+                        break;
+                    case NI_System_Math_Floor:
+                        printf(" floor");
                         break;
                     case NI_System_Math_Log10:
                         printf(" log10");
@@ -11630,14 +11621,23 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case NI_System_Math_Pow:
                         printf(" pow");
                         break;
-                    case NI_System_Math_Exp:
-                        printf(" exp");
+                    case NI_System_Math_Round:
+                        printf(" round");
                         break;
-                    case NI_System_Math_Ceiling:
-                        printf(" ceiling");
+                    case NI_System_Math_Sin:
+                        printf(" sin");
                         break;
-                    case NI_System_Math_Floor:
-                        printf(" floor");
+                    case NI_System_Math_Sinh:
+                        printf(" sinh");
+                        break;
+                    case NI_System_Math_Sqrt:
+                        printf(" sqrt");
+                        break;
+                    case NI_System_Math_Tan:
+                        printf(" tan");
+                        break;
+                    case NI_System_Math_Tanh:
+                        printf(" tanh");
                         break;
 
                     default:

@@ -4577,26 +4577,26 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
             double res = 0.0;
             switch (gtMathFN)
             {
-                case NI_System_Math_Sin:
-                    res = sin(arg0Val);
-                    break;
-                case NI_System_Math_Cos:
-                    res = cos(arg0Val);
-                    break;
-                case NI_System_Math_Sqrt:
-                    res = sqrt(arg0Val);
-                    break;
                 case NI_System_Math_Abs:
                     res = fabs(arg0Val);
                     break;
                 case NI_System_Math_Ceiling:
                     res = ceil(arg0Val);
                     break;
+                case NI_System_Math_Cos:
+                    res = cos(arg0Val);
+                    break;
                 case NI_System_Math_Floor:
                     res = floor(arg0Val);
                     break;
                 case NI_System_Math_Round:
                     res = FloatingPointUtils::round(arg0Val);
+                    break;
+                case NI_System_Math_Sin:
+                    res = sin(arg0Val);
+                    break;
+                case NI_System_Math_Sqrt:
+                    res = sqrt(arg0Val);
                     break;
                 default:
                     unreached(); // the above are the only math intrinsics at the time of this writing.
@@ -4613,26 +4613,26 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
             float res = 0.0f;
             switch (gtMathFN)
             {
-                case NI_System_Math_Sin:
-                    res = sinf(arg0Val);
-                    break;
-                case NI_System_Math_Cos:
-                    res = cosf(arg0Val);
-                    break;
-                case NI_System_Math_Sqrt:
-                    res = sqrtf(arg0Val);
-                    break;
                 case NI_System_Math_Abs:
                     res = fabsf(arg0Val);
                     break;
                 case NI_System_Math_Ceiling:
                     res = ceilf(arg0Val);
                     break;
+                case NI_System_Math_Cos:
+                    res = cosf(arg0Val);
+                    break;
                 case NI_System_Math_Floor:
                     res = floorf(arg0Val);
                     break;
                 case NI_System_Math_Round:
                     res = FloatingPointUtils::round(arg0Val);
+                    break;
+                case NI_System_Math_Sin:
+                    res = sinf(arg0Val);
+                    break;
+                case NI_System_Math_Sqrt:
+                    res = sqrtf(arg0Val);
                     break;
                 default:
                     unreached(); // the above are the only math intrinsics at the time of this writing.
@@ -4678,56 +4678,8 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
         VNFunc vnf = VNF_Boundary;
         switch (gtMathFN)
         {
-            case NI_System_Math_Sin:
-                vnf = VNF_Sin;
-                break;
-            case NI_System_Math_Cos:
-                vnf = VNF_Cos;
-                break;
-            case NI_System_Math_Cbrt:
-                vnf = VNF_Cbrt;
-                break;
-            case NI_System_Math_Sqrt:
-                vnf = VNF_Sqrt;
-                break;
             case NI_System_Math_Abs:
                 vnf = VNF_Abs;
-                break;
-            case NI_System_Math_Round:
-                if (typ == TYP_DOUBLE)
-                {
-                    vnf = VNF_RoundDouble;
-                }
-                else if (typ == TYP_FLOAT)
-                {
-                    vnf = VNF_RoundFloat;
-                }
-                else if (typ == TYP_INT)
-                {
-                    vnf = VNF_RoundInt;
-                }
-                else
-                {
-                    noway_assert(!"Invalid INTRINSIC_Round");
-                }
-                break;
-            case NI_System_Math_Cosh:
-                vnf = VNF_Cosh;
-                break;
-            case NI_System_Math_Sinh:
-                vnf = VNF_Sinh;
-                break;
-            case NI_System_Math_Tan:
-                vnf = VNF_Tan;
-                break;
-            case NI_System_Math_Tanh:
-                vnf = VNF_Tanh;
-                break;
-            case NI_System_Math_Asin:
-                vnf = VNF_Asin;
-                break;
-            case NI_System_Math_Asinh:
-                vnf = VNF_Asinh;
                 break;
             case NI_System_Math_Acos:
                 vnf = VNF_Acos;
@@ -4735,23 +4687,71 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
             case NI_System_Math_Acosh:
                 vnf = VNF_Acosh;
                 break;
+            case NI_System_Math_Asin:
+                vnf = VNF_Asin;
+                break;
+            case NI_System_Math_Asinh:
+                vnf = VNF_Asinh;
+                break;
             case NI_System_Math_Atan:
                 vnf = VNF_Atan;
                 break;
             case NI_System_Math_Atanh:
                 vnf = VNF_Atanh;
                 break;
-            case NI_System_Math_Log10:
-                vnf = VNF_Log10;
-                break;
-            case NI_System_Math_Exp:
-                vnf = VNF_Exp;
+            case NI_System_Math_Cbrt:
+                vnf = VNF_Cbrt;
                 break;
             case NI_System_Math_Ceiling:
                 vnf = VNF_Ceiling;
                 break;
+            case NI_System_Math_Cos:
+                vnf = VNF_Cos;
+                break;
+            case NI_System_Math_Cosh:
+                vnf = VNF_Cosh;
+                break;
+            case NI_System_Math_Exp:
+                vnf = VNF_Exp;
+                break;
             case NI_System_Math_Floor:
                 vnf = VNF_Floor;
+                break;
+            case NI_System_Math_Log10:
+                vnf = VNF_Log10;
+                break;
+            case NI_System_Math_Round:
+                if (typ == TYP_DOUBLE)
+                {
+                    vnf = VNF_RoundDouble;
+                }
+                else if (typ == TYP_INT)
+                {
+                    vnf = VNF_RoundInt32;
+                }
+                else if (typ == TYP_FLOAT)
+                {
+                    vnf = VNF_RoundSingle;
+                }
+                else
+                {
+                    noway_assert(!"Invalid INTRINSIC_Round");
+                }
+                break;
+            case NI_System_Math_Sin:
+                vnf = VNF_Sin;
+                break;
+            case NI_System_Math_Sinh:
+                vnf = VNF_Sinh;
+                break;
+            case NI_System_Math_Sqrt:
+                vnf = VNF_Sqrt;
+                break;
+            case NI_System_Math_Tan:
+                vnf = VNF_Tan;
+                break;
+            case NI_System_Math_Tanh:
+                vnf = VNF_Tanh;
                 break;
             default:
                 unreached(); // the above are the only math intrinsics at the time of this writing.

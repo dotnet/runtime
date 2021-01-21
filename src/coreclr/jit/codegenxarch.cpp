@@ -7035,6 +7035,16 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
     // Right now only Sqrt/Abs are treated as math intrinsics.
     switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
+        case NI_System_Math_Abs:
+            genSSE2BitwiseOp(treeNode);
+            break;
+
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+            genSSE41RoundOp(treeNode->AsOp());
+            break;
+
         case NI_System_Math_Sqrt:
         {
             // Both operand and its result must be of the same floating point type.
@@ -7046,16 +7056,6 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             GetEmitter()->emitInsBinary(ins_FloatSqrt(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode, srcNode);
             break;
         }
-
-        case NI_System_Math_Abs:
-            genSSE2BitwiseOp(treeNode);
-            break;
-
-        case NI_System_Math_Round:
-        case NI_System_Math_Ceiling:
-        case NI_System_Math_Floor:
-            genSSE41RoundOp(treeNode->AsOp());
-            break;
 
         default:
             assert(!"genIntrinsic: Unsupported intrinsic");

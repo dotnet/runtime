@@ -1829,10 +1829,10 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             break;
 #endif // TARGET_X86
 
-        case NI_System_Math_Sqrt:
-        case NI_System_Math_Round:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
             break;
 
         default:

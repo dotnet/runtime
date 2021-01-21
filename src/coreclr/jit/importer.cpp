@@ -4399,28 +4399,28 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             }
 #endif // FEATURE_HW_INTRINSICS
 
-            case NI_System_Math_Sin:
-            case NI_System_Math_Cbrt:
-            case NI_System_Math_Sqrt:
             case NI_System_Math_Abs:
-            case NI_System_Math_Cos:
-            case NI_System_Math_Round:
-            case NI_System_Math_Cosh:
-            case NI_System_Math_Sinh:
-            case NI_System_Math_Tan:
-            case NI_System_Math_Tanh:
-            case NI_System_Math_Asin:
-            case NI_System_Math_Asinh:
             case NI_System_Math_Acos:
             case NI_System_Math_Acosh:
+            case NI_System_Math_Asin:
+            case NI_System_Math_Asinh:
             case NI_System_Math_Atan:
-            case NI_System_Math_Atan2:
             case NI_System_Math_Atanh:
+            case NI_System_Math_Atan2:
+            case NI_System_Math_Cbrt:
+            case NI_System_Math_Ceiling:
+            case NI_System_Math_Cos:
+            case NI_System_Math_Cosh:
+            case NI_System_Math_Exp:
+            case NI_System_Math_Floor:
             case NI_System_Math_Log10:
             case NI_System_Math_Pow:
-            case NI_System_Math_Exp:
-            case NI_System_Math_Ceiling:
-            case NI_System_Math_Floor:
+            case NI_System_Math_Round:
+            case NI_System_Math_Sin:
+            case NI_System_Math_Sinh:
+            case NI_System_Math_Sqrt:
+            case NI_System_Math_Tan:
+            case NI_System_Math_Tanh:
             {
                 retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
                 break;
@@ -4709,57 +4709,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
         else if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
         {
-            if (strcmp(methodName, "FusedMultiplyAdd") == 0)
-            {
-                result = NI_System_Math_FusedMultiplyAdd;
-            }
-            else if (strcmp(methodName, "Round") == 0)
-            {
-                result = NI_System_Math_Round;
-            }
-            else if (strcmp(methodName, "Sin") == 0)
-            {
-                result = NI_System_Math_Sin;
-            }
-            else if (strcmp(methodName, "Cos") == 0)
-            {
-                result = NI_System_Math_Cos;
-            }
-            else if (strcmp(methodName, "Cbrt") == 0)
-            {
-                result = NI_System_Math_Cbrt;
-            }
-            else if (strcmp(methodName, "Sqrt") == 0)
-            {
-                result = NI_System_Math_Sqrt;
-            }
-            else if (strcmp(methodName, "Abs") == 0)
+            if (strcmp(methodName, "Abs") == 0)
             {
                 result = NI_System_Math_Abs;
-            }
-            else if (strcmp(methodName, "Cosh") == 0)
-            {
-                result = NI_System_Math_Cosh;
-            }
-            else if (strcmp(methodName, "Sinh") == 0)
-            {
-                result = NI_System_Math_Sinh;
-            }
-            else if (strcmp(methodName, "Tan") == 0)
-            {
-                result = NI_System_Math_Tan;
-            }
-            else if (strcmp(methodName, "Tanh") == 0)
-            {
-                result = NI_System_Math_Tanh;
-            }
-            else if (strcmp(methodName, "Asin") == 0)
-            {
-                result = NI_System_Math_Asin;
-            }
-            else if (strcmp(methodName, "Asinh") == 0)
-            {
-                result = NI_System_Math_Asinh;
             }
             else if (strcmp(methodName, "Acos") == 0)
             {
@@ -4769,17 +4721,53 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Math_Acosh;
             }
+            else if (strcmp(methodName, "Asin") == 0)
+            {
+                result = NI_System_Math_Asin;
+            }
+            else if (strcmp(methodName, "Asinh") == 0)
+            {
+                result = NI_System_Math_Asinh;
+            }
             else if (strcmp(methodName, "Atan") == 0)
             {
                 result = NI_System_Math_Atan;
+            }
+            else if (strcmp(methodName, "Atanh") == 0)
+            {
+                result = NI_System_Math_Atanh;
             }
             else if (strcmp(methodName, "Atan2") == 0)
             {
                 result = NI_System_Math_Atan2;
             }
-            else if (strcmp(methodName, "Atanh") == 0)
+            else if (strcmp(methodName, "Cbrt") == 0)
             {
-                result = NI_System_Math_Atanh;
+                result = NI_System_Math_Cbrt;
+            }
+            else if (strcmp(methodName, "Ceiling") == 0)
+            {
+                result = NI_System_Math_Ceiling;
+            }
+            else if (strcmp(methodName, "Cos") == 0)
+            {
+                result = NI_System_Math_Cos;
+            }
+            else if (strcmp(methodName, "Cosh") == 0)
+            {
+                result = NI_System_Math_Cosh;
+            }
+            else if (strcmp(methodName, "Exp") == 0)
+            {
+                result = NI_System_Math_Exp;
+            }
+            else if (strcmp(methodName, "Floor") == 0)
+            {
+                result = NI_System_Math_Floor;
+            }
+            else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
+            {
+                result = NI_System_Math_FusedMultiplyAdd;
             }
             else if (strcmp(methodName, "Log10") == 0)
             {
@@ -4789,17 +4777,29 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Math_Pow;
             }
-            else if (strcmp(methodName, "Exp") == 0)
+            else if (strcmp(methodName, "Round") == 0)
             {
-                result = NI_System_Math_Exp;
+                result = NI_System_Math_Round;
             }
-            else if (strcmp(methodName, "Ceiling") == 0)
+            else if (strcmp(methodName, "Sin") == 0)
             {
-                result = NI_System_Math_Ceiling;
+                result = NI_System_Math_Sin;
             }
-            else if (strcmp(methodName, "Floor") == 0)
+            else if (strcmp(methodName, "Sinh") == 0)
             {
-                result = NI_System_Math_Floor;
+                result = NI_System_Math_Sinh;
+            }
+            else if (strcmp(methodName, "Sqrt") == 0)
+            {
+                result = NI_System_Math_Sqrt;
+            }
+            else if (strcmp(methodName, "Tan") == 0)
+            {
+                result = NI_System_Math_Tan;
+            }
+            else if (strcmp(methodName, "Tanh") == 0)
+            {
+                result = NI_System_Math_Tanh;
             }
         }
         else if (strcmp(className, "GC") == 0)
@@ -20548,13 +20548,13 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         //       a CQ problem, it may be necessary to change the implementation of
         //       the helper calls to decrease call overhead or switch back to the
         //       x87 instructions. This is tracked by #7097.
-        case NI_System_Math_Sqrt:
         case NI_System_Math_Abs:
+        case NI_System_Math_Sqrt:
             return true;
 
-        case NI_System_Math_Round:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Round:
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         default:
@@ -20563,11 +20563,11 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 #elif defined(TARGET_ARM64)
     switch (intrinsicName)
     {
-        case NI_System_Math_Sqrt:
         case NI_System_Math_Abs:
-        case NI_System_Math_Round:
-        case NI_System_Math_Floor:
         case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
             return true;
 
         default:
@@ -20576,9 +20576,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 #elif defined(TARGET_ARM)
     switch (intrinsicName)
     {
-        case NI_System_Math_Sqrt:
         case NI_System_Math_Abs:
         case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
             return true;
 
         default:
@@ -20609,29 +20609,30 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
 {
     switch (intrinsicName)
     {
-        case NI_System_Math_Sin:
-        case NI_System_Math_Cbrt:
-        case NI_System_Math_Sqrt:
         case NI_System_Math_Abs:
-        case NI_System_Math_Cos:
-        case NI_System_Math_Round:
-        case NI_System_Math_Cosh:
-        case NI_System_Math_Sinh:
-        case NI_System_Math_Tan:
-        case NI_System_Math_Tanh:
-        case NI_System_Math_Asin:
-        case NI_System_Math_Asinh:
         case NI_System_Math_Acos:
         case NI_System_Math_Acosh:
+        case NI_System_Math_Asin:
+        case NI_System_Math_Asinh:
         case NI_System_Math_Atan:
-        case NI_System_Math_Atan2:
         case NI_System_Math_Atanh:
+        case NI_System_Math_Atan2:
+        case NI_System_Math_Cbrt:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Cos:
+        case NI_System_Math_Cosh:
+        case NI_System_Math_Exp:
+        case NI_System_Math_Floor:
         case NI_System_Math_Log10:
         case NI_System_Math_Pow:
-        case NI_System_Math_Exp:
-        case NI_System_Math_Ceiling:
-        case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sin:
+        case NI_System_Math_Sinh:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Tan:
+        case NI_System_Math_Tanh:
             return true;
+
         default:
             return false;
     }
