@@ -5930,7 +5930,6 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         // If the thread is at a GC safe point, push a RedirectedThreadFrame with
         // the interrupted context and pulse the GC mode so that GC can proceed.
         FrameWithCookie<RedirectedThreadFrame> frame(interruptedContext);
-        pThread->MarkRedirectContextInUse(interruptedContext);
 
         frame.Push(pThread);
 
