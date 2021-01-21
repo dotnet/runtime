@@ -150,8 +150,11 @@ namespace System.Net.NetworkInformation
             }
 
             s_socket = newSocket;
-            Task.Factory.StartNew(s => LoopReadSocket((int)s!), s_socket,
-                CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            new Thread(s => LoopReadSocket((int)s!))
+            {
+                IsBackground = true,
+                Name = ".NET Net Address Monitor"
+            }.UnsafeStart(newSocket);
         }
 
         private static void CloseSocket()
