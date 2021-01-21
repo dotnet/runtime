@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "comwrappers.hpp"
-#include <interoplibabi.h>
 #include <interoplibimports.h>
 
 #include <new> // placement new
@@ -451,12 +450,12 @@ ManagedObjectWrapper::ManagedObjectWrapper(
     _In_ const ABI::ComInterfaceEntry* userDefined,
     _In_ ABI::ComInterfaceDispatch* dispatches)
     : Target{ nullptr }
+    , _refCount{ 1 }
     , _runtimeDefinedCount{ runtimeDefinedCount }
     , _userDefinedCount{ userDefinedCount }
     , _runtimeDefined{ runtimeDefined }
     , _userDefined{ userDefined }
     , _dispatches{ dispatches }
-    , _refCount{ 1 }
     , _flags{ flags }
 {
     bool wasSet = TrySetObjectHandle(objectHandle);

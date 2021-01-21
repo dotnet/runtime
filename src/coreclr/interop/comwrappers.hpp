@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef _INTEROP_COMWRAPPERS_H_
-#define _INTEROP_COMWRAPPERS_H_
+#ifndef _INTEROP_COMWRAPPERS_HPP_
+#define _INTEROP_COMWRAPPERS_HPP_
 
 #include "platform.h"
 #include <interoplib.h>
+#include <interoplibabi.h>
 #include "referencetrackertypes.hpp"
 
 enum class CreateComInterfaceFlagsEx : int32_t
@@ -34,18 +35,19 @@ namespace ABI
 // Class for wrapping a managed object and projecting it in a non-managed environment
 class ManagedObjectWrapper
 {
-    friend constexpr size_t RefCountOffset();
+    friend constexpr size_t ManagedObjectWrapperRefCountOffset();
 public:
     Volatile<InteropLib::OBJECTHANDLE> Target;
 
 private:
+    LONGLONG _refCount;
+
     const int32_t _runtimeDefinedCount;
     const int32_t _userDefinedCount;
     const ABI::ComInterfaceEntry* _runtimeDefined;
     const ABI::ComInterfaceEntry* _userDefined;
     ABI::ComInterfaceDispatch* _dispatches;
 
-    LONGLONG _refCount;
     Volatile<CreateComInterfaceFlagsEx> _flags;
 
 public: // static
@@ -115,17 +117,16 @@ public: // Lifetime
     ULONG Release(void);
 };
 
-// The Target and _refCount fields are used by the DAC, any changes to the layout must be updated on the DAC side (request.cpp)
-static constexpr size_t DACTargetOffset = 0;
-static_assert(offsetof(ManagedObjectWrapper, Target) == DACTargetOffset, "Keep in sync with DAC interfaces");
-static constexpr size_t DACRefCountOffset = (4 * sizeof(intptr_t)) + (2 * sizeof(int32_t));
-static constexpr size_t RefCountOffset()
+static constexpr size_t ManagedObjectWrapperRefCountOffset()
 {
     // _refCount is a private field and offsetof won't let you look at private fields. To overcome
     // this RefCountOffset() is a friend function.
     return offsetof(ManagedObjectWrapper, _refCount);
 }
-static_assert(RefCountOffset() == DACRefCountOffset, "Keep in sync with DAC interfaces");
+
+// ABI contract used by the DAC.
+ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, ManagedObject));
+ABI_ASSERT(ManagedObjectWrapperRefCountOffset() == offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, RefCount));
 
 // ABI contract. This below offset is assumed in managed code.
 ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
@@ -269,4 +270,4 @@ struct ComHolder
         }
     }
 };
-#endif // _INTEROP_COMWRAPPERS_H_
+#endif // _INTEROP_COMWRAPPERS_HPP_

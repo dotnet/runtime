@@ -7,6 +7,16 @@
 
 #ifdef FEATURE_COMWRAPPERS
 
+namespace InteropLibInterface
+{
+    // Base definition of the external object context.
+    struct ExternalObjectContextBase
+    {
+        PTR_VOID Identity;
+        DWORD SyncBlockIndex;
+    };
+}
+
 // Native calls for the managed ComWrappers API
 class ComWrappersNative
 {
