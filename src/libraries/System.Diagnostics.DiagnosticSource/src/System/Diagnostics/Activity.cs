@@ -1667,7 +1667,7 @@ namespace System.Diagnostics
 
             Unsafe.WriteUnaligned(ref outBytes[0],  r.Next());
 
-            if (outBytes.Length >= 16)
+            if (outBytes.Length == 16)
             {
                 Unsafe.WriteUnaligned(ref outBytes[8],  r.Next());
             }

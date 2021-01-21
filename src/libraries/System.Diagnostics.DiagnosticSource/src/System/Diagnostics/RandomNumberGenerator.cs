@@ -4,7 +4,7 @@
 namespace System.Diagnostics
 {
     /// <summary>
-    /// RandomNumberGenerator implementation is the 64-bit random number generator based on the Xorshift algorithm (known as shift-register generators).
+    /// RandomNumberGenerator implementation is the 64-bit random number generator based on the Xoshiro256StarStar algorithm (known as shift-register generators).
     /// </summary>
     internal class RandomNumberGenerator
     {
