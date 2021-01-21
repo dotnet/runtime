@@ -111,8 +111,8 @@ message ("Looking for coreclr_static lib at location: '${CORECLR_STATIC_LIB_LOCA
 if(CLR_CMAKE_TARGET_WIN32)
     set(NATIVE_LIBS
         ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
-        ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native.lib
-        ${CORECLR_STATIC_LIB_LOCATION}/System.IO.Compression.Native.lib
+        ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native-Static.lib
+        ${CORECLR_STATIC_LIB_LOCATION}/System.IO.Compression.Native-Static.lib
         kernel32.lib
         advapi32.lib
         ole32.lib
