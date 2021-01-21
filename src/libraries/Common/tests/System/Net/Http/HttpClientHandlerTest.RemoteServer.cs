@@ -764,40 +764,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Theory]
-        [InlineData("12345678910", 0)]
-        [InlineData("12345678910", 5)]
-        public async Task SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(string stringContent, int startingPosition)
-        {
-            using (var handler = new HttpMessageInvoker(CreateHttpClientHandler()))
-            {
-                byte[] byteContent = Encoding.ASCII.GetBytes(stringContent);
-                var content = new MemoryStream();
-                content.Write(byteContent, 0, byteContent.Length);
-                content.Position = startingPosition;
-                var request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer) { Content = new StreamContent(content), Version = UseVersion };
-
-                for (int iter = 0; iter < 2; iter++)
-                {
-                    using (HttpResponseMessage response = await handler.SendAsync(TestAsync, request, CancellationToken.None))
-                    {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                        string responseContent = await response.Content.ReadAsStringAsync();
-
-                        Assert.Contains($"\"Content-Length\": \"{request.Content.Headers.ContentLength.Value}\"", responseContent);
-                        string bodyContent = System.Text.Json.JsonDocument.Parse(responseContent).RootElement.GetProperty("BodyContent").GetString();
-                        Assert.Contains(stringContent.Substring(startingPosition), bodyContent);
-                        if (startingPosition != 0)
-                        {
-                            Assert.DoesNotContain(stringContent.Substring(0, startingPosition), bodyContent);
-                        }
-                    }
-                }
-            }
-        }
-
-        [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(HttpMethodsThatDontAllowContent))]
         public async Task SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(
             string method,
@@ -828,6 +794,48 @@ namespace System.Net.Http.Functional.Tests
                         TestHelper.VerifyRequestMethod(response, method);
                         string responseContent = await response.Content.ReadAsStringAsync();
                         Assert.DoesNotContain(ExpectedContent, responseContent);
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success_MemberData()
+        {
+            foreach (var server in Configuration.Http.RemoteServers)
+            {
+                yield return new object[] { server, "12345678910", 0 };
+                yield return new object[] { server, "12345678910", 5 };
+            }
+        }
+
+
+        [OuterLoop("Uses external server")]
+        [Theory, MemberData(nameof(SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success_MemberData))]
+        public async Task SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(Configuration.Http.RemoteServer remoteServer, string stringContent, int startingPosition)
+        {
+            using (var handler = new HttpMessageInvoker(CreateHttpClientHandler()))
+            {
+                byte[] byteContent = Encoding.ASCII.GetBytes(stringContent);
+                var content = new MemoryStream();
+                content.Write(byteContent, 0, byteContent.Length);
+                content.Position = startingPosition;
+                var request = new HttpRequestMessage(HttpMethod.Post, remoteServer.EchoUri) { Content = new StreamContent(content), Version = UseVersion };
+
+                for (int iter = 0; iter < 2; iter++)
+                {
+                    using (HttpResponseMessage response = await handler.SendAsync(TestAsync, request, CancellationToken.None))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                        string responseContent = await response.Content.ReadAsStringAsync();
+
+                        Assert.Contains($"\"Content-Length\": \"{request.Content.Headers.ContentLength.Value}\"", responseContent);
+                        string bodyContent = System.Text.Json.JsonDocument.Parse(responseContent).RootElement.GetProperty("BodyContent").GetString();
+                        Assert.Contains(stringContent.Substring(startingPosition), bodyContent);
+                        if (startingPosition != 0)
+                        {
+                            Assert.DoesNotContain(stringContent.Substring(0, startingPosition), bodyContent);
+                        }
                     }
                 }
             }
