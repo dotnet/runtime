@@ -90,8 +90,15 @@ namespace System.Threading
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern IntPtr Exchange(ref IntPtr location1, IntPtr value);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
+        {
+            if (IntPtr.Size == 4)
+            {
+                return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value);
+            }
+            return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value);
+        }
 
         // The below whole method reduces to a single call to Exchange(ref object, object) but
         // the JIT thinks that it will generate more native code than it actually does.
@@ -162,8 +169,15 @@ namespace System.Threading
         /// <param name="comparand">The <see cref="IntPtr"/> that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
+        {
+            if (IntPtr.Size == 4)
+            {
+                return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
+            }
+            return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value, (long)comparand);
+        }
 
         // Note that getILIntrinsicImplementationForInterlocked() in vm\jitinterface.cpp replaces
         // the body of the following method with the the following IL:
