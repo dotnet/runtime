@@ -17,6 +17,7 @@ namespace System.Net.Sockets.Tests
 
         protected ReceiveMessageFrom(ITestOutputHelper output) : base(output) { }
 
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
