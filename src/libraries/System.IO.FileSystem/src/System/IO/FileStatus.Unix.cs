@@ -32,6 +32,10 @@ namespace System.IO
         // Is a directory as of the last refresh
         internal bool _isDirectory;
 
+        // Only call if Refresh has been successfully called at least once
+        private bool HasSymbolicLinkFlag =>
+            (_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+
         // We track intent of creation to know whether or not we want to (1) create a
         // DirectoryInfo around this status struct or (2) actually are part of a DirectoryInfo.
         internal bool InitiallyDirectory { get; private set; }
@@ -88,7 +92,7 @@ namespace System.IO
                 attributes |= FileAttributes.ReadOnly;
             }
 
-            if ((_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
+            if (HasSymbolicLinkFlag)
             {
                 attributes |= FileAttributes.ReparsePoint;
             }
@@ -199,6 +203,12 @@ namespace System.IO
                 (_mainCache.Mode & (int)writeBit) == 0);     // but not write permission
         }
 
+        internal bool IsSymbolicLink(ReadOnlySpan<char> path, bool continueOnError = false)
+        {
+            EnsureStatInitialized(path, continueOnError);
+            return HasSymbolicLinkFlag;
+        }
+
         internal void Refresh(ReadOnlySpan<char> path)
         {
             // This should not throw, instead we store the result so that we can throw it
@@ -220,14 +230,15 @@ namespace System.IO
             // IMPORTANT: Is directory logic must match the logic in FileSystemEntry
             _isDirectory = (_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
 
-            // If we're a symlink, attempt to check the target to see if it is a directory
-            if ((_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
+            // If lstat indicated the path is a symlink
+            if (HasSymbolicLinkFlag)
             {
                 if (!VerifyStatCall(Interop.Sys.Stat(path, out _secondaryCache), out _initializedSecondaryCache))
                 {
                     _exists = false;
                     return;
                 }
+                // attempt to check the target to see if it is a directory
                 _isDirectory = (_secondaryCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
 
