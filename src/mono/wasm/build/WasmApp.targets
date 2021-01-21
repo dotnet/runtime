@@ -271,6 +271,13 @@
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <RemoveDir Directories="$(WasmAppDir)" />
+    
+    <ItemGroup Condition="'$(WasmIncludeDefaultMarshalers)' != 'false'">
+      <WasmMarshaledType Include="System.Uri, System.Private.Uri" MarshalerType="System.Runtime.InteropServices.JavaScript.UriMarshaler,System.Private.Runtime.InteropServices.JavaScript" />
+      <WasmMarshaledType Include="System.DateTime, System.Private.CoreLib" MarshalerType="System.Runtime.InteropServices.JavaScript.DateTimeMarshaler,System.Private.Runtime.InteropServices.JavaScript" />
+      <WasmMarshaledType Include="System.DateTimeOffset, System.Private.CoreLib" MarshalerType="System.Runtime.InteropServices.JavaScript.DateTimeOffsetMarshaler,System.Private.Runtime.InteropServices.JavaScript" />
+    </ItemGroup>
+
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MainJS="$(WasmMainJSPath)"
@@ -283,7 +290,9 @@
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
-      DebugLevel="$(WasmDebugLevel)">
+      DebugLevel="$(WasmDebugLevel)"
+      MarshaledTypes="@(WasmMarshaledType)"
+      >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
 

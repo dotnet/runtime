@@ -46,18 +46,29 @@ public class WasmAppBuilder : Task
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
 
-    // <summary>
-    // Extra json elements to add to mono-config.json
-    //
-    // Metadata:
-    // - Value: can be a number, bool, quoted string, or json string
-    //
-    // Examples:
-    //      <WasmExtraConfig Include="enable_profiler" Value="true" />
-    //      <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
-    //      <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
-    //       <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
-    // </summary>
+    /// <summary>
+    /// A list of managed types along with their associated marshaler type
+    ///
+    /// Metadata:
+    /// - MarshalerType: the fully-qualified type name of the managed type marshaler for this type
+    ///
+    /// Examples:
+    ///     <WasmMarshaledType Include="System.Uri" MarshalerType="System.Runtime.InteropServices.JavaScript.UriMarshaler" />
+    /// </summary>
+    public ITaskItem[]? MarshaledTypes { get; set; }
+
+    /// <summary>
+    /// Extra json elements to add to mono-config.json
+    ///
+    /// Metadata:
+    /// - Value: can be a number, bool, quoted string, or json string
+    ///
+    /// Examples:
+    ///      <WasmExtraConfig Include="enable_profiler" Value="true" />
+    ///      <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
+    ///      <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
+    ///      <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
+    /// </summary>
     public ITaskItem[]? ExtraConfig { get; set; }
 
     private sealed class WasmAppConfig
@@ -70,6 +81,8 @@ public class WasmAppBuilder : Task
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remote_sources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
+        [JsonPropertyName("custom_marshalers")]
+        public Dictionary<string, string?> CustomMarshalers { get; set; } = new();
         [JsonExtensionData]
         public Dictionary<string, object?> Extra { get; set; } = new();
     }
@@ -271,6 +284,12 @@ public class WasmAppBuilder : Task
             foreach (var source in RemoteSources)
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
+        }
+
+        if (MarshaledTypes?.Length > 0)
+        {
+            foreach (var mt in MarshaledTypes)
+                config.CustomMarshalers.Add(mt.ItemSpec, mt.GetMetadata("MarshalerType"));
         }
 
         foreach (ITaskItem extra in ExtraConfig ?? Enumerable.Empty<ITaskItem>())

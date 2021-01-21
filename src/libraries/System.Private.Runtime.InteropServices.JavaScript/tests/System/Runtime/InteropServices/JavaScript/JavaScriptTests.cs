@@ -464,7 +464,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             var obj = (JSObject)factory.Call(null, date);
             var dummy = (DateTime)obj.GetObjectProperty("dummy");
-            Assert.Equal(date, dummy);
+            // HACK: JS Dates do not contain timezone information, so date marshaling converts all dates to
+            //  UTC dates.
+            Assert.Equal(date.ToUniversalTime(), dummy.ToUniversalTime());
         }
 
         [Fact]

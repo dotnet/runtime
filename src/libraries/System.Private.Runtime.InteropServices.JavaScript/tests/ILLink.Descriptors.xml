@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Private.Runtime.InteropServices.JavaScript.Tests">
+    <type fullname="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomClassMarshaler" />
+    <type fullname="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomStructMarshaler" />
+    <type fullname="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomDateMarshaler" />
+    <type fullname="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomVector3Marshaler" />
+  </assembly>
+</linker>

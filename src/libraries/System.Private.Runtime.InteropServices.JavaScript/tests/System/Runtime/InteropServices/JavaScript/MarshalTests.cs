@@ -69,7 +69,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 for (var i = 0; i < int32View.length; i++) {
                     int32View[i] = i * 2;
                 }
-                App.call_test_method (""MarshalByteBufferToInts"", [ buffer ]);		
+                App.call_test_method (""MarshalByteBufferToInts"", [ buffer ]);
             ");
 
             Assert.Equal(4, HelperMarshal._intBuffer.Length);
@@ -344,7 +344,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
                 var obj = {myInt: 100, myDouble: 4.5, myString: ""Hic Sunt Dracones"", myBoolean: true};
-                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
 
             Assert.Equal(100, HelperMarshal._jsProperties[0]);
@@ -358,8 +358,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
                 var obj = {myInt: 200, myDouble: 0, myString: ""foo"", myBoolean: false};
-                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);		
-                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
 
             Assert.Equal(100, HelperMarshal._jsProperties[0]);
@@ -374,8 +374,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             // This test will not create the properties if they do not already exist
             Runtime.InvokeJS(@"
                 var obj = {myInt: 200};
-                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);		
-                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
 
             Assert.Equal(100, HelperMarshal._jsProperties[0]);
@@ -387,7 +387,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void SetObjectPropertiesIfNotExistsTrue()
         {
-            // This test will set the value of the property if it exists and will create and 
+            // This test will set the value of the property if it exists and will create and
             // set the value if it does not exists
             Runtime.InvokeJS(@"
                 var obj = {myInt: 200};
@@ -407,7 +407,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(@"
                 var buffer = new ArrayBuffer(16);
                 var uint8View = new Uint8Array(buffer);
-                App.call_test_method (""MarshalByteBuffer"", [ uint8View ]);		
+                App.call_test_method (""MarshalByteBuffer"", [ uint8View ]);
             ");
 
             Assert.Equal(16, HelperMarshal._byteBuffer.Length);
@@ -437,7 +437,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
                 var typedArray = new Float32Array([1, 2.1334, 3, 4.2, 5]);
-                App.call_test_method (""MarshalFloat32Array"", [ typedArray ]);		
+                App.call_test_method (""MarshalFloat32Array"", [ typedArray ]);
             ");
 
             Assert.Equal(1, HelperMarshal._floatBuffer[0]);
@@ -456,7 +456,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 for (var i = 0; i < float32View.length; i++) {
                     float32View[i] = i * 2.5;
                 }
-                App.call_test_method (""MarshalArrayBufferToFloat32Array"", [ buffer ]);		
+                App.call_test_method (""MarshalArrayBufferToFloat32Array"", [ buffer ]);
             ");
 
             Assert.Equal(4, HelperMarshal._floatBuffer.Length);
@@ -471,7 +471,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
 			var typedArray = new Float64Array([1, 2.1334, 3, 4.2, 5]);
-			App.call_test_method (""MarshalFloat64Array"", [ typedArray ]);		
+			App.call_test_method (""MarshalFloat64Array"", [ typedArray ]);
 		");
 
             Assert.Equal(1, HelperMarshal._doubleBuffer[0]);
@@ -490,7 +490,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 for (var i = 0; i < float64View.length; i++) {
                     float64View[i] = i * 2.5;
                 }
-                App.call_test_method (""MarshalByteBufferToDoubles"", [ buffer ]);		
+                App.call_test_method (""MarshalByteBufferToDoubles"", [ buffer ]);
             ");
 
             Assert.Equal(4, HelperMarshal._doubleBuffer.Length);
@@ -509,7 +509,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 for (var i = 0; i < float64View.length; i++) {
                     float64View[i] = i * 2.5;
                 }
-                App.call_test_method (""MarshalArrayBufferToFloat64Array"", [ buffer ]);		
+                App.call_test_method (""MarshalArrayBufferToFloat64Array"", [ buffer ]);
             ");
 
             Assert.Equal(4, HelperMarshal._doubleBuffer.Length);
@@ -621,7 +621,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
             Assert.Equal(2, HelperMarshal._minValue);
         }
-        
+
         [Fact]
         public static void BoundStaticMethodMissingArgs()
         {
@@ -636,7 +636,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
             Assert.Equal(0, HelperMarshal._intValue);
         }
-        
+
         [Fact]
         public static void BoundStaticMethodExtraArgs()
         {
@@ -647,7 +647,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
             Assert.Equal(200, HelperMarshal._intValue);
         }
-        
+
         [Fact]
         public static void BoundStaticMethodArgumentTypeCoercion()
         {
@@ -667,7 +667,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
             Assert.Equal(400, HelperMarshal._intValue);
         }
-        
+
         [Fact]
         public static void BoundStaticMethodUnpleasantArgumentTypeCoercion()
         {
@@ -697,7 +697,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             Assert.Equal(0xFFFFFFFEu, HelperMarshal._uintValue);
         }
-        
+
         [Fact]
         public static void ReturnUintEnum ()
         {
@@ -711,7 +711,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
             Assert.Equal((uint)TestEnum.BigValue, HelperMarshal._uintValue);
         }
-        
+
         [Fact]
         public static void PassUintEnumByValue ()
         {
@@ -722,7 +722,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
             Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
         }
-        
+
         [Fact]
         public static void PassUintEnumByValueMasqueradingAsInt ()
         {
@@ -735,12 +735,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
             Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
         }
-        
+
         [Fact]
         public static void PassUintEnumByNameIsNotImplemented ()
         {
             HelperMarshal._enumValue = TestEnum.Zero;
-            var exc = Assert.Throws<JSException>( () => 
+            var exc = Assert.Throws<JSException>( () =>
                 Runtime.InvokeJS(@$"
                     var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
                     set_enum (""BigValue"");
@@ -748,11 +748,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             );
             Assert.StartsWith("Error: Expected numeric value for enum argument, got 'BigValue'", exc.Message);
         }
-        
+
         [Fact]
         public static void CannotUnboxUint64 ()
         {
-            var exc = Assert.Throws<JSException>( () => 
+            var exc = Assert.Throws<JSException>( () =>
                 Runtime.InvokeJS(@$"
                     var get_u64 = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetUInt64"", """");
                     var u64 = get_u64();
@@ -860,6 +860,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
         }
 
+        const string ExpectedDateString = "1937-07-02T05:35:02.0000000Z";
+        static readonly DateTime ExpectedDateTime = DateTime.Parse(ExpectedDateString).ToUniversalTime();
+
         [Fact]
         public static void InternedStringReturnValuesWork()
         {
@@ -902,15 +905,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Null(result);
         }
 
-        private static async Task<bool> MarshalTask(string helperMethodName, string helperMethodArgs = "", string resolvedBody = "") 
+        private static async Task<bool> MarshalTask(string helperMethodName, string helperMethodArgs = "", string resolvedBody = "")
         {
             Runtime.InvokeJS(
                 @"globalThis.__test_promise_completed = false; " +
                 @"globalThis.__test_promise_resolved = false; " +
                 @"globalThis.__test_promise_failed = false; " +
                 $@"var t = App.call_test_method ('{helperMethodName}', [ {helperMethodArgs} ], 'i'); " +
-                "t.finally(result => { globalThis.__test_promise_completed = true; }); " + 
-                "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " }); " + 
+                "t.finally(result => { globalThis.__test_promise_completed = true; }); " +
+                "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " }); " +
                 "t.catch(e => { globalThis.__test_promise_failed = true; }); "
             );
 
@@ -1017,6 +1020,182 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             bool success = await MarshalTask("FailedAsynchronousValueTask");
             Assert.False(success, "FailedAsynchronousValueTask didn't failed.");
+        }
+
+        [Fact]
+        public static void MarshalDateTime()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                "App.call_test_method ('InvokeDateTime', [ dt ], 'o');"
+            );
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
+
+        [Fact]
+        public static void MarshalDateTimeDefault()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                "App.call_test_method ('InvokeDateTime', [ dt ]);"
+            );
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
+
+        [Fact]
+        public static void MarshalDateTimeAutomatic()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                "App.call_test_method ('InvokeDateTime', [ dt ], 'a');"
+            );
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
+
+        [Fact]
+        public static void MarshalDateTimeOffsetAutomatic()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                "App.call_test_method ('InvokeDateTimeOffset', [ dt ], 'a');"
+            );
+            // FIXME
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
+
+        [Fact]
+        public static void MarshalDateTimeByValueAutomatic()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                "App.call_test_method ('InvokeDateTimeByValue', [ dt.valueOf() ], 'a');"
+            );
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
+
+        [Fact]
+        public static void MarshalUri()
+        {
+            var expected = new System.Uri("https://www.example.com/");
+            HelperMarshal._uriValue = default(System.Uri);
+            Runtime.InvokeJS(
+                @"var uri = 'https://www.example.com/';
+                App.call_test_method ('InvokeUri', [ uri ], 'u');"
+            );
+            Assert.Equal(expected, HelperMarshal._uriValue);
+        }
+
+        [Fact]
+        public static void MarshalCustomClassAutomatic()
+        {
+            HelperMarshal._ccValue = new HelperMarshal.CustomClass ();
+            Runtime.InvokeJS(
+                "App.call_test_method ('InvokeCustomClass', [ 4.13 ], 'a');"
+            );
+            Assert.Equal(4.13, HelperMarshal._ccValue?.D);
+        }
+
+        [Fact]
+        public static void MarshalCustomStructAutomatic()
+        {
+            HelperMarshal._csValue = default(HelperMarshal.CustomStruct);
+            Runtime.InvokeJS(
+                "App.call_test_method ('InvokeCustomStruct', [ 4.13 ], 'a');"
+            );
+            Assert.Equal(4.13, HelperMarshal._csValue.D);
+        }
+
+        [Fact]
+        public static void MarshalCustomDateAutomatic()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                "App.call_test_method ('InvokeCustomDate', [ dt ], 'a');"
+            );
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
+
+        [Fact]
+        public static void ReturnCustomClass()
+        {
+            HelperMarshal._ccValue = new HelperMarshal.CustomClass ();
+            Runtime.InvokeJS(
+                "var cc = App.call_test_method ('ReturnCustomClass', [ 4.13 ], 'a');" +
+                "App.call_test_method ('InvokeCustomClass', [ cc ], 'a');"
+            );
+            Assert.Equal(4.13, HelperMarshal._ccValue?.D);
+        }
+
+        [Fact]
+        public static void ReturnCustomStruct()
+        {
+            HelperMarshal._csValue = default(HelperMarshal.CustomStruct);
+            Runtime.InvokeJS(
+                "var cs = App.call_test_method ('ReturnCustomStruct', [ 4.13 ], 'a');" +
+                "App.call_test_method ('InvokeCustomStruct', [ cs ], 'a');"
+            );
+            Assert.Equal(4.13, HelperMarshal._csValue.D);
+        }
+
+        [Fact]
+        public static void ReturnCustomDate()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                "var cd = App.call_test_method ('ReturnCustomDate', [ dt ], 'a');" +
+                "App.call_test_method ('InvokeCustomDate', [ cd ], 'a');"
+            );
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
+
+        [Fact]
+        public static void InvokeCustomVector3()
+        {
+            HelperMarshal._vec3Value = default(HelperMarshal.CustomVector3);
+            Runtime.InvokeJS(
+                "App.call_test_method ('InvokeCustomVector3', [ [1, 2.5, 4] ], 'a');"
+            );
+            Assert.Equal(1, HelperMarshal._vec3Value.X);
+            Assert.Equal(2.5, HelperMarshal._vec3Value.Y);
+            Assert.Equal(4, HelperMarshal._vec3Value.Z);
+        }
+
+        [Fact]
+        public static void ReturnCustomVector3()
+        {
+            HelperMarshal._vec3Value = default(HelperMarshal.CustomVector3);
+            Runtime.InvokeJS(
+                "var cv3 = App.call_test_method ('ReturnCustomVector3', [ [1, 2.5, 4] ], 'a');" +
+                "App.call_test_method ('InvokeCustomVector3', [ cv3 ], 'a');"
+            );
+            Assert.Equal(1, HelperMarshal._vec3Value.X);
+            Assert.Equal(2.5, HelperMarshal._vec3Value.Y);
+            Assert.Equal(4, HelperMarshal._vec3Value.Z);
+        }
+
+        [Fact]
+        public static void AddCustomVector3()
+        {
+            HelperMarshal._stringResource = null;
+            HelperMarshal._vec3Value = default(HelperMarshal.CustomVector3);
+            Runtime.InvokeJS(
+                "var cva = App.call_test_method ('MakeCustomVector3', [1, 2.5, 4], 'aaa');" +
+                "var cvb = App.call_test_method ('MakeCustomVector3', [4, 3, 2], 'aaa');" +
+                "var res = App.call_test_method ('AddCustomVector3', [ cva, cvb ], 'aa');" +
+                "App.call_test_method ('InvokeCustomVector3', [ res ], 'a');" +
+                "App.call_test_method ('InvokeString', [ String(res) ], 'a');"
+            );
+            Assert.Equal("5,5.5,6", HelperMarshal._stringResource);
+            Assert.Equal(5, HelperMarshal._vec3Value.X);
+            Assert.Equal(5.5, HelperMarshal._vec3Value.Y);
+            Assert.Equal(6, HelperMarshal._vec3Value.Z);
         }
     }
 }

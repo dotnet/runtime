@@ -5,7 +5,7 @@ import { mono_wasm_new_root, WasmRoot } from "./roots";
 import {
     GCHandle, JSHandleDisposed, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
-    MonoType, MonoTypeNull
+    MonoType, MonoTypeNull, MarshalType, MarshalError
 } from "./types";
 import { runtimeHelpers } from "./imports";
 import { conv_string } from "./strings";
@@ -16,50 +16,7 @@ import { mono_method_get_call_signature, call_method, wrap_error } from "./metho
 import { _js_to_mono_obj } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
 import { getU32, getI32, getF32, getF64 } from "./memory";
-import { Int32Ptr, VoidPtr } from "./types/emscripten";
-
-// see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
-export enum MarshalType {
-    NULL = 0,
-    INT = 1,
-    FP64 = 2,
-    STRING = 3,
-    VT = 4,
-    DELEGATE = 5,
-    TASK = 6,
-    OBJECT = 7,
-    BOOL = 8,
-    ENUM = 9,
-    URI = 22,
-    SAFEHANDLE = 23,
-    ARRAY_BYTE = 10,
-    ARRAY_UBYTE = 11,
-    ARRAY_UBYTE_C = 12,
-    ARRAY_SHORT = 13,
-    ARRAY_USHORT = 14,
-    ARRAY_INT = 15,
-    ARRAY_UINT = 16,
-    ARRAY_FLOAT = 17,
-    ARRAY_DOUBLE = 18,
-    FP32 = 24,
-    UINT32 = 25,
-    INT64 = 26,
-    UINT64 = 27,
-    CHAR = 28,
-    STRING_INTERNED = 29,
-    VOID = 30,
-    ENUM64 = 31,
-    POINTER = 32
-}
-
-// see src/mono/wasm/driver.c MARSHAL_ERROR_xxx and Runtime.cs
-export enum MarshalError {
-    BUFFER_TOO_SMALL = 512,
-    NULL_CLASS_POINTER = 513,
-    NULL_TYPE_POINTER = 514,
-    UNSUPPORTED_TYPE = 515,
-    FIRST = BUFFER_TOO_SMALL
-}
+import { extract_js_obj_root_with_converter, extract_js_obj_root_with_possible_converter } from "./custom-marshaler";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
@@ -84,8 +41,7 @@ function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
     return js_obj;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<any>, type: MarshalType, typePtr: MonoType, unbox_buffer: VoidPtr): any {
+function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<any>, type: MarshalType, typePtr: MonoType, unbox_buffer: VoidPtr) : any {
     //See MARSHAL_TYPE_ defines in driver.c
     switch (type) {
         case MarshalType.INT64:
@@ -96,13 +52,13 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.STRING_INTERNED:
             return conv_string(root.value);
         case MarshalType.VT:
-            throw new Error("no idea on how to unbox value types");
+            return extract_js_obj_root_with_converter (root, typePtr, unbox_buffer);
         case MarshalType.DELEGATE:
             return _wrap_delegate_root_as_function(root);
         case MarshalType.TASK:
             return _unbox_task_root_as_promise(root);
         case MarshalType.OBJECT:
-            return _unbox_ref_type_root_as_js_object(root);
+            return extract_js_obj_root_with_possible_converter (root, typePtr, unbox_buffer);
         case MarshalType.ARRAY_BYTE:
         case MarshalType.ARRAY_UBYTE:
         case MarshalType.ARRAY_UBYTE_C:
@@ -114,9 +70,8 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.ARRAY_DOUBLE:
             throw new Error("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
         case <MarshalType>20: // clr .NET DateTime
-            return new Date(corebindings._get_date_value(root.value));
         case <MarshalType>21: // clr .NET DateTimeOffset
-            return corebindings._object_to_string(root.value);
+            throw new Error("Deprecated type (DATETIME / DATETIMEOFFSET)");
         case MarshalType.URI:
             return corebindings._object_to_string(root.value);
         case MarshalType.SAFEHANDLE:
@@ -128,7 +83,7 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
     }
 }
 
-export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr): any {
+export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr) : any {
     if (type >= MarshalError.FIRST)
         throw new Error(`Got marshaling error ${type} when attempting to unbox object at address ${root.value} (root located at ${root.get_address()})`);
 
@@ -142,7 +97,7 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
     return _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root, type, typePtr, unbox_buffer);
 }
 
-export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
+export function _unbox_mono_obj_root(root: WasmRoot<any>) : any {
     if (root.value === 0)
         return undefined;
 

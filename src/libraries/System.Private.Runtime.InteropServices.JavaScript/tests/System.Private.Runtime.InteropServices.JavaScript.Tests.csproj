@@ -4,7 +4,19 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
+    <ILLinkDescriptorsXml>ILLink.Descriptors.xml</ILLinkDescriptorsXml>
+    <ILLinkDescriptorsLibraryBuildXml>ILLink.Descriptors.xml</ILLinkDescriptorsLibraryBuildXml>
   </PropertyGroup>
+  <ItemGroup>
+    <WasmMarshaledType Include="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomClass"
+      MarshalerType="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomClassMarshaler" />
+    <WasmMarshaledType Include="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomStruct"
+      MarshalerType="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomStructMarshaler" />
+    <WasmMarshaledType Include="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomDate"
+      MarshalerType="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomDateMarshaler" />
+    <WasmMarshaledType Include="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomVector3"
+      MarshalerType="System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal+CustomVector3Marshaler" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />

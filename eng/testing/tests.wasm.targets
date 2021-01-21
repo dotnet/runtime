@@ -150,6 +150,11 @@
       <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
       <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
 
+      <!-- the custom marshaler support requires the .csproj to include a list of custom marshalers and types
+          that will get included in the generated mono-config so that the runtime knows about them. Without this
+          any application or test relying on custom marshalers will break -->
+      <_WasmItemsToPass Include="@(WasmMarshaledType)" OriginalItemName__="WasmMarshaledType" />
+      
       <!-- Example of passing items to the project
 
           <_WasmItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />

@@ -67,7 +67,9 @@ mono_class_try_get_generic_class (MonoClass *klass)
 guint32
 mono_class_get_flags (MonoClass *klass)
 {
-	switch (m_class_get_class_kind (klass)) {
+	g_assert (klass);
+	guint32 kind = m_class_get_class_kind (klass);
+	switch (kind) {
 	case MONO_CLASS_DEF:
 	case MONO_CLASS_GTD:
 		return m_classdef_get_flags ((MonoClassDef*)klass);

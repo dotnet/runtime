@@ -13,7 +13,8 @@ import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from "./js-to-cs";
 import {
     ArgsMarshalString, mono_bind_method,
-    Converter, _compile_converter_for_marshal_string,
+    SignatureConverter, TypeConverter,
+    _compile_converter_for_marshal_string,
     _decide_if_result_is_marshaled, find_method,
     BoundMethodToken
 } from "./method-binding";
@@ -37,7 +38,7 @@ function _verify_args_for_method_call(args_marshal: ArgsMarshalString, args: any
     return has_args_marshal && has_args;
 }
 
-export function _get_buffer_for_method_call(converter: Converter, token: BoundMethodToken | null): VoidPtr | undefined {
+export function _get_buffer_for_method_call(converter: SignatureConverter, token: BoundMethodToken | null): VoidPtr | undefined {
     if (!converter)
         return VoidPtrNull;
 
@@ -52,7 +53,7 @@ export function _get_buffer_for_method_call(converter: Converter, token: BoundMe
     return result;
 }
 
-export function _get_args_root_buffer_for_method_call(converter: Converter, token: BoundMethodToken | null): WasmRootBuffer | undefined {
+export function _get_args_root_buffer_for_method_call(converter: SignatureConverter, token: BoundMethodToken | null): WasmRootBuffer | undefined {
     if (!converter)
         return undefined;
 
@@ -73,7 +74,7 @@ export function _get_args_root_buffer_for_method_call(converter: Converter, toke
         //  mono_wasm_new_root_buffer_from_pointer instead. Not that important
         //  at present because the scratch buffer will be reused unless we are
         //  recursing through a re-entrant call
-        result = mono_wasm_new_root_buffer(converter.steps.length);
+        result = mono_wasm_new_root_buffer(<number>converter.root_buffer_size);
         // FIXME
         (<any>result).converter = converter;
     }
@@ -82,7 +83,7 @@ export function _get_args_root_buffer_for_method_call(converter: Converter, toke
 }
 
 function _release_args_root_buffer_from_method_call(
-    converter?: Converter, token?: BoundMethodToken | null, argsRootBuffer?: WasmRootBuffer
+    converter?: SignatureConverter, token?: BoundMethodToken | null, argsRootBuffer?: WasmRootBuffer
 ) {
     if (!argsRootBuffer || !converter)
         return;
@@ -100,7 +101,7 @@ function _release_args_root_buffer_from_method_call(
 }
 
 function _release_buffer_from_method_call(
-    converter: Converter | undefined, token?: BoundMethodToken | null, buffer?: VoidPtr
+    converter: SignatureConverter | undefined, token?: BoundMethodToken | null, buffer?: VoidPtr
 ) {
     if (!converter || !buffer)
         return;
@@ -113,7 +114,7 @@ function _release_buffer_from_method_call(
         Module._free(buffer);
 }
 
-function _convert_exception_for_method_call(result: MonoString, exception: MonoObject) {
+export function _convert_exception_for_method_call(result: MonoString, exception: MonoObject) {
     if (exception === MonoObjectNull)
         return null;
 
@@ -160,7 +161,12 @@ export function call_method(method: MonoMethod, this_arg: MonoObject | undefined
 
     // check if the method signature needs argument mashalling
     if (needs_converter) {
-        converter = _compile_converter_for_marshal_string(args_marshal);
+        const classPtr = cwraps.mono_wasm_get_class_for_bind_or_invoke(this_arg, method);
+        if (!classPtr)
+            throw new Error (`Could not get class ptr for call_method with this (${this_arg}) and method (${method})`);
+
+        const typePtr = cwraps.mono_wasm_class_get_type(classPtr);
+        converter = _compile_converter_for_marshal_string(typePtr, method, args_marshal);
 
         is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);
 
@@ -175,11 +181,11 @@ export function call_method(method: MonoMethod, this_arg: MonoObject | undefined
 
 
 export function _handle_exception_for_call(
-    converter: Converter | undefined, token: BoundMethodToken | null,
-    buffer: VoidPtr, resultRoot: WasmRoot<MonoString>,
+    converter: SignatureConverter | undefined, token: BoundMethodToken | null,
+    buffer: VoidPtr, resultRoot: WasmRoot<MonoObject>,
     exceptionRoot: WasmRoot<MonoObject>, argsRootBuffer?: WasmRootBuffer
 ): void {
-    const exc = _convert_exception_for_method_call(resultRoot.value, exceptionRoot.value);
+    const exc = _convert_exception_for_method_call(<MonoString>resultRoot.value, exceptionRoot.value);
     if (!exc)
         return;
 
@@ -188,8 +194,8 @@ export function _handle_exception_for_call(
 }
 
 function _handle_exception_and_produce_result_for_call(
-    converter: Converter | undefined, token: BoundMethodToken | null,
-    buffer: VoidPtr, resultRoot: WasmRoot<MonoString>,
+    converter: SignatureConverter | undefined, token: BoundMethodToken | null,
+    buffer: VoidPtr, resultRoot: WasmRoot<MonoObject>,
     exceptionRoot: WasmRoot<MonoObject>, argsRootBuffer: WasmRootBuffer | undefined,
     is_result_marshaled: boolean
 ): any {
@@ -205,7 +211,7 @@ function _handle_exception_and_produce_result_for_call(
 }
 
 export function _teardown_after_call(
-    converter: Converter | undefined, token: BoundMethodToken | null,
+    converter: SignatureConverter | undefined, token: BoundMethodToken | null,
     buffer: VoidPtr, resultRoot: WasmRoot<any>,
     exceptionRoot: WasmRoot<any>, argsRootBuffer?: WasmRootBuffer
 ): void {
@@ -230,11 +236,11 @@ export function _teardown_after_call(
 }
 
 function _call_method_with_converted_args(
-    method: MonoMethod, this_arg: MonoObject, converter: Converter | undefined,
+    method: MonoMethod, this_arg: MonoObject, converter: SignatureConverter | undefined,
     token: BoundMethodToken | null, buffer: VoidPtr,
     is_result_marshaled: boolean, argsRootBuffer?: WasmRootBuffer
 ): any {
-    const resultRoot = mono_wasm_new_root<MonoString>(), exceptionRoot = mono_wasm_new_root<MonoObject>();
+    const resultRoot = mono_wasm_new_root<MonoObject>(), exceptionRoot = mono_wasm_new_root<MonoObject>();
     resultRoot.value = <any>cwraps.mono_wasm_invoke_method(method, this_arg, buffer, <any>exceptionRoot.get_address());
     return _handle_exception_and_produce_result_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 }

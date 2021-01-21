@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="Common\Interop\Browser\Interop.Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Codegen.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.CS.Owned.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Runtime.JS.Owned.cs" />
@@ -31,6 +32,9 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\HostObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Function.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.References.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\DateTimeMarshaler.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\DateTimeOffsetMarshaler.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\UriMarshaler.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

@@ -57,6 +57,7 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_type_get_class", "number", ["number"]],
     ["mono_wasm_get_type_name", "string", ["number"]],
     ["mono_wasm_get_type_aqn", "string", ["number"]],
+    ["mono_wasm_get_class_for_bind_or_invoke", "number", ["number", "number"]],
     ["mono_wasm_unbox_rooted", "number", ["number"]],
 
     //DOTNET
@@ -97,7 +98,7 @@ export interface t_Cwraps {
     mono_wasm_find_corlib_type(namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_type(assembly: MonoAssembly, namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_method(klass: MonoClass, name: string, args: number): MonoMethod;
-    mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: MonoObject): MonoObject;
+    mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: NativePointer): MonoObject;
     mono_wasm_string_get_utf8(str: MonoString): CharPtr;
     mono_wasm_string_from_utf16(str: CharPtr, len: number): MonoString;
     mono_wasm_get_obj_type(str: MonoObject): number;
@@ -117,6 +118,7 @@ export interface t_Cwraps {
     mono_wasm_type_get_class(ty: MonoType): MonoClass;
     mono_wasm_get_type_name(ty: MonoType): string;
     mono_wasm_get_type_aqn(ty: MonoType): string;
+    mono_wasm_get_class_for_bind_or_invoke(this_arg: MonoObject, method: MonoMethod): MonoClass;
     mono_wasm_unbox_rooted(obj: MonoObject): VoidPtr;
 
     //DOTNET
