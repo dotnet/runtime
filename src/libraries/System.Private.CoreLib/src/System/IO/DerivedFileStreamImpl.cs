@@ -119,7 +119,7 @@ namespace System.IO
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => _fileStream.BaseWriteAsync(buffer, cancellationToken);
 
-        public override void Flush() => _impl.Flush();
+        public override void Flush() => throw new InvalidOperationException("FileStream should never call this method.");
 
         internal override void Flush(bool flushToDisk) => _impl.Flush(flushToDisk);
 

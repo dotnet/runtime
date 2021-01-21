@@ -277,11 +277,8 @@ namespace System.IO
             return WriteAsyncInternal(buffer, cancellationToken);
         }
 
-        public override void Flush()
-        {
-            // Make sure that we call through the public virtual API
-            Flush(flushToDisk: false);
-        }
+        // this method might call Derived type implenentation of Flush(flushToDisk)
+        public override void Flush() => _fileStream.Flush();
 
         internal override void Flush(bool flushToDisk)
         {
