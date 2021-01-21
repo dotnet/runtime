@@ -53,7 +53,12 @@ namespace System.IO
         public override int ReadByte() => _impl.ReadByte();
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => _impl.BeginRead(buffer, offset, count, callback, state);
+            => _impl.IsAsync
+                ? _impl.BeginRead(buffer, offset, count, callback, state)
+                : _fileStream.BaseBeginRead(buffer, offset, count, callback, state);
+
+        public override int EndRead(IAsyncResult asyncResult)
+            => _impl.IsAsync ? _impl.EndRead(asyncResult) : _fileStream.BaseEndRead(asyncResult);
 
         public override int Read(byte[] buffer, int offset, int count) => _impl.Read(buffer, offset, count);
 
@@ -79,7 +84,21 @@ namespace System.IO
             => _fileStream.BaseReadAsync(buffer, cancellationToken);
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => _impl.BeginRead(buffer, offset, count, callback, state);
+            => _impl.IsAsync
+                ? _impl.BeginWrite(buffer, offset, count, callback, state)
+                : _fileStream.BaseBeginWrite(buffer, offset, count, callback, state);
+
+        public override void EndWrite(IAsyncResult asyncResult)
+        {
+            if (_impl.IsAsync)
+            {
+                _impl.EndWrite(asyncResult);
+            }
+            else
+            {
+                _fileStream.BaseEndWrite(asyncResult);
+            }
+        }
 
         public override void WriteByte(byte value) => _impl.WriteByte(value);
 

@@ -527,12 +527,34 @@ namespace System.IO
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            return TaskToApm.Begin(ReadAsyncTask(buffer, offset, count, CancellationToken.None), callback, state);
+            if (!_useAsyncIO)
+                return base.BeginRead(buffer, offset, count, callback, state);
+            else
+                return TaskToApm.Begin(ReadAsyncTask(buffer, offset, count, CancellationToken.None), callback, state);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask(), callback, state);
+            if (!_useAsyncIO)
+                return base.BeginWrite(buffer, offset, count, callback, state);
+            else
+                return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask(), callback, state);
+        }
+
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            if (!_useAsyncIO)
+                return base.EndRead(asyncResult);
+            else
+                return TaskToApm.End<int>(asyncResult);
+        }
+
+        public override void EndWrite(IAsyncResult asyncResult)
+        {
+            if (!_useAsyncIO)
+                base.EndWrite(asyncResult);
+            else
+                TaskToApm.End(asyncResult);
         }
     }
 }

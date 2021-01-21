@@ -471,11 +471,21 @@ namespace System.IO
             if (_impl.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
             if (!_impl.CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-            if (!_impl.IsAsync)
-                return base.BeginRead(buffer, offset, count, callback, state);
-            else
-                return _impl.BeginRead(buffer, offset, count, callback, state);
+            return _impl.BeginRead(buffer, offset, count, callback, state);
         }
+
+        internal IAsyncResult BaseBeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+            => base.BeginRead(buffer, offset, count, callback, state);
+
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            if (asyncResult == null)
+                throw new ArgumentNullException(nameof(asyncResult));
+
+            return _impl.EndRead(asyncResult);
+        }
+
+        internal int BaseEndRead(IAsyncResult asyncResult) => base.EndRead(asyncResult);
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
@@ -483,38 +493,24 @@ namespace System.IO
             if (_impl.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
             if (!_impl.CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
-            if (!_impl.IsAsync)
-                return base.BeginWrite(buffer, offset, count, callback, state);
-            else
-                return _impl.BeginWrite(buffer, offset, count, callback, state);
+            return _impl.BeginWrite(buffer, offset, count, callback, state);
         }
 
-        public override int EndRead(IAsyncResult asyncResult)
-        {
-            if (asyncResult == null)
-                throw new ArgumentNullException(nameof(asyncResult));
-
-            if (!_impl.IsAsync)
-                return base.EndRead(asyncResult);
-            else
-                return TaskToApm.End<int>(asyncResult);
-        }
+        internal IAsyncResult BaseBeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+            => base.BeginWrite(buffer, offset, count, callback, state);
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            if (!_impl.IsAsync)
-                base.EndWrite(asyncResult);
-            else
-                TaskToApm.End(asyncResult);
+            _impl.EndWrite(asyncResult);
         }
+
+        internal void BaseEndWrite(IAsyncResult asyncResult) => base.EndWrite(asyncResult);
 
         public override bool CanSeek => _impl.CanSeek;
 
         public override long Seek(long offset, SeekOrigin origin) => _impl.Seek(offset, origin);
-
-
     }
 }
