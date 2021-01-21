@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, GCHandle, MonoObject } from "./types";
+import { JSHandle, GCHandle, MonoObject, MonoType, MonoMethod } from "./types";
 import { PromiseControl } from "./cancelable-promise";
 import { runtimeHelpers } from "./imports";
 
-const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMarshalString*/][] = [
+const fn_signatures: [jsname: string, csname: string, signature: string][] = [
     ["_get_cs_owned_object_by_js_handle", "GetCSOwnedObjectByJSHandle", "ii!"],
     ["_get_cs_owned_object_js_handle", "GetCSOwnedObjectJSHandle", "mi"],
     ["_try_get_cs_owned_object_js_handle", "TryGetCSOwnedObjectJSHandle", "mi"],
@@ -23,10 +23,10 @@ const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMar
     ["_setup_js_cont", "SetupJSContinuation", "mo"],
 
     ["_object_to_string", "ObjectToString", "m"],
-    ["_get_date_value", "GetDateValue", "m"],
-    ["_create_date_time", "CreateDateTime", "d!"],
-    ["_create_uri", "CreateUri", "s!"],
     ["_is_simple_array", "IsSimpleArray", "m"],
+
+    ["make_marshal_signature_info", "MakeMarshalSignatureInfo", "ii"],
+    ["get_custom_marshaler_info", "GetCustomMarshalerInfoForType", "is"],
 ];
 
 export interface t_CSwraps {
@@ -48,10 +48,12 @@ export interface t_CSwraps {
     _setup_js_cont(task: MonoObject, continuation: PromiseControl): MonoObject
 
     _object_to_string(obj: MonoObject): string;
-    _get_date_value(obj: MonoObject): number;
-    _create_date_time(ticks: number): MonoObject;
-    _create_uri(uri: string): MonoObject;
     _is_simple_array(obj: MonoObject): boolean;
+
+    make_marshal_signature_info(typePtr: MonoType, methodPtr: MonoMethod): string;
+    get_custom_marshaler_info(typePtr: MonoType, marshalerFullName: string | null): string;
+
+    generate_args_marshaler(signature: string, methodPtr: MonoMethod): string;
 }
 
 const wrapped_cs_functions: t_CSwraps = <any>{};

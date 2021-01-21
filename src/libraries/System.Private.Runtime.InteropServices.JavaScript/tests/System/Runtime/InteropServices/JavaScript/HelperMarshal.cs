@@ -1,17 +1,127 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
+        public static class CustomClassMarshaler {
+            public static CustomClass FromJavaScript (double d) {
+                return new CustomClass { D = d };
+            }
+
+            public static double ToJavaScript (CustomClass ct) {
+                return ct?.D ?? -1;
+            }
+        }
+
+        public class CustomClass {
+            public double D;
+        }
+
+        public static class CustomStructMarshaler {
+            public static CustomStruct FromJavaScript (double d) {
+                return new CustomStruct { D = d };
+            }
+
+            public static double ToJavaScript (in CustomStruct ct) {
+                return ct.D;
+            }
+        }
+
+        public struct CustomStruct {
+            public double D;
+        }
+
+        public static class CustomDateMarshaler {
+            public static string JavaScriptToInterchangeTransform => "return value.toISOString()";
+            public static string InterchangeToJavaScriptTransform => "return new Date(value)";
+
+            public static CustomDate FromJavaScript (string s) {
+                var newDate = DateTime.Parse(s).ToUniversalTime();
+                return new CustomDate {
+                    Date = newDate
+                };
+            }
+
+            public static string ToJavaScript (in CustomDate cd) {
+                var result = cd.Date.ToString("o");
+                return result;
+            }
+        }
+
+        public struct CustomDate {
+            public DateTime Date;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CustomVector3 {
+            public float X, Y, Z;
+
+            public override string ToString () {
+                return $"[{X}, {Y}, {Z}]";
+            }
+        }
+
+        public static unsafe class CustomVector3Marshaler {
+            public static int ScratchBufferSize => sizeof(CustomVector3);
+            public static string JavaScriptToInterchangeTransform =>
+    @"
+    if (bufferSize !== 12)
+        throw new Error('Invalid buffer size');
+    if (!Array.isArray(value) || (value.length !== 3))
+        throw new Error('Invalid vector3, expected [f, f, f]');
+    setF32(buffer + 0, value[0]);
+    setF32(buffer + 4, value[1]);
+    setF32(buffer + 8, value[2]);
+    ";
+
+            public static string InterchangeToJavaScriptTransform =>
+    @"
+    if (bufferSize !== 12)
+        throw new Error('Invalid buffer size');
+    return [getF32(buffer + 0), getF32(buffer + 4), getF32(buffer + 8)];
+    ";
+
+            public static void ToJavaScript (ref CustomVector3 value, Span<byte> buffer) {
+                MemoryMarshal.Write(buffer, ref value);
+            }
+
+            public static CustomVector3 FromJavaScript (ReadOnlySpan<byte> buffer) {
+                return MemoryMarshal.AsRef<CustomVector3>(buffer);
+            }
+        }
+
         internal const string INTEROP_CLASS = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
+
+        internal static CustomClass _ccValue;
+        private static void InvokeCustomClass(CustomClass cc)
+        {
+            _ccValue = cc;
+        }
+        private static CustomClass ReturnCustomClass(CustomClass cc)
+        {
+            return cc;
+        }
+
+        internal static CustomStruct _csValue;
+        private unsafe static void InvokeCustomStruct(CustomStruct cs)
+        {
+            _csValue = cs;
+        }
+        private static CustomStruct ReturnCustomStruct(CustomStruct cs)
+        {
+            return cs;
+        }
+
         internal static int _i32Value;
         private static void InvokeI32(int a, int b)
         {
@@ -102,6 +212,61 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _object2 = obj;
             return obj;
+        }
+
+        internal static DateTime _dateTimeValue;
+        private static void InvokeDateTime(object boxed)
+        {
+            _dateTimeValue = (DateTime)boxed;
+        }
+        private static void InvokeDateTimeOffset(DateTimeOffset dto)
+        {
+            // FIXME
+            _dateTimeValue = dto.DateTime;
+        }
+        private static void InvokeDateTimeByValue(DateTime dt)
+        {
+            _dateTimeValue = dt;
+        }
+        private static void InvokeCustomDate(CustomDate cd)
+        {
+            _dateTimeValue = cd.Date;
+        }
+        private static CustomDate ReturnCustomDate(CustomDate cd)
+        {
+            return cd;
+        }
+
+        internal static CustomVector3 _vec3Value;
+        private static void InvokeCustomVector3(CustomVector3 cv3)
+        {
+            _vec3Value = cv3;
+        }
+        private static CustomVector3 MakeCustomVector3(float x, float y, float z)
+        {
+            return new CustomVector3 {
+                X = x,
+                Y = y,
+                Z = z
+            };
+        }
+        private static CustomVector3 ReturnCustomVector3(CustomVector3 cv3)
+        {
+            return cv3;
+        }
+        private static CustomVector3 AddCustomVector3(CustomVector3 lhs, CustomVector3 rhs)
+        {
+            return new CustomVector3 {
+                X = lhs.X + rhs.X,
+                Y = lhs.Y + rhs.Y,
+                Z = lhs.Z + rhs.Z
+            };
+        }
+
+        internal static System.Uri _uriValue;
+        private static void InvokeUri(System.Uri uri)
+        {
+            _uriValue = uri;
         }
 
         internal static object _marshalledObject;
@@ -642,65 +807,65 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             };
         }
 
-        public static Task SynchronousTask() 
+        public static Task SynchronousTask()
         {
             return Task.CompletedTask;
         }
 
-        public static async Task AsynchronousTask() 
+        public static async Task AsynchronousTask()
         {
             await Task.Yield();
         }
 
-        public static Task<int> SynchronousTaskInt(int i) 
+        public static Task<int> SynchronousTaskInt(int i)
         {
             return Task.FromResult(i);
         }
 
-        public static async Task<int> AsynchronousTaskInt(int i) 
+        public static async Task<int> AsynchronousTaskInt(int i)
         {
             await Task.Yield();
             return i;
         }
 
-        public static Task FailedSynchronousTask() 
+        public static Task FailedSynchronousTask()
         {
             return Task.FromException(new Exception());
         }
 
-        public static async Task FailedAsynchronousTask() 
+        public static async Task FailedAsynchronousTask()
         {
             await Task.Yield();
             throw new Exception();
         }
 
-        public static async ValueTask AsynchronousValueTask() 
+        public static async ValueTask AsynchronousValueTask()
         {
             await Task.Yield();
         }
 
-        public static ValueTask SynchronousValueTask() 
+        public static ValueTask SynchronousValueTask()
         {
             return ValueTask.CompletedTask;
         }
 
-        public static ValueTask<int> SynchronousValueTaskInt(int i) 
+        public static ValueTask<int> SynchronousValueTaskInt(int i)
         {
             return ValueTask.FromResult(i);
         }
 
-        public static async ValueTask<int> AsynchronousValueTaskInt(int i) 
+        public static async ValueTask<int> AsynchronousValueTaskInt(int i)
         {
             await Task.Yield();
             return i;
         }
 
-        public static ValueTask FailedSynchronousValueTask() 
+        public static ValueTask FailedSynchronousValueTask()
         {
             return ValueTask.FromException(new Exception());
         }
 
-        public static async ValueTask FailedAsynchronousValueTask() 
+        public static async ValueTask FailedAsynchronousValueTask()
         {
             await Task.Yield();
             throw new Exception();

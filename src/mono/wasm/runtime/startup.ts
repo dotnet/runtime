@@ -1,15 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AllAssetEntryTypes, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./imports";
+import {
+    AllAssetEntryTypes, AssetEntry, CharPtrNull, DotnetModule,
+    MonoConfig, MonoConfigError, wasm_type_symbol, GlobalizationMode
+} from "./types";
+import {
+    ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL,
+    locateFile, Module, MONO, runtimeHelpers
+} from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
-import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
+import { bind_runtime_method, get_method } from "./method-binding";
+import { _custom_marshaler_name_table } from "./custom-marshaler";
 import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 
@@ -149,6 +156,12 @@ function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: str
     }
 }
 
+export function mono_wasm_register_custom_marshaler (aqn: string, marshalerAQN: string): void {
+    if (_custom_marshaler_name_table[aqn])
+        throw new Error(`A custom marshaler for ${aqn} is already registered.`);
+    _custom_marshaler_name_table[aqn] = marshalerAQN;
+}
+
 function _apply_configuration_from_args(config: MonoConfig) {
     for (const k in (config.environment_variables || {}))
         mono_wasm_setenv(k, config.environment_variables![k]);
@@ -161,6 +174,9 @@ function _apply_configuration_from_args(config: MonoConfig) {
 
     if (config.coverage_profiler_options)
         mono_wasm_init_coverage_profiler(config.coverage_profiler_options);
+
+    if (config.custom_marshalers)
+        Object.assign(_custom_marshaler_name_table, config.custom_marshalers);
 }
 
 function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {
@@ -296,8 +312,6 @@ export function bindings_lazy_init(): void {
     runtimeHelpers.get_call_sig = get_method("GetCallSignature");
     if (!runtimeHelpers.get_call_sig)
         throw "Can't find GetCallSignature method";
-
-    _create_primitive_converters();
 }
 
 // Initializes the runtime and loads assemblies, debug information, and other files.

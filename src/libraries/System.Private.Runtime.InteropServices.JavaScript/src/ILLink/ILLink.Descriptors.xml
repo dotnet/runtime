@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Private.Runtime.InteropServices.JavaScript">
+    <!-- HACK: Hard-coded preserve for all custom marshalers until we implement the msbuild task to generate this on-demand -->
+    <type fullname="System.Runtime.InteropServices.JavaScript.UriMarshaler" />
+    <type fullname="System.Runtime.InteropServices.JavaScript.DateTimeMarshaler" />
+    <type fullname="System.Runtime.InteropServices.JavaScript.DateTimeOffsetMarshaler" />
+  </assembly>
+</linker>

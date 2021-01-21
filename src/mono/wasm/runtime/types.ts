@@ -62,7 +62,8 @@ export type MonoConfig = {
     runtime_options?: string[], // array of runtime options as strings
     aot_profiler_options?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverage_profiler_options?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
-    ignore_pdb_load_errors?: boolean
+    ignore_pdb_load_errors?: boolean,
+    custom_marshalers?: { [key: string]: string | undefined },
 };
 
 export type MonoConfigError = {
@@ -186,4 +187,71 @@ export type DotnetModuleConfigImports = {
         dirname?: (path: string) => string,
     };
     url?: any;
+}
+
+
+// see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
+export enum MarshalType {
+    NULL = 0,
+    INT = 1,
+    FP64 = 2,
+    STRING = 3,
+    VT = 4,
+    DELEGATE = 5,
+    TASK = 6,
+    OBJECT = 7,
+    BOOL = 8,
+    ENUM = 9,
+    URI = 22,
+    SAFEHANDLE = 23,
+    ARRAY_BYTE = 10,
+    ARRAY_UBYTE = 11,
+    ARRAY_UBYTE_C = 12,
+    ARRAY_SHORT = 13,
+    ARRAY_USHORT = 14,
+    ARRAY_INT = 15,
+    ARRAY_UINT = 16,
+    ARRAY_FLOAT = 17,
+    ARRAY_DOUBLE = 18,
+    FP32 = 24,
+    UINT32 = 25,
+    INT64 = 26,
+    UINT64 = 27,
+    CHAR = 28,
+    STRING_INTERNED = 29,
+    VOID = 30,
+    ENUM64 = 31,
+    POINTER = 32,
+    SPAN_BYTE = 33,
+}
+
+// see src/mono/wasm/driver.c MARSHAL_ERROR_xxx and Runtime.cs
+export enum MarshalError {
+    BUFFER_TOO_SMALL = 512,
+    NULL_CLASS_POINTER = 513,
+    NULL_TYPE_POINTER = 514,
+    UNSUPPORTED_TYPE = 515,
+    FIRST = BUFFER_TOO_SMALL
+}
+
+export type MarshalTypeRecord = {
+    marshalType : MarshalType;
+    typePtr : MonoType;
+    signatureChar : string;
+}
+
+export type MarshalSignatureInfo = {
+    typePtr : MonoType;
+    methodPtr : MonoMethod;
+    parameters : MarshalTypeRecord[];
+}
+
+export type CustomMarshalerInfo = {
+    typePtr : MonoType;
+    jsToInterchange? : string;
+    interchangeToJs? : string;
+    inputPtr? : MonoMethod;
+    outputPtr? : MonoMethod;
+    error? : string;
+    scratchBufferSize? : number;
 }

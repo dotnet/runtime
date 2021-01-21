@@ -33,7 +33,8 @@ import {
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
     mono_wasm_pre_init,
     mono_wasm_runtime_is_initialized,
-    mono_wasm_on_runtime_initialized
+    mono_wasm_on_runtime_initialized,
+    mono_wasm_register_custom_marshaler
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -49,7 +50,7 @@ import {
     mono_wasm_get_by_index, mono_wasm_get_global_object, mono_wasm_get_object_property,
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
-    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property
+    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property,
 } from "./method-calls";
 import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
@@ -82,6 +83,8 @@ const MONO = {
     mono_wasm_release_roots,
     mono_run_main,
     mono_run_main_and_exit,
+
+    mono_wasm_register_custom_marshaler,
 
     // for Blazor's future!
     mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
@@ -218,7 +221,7 @@ function initializeImportsAndExports(
         // backward compatibility
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
+        module.mono_bind_static_method = (fqn: string, signature: string): Function => {
             console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
         };
@@ -266,7 +269,7 @@ function initializeImportsAndExports(
 
     // if onRuntimeInitialized is set it's probably Blazor, we let them to do their own init sequence
     if (!module.onRuntimeInitialized) {
-        // note this would keep running in async-parallel with emscripten's `run()` and `postRun()` 
+        // note this would keep running in async-parallel with emscripten's `run()` and `postRun()`
         // because it's loading files asynchronously and the emscripten is not awaiting onRuntimeInitialized
         // execution order == [1] ==
         module.onRuntimeInitialized = () => mono_wasm_on_runtime_initialized();
