@@ -45,6 +45,7 @@ mono_w32event_reset (gpointer handle)
 	ResetEvent (handle);
 }
 
+#ifndef ENABLE_NETCORE
 gpointer
 ves_icall_System_Threading_Events_CreateEvent_icall (MonoBoolean manual, MonoBoolean initial,
 	const gunichar2 *name, gint32 name_length, gint32 *win32error, MonoError *error)
@@ -93,3 +94,4 @@ ves_icall_System_Threading_Events_OpenEvent_icall (const gunichar2 *name, gint32
 
 	return handle;
 }
+#endif

@@ -21,6 +21,7 @@ mono_w32semaphore_init (void)
 {
 }
 
+#ifndef ENABLE_NETCORE
 #if HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE || HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE_EX
 gpointer
 ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount, gint32 maximumCount,
@@ -65,3 +66,4 @@ ves_icall_System_Threading_Semaphore_OpenSemaphore_icall (const gunichar2 *name,
 	*win32error = GetLastError ();
 	return sem;
 }
+#endif

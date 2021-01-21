@@ -274,19 +274,6 @@ mono_w32event_create_full (MonoBoolean manual, MonoBoolean initial, const char *
 	return event;
 }
 
-gpointer
-ves_icall_System_Threading_Events_CreateEvent_icall (MonoBoolean manual, MonoBoolean initial,
-	const gunichar2* name, gint32 name_length, gint32 *win32error, MonoError *error)
-{
-	*win32error = ERROR_SUCCESS;
-	gsize utf8_name_length = 0;
-	char *utf8_name = mono_utf16_to_utf8len (name, name_length, &utf8_name_length, error);
-	return_val_if_nok (error, NULL);
-	gpointer result = mono_w32event_create_full (manual, initial, utf8_name, utf8_name_length, win32error);
-	g_free (utf8_name);
-	return result;
-}
-
 gboolean
 ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle)
 {
@@ -372,13 +359,26 @@ ves_icall_System_Threading_Events_ResetEvent_internal (gpointer handle)
 	return TRUE;
 }
 
+#ifndef ENABLE_NETCORE
+gpointer
+ves_icall_System_Threading_Events_CreateEvent_icall (MonoBoolean manual, MonoBoolean initial,
+	const gunichar2* name, gint32 name_length, gint32 *win32error, MonoError *error)
+{
+	*win32error = ERROR_SUCCESS;
+	gsize utf8_name_length = 0;
+	char *utf8_name = mono_utf16_to_utf8len (name, name_length, &utf8_name_length, error);
+	return_val_if_nok (error, NULL);
+	gpointer result = mono_w32event_create_full (manual, initial, utf8_name, utf8_name_length, win32error);
+	g_free (utf8_name);
+	return result;
+}
+
 void
 ves_icall_System_Threading_Events_CloseEvent_internal (gpointer handle)
 {
 	mono_w32handle_close (handle);
 }
 
-#ifndef ENABLE_NETCORE
 gpointer
 ves_icall_System_Threading_Events_OpenEvent_icall (const gunichar2 *name, gint32 name_length,
 	gint32 rights, gint32 *win32error, MonoError *error)

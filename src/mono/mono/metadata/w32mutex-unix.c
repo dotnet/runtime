@@ -341,6 +341,7 @@ namedmutex_create (gboolean owned, const char *utf8_name, gsize utf8_len)
 	return handle;
 }
 
+#ifndef ENABLE_NETCORE
 gpointer
 ves_icall_System_Threading_Mutex_CreateMutex_icall (MonoBoolean owned, const gunichar2 *name,
 	gint32 name_length, MonoBoolean *created, MonoError *error)
@@ -442,6 +443,7 @@ ves_icall_System_Threading_Mutex_OpenMutex_icall (const gunichar2 *name, gint32 
 	g_free (utf8_name);
 	return handle;
 }
+#endif
 
 gpointer
 mono_w32mutex_open (const char* utf8_name, gint32 rights G_GNUC_UNUSED, gint32 *win32error)

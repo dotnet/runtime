@@ -21,6 +21,7 @@ mono_w32mutex_init (void)
 {
 }
 
+#ifndef ENABLE_NETCORE
 gpointer
 ves_icall_System_Threading_Mutex_CreateMutex_icall (MonoBoolean owned, const gunichar2 *name,
 	gint32 name_length, MonoBoolean *created, MonoError *error)
@@ -65,3 +66,4 @@ ves_icall_System_Threading_Mutex_OpenMutex_icall (const gunichar2 *name, gint32 
 
 	return ret;
 }
+#endif

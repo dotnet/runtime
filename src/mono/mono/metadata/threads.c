@@ -2458,6 +2458,7 @@ map_native_wait_result_to_managed (MonoW32HandleWaitRet val, gsize numobjects)
 	}
 }
 
+#ifndef ENABLE_NETCORE
 gint32
 ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 numhandles, MonoBoolean waitall, gint32 timeout, MonoError *error)
 {
@@ -2556,6 +2557,7 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal,
 
 	return map_native_wait_result_to_managed (ret, 1);
 }
+#endif
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 {
