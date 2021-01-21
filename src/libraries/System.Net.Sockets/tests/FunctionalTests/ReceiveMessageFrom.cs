@@ -12,6 +12,9 @@ namespace System.Net.Sockets.Tests
 {
     public abstract class ReceiveMessageFrom<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
+        protected static IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
+            addressFamily == AddressFamily.InterNetwork ? new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
+
         protected ReceiveMessageFrom(ITestOutputHelper output) : base(output) { }
 
         [Theory]
@@ -54,14 +57,74 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public async Task Disposed_Throws()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ClosedBeforeOperation_Throws_ObjectDisposedException(bool closeOrDispose)
         {
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket.BindToAnonymousPort(IPAddress.Any);
-            socket.Dispose();
+            if (closeOrDispose) socket.Close();
+            else socket.Dispose();
 
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => ReceiveMessageFromAsync(socket, new byte[1], new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234)));
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ClosedDuringOperation_Throws_ObjectDisposedExceptionOrSocketException(bool closeOrDispose)
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.BindToAnonymousPort(IPAddress.Any);
+
+            Task receiveTask = ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint());
+            await Task.Delay(100);
+            if (closeOrDispose) socket.Close();
+            else socket.Dispose();
+
+            if (UsesApm)
+            {
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask);
+            }
+            else
+            {
+                SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
+                SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
+                Assert.Equal(expectedError, ex.SocketErrorCode);
+            }
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)] // It's allowed to shutdown() UDP sockets on Windows, however on Unix this will lead to ENOTCONN
+        [Theory]
+        [InlineData(SocketShutdown.Both)]
+        [InlineData(SocketShutdown.Receive)]
+        public async Task ShutdownReceiveBeforeOperation_ThrowsSocketException(SocketShutdown shutdown)
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.BindToAnonymousPort(IPAddress.Any);
+            socket.Shutdown(shutdown);
+
+            SocketException exception = await Assert.ThrowsAnyAsync<SocketException>(() => ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()))
+                .TimeoutAfter(10_000);
+
+            Assert.Equal(SocketError.Shutdown, exception.SocketErrorCode);
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)] // It's allowed to shutdown() UDP sockets on Windows, however on Unix this will lead to ENOTCONN
+        [Fact]
+        public async Task ShutdownSend_ReceiveFromShouldSucceed()
+        {
+            using var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            receiver.BindToAnonymousPort(IPAddress.Loopback);
+            receiver.Shutdown(SocketShutdown.Send);
+
+            using var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            sender.BindToAnonymousPort(IPAddress.Loopback);
+            sender.SendTo(new byte[1], receiver.LocalEndPoint);
+
+            var r = await ReceiveMessageFromAsync(receiver, new byte[1], sender.LocalEndPoint);
+            Assert.Equal(1, r.ReceivedBytes);
         }
     }
 
