@@ -233,13 +233,11 @@ namespace System.IO
             // If lstat indicated the path is a symlink
             if (HasSymbolicLinkFlag)
             {
-                if (!VerifyStatCall(Interop.Sys.Stat(path, out _secondaryCache), out _initializedSecondaryCache))
+                    // attempt to check the target to see if it is a directory
+                if (VerifyStatCall(Interop.Sys.Stat(path, out _secondaryCache), out _initializedSecondaryCache))
                 {
-                    _exists = false;
-                    return;
+                    _isDirectory = (_secondaryCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
                 }
-                // attempt to check the target to see if it is a directory
-                _isDirectory = (_secondaryCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
 
             _exists = true;
