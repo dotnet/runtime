@@ -88,6 +88,10 @@ while (($# > 0)); do
       internal=true
       shift 1
       ;;
+    --alpine)
+      alpine=true
+      shift 1
+      ;;
     --llvm)
       llvm=true
       shift 1
@@ -199,11 +203,19 @@ if [[ "$internal" == true ]]; then
     else
         queue=Ubuntu.1804.Amd64.Tiger.Perf
     fi
+
+    if [[ "$alpine" = "true" ]]; then
+        queue=alpine.amd64.tiger.perf
+    fi
 else
     if [[ "$architecture" = "arm64" ]]; then
         queue=ubuntu.1804.armarch.open
     else
         queue=Ubuntu.1804.Amd64.Open
+    fi
+
+    if [[ "$alpine" = "true" ]]; then
+        queue=alpine.amd64.tiger.perf
     fi
 fi
 
