@@ -4583,17 +4583,11 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 case NI_System_Math_Ceiling:
                     res = ceil(arg0Val);
                     break;
-                case NI_System_Math_Cos:
-                    res = cos(arg0Val);
-                    break;
                 case NI_System_Math_Floor:
                     res = floor(arg0Val);
                     break;
                 case NI_System_Math_Round:
                     res = FloatingPointUtils::round(arg0Val);
-                    break;
-                case NI_System_Math_Sin:
-                    res = sin(arg0Val);
                     break;
                 case NI_System_Math_Sqrt:
                     res = sqrt(arg0Val);
@@ -4619,17 +4613,11 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 case NI_System_Math_Ceiling:
                     res = ceilf(arg0Val);
                     break;
-                case NI_System_Math_Cos:
-                    res = cosf(arg0Val);
-                    break;
                 case NI_System_Math_Floor:
                     res = floorf(arg0Val);
                     break;
                 case NI_System_Math_Round:
                     res = FloatingPointUtils::round(arg0Val);
-                    break;
-                case NI_System_Math_Sin:
-                    res = sinf(arg0Val);
                     break;
                 case NI_System_Math_Sqrt:
                     res = sqrtf(arg0Val);
