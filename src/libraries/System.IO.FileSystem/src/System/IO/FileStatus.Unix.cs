@@ -54,22 +54,32 @@ namespace System.IO
             EnsureStatInitialized(path);
 
             if (!_exists)
+            {
                 return (FileAttributes)(-1);
+            }
 
             FileAttributes attributes = default;
 
             if (IsReadOnly(path))
+            {
                 attributes |= FileAttributes.ReadOnly;
+            }
 
             if ((_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
+            {
                 attributes |= FileAttributes.ReparsePoint;
+            }
 
             if (_isDirectory)
+            {
                 attributes |= FileAttributes.Directory;
+            }
 
             // If the filename starts with a period or has UF_HIDDEN flag set, it's hidden.
             if (fileName.Length > 0 && (fileName[0] == '.' || (_fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN))
+            {
                 attributes |= FileAttributes.Hidden;
+            }
 
             return attributes != default ? attributes : FileAttributes.Normal;
         }
@@ -78,15 +88,21 @@ namespace System.IO
         {
             EnsureStatInitialized(path, continueOnError);
             if (!_exists)
+            {
                 return DateTimeOffset.FromFileTime(0);
+            }
 
             if ((_fileStatus.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0)
+            {
                 return UnixTimeToDateTimeOffset(_fileStatus.BirthTime, _fileStatus.BirthTimeNsec);
+            }
 
             // fall back to the oldest time we have in between change and modify time
             if (_fileStatus.MTime < _fileStatus.CTime ||
                 (_fileStatus.MTime == _fileStatus.CTime && _fileStatus.MTimeNsec < _fileStatus.CTimeNsec))
+            {
                 return UnixTimeToDateTimeOffset(_fileStatus.MTime, _fileStatus.MTimeNsec);
+            }
 
             return UnixTimeToDateTimeOffset(_fileStatus.CTime, _fileStatus.CTimeNsec);
         }
@@ -95,7 +111,9 @@ namespace System.IO
         internal bool GetExists(ReadOnlySpan<char> path)
         {
             if (_fileStatusInitialized == -1)
+            {
                 Refresh(path);
+            }
 
             return _exists && InitiallyDirectory == _isDirectory;
         }
@@ -104,7 +122,9 @@ namespace System.IO
         {
             EnsureStatInitialized(path, continueOnError);
             if (!_exists)
+            {
                 return DateTimeOffset.FromFileTime(0);
+            }
             return UnixTimeToDateTimeOffset(_fileStatus.ATime, _fileStatus.ATimeNsec);
         }
 
@@ -257,7 +277,9 @@ namespace System.IO
             EnsureStatInitialized(path);
 
             if (!_exists)
+            {
                 FileSystemInfo.ThrowNotFound(path);
+            }
 
             if (Interop.Sys.CanSetHiddenFlag)
             {
@@ -321,7 +343,9 @@ namespace System.IO
         {
             EnsureStatInitialized(path, continueOnError);
             if (!_exists)
+            {
                 return DateTimeOffset.FromFileTime(0);
+            }
             return UnixTimeToDateTimeOffset(_fileStatus.MTime, _fileStatus.MTimeNsec);
         }
 
