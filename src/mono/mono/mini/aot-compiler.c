@@ -4578,7 +4578,7 @@ add_wrappers (MonoAotCompile *acfg)
 		if ((sig->ret->type == MONO_TYPE_PTR) ||
 			(sig->ret->type == MONO_TYPE_TYPEDBYREF))
 			skip = TRUE;
-		if (mono_class_is_open_constructed_type (sig->ret))
+		if (mono_class_is_open_constructed_type (sig->ret) || m_class_is_byreflike (mono_class_from_mono_type_internal (sig->ret)))
 			skip = TRUE;
 
 		for (j = 0; j < sig->param_count; j++) {
