@@ -203,17 +203,18 @@ namespace System.Security.Cryptography
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckReadArguments(buffer, offset, count);
-            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            return ReadAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!CanRead)
+                return ValueTask.FromException<int>(new NotSupportedException(SR.NotSupported_UnreadableStream));
 
-        public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+            return ReadAsyncInternal(buffer, cancellationToken);
+        }
 
-        /// <inheritdoc/>
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        private async ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             // To avoid a race with a stream's position pointer & generating race
             // conditions with internal buffer indexes in our own streams that
@@ -231,6 +232,12 @@ namespace System.Security.Cryptography
                 _lazyAsyncActiveSemaphore.Release();
             }
         }
+
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+        public override int EndRead(IAsyncResult asyncResult) =>
+            TaskToApm.End<int>(asyncResult);
 
         public override int ReadByte()
         {
@@ -483,17 +490,19 @@ namespace System.Security.Cryptography
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckWriteArguments(buffer, offset, count);
-            return WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            return WriteAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
-
-        public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
-
         /// <inheritdoc/>
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!CanWrite)
+                return ValueTask.FromException(new NotSupportedException(SR.NotSupported_UnwritableStream));
+
+            return WriteAsyncInternal(buffer, cancellationToken);
+        }
+
+        private async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             // To avoid a race with a stream's position pointer & generating race
             // conditions with internal buffer indexes in our own streams that
@@ -511,6 +520,12 @@ namespace System.Security.Cryptography
                 _lazyAsyncActiveSemaphore.Release();
             }
         }
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+        public override void EndWrite(IAsyncResult asyncResult) =>
+            TaskToApm.End(asyncResult);
 
         public override void Write(byte[] buffer, int offset, int count)
         {
