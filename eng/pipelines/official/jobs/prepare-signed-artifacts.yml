@@ -20,8 +20,20 @@ jobs:
   - name: SignType
     value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
+  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+    - group: AzureDevOps-Artifact-Feeds-Pats
+
   steps:
   - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+    - task: PowerShell@2
+      displayName: Setup Private Feeds Credentials
+      inputs:
+        filePath: $(Build.SourcesDirectory)\eng\common\SetupNugetSources.ps1
+        arguments: -ConfigFile $(Build.SourcesDirectory)\NuGet.config -Password $Env:Token
+      env:
+        Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@0
@@ -33,7 +45,7 @@ jobs:
       zipSources: false
       feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
     continueOnError: false
-    condition: and(succeeded(), 
+    condition: and(succeeded(),
                 in(variables['SignType'], 'real', 'test'))
 
   - task: DownloadBuildArtifacts@0
