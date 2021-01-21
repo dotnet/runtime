@@ -188,7 +188,7 @@ namespace System.Net.Sockets.Tests
 
             OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => socket.ReceiveMessageFromAsync(buffer, SocketFlags.None, dummy.LocalEndPoint, cts.Token).AsTask())
-                .TimeoutAfter(10_000);
+                .TimeoutAfter(30_000);
             Assert.Equal(cts.Token, ex.CancellationToken);
         }
     }

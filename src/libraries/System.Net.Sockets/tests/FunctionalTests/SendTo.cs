@@ -155,26 +155,32 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task CancelDuringOperation_Throws()
         {
-            const int DatagramCount = 50;
+            const int DatagramCount = 100;
             const int DatagramSize = 32768;
-            TimeSpan cancelAfter = TimeSpan.FromMilliseconds(5);
 
-            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            int port = client.BindToAnonymousPort(IPAddress.Any);
+            TimeSpan cancelAfter = TimeSpan.FromMilliseconds(1);
 
-            List<Task> tasks = new List<Task>();
-            CancellationTokenSource cts = new CancellationTokenSource();
-
-            // After flooding the socket with a high number of send tasks,
-            // we assume some of them won't complete before the "CancelAfter" period expires.
-            for (int i = 0; i < DatagramCount; i++)
+            await RetryHelper.ExecuteAsync(async () =>
             {
-                var leftTask = client.SendToAsync(new byte[DatagramSize], SocketFlags.None, ValidUdpRemoteEndpoint, cts.Token);
-                tasks.Add(leftTask.AsTask());
-            }
-            cts.CancelAfter(cancelAfter);
+                cancelAfter /= 2;
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(tasks));
+                using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                int port = client.BindToAnonymousPort(IPAddress.Any);
+
+                List<Task> tasks = new List<Task>();
+                CancellationTokenSource cts = new CancellationTokenSource();
+
+                // After flooding the socket with a high number of send tasks,
+                // we assume some of them won't complete before the "CancelAfter" period expires.
+                for (int i = 0; i < DatagramCount; i++)
+                {
+                    var leftTask = client.SendToAsync(new byte[DatagramSize], SocketFlags.None, ValidUdpRemoteEndpoint, cts.Token);
+                    tasks.Add(leftTask.AsTask());
+                }
+                cts.CancelAfter(cancelAfter);
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(tasks));
+            }, maxAttempts: 4);
         }
     }
 
