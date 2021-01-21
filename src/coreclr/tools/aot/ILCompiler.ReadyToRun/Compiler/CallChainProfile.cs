@@ -38,13 +38,15 @@ namespace ILCompiler
     //}
     public class CallChainProfile
     {
-        IEnumerable<ModuleDesc> _referenceableModules;
-        Dictionary<MethodDesc, Dictionary<MethodDesc, int>> _resolvedProfileData;
+        private readonly IEnumerable<ModuleDesc> _referenceableModules;
+        private readonly Dictionary<MethodDesc, Dictionary<MethodDesc, int>> _resolvedProfileData;
 
         // Diagnostics
+#if DEBUG
         private int _methodResolvesAttempted = 0;
         private int _methodsSuccessfullyResolved = 0;
         private Dictionary<string, int> _resolveFails = new Dictionary<string, int>();
+#endif
 
         public CallChainProfile(string callChainProfileFile,
                                 CompilerTypeSystemContext context,
@@ -53,7 +55,6 @@ namespace ILCompiler
             _referenceableModules = referenceableModules;
             var analysisData = ReadCallChainAnalysisData(callChainProfileFile);
             _resolvedProfileData = ResolveMethods(analysisData, context);
-            WriteProfileParseStats();
         }
 
         /// <summary>
@@ -95,23 +96,20 @@ namespace ILCompiler
             return resolvedProfileData;
         }
 
-        private int _cacheHits = 0;
-        private int _cacheMisses = 0;
         private MethodDesc CachedResolveMethodName(Dictionary<string, MethodDesc> nameToMethodDescMap, string methodName, CompilerTypeSystemContext context)
         {
             MethodDesc resolvedMethod = null;
             if (nameToMethodDescMap.ContainsKey(methodName))
             {
-                _cacheHits++;
                 resolvedMethod = nameToMethodDescMap[methodName];
             }
             else
             {
-                _cacheMisses++;
                 resolvedMethod = ResolveMethodName(context, methodName);
                 nameToMethodDescMap.Add(methodName, resolvedMethod);
             }
 
+#if DEBUG
             if (resolvedMethod == null)
             {
                 if (!_resolveFails.ContainsKey(methodName))
@@ -120,6 +118,7 @@ namespace ILCompiler
                 }
                 _resolveFails[methodName]++;
             }
+#endif
             return resolvedMethod;
         }
 
@@ -130,7 +129,9 @@ namespace ILCompiler
             // System.Core.ni.dll!System.Linq.Enumerable+WhereSelectEnumerableIterator`2[System.__Canon,System.__Canon].MoveNext
             // Microsoft.Azure.Monitoring.WarmPath.FrontEnd.Middleware.SecurityMiddlewareBase`1+<Invoke>d__6[System.__Canon]!MoveNext
             // System.Runtime.CompilerServices.AsyncTaskMethodBuilder!Start
+#if DEBUG
             _methodResolvesAttempted++;
+#endif
 
             string[] splitMethodName = methodName.Split("!");
             if (splitMethodName.Length != 2)
@@ -184,7 +185,9 @@ namespace ILCompiler
                 var resolvedMethod = ResolveMethodName(context, resolvedModule, namespaceAndTypeName, methodNameWithoutType);
                 if (resolvedMethod != null)
                 {
+#if DEBUG
                     _methodsSuccessfullyResolved++;
+#endif
                     return resolvedMethod;
                 }
                     
@@ -203,7 +206,9 @@ namespace ILCompiler
                     var resolvedMethod = ResolveMethodName(context, module, namespaceAndTypeName, methodNameWithoutType);
                     if (resolvedMethod != null)
                     {
+#if DEBUG
                         _methodsSuccessfullyResolved++;
+#endif
                         return resolvedMethod;
                     }
                         
@@ -295,16 +300,13 @@ namespace ILCompiler
             return profileData;
         }
 
+#if DEBUG
         /// <summary>
         /// Dump diagnostic information to the console
         /// </summary>
         private void WriteProfileParseStats()
         {
-            // Display the resolve fails ordered by how many times each method appeared in the trace
-            // foreach (var fail in _resolveFails.OrderByDescending((kvp) => kvp.Value))
-            // {
-            //     Console.WriteLine($"{fail.Value}\t{fail.Key}");
-            // }
+            Console.WriteLine("Callchain profile entries:");
 
             // Display all resolved methods in key -> { method -> count, method2 -> count} map
             foreach (var key in _resolvedProfileData)
@@ -319,12 +321,8 @@ namespace ILCompiler
 
             Console.WriteLine($"Method resolves attempted: {_methodResolvesAttempted}");
             Console.WriteLine($"Successfully resolved {_methodsSuccessfullyResolved} methods ({(double)_methodsSuccessfullyResolved / (double)_methodResolvesAttempted:P})");
-
-            int cacheTotal = _cacheHits + _cacheMisses;
-            Console.WriteLine("Lookup cache performance:");
-            Console.WriteLine($"Cache hits: {_cacheHits} ({(double)_cacheHits / (double)cacheTotal:P})");
-            Console.WriteLine($"Cache misses: {_cacheMisses}");
         }
+#endif
     }
 
 }
