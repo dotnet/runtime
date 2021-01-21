@@ -12,12 +12,13 @@ namespace System.IO
         // Exists as of the last refresh
         private bool _exists;
 
-        // The last cached stat information about the file
-        private Interop.Sys.FileStatus _fileStatus;
+        // The last cached lstat information about the file
+        private Interop.Sys.FileStatus _mainCache;
 
-        // -1 if _fileStatus isn't initialized, 0 if _fileStatus was initialized with no
-        // errors, or the errno error code.
-        private int _fileStatusInitialized;
+        // -1 if _mainCache isn't initialized - Refresh should always change this value
+        // 0 if _mainCache was initialized with no errors
+        // or the errno error code (always positive value)
+        private int _initializedMainCache;
 
         // Is a directory as of the last refresh
         internal bool _isDirectory;
@@ -28,15 +29,15 @@ namespace System.IO
 
         internal void EnsureStatInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            if (_fileStatusInitialized == -1)
+            if (_initializedMainCache == -1)
             {
                 Refresh(path);
             }
 
-            if (_fileStatusInitialized != 0 && !continueOnError)
+            if (_initializedMainCache != 0 && !continueOnError)
             {
-                int errno = _fileStatusInitialized;
-                _fileStatusInitialized = -1;
+                int errno = _initializedMainCache;
+                _initializedMainCache = -1;
                 throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
             }
         }
@@ -59,7 +60,7 @@ namespace System.IO
                 attributes |= FileAttributes.ReadOnly;
             }
 
-            if ((_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
+            if ((_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
             {
                 attributes |= FileAttributes.ReparsePoint;
             }
@@ -70,7 +71,7 @@ namespace System.IO
             }
 
             // If the filename starts with a period or has UF_HIDDEN flag set, it's hidden.
-            if (fileName.Length > 0 && (fileName[0] == '.' || (_fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN))
+            if (fileName.Length > 0 && (fileName[0] == '.' || (_mainCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN))
             {
                 attributes |= FileAttributes.Hidden;
             }
@@ -86,25 +87,25 @@ namespace System.IO
                 return DateTimeOffset.FromFileTime(0);
             }
 
-            if ((_fileStatus.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0)
+            if ((_mainCache.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0)
             {
-                return UnixTimeToDateTimeOffset(_fileStatus.BirthTime, _fileStatus.BirthTimeNsec);
+                return UnixTimeToDateTimeOffset(_mainCache.BirthTime, _mainCache.BirthTimeNsec);
             }
 
             // fall back to the oldest time we have in between change and modify time
-            if (_fileStatus.MTime < _fileStatus.CTime ||
-                (_fileStatus.MTime == _fileStatus.CTime && _fileStatus.MTimeNsec < _fileStatus.CTimeNsec))
+            if (_mainCache.MTime < _mainCache.CTime ||
+                (_mainCache.MTime == _mainCache.CTime && _mainCache.MTimeNsec < _mainCache.CTimeNsec))
             {
-                return UnixTimeToDateTimeOffset(_fileStatus.MTime, _fileStatus.MTimeNsec);
+                return UnixTimeToDateTimeOffset(_mainCache.MTime, _mainCache.MTimeNsec);
             }
 
-            return UnixTimeToDateTimeOffset(_fileStatus.CTime, _fileStatus.CTimeNsec);
+            return UnixTimeToDateTimeOffset(_mainCache.CTime, _mainCache.CTimeNsec);
         }
 
 
         internal bool GetExists(ReadOnlySpan<char> path)
         {
-            if (_fileStatusInitialized == -1)
+            if (_initializedMainCache == -1)
             {
                 Refresh(path);
             }
@@ -119,23 +120,23 @@ namespace System.IO
             {
                 return DateTimeOffset.FromFileTime(0);
             }
-            return UnixTimeToDateTimeOffset(_fileStatus.ATime, _fileStatus.ATimeNsec);
+            return UnixTimeToDateTimeOffset(_mainCache.ATime, _mainCache.ATimeNsec);
         }
 
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureStatInitialized(path, continueOnError);
-            return _fileStatus.Size;
+            return _mainCache.Size;
         }
 
         internal static void Initialize(ref FileStatus status, bool isDirectory)
         {
             status.InitiallyDirectory = isDirectory;
-            status._fileStatusInitialized = -1;
+            status._initializedMainCache = -1;
         }
 
         internal void Invalidate() =>
-            _fileStatusInitialized = -1;
+            _initializedMainCache = -1;
 
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
@@ -146,13 +147,13 @@ namespace System.IO
 #else
             Interop.Sys.Permissions readBit, writeBit;
 
-            if (_fileStatus.Uid == Interop.Sys.GetEUid())
+            if (_mainCache.Uid == Interop.Sys.GetEUid())
             {
                 // User effectively owns the file
                 readBit = Interop.Sys.Permissions.S_IRUSR;
                 writeBit = Interop.Sys.Permissions.S_IWUSR;
             }
-            else if (_fileStatus.Gid == Interop.Sys.GetEGid())
+            else if (_mainCache.Gid == Interop.Sys.GetEGid())
             {
                 // User belongs to a group that effectively owns the file
                 readBit = Interop.Sys.Permissions.S_IRGRP;
@@ -166,8 +167,8 @@ namespace System.IO
             }
 #endif
 
-            return ((_fileStatus.Mode & (int)readBit) != 0 && // has read permission
-                (_fileStatus.Mode & (int)writeBit) == 0);     // but not write permission
+            return ((_mainCache.Mode & (int)readBit) != 0 && // has read permission
+                (_mainCache.Mode & (int)writeBit) == 0);     // but not write permission
         }
 
         internal void Refresh(ReadOnlySpan<char> path)
@@ -182,8 +183,8 @@ namespace System.IO
             // If it is a symlink, then subsequently get details on the target of the symlink,
             // storing those results separately.  We only report failure if the initial
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
-            _fileStatusInitialized = VerifyStatCall(Interop.Sys.LStat(path, out _fileStatus));
-            if (_fileStatusInitialized != 0)
+            _initializedMainCache = VerifyStatCall(Interop.Sys.LStat(path, out _mainCache));
+            if (_initializedMainCache != 0)
             {
                 _exists = false;
                 return;
@@ -192,22 +193,22 @@ namespace System.IO
             _exists = true;
 
             // IMPORTANT: Is directory logic must match the logic in FileSystemEntry
-            _isDirectory = (_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+            _isDirectory = (_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
 
             // If we're a symlink, attempt to check the target to see if it is a directory
-            if ((_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK &&
+            if ((_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK &&
                 Interop.Sys.Stat(path, out Interop.Sys.FileStatus targetStatus) >= 0)
             {
                 _isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
 
-            _fileStatusInitialized = 0;
+            _initializedMainCache = 0;
         }
 
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
         {
             // force a refresh so that we have an up-to-date times for values not being overwritten
-            _fileStatusInitialized = -1;
+            _initializedMainCache = -1;
             EnsureStatInitialized(path);
 
             // we use utimes()/utimensat() to set the accessTime and writeTime
@@ -229,19 +230,19 @@ namespace System.IO
             {
                 buf[0].TvSec = seconds;
                 buf[0].TvNsec = nanoseconds;
-                buf[1].TvSec = _fileStatus.MTime;
-                buf[1].TvNsec = _fileStatus.MTimeNsec;
+                buf[1].TvSec = _mainCache.MTime;
+                buf[1].TvNsec = _mainCache.MTimeNsec;
             }
             else
             {
-                buf[0].TvSec = _fileStatus.ATime;
-                buf[0].TvNsec = _fileStatus.ATimeNsec;
+                buf[0].TvSec = _mainCache.ATime;
+                buf[0].TvNsec = _mainCache.ATimeNsec;
                 buf[1].TvSec = seconds;
                 buf[1].TvNsec = nanoseconds;
             }
 #endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
-            _fileStatusInitialized = -1;
+            _initializedMainCache = -1;
         }
 
         internal void SetAttributes(string path, FileAttributes attributes)
@@ -272,25 +273,25 @@ namespace System.IO
             {
                 if ((attributes & FileAttributes.Hidden) != 0)
                 {
-                    if ((_fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == 0)
+                    if ((_mainCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == 0)
                     {
                         // If Hidden flag is set and cached file status does not have the flag set then set it
-                        Interop.CheckIo(Interop.Sys.LChflags(path, (_fileStatus.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
+                        Interop.CheckIo(Interop.Sys.LChflags(path, (_mainCache.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
                     }
                 }
                 else
                 {
-                    if ((_fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN)
+                    if ((_mainCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN)
                     {
                         // If Hidden flag is not set and cached file status does have the flag set then remove it
-                        Interop.CheckIo(Interop.Sys.LChflags(path, (_fileStatus.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
+                        Interop.CheckIo(Interop.Sys.LChflags(path, (_mainCache.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
                     }
                 }
             }
 
             // The only thing we can reasonably change is whether the file object is readonly by changing permissions.
 
-            int newMode = _fileStatus.Mode;
+            int newMode = _mainCache.Mode;
             if ((attributes & FileAttributes.ReadOnly) != 0)
             {
                 // Take away all write permissions from user/group/everyone
@@ -303,12 +304,12 @@ namespace System.IO
             }
 
             // Change the permissions on the file
-            if (newMode != _fileStatus.Mode)
+            if (newMode != _mainCache.Mode)
             {
                 Interop.CheckIo(Interop.Sys.ChMod(path, newMode), path, InitiallyDirectory);
             }
 
-            _fileStatusInitialized = -1;
+            _initializedMainCache = -1;
         }
 
         internal void SetCreationTime(string path, DateTimeOffset time) =>
@@ -333,7 +334,7 @@ namespace System.IO
             {
                 return DateTimeOffset.FromFileTime(0);
             }
-            return UnixTimeToDateTimeOffset(_fileStatus.MTime, _fileStatus.MTimeNsec);
+            return UnixTimeToDateTimeOffset(_mainCache.MTime, _mainCache.MTimeNsec);
         }
 
         internal void SetLastWriteTime(string path, DateTimeOffset time) =>
