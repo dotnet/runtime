@@ -52,14 +52,73 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAnyAsync<ArgumentException>(() => ReceiveFromAsync(socket, new byte[1], null));
         }
 
-        [Fact]
-        public async Task Disposed_Throws()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ClosedBeforeOperation_Throws_ObjectDisposedException(bool closeOrDispose)
         {
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket.BindToAnonymousPort(IPAddress.Any);
-            socket.Dispose();
+            if (closeOrDispose) socket.Close();
+            else socket.Dispose();
 
             await Assert.ThrowsAsync<ObjectDisposedException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ClosedDuringOperation_Throws_ObjectDisposedExceptionOrSocketException(bool closeOrDispose)
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.BindToAnonymousPort(IPAddress.Any);
+
+            Task receiveTask = ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint());
+            await Task.Delay(100);
+            if (closeOrDispose) socket.Close();
+            else socket.Dispose();
+
+            if (UsesApm)
+            {
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask);
+            }
+            else
+            {
+                SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
+                SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
+                Assert.Equal(expectedError, ex.SocketErrorCode);
+            }
+        }
+
+        [Theory]
+        [InlineData(SocketShutdown.Both)]
+        [InlineData(SocketShutdown.Receive)]
+        public async Task ShutdownReceiveBeforeOperation_ThrowsSocketException(SocketShutdown shutdown)
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.BindToAnonymousPort(IPAddress.Any);
+            socket.Shutdown(shutdown);
+
+            SocketException exception = await Assert.ThrowsAnyAsync<SocketException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()))
+                .TimeoutAfter(10_000);
+
+            Assert.Equal(SocketError.Shutdown, exception.SocketErrorCode);
+            _output.WriteLine($"{exception.GetType()} -- {exception.Message}");
+        }
+
+        [Fact]
+        public async Task ShutdownSend_ReceiveFromShouldSucceed()
+        {
+            using var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            receiver.BindToAnonymousPort(IPAddress.Loopback);
+            receiver.Shutdown(SocketShutdown.Send);
+
+            using var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            sender.BindToAnonymousPort(IPAddress.Loopback);
+            sender.SendTo(new byte[1], receiver.LocalEndPoint);
+
+            var r = await ReceiveFromAsync(receiver, new byte[1], sender.LocalEndPoint);
+            Assert.Equal(1, r.ReceivedBytes);
         }
     }
 
