@@ -657,7 +657,7 @@ namespace System.Security.Cryptography
             }
             return;
 
-            static int TransformBlock(ICryptoTransform transform, ReadOnlyMemory<byte> inputBuffer, byte[] outputBuffer, int outputOffset)
+            unsafe static int TransformBlock(ICryptoTransform transform, ReadOnlyMemory<byte> inputBuffer, byte[] outputBuffer, int outputOffset)
             {
                 if (MemoryMarshal.TryGetArray(inputBuffer, out ArraySegment<byte> segment))
                 {
@@ -668,23 +668,24 @@ namespace System.Security.Cryptography
                 else
                 {
                     var rentedBuffer = ArrayPool<byte>.Shared.Rent(inputBuffer.Length);
+                    int result = default;
                     try
                     {
-                        inputBuffer.CopyTo(rentedBuffer);
-                        int result = transform.TransformBlock(rentedBuffer, 0, inputBuffer.Length, outputBuffer, outputOffset);
-                        CryptographicOperations.ZeroMemory(rentedBuffer.AsSpan(0, inputBuffer.Length));
-                        ArrayPool<byte>.Shared.Return(rentedBuffer);
-                        rentedBuffer = null;
-
-                        return result;
+                        // Pin the rented buffer for security.
+                        fixed (byte* _ = &rentedBuffer[0])
+                        {
+                            inputBuffer.CopyTo(rentedBuffer);
+                            result = transform.TransformBlock(rentedBuffer, 0, inputBuffer.Length, outputBuffer, outputOffset);
+                        }
                     }
-                    catch
+                    finally
                     {
                         CryptographicOperations.ZeroMemory(rentedBuffer.AsSpan(0, inputBuffer.Length));
-                        rentedBuffer = null;
-
-                        throw;
                     }
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                    rentedBuffer = null;
+
+                    return result;
                 }
             }
         }
