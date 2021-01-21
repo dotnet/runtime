@@ -1272,6 +1272,27 @@ namespace System.Net.Sockets
             SendFile(fileName, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread);
         }
 
+        /// <summary>
+        /// Sends the file <paramref name="fileName"/> and buffers of data to a connected <see cref="Socket"/> object
+        /// using the specified <see cref="TransmitFileOptions"/> value.
+        /// </summary>
+        /// <param name="fileName">
+        /// A <see cref="string"/> that contains the path and name of the file to be sent. This parameter can be <see langword="null"/>.
+        /// </param>
+        /// <param name="preBuffer">
+        /// A <see cref="byte"/> array that contains data to be sent before the file is sent. This parameter can be <see langword="null"/>.
+        /// </param>
+        /// <param name="postBuffer">
+        /// A <see cref="byte"/> array that contains data to be sent after the file is sent. This parameter can be <see langword="null"/>.
+        /// </param>
+        /// <param name="flags">
+        /// One or more of <see cref="TransmitFileOptions"/> values.
+        /// </param>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> object has been closed.</exception>
+        /// <exception cref="NotSupportedException">The <see cref="Socket"/> object is not connected to a remote host.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="Socket"/> object is not in blocking mode and cannot accept this synchronous call.</exception>
+        /// <exception cref="FileNotFoundException">The file <paramref name="fileName"/> was not found.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         public void SendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
             SendFile(fileName, preBuffer.AsSpan(), postBuffer.AsSpan(), flags);
@@ -1285,10 +1306,10 @@ namespace System.Net.Sockets
         /// A <see cref="string"/> that contains the path and name of the file to be sent. This parameter can be <see langword="null"/>.
         /// </param>
         /// <param name="preBuffer">
-        /// A <see cref="byte"/> array that contains data to be sent before the file is sent. This parameter can be <see langword="null"/>.
+        /// A <see cref="ReadOnlySpan{T}"/> that contains data to be sent before the file is sent. This buffer can be empty.
         /// </param>
         /// <param name="postBuffer">
-        /// A <see cref="byte"/> array that contains data to be sent after the file is sent. This parameter can be <see langword="null"/>.
+        /// A <see cref="ReadOnlySpan{T}"/> that contains data to be sent after the file is sent. This buffer can be empty.
         /// </param>
         /// <param name="flags">
         /// One or more of <see cref="TransmitFileOptions"/> values.
