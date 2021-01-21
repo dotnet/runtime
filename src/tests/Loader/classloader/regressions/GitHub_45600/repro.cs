@@ -1,106 +1,98 @@
 using System;
 using System.Collections.Generic;
 
+public abstract class A { }
+
+public class B : A { }
+
+public abstract class C { }
+
+public abstract class C<CTParam> : C where CTParam : A { }
+
+public class D : C<B> { }
+
+public abstract class E
+{
+    internal E() { }
+
+    internal abstract Type NamedObjectType { get; }
+}
+
+public class E<ETParam> : E
+    where ETParam : A
+{
+    private readonly F<C<ETParam>> components =
+        new F<C<ETParam>>();
+
+    internal override Type NamedObjectType => typeof(ETParam);
+
+    public void Register<ERegMethodParam>()
+        where ERegMethodParam : C<ETParam>, new()
+    {
+        components.Register<ERegMethodParam>();
+    }
+}
+
+public class F<FTParam> where FTParam : class
+{
+    private readonly HashSet<Type> componentTypes = new HashSet<Type>();
+
+    private readonly Dictionary<Type, Func<FTParam>> componentFactories =
+        new Dictionary<Type, Func<FTParam>>();
+
+    public void Register<FRegMethodParamHaha>()   // F<C<B>>.Register<D>
+        where FRegMethodParamHaha : class, FTParam, new()
+    {
+    }
+}
+
+public class G
+{
+    private readonly Dictionary<Type, E> subcontainersByNamedObjectType =
+        new Dictionary<Type, E>();
+
+    private readonly Dictionary<Type, E> subcontainersByRegisteredType =
+        new Dictionary<Type, E>();
+
+    public E<ETParam> RegisterNamedObjectType<ETParam>()
+    where ETParam : A
+    {
+        return RegisterSubcontainer(new E<ETParam>());
+    }
+
+    public GRegMethodParam RegisterSubcontainer<GRegMethodParam>(GRegMethodParam subcontainer)
+        where GRegMethodParam : E
+    {
+        subcontainersByNamedObjectType.Add(subcontainer.NamedObjectType, subcontainer);
+        subcontainersByRegisteredType.Add(typeof(GRegMethodParam), subcontainer);
+        return subcontainer;
+    }
+
+    internal void Register<GRegMethodParam1, GRegMethodParam2>()
+        where GRegMethodParam1 : A
+        where GRegMethodParam2 : C<GRegMethodParam1>, new()
+    {
+        GetSubcontainerFor<GRegMethodParam1>().Register<GRegMethodParam2>();  // E<B>.Reg<D>
+    }
+
+    public E<GGetSebMethodParam> GetSubcontainerFor<GGetSebMethodParam>()
+        where GGetSebMethodParam : A
+    {
+        return (E<GGetSebMethodParam>)GetSubcontainerFor(typeof(GGetSebMethodParam));
+    }
+
+    public E GetSubcontainerFor(Type baseNamedObjectType)
+    {
+        return subcontainersByNamedObjectType[baseNamedObjectType];
+    }
+}
+
 class Program
 {
-    public abstract class NamedObject { }
-
-    public class FooNamedObject : NamedObject { }
-
-    public abstract class NamedObjectComponent { }
-
-    public abstract class NamedObjectComponent<TNamedObject> : NamedObjectComponent where TNamedObject : NamedObject { }
-
-    public class FooNamedObjectComponent : NamedObjectComponent<FooNamedObject> { }
-
-    public abstract class SingleTypeNamedObjectContainer
+    static void Main(string[] args)
     {
-        internal SingleTypeNamedObjectContainer() { }
-        internal abstract Type NamedObjectType { get; }
-    }
-
-    public class SingleTypeNamedObjectContainer<TNamedObject> : SingleTypeNamedObjectContainer
-                  where TNamedObject : NamedObject
-    {
-        private readonly ComponentRegistry<NamedObjectComponent<TNamedObject>> components =
-            new ComponentRegistry<NamedObjectComponent<TNamedObject>>();
-
-        internal override Type NamedObjectType => typeof(TNamedObject);
-
-        public void Register<TComponentA>()
-            where TComponentA : NamedObjectComponent<TNamedObject>, new()
-        {
-            components.Register<TComponentA>();
-        }
-    }
-
-    public class ComponentRegistry<TBaseComponent> where TBaseComponent : class
-    {
-        private readonly HashSet<Type> componentTypes = new HashSet<Type>();
-
-        private readonly Dictionary<Type, Func<TBaseComponent>> componentFactories =
-            new Dictionary<Type, Func<TBaseComponent>>();
-
-        public void Register<TComponent>()
-            where TComponent : class, TBaseComponent, new()
-        {
-            Register(() => new TComponent());
-        }
-
-        public void Register<TComponent>(Func<TComponent> componentFactory)
-            where TComponent : class, TBaseComponent
-        {
-            componentTypes.Add(typeof(TComponent));
-                componentFactories.Add(typeof(TComponent), componentFactory);
-        }
-    }
-
-    public class NamedObjectContainer
-    {
-        private readonly Dictionary<Type, SingleTypeNamedObjectContainer> subcontainersByNamedObjectType =
-            new Dictionary<Type, SingleTypeNamedObjectContainer>();
-
-        private readonly Dictionary<Type, SingleTypeNamedObjectContainer> subcontainersByRegisteredType =
-            new Dictionary<Type, SingleTypeNamedObjectContainer>();
-
-        public SingleTypeNamedObjectContainer<TNamedObject> RegisterNamedObjectType<TNamedObject>()
-            where TNamedObject : NamedObject
-        {
-            return RegisterSubcontainer(new SingleTypeNamedObjectContainer<TNamedObject>());
-        }
-
-        public TSubcontainer RegisterSubcontainer<TSubcontainer>(TSubcontainer subcontainer)
-            where TSubcontainer : SingleTypeNamedObjectContainer
-        {
-            subcontainersByNamedObjectType.Add(subcontainer.NamedObjectType, subcontainer);
-            subcontainersByRegisteredType.Add(typeof(TSubcontainer), subcontainer);
-            return subcontainer;
-        }
-
-        internal void Register<TNamedObject, TComponent>()
-            where TNamedObject : NamedObject
-            where TComponent : NamedObjectComponent<TNamedObject>, new()
-        {
-            GetSubcontainerFor<TNamedObject>().Register<TComponent>();
-        }
-
-        public SingleTypeNamedObjectContainer<TNamedObject> GetSubcontainerFor<TNamedObject>()
-            where TNamedObject : NamedObject
-        {
-            return (SingleTypeNamedObjectContainer<TNamedObject>)GetSubcontainerFor(typeof(TNamedObject));
-        }
-
-        public SingleTypeNamedObjectContainer GetSubcontainerFor(Type baseNamedObjectType)
-        {
-            return subcontainersByNamedObjectType[baseNamedObjectType];
-        }
-    }
-
-        static int Main(string[] args)
-        {
-            var contaner = new NamedObjectContainer();
-            contaner.RegisterNamedObjectType<FooNamedObject>();
-            contaner.Register<FooNamedObject, FooNamedObjectComponent>();
-            return 100;
-        }		
-    }
+        var contaner = new G();
+        contaner.RegisterNamedObjectType<B>();
+        contaner.Register<B, D>();
+    }		
+}
