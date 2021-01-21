@@ -808,7 +808,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success_MemberData))]
         public async Task SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(Configuration.Http.RemoteServer remoteServer, string stringContent, int startingPosition)
