@@ -2766,7 +2766,7 @@ void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingC
 void ILStubLinker::SetStubTargetCallingConv(CorInfoCallConvExtension callConv)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(callconv != CorInfoCallConvExtension::Managed);
+    _ASSERTE(callConv != CorInfoCallConvExtension::Managed);
 
     const CorCallingConvention originalCallingConvention = m_nativeFnSigBuilder.GetCallingConv();
     if (originalCallingConvention != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
