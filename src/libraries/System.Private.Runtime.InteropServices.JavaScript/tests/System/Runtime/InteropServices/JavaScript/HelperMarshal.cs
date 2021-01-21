@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -12,6 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public static class HelperMarshal
     {
         internal const string INTEROP_CLASS = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
+
         internal static int _i32Value;
         private static void InvokeI32(int a, int b)
         {
@@ -102,6 +105,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _object2 = obj;
             return obj;
+        }
+
+        internal static DateTime _dateTimeValue;
+        private static void InvokeDateTime(object boxed)
+        {
+            _dateTimeValue = (DateTime)boxed;
+        }
+        private static void InvokeDateTimeOffset(DateTimeOffset dto)
+        {
+            // FIXME
+            _dateTimeValue = dto.DateTime;
+        }
+        private static void InvokeDateTimeByValue(DateTime dt)
+        {
+            _dateTimeValue = dt;
+        }
+
+        internal static System.Uri _uriValue;
+        private static void InvokeUri(System.Uri uri)
+        {
+            _uriValue = uri;
         }
 
         internal static object _marshalledObject;
@@ -642,65 +666,65 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             };
         }
 
-        public static Task SynchronousTask() 
+        public static Task SynchronousTask()
         {
             return Task.CompletedTask;
         }
 
-        public static async Task AsynchronousTask() 
+        public static async Task AsynchronousTask()
         {
             await Task.Yield();
         }
 
-        public static Task<int> SynchronousTaskInt(int i) 
+        public static Task<int> SynchronousTaskInt(int i)
         {
             return Task.FromResult(i);
         }
 
-        public static async Task<int> AsynchronousTaskInt(int i) 
+        public static async Task<int> AsynchronousTaskInt(int i)
         {
             await Task.Yield();
             return i;
         }
 
-        public static Task FailedSynchronousTask() 
+        public static Task FailedSynchronousTask()
         {
             return Task.FromException(new Exception());
         }
 
-        public static async Task FailedAsynchronousTask() 
+        public static async Task FailedAsynchronousTask()
         {
             await Task.Yield();
             throw new Exception();
         }
 
-        public static async ValueTask AsynchronousValueTask() 
+        public static async ValueTask AsynchronousValueTask()
         {
             await Task.Yield();
         }
 
-        public static ValueTask SynchronousValueTask() 
+        public static ValueTask SynchronousValueTask()
         {
             return ValueTask.CompletedTask;
         }
 
-        public static ValueTask<int> SynchronousValueTaskInt(int i) 
+        public static ValueTask<int> SynchronousValueTaskInt(int i)
         {
             return ValueTask.FromResult(i);
         }
 
-        public static async ValueTask<int> AsynchronousValueTaskInt(int i) 
+        public static async ValueTask<int> AsynchronousValueTaskInt(int i)
         {
             await Task.Yield();
             return i;
         }
 
-        public static ValueTask FailedSynchronousValueTask() 
+        public static ValueTask FailedSynchronousValueTask()
         {
             return ValueTask.FromException(new Exception());
         }
 
-        public static async ValueTask FailedAsynchronousValueTask() 
+        public static async ValueTask FailedAsynchronousValueTask()
         {
             await Task.Yield();
             throw new Exception();

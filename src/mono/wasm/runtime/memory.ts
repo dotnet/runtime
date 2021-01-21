@@ -37,80 +37,80 @@ export function _release_temp_frame(): void {
     alloca_offset = <VoidPtr>alloca_stack.pop();
 }
 
-type _MemOffset = number | VoidPtr | NativePointer;
-type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
+type DotnetMemOffset = number | NativePointer;
+type DotnetMemValue = number | NativePointer | ManagedPointer;
 
-export function setU8(offset: _MemOffset, value: number): void {
+export function setU8(offset: DotnetMemOffset, value: number): void {
     Module.HEAPU8[<any>offset] = value;
 }
 
-export function setU16(offset: _MemOffset, value: number): void {
+export function setU16(offset: DotnetMemOffset, value: number): void {
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
-export function setU32 (offset: _MemOffset, value: _NumberOrPointer) : void {
+export function setU32 (offset: DotnetMemOffset, value: DotnetMemValue) : void {
     Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
-export function setI8(offset: _MemOffset, value: number): void {
+export function setI8(offset: DotnetMemOffset, value: number): void {
     Module.HEAP8[<any>offset] = value;
 }
 
-export function setI16(offset: _MemOffset, value: number): void {
+export function setI16(offset: DotnetMemOffset, value: number): void {
     Module.HEAP16[<any>offset >>> 1] = value;
 }
 
-export function setI32 (offset: _MemOffset, value: _NumberOrPointer) : void {
-    Module.HEAP32[<any>offset >>> 2] = <number><any>value;
+export function setI32(offset: DotnetMemOffset, value: number): void {
+    Module.HEAP32[<any>offset >>> 2] = value;
 }
 
 // NOTE: Accepts a number, not a BigInt, so values over Number.MAX_SAFE_INTEGER will be corrupted
-export function setI64(offset: _MemOffset, value: number): void {
+export function setI64(offset: DotnetMemOffset, value: number): void {
     Module.setValue(<VoidPtr><any>offset, value, "i64");
 }
 
-export function setF32(offset: _MemOffset, value: number): void {
+export function setF32(offset: DotnetMemOffset, value: number): void {
     Module.HEAPF32[<any>offset >>> 2] = value;
 }
 
-export function setF64(offset: _MemOffset, value: number): void {
+export function setF64(offset: DotnetMemOffset, value: number): void {
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
 
 
-export function getU8(offset: _MemOffset): number {
+export function getU8(offset: DotnetMemOffset): number {
     return Module.HEAPU8[<any>offset];
 }
 
-export function getU16(offset: _MemOffset): number {
+export function getU16(offset: DotnetMemOffset): number {
     return Module.HEAPU16[<any>offset >>> 1];
 }
 
-export function getU32(offset: _MemOffset): number {
+export function getU32(offset: DotnetMemOffset): number {
     return Module.HEAPU32[<any>offset >>> 2];
 }
 
-export function getI8(offset: _MemOffset): number {
+export function getI8(offset: DotnetMemOffset): number {
     return Module.HEAP8[<any>offset];
 }
 
-export function getI16(offset: _MemOffset): number {
+export function getI16(offset: DotnetMemOffset): number {
     return Module.HEAP16[<any>offset >>> 1];
 }
 
-export function getI32(offset: _MemOffset): number {
+export function getI32(offset: DotnetMemOffset): number {
     return Module.HEAP32[<any>offset >>> 2];
 }
 
 // NOTE: Returns a number, not a BigInt. This means values over Number.MAX_SAFE_INTEGER will be corrupted
-export function getI64(offset: _MemOffset): number {
+export function getI64(offset: DotnetMemOffset): number {
     return Module.getValue(<number><any>offset, "i64");
 }
 
-export function getF32(offset: _MemOffset): number {
+export function getF32(offset: DotnetMemOffset): number {
     return Module.HEAPF32[<any>offset >>> 2];
 }
 
-export function getF64(offset: _MemOffset): number {
+export function getF64(offset: DotnetMemOffset): number {
     return Module.HEAPF64[<any>offset >>> 3];
 }

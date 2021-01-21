@@ -62,7 +62,7 @@ export type MonoConfig = {
     runtime_options?: string[], // array of runtime options as strings
     aot_profiler_options?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverage_profiler_options?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
-    ignore_pdb_load_errors?: boolean
+    ignore_pdb_load_errors?: boolean,
 };
 
 export type MonoConfigError = {
@@ -236,4 +236,16 @@ export enum MarshalError {
     NULL_TYPE_POINTER = 514,
     UNSUPPORTED_TYPE = 515,
     FIRST = BUFFER_TOO_SMALL
+}
+
+export type MarshalTypeRecord = {
+    marshalType : MarshalType;
+    typePtr : MonoType;
+    signatureChar : string;
+}
+
+export type MarshalSignatureInfo = {
+    typePtr : MonoType;
+    methodPtr : MonoMethod;
+    parameters : MarshalTypeRecord[];
 }

@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees. 
+//! This is not considered public API with backward compatibility guarantees.
 
 declare interface ManagedPointer {
     __brandManagedPointer: "ManagedPointer";
@@ -249,26 +249,26 @@ declare function mono_call_assembly_entry_point(assembly: string, args?: any[], 
 
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
-declare type _MemOffset = number | VoidPtr | NativePointer;
-declare type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
-declare function setU8(offset: _MemOffset, value: number): void;
-declare function setU16(offset: _MemOffset, value: number): void;
-declare function setU32(offset: _MemOffset, value: _NumberOrPointer): void;
-declare function setI8(offset: _MemOffset, value: number): void;
-declare function setI16(offset: _MemOffset, value: number): void;
-declare function setI32(offset: _MemOffset, value: _NumberOrPointer): void;
-declare function setI64(offset: _MemOffset, value: number): void;
-declare function setF32(offset: _MemOffset, value: number): void;
-declare function setF64(offset: _MemOffset, value: number): void;
-declare function getU8(offset: _MemOffset): number;
-declare function getU16(offset: _MemOffset): number;
-declare function getU32(offset: _MemOffset): number;
-declare function getI8(offset: _MemOffset): number;
-declare function getI16(offset: _MemOffset): number;
-declare function getI32(offset: _MemOffset): number;
-declare function getI64(offset: _MemOffset): number;
-declare function getF32(offset: _MemOffset): number;
-declare function getF64(offset: _MemOffset): number;
+declare type DotnetMemOffset = number | NativePointer;
+declare type DotnetMemValue = number | NativePointer | ManagedPointer;
+declare function setU8(offset: DotnetMemOffset, value: number): void;
+declare function setU16(offset: DotnetMemOffset, value: number): void;
+declare function setU32(offset: DotnetMemOffset, value: DotnetMemValue): void;
+declare function setI8(offset: DotnetMemOffset, value: number): void;
+declare function setI16(offset: DotnetMemOffset, value: number): void;
+declare function setI32(offset: DotnetMemOffset, value: number): void;
+declare function setI64(offset: DotnetMemOffset, value: number): void;
+declare function setF32(offset: DotnetMemOffset, value: number): void;
+declare function setF64(offset: DotnetMemOffset, value: number): void;
+declare function getU8(offset: DotnetMemOffset): number;
+declare function getU16(offset: DotnetMemOffset): number;
+declare function getU32(offset: DotnetMemOffset): number;
+declare function getI8(offset: DotnetMemOffset): number;
+declare function getI16(offset: DotnetMemOffset): number;
+declare function getI32(offset: DotnetMemOffset): number;
+declare function getI64(offset: DotnetMemOffset): number;
+declare function getF32(offset: DotnetMemOffset): number;
+declare function getF64(offset: DotnetMemOffset): number;
 
 declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
 declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;

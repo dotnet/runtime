@@ -9,7 +9,7 @@ import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
-import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
+import { bind_runtime_method, get_method } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
@@ -42,7 +42,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         module.postRun = [module.postRun];
     }
 
-    // when user set configSrc or config, we are running our default startup sequence. 
+    // when user set configSrc or config, we are running our default startup sequence.
     if (module.configSrc || module.config) {
         // execution order == [0] ==
         // - default or user Module.instantiateWasm (will start downloading dotnet.wasm)
@@ -383,8 +383,6 @@ export function bindings_lazy_init(): void {
     runtimeHelpers.get_call_sig = get_method("GetCallSignature");
     if (!runtimeHelpers.get_call_sig)
         throw "Can't find GetCallSignature method";
-
-    _create_primitive_converters();
 }
 
 // Initializes the runtime and loads assemblies, debug information, and other files.

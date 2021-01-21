@@ -41,8 +41,7 @@ function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
     return js_obj;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<any>, type: MarshalType, typePtr: MonoType, unbox_buffer: VoidPtr): any {
+function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<any>, type: MarshalType, typePtr: MonoType, unbox_buffer: VoidPtr) : any {
     //See MARSHAL_TYPE_ defines in driver.c
     switch (type) {
         case MarshalType.INT64:
@@ -53,13 +52,13 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.STRING_INTERNED:
             return conv_string(root.value);
         case MarshalType.VT:
-            throw new Error("no idea on how to unbox value types");
+            throw new Error("cannot unbox custom value types");
         case MarshalType.DELEGATE:
             return _wrap_delegate_root_as_function(root);
         case MarshalType.TASK:
             return _unbox_task_root_as_promise(root);
         case MarshalType.OBJECT:
-            return _unbox_ref_type_root_as_js_object(root);
+            return _unbox_ref_type_root_as_js_object (root);
         case MarshalType.ARRAY_BYTE:
         case MarshalType.ARRAY_UBYTE:
         case MarshalType.ARRAY_UBYTE_C:
@@ -71,9 +70,8 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.ARRAY_DOUBLE:
             throw new Error("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
         case <MarshalType>20: // clr .NET DateTime
-            return new Date(corebindings._get_date_value(root.value));
         case <MarshalType>21: // clr .NET DateTimeOffset
-            return corebindings._object_to_string(root.value);
+            throw new Error("Deprecated type (DATETIME / DATETIMEOFFSET)");
         case MarshalType.URI:
             return corebindings._object_to_string(root.value);
         case MarshalType.SAFEHANDLE:
@@ -85,7 +83,7 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
     }
 }
 
-export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr): any {
+export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr) : any {
     if (type >= MarshalError.FIRST)
         throw new Error(`Got marshaling error ${type} when attempting to unbox object at address ${root.value} (root located at ${root.get_address()})`);
 
@@ -99,7 +97,7 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
     return _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root, type, typePtr, unbox_buffer);
 }
 
-export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
+export function _unbox_mono_obj_root(root: WasmRoot<any>) : any {
     if (root.value === 0)
         return undefined;
 

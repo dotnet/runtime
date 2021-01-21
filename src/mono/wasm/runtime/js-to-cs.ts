@@ -17,19 +17,11 @@ import { has_backing_array_buffer } from "./buffers";
 import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";
 import { setI32, setU32, setF64 } from "./memory";
 import { Int32Ptr, TypedArray } from "./types/emscripten";
+import { find_corlib_type, find_type_in_assembly } from "./class-loader";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any): MonoObject {
-    switch (true) {
-        case js_obj === null:
-        case typeof js_obj === "undefined":
-            return MonoObjectNull;
-        case typeof js_obj === "symbol":
-        case typeof js_obj === "string":
-            return corebindings._create_uri(js_obj);
-        default:
-            return _extract_mono_obj(should_add_in_flight, js_obj);
-    }
+    throw new Error("js_to_mono_uri is no longer supported");
 }
 
 // this is only used from Blazor
@@ -69,8 +61,7 @@ export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any): Mon
             return task_ptr;
         }
         case js_obj.constructor.name === "Date":
-            // getTime() is always UTC
-            return corebindings._create_date_time(js_obj.getTime());
+            throw new Error("Automatic JS Date conversion is no longer supported");
         default:
             return _extract_mono_obj(should_add_in_flight, js_obj);
     }
@@ -203,7 +194,7 @@ export function _wrap_js_thenable_as_task(thenable: Promise<any>): {
     // ideally, this should be hold alive by lifespan of the resulting C# Task, but this is good cheap aproximation
     const thenable_js_handle = mono_wasm_get_js_handle(thenable);
 
-    // Note that we do not implement promise/task roundtrip. 
+    // Note that we do not implement promise/task roundtrip.
     // With more complexity we could recover original instance when this Task is marshaled back to JS.
     // TODO optimization: return the tcs.Task on this same call instead of _get_tcs_task
     const tcs_gc_handle = corebindings._create_tcs();

@@ -10,6 +10,12 @@ namespace System.Runtime.InteropServices.JavaScript
     /// </summary>
     public class JSException : Exception
     {
+        public string? Stack;
+
         public JSException(string msg) : base(msg) { }
+
+        public JSException(string msg, string? stack) : base(msg) {
+            Stack = stack;
+        }
     }
 }

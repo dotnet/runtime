@@ -31,7 +31,7 @@ import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    configure_emscripten_startup
+    configure_emscripten_startup,
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -47,7 +47,7 @@ import {
     mono_wasm_get_by_index, mono_wasm_get_global_object, mono_wasm_get_object_property,
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
-    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property
+    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property,
 } from "./method-calls";
 import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
@@ -65,6 +65,10 @@ import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
+import {
+    _JSObject_Invoke, _JSObject_GetProperty, _JSObject_SetProperty,
+    _invoke_js_function_by_qualified_name_impl
+} from "./invoke-api";
 
 const MONO = {
     // current "public" MONO API
@@ -201,7 +205,7 @@ function initializeImportsAndExports(
         // backward compatibility
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
+        module.mono_bind_static_method = (fqn: string, signature: string): Function => {
             console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
         };
@@ -274,6 +278,7 @@ export const __linker_exports: any = {
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
+    _invoke_js_function_by_qualified_name_impl,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args,
@@ -333,6 +338,32 @@ const INTERNAL: any = {
     mono_wasm_detach_debugger,
     mono_wasm_raise_debug_event,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
+
+    // memory accessors
+    setI8,
+    setI16,
+    setI32,
+    setI64,
+    setU8,
+    setU16,
+    setU32,
+    setF32,
+    setF64,
+    getI8,
+    getI16,
+    getI32,
+    getI64,
+    getU8,
+    getU16,
+    getU32,
+    getF32,
+    getF64,
+
+    // new invoke API
+    _JSObject_Invoke,
+    _JSObject_GetProperty,
+    _JSObject_SetProperty,
+    _invoke_js_function_by_qualified_name_impl,
 };
 
 

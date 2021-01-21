@@ -35,6 +35,11 @@ extern MonoString* mono_wasm_invoke_js (MonoString *str, int *is_exception);
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
 
+extern uint32_t _invoke_js_function_by_qualified_name_impl (
+	MonoString *internedFunctionName, uint32_t argumentCount,
+	int* marshalTypes, MonoType **typeHandles, void **arguments
+);
+
 void mono_wasm_enable_debugging (int);
 
 int mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type);
@@ -65,8 +70,6 @@ char *mono_method_get_full_name (MonoMethod *method);
 #define MARSHAL_TYPE_OBJECT 7
 #define MARSHAL_TYPE_BOOL 8
 #define MARSHAL_TYPE_ENUM 9
-#define MARSHAL_TYPE_DATE 20
-#define MARSHAL_TYPE_DATEOFFSET 21
 #define MARSHAL_TYPE_URI 22
 #define MARSHAL_TYPE_SAFEHANDLE 23
 
@@ -90,21 +93,21 @@ char *mono_method_get_full_name (MonoMethod *method);
 #define MARSHAL_TYPE_VOID 30
 #define MARSHAL_TYPE_POINTER 32
 
+// Used for passing spans to C# from the JS bindings. Since spans have type restrictions,
+//  no boxed value will ever have this type and driver.c does not ever produce it
+#define MARSHAL_TYPE_SPAN_BYTE 33
+
 // errors
 #define MARSHAL_ERROR_BUFFER_TOO_SMALL 512
 #define MARSHAL_ERROR_NULL_CLASS_POINTER 513
 #define MARSHAL_ERROR_NULL_TYPE_POINTER 514
 
-static MonoClass* datetime_class;
-static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
 static MonoClass* task_class;
 static MonoClass* safehandle_class;
 static MonoClass* voidtaskresult_class;
 
-static int resolved_datetime_class = 0,
-	resolved_datetimeoffset_class = 0,
-	resolved_uri_class = 0,
+static int resolved_uri_class = 0,
 	resolved_task_class = 0,
 	resolved_safehandle_class = 0,
 	resolved_voidtaskresult_class = 0;
@@ -138,6 +141,80 @@ static MonoDomain *root_domain;
 
 extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
 
+#define INVOKERESULT_Success 0
+#define INVOKERESULT_InvalidFunctionName 1 // null/blank name, name not interned, or syntax error
+#define INVOKERESULT_FunctionNotFound 2 // no function found matching this function name
+#define INVOKERESULT_InvalidArgumentCount 3 // argument count outside valid range [0-3]
+#define INVOKERESULT_InvalidArgumentType 4 // an argument was of an unsupported type
+#define INVOKERESULT_MissingArgumentType 5 // an argument value was provided without a type handle
+#define INVOKERESULT_NullArgumentPointer 6 // the pointer to a non-nullable argument value was 0
+#define INVOKERESULT_FunctionHadReturnValue 7
+#define INVOKERESULT_FunctionThrewException 8
+#define INVOKERESULT_InternalError 9 // an unspecified internal error occurred
+
+#define INVOKE_ARGUMENT_BUFFER_SIZE 3
+
+static int32_t
+mono_wasm_invoke_js_function_by_qualified_name (
+	MonoString *internedFunctionName, int32_t argumentCount,
+	MonoType *type1, void *arg1,
+	MonoType *type2, void *arg2,
+	MonoType *type3, void *arg3
+) {
+	if (!internedFunctionName || !mono_string_instance_is_interned (internedFunctionName))
+		return INVOKERESULT_InvalidFunctionName;
+
+	if ((argumentCount < 0) || (argumentCount > INVOKE_ARGUMENT_BUFFER_SIZE))
+		return INVOKERESULT_InvalidArgumentCount;
+
+	int marshalTypes[INVOKE_ARGUMENT_BUFFER_SIZE] = {0};
+	MonoType *typeHandles[INVOKE_ARGUMENT_BUFFER_SIZE] = {0};
+	void *arguments[INVOKE_ARGUMENT_BUFFER_SIZE] = {0};
+
+	if (argumentCount > 0) {
+		typeHandles[0] = type1;
+		arguments[0] = arg1;
+	}
+	if (argumentCount > 1) {
+		typeHandles[1] = type2;
+		arguments[1] = arg2;
+	}
+	if (argumentCount > 2) {
+		typeHandles[2] = type3;
+		arguments[2] = arg3;
+	}
+
+	int32_t result = 0;
+	MonoClass *klass;
+	int mono_type;
+
+	for (int32_t i = 0; i < argumentCount; i++) {
+		if (typeHandles[i] == 0) {
+			result = INVOKERESULT_MissingArgumentType;
+			break;
+		}
+
+		klass = mono_class_from_mono_type (typeHandles[i]);
+		mono_type = mono_type_get_type (typeHandles[i]);
+		marshalTypes[i] = mono_wasm_marshal_type_from_mono_type (mono_type, klass, typeHandles[i]);
+		if (marshalTypes[i] >= MARSHAL_ERROR_BUFFER_TOO_SMALL) {
+			result = INVOKERESULT_InvalidArgumentType;
+			break;
+		}
+
+		// TODO: INVOKERESULT_NullArgumentPointer
+	}
+
+	if (result == 0) {
+		result = _invoke_js_function_by_qualified_name_impl (
+			internedFunctionName, argumentCount,
+			marshalTypes, typeHandles, arguments
+		);
+	}
+
+	return result;
+}
+
 static void
 wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
@@ -158,7 +235,7 @@ mono_wasm_register_root (char *start, size_t size, const char *name)
 	return mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
 }
 
-EMSCRIPTEN_KEEPALIVE void 
+EMSCRIPTEN_KEEPALIVE void
 mono_wasm_deregister_root (char *addr)
 {
 	mono_gc_deregister_root (addr);
@@ -407,6 +484,8 @@ void mono_initialize_internals ()
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
+
+	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_js_function_by_qualified_name);
 
 #ifdef CORE_BINDINGS
 	core_initialize_internals();
@@ -752,14 +831,6 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 
 void mono_wasm_ensure_classes_resolved ()
 {
-	if (!datetime_class && !resolved_datetime_class) {
-		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
-		resolved_datetime_class = 1;
-	}
-	if (!datetimeoffset_class && !resolved_datetimeoffset_class) {
-		datetimeoffset_class = mono_class_from_name (mono_get_corlib(), "System", "DateTimeOffset");
-		resolved_datetimeoffset_class = 1;
-	}
 	if (!uri_class && !resolved_uri_class) {
 		MonoException** exc = NULL;
 		uri_class = mono_get_uri_class(exc);
@@ -811,29 +882,29 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 		return MARSHAL_TYPE_STRING;
 	case MONO_TYPE_SZARRAY:  { // simple zero based one-dim-array
 		if (klass) {
-		MonoClass *eklass = mono_class_get_element_class (klass);
-		MonoType *etype = mono_class_get_type (eklass);
+			MonoClass *eklass = mono_class_get_element_class (klass);
+			MonoType *etype = mono_class_get_type (eklass);
 
-		switch (mono_type_get_type (etype)) {
-			case MONO_TYPE_U1:
-				return MARSHAL_ARRAY_UBYTE;
-			case MONO_TYPE_I1:
-				return MARSHAL_ARRAY_BYTE;
-			case MONO_TYPE_U2:
-				return MARSHAL_ARRAY_USHORT;
-			case MONO_TYPE_I2:
-				return MARSHAL_ARRAY_SHORT;
-			case MONO_TYPE_U4:
-				return MARSHAL_ARRAY_UINT;
-			case MONO_TYPE_I4:
-				return MARSHAL_ARRAY_INT;
-			case MONO_TYPE_R4:
-				return MARSHAL_ARRAY_FLOAT;
-			case MONO_TYPE_R8:
-				return MARSHAL_ARRAY_DOUBLE;
-			default:
-				return MARSHAL_TYPE_OBJECT;
-		}
+			switch (mono_type_get_type (etype)) {
+				case MONO_TYPE_U1:
+					return MARSHAL_ARRAY_UBYTE;
+				case MONO_TYPE_I1:
+					return MARSHAL_ARRAY_BYTE;
+				case MONO_TYPE_U2:
+					return MARSHAL_ARRAY_USHORT;
+				case MONO_TYPE_I2:
+					return MARSHAL_ARRAY_SHORT;
+				case MONO_TYPE_U4:
+					return MARSHAL_ARRAY_UINT;
+				case MONO_TYPE_I4:
+					return MARSHAL_ARRAY_INT;
+				case MONO_TYPE_R4:
+					return MARSHAL_ARRAY_FLOAT;
+				case MONO_TYPE_R8:
+					return MARSHAL_ARRAY_DOUBLE;
+				default:
+					return MARSHAL_TYPE_OBJECT;
+			}
 		} else {
 			return MARSHAL_TYPE_OBJECT;
 		}
@@ -842,24 +913,20 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 		mono_wasm_ensure_classes_resolved ();
 
 		if (klass) {
-		if (klass == datetime_class)
-			return MARSHAL_TYPE_DATE;
-		if (klass == datetimeoffset_class)
-			return MARSHAL_TYPE_DATEOFFSET;
-		if (uri_class && mono_class_is_assignable_from(uri_class, klass))
-			return MARSHAL_TYPE_URI;
-		if (klass == voidtaskresult_class)
-			return MARSHAL_TYPE_VOID;
-		if (mono_class_is_enum (klass))
-			return MARSHAL_TYPE_ENUM;
+			if (uri_class && mono_class_is_assignable_from(uri_class, klass))
+				return MARSHAL_TYPE_URI;
+			if (klass == voidtaskresult_class)
+				return MARSHAL_TYPE_VOID;
+			if (mono_class_is_enum (klass))
+				return MARSHAL_TYPE_ENUM;
 			if (type && !mono_type_is_reference (type)) //vt
-			return MARSHAL_TYPE_VT;
-		if (mono_class_is_delegate (klass))
-			return MARSHAL_TYPE_DELEGATE;
-		if (class_is_task(klass))
-			return MARSHAL_TYPE_TASK;
+				return MARSHAL_TYPE_VT;
+			if (mono_class_is_delegate (klass))
+				return MARSHAL_TYPE_DELEGATE;
+			if (class_is_task(klass))
+				return MARSHAL_TYPE_TASK;
 			if (safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0)))
-			return MARSHAL_TYPE_SAFEHANDLE;
+				return MARSHAL_TYPE_SAFEHANDLE;
 		}
 
 		return MARSHAL_TYPE_OBJECT;
@@ -952,7 +1019,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 		if (mono_type_generic_inst_is_valuetype (type))
 			mono_type = MONO_TYPE_VALUETYPE;
 	}
-	
+
 	// FIXME: We would prefer to unbox once here but it will fail if the value isn't unboxable
 
 	switch (mono_type) {
@@ -1155,6 +1222,16 @@ mono_wasm_unbox_rooted (MonoObject *obj)
 	if (!obj)
 		return NULL;
 	return mono_object_unbox (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE MonoClass *
+mono_wasm_get_class_for_bind_or_invoke (MonoObject *this_arg, MonoMethod *method) {
+	if (this_arg)
+		return mono_object_get_class (this_arg);
+	else if (method)
+		return mono_method_get_class (method);
+	else
+		return NULL;
 }
 
 EMSCRIPTEN_KEEPALIVE char *

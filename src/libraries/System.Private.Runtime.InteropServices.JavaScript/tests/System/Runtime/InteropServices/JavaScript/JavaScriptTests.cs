@@ -186,8 +186,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     return rangeIterator;
                 ");
 
-            const int count = 500;
-            for (int attempt = 0; attempt < 100; attempt++)
+            const int count = 500, attemptCount = 100;
+            for (int attempt = 0; attempt < attemptCount; attempt++)
             {
                 int index = 0;
                 try
@@ -226,8 +226,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 {
                     object value = nextResult.GetObjectProperty("value");
                     nextResult.Dispose();
+                    if (value == null)
+                        Console.WriteLine("iter.value was null");
                     yield return value;
                     nextResult = (JSObject)iterrator.Invoke("next");
+                    if (nextResult == null) {
+                        Console.WriteLine("next return value was null");
+                        break;
+                    }
                     done = (bool)nextResult.GetObjectProperty("done");
                 }
             }
@@ -464,7 +470,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             var obj = (JSObject)factory.Call(null, date);
             var dummy = (DateTime)obj.GetObjectProperty("dummy");
-            Assert.Equal(date, dummy);
+            // HACK: JS Dates do not contain timezone information, so date marshaling converts all dates to
+            //  UTC dates.
+            Assert.Equal(date.ToUniversalTime(), dummy.ToUniversalTime());
         }
 
         [Fact]
