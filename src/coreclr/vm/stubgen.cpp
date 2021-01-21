@@ -2766,7 +2766,9 @@ void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingC
 void ILStubLinker::SetStubTargetCallingConv(CorInfoCallConvExtension callConv)
 {
     LIMITED_METHOD_CONTRACT;
-    CorCallingConvention originalCallingConvention = m_nativeFnSigBuilder.GetCallingConv();
+    _ASSERTE(callconv != CorInfoCallConvExtension::Managed);
+
+    const CorCallingConvention originalCallingConvention = m_nativeFnSigBuilder.GetCallingConv();
     if (originalCallingConvention != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
     {
         // For performance reasons, we try to encode the calling convention using
@@ -2791,6 +2793,8 @@ void ILStubLinker::SetStubTargetCallingConv(CorInfoCallConvExtension callConv)
         }
     }
 
+    // We may have updated the calling convention above, so reread the calling convention
+    // from the signature builder instead of using originalCallingConvention.
     if (m_nativeFnSigBuilder.GetCallingConv() == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
     {
         // In this case we're already using the "Unmanaged" calling convention, so encode the specific callconv

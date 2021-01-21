@@ -2495,6 +2495,11 @@ protected:
 
 namespace
 {
+    // Use CorInfoCallConvExtension::Managed as a sentinel represent a user-provided WinApi calling convention.
+    CorInfoCallConvExtension CallConvWinApiSentinel = CorInfoCallConvExtension::Managed;
+
+    // Returns the unmanaged calling convention for callConv or CallConvWinApiSentinel
+    // if the calling convention is not provided or WinApi.
     CorInfoCallConvExtension GetCallConvValueForPInvokeCallConv(CorPinvokeMap callConv)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2503,7 +2508,7 @@ namespace
         {
         case 0:
         case pmCallConvWinapi:
-            return CorInfoCallConvExtension::Managed;
+            return CallConvWinApiSentinel;
         case pmCallConvCdecl:
             return CorInfoCallConvExtension::C;
         case pmCallConvStdcall:
@@ -2514,7 +2519,7 @@ namespace
             return CorInfoCallConvExtension::Fastcall;
         default:
             _ASSERTE_MSG(false, "Invalid PInvoke callconv.");
-            return CorInfoCallConvExtension::Managed;
+            return CallConvWinApiSentinel;
         }
     }
 }
@@ -2532,7 +2537,7 @@ void PInvokeStaticSigInfo::PreInit(Module* pModule, MethodTable * pMT)
     // initialize data members
     m_wFlags = 0;
     m_pModule = pModule;
-    m_callConv = CorInfoCallConvExtension::Managed;
+    m_callConv = CallConvWinApiSentinel;
     SetBestFitMapping (TRUE);
     SetThrowOnUnmappableChar (FALSE);
     SetLinkFlags (nlfNone);
@@ -2945,7 +2950,7 @@ void PInvokeStaticSigInfo::BestGuessNDirectDefaults(MethodDesc* pMD)
 
 #endif // !CROSSGEN_COMPILE
 
-inline CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
+CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
 {
     return bIsVarArg ? CorInfoCallConvExtension::C : MetaSig::GetDefaultUnmanagedCallingConvention();
 }
@@ -2954,7 +2959,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
 {
     STANDARD_VM_CONTRACT;
 
-    CorInfoCallConvExtension sigCallConv = CorInfoCallConvExtension::Managed;
+    CorInfoCallConvExtension sigCallConv = CallConvWinApiSentinel;
     bool suppressGCTransition;
     UINT errorResID;
     HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv, &suppressGCTransition, &errorResID);
@@ -2965,21 +2970,27 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     }
     else if (hr == S_FALSE)
     {
-        sigCallConv = CorInfoCallConvExtension::Managed;
+        sigCallConv = CallConvWinApiSentinel;
     }
 
-    if (callConv != CorInfoCallConvExtension::Managed && sigCallConv != CorInfoCallConvExtension::Managed && callConv != sigCallConv)
+    // Validate that either no specific calling convention is provided or that the signature calling convention
+    // matches the DllImport calling convention.
+    // If no calling convention is provided, then use the default calling convention for the platform.
+
+    if (callConv != CallConvWinApiSentinel && sigCallConv != CallConvWinApiSentinel && callConv != sigCallConv)
         SetError(IDS_EE_NDIRECT_BADNATL_CALLCONV);
 
-    if (callConv == CorInfoCallConvExtension::Managed && sigCallConv == CorInfoCallConvExtension::Managed)
+    if (callConv == CallConvWinApiSentinel && sigCallConv == CallConvWinApiSentinel)
         m_callConv = GetDefaultCallConv(bIsVarArg);
-    else if (callConv != CorInfoCallConvExtension::Managed)
+    else if (callConv != CallConvWinApiSentinel)
         m_callConv = callConv;
     else
         m_callConv = sigCallConv;
 
     if (bIsVarArg && m_callConv != CorInfoCallConvExtension::C)
         SetError(IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV);
+
+    _ASSERTE(m_callConv != CallConvWinApiSentinel);
 }
 
 void PInvokeStaticSigInfo::ReportErrors()
@@ -6648,7 +6659,11 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
 
         // Unmanaged calling convention indicates modopt should be read
-        if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+        if (callConv != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+        {
+            unmgdCallConv = (CorInfoCallConvExtension)callConv;
+        }
+        else
         {
             CorInfoCallConvExtension callConvMaybe;
             UINT errorResID;
@@ -6670,10 +6685,6 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
             {
                 dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
             }
-        }
-        else
-        {
-            unmgdCallConv = (CorInfoCallConvExtension)callConv;
         }
 
         LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
