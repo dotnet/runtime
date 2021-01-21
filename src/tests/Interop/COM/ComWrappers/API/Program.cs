@@ -281,6 +281,23 @@ namespace ComWrappersTests
                 });
         }
 
+        static void ValidateSuppliedInnerNotAggregation()
+        {
+            Console.WriteLine($"Running {nameof(ValidateSuppliedInnerNotAggregation)}...");
+
+            var cw = new TestComWrappers();
+
+            // Attempt to register a non-zero instance with a non-zero inner value without
+            // indicating the scenario is aggregaion.
+            var invalidInstance = new IntPtr(1);
+            var invalidInner = new IntPtr(2);
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    cw.GetOrRegisterObjectForComInstance(invalidInstance, CreateObjectFlags.None, new object(), invalidInner);
+                });
+        }
+
         static void ValidateIUnknownImpls()
             => TestComWrappers.ValidateIUnknownImpls();
 
@@ -498,6 +515,7 @@ namespace ComWrappersTests
                 ValidateCreateObjectCachingScenario();
                 ValidateWrappersInstanceIsolation();
                 ValidatePrecreatedExternalWrapper();
+                ValidateSuppliedInnerNotAggregation();
                 ValidateIUnknownImpls();
                 ValidateBadComWrapperImpl();
                 ValidateRuntimeTrackerScenario();
