@@ -86,9 +86,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Pow(float x, float y);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float ScaleB(float x, int n);
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Sin(float x);
