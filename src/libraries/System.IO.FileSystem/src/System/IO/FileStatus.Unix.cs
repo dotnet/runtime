@@ -15,10 +15,19 @@ namespace System.IO
         // The last cached lstat information about the file
         private Interop.Sys.FileStatus _mainCache;
 
+        // The last cached stat information about the file
+        // Refresh only collects this if lstat determines the path is a symbolic link
+        private Interop.Sys.FileStatus _secondaryCache;
+
         // -1 if _mainCache isn't initialized - Refresh should always change this value
         // 0 if _mainCache was initialized with no errors
         // or the errno error code (always positive value)
         private int _initializedMainCache;
+
+        // -1 if _secondaryCache isn't initialized - Refresh only changes this value if lstat determines the path is a symbolic link
+        // 0 if _secondaryCache was initialized with no errors
+        // or the errno error code (always positive value)
+        private int _initializedSecondaryCache;
 
         // Is a directory as of the last refresh
         internal bool _isDirectory;
