@@ -95,30 +95,34 @@ namespace System.Net.Sockets.Tests
         [InlineData(SocketShutdown.Receive)]
         public async Task ShutdownReceiveBeforeOperation_ThrowsSocketException(SocketShutdown shutdown)
         {
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            socket.BindToAnonymousPort(IPAddress.Any);
-            socket.Shutdown(shutdown);
+            // It's allowed to shutdown() UDP sockets on Windows, however on Unix it will lead to ENOTCONN
+            // Using TCP for the sake of this test.
+            (Socket receiver, Socket sender) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (receiver)
+            using (sender)
+            {
+                receiver.Shutdown(shutdown);
+                SocketException exception = await Assert.ThrowsAnyAsync<SocketException>(() => ReceiveFromAsync(receiver, new byte[1], sender.LocalEndPoint))
+                    .TimeoutAfter(10_000);
 
-            SocketException exception = await Assert.ThrowsAnyAsync<SocketException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()))
-                .TimeoutAfter(10_000);
-
-            Assert.Equal(SocketError.Shutdown, exception.SocketErrorCode);
-            _output.WriteLine($"{exception.GetType()} -- {exception.Message}");
+                Assert.Equal(SocketError.Shutdown, exception.SocketErrorCode);
+            }
         }
 
         [Fact]
         public async Task ShutdownSend_ReceiveFromShouldSucceed()
         {
-            using var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            receiver.BindToAnonymousPort(IPAddress.Loopback);
-            receiver.Shutdown(SocketShutdown.Send);
-
-            using var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            sender.BindToAnonymousPort(IPAddress.Loopback);
-            sender.SendTo(new byte[1], receiver.LocalEndPoint);
-
-            var r = await ReceiveFromAsync(receiver, new byte[1], sender.LocalEndPoint);
-            Assert.Equal(1, r.ReceivedBytes);
+            // It's allowed to shutdown() UDP sockets on Windows, however on Unix it will lead to ENOTCONN
+            // Using TCP for the sake of this test.
+            (Socket receiver, Socket sender) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (receiver)
+            using (sender)
+            {
+                receiver.Shutdown(SocketShutdown.Send);
+                sender.Send(new byte[1]);
+                var r = await ReceiveFromAsync(receiver, new byte[1], sender.LocalEndPoint);
+                Assert.Equal(1, r.ReceivedBytes);
+            }
         }
     }
 
