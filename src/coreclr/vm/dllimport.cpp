@@ -259,7 +259,8 @@ protected:
                 DWORD dwStubFlags,
                 int iLCIDParamIdx,
                 MethodDesc* pTargetMD)
-            : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx)
+        : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx)
+        , m_dwStubFlags(dwStubFlags)
     {
         STANDARD_VM_CONTRACT;
 
@@ -291,7 +292,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         m_slIL.Begin(dwStubFlags);
-        m_dwStubFlags = dwStubFlags;
+        _ASSERTE(m_dwStubFlags == dwStubFlags);
     }
 
     void MarshalReturn(MarshalInfo* pInfo, int argOffset)
@@ -1202,6 +1203,8 @@ public:
     }
 
     TokenLookupMap* GetTokenLookupMap() { WRAPPER_NO_CONTRACT; return m_slIL.GetTokenLookupMap(); }
+
+    DWORD GetFlags() const { return m_dwStubFlags; }
 
 protected:
     CQuickBytes         m_qbNativeFnSigBuffer;
@@ -4444,7 +4447,6 @@ MethodDesc* CreateInteropILStub(
                          CorNativeLinkType        nlType,
                          CorNativeLinkFlags       nlFlags,
                          CorInfoCallConvExtension unmgdCallConv,
-                         DWORD                    dwStubFlags,            // NDirectStubFlags
                          int                      nParamTokens,
                          mdParamDef*              pParamTokenArray,
                          int                      iLCIDArg,
@@ -4477,6 +4479,8 @@ MethodDesc* CreateInteropILStub(
     // pTargetMD may be null in the case of calli pinvoke
     // and vararg pinvoke.
     //
+
+    DWORD dwStubFlags = pss->GetFlags();
 
 #ifdef FEATURE_COMINTEROP
     //
@@ -4820,7 +4824,6 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(
                 nlType,
                 nlFlags,
                 unmgdCallConv,
-                dwStubFlags,
                 numParamTokens,
                 pParamTokenArray,
                 iLCIDArg);
@@ -4894,7 +4897,6 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
                 (CorNativeLinkType)0,
                 (CorNativeLinkFlags)0,
                 MetaSig::GetDefaultUnmanagedCallingConvention(),
-                dwStubFlags,
                 numParamTokens,
                 pParamTokenArray,
                 -1);
@@ -5003,7 +5005,6 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
         (CorNativeLinkType)0,
         (CorNativeLinkFlags)0,
         CorInfoCallConvExtension::Managed,
-        dwStubFlags,
         numParamTokens,
         pParamTokenArray,
         -1,
