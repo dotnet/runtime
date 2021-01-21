@@ -36,9 +36,13 @@ namespace System.IO
         // DirectoryInfo around this status struct or (2) actually are part of a DirectoryInfo.
         internal bool InitiallyDirectory { get; private set; }
 
+        private bool IsValid =>
+            _initializedMainCache == 0 && // Should always be successfully refreshed
+            (_initializedSecondaryCache == -1 || _initializedSecondaryCache == 0); // Only refreshed when path is detected to be a symbolic link
+
         internal void EnsureStatInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            if (_initializedMainCache == -1)
+            if (!IsValid)
             {
                 Refresh(path);
             }
@@ -114,7 +118,7 @@ namespace System.IO
 
         internal bool GetExists(ReadOnlySpan<char> path)
         {
-            if (_initializedMainCache == -1)
+            if (!IsValid)
             {
                 Refresh(path);
             }
