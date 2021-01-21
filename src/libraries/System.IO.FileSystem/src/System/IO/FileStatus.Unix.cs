@@ -175,30 +175,17 @@ namespace System.IO
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property.
 
+            _isDirectory = false;
+            path = Path.TrimEndingDirectorySeparator(path);
+
             // Use lstat to get the details on the object, without following symlinks.
             // If it is a symlink, then subsequently get details on the target of the symlink,
             // storing those results separately.  We only report failure if the initial
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
-            _isDirectory = false;
-            path = Path.TrimEndingDirectorySeparator(path);
-
-            int result = Interop.Sys.LStat(path, out _fileStatus);
-            if (result < 0)
+            _fileStatusInitialized = VerifyStatCall(Interop.Sys.LStat(path, out _fileStatus));
+            if (_fileStatusInitialized != 0)
             {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-
-                // This should never set the error if the file can't be found.
-                // (see the Windows refresh passing returnErrorOnNotFound: false).
-                if (errorInfo.Error == Interop.Error.ENOENT
-                    || errorInfo.Error == Interop.Error.ENOTDIR)
-                {
-                    _fileStatusInitialized = 0;
-                    _exists = false;
-                }
-                else
-                {
-                    _fileStatusInitialized = errorInfo.RawErrno;
-                }
+                _exists = false;
                 return;
             }
 
