@@ -140,21 +140,6 @@ namespace System.Net.Sockets.Tests
             File.Delete(filename);
         }
 
-        [Fact]
-        public void SendFile_NonBlocking_ThrowsInvalidOperationException()
-        {
-            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            listener.BindToAnonymousPort(IPAddress.Loopback);
-            listener.Listen(1);
-
-            client.Connect(listener.LocalEndPoint);
-            using Socket server = listener.Accept();
-            server.ForceNonBlocking(force: true);
-
-            Assert.Throws<InvalidOperationException>(() => server.SendFile(null));
-        }
-
         [Theory]
         [InlineData(false, false, false)]
         [InlineData(false, false, true)]
