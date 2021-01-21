@@ -33,6 +33,41 @@ namespace System.IO
         internal bool _isDirectory;
 
         // Only call if Refresh has been successfully called at least once
+        private bool HasReadOnlyFlag
+        {
+            get
+            {
+#if TARGET_BROWSER
+                const Interop.Sys.Permissions readBit = Interop.Sys.Permissions.S_IRUSR;
+                const Interop.Sys.Permissions writeBit = Interop.Sys.Permissions.S_IWUSR;
+#else
+                Interop.Sys.Permissions readBit, writeBit;
+
+                if (_mainCache.Uid == Interop.Sys.GetEUid())
+                {
+                    // User effectively owns the file
+                    readBit = Interop.Sys.Permissions.S_IRUSR;
+                    writeBit = Interop.Sys.Permissions.S_IWUSR;
+                }
+                else if (_mainCache.Gid == Interop.Sys.GetEGid())
+                {
+                    // User belongs to a group that effectively owns the file
+                    readBit = Interop.Sys.Permissions.S_IRGRP;
+                    writeBit = Interop.Sys.Permissions.S_IWGRP;
+                }
+                else
+                {
+                    // Others permissions
+                    readBit = Interop.Sys.Permissions.S_IROTH;
+                    writeBit = Interop.Sys.Permissions.S_IWOTH;
+                }
+    #endif
+                return ((_mainCache.Mode & (int)readBit) != 0 && // has read permission
+                    (_mainCache.Mode & (int)writeBit) == 0);     // but not write permission
+            }
+        }
+
+        // Only call if Refresh has been successfully called at least once
         private bool HasSymbolicLinkFlag =>
             (_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
 
@@ -87,7 +122,7 @@ namespace System.IO
 
             FileAttributes attributes = default;
 
-            if (IsReadOnly(path))
+            if (HasReadOnlyFlag)
             {
                 attributes |= FileAttributes.ReadOnly;
             }
@@ -176,34 +211,7 @@ namespace System.IO
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureStatInitialized(path, continueOnError);
-#if TARGET_BROWSER
-            const Interop.Sys.Permissions readBit = Interop.Sys.Permissions.S_IRUSR;
-            const Interop.Sys.Permissions writeBit = Interop.Sys.Permissions.S_IWUSR;
-#else
-            Interop.Sys.Permissions readBit, writeBit;
-
-            if (_mainCache.Uid == Interop.Sys.GetEUid())
-            {
-                // User effectively owns the file
-                readBit = Interop.Sys.Permissions.S_IRUSR;
-                writeBit = Interop.Sys.Permissions.S_IWUSR;
-            }
-            else if (_mainCache.Gid == Interop.Sys.GetEGid())
-            {
-                // User belongs to a group that effectively owns the file
-                readBit = Interop.Sys.Permissions.S_IRGRP;
-                writeBit = Interop.Sys.Permissions.S_IWGRP;
-            }
-            else
-            {
-                // Others permissions
-                readBit = Interop.Sys.Permissions.S_IROTH;
-                writeBit = Interop.Sys.Permissions.S_IWOTH;
-            }
-#endif
-
-            return ((_mainCache.Mode & (int)readBit) != 0 && // has read permission
-                (_mainCache.Mode & (int)writeBit) == 0);     // but not write permission
+            return HasReadOnlyFlag;
         }
 
         internal bool IsSymbolicLink(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -249,7 +257,7 @@ namespace System.IO
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
         {
             // force a refresh so that we have an up-to-date times for values not being overwritten
-            _initializedMainCache = -1;
+            Invalidate();
             EnsureStatInitialized(path);
 
             // we use utimes()/utimensat() to set the accessTime and writeTime
@@ -283,7 +291,7 @@ namespace System.IO
             }
 #endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
-            _initializedMainCache = -1;
+            Invalidate();
         }
 
         internal void SetAttributes(string path, FileAttributes attributes)
@@ -350,7 +358,7 @@ namespace System.IO
                 Interop.CheckIo(Interop.Sys.ChMod(path, newMode), path, InitiallyDirectory);
             }
 
-            _initializedMainCache = -1;
+            Invalidate();
         }
 
         internal void SetCreationTime(string path, DateTimeOffset time) =>
