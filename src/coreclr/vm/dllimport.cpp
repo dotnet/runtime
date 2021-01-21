@@ -2496,7 +2496,7 @@ protected:
 namespace
 {
     // Use CorInfoCallConvExtension::Managed as a sentinel represent a user-provided WinApi calling convention.
-    CorInfoCallConvExtension CallConvWinApiSentinel = CorInfoCallConvExtension::Managed;
+    constexpr CorInfoCallConvExtension CallConvWinApiSentinel = CorInfoCallConvExtension::Managed;
 
     // Returns the unmanaged calling convention for callConv or CallConvWinApiSentinel
     // if the calling convention is not provided or WinApi.
