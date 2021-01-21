@@ -104,7 +104,7 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
-    const unsigned stackSlotSize = sizeof(void*);
+    const unsigned stackSlotSize = 4;
     return ALIGN_UP(parmSize, stackSlotSize);
 }
 

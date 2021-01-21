@@ -116,7 +116,7 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
     // Always skip over the varargs_cookie.
     const bool isValueType = false;
     const bool isFloatHfa = false;
-    data->ArgPtr += StackElemSize(sizeof(LPVOID), isValueType, isFloatHfa);
+    data->ArgPtr += StackElemSize(TARGET_POINTER_SIZE, isValueType, isFloatHfa);
 #endif
 }
 
