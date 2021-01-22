@@ -315,9 +315,5 @@ namespace System.Diagnostics.Tracing
             data[1].Reserved = 0;
             WriteEventCore(60, 2, data);
         }
-
-#pragma warning disable IDE1006 // Naming Styles
-        public static readonly NativeRuntimeEventSource Log = new NativeRuntimeEventSource();
-#pragma warning restore IDE1006 // Naming Styles
     }
 }
