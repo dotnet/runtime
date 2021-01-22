@@ -805,10 +805,13 @@ namespace System.Globalization
 
             if (GlobalizationMode.PredefinedOnly)
             {
-                if (!Interop.Globalization.IsPredefinedLocale(cultureName))
+                if (GlobalizationMode.UseNls)
                 {
-                    throw new CultureNotFoundException(nameof(cultureName), SR.Format(SR.Argument_InvalidPredefinedCultureName, cultureName),
-                        message: "View https://docs.microsoft.com/en-us/aspnet/core/blazor/globalization-localization?view=aspnetcore-5.0#blazor-webassembly to load a new culture");
+                    NlsIsEnsurePredefinedLocaleName(cultureName);
+                }
+                else
+                {
+                    IcuIsEnsurePredefinedLocaleName(cultureName);
                 }
             }
 

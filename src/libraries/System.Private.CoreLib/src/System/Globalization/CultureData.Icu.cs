@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -63,11 +64,8 @@ namespace System.Globalization
             {
                 _iLanguage = CultureInfo.LOCALE_CUSTOM_UNSPECIFIED;
             }
-
             _bNeutral = TwoLetterISOCountryName.Length == 0;
-
             _sSpecificCulture = _bNeutral ? IcuLocaleData.GetSpecificCultureName(_sRealName) : _sRealName;
-
             // Remove the sort from sName unless custom culture
             if (index > 0 && !_bNeutral && !IsCustomCultureId(_iLanguage))
             {
@@ -110,7 +108,6 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-
             Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo] Expected _sWindowsName to be populated already");
             return IcuGetLocaleInfo(_sWindowsName, type);
         }
@@ -138,7 +135,6 @@ namespace System.Globalization
                 Debug.Fail("[CultureData.IcuGetLocaleInfo(LocaleStringData)] Failed");
                 return string.Empty;
             }
-
             return new string(buffer);
         }
 
@@ -224,6 +220,18 @@ namespace System.Globalization
         {
             // use the fallback which is to return NativeName
             return null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void IcuIsEnsurePredefinedLocaleName(string name)
+        {
+            Debug.Assert(!GlobalizationMode.UseNls);
+
+            if (!Interop.Globalization.IsPredefinedLocale(name))
+            {
+                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name),
+                    message: "View https://docs.microsoft.com/en-us/aspnet/core/blazor/globalization-localization?view=aspnetcore-5.0#blazor-webassembly to load a new culture");
+            }
         }
 
         private static string ConvertIcuTimeFormatString(ReadOnlySpan<char> icuFormatString)

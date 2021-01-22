@@ -11,7 +11,6 @@ namespace System.Globalization
 
         internal static bool UseNls => false;
 
-        internal static bool PredefinedOnly { get; } = GetPredefinedOnly();
 
         private static bool GetGlobalizationInvariantMode()
         {

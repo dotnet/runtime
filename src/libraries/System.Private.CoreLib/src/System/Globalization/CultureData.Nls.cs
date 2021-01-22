@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -83,6 +84,17 @@ namespace System.Globalization
             Debug.Assert(ShouldUseUserOverrideNlsData);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, _bUseOverrides));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void NlsIsEnsurePredefinedLocaleName(string name)
+        {
+            Debug.Assert(GlobalizationMode.UseNls);
+
+            if (CultureData.GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) == 1)
+            {
+                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
+            }
         }
 
         private string? NlsGetTimeFormatString()
