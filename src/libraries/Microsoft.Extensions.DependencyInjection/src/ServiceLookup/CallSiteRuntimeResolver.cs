@@ -115,6 +115,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private object ResolveService(ServiceCallSite callSite, RuntimeResolverContext context, RuntimeResolverLock lockType, ServiceProviderEngineScope serviceProviderEngine)
         {
+            // Note: This method has already taken lock by the caller for resolution and access synchronization.
+            // For root: uses a concurrent dictionary and takes a per singleton lock for resolution.
+            // For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
+
             object resolved;
             IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
             if (resolvedServices.TryGetValue(callSite.Cache.Key, out resolved))
@@ -122,8 +126,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return resolved;
             }
 
-            // This method uses lock to synchronize access to the resolvedServices dictionary.
-            // but it does not need to lock here because the lock for resolving a singleton is taken outside of this method.
             resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
             {
                 Scope = serviceProviderEngine,

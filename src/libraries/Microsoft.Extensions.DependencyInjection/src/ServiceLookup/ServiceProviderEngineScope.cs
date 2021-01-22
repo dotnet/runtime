@@ -23,6 +23,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
         {
             Engine = engine;
+
+            // To reduce lock contention for singletons upon resolve we use a concurrent dictionary.
             ResolvedServices = isRoot ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>();
         }
 
