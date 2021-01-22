@@ -49,7 +49,7 @@ namespace System.IO.Enumeration
             // so we use DT_UNKNOWN as a sentinel value. As such, check if the dirent is a
             // directory.
             else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN) &&
-                     entry._status.TryRefreshMainCache(entry.FullPath)) // Only call lstat if inode is link or unknown
+                     entry._status.TryRefreshSecondaryCache(entry.FullPath)) // Only call stat if inode is link or unknown
             {
                 // Symlink or unknown: Stat should tell us if we can resolve it to a directory.
                 isDirectory = entry._status.HasSecondaryDirectoryFlag;
@@ -62,7 +62,7 @@ namespace System.IO.Enumeration
                 isSymlink = true;
             }
             else if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN &&
-                     entry._status.TryRefreshSecondaryCache(entry.FullPath)) // Only call stat if inode is unknown
+                     entry._status.TryRefreshMainCache(entry.FullPath)) // Only call lstat if inode is unknown
             {
                 isSymlink = entry._status.HasSymbolicLinkFlag;
             }
@@ -153,8 +153,7 @@ namespace System.IO.Enumeration
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
         public bool IsDirectory => _status.InitiallyDirectory;
         public bool IsHidden =>
-            (_directoryEntry.NameLength > 0 && _directoryEntry.Name[0] == '.') ||
-            (_status.IsMainCacheValid && _status.HasHiddenFlag);
+            (_directoryEntry.NameLength > 0 && _directoryEntry.Name[0] == '.') || _status.IsHidden(FullPath, continueOnError: true);
 
         public FileSystemInfo ToFileSystemInfo()
         {
