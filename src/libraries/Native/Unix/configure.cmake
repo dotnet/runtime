@@ -579,6 +579,11 @@ check_symbol_exists(
     HAVE_CLOCK_GETTIME_NSEC_NP)
 
 check_symbol_exists(
+    pthread_condattr_setclock
+    time.h
+    HAVE_PTHREAD_CONDATTR_SETCLOCK)
+
+check_symbol_exists(
     futimes
     sys/time.h
     HAVE_FUTIMES)
