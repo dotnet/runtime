@@ -113,7 +113,6 @@ namespace System.IO
 
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
-        internal override IntPtr Handle => SafeFileHandle.DangerousGetHandle();
 
         internal override void Lock(long position, long length) => LockInternal(position, length);
 
