@@ -30,7 +30,7 @@ namespace System.IO
         private int _initializedSecondaryCache;
 
         // Is a directory as of the last refresh
-        internal bool _isDirectory;
+        private bool _isDirectory;
 
         // Checks if the main path (without following symbolic links) has the hidden attribute
         // Only call if Refresh has been successfully called at least once
@@ -179,11 +179,7 @@ namespace System.IO
 
         internal bool GetExists(ReadOnlySpan<char> path)
         {
-            if (!IsValid)
-            {
-                Refresh(path);
-            }
-
+            EnsureStatInitialized(path, continueOnError: true);
             return _exists && InitiallyDirectory == _isDirectory;
         }
 
@@ -203,6 +199,12 @@ namespace System.IO
             return _mainCache.Size;
         }
 
+        // Checks if the specified stat or lstat cache has the directory attribute
+        // Only call if Refresh has been successfully called at least once and
+        // you're certain the passed-in cache was successfully retrieved
+        private bool HasDirectoryFlag(Interop.Sys.FileStatus cache) =>
+            (cache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+
         internal static void Initialize(ref FileStatus status, bool isDirectory)
         {
             status.InitiallyDirectory = isDirectory;
@@ -213,6 +215,12 @@ namespace System.IO
         {
             _initializedMainCache = -1;
             _initializedSecondaryCache = -1;
+        }
+
+        internal bool IsDirectory(ReadOnlySpan<char> path, bool continueOnError = false)
+        {
+            EnsureStatInitialized(path, continueOnError);
+            return _isDirectory; // Value should be set in Refresh
         }
 
         internal bool IsHidden(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -251,16 +259,13 @@ namespace System.IO
                 return;
             }
 
-            // IMPORTANT: Is directory logic must match the logic in FileSystemEntry
-            _isDirectory = (_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+            _isDirectory = HasDirectoryFlag(_mainCache);
 
-            // If lstat indicated the path is a symlink
             if (HasSymbolicLinkFlag)
             {
-                    // attempt to check the target to see if it is a directory
                 if (VerifyStatCall(Interop.Sys.Stat(path, out _secondaryCache), out _initializedSecondaryCache))
                 {
-                    _isDirectory = (_secondaryCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+                    _isDirectory = HasDirectoryFlag(_secondaryCache);
                 }
             }
 
