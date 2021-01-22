@@ -2,7 +2,3 @@
 ; The .NET Foundation licenses this file to you under the MIT license.
 
 DotNetRuntimeInfo
-
-; FreeBSD needs to reexport these
-__progname
-environ 

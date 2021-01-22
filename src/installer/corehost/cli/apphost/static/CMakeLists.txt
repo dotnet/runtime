@@ -54,7 +54,12 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_linker_flag("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
 
 else()
-    set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
+    if(CLR_CMAKE_TARGET_OSX)
+        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_OSXexports.src)
+    else()
+        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
+    endif()
+
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/singlefilehost.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
