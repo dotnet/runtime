@@ -133,6 +133,10 @@ namespace System.IO
 
         protected abstract void WriteSpan(ReadOnlySpan<byte> source);
 
+        protected abstract Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult);
+
+        protected abstract ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken);
+
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         public override Task FlushAsync(CancellationToken cancellationToken)
