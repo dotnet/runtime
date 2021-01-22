@@ -6,8 +6,9 @@
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
-      Public properties (required):
+      Required public items/properties:
       - $(WasmMainJSPath)
+      - @(WasmAssembliesToBundle)    - list of assemblies to package as the wasm app
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
