@@ -77,12 +77,14 @@ namespace System.IO
 
         // Checks if the main path is a symbolic link
         // Only call if Refresh has been successfully called at least once
-        private bool HasSymbolicLinkFlag =>
+        internal bool HasSymbolicLinkFlag =>
             (_mainCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
 
         // We track intent of creation to know whether or not we want to (1) create a
         // DirectoryInfo around this status struct or (2) actually are part of a DirectoryInfo.
         internal bool InitiallyDirectory { get; set; }
+
+        internal bool IsMainCacheValid => _initializedMainCache == 0;
 
         internal bool IsSecondaryCacheValid => _initializedSecondaryCache == 0;
 

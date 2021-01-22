@@ -41,7 +41,6 @@ namespace System.IO.Enumeration
             entry._status.EnsureStatInitialized(entry.FullPath, continueOnError: true);
 
             bool isDirectory = false;
-            bool isSymlink = false;
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR)
             {
                 // We know it's a directory.
@@ -57,16 +56,16 @@ namespace System.IO.Enumeration
                 isDirectory = entry._status.HasSecondaryDirectoryFlag;
             }
 
-            // Same idea as the directory check, just repeated for (and tweaked due to the
-            // nature of) symlinks.
+            // Same idea as the directory check, just repeated for (and tweaked due to the nature of) symlinks.
+            bool isSymlink = false;
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
             {
                 isSymlink = true;
             }
-            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                && (Interop.Sys.LStat(entry.FullPath, out Interop.Sys.FileStatus linkTargetStatus) >= 0))
+            else if (entry._status.IsMainCacheValid && // Set by EnsureStatInitialized
+                     directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
             {
-                isSymlink = (linkTargetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+                isSymlink = entry._status.HasSymbolicLinkFlag;
             }
 
             entry._status.InitiallyDirectory = isDirectory;
