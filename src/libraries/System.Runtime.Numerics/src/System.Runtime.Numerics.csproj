@@ -6,6 +6,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Globalization\ThrowHelper.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.BitsBuffer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />

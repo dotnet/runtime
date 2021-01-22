@@ -479,7 +479,7 @@ namespace System.Numerics
                         int temp = n * 10 + (format[i++] - '0');
                         if (temp < n)
                         {
-                            throw new FormatException();
+                            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
                         }
                         n = temp;
                     }
