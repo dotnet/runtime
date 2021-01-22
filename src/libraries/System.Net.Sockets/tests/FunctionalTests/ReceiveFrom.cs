@@ -14,6 +14,8 @@ namespace System.Net.Sockets.Tests
         protected static IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
             addressFamily == AddressFamily.InterNetwork ? new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
 
+        protected static readonly TimeSpan CancellationTestTimeout = TimeSpan.FromSeconds(30);
+
         protected ReceiveFrom(ITestOutputHelper output) : base(output) { }
 
         [Theory]
@@ -99,11 +101,13 @@ namespace System.Net.Sockets.Tests
 
             if (UsesApm)
             {
-                await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask);
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask)
+                    .TimeoutAfter(CancellationTestTimeout);
             }
             else
             {
-                SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
+                SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask)
+                    .TimeoutAfter(CancellationTestTimeout);
                 SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
                 Assert.Equal(expectedError, ex.SocketErrorCode);
             }
@@ -120,7 +124,7 @@ namespace System.Net.Sockets.Tests
             socket.Shutdown(shutdown);
 
             SocketException exception = await Assert.ThrowsAnyAsync<SocketException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()))
-                .TimeoutAfter(10_000);
+                .TimeoutAfter(CancellationTestTimeout);
 
             Assert.Equal(SocketError.Shutdown, exception.SocketErrorCode);
         }
@@ -182,7 +186,7 @@ namespace System.Net.Sockets.Tests
 
             OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => socket.ReceiveFromAsync(buffer, SocketFlags.None, dummy.LocalEndPoint, cts.Token).AsTask())
-                .TimeoutAfter(30_000);
+                .TimeoutAfter(CancellationTestTimeout);
             Assert.Equal(cts.Token, ex.CancellationToken);
         }
     }
