@@ -583,7 +583,7 @@ namespace Microsoft.Extensions.Primitives
             ReadOnlySpan<char> span = AsSpan();
 
             int i;
-            for (i = span.Length - 1; (uint)i < (uint)span.Length; i--)
+            for (i = span.Length - 1; i >= 0; i--)
             {
                 if (!char.IsWhiteSpace(span[i]))
                 {
