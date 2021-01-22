@@ -191,7 +191,6 @@
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
-      <WasmBuildDir>$(PublishDir)</WasmBuildDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
