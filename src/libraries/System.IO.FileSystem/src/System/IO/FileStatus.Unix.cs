@@ -202,25 +202,57 @@ namespace System.IO
 
         internal bool IsDirectory(ReadOnlySpan<char> path, bool continueOnError = false)
         {
+            // We first check if main path has directory flag, then follow the symbolic link in case the target has directory flag
+            // So we need to try to refresh both caches
             EnsureCachesInitialized(path, continueOnError);
             return _isDirectory; // Value should be set in Refresh
         }
 
         internal bool IsHidden(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            // We only check for the hidden flag in the main path without following symbolic links
+            if (!IsMainCacheValid)
+            {
+                if (!TryRefreshMainCache(path))
+                {
+                    if (!continueOnError)
+                    {
+                        ThrowOnCacheInitializationError(path);
+                    }
+                }
+            }
             return HasHiddenFlag;
         }
 
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            // We only check for the readonly flag in the main path without following symbolic links
+            if (!IsMainCacheValid)
+            {
+                if (!TryRefreshMainCache(path))
+                {
+                    if (!continueOnError)
+                    {
+                        ThrowOnCacheInitializationError(path);
+                    }
+                }
+            }
             return HasReadOnlyFlag;
         }
 
         internal bool IsSymbolicLink(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path, continueOnError);
+            // We only check for the symbolic link flag in the main path without following symbolic links
+            if (!IsMainCacheValid)
+            {
+                if (!TryRefreshMainCache(path))
+                {
+                    if (!continueOnError)
+                    {
+                        ThrowOnCacheInitializationError(path);
+                    }
+                }
+            }
             return HasSymbolicLinkFlag;
         }
 
