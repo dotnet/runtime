@@ -3420,7 +3420,7 @@ void Compiler::fgCreateFunclets()
 #endif // DEBUG
 }
 
-#endif defined(FEATURE_EH_FUNCLETS)
+#endif // defined(FEATURE_EH_FUNCLETS)
 
 /*-------------------------------------------------------------------------
  *
