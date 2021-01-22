@@ -123,7 +123,7 @@ namespace System.Threading
         private static SafeWaitHandle NewHandle(WaitableObject waitableObject)
         {
             IntPtr handle = HandleManager.NewHandle(waitableObject);
-            SafeWaitHandle safeWaitHandle = null;
+            SafeWaitHandle? safeWaitHandle = null;
             try
             {
                 safeWaitHandle = new SafeWaitHandle(handle, ownsHandle: true);
@@ -282,7 +282,7 @@ namespace System.Threading
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ThreadWaitInfo waitInfo = Thread.CurrentThread._waitInfo;
-            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
+            WaitableObject?[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
             bool success = false;
             try
             {
@@ -322,7 +322,7 @@ namespace System.Threading
 
             if (waitHandles.Length == 1)
             {
-                WaitableObject waitableObject = waitableObjects[0];
+                WaitableObject waitableObject = waitableObjects[0]!;
                 waitableObjects[0] = null;
                 return
                     waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize : false);

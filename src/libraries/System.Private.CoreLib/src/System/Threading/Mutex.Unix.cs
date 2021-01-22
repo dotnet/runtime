@@ -10,7 +10,7 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
-        private void CreateMutexCore(bool initiallyOwned, string name, out bool createdNew)
+        private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
         {
             if (name != null)
             {
@@ -21,7 +21,7 @@ namespace System.Threading
             createdNew = true;
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out Mutex result)
+        private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }
