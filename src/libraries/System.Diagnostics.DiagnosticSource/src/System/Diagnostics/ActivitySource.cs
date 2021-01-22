@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
@@ -76,7 +77,7 @@ namespace System.Diagnostics
         /// <param name="name">The operation name of the Activity</param>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any event listener.</returns>
-        public Activity? StartActivity(string name, ActivityKind kind = ActivityKind.Internal)
+        public Activity? StartActivity([CallerMemberName] string name = "", ActivityKind kind = ActivityKind.Internal)
             => StartActivity(name, kind, default, null, null, null, default);
 
         /// <summary>
@@ -104,6 +105,19 @@ namespace System.Diagnostics
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         public Activity? StartActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
             => StartActivity(name, kind, default, parentId, tags, links, startTime);
+
+        /// <summary>
+        /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity events, returns null otherwise.
+        /// </summary>
+        /// <param name="kind">The <see cref="ActivityKind"/></param>
+        /// <param name="parentContext">The parent <see cref="ActivityContext"/> object to initialize the created Activity object with.</param>
+        /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
+        /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
+        /// <param name="name">The operation name of the Activity.</param>
+        /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
+        public Activity? StartActivity(ActivityKind kind, ActivityContext parentContext = default, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default, [CallerMemberName] string name = "")
+            => StartActivity(name, kind, parentContext, null, tags, links, startTime);
 
         private Activity? StartActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime)
         {
