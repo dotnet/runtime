@@ -803,6 +803,14 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
+            if (GlobalizationMode.PredefinedOnly)
+            {
+                if (!Interop.Globalization.IsPredefinedLocale(cultureName))
+                {
+                    throw new CultureNotFoundException(nameof(cultureName), SR.Format(SR.Argument_InvalidPredefinedCultureName, cultureName));
+                }
+            }
+
             CultureData culture = new CultureData();
             culture._sRealName = cultureName;
             culture._bUseOverridesUserSetting = useUserOverride;

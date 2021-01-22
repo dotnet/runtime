@@ -1904,6 +1904,9 @@ var MonoSupportLib = {
 
 			if (invariantMode)
 				this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+			
+			// Set globalization mode to PredefinedOnly
+			this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_ONLY", "1");
 		},
 
 		// Used by the debugger to enumerate loaded dlls and pdbs

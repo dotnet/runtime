@@ -290,7 +290,6 @@ namespace System.Globalization
         public static CultureInfo CreateSpecificCulture(string name)
         {
             CultureInfo? culture;
-            IcuGetPredefinedCultureInfo(name);
 
             try
             {

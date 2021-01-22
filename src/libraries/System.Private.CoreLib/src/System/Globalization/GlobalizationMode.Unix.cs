@@ -11,6 +11,8 @@ namespace System.Globalization
 
         internal static bool UseNls => false;
 
+        internal static bool PredefinedOnly { get; } = GetSwitchValue("System.Globalization.PredefinedOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_ONLY");
+
         private static bool GetGlobalizationInvariantMode()
         {
             bool invariantEnabled = GetInvariantSwitchValue();
