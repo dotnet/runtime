@@ -9785,7 +9785,7 @@ namespace
             return CorInfoCallConvExtension::Fastcall;
         case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
-            CorUnmanagedCallingConvention callConvMaybe;
+            CorInfoCallConvExtension callConvMaybe;
             UINT errorResID;
             HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
 
@@ -9794,11 +9794,11 @@ namespace
 
             if (hr == S_OK)
             {
-                return (CorInfoCallConvExtension)callConvMaybe;
+                return callConvMaybe;
             }
             else
             {
-                return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+                return MetaSig::GetDefaultUnmanagedCallingConvention();
             }
         }
         case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:
@@ -9833,25 +9833,7 @@ namespace
                 }
 
                 PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-                switch (sigInfo.GetCallConv())
-                {
-                case pmCallConvCdecl:
-                    return CorInfoCallConvExtension::C;
-                    break;
-                case pmCallConvStdcall:
-                    return CorInfoCallConvExtension::Stdcall;
-                    break;
-                case pmCallConvThiscall:
-                    return CorInfoCallConvExtension::Thiscall;
-                    break;
-                case pmCallConvFastcall:
-                    return CorInfoCallConvExtension::Fastcall;
-                    break;
-                default:
-                    _ASSERTE_MSG(false, "bad callconv");
-                    return CorInfoCallConvExtension::Managed;
-                    break;
-                }
+                return sigInfo.GetCallConv();
             }
             else
             {
@@ -9868,7 +9850,7 @@ namespace
                     }
                     return unmanagedCallConv;
                 }
-                return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+                return MetaSig::GetDefaultUnmanagedCallingConvention();
 #endif // CROSSGEN_COMPILE
             }
         }
