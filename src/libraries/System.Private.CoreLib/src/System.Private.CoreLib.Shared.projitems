@@ -17,6 +17,10 @@
     <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64'">true</Is64Bit>
   </PropertyGroup>
   <PropertyGroup>
+    <DefineConstants Condition="'$(Is64Bit)' != 'true'">$(DefineConstants);TARGET_32BIT</DefineConstants>
+    <DefineConstants Condition="'$(Is64Bit)' == 'true'">$(DefineConstants);TARGET_64BIT</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);TARGET_UNIX</DefineConstants>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
     <DefineConstants Condition="'$(TargetsOSX)' == 'true'">$(DefineConstants);TARGET_OSX</DefineConstants>
