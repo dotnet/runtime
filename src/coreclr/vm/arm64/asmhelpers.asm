@@ -1491,19 +1491,20 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
 ;   x9   - is preserved
 ;
 ; NOTE: this helper will probe at least one page below the one pointed to by sp.
-#define PAGE_SIZE_LOG2 12
+#define PROBE_PAGE_SIZE 4096
+#define PROBE_PAGE_SIZE_LOG2 12
 
     LEAF_ENTRY JIT_StackProbe
         PROLOG_SAVE_REG_PAIR fp, lr, #-16!
 
-        add     x30, x9, #(PAGE_SIZE >> 12), lsl #12 ; x30 points to some byte on the page **immediately preceding** the last page to probe (i.e. pointed to by x9)
-        bfc     x30, #0, #(PAGE_SIZE_LOG2)           ; x30 points to the **lowest address** on that page
+        add     x30, x9, #(PROBE_PAGE_SIZE >> 12), lsl #12 ; x30 points to some byte on the page **immediately preceding** the last page to probe (i.e. pointed to by x9)
+        bfc     x30, #0, #(PROBE_PAGE_SIZE_LOG2)           ; x30 points to the **lowest address** on that page
 
 ProbeLoop
-        sub     sp, sp, #(PAGE_SIZE >> 12), lsl #12  ; sp points to some byte on the **next page** to probe
-        ldr     wzr, [sp]                            ; sp points to some byte on the **last probed** page
+        sub     sp, sp, #(PROBE_PAGE_SIZE >> 12), lsl #12  ; sp points to some byte on the **next page** to probe
+        ldr     wzr, [sp]                                  ; sp points to some byte on the **last probed** page
         cmp     sp, x30, lsl #0
-        bhs     ProbeLoop                            ; if (sp >= x30), then we need to probe at least one more page
+        bhs     ProbeLoop                                  ; if (sp >= x30), then we need to probe at least one more page
 
         mov     sp, fp
         EPILOG_RESTORE_REG_PAIR fp, lr, 16!
