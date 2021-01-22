@@ -195,12 +195,11 @@
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
-      <_WasmPInvokeAssemblies Include="$(WasmBuildDir)\*.dll" />
    </ItemGroup>
    <!--This pinvoke-table.h will be used instead of the one in the runtime pack because of -I$(WasmBuildDir) -->
    <PInvokeTableGenerator
      Modules="@(_WasmPInvokeModules)"
-     Assemblies="@(_WasmPInvokeAssemblies)"
+     Assemblies="@(_WasmAssemblies)"
      OutputPath="$(WasmBuildDir)pinvoke-table.h" />
 
    <ItemGroup>
