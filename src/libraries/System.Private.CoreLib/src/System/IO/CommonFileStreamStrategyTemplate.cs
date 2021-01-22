@@ -125,6 +125,8 @@ namespace System.IO
         {
         }
 
+        protected abstract int FillReadBufferForReadByte();
+
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         public override Task FlushAsync(CancellationToken cancellationToken)

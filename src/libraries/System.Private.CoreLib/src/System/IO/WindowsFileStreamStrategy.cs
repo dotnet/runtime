@@ -483,7 +483,7 @@ namespace System.IO
         }
 
         /// <summary>Reads from the file handle into the buffer, overwriting anything in it.</summary>
-        private int FillReadBufferForReadByte() =>
+        protected override int FillReadBufferForReadByte() =>
             _useAsyncIO ?
                 ReadNativeAsync(new Memory<byte>(_buffer), 0, CancellationToken.None).GetAwaiter().GetResult() :
                 ReadNative(_buffer);

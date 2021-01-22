@@ -546,7 +546,7 @@ namespace System.IO
         }
 
         /// <summary>Reads from the file handle into the buffer, overwriting anything in it.</summary>
-        private int FillReadBufferForReadByte()
+        protected override int FillReadBufferForReadByte()
         {
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();
