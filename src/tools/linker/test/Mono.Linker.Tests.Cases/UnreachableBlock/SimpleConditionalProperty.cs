@@ -22,6 +22,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			TestProperty_null_1 ();
 			TestProperty_SignedComparisons ();
 			TestProperty_UnsignedComparisons ();
+			TestDefaultInterface ();
 		}
 
 		[Kept]
@@ -263,6 +264,43 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			B = 1,
 			[Kept]
 			C = 2
+		}
+
+		[Kept]
+		interface IDefaultInterface
+		{
+			[Kept]
+			public void NonDefault ();
+
+			[Kept]
+			[ExpectBodyModified]
+			public void Default ()
+			{
+				if (SimpleConditionalProperty.PropBool)
+					SimpleConditionalProperty.NeverReached_1 ();
+			}
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptInterface (typeof (IDefaultInterface))]
+		class ImplementsDefaultInterface : IDefaultInterface
+		{
+			[Kept]
+			[ExpectBodyModified]
+			public void NonDefault ()
+			{
+				if (PropBool)
+					NeverReached_1 ();
+			}
+		}
+
+		[Kept]
+		static void TestDefaultInterface ()
+		{
+			IDefaultInterface i = new ImplementsDefaultInterface ();
+			i.NonDefault ();
+			i.Default ();
 		}
 	}
 }
