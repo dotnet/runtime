@@ -98,13 +98,17 @@ private: // Inner classes
         ILStubHashBlob *m_pBlob;
     };
 
-    class ILStubCacheTraits : public DeleteElementsOnDestructSHashTraits<DefaultSHashTraits<ILStubCacheEntry *>>
+    class ILStubCacheTraits : public DefaultSHashTraits<ILStubCacheEntry>
     {
     public:
         using key_t = const ILStubHashBlob *;
-        static const key_t GetKey(_In_ element_t e) { LIMITED_METHOD_CONTRACT; return e->m_pBlob; }
+        static const key_t GetKey(_In_ const element_t& e) { LIMITED_METHOD_CONTRACT; return e.m_pBlob; }
         static count_t Hash(_In_ key_t key);
         static bool Equals(_In_ key_t lhs, _In_ key_t rhs);
+        static bool IsNull(_In_ const element_t& e) { LIMITED_METHOD_CONTRACT; return e.m_pMethodDesc == NULL; }
+        static const element_t Null() { LIMITED_METHOD_CONTRACT; return ILStubCacheEntry(); }
+        static bool IsDeleted(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_pMethodDesc == (MethodDesc *)-1; }
+        static const element_t Deleted() { LIMITED_METHOD_CONTRACT; return ILStubCacheEntry{(MethodDesc *)-1, NULL}; }
     };
 
 private:

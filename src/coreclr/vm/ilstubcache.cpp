@@ -452,7 +452,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         CrstHolder ch(&m_crst);
 
         // Try to find the stub
-        ILStubCacheEntry* phe = m_hashMap.Lookup(pHashBlob);
+        const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
         if (phe)
         {
             pMD = phe->m_pMethodDesc;
@@ -489,26 +489,24 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 
             CrstHolder ch(&m_crst);
 
-            ILStubCacheEntry* phe = m_hashMap.Lookup(pHashBlob);
+            const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
             if (phe == NULL)
             {
-                pBlobHolder.SuppressRelease();
                 pBlob = pBlobHolder;
-
-                phe = new ILStubCacheEntry{ pMD, pBlob };
                 _ASSERTE(pHashBlob->m_cbSizeOfBlob == cbSizeOfBlob);
                 memcpy(pBlob, pHashBlob, cbSizeOfBlob);
 
-                m_hashMap.Add(phe);
-                bILStubCreator = true;
+                m_hashMap.Add(ILStubCacheEntry{ pMD, pBlob });
+                pBlobHolder.SuppressRelease();
+
                 INDEBUG(pszResult   = "[missed cache]");
+                bILStubCreator = true;
             }
             else
             {
                 INDEBUG(pszResult   = "[hit cache][wasted new MethodDesc due to race]");
+                pMD = phe->m_pMethodDesc;
             }
-
-            pMD = phe->m_pMethodDesc;
         }
         else
         {
@@ -538,14 +536,13 @@ void ILStubCache::DeleteEntry(ILStubHashBlob* pHashBlob)
 
     CrstHolder ch(&m_crst);
 
-    ILStubCacheEntry *phe = m_hashMap.Lookup(pHashBlob);
-    if (phe)
+    const ILStubCacheEntry *phe = m_hashMap.LookupPtr(pHashBlob);
+    if (phe != NULL)
     {
 #ifdef _DEBUG
         LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::DeleteEntry StubMD: %p\n", phe->m_pMethodDesc));
 #endif
         m_hashMap.Remove(pHashBlob);
-        delete phe;
     }
 }
 
