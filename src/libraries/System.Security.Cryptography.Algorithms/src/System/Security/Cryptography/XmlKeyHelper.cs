@@ -267,6 +267,13 @@ namespace System.Security.Cryptography
             {
                 private const string XmlLinqAssemblyString = ", System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
 
+                private static readonly Func<string, object> s_xDocumentCreate;
+                private static readonly PropertyInfo s_docRootProperty;
+                private static readonly MethodInfo s_getElementsMethod;
+                private static readonly PropertyInfo s_elementNameProperty;
+                private static readonly PropertyInfo s_elementValueProperty;
+                private static readonly PropertyInfo s_nameNameProperty;
+
 #pragma warning disable CA1810 // explicit static cctor
                 static Functions()
                 {
@@ -292,13 +299,6 @@ namespace System.Security.Cryptography
                     s_nameNameProperty = xName.GetProperty("LocalName")!;
                 }
 #pragma warning restore CA1810
-
-                private static readonly Func<string, object> s_xDocumentCreate;
-                private static readonly PropertyInfo s_docRootProperty;
-                private static readonly MethodInfo s_getElementsMethod;
-                private static readonly PropertyInfo s_elementNameProperty;
-                private static readonly PropertyInfo s_nameNameProperty;
-                private static readonly PropertyInfo s_elementValueProperty;
 
                 internal static object? ParseDocument(string xmlString) =>
                     s_docRootProperty.GetValue(s_xDocumentCreate(xmlString));
