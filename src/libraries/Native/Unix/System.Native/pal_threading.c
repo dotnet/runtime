@@ -12,6 +12,10 @@
 #include <errno.h>
 #include <time.h>
 
+#if defined(TARGET_OSX) // Only needed on MacOS
+// So we can use the declaration of pthread_cond_timedwait_relative_np
+#undef _XOPEN_SOURCE
+#endif
 #include <pthread.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
