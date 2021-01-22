@@ -9,6 +9,8 @@ namespace System.Globalization
         // So we need Invariant to be initialized first.
         internal static bool Invariant { get; } = GetInvariantSwitchValue();
 
+        internal static bool PredefinedOnly { get; } = GetPredefinedOnly();
+
         internal static bool UseNls { get; } = !Invariant &&
             (GetSwitchValue("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") ||
                 !LoadIcu());
