@@ -1540,7 +1540,7 @@ namespace System.IO
             }
         }
 
-        private void LockInternal(long position, long length)
+        internal override void Lock(long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));
@@ -1553,7 +1553,7 @@ namespace System.IO
             }
         }
 
-        private void UnlockInternal(long position, long length)
+        internal override void Unlock(long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));

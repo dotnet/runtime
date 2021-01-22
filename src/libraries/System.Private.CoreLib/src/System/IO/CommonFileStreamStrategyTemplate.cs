@@ -119,10 +119,6 @@ namespace System.IO
 
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
-        internal override void Lock(long position, long length) => LockInternal(position, length);
-
-        internal override void Unlock(long position, long length) => UnlockInternal(position, length);
-
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             // TODO: https://github.com/dotnet/runtime/issues/27643 (stop doing this synchronous work!!).

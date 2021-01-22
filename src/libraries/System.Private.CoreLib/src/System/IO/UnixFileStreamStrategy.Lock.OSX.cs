@@ -5,12 +5,12 @@ namespace System.IO
 {
     internal sealed partial class UnixFileStreamStrategy : CommonFileStreamStrategyTemplate
     {
-        private static void LockInternal(long position, long length)
+        internal override void Lock(long position, long length)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
         }
 
-        private static void UnlockInternal(long position, long length)
+        internal override void Unlock(long position, long length)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
         }
