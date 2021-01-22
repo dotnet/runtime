@@ -96,7 +96,7 @@ namespace System.IO
         {
             if (!IsValid)
             {
-                Refresh(path);
+                RefreshCaches(path);
             }
 
             if (!continueOnError)
@@ -241,7 +241,7 @@ namespace System.IO
             return HasSymbolicLinkFlag;
         }
 
-        internal void Refresh(ReadOnlySpan<char> path)
+        internal void RefreshCaches(ReadOnlySpan<char> path)
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property.
