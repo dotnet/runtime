@@ -101,24 +101,7 @@ namespace System.IO
 
             if (!continueOnError)
             {
-                int errno = 0;
-
-                // Lstat should always be initialized by Refresh
-                if (_initializedMainCache != 0)
-                {
-                    errno = _initializedMainCache;
-                }
-                // Stat is optionally initialized when Refresh detects object is a symbolic link
-                else if (_initializedSecondaryCache != 0 && _initializedSecondaryCache != -1)
-                {
-                    errno = _initializedSecondaryCache;
-                }
-
-                if (errno != 0)
-                {
-                    Invalidate();
-                    throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
-                }
+                ThrowOnCacheInitializationError(path);
             }
         }
 
@@ -270,6 +253,27 @@ namespace System.IO
             }
 
             _exists = true;
+        }
+        private void ThrowOnCacheInitializationError(ReadOnlySpan<char> path)
+        {
+            int errno = 0;
+
+            // Lstat should always be initialized by Refresh
+            if (_initializedMainCache != 0)
+            {
+                errno = _initializedMainCache;
+            }
+            // Stat is optionally initialized when Refresh detects object is a symbolic link
+            else if (_initializedSecondaryCache != 0 && _initializedSecondaryCache != -1)
+            {
+                errno = _initializedSecondaryCache;
+            }
+
+            if (errno != 0)
+            {
+                Invalidate();
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
+            }
         }
 
         internal bool TryRefreshMainCache(ReadOnlySpan<char> path) =>
