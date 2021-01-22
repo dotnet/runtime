@@ -19,7 +19,7 @@ namespace System
         {
         }
 
-        protected MulticastDelegate([DynamicallyAccessedMembers(AllMethods)] Type target, string method)
+        protected MulticastDelegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
             : base(target, method)
         {
         }

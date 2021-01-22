@@ -11,13 +11,13 @@ parameters:
   variables: []
   targetRid: ''
   timeoutInMinutes: ''
-  dependsOn: ''
+  dependsOn: []
   pool: ''
   platform: ''
   condition: true
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
-  useCheckoutBundle: false
+  dependOnEvaluatePaths: false
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
   helixQueues: ''
@@ -41,12 +41,12 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if and(ne(parameters.useCheckoutBundle, true),ne(parameters.dependsOn,'')) }}:
+    ${{ if and(ne(parameters.dependOnEvaluatePaths, true),ne(parameters.dependsOn,'')) }}:
       dependsOn: ${{ parameters.dependsOn }}
 
-    ${{ if eq(parameters.useCheckoutBundle, true) }}:
+    ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
       dependsOn: 
-      - checkout
+      - evaluate_paths
       - ${{ if ne(parameters.dependsOn,'') }}:
         - ${{ parameters.dependsOn }}
 
@@ -82,18 +82,18 @@ jobs:
         - ${{ variable }}
 
     steps:
-    - template: /eng/pipelines/common/checkout-step.yml
-      parameters:
-        useBundle: ${{ parameters.useCheckoutBundle }}
+    - checkout: self
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if eq(parameters.monoCrossAOTTargetOS, 'Android') }}:
+    - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
-        displayName: Download AOT offset files
+        displayName: Download ${{monoCrossAOTTargetOS}} AOT offset files
         inputs:
-          artifact: Mono_Offsets_Android
+          artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:

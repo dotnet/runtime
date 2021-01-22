@@ -12,7 +12,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class HarnessTests : SingleSessionTestBase
+    public class HarnessTests : DebuggerTestBase
     {
         [Fact]
         public async Task TimedOutWaitingForInvalidBreakpoint()
@@ -45,10 +45,10 @@ namespace DebuggerTests
             Result res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
             Assert.True(res.IsOk, $"setBreakpoint failed with {res}");
 
-            res = await ctx.cli.SendCommand(
+            res = await cli.SendCommand(
                 "Runtime.evaluate",
                 JObject.FromObject(new { expression = "window.setTimeout(function() { invoke_add(); }, 0);" }),
-                ctx.token);
+                token);
             Assert.True(res.IsOk, $"evaluating the function failed with {res}");
 
             // delay, so that we can get the Debugger.pause event

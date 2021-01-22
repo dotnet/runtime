@@ -64,6 +64,7 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         signBinaries: ${{ variables.isOfficialBuild }}
+        timeoutInMinutes: 120
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -73,6 +74,7 @@ stages:
       - windows_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
+        timeoutInMinutes: 120
         crossDacPlatforms:
         - Linux_x64
         - Linux_arm
@@ -130,9 +132,12 @@ stages:
       buildConfig: release
       platforms:
       - Android_x64
+      - Browser_wasm
+      - tvOS_x64
+      - iOS_x64
 
   #
-  # Build Mono release Android AOT cross-compiler
+  # Build Mono release AOT cross-compilers
   #
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -140,19 +145,50 @@ stages:
       runtimeFlavor: mono
       buildConfig: release
       platforms:
-      - OSX_x64
       - Linux_x64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                   /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-        nameSuffix: AndroidAOT_Mono
-        runtimeVariant: crossandroid
-        dependsOn: mono_android_offsets
-        monoCrossAOTTargetOS: Android
+        buildArgs: -s mono+packs -c $(_BuildConfig)
+                   /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+        nameSuffix: CrossAOT_Mono
+        runtimeVariant: crossaot
+        dependsOn:
+        - mono_android_offsets
+        - mono_browser_offsets
+        monoCrossAOTTargetOS:
+        - Android
+        - Browser
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: MonoRuntimePacks
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - OSX_x64
+      jobParameters:
+        buildArgs: -s mono+packs -c $(_BuildConfig)
+                   /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+        nameSuffix: CrossAOT_Mono
+        runtimeVariant: crossaot
+        dependsOn:
+        - mono_android_offsets
+        - mono_browser_offsets
+        - mono_tvos_offsets
+        - mono_ios_offsets
+        monoCrossAOTTargetOS:
+        - Android
+        - Browser
+        - tvOS
+        - iOS
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
   #
   # Build Mono LLVM runtime packs
   #

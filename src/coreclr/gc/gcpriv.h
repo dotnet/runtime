@@ -1214,6 +1214,8 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
+    void verify_regions();
+    PER_HEAP
     void verify_heap (BOOL begin_gc_p);
     PER_HEAP
     BOOL check_need_card (uint8_t* child_obj, int gen_num_for_cards, 
@@ -1307,6 +1309,16 @@ public:
     void thread_rest_of_generation (generation* gen, heap_segment* region);
     PER_HEAP
     heap_segment* get_new_region (int gen_number);
+    // This allocates one from region allocator and commit the mark array if needed.
+    PER_HEAP_ISOLATED
+    heap_segment* allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p);
+    // When we delete a region we need to update start and tail region
+    // if needed.
+    PER_HEAP
+    void update_start_tail_regions (generation* gen,
+                                    heap_segment* region_to_delete, 
+                                    heap_segment* prev_region, 
+                                    heap_segment* next_region);
 #endif //USE_REGIONS
 
     static
@@ -3363,6 +3375,12 @@ public:
 
     PER_HEAP
     int num_free_large_regions;
+
+    PER_HEAP
+    int num_free_large_regions_added;
+
+    PER_HEAP
+    int num_free_large_regions_removed;
 
     PER_HEAP
     size_t committed_in_free;

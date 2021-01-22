@@ -2023,23 +2023,16 @@ public:
 
 private:
     PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
-#ifdef FEATURE_TIERED_COMPILATION
-    PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldCountCalls);
-    PCODE JitCompileCode(PrepareCodeConfig* pConfig, bool shouldCountCalls);
-    PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, bool shouldCountCalls);
-    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, bool shouldCountCalls, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
-#else
-    PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig);
-    PCODE JitCompileCode(PrepareCodeConfig* pConfig);
-    PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
-    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
-#endif
+    PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledNgenCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0Jit);
     COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
+    PCODE JitCompileCode(PrepareCodeConfig* pConfig);
+    PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
 #endif // DACCESS_COMPILE
 
 #ifdef HAVE_GCCOVER
@@ -2138,6 +2131,20 @@ public:
 
 #ifdef FEATURE_TIERED_COMPILATION
 public:
+    bool WasTieringDisabledBeforeJitting() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_wasTieringDisabledBeforeJitting;
+    }
+
+    void SetWasTieringDisabledBeforeJitting()
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
+
+        m_wasTieringDisabledBeforeJitting = true;
+    }
+
     bool ShouldCountCalls() const
     {
         WRAPPER_NO_CONTRACT;
@@ -2245,6 +2252,7 @@ private:
 
 #ifdef FEATURE_TIERED_COMPILATION
 private:
+    bool m_wasTieringDisabledBeforeJitting;
     bool m_shouldCountCalls;
 #endif
 
@@ -2750,7 +2758,10 @@ public:
     void SetNativeStackArgSize(WORD cbArgSize)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsILStub() && (cbArgSize % TARGET_POINTER_SIZE) == 0);
+        _ASSERTE(IsILStub());
+#if !defined(OSX_ARM64_ABI)
+        _ASSERTE((cbArgSize % TARGET_POINTER_SIZE) == 0);
+#endif
         m_dwExtendedFlags = (m_dwExtendedFlags & ~nomdStackArgSize) | ((DWORD)cbArgSize << 16);
     }
 
@@ -3230,13 +3241,13 @@ private:
 #endif
 public:
 
-    void SetStackArgumentSize(WORD cbDstBuffer, CorPinvokeMap unmgdCallConv)
+    void SetStackArgumentSize(WORD cbDstBuffer, CorInfoCallConvExtension unmgdCallConv)
     {
         LIMITED_METHOD_CONTRACT;
 
 #if defined(TARGET_X86)
         // thiscall passes the this pointer in ECX
-        if (unmgdCallConv == pmCallConvThiscall)
+        if (unmgdCallConv == CorInfoCallConvExtension::Thiscall)
         {
             _ASSERTE(cbDstBuffer >= sizeof(SLOT));
             cbDstBuffer -= sizeof(SLOT);

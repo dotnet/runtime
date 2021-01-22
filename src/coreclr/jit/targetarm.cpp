@@ -12,8 +12,9 @@
 
 #include "target.h"
 
-const char*            Target::g_tgtCPUName  = "arm";
-const Target::ArgOrder Target::g_tgtArgOrder = ARG_ORDER_R2L;
+const char*            Target::g_tgtCPUName           = "arm";
+const Target::ArgOrder Target::g_tgtArgOrder          = ARG_ORDER_R2L;
+const Target::ArgOrder Target::g_tgtUnmanagedArgOrder = ARG_ORDER_R2L;
 
 // clang-format off
 const regNumber intArgRegs [] = {REG_R0, REG_R1, REG_R2, REG_R3};

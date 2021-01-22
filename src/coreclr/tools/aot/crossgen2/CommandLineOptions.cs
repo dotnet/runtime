@@ -46,11 +46,16 @@ namespace ILCompiler
         public bool Resilient;
         public bool Map;
         public bool MapCsv;
+        public bool Pdb;
+        public string PdbPath;
+        public bool PerfMap;
+        public string PerfMapPath;
         public int Parallelism;
         public int CustomPESectionAlignment;
         public string MethodLayout;
         public string FileLayout;
         public bool VerifyTypeAndFieldLayout;
+        public string CallChainProfileFile;
 
         public string SingleMethodTypeName;
         public string SingleMethodName;
@@ -117,10 +122,15 @@ namespace ILCompiler
                 syntax.DefineOption("custom-pe-section-alignment", ref CustomPESectionAlignment, SR.CustomPESectionAlignmentOption);
                 syntax.DefineOption("map", ref Map, SR.MapFileOption);
                 syntax.DefineOption("mapcsv", ref MapCsv, SR.MapCsvFileOption);
+                syntax.DefineOption("pdb", ref Pdb, SR.PdbFileOption);
+                syntax.DefineOption("pdb-path", ref PdbPath, SR.PdbFilePathOption);
+                syntax.DefineOption("perfmap", ref PerfMap, SR.PerfMapFileOption);
+                syntax.DefineOption("perfmap-path", ref PerfMapPath, SR.PerfMapFilePathOption);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);
                 syntax.DefineOption("verify-type-and-field-layout", ref VerifyTypeAndFieldLayout, SR.VerifyTypeAndFieldLayoutOption);
+                syntax.DefineOption("callchain-profile", ref CallChainProfileFile, SR.CallChainProfileFile);
 
                 syntax.DefineOption("h|help", ref Help, SR.HelpOption);
 

@@ -3,17 +3,12 @@
     <!-- These need to be set here because the root Directory.Build.props sets up the intermediate path early -->
     <Configuration>Release</Configuration>
     <OutputType>Exe</OutputType>
-
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>link</TrimMode>
-    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
-  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <OutputPath>$(RepoRoot)artifacts\bin\$(MSBuildProjectName)</OutputPath>
   </PropertyGroup>
 </Project>

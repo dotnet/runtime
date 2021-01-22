@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -159,7 +160,9 @@ namespace System
 
         private static unsafe delegate* unmanaged[SuppressGCTransition]<long*, void> GetGetSystemTimeAsFileTimeFnPtr()
         {
-            IntPtr kernel32Lib = NativeLibrary.Load("kernel32.dll", typeof(DateTime).Assembly, DllImportSearchPath.System32);
+            IntPtr kernel32Lib = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+            Debug.Assert(kernel32Lib != IntPtr.Zero);
+
             IntPtr pfnGetSystemTime = NativeLibrary.GetExport(kernel32Lib, "GetSystemTimeAsFileTime");
 
             if (NativeLibrary.TryGetExport(kernel32Lib, "GetSystemTimePreciseAsFileTime", out IntPtr pfnGetSystemTimePrecise))

@@ -177,11 +177,17 @@ fi
 
 if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
   if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
-     have_sleep=$(which sleep)
-     if [ -x "$have_sleep" ]; then
-         echo Waiting a few seconds for any dump to be written..
-          sleep 10s
-     fi
+
+    # For abrupt failures, in Helix, dump some of the kernel log, in case there is a hint
+    if [[ $test_exitcode -ne 1 ]]; then
+      dmesg | tail -50
+    fi
+
+    have_sleep=$(which sleep)
+    if [ -x "$have_sleep" ]; then
+      echo Waiting a few seconds for any dump to be written..
+      sleep 10s
+    fi
   fi
 
   echo cat /proc/sys/kernel/core_pattern: $(cat /proc/sys/kernel/core_pattern)

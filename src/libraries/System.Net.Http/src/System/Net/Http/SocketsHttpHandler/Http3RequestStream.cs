@@ -889,7 +889,7 @@ namespace System.Net.Http
 
                 _response = new HttpResponseMessage()
                 {
-                    Version = Http3Connection.HttpVersion30,
+                    Version = HttpVersion.Version30,
                     RequestMessage = _request,
                     Content = new HttpConnectionResponseContent(),
                     StatusCode = (HttpStatusCode)statusCode

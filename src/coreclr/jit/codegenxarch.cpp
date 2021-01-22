@@ -1129,6 +1129,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 }
 
 #ifdef FEATURE_SIMD
+
 //------------------------------------------------------------------------
 // genSIMDSplitReturn: Generates code for returning a fixed-size SIMD type that lives
 //                     in a single register, but is returned in multiple registers.
@@ -1148,34 +1149,62 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     regNumber reg0  = retTypeDesc->GetABIReturnReg(0);
     regNumber reg1  = retTypeDesc->GetABIReturnReg(1);
 
+    assert((reg0 != REG_NA) && (reg1 != REG_NA) && (opReg != REG_NA));
+
+    const bool srcIsFloatReg = genIsValidFloatReg(opReg);
+    const bool dstIsFloatReg = genIsValidFloatReg(reg0);
+    assert(srcIsFloatReg);
+
+#ifdef TARGET_AMD64
+    assert(src->TypeIs(TYP_SIMD16));
+    assert(srcIsFloatReg == dstIsFloatReg);
     if (opReg != reg0 && opReg != reg1)
     {
         // Operand reg is different from return regs.
         // Copy opReg to reg0 and let it to be handled by one of the
         // two cases below.
-        inst_RV_RV(ins_Copy(TYP_DOUBLE), reg0, opReg, TYP_DOUBLE);
+        inst_RV_RV(ins_Copy(opReg, TYP_SIMD16), reg0, opReg, TYP_SIMD16);
         opReg = reg0;
     }
 
     if (opReg == reg0)
     {
         assert(opReg != reg1);
-
-        // reg0 - already has required 8-byte in bit position [63:0].
         // reg1 = opReg.
-        // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
-        inst_RV_RV(ins_Copy(TYP_DOUBLE), reg1, opReg, TYP_DOUBLE);
+        inst_RV_RV(ins_Copy(opReg, TYP_SIMD16), reg1, opReg, TYP_SIMD16);
     }
     else
     {
         assert(opReg == reg1);
 
         // reg0 = opReg.
-        // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
-        inst_RV_RV(ins_Copy(TYP_DOUBLE), reg0, opReg, TYP_DOUBLE);
+
+        inst_RV_RV(ins_Copy(opReg, TYP_SIMD16), reg0, opReg, TYP_SIMD16);
     }
+    // reg0 - already has required 8-byte in bit position [63:0].
+    // swap upper and lower 8-bytes of reg1 so that desired 8-byte is in bit position [63:0].
     inst_RV_RV_IV(INS_shufpd, EA_16BYTE, reg1, reg1, 0x01);
+
+#else  // TARGET_X86
+    assert(src->TypeIs(TYP_SIMD8));
+    assert(srcIsFloatReg != dstIsFloatReg);
+    assert((reg0 == REG_EAX) && (reg1 == REG_EDX));
+    // reg0 = opReg[31:0]
+    inst_RV_RV(ins_Copy(opReg, TYP_INT), reg0, opReg, TYP_INT);
+    // reg1 = opRef[61:32]
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        inst_RV_TT_IV(INS_pextrd, EA_4BYTE, reg1, src, 1);
+    }
+    else
+    {
+        int8_t shuffleMask = 1; // we only need [61:32]->[31:0], the rest is not read.
+        inst_RV_TT_IV(INS_pshufd, EA_8BYTE, opReg, src, shuffleMask);
+        inst_RV_RV(ins_Copy(opReg, TYP_INT), reg1, opReg, TYP_INT);
+    }
+#endif // TARGET_X86
 }
+
 #endif // FEATURE_SIMD
 
 #if defined(TARGET_X86)
@@ -1793,8 +1822,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_PINVOKE_PROLOG:
             noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
 
+#ifdef PSEUDORANDOM_NOP_INSERTION
             // the runtime side requires the codegen here to be consistent
             emit->emitDisableRandomNops();
+#endif // PSEUDORANDOM_NOP_INSERTION
             break;
 
         case GT_LABEL:

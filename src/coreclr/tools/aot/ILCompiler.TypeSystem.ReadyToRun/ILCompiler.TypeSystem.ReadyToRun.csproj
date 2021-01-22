@@ -278,6 +278,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\SignatureVariable.cs">
       <Link>TypeSystem\Common\SignatureVariable.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TargetArchitecture.cs">
+      <Link>TypeSystem\Common\TargetArchitecture.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TargetDetails.cs">
       <Link>TypeSystem\Common\TargetDetails.cs</Link>
     </Compile>

@@ -19,9 +19,7 @@ jobs:
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
-
-    ${{ if eq(parameters.useCheckoutBundle, true) }}:
-      dependsOn: checkout
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
     name: ${{ format('mono_{0}_offsets', parameters.osGroup) }}
@@ -64,10 +62,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOnly=true
+      - script: ./build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
         displayName: Generate AOT offsets
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOnly=true
+      - script: build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
         displayName: Generate AOT offsets
 
     # Upload offset files

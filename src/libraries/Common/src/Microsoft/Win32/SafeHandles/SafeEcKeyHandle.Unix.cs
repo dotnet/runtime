@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeEcKeyHandle : SafeHandle
     {
-        private SafeEcKeyHandle() :
+        public SafeEcKeyHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

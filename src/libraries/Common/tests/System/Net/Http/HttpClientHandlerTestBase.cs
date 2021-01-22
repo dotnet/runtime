@@ -2,21 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+#if !NETCOREAPP
 using System.Diagnostics;
+#endif
 using System.IO;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Reflection;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
+        // This file is shared with the WinHttpHandler implementation, which supports .NET Framework
+        // So, define this so derived tests can use it.
         public static readonly Version HttpVersion30 = new Version(3, 0);
 
         public readonly ITestOutputHelper _output;

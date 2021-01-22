@@ -293,14 +293,6 @@ ASMCONSTANTS_C_ASSERT(UMEntryThunk__m_pUMThunkMarshInfo == offsetof(UMEntryThunk
 #define               UMThunkMarshInfo__m_pILStub           0x00
 ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_pILStub == offsetof(UMThunkMarshInfo, m_pILStub))
 
-#define               UMThunkMarshInfo__m_cbActualArgSize   0x04
-ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_cbActualArgSize == offsetof(UMThunkMarshInfo, m_cbActualArgSize))
-
-#ifdef FEATURE_STUBS_AS_IL
-#define               UMThunkMarshInfo__m_cbRetPop   0x08
-ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_cbRetPop == offsetof(UMThunkMarshInfo, m_cbRetPop))
-#endif //FEATURE_STUBS_AS_IL
-
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x04
 ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next));

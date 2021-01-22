@@ -55,7 +55,7 @@ namespace System.Net.Sockets
         // Note that these arrays are allocated and then grown as necessary, but never shrunk.
         // Thus the actual in-use length is defined by _bufferListInternal.Count, not the length of these arrays.
         private WSABuffer[]? _wsaBufferArrayPinned;
-        private GCHandle[]? _multipleBufferGCHandles;
+        private MemoryHandle[]? _multipleBufferMemoryHandles;
 
         // Internal buffers for WSARecvMsg
         private byte[]? _wsaMessageBufferPinned;
@@ -703,7 +703,7 @@ namespace System.Net.Sockets
                     {
                         sendPacketsElementsFileStreamCount++;
                     }
-                    else if (spe.Buffer != null && spe.Count > 0)
+                    else if (spe.MemoryBuffer != null && spe.Count > 0)
                     {
                         sendPacketsElementsBufferCount++;
                     }
@@ -865,28 +865,17 @@ namespace System.Net.Sockets
                 {
                     int bufferCount = _bufferListInternal.Count;
 
-#if DEBUG
-                    if (_multipleBufferGCHandles != null)
-                    {
-                        foreach (GCHandle gcHandle in _multipleBufferGCHandles)
-                        {
-                            Debug.Assert(!gcHandle.IsAllocated);
-                        }
-                    }
-#endif
-
                     // Number of things to pin is number of buffers.
                     // Ensure we have properly sized object array.
-                    if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < bufferCount))
+                    if (_multipleBufferMemoryHandles == null || (_multipleBufferMemoryHandles.Length < bufferCount))
                     {
-                        _multipleBufferGCHandles = new GCHandle[bufferCount];
+                        _multipleBufferMemoryHandles = new MemoryHandle[bufferCount];
                     }
 
                     // Pin the buffers.
                     for (int i = 0; i < bufferCount; i++)
                     {
-                        Debug.Assert(!_multipleBufferGCHandles[i].IsAllocated);
-                        _multipleBufferGCHandles[i] = GCHandle.Alloc(_bufferListInternal[i].Array, GCHandleType.Pinned);
+                        _multipleBufferMemoryHandles[i] = _bufferListInternal[i].Array.AsMemory().Pin();
                     }
 
                     if (_wsaBufferArrayPinned == null || _wsaBufferArrayPinned.Length < bufferCount)
@@ -973,14 +962,12 @@ namespace System.Net.Sockets
                 _singleBufferHandle.Dispose();
             }
 
-            if (_multipleBufferGCHandles != null)
+            if (_multipleBufferMemoryHandles != null)
             {
-                for (int i = 0; i < _multipleBufferGCHandles.Length; i++)
+                for (int i = 0; i < _multipleBufferMemoryHandles.Length; i++)
                 {
-                    if (_multipleBufferGCHandles[i].IsAllocated)
-                    {
-                        _multipleBufferGCHandles[i].Free();
-                    }
+                    _multipleBufferMemoryHandles[i].Dispose();
+                    _multipleBufferMemoryHandles[i] = default;
                 }
             }
 
@@ -1007,50 +994,40 @@ namespace System.Net.Sockets
 
             // Number of things to pin is number of buffers + 1 (native descriptor).
             // Ensure we have properly sized object array.
-#if DEBUG
-            if (_multipleBufferGCHandles != null)
+            if (_multipleBufferMemoryHandles == null || (_multipleBufferMemoryHandles.Length < sendPacketsElementsBufferCount))
             {
-                foreach (GCHandle gcHandle in _multipleBufferGCHandles)
-                {
-                    Debug.Assert(!gcHandle.IsAllocated);
-                }
-            }
-#endif
-
-            if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < sendPacketsElementsBufferCount))
-            {
-                _multipleBufferGCHandles = new GCHandle[sendPacketsElementsBufferCount];
+                _multipleBufferMemoryHandles = new MemoryHandle[sendPacketsElementsBufferCount];
             }
 
             // Pin user specified buffers.
             int index = 0;
             foreach (SendPacketsElement spe in sendPacketsElementsCopy)
             {
-                if (spe?.Buffer != null && spe.Count > 0)
+                if (spe?.MemoryBuffer != null && spe.Count > 0)
                 {
-                    Debug.Assert(!_multipleBufferGCHandles[index].IsAllocated);
-                    _multipleBufferGCHandles[index] = GCHandle.Alloc(spe.Buffer, GCHandleType.Pinned);
-
+                    _multipleBufferMemoryHandles[index] = spe.MemoryBuffer.Value.Pin();
                     index++;
                 }
             }
 
             // Fill in native descriptor.
+            int bufferIndex = 0;
             int descriptorIndex = 0;
             int fileIndex = 0;
             foreach (SendPacketsElement spe in sendPacketsElementsCopy)
             {
                 if (spe != null)
                 {
-                    if (spe.Buffer != null && spe.Count > 0)
+                    if (spe.MemoryBuffer != null && spe.Count > 0)
                     {
                         // This element is a buffer.
-                        sendPacketsDescriptorPinned[descriptorIndex].buffer = Marshal.UnsafeAddrOfPinnedArrayElement(spe.Buffer, spe.Offset);
+                        sendPacketsDescriptorPinned[descriptorIndex].buffer = (IntPtr)_multipleBufferMemoryHandles[bufferIndex].Pointer;
                         sendPacketsDescriptorPinned[descriptorIndex].length = (uint)spe.Count;
                         sendPacketsDescriptorPinned[descriptorIndex].flags =
                             Interop.Winsock.TransmitPacketsElementFlags.Memory | (spe.EndOfPacket
                                 ? Interop.Winsock.TransmitPacketsElementFlags.EndOfPacket
                                 : 0);
+                        bufferIndex++;
                         descriptorIndex++;
                     }
                     else if (spe.FilePath != null)

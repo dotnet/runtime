@@ -68,7 +68,7 @@ internal class Utils
             {
                 if (!silent)
                 {
-                    LogError(e.Data);
+                    LogWarning(e.Data);
                     outputBuilder.AppendLine(e.Data);
                 }
                 errorBuilder.AppendLine(e.Data);
@@ -122,6 +122,12 @@ internal class Utils
     {
         if (msg != null)
             Logger?.LogMessage(importance, msg);
+    }
+
+    public static void LogWarning(string? msg)
+    {
+        if (msg != null)
+            Logger?.LogWarning(msg);
     }
 
     public static void LogError(string? msg)
