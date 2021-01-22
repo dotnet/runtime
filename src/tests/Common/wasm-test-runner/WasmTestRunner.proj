@@ -16,7 +16,7 @@
 
   <Target Name="BuildApp" BeforeTargets="WasmBuildApp">
     <PropertyGroup>
-      <WasmMainAssemblyFileName>$(TestAssembly)</WasmMainAssemblyFileName>
+      <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
