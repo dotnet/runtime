@@ -34,6 +34,16 @@ namespace System.IO
         /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
         private bool? _canSeek;
 
+        internal UnixFileStreamStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+            : base(fileStream, handle, access, bufferSize, isAsync)
+        {
+        }
+
+        internal UnixFileStreamStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+            : base(fileStream, path, mode, access, share, bufferSize, options)
+        {
+        }
+
         protected override SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments

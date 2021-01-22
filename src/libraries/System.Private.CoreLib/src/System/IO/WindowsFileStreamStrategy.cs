@@ -51,6 +51,16 @@ namespace System.IO
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
+        internal WindowsFileStreamStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+            : base(fileStream, handle, access, bufferSize, isAsync)
+        {
+        }
+
+        internal WindowsFileStreamStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+            : base(fileStream, path, mode, access, share, bufferSize, options)
+        {
+        }
+
         protected override void Init(FileMode mode, FileShare share, string originalPath)
         {
             if (!PathInternal.IsExtended(originalPath))

@@ -45,16 +45,11 @@ namespace System.IO
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
-                // it might seem to have no sense now, but we plan to introduce dedicated strategies for sync and async implementations
-                switch (isAsync)
-                {
-                    case true:
-                        _strategy = WrapForDerivedType(new FileStreamImpl(this, safeHandle, access, bufferSize, true));
-                        return;
-                    case false:
-                        _strategy = WrapForDerivedType(new FileStreamImpl(this, safeHandle, access, bufferSize, false));
-                        return;
-                }
+#if TARGET_WINDOWS
+                _strategy = WrapForDerivedType(new WindowsFileStreamStrategy(this, safeHandle, access, bufferSize, isAsync));
+#else
+                _strategy = WrapForDerivedType(new UnixFileStreamStrategy(this, safeHandle, access, bufferSize, isAsync));
+#endif
             }
             catch
             {
@@ -95,7 +90,12 @@ namespace System.IO
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
-            : this(handle, access, bufferSize, FileStreamImpl.GetDefaultIsAsync(handle, DefaultIsAsync))
+            : this(handle, access, bufferSize,
+#if TARGET_WINDOWS
+                  WindowsFileStreamStrategy.GetDefaultIsAsync(handle, DefaultIsAsync))
+#else
+                  UnixFileStreamStrategy.GetDefaultIsAsync(handle, DefaultIsAsync))
+#endif
         {
         }
 
@@ -103,15 +103,11 @@ namespace System.IO
         {
             ValidateHandle(handle, access, bufferSize, isAsync);
 
-            switch (isAsync)
-            {
-                case true:
-                    _strategy = WrapForDerivedType(new FileStreamImpl(this, handle, access, bufferSize, true));
-                    return;
-                case false:
-                    _strategy = WrapForDerivedType(new FileStreamImpl(this, handle, access, bufferSize, false));
-                    return;
-            }
+#if TARGET_WINDOWS
+            _strategy = WrapForDerivedType(new WindowsFileStreamStrategy(this, handle, access, bufferSize, isAsync));
+#else
+            _strategy = WrapForDerivedType(new UnixFileStreamStrategy(this, handle, access, bufferSize, isAsync));
+#endif
         }
 
         public FileStream(string path, FileMode mode) :
@@ -180,7 +176,11 @@ namespace System.IO
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }
 
-            _strategy = WrapForDerivedType(new FileStreamImpl(this, path, mode, access, share, bufferSize, options));
+#if TARGET_WINDOWS
+            _strategy = WrapForDerivedType(new WindowsFileStreamStrategy(this, path, mode, access, share, bufferSize, options));
+#else
+            _strategy = WrapForDerivedType(new UnixFileStreamStrategy(this, path, mode, access, share, bufferSize, options));
+#endif
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
