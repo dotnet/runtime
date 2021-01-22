@@ -253,7 +253,7 @@ namespace System.IO
             // If it is a symlink, then subsequently get details on the target of the symlink,
             // storing those results separately.  We only report failure if the initial
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
-            if (!VerifyStatCall(Interop.Sys.LStat(path, out _mainCache), out _initializedMainCache))
+            if (!TryRefreshMainCache(path))
             {
                 _exists = false;
                 return;
@@ -263,7 +263,7 @@ namespace System.IO
 
             if (HasSymbolicLinkFlag)
             {
-                if (VerifyStatCall(Interop.Sys.Stat(path, out _secondaryCache), out _initializedSecondaryCache))
+                if (TryRefreshSecondaryCache(path))
                 {
                     _isDirectory = HasDirectoryFlag(_secondaryCache);
                 }
@@ -271,6 +271,12 @@ namespace System.IO
 
             _exists = true;
         }
+
+        internal bool TryRefreshMainCache(ReadOnlySpan<char> path) =>
+            VerifyStatCall(Interop.Sys.LStat(path, out _mainCache), out _initializedMainCache);
+
+        internal bool TryRefreshSecondaryCache(ReadOnlySpan<char> path) =>
+            VerifyStatCall(Interop.Sys.Stat(path, out _secondaryCache), out _initializedSecondaryCache);
 
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
         {

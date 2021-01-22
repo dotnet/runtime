@@ -38,7 +38,6 @@ namespace System.IO.Enumeration
 
             entry._status = default;
             entry._status.Invalidate();
-            entry._status.EnsureStatInitialized(entry.FullPath, continueOnError: true);
 
             bool isDirectory = false;
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR)
@@ -49,8 +48,8 @@ namespace System.IO.Enumeration
             // Some operating systems don't have the inode type in the dirent structure,
             // so we use DT_UNKNOWN as a sentinel value. As such, check if the dirent is a
             // directory.
-            else if (entry._status.IsSecondaryCacheValid && // Set by EnsureStatInitialized
-                     (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN))
+            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN) &&
+                     entry._status.TryRefreshMainCache(entry.FullPath)) // Only call lstat if inode is link or unknown
             {
                 // Symlink or unknown: Stat should tell us if we can resolve it to a directory.
                 isDirectory = entry._status.HasSecondaryDirectoryFlag;
@@ -62,8 +61,8 @@ namespace System.IO.Enumeration
             {
                 isSymlink = true;
             }
-            else if (entry._status.IsMainCacheValid && // Set by EnsureStatInitialized
-                     directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+            else if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN &&
+                     entry._status.TryRefreshSecondaryCache(entry.FullPath)) // Only call stat if inode is unknown
             {
                 isSymlink = entry._status.HasSymbolicLinkFlag;
             }
