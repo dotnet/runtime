@@ -75,6 +75,7 @@
 
     <MonoAOTCompiler
       CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross"
+      OutputDir="$(WasmBuildDir)"
       Mode="$(AOTMode)"
       OutputType="AsmOnly"
       Assemblies="@(_AotInputAssemblies)"
