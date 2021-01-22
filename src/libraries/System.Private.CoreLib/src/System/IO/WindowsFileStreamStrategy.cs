@@ -51,7 +51,7 @@ namespace System.IO
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        private void Init(FileMode mode, FileShare share, string originalPath)
+        protected sealed override void Init(FileMode mode, FileShare share, string originalPath)
         {
             if (!PathInternal.IsExtended(originalPath))
             {
@@ -118,7 +118,7 @@ namespace System.IO
             }
         }
 
-        private void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
+        protected sealed override void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
         {
 #if DEBUG
             bool hadBinding = handle.ThreadPoolBinding != null;

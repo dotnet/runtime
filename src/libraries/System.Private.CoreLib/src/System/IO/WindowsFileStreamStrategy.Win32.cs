@@ -8,7 +8,7 @@ namespace System.IO
 {
     internal sealed partial class WindowsFileStreamStrategy : CommonFileStreamStrategyTemplate
     {
-        private SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
+        protected sealed override SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {
             return CreateFileOpenHandle(mode, share, options);
         }

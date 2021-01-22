@@ -60,7 +60,7 @@ namespace System.IO
         /// <summary>Whether the file stream's handle has been exposed.</summary>
         protected bool _exposedHandle;
 
-        internal FileStreamImpl(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
+        protected CommonFileStreamStrategyTemplate(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
         {
             _exposedHandle = true;
             _bufferLength = bufferSize;
@@ -77,7 +77,7 @@ namespace System.IO
             _fileHandle = handle;
         }
 
-        internal FileStreamImpl(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options) : base(fileStream)
+        protected CommonFileStreamStrategyTemplate(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options) : base(fileStream)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -111,8 +111,13 @@ namespace System.IO
             Dispose(false);
         }
 
-        internal override void DisposeInternal(bool disposing) => Dispose(disposing);
+        protected abstract void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO);
 
+        protected abstract SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options);
+
+        protected abstract void Init(FileMode mode, FileShare share, string originalPath);
+
+        internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         internal override void Lock(long position, long length) => LockInternal(position, length);
 

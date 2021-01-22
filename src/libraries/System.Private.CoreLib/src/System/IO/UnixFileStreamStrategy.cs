@@ -34,7 +34,7 @@ namespace System.IO
         /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
         private bool? _canSeek;
 
-        private SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
+        protected sealed override SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
@@ -67,7 +67,7 @@ namespace System.IO
         /// <param name="mode">How the file should be opened.</param>
         /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
         /// <param name="originalPath">The original path specified for the FileStream.</param>
-        private void Init(FileMode mode, FileShare share, string originalPath)
+        protected sealed override void Init(FileMode mode, FileShare share, string originalPath)
         {
             _fileHandle.IsAsync = _useAsyncIO;
 
@@ -125,7 +125,7 @@ namespace System.IO
         }
 
         /// <summary>Initializes a stream from an already open file handle (file descriptor).</summary>
-        private void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
+        protected sealed override void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
         {
             if (useAsyncIO)
                 _asyncState = new AsyncState();
