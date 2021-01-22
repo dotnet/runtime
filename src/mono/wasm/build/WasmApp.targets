@@ -129,8 +129,8 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
 
-      <WasmNativeAsset Include="$(PublishDir)\$(WasmIcuDataFileName)" Condition="'$(WasmInvariantGlobalization)' != 'true'" />
-      <WasmNativeAsset Include="$(PublishDir)\dotnet.timezones.blat" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\$(WasmIcuDataFileName)" Condition="'$(WasmInvariantGlobalization)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.timezones.blat" />
     </ItemGroup>
 
     <WasmAppBuilder
@@ -203,15 +203,17 @@
      OutputPath="$(WasmBuildDir)pinvoke-table.h" />
 
    <ItemGroup>
-     <_WasmObjects Include="libmono-ee-interp.a"/>
-     <_WasmObjects Include="libmonosgen-2.0.a"/>
-     <_WasmObjects Include="libmono-ilgen.a"/>
-     <_WasmObjects Include="libmono-icall-table.a"/>
-     <_WasmObjects Include="libSystem.Native.a"/>
-     <_WasmObjects Include="libSystem.IO.Compression.Native.a"/>
-     <_WasmObjects Include="libmono-profiler-aot.a"/>
-     <_WasmObjects Include="libicuuc.a"/>
-     <_WasmObjects Include="libicui18n.a"/>
+     <_WasmRuntimePackNativeLibs Include="libmono-ee-interp.a"/>
+     <_WasmRuntimePackNativeLibs Include="libmonosgen-2.0.a"/>
+     <_WasmRuntimePackNativeLibs Include="libmono-ilgen.a"/>
+     <_WasmRuntimePackNativeLibs Include="libmono-icall-table.a"/>
+     <_WasmRuntimePackNativeLibs Include="libSystem.Native.a"/>
+     <_WasmRuntimePackNativeLibs Include="libSystem.IO.Compression.Native.a"/>
+     <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
+     <_WasmRuntimePackNativeLibs Include="libicuuc.a"/>
+     <_WasmRuntimePackNativeLibs Include="libicui18n.a"/>
+     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
+
      <_WasmObjects Include="driver.o"/>
      <_WasmObjects Include="pinvoke.o"/>
      <_WasmObjects Include="corebindings.o"/>
