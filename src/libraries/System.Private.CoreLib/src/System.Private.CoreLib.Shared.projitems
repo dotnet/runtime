@@ -1980,4 +1980,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureManagedThreadingUnix)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.HandleManager.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
+  </ItemGroup>
 </Project>
