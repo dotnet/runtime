@@ -129,7 +129,8 @@ typedef enum {
 	MerpArchx86_64 = 1,
 	MerpArchx86 = 2,
 	MerpArchPPC = 3,
-	MerpArchPPC64 = 4
+	MerpArchPPC64 = 4,
+	MerpArchARM64 = 5
 } MerpArch;
 
 typedef enum
@@ -218,6 +219,8 @@ get_merp_bitness (MerpArch arch)
 			return "x64";
 		case MerpArchx86:
 			return "x32";
+		case MerpArchARM64:
+			return "arm64";
 		default:
 			g_assert_not_reached ();
 	}
@@ -234,6 +237,8 @@ get_merp_arch (void)
 	return MerpArchPPC;
 #elif defined(TARGET_POWERPC64)
 	return MerpArchPPC64;
+#elif defined(TARGET_ARM64)
+	return MerpArchARM64;
 #else
 	g_assert_not_reached ();
 #endif
