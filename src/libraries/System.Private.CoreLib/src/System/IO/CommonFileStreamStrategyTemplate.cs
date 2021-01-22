@@ -11,24 +11,24 @@ namespace System.IO
 {
     internal abstract class CommonFileStreamStrategyTemplate : FileStreamStrategy
     {
-        private byte[]? _buffer;
-        private readonly int _bufferLength;
-        private readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
+        protected byte[]? _buffer;
+        protected readonly int _bufferLength;
+        protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
 
         /// <summary>Whether the file is opened for reading, writing, or both.</summary>
-        private readonly FileAccess _access;
+        protected readonly FileAccess _access;
 
         /// <summary>The path to the opened file.</summary>
-        private readonly string? _path;
+        protected readonly string? _path;
 
         /// <summary>The next available byte to be read from the _buffer.</summary>
-        private int _readPos;
+        protected int _readPos;
 
         /// <summary>The number of valid bytes in _buffer.</summary>
-        private int _readLength;
+        protected int _readLength;
 
         /// <summary>The next location in which a write should occur to the buffer.</summary>
-        private int _writePos;
+        protected int _writePos;
 
         /// <summary>
         /// Whether asynchronous read/write/flush operations should be performed using async I/O.
@@ -45,20 +45,20 @@ namespace System.IO
         /// delegate to the base stream, and no attempt is made to synchronize.  If async, we use
         /// a semaphore to coordinate both sync and async operations.
         /// </summary>
-        private readonly bool _useAsyncIO;
+        protected readonly bool _useAsyncIO;
 
         /// <summary>cached task for read ops that complete synchronously</summary>
-        private Task<int>? _lastSynchronouslyCompletedTask;
+        protected Task<int>? _lastSynchronouslyCompletedTask;
 
         /// <summary>
         /// Currently cached position in the stream.  This should always mirror the underlying file's actual position,
         /// and should only ever be out of sync if another stream with access to this same file manipulates it, at which
         /// point we attempt to error out.
         /// </summary>
-        private long _filePosition;
+        protected long _filePosition;
 
         /// <summary>Whether the file stream's handle has been exposed.</summary>
-        private bool _exposedHandle;
+        protected bool _exposedHandle;
 
         internal FileStreamImpl(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
         {
