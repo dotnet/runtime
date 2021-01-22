@@ -36,8 +36,6 @@ namespace System.IO
 
         internal override string Name => _strategy.Name;
 
-        internal override IntPtr Handle => _strategy.Handle;
-
         internal override SafeFileHandle SafeFileHandle => _strategy.SafeFileHandle;
 
         internal override bool IsClosed => _strategy.IsClosed;
