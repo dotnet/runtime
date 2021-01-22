@@ -395,7 +395,7 @@ namespace System.Threading
 
                 if (timeoutMilliseconds == 0)
                 {
-                    if (interruptible && Thread.CurrentThread.WaitInfo.CheckAndResetPendingInterrupt_NotLocked)
+                    if (interruptible && Thread.CurrentThread._waitInfo.CheckAndResetPendingInterrupt_NotLocked)
                     {
                         throw new ThreadInterruptedException();
                     }
@@ -407,7 +407,7 @@ namespace System.Threading
                 int waitResult =
                     Thread
                         .CurrentThread
-                        .WaitInfo
+                        ._waitInfo
                         .Wait(timeoutMilliseconds, interruptible, isSleep: true);
                 Debug.Assert(waitResult == WaitHandle.WaitTimeout);
             }
