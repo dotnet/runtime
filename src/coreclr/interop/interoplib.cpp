@@ -11,7 +11,6 @@
 
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 using RuntimeCallContext = InteropLibImports::RuntimeCallContext;
-using ComInterfaceEntry = ::ABI::ComInterfaceEntry;
 
 namespace InteropLib
 {
@@ -36,7 +35,7 @@ namespace InteropLib
             HRESULT hr;
 
             // Convert input to appropriate types.
-            auto vtables = static_cast<ComInterfaceEntry*>(vtablesRaw);
+            auto vtables = static_cast<::ABI::ComInterfaceEntry*>(vtablesRaw);
 
             ManagedObjectWrapper* mow;
             RETURN_IF_FAILED(ManagedObjectWrapper::Create(flags, instance, vtableCount, vtables, &mow));
