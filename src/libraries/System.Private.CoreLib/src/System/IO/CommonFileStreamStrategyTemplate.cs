@@ -362,7 +362,7 @@ namespace System.IO
 
         /// <summary>Verifies that state relating to the read/write buffer is consistent.</summary>
         [Conditional("DEBUG")]
-        private void AssertBufferInvariants()
+        protected void AssertBufferInvariants()
         {
             // Read buffer values must be in range: 0 <= _bufferReadPos <= _bufferReadLength <= _bufferLength
             Debug.Assert(0 <= _readPos && _readPos <= _readLength && _readLength <= _bufferLength);
@@ -375,7 +375,7 @@ namespace System.IO
         }
 
         /// <summary>Validates that we're ready to read from the stream.</summary>
-        private void PrepareForReading()
+        protected void PrepareForReading()
         {
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
@@ -449,7 +449,7 @@ namespace System.IO
         /// reading from the stream, the data is dumped and our position in the underlying file
         /// is rewound as necessary.  This does not flush the OS buffer.
         /// </summary>
-        private void FlushInternalBuffer()
+        protected void FlushInternalBuffer()
         {
             AssertBufferInvariants();
             if (_writePos > 0)
@@ -526,7 +526,7 @@ namespace System.IO
         /// Validates that we're ready to write to the stream,
         /// including flushing a read buffer if necessary.
         /// </summary>
-        private void PrepareForWriting()
+        protected void PrepareForWriting()
         {
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
