@@ -24,15 +24,15 @@ public class WasmAppBuilder : Task
 
     [NotNull]
     [Required]
-    public string? MicrosoftNetCoreAppRuntimePackDir { get; set; }
-
-    [NotNull]
-    [Required]
     public string? MainJS { get; set; }
 
     [NotNull]
     [Required]
     public string[]? Assemblies { get; set; }
+
+    [NotNull]
+    [Required]
+    public ITaskItem[]? NativeAssets { get; set; }
 
     private List<string> _fileWrites = new();
 
@@ -41,7 +41,7 @@ public class WasmAppBuilder : Task
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-    public string? IcuDataFileName { get; set; } = "icudt.dat";
+    public string? IcuDataFileName { get; set; }
 
     public int DebugLevel { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
@@ -134,15 +134,10 @@ public class WasmAppBuilder : Task
         }
 
         var _assemblies = new List<string>();
-        var runtimeSourceDir = Path.Join(MicrosoftNetCoreAppRuntimePackDir, "native");
-
         foreach (var asm in Assemblies)
         {
             if (!_assemblies.Contains(asm))
                 _assemblies.Add(asm);
-
-            if (asm.EndsWith("System.Private.CoreLib.dll"))
-                runtimeSourceDir = Path.GetDirectoryName(asm);
         }
 
         var config = new WasmAppConfig ();
@@ -163,15 +158,11 @@ public class WasmAppBuilder : Task
             }
         }
 
-        List<string> nativeAssets = new List<string>() { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" };
-
-        if (!InvariantGlobalization)
-            nativeAssets.Add(IcuDataFileName!);
-
-        if (Path.TrimEndingDirectorySeparator(Path.GetFullPath(runtimeSourceDir)) != Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppDir!)))
+        foreach (ITaskItem item in NativeAssets)
         {
-            foreach (var f in nativeAssets)
-                FileCopyChecked(Path.Join(runtimeSourceDir, f), Path.Join(AppDir, f), "NativeAssets");
+            string dest = Path.Combine(AppDir!, Path.GetFileName(item.ItemSpec));
+            if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
+                return false;
         }
         FileCopyChecked(MainJS!, Path.Join(AppDir, "runtime.js"), string.Empty);
 
@@ -278,7 +269,7 @@ public class WasmAppBuilder : Task
             }
         }
 
-        return true;
+        return !Log.HasLoggedErrors;
     }
 
     private bool TryParseExtraConfigValue(ITaskItem extraItem, out object? valueObject)
