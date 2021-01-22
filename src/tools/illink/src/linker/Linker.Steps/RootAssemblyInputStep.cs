@@ -27,9 +27,8 @@ namespace Mono.Linker.Steps
 			AssemblyAction action = Context.Annotations.GetAction (assembly);
 			switch (action) {
 			case AssemblyAction.CopyUsed:
-				Annotations.Mark (assembly.MainModule, di);
-				goto case AssemblyAction.Copy;
 			case AssemblyAction.Copy:
+				Annotations.Mark (assembly.MainModule, di);
 				// Mark Step will take care of marking whole assembly
 				return;
 			case AssemblyAction.Link:

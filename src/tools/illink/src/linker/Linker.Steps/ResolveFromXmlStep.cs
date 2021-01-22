@@ -167,12 +167,14 @@ namespace Mono.Linker.Steps
 			if (Annotations.IsMarked (method))
 				Context.LogWarning ($"Duplicate preserve of '{method.GetDisplayName ()}'", 2025, _xmlDocumentLocation);
 
-			Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			Annotations.MarkIndirectlyCalledMethod (method);
 			Annotations.SetAction (method, MethodAction.Parse);
 
-			if (!(bool) customData)
+			if (!(bool) customData) {
 				Annotations.AddPreservedMethod (type, method);
+			} else {
+				Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
+			}
 		}
 
 		void ProcessMethodIfNotNull (TypeDefinition type, MethodDefinition method, object customData)
@@ -222,8 +224,6 @@ namespace Mono.Linker.Steps
 			if (Annotations.IsMarked (@event))
 				Context.LogWarning ($"Duplicate preserve of '{@event.FullName}'", 2025, _xmlDocumentLocation);
 
-			Annotations.Mark (@event, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
-
 			ProcessMethod (type, @event.AddMethod, null, customData);
 			ProcessMethod (type, @event.RemoveMethod, null, customData);
 			ProcessMethodIfNotNull (type, @event.InvokeMethod, customData);
@@ -235,8 +235,6 @@ namespace Mono.Linker.Steps
 
 			if (Annotations.IsMarked (property))
 				Context.LogWarning ($"Duplicate preserve of '{property.FullName}'", 2025, _xmlDocumentLocation);
-
-			Annotations.Mark (property, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
 			ProcessPropertyAccessors (type, property, accessors, customData);
 		}
