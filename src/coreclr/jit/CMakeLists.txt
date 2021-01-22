@@ -87,6 +87,13 @@ set( JIT_SOURCES
   eeinterface.cpp
   emit.cpp
   error.cpp
+  fgBasic.cpp
+  fgCheckDump.cpp
+  fgEhOpt.cpp
+  fgInfo.cpp
+  fgInline.cpp
+  fgOpt.cpp
+  fgProfile.cpp
   flowgraph.cpp
   gcdecode.cpp
   gcencode.cpp
