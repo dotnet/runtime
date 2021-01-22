@@ -282,6 +282,22 @@ namespace System.Threading
             return state;
         }
 
+        internal void SetWaitSleepJoinState()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert((GetState(this) & ThreadState.WaitSleepJoin) == 0);
+
+            SetState(this, ThreadState.WaitSleepJoin);
+        }
+
+        internal void ClearWaitSleepJoinState()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert((GetState(this) & ThreadState.WaitSleepJoin) != 0);
+
+            ClrState(this, ThreadState.WaitSleepJoin);
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern ulong GetCurrentOSThreadId();
 
