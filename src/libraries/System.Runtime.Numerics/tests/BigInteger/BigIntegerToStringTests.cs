@@ -1471,10 +1471,6 @@ namespace System.Numerics.Tests
             {
                 Assert.True(expectError);
             }
-            catch (OverflowException)
-            {
-                Assert.True(expectError);
-            }
 
             VerifyTryFormat(test, format, provider, expectError, expectedResult);
         }
@@ -1522,10 +1518,6 @@ namespace System.Numerics.Tests
                 }
             }
             catch (FormatException)
-            {
-                Assert.True(expectError);
-            }
-            catch (OverflowException)
             {
                 Assert.True(expectError);
             }

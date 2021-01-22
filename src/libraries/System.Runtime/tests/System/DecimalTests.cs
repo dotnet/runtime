@@ -1494,7 +1494,7 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => f.ToString("Y", null));
             long intMaxPlus1 = (long)int.MaxValue + 1;
             string intMaxPlus1String = intMaxPlus1.ToString();
-            Assert.Throws<OverflowException>(() => f.ToString("E" + intMaxPlus1String));
+            Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
         }
 
         public static IEnumerable<object[]> Truncate_TestData()
