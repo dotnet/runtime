@@ -111,6 +111,7 @@
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
 
     <PropertyGroup>
+      <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == '' and '$(TargetFileName)' != ''">$(TargetFileName)</WasmMainAssemblyFileName>
       <_WasmIntermediateOutputPath>$(IntermediateOutputPath)\wasm\</_WasmIntermediateOutputPath>
     </PropertyGroup>
