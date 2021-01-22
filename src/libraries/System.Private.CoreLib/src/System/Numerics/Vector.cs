@@ -1445,7 +1445,7 @@ namespace System.Numerics
         /// </exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<TTo> As<TFrom, TTo>(Vector<TFrom> vector)
+        public static Vector<TTo> As<TFrom, TTo>(this Vector<TFrom> vector)
             where TFrom : struct
             where TTo : struct
         {
