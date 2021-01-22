@@ -15,7 +15,11 @@ namespace System.IO
     //
     public class BinaryWriter : IDisposable, IAsyncDisposable
     {
+        private const int MaxArrayPoolRentalSize = 1024 * 1024; // ArrayPool<T>.Shared allocates beyond this point
+
         private delegate void WriteBufferToOutputDelegate(BinaryWriter sink, byte[] buffer, int offset, int count);
+        private static readonly WriteBufferToOutputDelegate s_writeToBinaryWriter = WriteToBinaryWriter;
+        private static readonly WriteBufferToOutputDelegate s_writeToOutStream = WriteToOutStream;
 
         public static readonly BinaryWriter Null = new BinaryWriter();
 
@@ -220,7 +224,7 @@ namespace System.IO
             if (chars == null)
                 throw new ArgumentNullException(nameof(chars));
 
-            WriteCharsCommonWithoutLengthPrefix(chars, WriteToStream);
+            WriteCharsCommonWithoutLengthPrefix(chars, s_writeToOutStream);
         }
 
         // Writes a section of a character array to this stream.
@@ -239,7 +243,7 @@ namespace System.IO
             if (index > chars.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexCount);
 
-            WriteCharsCommonWithoutLengthPrefix(chars.AsSpan(index, count), WriteToStream);
+            WriteCharsCommonWithoutLengthPrefix(chars.AsSpan(index, count), s_writeToOutStream);
         }
 
         // Writes a double to this stream. The current position of the stream is
@@ -352,26 +356,37 @@ namespace System.IO
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            if (_useFastUtf8 && value.Length <= 512 * 1024)
-            {
-                // Fast UTF-8 path: we know chars -> bytes will never exceed 1:3 ratio, so
-                // rent an array, perform a single pass over the data, and write.
+            // Common: UTF-8, small string, avoid 2-pass calculation
+            // Less common: UTF-8, large string, avoid 2-pass calculation
+            // Uncommon: excessively large string or not UTF-8
 
-                byte[] rented = ArrayPool<byte>.Shared.Rent(value.Length * 3);
-                int actualByteCount = _encoding.GetBytes(value, rented);
-                Write7BitEncodedInt(actualByteCount);
-                OutStream.Write(rented, 0, actualByteCount);
-                ArrayPool<byte>.Shared.Return(rented);
-            }
-            else
+            if (_useFastUtf8)
             {
-                // Slow path: not UTF-8, or data is very large. We need to fall back
-                // to a 2-pass mechanism so that we're not renting absurdly large arrays.
-
-                int actualBytecount = _encoding.GetByteCount(value);
-                Write7BitEncodedInt(actualBytecount);
-                WriteCharsCommonWithoutLengthPrefix(value, WriteToStream);
+                if (value.Length <= 24)
+                {
+                    Span<byte> buffer = stackalloc byte[24 * 3]; // max expansion: each char -> 3 bytes (use const for improved perf)
+                    int actualByteCount = _encoding.GetBytes(value, buffer);
+                    Write7BitEncodedInt(actualByteCount);
+                    OutStream.Write(buffer.Slice(0, actualByteCount));
+                    return;
+                }
+                else if (value.Length <= MaxArrayPoolRentalSize / 3)
+                {
+                    byte[] rented = ArrayPool<byte>.Shared.Rent(value.Length * 3); // max expansion: each char -> 3 bytes
+                    int actualByteCount = _encoding.GetBytes(value, rented);
+                    Write7BitEncodedInt(actualByteCount);
+                    OutStream.Write(rented, 0, actualByteCount);
+                    ArrayPool<byte>.Shared.Return(rented);
+                    return;
+                }
             }
+
+            // Slow path: not UTF-8, or data is very large. We need to fall back
+            // to a 2-pass mechanism so that we're not renting absurdly large arrays.
+
+            int actualBytecount = _encoding.GetByteCount(value);
+            Write7BitEncodedInt(actualBytecount);
+            WriteCharsCommonWithoutLengthPrefix(value, s_writeToOutStream);
         }
 
         public virtual void Write(ReadOnlySpan<byte> buffer)
@@ -397,7 +412,7 @@ namespace System.IO
 
         public virtual void Write(ReadOnlySpan<char> chars)
         {
-            WriteCharsCommonWithoutLengthPrefix(chars, WriteToBinaryWriter);
+            WriteCharsCommonWithoutLengthPrefix(chars, s_writeToBinaryWriter);
         }
 
         // dispatches to the virtual BinaryWriter.Write(byte[], int, int) method
@@ -407,7 +422,7 @@ namespace System.IO
         }
 
         // dispatches to the virtual Stream.Write(byte[], int, int) method
-        private static void WriteToStream(BinaryWriter sink, byte[] buffer, int offset, int count)
+        private static void WriteToOutStream(BinaryWriter sink, byte[] buffer, int offset, int count)
         {
             sink.OutStream.Write(buffer, offset, count);
         }
@@ -415,22 +430,21 @@ namespace System.IO
         private void WriteCharsCommonWithoutLengthPrefix(ReadOnlySpan<char> chars, WriteBufferToOutputDelegate writeDelegate)
         {
             // We'd like to rent a buffer from the array pool if possible, but we don't want to
-            // rent buffers above 2 million elements since they'll be discarded by the array
+            // rent buffers above some upper threshold since they'll be discarded by the array
             // pool upon return. Additionally, if our input is truly enormous, the call to
             // GetMaxByteCount might overflow, which we also want to avoid. Technically any
             // Encoding could expand from chars -> bytes at an enormous ratio and cause us
             // problems anyway, but this is so unrealistic that we needn't worry about it.
 
-            const int MaxArrayCutoff = 2 * 1024 * 1024 - 1;
             byte[] rented;
 
-            if (chars.Length <= MaxArrayCutoff)
+            if (chars.Length <= MaxArrayPoolRentalSize)
             {
                 // GetByteCount may walk the buffer contents, resulting in 2 passes over the data.
                 // We prefer GetMaxByteCount because it's a constant-time operation.
 
                 int maxByteCount = _encoding.GetMaxByteCount(chars.Length);
-                if (maxByteCount <= MaxArrayCutoff)
+                if (maxByteCount <= MaxArrayPoolRentalSize)
                 {
                     rented = ArrayPool<byte>.Shared.Rent(maxByteCount);
                     int actualByteCount = _encoding.GetBytes(chars, rented);
@@ -445,7 +459,7 @@ namespace System.IO
             // this code path, and the cost of the operation is dominated by the transcoding
             // step anyway, so it's ok for us to take the allocation here.
 
-            rented = ArrayPool<byte>.Shared.Rent(MaxArrayCutoff);
+            rented = ArrayPool<byte>.Shared.Rent(MaxArrayPoolRentalSize);
             Encoder encoder = _encoding.GetEncoder();
             bool completed;
 

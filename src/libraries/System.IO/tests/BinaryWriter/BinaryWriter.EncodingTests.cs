@@ -111,7 +111,8 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(512 * 1024)]
+        [InlineData(128 * 1024)]
+        [InlineData(768 * 1024)]
         [InlineData(2 * 1024 * 1024)]
         public void WriteChars_FastUtf8(int stringLengthInChars)
         {
@@ -127,8 +128,8 @@ namespace System.IO.Tests
 
         [Theory]
         [InlineData(0)]
-        [InlineData(1024)]
-        [InlineData(512 * 1024)]
+        [InlineData(128 * 1024)]
+        [InlineData(768 * 1024)]
         [InlineData(2 * 1024 * 1024)]
         public void WriteString_FastUtf8(int stringLengthInChars)
         {
@@ -142,11 +143,30 @@ namespace System.IO.Tests
             stream.Position = 0;
 
             Assert.Equal(expectedBytes.Length /* byte count */, new BinaryReader(stream).Read7BitEncodedInt());
-            Assert.Equal(expectedBytes, stream.GetBuffer().AsSpan(Get7BitEncodedIntByteLength((uint)expectedBytes.Length), expectedBytes.Length).ToArray());
+            Assert.Equal(expectedBytes, stream.GetBuffer()[Get7BitEncodedIntByteLength((uint)expectedBytes.Length)..(int)stream.Length]);
         }
 
         [Theory]
-        [InlineData(512 * 1024)]
+        [InlineData(24)]
+        [InlineData(25)]
+        public void WriteString_FastUtf8_UsingThreeByteChars(int stringLengthInChars)
+        {
+            string stringToWrite = new string('\u2023', stringLengthInChars); // TRIANGULAR BULLET
+            byte[] expectedBytes = Encoding.UTF8.GetBytes(stringToWrite);
+
+            MemoryStream stream = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stream);
+
+            writer.Write(stringToWrite);
+            stream.Position = 0;
+
+            Assert.Equal(expectedBytes.Length /* byte count */, new BinaryReader(stream).Read7BitEncodedInt());
+            Assert.Equal(expectedBytes, stream.GetBuffer()[Get7BitEncodedIntByteLength((uint)expectedBytes.Length)..(int)stream.Length]);
+        }
+
+        [Theory]
+        [InlineData(128 * 1024)]
+        [InlineData(768 * 1024)]
         [InlineData(2 * 1024 * 1024)]
         public void WriteString_NotUtf8(int stringLengthInChars)
         {
@@ -160,7 +180,7 @@ namespace System.IO.Tests
             stream.Position = 0;
 
             Assert.Equal(expectedBytes.Length /* byte count */, new BinaryReader(stream).Read7BitEncodedInt());
-            Assert.Equal(expectedBytes, stream.GetBuffer().AsSpan(Get7BitEncodedIntByteLength((uint)expectedBytes.Length), expectedBytes.Length).ToArray());
+            Assert.Equal(expectedBytes, stream.GetBuffer()[Get7BitEncodedIntByteLength((uint)expectedBytes.Length)..(int)stream.Length]);
         }
 
         [Fact]
