@@ -12211,7 +12211,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     {
                         tree = gtFoldExpr(tree);
                     }
-                    else
+
+                    // We may fail to fold
+                    if (!tree->OperIsConst())
                     {
                         tree->AsOp()->CheckDivideByConstOptimized(this);
                     }
