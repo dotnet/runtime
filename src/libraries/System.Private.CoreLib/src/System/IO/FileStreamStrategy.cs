@@ -15,8 +15,6 @@ namespace System.IO
 
         internal abstract string Name { get; }
 
-        internal abstract IntPtr Handle { get; }
-
         internal abstract SafeFileHandle SafeFileHandle { get; }
 
         internal abstract bool IsClosed { get; }
