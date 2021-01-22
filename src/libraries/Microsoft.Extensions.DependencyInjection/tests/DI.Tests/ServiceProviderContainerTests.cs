@@ -468,24 +468,20 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                     // This waits on InnerSingleton singleton lock that is taken in thread 1
                     innerSingleton = sp.GetRequiredService<InnerSingleton>();
                 });
+                
+                mreForThread3.WaitOne();
 
-                var t3 = Task.Run(() =>
-                {
-                    mreForThread3.WaitOne();
+                // Set a timeout before unblocking execution of both thread1 and thread2 via mre1:
+                Assert.False(mreForThread1.WaitOne(10));
 
-                    // Set a timeout before unblocking execution via mre1:
-                    Assert.False(mreForThread1.WaitOne(10));
-
-                    // By this time thread 1 has already reached InnerSingleton ctor and is waiting for mre1. 
-                    // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for InnerSingleton
-                    // (rather than trying to instantiating InnerSingleton twice).
-                    mreForThread1.Set();
-                });
+                // By this time thread 1 has already reached InnerSingleton ctor and is waiting for mre1. 
+                // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for InnerSingleton
+                // (rather than trying to instantiating InnerSingleton twice).
+                mreForThread1.Set();
 
                 // Act
                 await t1;
                 await t2;
-                await t3;
 
                 // Assert
                 Assert.NotNull(outerSingleton);
