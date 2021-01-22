@@ -133,7 +133,7 @@ namespace System.Diagnostics.Tests
                 {
                     using ActivityListener listener = new ActivityListener();
                     listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
-                    listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                    listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
 
                     ActivitySource.AddActivityListener(listener);
 
@@ -149,6 +149,25 @@ namespace System.Diagnostics.Tests
                             Assert.NotNull(activity1);
                             Assert.True(methodName.IndexOf(activity1.OperationName, StringComparison.Ordinal) >= 0);
                             Assert.Equal(ActivityKind.Client, activity1.Kind);
+                        }
+
+                        ActivityContext parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None);
+                        List<KeyValuePair<string, object>> tags = new List<KeyValuePair<string, object>>() { new KeyValuePair<string, object>("Key", "Value") };
+                        List<ActivityLink> links = new List<ActivityLink>() { new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key-value")) };
+                        DateTimeOffset startTime = DateTimeOffset.UtcNow;
+
+                        using (Activity activity2 = aSource.StartActivity(ActivityKind.Server, parentContext, tags, links, startTime))
+                        {
+                            Assert.NotNull(activity2);
+                            Assert.True(methodName.IndexOf(activity2.OperationName, StringComparison.Ordinal) >= 0);
+                            Assert.Equal(ActivityKind.Server, activity2.Kind);
+                            Assert.Equal(tags, activity2.TagObjects);
+                            Assert.Equal(links, activity2.Links);
+                            Assert.Equal(startTime, activity2.StartTimeUtc);
+                            Assert.Equal(parentContext.TraceId, activity2.TraceId);
+                            Assert.Equal(parentContext.SpanId, activity2.ParentSpanId);
+                            Assert.Equal(parentContext.TraceFlags, activity2.ActivityTraceFlags);
+                            Assert.Equal(parentContext.TraceState, activity2.TraceStateString);
                         }
                     }
                 }
