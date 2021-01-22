@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
-            // This method uses lock to synchronise access to the resolvedServices dictionary.
+            // This method uses lock to synchronize access to the resolvedServices dictionary.
             // but it does not need to lock here because the lock for resolving a singleton is taken outside of this method.
             resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
             {

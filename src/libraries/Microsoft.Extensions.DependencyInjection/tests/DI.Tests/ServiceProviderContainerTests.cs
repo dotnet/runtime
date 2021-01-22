@@ -423,13 +423,14 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             public Bar(ManualResetEvent mre1, ManualResetEvent mre2)
             {
-                if (!mre1.WaitOne(0) && !mre2.WaitOne(0))
-                {
-                    // Use mre2 to signal execution reached this ctor call
-                    mre2.Set();
-                    mre1.WaitOne();
-                }
-                mre1.Set();
+                // Making sure ctor gets called only once
+                Assert.True(!mre1.WaitOne(0) && !mre2.WaitOne(0)); 
+
+                // Then use mre2 to signal execution reached this ctor call
+                mre2.Set();
+
+                // Wait until it's OK to leave ctor
+                mre1.WaitOne();
             }
         }
 
@@ -439,7 +440,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Bar bar = null;
             Foo foo = null;
             IServiceProvider sp = null;
-            var sb = new StringBuilder();
 
             // Arrange
             var services = new ServiceCollection();
@@ -453,7 +453,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var t1 = Task.Run(() =>
             {
-                ThreadId = 1;
                 using var scope1 = sp.CreateScope();
                 foo = scope1.ServiceProvider.GetRequiredService<Foo>();
             });
@@ -463,7 +462,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var t2 = Task.Run(() =>
             {
-                ThreadId = 2;
                 using var scope2 = sp.CreateScope();
                 _mreForThread3.Set();
 
@@ -475,12 +473,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 _mreForThread3.WaitOne();
 
-                // By this time thread 1 has already reached Bar ctor and is waiting for mre1. 
-                // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for Bar
-                // (rather than trying to instantiating Bar twice).
                 // Set a timeout before unblocking execution via mre1:
                 Assert.False(_mreForThread1.WaitOne(10));
 
+                // By this time thread 1 has already reached Bar ctor and is waiting for mre1. 
+                // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for Bar
+                // (rather than trying to instantiating Bar twice).
                 _mreForThread1.Set();
             });
 
