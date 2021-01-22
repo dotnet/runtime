@@ -34,7 +34,7 @@ namespace System.IO
         /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
         private bool? _canSeek;
 
-        protected sealed override SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
+        protected override SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
@@ -67,7 +67,7 @@ namespace System.IO
         /// <param name="mode">How the file should be opened.</param>
         /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
         /// <param name="originalPath">The original path specified for the FileStream.</param>
-        protected sealed override void Init(FileMode mode, FileShare share, string originalPath)
+        protected override void Init(FileMode mode, FileShare share, string originalPath)
         {
             _fileHandle.IsAsync = _useAsyncIO;
 
@@ -125,7 +125,7 @@ namespace System.IO
         }
 
         /// <summary>Initializes a stream from an already open file handle (file descriptor).</summary>
-        protected sealed override void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
+        protected override void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
         {
             if (useAsyncIO)
                 _asyncState = new AsyncState();
@@ -342,7 +342,7 @@ namespace System.IO
         }
 
         /// <summary>Writes any data in the write buffer to the underlying stream and resets the buffer.</summary>
-        protected sealed override void FlushWriteBuffer(bool calledFromFinalizer = false)
+        protected override void FlushWriteBuffer(bool calledFromFinalizer = false)
         {
             AssertBufferInvariants();
             if (_writePos > 0)

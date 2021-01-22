@@ -51,7 +51,7 @@ namespace System.IO
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        protected sealed override void Init(FileMode mode, FileShare share, string originalPath)
+        protected override void Init(FileMode mode, FileShare share, string originalPath)
         {
             if (!PathInternal.IsExtended(originalPath))
             {
@@ -118,7 +118,7 @@ namespace System.IO
             }
         }
 
-        protected sealed override void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
+        protected override void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
         {
 #if DEBUG
             bool hadBinding = handle.ThreadPoolBinding != null;
@@ -319,7 +319,7 @@ namespace System.IO
         // Writes are buffered.  Anytime the buffer fills up
         // (_writePos + delta > _bufferSize) or the buffer switches to reading
         // and there is left over data (_writePos > 0), this function must be called.
-        protected sealed override void FlushWriteBuffer(bool calledFromFinalizer = false)
+        protected override void FlushWriteBuffer(bool calledFromFinalizer = false)
         {
             if (_writePos == 0) return;
             Debug.Assert(_readPos == 0 && _readLength == 0, "FileStream: Read buffer must be empty in FlushWrite!");
