@@ -2749,6 +2749,32 @@ namespace System.Diagnostics.Tracing
         }
 
         // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
+        // When that is the case, we have to build the custom assemblies on a member by hand.
+        internal static bool IsCustomAttributeDefinedHelper(
+            MemberInfo member,
+            Type attributeType,
+            EventManifestOptions flags = EventManifestOptions.None)
+        {
+            // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
+            // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
+            if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
+            {
+                // Let the runtime do the work for us, since we can execute code in this context.
+                return member.IsDefined(attributeType, inherit: false);
+            }
+
+            foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
+            {
+                if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
         // When that is the case, we have the build the custom assemblies on a member by hand.
         internal static Attribute? GetCustomAttributeHelper(
             MemberInfo member,
@@ -2758,18 +2784,13 @@ namespace System.Diagnostics.Tracing
             Type attributeType,
             EventManifestOptions flags = EventManifestOptions.None)
         {
+            Debug.Assert(attributeType == typeof(EventAttribute) || attributeType == typeof(EventSourceAttribute));
             // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
             // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
             if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
             {
-                // Let the runtime to the work for us, since we can execute code in this context.
-                Attribute? firstAttribute = null;
-                foreach (object attribute in member.GetCustomAttributes(attributeType, false))
-                {
-                    firstAttribute = (Attribute)attribute;
-                    break;
-                }
-                return firstAttribute;
+                // Let the runtime do the work for us, since we can execute code in this context.
+                return member.GetCustomAttribute(attributeType, inherit: false);
             }
 
             foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
@@ -3019,7 +3040,7 @@ namespace System.Diagnostics.Tracing
                             }
 
                             // If we explicitly mark the method as not being an event, then honor that.
-                            if (GetCustomAttributeHelper(method, typeof(NonEventAttribute), flags) != null)
+                            if (IsCustomAttributeDefinedHelper(method, typeof(NonEventAttribute), flags))
                                 continue;
 
                             defaultEventAttribute = new EventAttribute(eventId);
@@ -5475,7 +5496,7 @@ namespace System.Diagnostics.Tracing
                 sb.AppendLine(" <maps>");
                 foreach (Type enumType in mapsTab.Values)
                 {
-                    bool isbitmap = EventSource.GetCustomAttributeHelper(enumType, typeof(FlagsAttribute), flags) != null;
+                    bool isbitmap = EventSource.IsCustomAttributeDefinedHelper(enumType, typeof(FlagsAttribute), flags);
                     string mapKind = isbitmap ? "bitMap" : "valueMap";
                     sb.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).AppendLine("\">");
 
