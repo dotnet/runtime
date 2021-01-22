@@ -3,7 +3,7 @@
 
 namespace System.IO
 {
-    internal sealed partial class FileStreamImpl : FileStreamStrategy
+    internal sealed partial class UnixFileStreamStrategy : CommonFileStreamStrategyTemplate
     {
         private static void LockInternal(long position, long length)
         {
