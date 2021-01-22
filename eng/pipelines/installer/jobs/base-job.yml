@@ -8,10 +8,12 @@ parameters:
   crossrootfsDir: ''
   timeoutInMinutes: 120
   condition: true
+  shouldContinueOnError: false
   container: ''
   buildSteps: []
   dependsOn: []
   dependsOnGlobalBuild: false
+  dependOnEvaluatePaths: false
   globalBuildSuffix: ''
   variables: []
   name: ''
@@ -293,7 +295,8 @@ jobs:
       value: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
 
   dependsOn:
-  - checkout
+  - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+    - evaluate_paths
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
@@ -345,7 +348,9 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+  - checkout: self
+    clean: true
+    fetchDepth: $(checkoutFetchDepth)
 
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -377,11 +382,13 @@ jobs:
   - ${{ if ne(parameters.osGroup, 'OSX') }}:
     - script: $(BaseJobBuildCommand)
       displayName: Build
+      continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
   # Build corehost, sign and add entitlements to MacOS binaries
   - ${{ if eq(parameters.osGroup, 'OSX') }}:
     - script: $(BaseJobBuildCommand) -subset host.native
       displayName: Build CoreHost
+      continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
@@ -394,8 +401,9 @@ jobs:
             path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
             entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
-    - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+packs
+    - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.tests+packs
       displayName: Build and Package
+      continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
     - script: |

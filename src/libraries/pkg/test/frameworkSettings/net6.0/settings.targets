@@ -1,8 +1,6 @@
 <Project>
   <PropertyGroup>
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
-    <!-- This should be enabled once we have updated assembly versions. -->
-    <ShouldVerifyClosure>false</ShouldVerifyClosure>
   </PropertyGroup>
 
   <ItemGroup>

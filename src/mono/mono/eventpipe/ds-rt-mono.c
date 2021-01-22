@@ -1,9 +1,9 @@
 #include <config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
-#include "ds-types.h"
-#include "ds-rt.h"
+#include <eventpipe/ds-rt-config.h>
+#include <eventpipe/ds-types.h>
+#include <eventpipe/ds-rt.h>
 
 #ifdef __APPLE__
 #define APPLICATION_CONTAINER_BASE_PATH_SUFFIX "/Library/Group Containers/"
@@ -30,15 +30,6 @@ ipc_get_process_id_disambiguation_key (
 	uint32_t process_id,
 	uint64_t *key);
 #endif /* !HOST_WIN32 */
-
-bool
-ipc_transport_get_default_name (
-	ep_char8_t *name,
-	uint32_t name_len,
-	const ep_char8_t *prefix,
-	int32_t id,
-	const ep_char8_t *group_id,
-	const ep_char8_t *suffix);
 
 #ifndef HOST_WIN32
 
@@ -179,7 +170,7 @@ ipc_get_process_id_disambiguation_key (
 }
 
 bool
-ipc_transport_get_default_name (
+ds_rt_mono_transport_get_default_name (
 	ep_char8_t *name,
 	uint32_t name_len,
 	const ep_char8_t *prefix,
@@ -266,7 +257,7 @@ ep_on_error:
 }
 #else /* !HOST_WIN32 */
 bool
-ipc_transport_get_default_name (
+ds_rt_mono_transport_get_default_name (
 	ep_char8_t *name,
 	uint32_t name_len,
 	const ep_char8_t *prefix,

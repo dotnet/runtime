@@ -11,12 +11,18 @@ parameters:
   variables: []
   targetRid: ''
   timeoutInMinutes: ''
+  dependsOn: []
   pool: ''
   platform: ''
   condition: true
+  useContinueOnErrorDuringBuild: false
+  shouldContinueOnError: false
+  dependOnEvaluatePaths: false
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
   helixQueues: ''
+  enablePublishTestResults: false
+  testResultsFormat: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
 
@@ -25,13 +31,24 @@ jobs:
   parameters:
     name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
     displayName: ${{ format('Build {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
-    dependsOn: checkout
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
+    testResultsFormat: ${{ parameters.testResultsFormat }}
+
     workspace:
       clean: all
+
+    ${{ if and(ne(parameters.dependOnEvaluatePaths, true),ne(parameters.dependsOn,'')) }}:
+      dependsOn: ${{ parameters.dependsOn }}
+
+    ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+      dependsOn: 
+      - evaluate_paths
+      - ${{ if ne(parameters.dependsOn,'') }}:
+        - ${{ parameters.dependsOn }}
 
     variables:
       - name: _osParameter
@@ -65,10 +82,19 @@ jobs:
         - ${{ variable }}
 
     steps:
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    - checkout: self
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
+
+    - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
+      - task: DownloadPipelineArtifact@2
+        displayName: Download ${{monoCrossAOTTargetOS}} AOT offset files
+        inputs:
+          artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
+          path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
@@ -82,6 +108,8 @@ jobs:
     # Build
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter)
       displayName: Build product
+      ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
+        continueOnError: ${{ parameters.shouldContinueOnError }}
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: |
@@ -103,6 +131,7 @@ jobs:
           targetRid: ${{ parameters.targetRid }}
           nameSuffix: ${{ parameters.nameSuffix }}
           platform: ${{ parameters.platform }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
     - task: PublishBuildArtifacts@1

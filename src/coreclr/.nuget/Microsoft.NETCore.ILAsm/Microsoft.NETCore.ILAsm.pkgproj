@@ -1,0 +1,18 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>The .NET IL Assembler.</PackageDescription>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
+    <PackageTargetRuntime Condition="'$(_packageTargetOSGroup)' == 'windows'">$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NativeBinary Include="$(RuntimeBinDir)ilasm$(ExeSuffix)" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

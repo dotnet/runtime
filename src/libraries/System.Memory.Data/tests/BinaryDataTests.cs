@@ -462,12 +462,12 @@ namespace System.Tests
             var length = 4;
             var read = new byte[length];
             stream.Read(read, 0, length);
-            Assert.Equal(buffer.AsMemory().Slice(0, length).ToArray(), read.AsMemory().Slice(0, length).ToArray());
+            Assert.Equal(buffer.AsMemory(0, length).ToArray(), read.AsMemory(0, length).ToArray());
 
             read = new byte[length];
             stream.Position = 0;
             await stream.ReadAsync(read, 0, length);
-            Assert.Equal(buffer.AsMemory().Slice(0, length).ToArray(), read.AsMemory().Slice(0, length).ToArray());
+            Assert.Equal(buffer.AsMemory(0, length).ToArray(), read.AsMemory(0, length).ToArray());
 
             // no-op as we are at end of stream
             stream.Read(read, 0, length);

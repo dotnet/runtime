@@ -7,17 +7,20 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Threading\Tasks\Parallel.cs" />
+    <Compile Include="System\Threading\Tasks\Parallel.ForEachAsync.cs" />
     <Compile Include="System\Threading\Tasks\ParallelETWProvider.cs" />
     <Compile Include="System\Threading\Tasks\ParallelLoopState.cs" />
     <Compile Include="System\Threading\Tasks\ParallelRangeManager.cs" />
     <Compile Include="System\Threading\Tasks\TaskReplicator.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 </Project>

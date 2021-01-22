@@ -112,7 +112,7 @@ namespace System.Net.Sockets
             {
                 // Using public SafeSocketHandle(IntPtr) a user can add the same handle
                 // from a different Socket instance.
-                throw new InvalidOperationException("Handle is already used by another Socket.");
+                throw new InvalidOperationException(SR.net_sockets_handle_already_used);
             }
 
             Interop.Error error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
@@ -157,20 +157,10 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
-                bool suppressFlow = !ExecutionContext.IsFlowSuppressed();
-                try
-                {
-                    if (suppressFlow) ExecutionContext.SuppressFlow();
-
-                    Thread thread = new Thread(s => ((SocketAsyncEngine)s!).EventLoop());
-                    thread.IsBackground = true;
-                    thread.Name = ".NET Sockets";
-                    thread.Start(this);
-                }
-                finally
-                {
-                    if (suppressFlow) ExecutionContext.RestoreFlow();
-                }
+                var thread = new Thread(static s => ((SocketAsyncEngine)s!).EventLoop());
+                thread.IsBackground = true;
+                thread.Name = ".NET Sockets";
+                thread.UnsafeStart(this);
             }
             catch
             {

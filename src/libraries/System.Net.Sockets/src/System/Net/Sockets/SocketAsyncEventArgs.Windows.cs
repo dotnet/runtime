@@ -15,14 +15,47 @@ namespace System.Net.Sockets
     {
         // Single buffer
         private MemoryHandle _singleBufferHandle;
+
+        /// <summary>The state of the <see cref="_singleBufferHandle"/> to track whether and when it requires disposal to unpin memory.</summary>
+        /// <remarks>
+        /// Pinning via a GCHandle (the mechanism used by Memory) has measurable overhead, and for operations like
+        /// send and receive that we want to optimize and that frequently complete synchronously, we
+        /// want to avoid such GCHandle interactions whenever possible.  To achieve that, we used `fixed`
+        /// to pin the relevant state while starting the async operation, and then only if the operation
+        /// is seen to be pending do we use Pin to create the GCHandle; this is done while the `fixed` is
+        /// still in scope, to ensure that throughout the whole operation the buffer remains pinned, while
+        /// using the much cheaper `fixed` only for the fast path.  <see cref="_singleBufferHandle"/> starts
+        /// life as None, transitions to InProcess prior to initiating the async operation, and then transitions
+        /// either back to None if the buffer never needed to be pinned, or to Set once it has been pinned. This
+        /// ensures that asynchronous completion racing with the code that is still setting up the operation
+        /// can properly clean up after pinned memory, even if it needs to wait momentarily to do so.
+        ///
+        /// Currently, only the operations that use <see cref="_singleBufferHandle"/> and <see cref="_singleBufferHandleState"/>
+        /// are cancelable, and as such <see cref="_singleBufferHandleState"/> is also used to guard the cleanup
+        /// of <see cref="_registrationToCancelPendingIO"/>.
+        /// </remarks>
         private volatile SingleBufferHandleState _singleBufferHandleState;
-        private enum SingleBufferHandleState : byte { None, InProcess, Set }
+
+        /// <summary>Defines possible states for <see cref="_singleBufferHandleState"/> in order to faciliate correct cleanup of any pinned state.</summary>
+        private enum SingleBufferHandleState : byte
+        {
+            /// <summary>No operation using <see cref="_singleBufferHandle"/> is in flight, and no cleanup of <see cref="_singleBufferHandle"/> is required.</summary>
+            None,
+            /// <summary>
+            /// An operation potentially using <see cref="_singleBufferHandle"/> is in flight, but the field hasn't yet been initialized.
+            /// It's possible <see cref="_singleBufferHandle"/> will transition to <see cref="Set"/>, and thus code needs to wait for the
+            /// value to no longer be <see cref="InProcess"/> before <see cref="_singleBufferHandle"/> can be disposed.
+            /// </summary>
+            InProcess,
+            /// <summary>The <see cref="_singleBufferHandle"/> field has been initialized and requires disposal.  It is safe to dispose of when the operation no longer needs it.</summary>
+            Set
+        }
 
         // BufferList property variables.
         // Note that these arrays are allocated and then grown as necessary, but never shrunk.
         // Thus the actual in-use length is defined by _bufferListInternal.Count, not the length of these arrays.
         private WSABuffer[]? _wsaBufferArrayPinned;
-        private GCHandle[]? _multipleBufferGCHandles;
+        private MemoryHandle[]? _multipleBufferMemoryHandles;
 
         // Internal buffers for WSARecvMsg
         private byte[]? _wsaMessageBufferPinned;
@@ -101,7 +134,7 @@ namespace System.Net.Sockets
 
         private unsafe void RegisterToCancelPendingIO(NativeOverlapped* overlapped, CancellationToken cancellationToken)
         {
-            Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.InProcess);
+            Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.InProcess, "An operation must be declared in-flight in order to register to cancel it.");
             Debug.Assert(_pendingOverlappedForCancellation == null);
             _pendingOverlappedForCancellation = overlapped;
             _registrationToCancelPendingIO = cancellationToken.UnsafeRegister(s =>
@@ -243,10 +276,15 @@ namespace System.Net.Sockets
             // Return pending and we will continue in the completion port callback.
             if (_singleBufferHandleState == SingleBufferHandleState.InProcess)
             {
-                RegisterToCancelPendingIO(overlapped, cancellationToken); // must happen before we change state to Set to avoid race conditions
+                // Register for cancellation.  This must happen before we change state to Set, as once it's Set,
+                // the operation completing asynchronously could invoke cleanup, which includes disposing of the
+                // cancellation registration, and thus the registration needs to be stored prior to setting Set.
+                RegisterToCancelPendingIO(overlapped, cancellationToken);
+
                 _singleBufferHandle = _buffer.Pin();
                 _singleBufferHandleState = SingleBufferHandleState.Set;
             }
+
             return SocketError.IOPending;
         }
 
@@ -665,7 +703,7 @@ namespace System.Net.Sockets
                     {
                         sendPacketsElementsFileStreamCount++;
                     }
-                    else if (spe.Buffer != null && spe.Count > 0)
+                    else if (spe.MemoryBuffer != null && spe.Count > 0)
                     {
                         sendPacketsElementsBufferCount++;
                     }
@@ -827,28 +865,17 @@ namespace System.Net.Sockets
                 {
                     int bufferCount = _bufferListInternal.Count;
 
-#if DEBUG
-                    if (_multipleBufferGCHandles != null)
-                    {
-                        foreach (GCHandle gcHandle in _multipleBufferGCHandles)
-                        {
-                            Debug.Assert(!gcHandle.IsAllocated);
-                        }
-                    }
-#endif
-
                     // Number of things to pin is number of buffers.
                     // Ensure we have properly sized object array.
-                    if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < bufferCount))
+                    if (_multipleBufferMemoryHandles == null || (_multipleBufferMemoryHandles.Length < bufferCount))
                     {
-                        _multipleBufferGCHandles = new GCHandle[bufferCount];
+                        _multipleBufferMemoryHandles = new MemoryHandle[bufferCount];
                     }
 
                     // Pin the buffers.
                     for (int i = 0; i < bufferCount; i++)
                     {
-                        Debug.Assert(!_multipleBufferGCHandles[i].IsAllocated);
-                        _multipleBufferGCHandles[i] = GCHandle.Alloc(_bufferListInternal[i].Array, GCHandleType.Pinned);
+                        _multipleBufferMemoryHandles[i] = _bufferListInternal[i].Array.AsMemory().Pin();
                     }
 
                     if (_wsaBufferArrayPinned == null || _wsaBufferArrayPinned.Length < bufferCount)
@@ -935,14 +962,12 @@ namespace System.Net.Sockets
                 _singleBufferHandle.Dispose();
             }
 
-            if (_multipleBufferGCHandles != null)
+            if (_multipleBufferMemoryHandles != null)
             {
-                for (int i = 0; i < _multipleBufferGCHandles.Length; i++)
+                for (int i = 0; i < _multipleBufferMemoryHandles.Length; i++)
                 {
-                    if (_multipleBufferGCHandles[i].IsAllocated)
-                    {
-                        _multipleBufferGCHandles[i].Free();
-                    }
+                    _multipleBufferMemoryHandles[i].Dispose();
+                    _multipleBufferMemoryHandles[i] = default;
                 }
             }
 
@@ -969,50 +994,40 @@ namespace System.Net.Sockets
 
             // Number of things to pin is number of buffers + 1 (native descriptor).
             // Ensure we have properly sized object array.
-#if DEBUG
-            if (_multipleBufferGCHandles != null)
+            if (_multipleBufferMemoryHandles == null || (_multipleBufferMemoryHandles.Length < sendPacketsElementsBufferCount))
             {
-                foreach (GCHandle gcHandle in _multipleBufferGCHandles)
-                {
-                    Debug.Assert(!gcHandle.IsAllocated);
-                }
-            }
-#endif
-
-            if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < sendPacketsElementsBufferCount))
-            {
-                _multipleBufferGCHandles = new GCHandle[sendPacketsElementsBufferCount];
+                _multipleBufferMemoryHandles = new MemoryHandle[sendPacketsElementsBufferCount];
             }
 
             // Pin user specified buffers.
             int index = 0;
             foreach (SendPacketsElement spe in sendPacketsElementsCopy)
             {
-                if (spe?.Buffer != null && spe.Count > 0)
+                if (spe?.MemoryBuffer != null && spe.Count > 0)
                 {
-                    Debug.Assert(!_multipleBufferGCHandles[index].IsAllocated);
-                    _multipleBufferGCHandles[index] = GCHandle.Alloc(spe.Buffer, GCHandleType.Pinned);
-
+                    _multipleBufferMemoryHandles[index] = spe.MemoryBuffer.Value.Pin();
                     index++;
                 }
             }
 
             // Fill in native descriptor.
+            int bufferIndex = 0;
             int descriptorIndex = 0;
             int fileIndex = 0;
             foreach (SendPacketsElement spe in sendPacketsElementsCopy)
             {
                 if (spe != null)
                 {
-                    if (spe.Buffer != null && spe.Count > 0)
+                    if (spe.MemoryBuffer != null && spe.Count > 0)
                     {
                         // This element is a buffer.
-                        sendPacketsDescriptorPinned[descriptorIndex].buffer = Marshal.UnsafeAddrOfPinnedArrayElement(spe.Buffer, spe.Offset);
+                        sendPacketsDescriptorPinned[descriptorIndex].buffer = (IntPtr)_multipleBufferMemoryHandles[bufferIndex].Pointer;
                         sendPacketsDescriptorPinned[descriptorIndex].length = (uint)spe.Count;
                         sendPacketsDescriptorPinned[descriptorIndex].flags =
                             Interop.Winsock.TransmitPacketsElementFlags.Memory | (spe.EndOfPacket
                                 ? Interop.Winsock.TransmitPacketsElementFlags.EndOfPacket
                                 : 0);
+                        bufferIndex++;
                         descriptorIndex++;
                     }
                     else if (spe.FilePath != null)
@@ -1166,10 +1181,19 @@ namespace System.Net.Sockets
             _strongThisRef.Value = null; // null out this reference from the overlapped so this isn't kept alive artificially
             if (_singleBufferHandleState != SingleBufferHandleState.None)
             {
+                // If the state isn't None, then either it's Set, in which case there's state to cleanup,
+                // or it's InProcess, which can happen if the async operation was scheduled and actually
+                // completed asynchronously (invoking this logic) but the main thread initiating the
+                // operation stalled and hasn't yet transitioned the memory handle to being initialized,
+                // in which case we need to wait for that logic to complete initializing it so that we
+                // can safely uninitialize it.
                 CompleteCoreSpin();
             }
 
-            void CompleteCoreSpin() // separate out to help inline the fast path
+            // Separate out to help inline the CompleteCore fast path, as CompleteCore is used with all operations.
+            // We want to optimize for the case where the async operation actually completes synchronously, in particular
+            // for sends and receives.
+            void CompleteCoreSpin()
             {
                 // The operation could complete so quickly that it races with the code
                 // initiating it.  Wait until that initiation code has completed before

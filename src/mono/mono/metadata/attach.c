@@ -13,7 +13,7 @@
 #include <glib.h>
 #include "attach.h"
 
-#ifdef HOST_WIN32
+#if defined(HOST_WIN32) && !defined(DISABLE_ATTACH)
 #define DISABLE_ATTACH
 #endif
 #ifndef DISABLE_ATTACH

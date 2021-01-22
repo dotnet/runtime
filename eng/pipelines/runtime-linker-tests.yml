@@ -47,11 +47,6 @@ pr:
 
 jobs:
 #
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
-
-#
 # Build Release config vertical for Windows, Linux, Linux musl and OSX
 #
 - template: /eng/pipelines/common/platform-matrix.yml

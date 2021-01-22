@@ -8,7 +8,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeAsn1ObjectHandle : SafeHandle
     {
-        private SafeAsn1ObjectHandle() :
+        public SafeAsn1ObjectHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -28,7 +28,7 @@ namespace Microsoft.Win32.SafeHandles
 
     internal sealed class SafeAsn1BitStringHandle : SafeHandle
     {
-        private SafeAsn1BitStringHandle() :
+        public SafeAsn1BitStringHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -48,7 +48,7 @@ namespace Microsoft.Win32.SafeHandles
 
     internal sealed class SafeAsn1OctetStringHandle : SafeHandle
     {
-        private SafeAsn1OctetStringHandle() :
+        public SafeAsn1OctetStringHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

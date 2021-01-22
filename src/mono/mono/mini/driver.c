@@ -68,7 +68,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#include "version.h"
 #include "debugger-agent.h"
 #if TARGET_OSX
 #   include <sys/resource.h>
@@ -452,7 +451,9 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		if (!is_ok (error))
 			continue;
 
-		char *utf8_str = (char*)(void*)typed_args[0]; //this points into image memory that is constant
+		const char *arg = (const char*)typed_args [0];
+		mono_metadata_decode_value (arg, &arg);
+		char *utf8_str = (char*)arg; //this points into image memory that is constant
 		g_free (typed_args);
 		g_free (named_args);
 		g_free (arginfo);
@@ -2007,11 +2008,14 @@ switch_arch (char* argv[], const char* target_arch)
 static void
 apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_domain_configuration_file)
 {
+#ifndef ENABLE_NETCORE
 	g_assert (domain->setup == NULL || domain->setup->configuration_file == NULL);
 	g_assert (!domain->assembly_bindings_parsed);
 
 	mono_domain_parse_assembly_bindings (domain, 0, 0, root_domain_configuration_file);
-
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 static void
@@ -3352,4 +3356,3 @@ mono_parse_env_options (int *ref_argc, char **ref_argv [])
 	fprintf (stderr, "%s", ret);
 	exit (1);
 }
-

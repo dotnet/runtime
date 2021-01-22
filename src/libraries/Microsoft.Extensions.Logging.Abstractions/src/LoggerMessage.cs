@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
         /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
-        /// <typeparam name="T6">The type of the sisxth parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T6">The type of the sixth parameter passed to the named format string.</typeparam>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, T4, T5, T6, IDisposable> DefineScope<T1, T2, T3, T4, T5, T6>(string formatString)

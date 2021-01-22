@@ -18,15 +18,8 @@ namespace DebuggerTests
     {
 
         [Fact]
-        public async Task CheckThatAllSourcesAreSent()
+        public void CheckThatAllSourcesAreSent()
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            //all sources are sent before runtime ready is sent, nothing to check
-            await insp.Ready();
             Assert.Contains("dotnet://debugger-test.dll/debugger-test.cs", scripts.Values);
             Assert.Contains("dotnet://debugger-test.dll/debugger-test2.cs", scripts.Values);
             Assert.Contains("dotnet://debugger-test.dll/dependency.cs", scripts.Values);
@@ -35,106 +28,74 @@ namespace DebuggerTests
         [Fact]
         public async Task CreateGoodBreakpoint()
         {
-            var insp = new Inspector();
+            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            Assert.EndsWith("debugger-test.cs", bp1_res.Value["breakpointId"].ToString());
+            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
+            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
 
-                var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-
-                Assert.EndsWith("debugger-test.cs", bp1_res.Value["breakpointId"].ToString());
-                Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-                var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-                Assert.NotNull(loc["scriptId"]);
-                Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts[loc["scriptId"]?.Value<string>()]);
-                Assert.Equal(10, loc["lineNumber"]);
-                Assert.Equal(8, loc["columnNumber"]);
-            });
+            Assert.NotNull(loc["scriptId"]);
+            Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts[loc["scriptId"]?.Value<string>()]);
+            Assert.Equal(10, loc["lineNumber"]);
+            Assert.Equal(8, loc["columnNumber"]);
         }
 
         [Fact]
         public async Task CreateJSBreakpoint()
         {
             // Test that js breakpoints get set correctly
-            var insp = new Inspector();
+            // 13 24
+            // 13 31
+            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
 
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
+            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                // 13 24
-                // 13 31
-                var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
+            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
 
-                Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
-                Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
+            Assert.NotNull(loc["scriptId"]);
+            Assert.Equal(13, loc["lineNumber"]);
+            Assert.Equal(24, loc["columnNumber"]);
 
-                var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
 
-                Assert.NotNull(loc["scriptId"]);
-                Assert.Equal(13, loc["lineNumber"]);
-                Assert.Equal(24, loc["columnNumber"]);
+            Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
+            Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
 
-                var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
+            var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
 
-                Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
-                Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
-
-                var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
-
-                Assert.NotNull(loc2["scriptId"]);
-                Assert.Equal(13, loc2["lineNumber"]);
-                Assert.Equal(31, loc2["columnNumber"]);
-            });
+            Assert.NotNull(loc2["scriptId"]);
+            Assert.Equal(13, loc2["lineNumber"]);
+            Assert.Equal(31, loc2["columnNumber"]);
         }
 
         [Fact]
         public async Task CreateJS0Breakpoint()
         {
-            // Test that js column 0 does as expected
-            var insp = new Inspector();
+            // 13 24
+            // 13 31
+            var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
 
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
+            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                // 13 24
-                // 13 31
-                var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
+            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
 
-                Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
-                Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
+            Assert.NotNull(loc["scriptId"]);
+            Assert.Equal(13, loc["lineNumber"]);
+            Assert.Equal(24, loc["columnNumber"]);
 
-                var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
 
-                Assert.NotNull(loc["scriptId"]);
-                Assert.Equal(13, loc["lineNumber"]);
-                Assert.Equal(24, loc["columnNumber"]);
+            Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
+            Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
 
-                var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 31);
+            var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
 
-                Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
-                Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
-
-                var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
-
-                Assert.NotNull(loc2["scriptId"]);
-                Assert.Equal(13, loc2["lineNumber"]);
-                Assert.Equal(31, loc2["columnNumber"]);
-            });
+            Assert.NotNull(loc2["scriptId"]);
+            Assert.Equal(13, loc2["lineNumber"]);
+            Assert.Equal(31, loc2["columnNumber"]);
         }
 
         [Theory]
@@ -142,160 +103,109 @@ namespace DebuggerTests
         [InlineData(50)]
         public async Task CheckMultipleBreakpointsOnSameLine(int col)
         {
-            var insp = new Inspector();
+            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-array-test.cs", 219, col);
+            Assert.EndsWith("debugger-array-test.cs", bp1_res.Value["breakpointId"].ToString());
+            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
 
-            var scripts = SubscribeToScripts(insp);
+            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
+            CheckLocation("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 50, scripts, loc);
 
-                var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-array-test.cs", 219, col);
-                Assert.EndsWith("debugger-array-test.cs", bp1_res.Value["breakpointId"].ToString());
-                Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
+            var bp2_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55);
+            Assert.EndsWith("debugger-array-test.cs", bp2_res.Value["breakpointId"].ToString());
+            Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
 
-                var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
+            var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
 
-                CheckLocation("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 50, scripts, loc);
-
-                var bp2_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55);
-                Assert.EndsWith("debugger-array-test.cs", bp2_res.Value["breakpointId"].ToString());
-                Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
-
-                var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
-
-                CheckLocation("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55, scripts, loc2);
-            });
+            CheckLocation("dotnet://debugger-test.dll/debugger-array-test.cs", 219, 55, scripts, loc2);
         }
 
         [Fact]
         public async Task CreateBadBreakpoint()
         {
-            var insp = new Inspector();
-
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            var bp1_req = JObject.FromObject(new
             {
-                var bp1_req = JObject.FromObject(new
-                {
-                    lineNumber = 8,
-                    columnNumber = 2,
-                    url = "dotnet://debugger-test.dll/this-file-doesnt-exist.cs",
-                });
-
-                var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
-
-                Assert.True(bp1_res.IsOk);
-                Assert.Empty(bp1_res.Value["locations"].Values<object>());
-                //Assert.Equal ((int)MonoErrorCodes.BpNotFound, bp1_res.Error ["code"]?.Value<int> ());
+                lineNumber = 8,
+                columnNumber = 2,
+                url = "dotnet://debugger-test.dll/this-file-doesnt-exist.cs",
             });
+
+            var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
+
+            Assert.True(bp1_res.IsOk);
+            Assert.Empty(bp1_res.Value["locations"].Values<object>());
+            //Assert.Equal ((int)MonoErrorCodes.BpNotFound, bp1_res.Error ["code"]?.Value<int> ());
         }
 
         [Fact]
         public async Task CreateGoodBreakpointAndHit()
         {
-            var insp = new Inspector();
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            var eval_req = JObject.FromObject(new
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
-                var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-
-                var eval_req = JObject.FromObject(new
-                {
-                    expression = "window.setTimeout(function() { invoke_add(); }, 1);",
-                });
-
-                await EvaluateAndCheck(
-                    "window.setTimeout(function() { invoke_add(); }, 1);",
-                    "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
-                    "IntAdd",
-                    wait_for_event_fn: (pause_location) =>
-                    {
-                        Assert.Equal("other", pause_location["reason"]?.Value<string>());
-                        Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
-
-                        var top_frame = pause_location["callFrames"][0];
-                        Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
-                        Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
-
-                        CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
-
-                        //now check the scope
-                        var scope = top_frame["scopeChain"][0];
-                        Assert.Equal("local", scope["type"]);
-                        Assert.Equal("IntAdd", scope["name"]);
-
-                        Assert.Equal("object", scope["object"]["type"]);
-                        CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
-                        CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
-                        return Task.CompletedTask;
-                    }
-                );
-
+                expression = "window.setTimeout(function() { invoke_add(); }, 1);",
             });
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "IntAdd",
+                wait_for_event_fn: (pause_location) =>
+                {
+                    Assert.Equal("other", pause_location["reason"]?.Value<string>());
+                    Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+                    var top_frame = pause_location["callFrames"][0];
+                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+                    Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+
+                    //now check the scope
+                    var scope = top_frame["scopeChain"][0];
+                    Assert.Equal("local", scope["type"]);
+                    Assert.Equal("IntAdd", scope["name"]);
+
+                    Assert.Equal("object", scope["object"]["type"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
+                    return Task.CompletedTask;
+                }
+            );
         }
 
         [Fact]
         public async Task ExceptionThrownInJS()
         {
-            var insp = new Inspector();
-
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            var eval_req = JObject.FromObject(new
             {
-                var eval_req = JObject.FromObject(new
-                {
-                    expression = "invoke_bad_js_test();"
-                });
-
-                var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
-                Assert.True(eval_res.IsErr);
-                Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
+                expression = "invoke_bad_js_test();"
             });
+
+            var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
+            Assert.True(eval_res.IsErr);
+            Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
 
         [Fact]
         public async Task ExceptionThrownInJSOutOfBand()
         {
-            var insp = new Inspector();
+            await SetBreakpoint("/debugger-driver.html", 27, 2);
 
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            var eval_req = JObject.FromObject(new
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
-                await SetBreakpoint("/debugger-driver.html", 27, 2);
-
-                var eval_req = JObject.FromObject(new
-                {
-                    expression = "window.setTimeout(function() { invoke_bad_js_test(); }, 1);",
-                });
-
-                var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
-                // Response here will be the id for the timer from JS!
-                Assert.True(eval_res.IsOk);
-
-                var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await insp.WaitFor("Runtime.exceptionThrown"));
-                var ex_json = JObject.Parse(ex.Message);
-                Assert.Equal(dicFileToUrl["/debugger-driver.html"], ex_json["exceptionDetails"]?["url"]?.Value<string>());
+                expression = "window.setTimeout(function() { invoke_bad_js_test(); }, 1);",
             });
 
+            var task = insp.WaitFor("Runtime.exceptionThrown");
+            var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
+            // Response here will be the id for the timer from JS!
+            Assert.True(eval_res.IsOk);
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await task);
+            var ex_json = JObject.Parse(ex.Message);
+            Assert.Equal(dicFileToUrl["/debugger-driver.html"], ex_json["exceptionDetails"]?["url"]?.Value<string>());
         }
 
         [Theory]
@@ -409,25 +319,25 @@ namespace DebuggerTests
                 var dt = new DateTime(2310, 1, 2, 3, 4, 5);
                 await CheckProps(locals, new
                 {
-                    n_int       = TNumber(5),
-                    n_int_null  = TObject("System.Nullable<int>", null),
+                    n_int = TNumber(5),
+                    n_int_null = TObject("System.Nullable<int>", null),
 
-                    n_dt        = TDateTime(dt),
-                    n_dt_null   = TObject("System.Nullable<System.DateTime>", null),
+                    n_dt = TDateTime(dt),
+                    n_dt_null = TObject("System.Nullable<System.DateTime>", null),
 
-                    n_gs        = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
-                    n_gs_null   = TObject("System.Nullable<DebuggerTests.ValueTypesTest.GenericStruct<int>>", null),
+                    n_gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
+                    n_gs_null = TObject("System.Nullable<DebuggerTests.ValueTypesTest.GenericStruct<int>>", null),
                 }, "locals");
 
                 // check gs
 
                 var n_gs = GetAndAssertObjectWithName(locals, "n_gs");
-                var n_gs_props = await GetProperties(n_gs["value"]?["objectId"]?.Value<string> ());
+                var n_gs_props = await GetProperties(n_gs["value"]?["objectId"]?.Value<string>());
                 await CheckProps(n_gs_props, new
                 {
-                    List        = TObject("System.Collections.Generic.List<int>", is_null: true),
+                    List = TObject("System.Collections.Generic.List<int>", is_null: true),
                     StringField = TString("n_gs#StringField"),
-                    Options     = TEnum  ("DebuggerTests.Options", "None")
+                    Options = TEnum("DebuggerTests.Options", "None")
                 }, nameof(n_gs));
             });
 
@@ -459,41 +369,31 @@ namespace DebuggerTests
         [Fact]
         public async Task RuntimeGetPropertiesWithInvalidScopeIdTest()
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 49, 8);
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_delegates_test (); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 49, 8,
+                "DelegatesTest",
+                wait_for_event_fn: async (pause_location) =>
+               {
+                   //make sure we're on the right bp
+                   Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
-                var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 49, 8);
+                   var top_frame = pause_location["callFrames"][0];
 
-                await EvaluateAndCheck(
-                    "window.setTimeout(function() { invoke_delegates_test (); }, 1);",
-                    "dotnet://debugger-test.dll/debugger-test.cs", 49, 8,
-                    "DelegatesTest",
-                    wait_for_event_fn: async (pause_location) =>
+                   var scope = top_frame["scopeChain"][0];
+
+                   // Try to get an invalid scope!
+                   var get_prop_req = JObject.FromObject(new
                    {
-                       //make sure we're on the right bp
-                       Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+                       objectId = "dotnet:scope:23490871",
+                   });
 
-                       var top_frame = pause_location["callFrames"][0];
-
-                       var scope = top_frame["scopeChain"][0];
-
-                       // Try to get an invalid scope!
-                       var get_prop_req = JObject.FromObject(new
-                       {
-                           objectId = "dotnet:scope:23490871",
-                       });
-
-                       var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
-                       Assert.True(frame_props.IsErr);
-                   }
-                );
-            });
+                   var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
+                   Assert.True(frame_props.IsErr);
+               }
+            );
         }
 
         [Theory]
@@ -501,99 +401,90 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsWithStructs(bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            await SetBreakpoint(debugger_test_loc, 24, 8);
+
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_method_with_structs(); }, 1);",
+                debugger_test_loc, 24, 8, "MethodWithLocalStructs");
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            await CheckProps(locals, new
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
-                var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
+                ss_local = TValueType("DebuggerTests.ValueTypesTest.SimpleStruct"),
+                gs_local = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<DebuggerTests.ValueTypesTest>"),
+                vt_local = TObject("DebuggerTests.ValueTypesTest")
+            }, "locals");
 
-                await SetBreakpoint(debugger_test_loc, 24, 8);
+            var dt = new DateTime(2021, 2, 3, 4, 6, 7);
+            var vt_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "vt_local");
+            Assert.Equal(5, vt_local_props.Count());
 
-                var pause_location = await EvaluateAndCheck(
-                    "window.setTimeout(function() { invoke_method_with_structs(); }, 1);",
-                    debugger_test_loc, 24, 8, "MethodWithLocalStructs");
+            CheckString(vt_local_props, "StringField", "string#0");
+            CheckValueType(vt_local_props, "SimpleStructField", "DebuggerTests.ValueTypesTest.SimpleStruct");
+            CheckValueType(vt_local_props, "SimpleStructProperty", "DebuggerTests.ValueTypesTest.SimpleStruct");
+            await CheckDateTime(vt_local_props, "DT", new DateTime(2020, 1, 2, 3, 4, 5));
+            CheckEnum(vt_local_props, "RGB", "DebuggerTests.RGB", "Blue");
 
-                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                await CheckProps(locals, new
-                {
-                    ss_local = TValueType("DebuggerTests.ValueTypesTest.SimpleStruct"),
-                    gs_local = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<DebuggerTests.ValueTypesTest>"),
-                    vt_local = TObject("DebuggerTests.ValueTypesTest")
-                }, "locals");
+            // Check ss_local's properties
+            var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
+            await CheckProps(ss_local_props, new
+            {
+                V = TGetter("V"),
+                str_member = TString("set in MethodWithLocalStructs#SimpleStruct#str_member"),
+                dt = TDateTime(dt),
+                gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
+                Kind = TEnum("System.DateTimeKind", "Utc")
+            }, "ss_local");
 
-                var dt = new DateTime(2021, 2, 3, 4, 6, 7);
-                var vt_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "vt_local");
-                Assert.Equal(5, vt_local_props.Count());
+            {
+                var gres = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_local"), "V");
+                await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + 2), $"ss_local#V");
 
-                CheckString(vt_local_props, "StringField", "string#0");
-                CheckValueType(vt_local_props, "SimpleStructField", "DebuggerTests.ValueTypesTest.SimpleStruct");
-                CheckValueType(vt_local_props, "SimpleStructProperty", "DebuggerTests.ValueTypesTest.SimpleStruct");
-                await CheckDateTime(vt_local_props, "DT", new DateTime(2020, 1, 2, 3, 4, 5));
-                CheckEnum(vt_local_props, "RGB", "DebuggerTests.RGB", "Blue");
+                // Check ss_local.gs
+                var gs_props = await GetObjectOnLocals(ss_local_props, "gs");
+                CheckString(gs_props, "StringField", "set in MethodWithLocalStructs#SimpleStruct#gs#StringField");
+                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>");
+            }
 
-                // Check ss_local's properties
-                var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
-                await CheckProps(ss_local_props, new
-                {
-                    V = TGetter("V"),
-                    str_member = TString("set in MethodWithLocalStructs#SimpleStruct#str_member"),
-                    dt = TDateTime(dt),
-                    gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
-                    Kind = TEnum("System.DateTimeKind", "Utc")
-                }, "ss_local");
+            // Check gs_local's properties
+            var gs_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "gs_local");
+            await CheckProps(gs_local_props, new
+            {
+                StringField = TString("gs_local#GenericStruct<ValueTypesTest>#StringField"),
+                List = TObject("System.Collections.Generic.List<DebuggerTests.ValueTypesTest>", is_null: true),
+                Options = TEnum("DebuggerTests.Options", "None")
+            }, "gs_local");
 
-                {
-                    var gres = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_local"), "V");
-                    await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + 2), $"ss_local#V");
+            // Check vt_local's properties
 
-                    // Check ss_local.gs
-                    var gs_props = await GetObjectOnLocals(ss_local_props, "gs");
-                    CheckString(gs_props, "StringField", "set in MethodWithLocalStructs#SimpleStruct#gs#StringField");
-                    CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>");
-                }
-
-                // Check gs_local's properties
-                var gs_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "gs_local");
-                await CheckProps(gs_local_props, new
-                {
-                    StringField = TString("gs_local#GenericStruct<ValueTypesTest>#StringField"),
-                    List = TObject("System.Collections.Generic.List<DebuggerTests.ValueTypesTest>", is_null: true),
-                    Options = TEnum("DebuggerTests.Options", "None")
-                }, "gs_local");
-
-                // Check vt_local's properties
-
-                var exp = new[]
-                {
+            var exp = new[]
+            {
                     ("SimpleStructProperty", 2, "Utc"),
                     ("SimpleStructField", 5, "Local")
                 };
 
-                foreach (var (name, bias, dt_kind) in exp)
-                {
-                    dt = new DateTime(2020 + bias, 1 + bias, 2 + bias, 3 + bias, 5 + bias, 6 + bias);
-                    await CompareObjectPropertiesFor(vt_local_props, name,
-                        new
-                        {
-                            V = TGetter("V"),
-                            str_member = TString($"{name}#string#0#SimpleStruct#str_member"),
-                            dt = TDateTime(dt),
-                            gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
-                            Kind = TEnum("System.DateTimeKind", dt_kind)
-                        },
-                        label: $"vt_local_props.{name}");
+            foreach (var (name, bias, dt_kind) in exp)
+            {
+                dt = new DateTime(2020 + bias, 1 + bias, 2 + bias, 3 + bias, 5 + bias, 6 + bias);
+                await CompareObjectPropertiesFor(vt_local_props, name,
+                    new
+                    {
+                        V = TGetter("V"),
+                        str_member = TString($"{name}#string#0#SimpleStruct#str_member"),
+                        dt = TDateTime(dt),
+                        gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
+                        Kind = TEnum("System.DateTimeKind", dt_kind)
+                    },
+                    label: $"vt_local_props.{name}");
 
-                    var gres = await InvokeGetter(GetAndAssertObjectWithName(vt_local_props, name), "V");
-                    await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + (uint)dt.Month), $"{name}#V");
-                }
+                var gres = await InvokeGetter(GetAndAssertObjectWithName(vt_local_props, name), "V");
+                await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + (uint)dt.Month), $"{name}#V");
+            }
 
-                // FIXME: check ss_local.gs.List's members
-            });
+            // FIXME: check ss_local.gs.List's members
         }
 
         [Theory]
@@ -611,33 +502,33 @@ namespace DebuggerTests
                 var dt = new DateTime(2310, 1, 2, 3, 4, 5);
                 await CheckProps(locals, new
                 {
-                    n_i    = TNumber(5),
-                    o_i    = TNumber(5),
-                    o_n_i  = TNumber(5),
-                    o_s    = TString("foobar"),
-                    o_obj  = TObject("Math"),
+                    n_i = TNumber(5),
+                    o_i = TNumber(5),
+                    o_n_i = TNumber(5),
+                    o_s = TString("foobar"),
+                    o_obj = TObject("Math"),
 
-                    n_gs   = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
-                    o_gs   = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
+                    n_gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
+                    o_gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
                     o_n_gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
 
-                    n_dt   = TDateTime(dt),
-                    o_dt   = TDateTime(dt),
+                    n_dt = TDateTime(dt),
+                    o_dt = TDateTime(dt),
                     o_n_dt = TDateTime(dt),
 
                     o_null = TObject("object", is_null: true),
-                    o_ia   = TArray("int[]", 2),
+                    o_ia = TArray("int[]", 2),
                 }, "locals");
 
                 foreach (var name in new[] { "n_gs", "o_gs", "o_n_gs" })
                 {
                     var gs = GetAndAssertObjectWithName(locals, name);
-                    var gs_props = await GetProperties(gs["value"]?["objectId"]?.Value<string> ());
+                    var gs_props = await GetProperties(gs["value"]?["objectId"]?.Value<string>());
                     await CheckProps(gs_props, new
                     {
-                        List        = TObject("System.Collections.Generic.List<int>", is_null: true),
+                        List = TObject("System.Collections.Generic.List<int>", is_null: true),
                         StringField = TString("n_gs#StringField"),
-                        Options     = TEnum  ("DebuggerTests.Options", "None")
+                        Options = TEnum("DebuggerTests.Options", "None")
                     }, name);
                 }
 
@@ -688,14 +579,14 @@ namespace DebuggerTests
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 var dt = new DateTime(2310, 1, 2, 3, 4, 5);
-                Console.WriteLine (locals);
+                Console.WriteLine(locals);
 
                 await CheckProps(locals, new
                 {
                     vt_dt = TDateTime(new DateTime(4819, 5, 6, 7, 8, 9)),
                     vt_gs = TValueType("Math.GenericStruct<string>"),
-                    e     = TEnum("System.IO.FileMode", "0"),
-                    ee    = TEnum("System.IO.FileMode", "Append")
+                    e = TEnum("System.IO.FileMode", "0"),
+                    ee = TEnum("System.IO.FileMode", "Append")
                 }, "locals");
             });
 
@@ -704,72 +595,63 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsWithStructsStaticAsync(bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            await SetBreakpoint(debugger_test_loc, 54, 12);
+
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method_async (" +
+                "'[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructsStaticAsync'" +
+                "); }, 1);",
+                debugger_test_loc, 54, 12, "MoveNext"); //BUG: method name
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            await CheckProps(locals, new
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
-                var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
+                ss_local = TObject("DebuggerTests.ValueTypesTest.SimpleStruct"),
+                gs_local = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
+                result = TBool(true)
+            },
+                "locals#0");
 
-                await SetBreakpoint(debugger_test_loc, 54, 12);
+            var dt = new DateTime(2021, 2, 3, 4, 6, 7);
+            // Check ss_local's properties
+            var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
+            await CheckProps(ss_local_props, new
+            {
+                V = TGetter("V"),
+                str_member = TString("set in MethodWithLocalStructsStaticAsync#SimpleStruct#str_member"),
+                dt = TDateTime(dt),
+                gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
+                Kind = TEnum("System.DateTimeKind", "Utc")
+            }, "ss_local");
 
-                var pause_location = await EvaluateAndCheck(
-                    "window.setTimeout(function() { invoke_static_method_async (" +
-                    "'[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructsStaticAsync'" +
-                    "); }, 1);",
-                    debugger_test_loc, 54, 12, "MoveNext"); //BUG: method name
+            {
+                var gres = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_local"), "V");
+                await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + 2), $"ss_local#V");
 
-                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                await CheckProps(locals, new
-                {
-                    ss_local = TObject("DebuggerTests.ValueTypesTest.SimpleStruct"),
-                    gs_local = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<int>"),
-                    result = TBool(true)
-                },
-                    "locals#0");
+                // Check ss_local.gs
+                await CompareObjectPropertiesFor(ss_local_props, "gs",
+                    new
+                    {
+                        StringField = TString("set in MethodWithLocalStructsStaticAsync#SimpleStruct#gs#StringField"),
+                        List = TObject("System.Collections.Generic.List<System.DateTime>"),
+                        Options = TEnum("DebuggerTests.Options", "Option1")
+                    }
+                );
+            }
 
-                var dt = new DateTime(2021, 2, 3, 4, 6, 7);
-                // Check ss_local's properties
-                var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
-                await CheckProps(ss_local_props, new
-                {
-                    V = TGetter("V"),
-                    str_member = TString("set in MethodWithLocalStructsStaticAsync#SimpleStruct#str_member"),
-                    dt = TDateTime(dt),
-                    gs = TValueType("DebuggerTests.ValueTypesTest.GenericStruct<System.DateTime>"),
-                    Kind = TEnum("System.DateTimeKind", "Utc")
-                }, "ss_local");
+            // Check gs_local's properties
+            var gs_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "gs_local");
+            await CheckProps(gs_local_props, new
+            {
+                StringField = TString("gs_local#GenericStruct<ValueTypesTest>#StringField"),
+                List = TObject("System.Collections.Generic.List<int>"),
+                Options = TEnum("DebuggerTests.Options", "Option2")
+            }, "gs_local");
 
-                {
-                    var gres = await InvokeGetter(GetAndAssertObjectWithName(locals, "ss_local"), "V");
-                    await CheckValue(gres.Value["result"], TNumber(0xDEADBEEF + 2), $"ss_local#V");
-
-                    // Check ss_local.gs
-                    await CompareObjectPropertiesFor(ss_local_props, "gs",
-                        new
-                        {
-                            StringField = TString("set in MethodWithLocalStructsStaticAsync#SimpleStruct#gs#StringField"),
-                            List = TObject("System.Collections.Generic.List<System.DateTime>"),
-                            Options = TEnum("DebuggerTests.Options", "Option1")
-                        }
-                    );
-                }
-
-                // Check gs_local's properties
-                var gs_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "gs_local");
-                await CheckProps(gs_local_props, new
-                {
-                    StringField = TString("gs_local#GenericStruct<ValueTypesTest>#StringField"),
-                    List = TObject("System.Collections.Generic.List<int>"),
-                    Options = TEnum("DebuggerTests.Options", "Option2")
-                }, "gs_local");
-
-                // FIXME: check ss_local.gs.List's members
-            });
+            // FIXME: check ss_local.gs.List's members
         }
 
         [Theory]
@@ -779,113 +661,95 @@ namespace DebuggerTests
         [InlineData(182, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]
         public async Task InspectLocalsForToStringDescriptions(int line, int col, string method_name, bool call_other, bool invoke_async)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
             string entry_method_name = $"[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalsForToStringTest{(invoke_async ? "Async" : String.Empty)}";
             int frame_idx = 0;
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            await SetBreakpoint(debugger_test_loc, line, col);
+
+            var eval_expr = "window.setTimeout(function() {" +
+                (invoke_async ? "invoke_static_method_async (" : "invoke_static_method (") +
+                $"'{entry_method_name}'," +
+                (call_other ? "true" : "false") +
+                "); }, 1);";
+            Console.WriteLine($"{eval_expr}");
+
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, invoke_async ? "MoveNext" : method_name);
+
+            var dt0 = new DateTime(2020, 1, 2, 3, 4, 5);
+            var dt1 = new DateTime(2010, 5, 4, 3, 2, 1);
+            var ts = dt0 - dt1;
+            var dto = new DateTimeOffset(dt0, new TimeSpan(4, 5, 0));
+
+            var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
+            await CheckProps(frame_locals, new
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
+                call_other = TBool(call_other),
+                dt0 = TDateTime(dt0),
+                dt1 = TDateTime(dt1),
+                dto = TValueType("System.DateTimeOffset", dto.ToString()),
+                ts = TValueType("System.TimeSpan", ts.ToString()),
+                dec = TValueType("System.Decimal", "123987123"),
+                guid = TValueType("System.Guid", "3D36E07E-AC90-48C6-B7EC-A481E289D014"),
+                dts = TArray("System.DateTime[]", 2),
+                obj = TObject("DebuggerTests.ClassForToStringTests"),
+                sst = TObject("DebuggerTests.StructForToStringTests")
+            }, "locals#0");
 
-                await SetBreakpoint(debugger_test_loc, line, col);
+            var dts_0 = new DateTime(1983, 6, 7, 5, 6, 10);
+            var dts_1 = new DateTime(1999, 10, 15, 1, 2, 3);
+            var dts_elements = await GetObjectOnLocals(frame_locals, "dts");
+            await CheckDateTime(dts_elements, "0", dts_0);
+            await CheckDateTime(dts_elements, "1", dts_1);
 
-                var eval_expr = "window.setTimeout(function() {" +
-                    (invoke_async ? "invoke_static_method_async (" : "invoke_static_method (") +
-                    $"'{entry_method_name}'," +
-                    (call_other ? "true" : "false") +
-                    "); }, 1);";
-                Console.WriteLine($"{eval_expr}");
-
-                var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, invoke_async ? "MoveNext" : method_name);
-
-                var dt0 = new DateTime(2020, 1, 2, 3, 4, 5);
-                var dt1 = new DateTime(2010, 5, 4, 3, 2, 1);
-                var ts = dt0 - dt1;
-                var dto = new DateTimeOffset(dt0, new TimeSpan(4, 5, 0));
-
-                var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
-                await CheckProps(frame_locals, new
+            // TimeSpan
+            await CompareObjectPropertiesFor(frame_locals, "ts",
+                new
                 {
-                    call_other = TBool(call_other),
-                    dt0 = TDateTime(dt0),
-                    dt1 = TDateTime(dt1),
-                    dto = TValueType("System.DateTimeOffset", dto.ToString()),
-                    ts = TValueType("System.TimeSpan", ts.ToString()),
-                    dec = TValueType("System.Decimal", "123987123"),
-                    guid = TValueType("System.Guid", "3D36E07E-AC90-48C6-B7EC-A481E289D014"),
-                    dts = TArray("System.DateTime[]", 2),
-                    obj = TObject("DebuggerTests.ClassForToStringTests"),
-                    sst = TObject("DebuggerTests.StructForToStringTests")
-                }, "locals#0");
+                    Days = TNumber(3530),
+                    Minutes = TNumber(2),
+                    Seconds = TNumber(4),
+                }, "ts_props", num_fields: 12);
 
-                var dts_0 = new DateTime(1983, 6, 7, 5, 6, 10);
-                var dts_1 = new DateTime(1999, 10, 15, 1, 2, 3);
-                var dts_elements = await GetObjectOnLocals(frame_locals, "dts");
-                await CheckDateTime(dts_elements, "0", dts_0);
-                await CheckDateTime(dts_elements, "1", dts_1);
+            // DateTimeOffset
+            await CompareObjectPropertiesFor(frame_locals, "dto",
+                new
+                {
+                    Day = TNumber(2),
+                    Year = TNumber(2020),
+                    DayOfWeek = TEnum("System.DayOfWeek", "Thursday")
+                }, "dto_props", num_fields: 22);
 
-                // TimeSpan
-                await CompareObjectPropertiesFor(frame_locals, "ts",
-                    new
-                    {
-                        Days = TNumber(3530),
-                        Minutes = TNumber(2),
-                        Seconds = TNumber(4),
-                    }, "ts_props", num_fields: 12);
+            var DT = new DateTime(2004, 10, 15, 1, 2, 3);
+            var DTO = new DateTimeOffset(dt0, new TimeSpan(2, 14, 0));
 
-                // DateTimeOffset
-                await CompareObjectPropertiesFor(frame_locals, "dto",
-                    new
-                    {
-                        Day = TNumber(2),
-                        Year = TNumber(2020),
-                        DayOfWeek = TEnum("System.DayOfWeek", "Thursday")
-                    }, "dto_props", num_fields: 22);
+            await CompareObjectPropertiesFor(frame_locals, "obj",
+                new
+                {
+                    DT = TDateTime(DT),
+                    DTO = TValueType("System.DateTimeOffset", DTO.ToString()),
+                    TS = TValueType("System.TimeSpan", ts.ToString()),
+                    Dec = TValueType("System.Decimal", "1239871"),
+                    Guid = TValueType("System.Guid", "3D36E07E-AC90-48C6-B7EC-A481E289D014")
+                }, "obj_props");
 
-                var DT = new DateTime(2004, 10, 15, 1, 2, 3);
-                var DTO = new DateTimeOffset(dt0, new TimeSpan(2, 14, 0));
-
-                await CompareObjectPropertiesFor(frame_locals, "obj",
-                    new
-                    {
-                        DT = TDateTime(DT),
-                        DTO = TValueType("System.DateTimeOffset", DTO.ToString()),
-                        TS = TValueType("System.TimeSpan", ts.ToString()),
-                        Dec = TValueType("System.Decimal", "1239871"),
-                        Guid = TValueType("System.Guid", "3D36E07E-AC90-48C6-B7EC-A481E289D014")
-                    }, "obj_props");
-
-                DTO = new DateTimeOffset(dt0, new TimeSpan(3, 15, 0));
-                var sst_props = await CompareObjectPropertiesFor(frame_locals, "sst",
-                    new
-                    {
-                        DT = TDateTime(DT),
-                        DTO = TValueType("System.DateTimeOffset", DTO.ToString()),
-                        TS = TValueType("System.TimeSpan", ts.ToString()),
-                        Dec = TValueType("System.Decimal", "1239871"),
-                        Guid = TValueType("System.Guid", "3D36E07E-AC90-48C6-B7EC-A481E289D014")
-                    }, "sst_props");
-            });
+            DTO = new DateTimeOffset(dt0, new TimeSpan(3, 15, 0));
+            var sst_props = await CompareObjectPropertiesFor(frame_locals, "sst",
+                new
+                {
+                    DT = TDateTime(DT),
+                    DTO = TValueType("System.DateTimeOffset", DTO.ToString()),
+                    TS = TValueType("System.TimeSpan", ts.ToString()),
+                    Dec = TValueType("System.Decimal", "1239871"),
+                    Guid = TValueType("System.Guid", "3D36E07E-AC90-48C6-B7EC-A481E289D014")
+                }, "sst_props");
         }
 
         [Fact]
         public async Task InspectLocals()
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
-                var wait_res = await RunUntil("locals_inner");
-                var locals = await GetProperties(wait_res["callFrames"][1]["callFrameId"].Value<string>());
-            });
+            var wait_res = await RunUntil("locals_inner");
+            var locals = await GetProperties(wait_res["callFrames"][1]["callFrameId"].Value<string>());
         }
 
         [Theory]
@@ -948,7 +812,7 @@ namespace DebuggerTests
 
             async Task<string> CreateNewId(string expr)
             {
-                var res = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), ctx.token);
+                var res = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), token);
                 Assert.True(res.IsOk, "Expected Runtime.evaluate to succeed");
                 AssertEqual("string", res.Value["result"]?["type"]?.Value<string>(), "Expected Runtime.evaluate to return a string type result");
                 return res.Value["result"]?["value"]?.Value<string>();
@@ -957,7 +821,7 @@ namespace DebuggerTests
             async Task<Result> _invoke_getter(string obj_id, string property_name, bool expect_ok)
             {
                 var expr = $"MONO._invoke_getter ('{obj_id}', '{property_name}')";
-                var res = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), ctx.token);
+                var res = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), token);
                 AssertEqual(expect_ok, res.IsOk, "Runtime.evaluate result not as expected for {expr}");
 
                 return res;
@@ -1057,84 +921,59 @@ namespace DebuggerTests
         [Fact]
         public async Task DebugLazyLoadedAssemblyWithPdb()
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
+            int line = 9;
+            await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
+            await LoadAssemblyDynamically(
+                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.dll"),
+                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.pdb"));
 
-                int line = 9;
-                await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
-                await LoadAssemblyDynamically(
-                        Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.dll"),
-                        Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.pdb"));
+            var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
+            Assert.Contains(source_location, scripts.Values);
 
-                var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
-                Assert.Contains(source_location, scripts.Values);
-
-                var pause_location = await EvaluateAndCheck(
-                   "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
-                   source_location, line, 8,
-                   "IntAdd");
-                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                CheckNumber(locals, "a", 5);
-                CheckNumber(locals, "b", 10);
-            });
+            var pause_location = await EvaluateAndCheck(
+               "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
+               source_location, line, 8,
+               "IntAdd");
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 5);
+            CheckNumber(locals, "b", 10);
         }
 
         [Fact]
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-            await Ready();
+            int line = 9;
+            await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
+            await LoadAssemblyDynamically(
+                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test-embedded.dll"),
+                    null);
 
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
+            var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
+            Assert.Contains(source_location, scripts.Values);
 
-                int line = 9;
-                await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
-                await LoadAssemblyDynamically(
-                        Path.Combine(DebuggerTestAppPath, "lazy-debugger-test-embedded.dll"),
-                        null);
-
-                var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
-                Assert.Contains(source_location, scripts.Values);
-
-                var pause_location = await EvaluateAndCheck(
-                   "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",
-                   source_location, line, 8,
-                   "IntAdd");
-                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-                CheckNumber(locals, "a", 5);
-                CheckNumber(locals, "b", 10);
-            });
+            var pause_location = await EvaluateAndCheck(
+               "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",
+               source_location, line, 8,
+               "IntAdd");
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 5);
+            CheckNumber(locals, "b", 10);
         }
 
         [Fact]
         public async Task CannotDebugLazyLoadedAssemblyWithoutPdb()
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
+            int line = 9;
+            await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
+            await LoadAssemblyDynamically(
+                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.dll"),
+                    null);
 
-                int line = 9;
-                await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
-                await LoadAssemblyDynamically(
-                        Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.dll"),
-                        null);
+            // wait to bit to catch if the event might be raised a bit late
+            await Task.Delay(1000);
 
-                // wait to bit to catch if the event might be raised a bit late
-                await Task.Delay(1000);
-
-                var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
-                Assert.DoesNotContain(source_location, scripts.Values);
-            });
+            var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
+            Assert.DoesNotContain(source_location, scripts.Values);
         }
 
         async Task LoadAssemblyDynamically(string asm_file, string pdb_file)
@@ -1144,7 +983,8 @@ namespace DebuggerTests
             string asm_base64 = Convert.ToBase64String(bytes);
 
             string pdb_base64 = null;
-            if (pdb_file != null) {
+            if (pdb_file != null)
+            {
                 bytes = File.ReadAllBytes(pdb_file);
                 pdb_base64 = Convert.ToBase64String(bytes);
             }
@@ -1154,26 +994,17 @@ namespace DebuggerTests
                 expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
             });
 
-            Result load_assemblies_res = await ctx.cli.SendCommand("Runtime.evaluate", load_assemblies, ctx.token);
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
             Assert.True(load_assemblies_res.IsOk);
         }
 
         [Fact]
         public async Task BreakOnDebuggerBreak()
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                await EvaluateAndCheck(
-                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
-                    "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
-                    "BreakOnDebuggerBreakCommand");
-            });
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
+                "BreakOnDebuggerBreakCommand");
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
     }

@@ -1041,6 +1041,18 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => DateTime.Parse(""));
             Assert.Throws<FormatException>(() => DateTime.Parse("", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.Parse("", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c"));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+			
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#"));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
+			
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0"));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0", new MyFormatter()));
+            Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
         }
 
         [Theory]
@@ -1710,6 +1722,11 @@ namespace System.Tests
             yield return new object[] { "1 1 1", CultureInfo.InvariantCulture, new DateTime(2001, 1, 1, 0, 0, 0) };
             yield return new object[] { "2 2 2Z", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2002, 2, 2, 0, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
             yield return new object[] { "#10/10/2095#\0", CultureInfo.InvariantCulture, new DateTime(2095, 10, 10, 0, 0, 0) };
+
+            yield return new object[] { "2020-5-7T09:37:00.0000000+00:00\0", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
+            yield return new object[] { "#2020-5-7T09:37:00.0000000+00:00#", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
+            yield return new object[] { "#2020-5-7T09:37:00.0000000+00:00#\0", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
+            yield return new object[] { "2020-5-7T09:37:00.0000000+00:00", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
 
             if (PlatformDetection.IsNotInvariantGlobalization)
             {

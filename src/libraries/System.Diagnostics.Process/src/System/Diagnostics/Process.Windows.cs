@@ -610,7 +610,7 @@ namespace System.Diagnostics
                     }
 
                     if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != new IntPtr(-1))
-                        procSH.InitialSetHandle(processInfo.hProcess);
+                        Marshal.InitHandle(procSH, processInfo.hProcess);
                     if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != new IntPtr(-1))
                         Interop.Kernel32.CloseHandle(processInfo.hThread);
 

@@ -8,6 +8,8 @@ parameters:
   pool: ''
   platform: ''
   runtimeFlavorDisplayName: ''
+  shouldContinueOnError: false
+  dependOnEvaluatePaths: false
   jobParameters: {}
 
 jobs:
@@ -19,6 +21,8 @@ jobs:
     archType: ${{ parameters.archType }}
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
     runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
     helixQueues:
 
@@ -30,9 +34,9 @@ jobs:
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-bfcd90a-20200127194925
+        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-20210106155927-56c6673
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-bfcd90a-20200127194925
+        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-20210106155927-56c6673
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
@@ -50,7 +54,7 @@ jobs:
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
       - ${{ if eq(parameters.jobParameters.interpreter, '') }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - Centos.7.Amd64.Open
+          - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
           - RedHat.7.Amd64.Open
           - SLES.15.Amd64.Open
           - (Fedora.32.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-32-helix-20200512010618-efb9f14
@@ -58,7 +62,7 @@ jobs:
           - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-            - Centos.7.Amd64.Open
+            - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
             - RedHat.7.Amd64.Open
             - Debian.9.Amd64.Open
             - Ubuntu.1604.Amd64.Open
@@ -70,7 +74,7 @@ jobs:
             - (Ubuntu.1910.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64-cfcfd50-20191030180623
             - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
           - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-            - Centos.7.Amd64.Open
+            - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
             - RedHat.7.Amd64.Open
             - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
             - Ubuntu.1604.Amd64.Open
@@ -119,6 +123,8 @@ jobs:
           - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
             - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.ES.Open
+            - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
+              - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
               - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
 

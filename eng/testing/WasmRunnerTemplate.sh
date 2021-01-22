@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
+SCENARIO=$3
 
 cd $EXECUTION_DIR
 
-XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+if [ -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]; then
+	XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+else
+	XHARNESS_OUT="$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output"
+fi
 
 if [ ! -z "$XHARNESS_CLI_PATH" ]; then
 	# When running in CI, we only have the .NET runtime available
@@ -14,7 +19,9 @@ else
 	HARNESS_RUNNER="dotnet xharness"
 fi
 
-if [ -z "$XHARNESS_COMMAND" ]; then
+if [ "$SCENARIO" == "WasmTestOnBrowser" ]; then
+	XHARNESS_COMMAND="test-browser"
+elif [ -z "$XHARNESS_COMMAND" ]; then
 	XHARNESS_COMMAND="test"
 fi
 

@@ -13,6 +13,69 @@ namespace System.Globalization
         private const int ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
         private const int ICU_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
 
+        /// <summary>
+        /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
+        /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
+        /// </summary>
+        private bool InitIcuCultureDataCore()
+        {
+            Debug.Assert(_sRealName != null);
+            Debug.Assert(!GlobalizationMode.Invariant);
+
+            const string ICU_COLLATION_KEYWORD = "@collation=";
+            string realNameBuffer = _sRealName;
+
+            // Basic validation
+            if (!IsValidCultureName(realNameBuffer, out var index))
+            {
+                return false;
+            }
+
+            // Replace _ (alternate sort) with @collation= for ICU
+            ReadOnlySpan<char> alternateSortName = default;
+            if (index > 0)
+            {
+                alternateSortName = realNameBuffer.AsSpan(index + 1);
+                realNameBuffer = string.Concat(realNameBuffer.AsSpan(0, index), ICU_COLLATION_KEYWORD, alternateSortName);
+            }
+
+            // Get the locale name from ICU
+            if (!GetLocaleName(realNameBuffer, out _sWindowsName))
+            {
+                return false; // fail
+            }
+
+            // Replace the ICU collation keyword with an _
+            Debug.Assert(_sWindowsName != null);
+            index = _sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
+            if (index >= 0)
+            {
+                _sName = string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
+            }
+            else
+            {
+                _sName = _sWindowsName;
+            }
+            _sRealName = _sName;
+
+            _iLanguage = LCID;
+            if (_iLanguage == 0)
+            {
+                _iLanguage = CultureInfo.LOCALE_CUSTOM_UNSPECIFIED;
+            }
+
+            _bNeutral = TwoLetterISOCountryName.Length == 0;
+
+            _sSpecificCulture = _bNeutral ? IcuLocaleData.GetSpecificCultureName(_sRealName) : _sRealName;
+
+            // Remove the sort from sName unless custom culture
+            if (index > 0 && !_bNeutral && !IsCustomCultureId(_iLanguage))
+            {
+                _sName = _sWindowsName.Substring(0, index);
+            }
+            return true;
+        }
+
         internal static unsafe bool GetLocaleName(string localeName, out string? windowsName)
         {
             // Get the locale name from ICU
@@ -235,11 +298,48 @@ namespace System.Globalization
             return geoId == -1 ? CultureData.Invariant.GeoId : geoId;
         }
 
+        private const uint DigitSubstitutionMask = 0x0000FFFF;
+        private const uint ListSeparatorMask     = 0xFFFF0000;
+
         private static int IcuGetDigitSubstitution(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
-            int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitution);
-            return digitSubstitution == -1 ? (int) DigitShapes.None : digitSubstitution;
+            int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
+            return digitSubstitution == -1 ? (int) DigitShapes.None : (int)(digitSubstitution & DigitSubstitutionMask);
+        }
+
+        private static string IcuGetListSeparator(string? cultureName)
+        {
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(cultureName != null);
+
+            int separator = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
+            if (separator != -1)
+            {
+                switch (separator & ListSeparatorMask)
+                {
+                    case IcuLocaleData.CommaSep:
+                        return ",";
+
+                    case IcuLocaleData.SemicolonSep:
+                        return ";";
+
+                    case IcuLocaleData.ArabicCommaSep:
+                        return "\u060C";
+
+                    case IcuLocaleData.ArabicSemicolonSep:
+                        return "\u061B";
+
+                    case IcuLocaleData.DoubleCommaSep:
+                        return ",,";
+
+                    default:
+                        Debug.Assert(false, "[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
+                        break;
+                }
+            }
+
+            return ","; // default separator
         }
 
         private static string IcuGetThreeLetterWindowsLanguageName(string cultureName)
@@ -304,6 +404,60 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.UseNls);
             return IcuLocaleData.GetConsoleUICulture(cultureName);
+        }
+
+        /// <summary>
+        /// Implementation of culture name validation.
+        /// </summary>
+        /// <remarks>
+        /// This is a fast approximate implementation based on BCP47 spec. It covers only parts of
+        /// the spec; such that, when it returns false, the input is definitely in incorrect format.
+        /// However, it returns true for some characters which are not allowed by the spec. It also
+        /// returns true for some inputs where spec specifies the lengths of subtags, but we are not
+        /// validating subtags individually to keep algorithm's computational complexity at O(n).
+        ///
+        /// Rules of implementation:
+        /// * Allow only letters, digits, - and '_' or \0 (NULL is for backward compatibility).
+        /// * Allow input length of zero (for invariant culture) or otherwise greater than 1 and less than or equal LocaleNameMaxLength.
+        /// * Disallow input that starts or ends with '-' or '_'.
+        /// * Disallow input that has any combination of consecutive '-' or '_'.
+        /// * Disallow input that has multiple '_'.
+        /// </remarks>
+        private static bool IsValidCultureName(string subject, out int indexOfUnderscore)
+        {
+            indexOfUnderscore = -1;
+
+            if (subject.Length == 0) return true; // Invariant Culture
+            if (subject.Length == 1 || subject.Length > LocaleNameMaxLength) return false;
+
+            bool seenUnderscore = false;
+            for (int i = 0; i < subject.Length; ++i)
+            {
+                char c = subject[i];
+
+                if ((uint)(c - 'A') <= ('Z' - 'A') || (uint)(c - 'a') <= ('z' - 'a') || (uint)(c - '0') <= ('9' - '0') || c == '\0')
+                {
+                    continue;
+                }
+
+                if (c == '_' || c == '-')
+                {
+                    if (i == 0 || i == subject.Length - 1) return false;
+                    if (subject[i - 1] == '_' || subject[i - 1] == '-') return false;
+                    if (c == '_')
+                    {
+                        if (seenUnderscore) return false; // only one _ is allowed
+                        seenUnderscore = true;
+                        indexOfUnderscore = i;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

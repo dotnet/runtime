@@ -393,7 +393,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> first = new int[] { 1, 2, 3 };
             IEnumerable<int> second = new int[] { 2, 5, 9 };
-            IEnumerable<(int, int)> expected = new (int,int)[] { (1,2), (2,5), (3,9) };
+            IEnumerable<(int, int)> expected = new (int, int)[] { (1, 2), (2, 5), (3, 9) };
 
             Assert.Equal(expected, first.Zip(second));
         }
@@ -403,7 +403,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> first = new int[] { 1, 2, 3 };
             IEnumerable<int> second = new int[] { 2, 5, 9 };
-            IEnumerable<(int, int)> expected = new (int,int)[] { (1,2), (2,5), (3,9) };
+            IEnumerable<(int, int)> expected = new (int, int)[] { (1, 2), (2, 5), (3, 9) };
 
             Assert.Equal(expected, first.Zip<int, int>(second));
         }
@@ -431,7 +431,7 @@ namespace System.Linq.Tests
         {
             ThrowsOnMatchEnumerable<int> first = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 3, 3 }, 2);
             IEnumerable<int> second = new int[] { 2, 4, 6 };
-            IEnumerable<(int, int)> expected = new (int,int)[] { (1,2), (3,4), (3,6) };
+            IEnumerable<(int, int)> expected = new (int, int)[] { (1, 2), (3, 4), (3, 6) };
 
             Assert.Equal(expected, first.Zip(second));
 
@@ -447,7 +447,7 @@ namespace System.Linq.Tests
         {
             ThrowsOnMatchEnumerable<int> second = new ThrowsOnMatchEnumerable<int>(new int[] { 1, 3, 3 }, 2);
             IEnumerable<int> first = new int[] { 2, 4, 6 };
-            IEnumerable<(int, int)> expected = new (int,int)[] { (2,1), (4,3), (6,3) };
+            IEnumerable<(int, int)> expected = new (int, int)[] { (2, 1), (4, 3), (6, 3) };
 
             Assert.Equal(expected, first.Zip(second));
 
@@ -600,6 +600,124 @@ namespace System.Linq.Tests
             var t = new[] { 1, 2, 3 }.Zip(new[] { 2, 4, 6 }).First();
             Assert.Equal(t.Item1, t.First);
             Assert.Equal(t.Item2, t.Second);
+        }
+
+        [Fact]
+        public void Zip3_FirstIsNull()
+        {
+            IEnumerable<int> first = null;
+            IEnumerable<int> second = new[] { 4, 5, 6 };
+            IEnumerable<int> third = new[] { 7, 8, 9 };
+
+            AssertExtensions.Throws<ArgumentNullException>("first", () => first.Zip(second, third));
+        }
+
+        [Fact]
+        public void Zip3_SecondIsNull()
+        {
+            IEnumerable<int> first = new[] { 1, 2, 3 };
+            IEnumerable<int> second = null;
+            IEnumerable<int> third = new[] { 4, 5, 6 };
+
+            AssertExtensions.Throws<ArgumentNullException>("second", () => first.Zip(second, third));
+        }
+
+        [Fact]
+        public void Zip3_ThirdIsNull()
+        {
+            IEnumerable<int> first = new[] { 1, 2, 3 };
+            IEnumerable<int> second = new[] { 4, 5, 6 };
+            IEnumerable<int> third = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("third", () => first.Zip(second, third));
+        }
+
+        [Fact]
+        public void Zip3_ThirdEmpty()
+        {
+            IEnumerable<int> first = new[] { 1, 2, 3 };
+            IEnumerable<int> second = new[] { 4, 5, 6 };
+            IEnumerable<int> third = new int[] { };
+            IEnumerable<(int, int, int)> expected = new (int, int, int)[] { };
+
+            Assert.Equal(expected, first.Zip(second, third));
+        }
+
+        [Fact]
+        public void Zip3_ImplicitTypeParameters()
+        {
+            IEnumerable<int> first = new[] { 1, 2 };
+            IEnumerable<int> second = new[] { 3, 4 };
+            IEnumerable<int> third = new[] { 5, 6 };
+            IEnumerable<(int, int, int)> expected = new[] { (1, 3, 5), (2, 4, 6) };
+
+            Assert.Equal(expected, first.Zip(second, third));
+        }
+
+        [Fact]
+        public void Zip3_ExplicitTypeParameters()
+        {
+            IEnumerable<int> first = new[] { 1, 2 };
+            IEnumerable<int> second = new[] { 3, 4 };
+            IEnumerable<int> third = new[] { 5, 6 };
+            IEnumerable<(int, int, int)> expected = new[] { (1, 3, 5), (2, 4, 6) };
+
+            Assert.Equal(expected, first.Zip<int, int, int>(second, third));
+        }
+
+        [Fact]
+        public void Zip3_ThirdOneMore()
+        {
+            IEnumerable<int> first = new[] { 1, 2 };
+            IEnumerable<int> second = new[] { 3, 4 };
+            IEnumerable<int> third = new[] { 5, 6, 7 };
+            IEnumerable<(int, int, int)> expected = new[] { (1, 3, 5), (2, 4, 6) };
+
+            Assert.Equal(expected, first.Zip(second, third));
+        }
+
+        [Fact]
+        public void Zip3_ThirdManyMore()
+        {
+            IEnumerable<int> first = new[] { 1, 2 };
+            IEnumerable<int> second = new[] { 3, 4 };
+            IEnumerable<int> third = new[] { 5, 6, 7, 8 };
+            IEnumerable<(int, int, int)> expected = new[] { (1, 3, 5), (2, 4, 6) };
+
+            Assert.Equal(expected, first.Zip(second, third));
+        }
+
+        [Fact]
+        public void Zip3_ThirdOneLess()
+        {
+            IEnumerable<int> first = new[] { 1, 2 };
+            IEnumerable<int> second = new[] { 3, 4 };
+            IEnumerable<int> third = new[] { 5 };
+            IEnumerable<(int, int, int)> expected = new[] { (1, 3, 5) };
+
+            Assert.Equal(expected, first.Zip(second, third));
+        }
+
+        [Fact]
+        public void Zip3_ThirdManyLess()
+        {
+            IEnumerable<int> first = new[] { 1, 2, 3 };
+            IEnumerable<int> second = new[] { 3, 4, 5 };
+            IEnumerable<int> third = new[] { 5 };
+            IEnumerable<(int, int, int)> expected = new[] { (1, 3, 5) };
+
+            Assert.Equal(expected, first.Zip(second, third));
+        }
+
+        [Fact]
+        public void Zip3_RunOnce()
+        {
+            IEnumerable<int> first = new[] { 1, 2 };
+            IEnumerable<int> second = new[] { 3, 4 };
+            IEnumerable<int> third = new[] { 5, 6 };
+            IEnumerable<(int, int, int)> expected = new[] { (1, 3, 5), (2, 4, 6) };
+
+            Assert.Equal(expected, first.RunOnce().Zip(second.RunOnce(), third.RunOnce()));
         }
     }
 }

@@ -7,8 +7,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeWaitHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        // Called by P/Invoke marshaler
-        private SafeWaitHandle() : base(true)
+        public SafeWaitHandle() : base(true)
         {
         }
 

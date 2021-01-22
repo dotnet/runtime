@@ -1,9 +1,9 @@
 #include <config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
-#include "ep-types.h"
-#include "ep-rt.h"
+#include <eventpipe/ep-rt-config.h>
+#include <eventpipe/ep-types.h>
+#include <eventpipe/ep-rt.h>
 #include <mono/utils/mono-lazy-init.h>
 
 ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock = {0};
@@ -86,6 +86,11 @@ static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
 static const int64_t SECS_TO_100NS = 10000000;
 static const int64_t SECS_TO_NS = 1000000000;
 static const int64_t MSECS_TO_MIS = 1000;
+
+/* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
+#if defined (HAVE_CLOCK_MONOTONIC) && (defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS))
+#undef HAVE_CLOCK_MONOTONIC
+#endif
 
 #ifndef HAVE_CLOCK_MONOTONIC
 static const int64_t MISECS_TO_NS = 1000;

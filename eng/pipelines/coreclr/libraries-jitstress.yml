@@ -1,7 +1,5 @@
 trigger: none
 
-pr: none
-
 schedules:
 - cron: "0 7 * * 0,2,4,6"
   displayName: Sun, Tue, Thu, Sat at 11:00 PM (UTC-8:00)
@@ -17,10 +15,6 @@ schedules:
   always: true
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Build CoreCLR checked and libraries Release

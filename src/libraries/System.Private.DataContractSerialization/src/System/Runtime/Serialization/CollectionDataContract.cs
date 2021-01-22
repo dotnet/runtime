@@ -883,7 +883,7 @@ namespace System.Runtime.Serialization
                     enumeratorType = GetEnumeratorMethod.ReturnType;
                 }
 
-                MethodInfo? getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
+                MethodInfo? getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
                 if (getCurrentMethod == null)
                 {
                     if (enumeratorType.IsInterface)
@@ -1145,7 +1145,7 @@ namespace System.Runtime.Serialization
             ConstructorInfo? defaultCtor = null;
             if (!type.IsValueType)
             {
-                defaultCtor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Array.Empty<Type>());
+                defaultCtor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Type.EmptyTypes);
                 if (defaultCtor == null && constructorRequired)
                 {
                     // All collection types could be considered read-only collections except collection types that are marked [Serializable].
@@ -1364,7 +1364,7 @@ namespace System.Runtime.Serialization
 
             if (getEnumeratorMethod == null)
             {
-                getEnumeratorMethod = type.GetMethod(Globals.GetEnumeratorMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
+                getEnumeratorMethod = type.GetMethod(Globals.GetEnumeratorMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
                 if (getEnumeratorMethod == null || !Globals.TypeOfIEnumerator.IsAssignableFrom(getEnumeratorMethod.ReturnType))
                 {
                     Type? ienumerableInterface = interfaceType.GetInterfaces().Where(t => t.FullName!.StartsWith("System.Collections.Generic.IEnumerable")).FirstOrDefault();

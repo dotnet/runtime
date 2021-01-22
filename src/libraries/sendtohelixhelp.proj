@@ -158,6 +158,27 @@
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
   </ItemGroup>
 
+  <ItemDefinitionGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
+    <XHarnessAppBundleToTest>
+      <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
+      <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
+      <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
+      <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
+      <TestTimeout>$(_workItemTimeout)</TestTimeout>
+      <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+    </XHarnessAppBundleToTest>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(TargetOS)' == 'Android'">
+    <XHarnessApkToTest>
+        <Targets Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x64'">x86_64</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x86'">x86</Targets>
+        <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
+        <TestTimeout>$(_workItemTimeout)</TestTimeout>
+    </XHarnessApkToTest>
+  </ItemDefinitionGroup>
   <!--
     Create all the Helix data to start a set of jobs. Create a set of work items, one for each libraries
     test assembly. All will have the same command line. Note that this target is listed in the
@@ -177,30 +198,27 @@
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
-      <!-- Find all directories named *.app -->
-      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
-        <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
-
-        <TestTimeout>$(_workItemTimeout)</TestTimeout>
-        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
+      <!-- Create work items for test apps -->
+      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))" />
+      <!-- Create work items for run-only apps -->
+      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
+        <!-- The sample app doesn't need test runner -->
+        <IncludesTestRunner>false</IncludesTestRunner>
+        <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
+        <ExpectedExitCode>42</ExpectedExitCode>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Android'">
-      <!-- We have to define this temp item list because of a bug in MSBuild that would prevent access %(Filename) right away -->
       <_apks Include="$(TestArchiveTestsRoot)**/*.apk" />
       <XHarnessApkToTest Include="@(_apks)">
-        <Targets Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x64'">x86_64</Targets>
-        <Targets Condition="'$(TargetArchitecture)' == 'x86'">x86</Targets>
         <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
-        <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
-
-        <TestTimeout>$(_workItemTimeout)</TestTimeout>
+      </XHarnessApkToTest>
+      <_runonlyApks Include="$(TestArchiveRoot)runonly/**/*.apk" />
+      <XHarnessApkToTest Include="@(_runonlyApks)">
+        <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
+        <!-- The android sample returns 42 so it should be considered by xharness as a success -->
+        <ExpectedExitCode>42</ExpectedExitCode>
       </XHarnessApkToTest>
     </ItemGroup>
 
@@ -230,11 +248,33 @@
       <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/*.Browser.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'">
+      <!-- Create a work item for run-only WASM console app  -->
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Sample.zip" />
+      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <!-- No RunTests script generated for the sample project so we just use the direct command -->
+        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- --run %(FileName).dll</Command>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'">
+      <!-- Create a work item for run-only WASM browser app  -->
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Browser.Sample.zip" />
+      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <!-- No RunTests script generated for the sample project so we just use the direct command -->
+        <Command>dotnet exec $XHARNESS_CLI_PATH wasm $XHARNESS_COMMAND  --app=. --browser=Chrome  --html-file=index.html --output-directory=$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output -- %(FileName).dll --testing</Command>
       </HelixWorkItem>
     </ItemGroup>
 

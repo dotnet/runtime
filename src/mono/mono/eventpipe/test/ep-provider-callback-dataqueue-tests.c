@@ -1,5 +1,9 @@
-#include "mono/eventpipe/ep.h"
-#include "eglib/test/test.h"
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include "ep-tests-debug.h"
+#endif
+
+#include <eventpipe/ep.h>
+#include <eglib/test/test.h>
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"
