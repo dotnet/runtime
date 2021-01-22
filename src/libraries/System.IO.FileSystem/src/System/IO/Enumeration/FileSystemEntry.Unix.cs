@@ -159,8 +159,17 @@ namespace System.IO.Enumeration
 
         public FileSystemInfo ToFileSystemInfo()
         {
+            Debug.Assert(!PathInternal.IsPartiallyQualified(FullPath), "FullPath should be fully qualified when constructed from directory enumeration");
+
             string fullPath = ToFullPath();
-            return FileSystemInfo.Create(fullPath, new string(FileName), ref _status);
+            string fileName = new(FileName);
+
+            FileSystemInfo info = IsDirectory
+                ? new DirectoryInfo(fullPath, fileName: fileName, isNormalized: true)
+                : new FileInfo(fullPath, fileName: fileName, isNormalized: true);
+
+            info.Init(ref _status);
+            return info;
         }
 
         /// <summary>

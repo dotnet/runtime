@@ -15,18 +15,6 @@ namespace System.IO
             _fileStatus.InitiallyDirectory = this is DirectoryInfo;
         }
 
-        internal static unsafe FileSystemInfo Create(string fullPath, string fileName, ref FileStatus fileStatus)
-        {
-            FileSystemInfo info = fileStatus.InitiallyDirectory
-                ? (FileSystemInfo)new DirectoryInfo(fullPath, fileName: fileName, isNormalized: true)
-                : new FileInfo(fullPath, fileName: fileName, isNormalized: true);
-
-            Debug.Assert(!PathInternal.IsPartiallyQualified(fullPath), $"'{fullPath}' should be fully qualified when constructed from directory enumeration");
-
-            info.Init(ref fileStatus);
-            return info;
-        }
-
         internal void Invalidate() => _fileStatus.Invalidate();
 
         internal unsafe void Init(ref FileStatus fileStatus)
