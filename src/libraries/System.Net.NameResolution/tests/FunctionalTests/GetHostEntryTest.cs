@@ -6,7 +6,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.NameResolution.Tests
@@ -263,7 +263,7 @@ namespace System.Net.NameResolution.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
         public async Task DnsGetHostEntry_PostCancelledToken_Throws()
         {
@@ -281,6 +281,7 @@ namespace System.Net.NameResolution.Tests
             try
             {
                 await Task.WhenAll(tasks);
+                throw new SkipTestException("GetHostEntryAsync should fail but it did not.");
             }
             catch { }
 
