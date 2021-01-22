@@ -4128,10 +4128,13 @@ protected:
     uint8_t** g_mark_list_copy;
     PER_HEAP
     uint8_t*** mark_list_piece_start;
+    PER_HEAP
     uint8_t*** mark_list_piece_end;
 #ifdef USE_REGIONS
-    PER_HEAP
-    size_t mark_list_piece_size;
+    PER_HEAP_ISOLATED
+    size_t g_mark_list_piece_size;
+    PER_HEAP_ISOLATED
+    uint8_t*** g_mark_list_piece;
 #endif //USE_REGIONS
 #endif //MARK_LIST
 

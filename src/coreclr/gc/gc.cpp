@@ -2110,6 +2110,10 @@ uint8_t**   gc_heap::g_mark_list;
 uint8_t**   gc_heap::g_mark_list_copy;
 size_t      gc_heap::mark_list_size;
 bool        gc_heap::mark_list_overflow;
+#if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
+uint8_t***  gc_heap::g_mark_list_piece;
+size_t      gc_heap::g_mark_list_piece_size;
+#endif //USE_REGIONS && MULTIPLE_HEAPS
 #endif //MARK_LIST
 
 seg_mapping* seg_mapping_table;
@@ -9380,31 +9384,7 @@ size_t gc_heap::sort_mark_list()
 #ifdef USE_REGIONS
     // first set the pieces for all regions to empty
     size_t region_count = get_basic_region_index_for_address (g_gc_highest_address) + 1;
-    if (mark_list_piece_size < region_count)
-    {
-        delete[] mark_list_piece_start;
-        delete[] mark_list_piece_end;
-
-        // at least double the size
-        size_t alloc_count = max ((mark_list_piece_size * 2), region_count);
-
-        mark_list_piece_start = new (nothrow) uint8_t** [alloc_count];
-        mark_list_piece_end   = new (nothrow) uint8_t** [alloc_count];
-        if (mark_list_piece_start && mark_list_piece_end)
-        {
-            mark_list_piece_size = alloc_count;
-        }
-        else
-        {
-            if (mark_list_piece_start)
-                delete[] mark_list_piece_start;
-            if (mark_list_piece_end)
-                delete[] mark_list_piece_end;
-            mark_list_piece_start = mark_list_piece_end = nullptr;
-            mark_list_piece_size = 0;
-            return 0;
-        }
-    }
+    assert (g_mark_list_piece_size >= region_count);
     for (size_t region_index = 0; region_index < region_count; region_index++)
     {
         mark_list_piece_start[region_index] = NULL;
@@ -10642,9 +10622,11 @@ heap_segment* gc_heap::get_free_region (int gen_number)
             }
         }
 #endif //BACKGROUND_GC
+        // we need to initialize the 1st brick - see expand_heap and relocate_pre_plug_info.
+        size_t first_brick = brick_of (heap_segment_mem (region));
+        set_brick (first_brick, ((gen_number <= max_generation) ? -1 : 0));
     }
 
-    // do we need to initialize the 1st brick??? see expand_heap and relocate_pre_plug_info.
     return region;
 }
 
@@ -12048,14 +12030,8 @@ gc_heap* gc_heap::make_gc_heap (
     res->alloc_context_count = 0;
 
 #ifdef MARK_LIST
-#ifdef USE_REGIONS
-    size_t region_count = get_basic_region_index_for_address (g_gc_highest_address) + 1;
-    res->mark_list_piece_size = 0;
-    size_t slot_count = region_count;
-#else //USE_REGIONS
-    size_t slot_count = n_heaps;
-#endif //USE_REGIONS
-    res->mark_list_piece_start = new (nothrow) uint8_t * *[slot_count];
+#ifndef USE_REGIONS
+    res->mark_list_piece_start = new (nothrow) uint8_t**[n_heaps];
     if (!res->mark_list_piece_start)
         return 0;
 
@@ -12063,18 +12039,15 @@ gc_heap* gc_heap::make_gc_heap (
 #pragma warning(push)
 #pragma warning(disable:22011) // Suppress PREFast warning about integer underflow/overflow
 #endif // _PREFAST_
-    res->mark_list_piece_end = new (nothrow) uint8_t**[slot_count + 32]; // +32 is padding to reduce false sharing
+    res->mark_list_piece_end = new (nothrow) uint8_t**[n_heaps + 32]; // +32 is padding to reduce false sharing
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif // _PREFAST_
 
     if (!res->mark_list_piece_end)
         return 0;
+#endif //!USE_REGIONS
 #endif //MARK_LIST
-
-#if defined(USE_REGIONS) && defined(MARK_LIST)
-    res->mark_list_piece_size = region_count;
-#endif //USE_REGIONS && MARK_LIST
 
 #endif //MULTIPLE_HEAPS
 
@@ -22960,6 +22933,29 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         }
 #endif //MH_SC_MARK
 
+#if defined(USE_REGIONS) && defined(MARK_LIST)
+        // first set the pieces for all regions to empty
+        size_t region_count = get_basic_region_index_for_address(g_gc_highest_address) + 1;
+        if (g_mark_list_piece_size < region_count)
+        {
+            delete[] g_mark_list_piece;
+
+            // at least double the size
+            size_t alloc_count = max ((g_mark_list_piece_size * 2), region_count);
+
+            // we need two arrays with alloc_count entries per heap
+            g_mark_list_piece = new (nothrow) uint8_t * *[alloc_count*2*n_heaps];
+            if (g_mark_list_piece != nullptr)
+            {
+                g_mark_list_piece_size = alloc_count;
+            }
+            else
+            {
+                g_mark_list_piece_size = 0;
+            }
+        }
+#endif //USE_REGIONS && MARK_LIST
+
         gc_t_join.restart();
 #endif //MULTIPLE_HEAPS
     }
@@ -22981,6 +22977,23 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         else
             mark_list_end = &mark_list [0];
         mark_list_index = &mark_list [0];
+
+#if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
+        if (g_mark_list_piece != nullptr)
+        {
+            // two arrays with alloc_count entries per heap
+            mark_list_piece_start = &g_mark_list_piece[heap_number * 2 * g_mark_list_piece_size];
+            mark_list_piece_end = &mark_list_piece_start[g_mark_list_piece_size];
+        }
+        else
+        {
+            // disable use of mark list altogether
+            mark_list_piece_start = nullptr;
+            mark_list_piece_end = nullptr;
+            mark_list_end = &mark_list[0];
+        }
+#endif // USE_REGIONS && MULTIPLE_HEAPS
+
 #endif //MARK_LIST
 
 #ifndef MULTIPLE_HEAPS
@@ -23260,11 +23273,13 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // null out the target of long weakref that were not promoted.
     GCScan::GcWeakPtrScan (GCHeap::Promote, condemned_gen_number, max_generation, &sc);
 
-#if defined(MULTIPLE_HEAPS) && defined(MARK_LIST)
+#ifdef MULTIPLE_HEAPS
+#ifdef MARK_LIST
     size_t total_mark_list_size = sort_mark_list();
+#endif //MARK_LIST
     // first thread to finish sorting will scan the sync syncblk cache
     if ((syncblock_scan_p == 0) && (Interlocked::Increment(&syncblock_scan_p) == 1))
-#endif //MULTIPLE_HEAPS && MARK_LIST
+#endif //MULTIPLE_HEAPS
     {
         // scan for deleted entries in the syncblk cache
         GCScan::GcWeakPtrScanBySingleThread(condemned_gen_number, max_generation, &sc);
@@ -25183,20 +25198,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS
         use_mark_list = TRUE;
-#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
-        // in server GC, we may have failed to allocate the mark_list_piece_start
-        // or mark_list_piece_end arrays for one of the heaps - in this case,
-        // we cannot use the mark list either
-        for (int i = 0; i < n_heaps; i++)
-        {
-            if (g_heaps[i]->mark_list_piece_size == 0)
-                use_mark_list = FALSE;
-        }
-        if (use_mark_list)
-#endif //MULTIPLE_HEAPS && USE_REGIONS
-        {
-            get_gc_data_per_heap()->set_mechanism_bit(gc_mark_list_bit);
-        }
+        get_gc_data_per_heap()->set_mechanism_bit(gc_mark_list_bit);
     }
     else
     {
