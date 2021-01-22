@@ -549,7 +549,7 @@ namespace System.Threading
                 int c = queues.Length;
                 Debug.Assert(c > 0, "There must at least be a queue for this thread.");
                 int maxIndex = c - 1;
-                int i = tl.random.Next(c);
+                uint i = tl.random.NextUInt32() % (uint)c;
                 while (c > 0)
                 {
                     i = (i < maxIndex) ? i + 1 : 0;
@@ -799,31 +799,6 @@ namespace System.Threading
         }
     }
 
-    // Simple random number generator. We don't need great randomness, we just need a little and for it to be fast.
-    internal struct FastRandom // xorshift prng
-    {
-        private uint _w, _x, _y, _z;
-
-        public FastRandom(int seed)
-        {
-            _x = (uint)seed;
-            _w = 88675123;
-            _y = 362436069;
-            _z = 521288629;
-        }
-
-        public int Next(int maxValue)
-        {
-            Debug.Assert(maxValue > 0);
-
-            uint t = _x ^ (_x << 11);
-            _x = _y; _y = _z; _z = _w;
-            _w = _w ^ (_w >> 19) ^ (t ^ (t >> 8));
-
-            return (int)(_w % (uint)maxValue);
-        }
-    }
-
     // Holds a WorkStealingQueue, and removes it from the list when this object is no longer referenced.
     internal sealed class ThreadPoolWorkQueueThreadLocals
     {
@@ -834,7 +809,7 @@ namespace System.Threading
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
         public readonly object? threadLocalCompletionCountObject;
-        public FastRandom random = new FastRandom(Environment.CurrentManagedThreadId); // mutable struct, do not copy or make readonly
+        public readonly Random.XoshiroImpl random = new Random.XoshiroImpl();
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {

@@ -17,7 +17,7 @@ namespace System
         /// As such, we are free to implement however we see fit, without back compat concerns around
         /// the sequence of numbers generated or what methods call what other methods.
         /// </summary>
-        internal sealed class Xoshiro256StarStarImpl : ImplBase
+        internal sealed class XoshiroImpl : ImplBase
         {
             // NextUInt64 is based on the algorithm from http://prng.di.unimi.it/xoshiro256starstar.c:
             //
@@ -31,7 +31,7 @@ namespace System
 
             private ulong _s0, _s1, _s2, _s3;
 
-            public unsafe Xoshiro256StarStarImpl()
+            public unsafe XoshiroImpl()
             {
                 ulong* ptr = stackalloc ulong[4];
                 do
@@ -44,6 +44,10 @@ namespace System
                 }
                 while ((_s0 | _s1 | _s2 | _s3) == 0); // at least one value must be non-zero
             }
+
+            /// <summary>Produces a value in the range [0, uint.MaxValue].</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by very few call sites
+            internal uint NextUInt32() => (uint)(NextUInt64() >> 32);
 
             /// <summary>Produces a value in the range [0, ulong.MaxValue].</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by a handful of "next" methods
