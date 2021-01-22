@@ -34,7 +34,7 @@ namespace System.IO
 
         // Checks if the main path (without following symbolic links) has the hidden attribute
         // Only call if Refresh has been successfully called at least once
-        private bool HasHiddenFlag =>
+        internal bool HasHiddenFlag =>
             (_mainCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
 
         // Checks if the main path (without following symbolic links) has the read-only attribute

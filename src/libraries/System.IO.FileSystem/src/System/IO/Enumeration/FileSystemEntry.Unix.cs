@@ -72,14 +72,22 @@ namespace System.IO.Enumeration
 
             FileAttributes attributes = default;
             if (isSymlink)
+            {
                 attributes |= FileAttributes.ReparsePoint;
+            }
             if (isDirectory)
+            {
                 attributes |= FileAttributes.Directory;
-            if (directoryEntry.Name[0] == '.')
+            }
+            if (entry.IsHidden)
+            {
                 attributes |= FileAttributes.Hidden;
+            }
 
             if (attributes == default)
+            {
                 attributes = FileAttributes.Normal;
+            }
 
             entry._initialAttributes = attributes;
             return attributes;
@@ -145,7 +153,9 @@ namespace System.IO.Enumeration
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
         public bool IsDirectory => _status.InitiallyDirectory;
-        public bool IsHidden => _directoryEntry.Name[0] == '.';
+        public bool IsHidden =>
+            (_directoryEntry.NameLength > 0 && _directoryEntry.Name[0] == '.') ||
+            (_status.IsMainCacheValid && _status.HasHiddenFlag);
 
         public FileSystemInfo ToFileSystemInfo()
         {
