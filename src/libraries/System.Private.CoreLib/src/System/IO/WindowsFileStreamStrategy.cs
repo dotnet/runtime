@@ -410,7 +410,7 @@ namespace System.IO
         private FileStreamCompletionSource? CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource) =>
             Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
-        private int ReadSpan(Span<byte> destination)
+        protected override int ReadSpan(Span<byte> destination)
         {
             Debug.Assert(!_useAsyncIO, "Must only be used when in synchronous mode");
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength),
@@ -635,7 +635,7 @@ namespace System.IO
                 _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, _buffer);
         }
 
-        private void WriteSpan(ReadOnlySpan<byte> source)
+        protected override void WriteSpan(ReadOnlySpan<byte> source)
         {
             Debug.Assert(!_useAsyncIO, "Must only be used when in synchronous mode");
 

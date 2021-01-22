@@ -378,7 +378,7 @@ namespace System.IO
         }
 
         /// <summary>Reads a block of bytes from the stream and writes the data in a given buffer.</summary>
-        private int ReadSpan(Span<byte> destination)
+        protected override int ReadSpan(Span<byte> destination)
         {
             PrepareForReading();
 
@@ -557,7 +557,7 @@ namespace System.IO
 
         /// <summary>Writes a block of bytes to the file stream.</summary>
         /// <param name="source">The buffer containing data to write to the stream.</param>
-        private void WriteSpan(ReadOnlySpan<byte> source)
+        protected override void WriteSpan(ReadOnlySpan<byte> source)
         {
             PrepareForWriting();
 

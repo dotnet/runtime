@@ -129,6 +129,10 @@ namespace System.IO
 
         protected abstract void FlushWriteBufferForWriteByte();
 
+        protected abstract int ReadSpan(Span<byte> destination);
+
+        protected abstract void WriteSpan(ReadOnlySpan<byte> source);
+
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         public override Task FlushAsync(CancellationToken cancellationToken)
