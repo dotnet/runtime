@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Engine = engine;
         }
 
-        internal ConcurrentDictionary<ServiceCacheKey, object> ResolvedServices { get; } = new ConcurrentDictionary<ServiceCacheKey, object>();
+        internal IDictionary<ServiceCacheKey, object> ResolvedServices { get; } = new ConcurrentDictionary<ServiceCacheKey, object>();
 
         public ServiceProviderEngine Engine { get; }
 

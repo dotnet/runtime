@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private object VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
         {
             bool lockTaken = false;
-            ConcurrentDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
+            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
 
             // Taking locks only once allows us to fork resolution process
             // on another thread without causing the deadlock because we
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private object ResolveService(ServiceCallSite callSite, RuntimeResolverContext context, RuntimeResolverLock lockType, ServiceProviderEngineScope serviceProviderEngine)
         {
             object resolved;
-            ConcurrentDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
+            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
             if (resolvedServices.TryGetValue(callSite.Cache.Key, out resolved))
             {
                 return resolved;
@@ -130,7 +130,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 AcquiredLocks = context.AcquiredLocks | lockType
             });
             serviceProviderEngine.CaptureDisposable(resolved);
-            return resolvedServices.GetOrAdd(callSite.Cache.Key, resolved);
+            lock (resolvedServices)
+            {
+                resolvedServices.Add(callSite.Cache.Key, resolved);
+            }
+            return resolved;
         }
 
         protected override object VisitConstant(ConstantCallSite constantCallSite, RuntimeResolverContext context)

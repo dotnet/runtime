@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public void Dispose_DoesntClearResolvedServices()
         {
             var serviceProviderEngineScope = new ServiceProviderEngineScope(null);
-            serviceProviderEngineScope.ResolvedServices.TryAdd(new ServiceCacheKey(typeof(IFakeService), 0), null);
+            serviceProviderEngineScope.ResolvedServices.Add(new ServiceCacheKey(typeof(IFakeService), 0), null);
             serviceProviderEngineScope.Dispose();
 
             Assert.Single(serviceProviderEngineScope.ResolvedServices);
