@@ -335,7 +335,7 @@ namespace System.IO
         /// This will fail if someone else moved the UnixFileStream's handle or if
         /// our position updating code is incorrect.
         /// </summary>
-        private void VerifyOSHandlePosition()
+        protected void VerifyOSHandlePosition()
         {
             bool verifyPosition = _exposedHandle; // in release, only verify if we've given out the handle such that someone else could be manipulating it
 #if DEBUG
@@ -410,7 +410,7 @@ namespace System.IO
 
         internal override bool IsClosed => _fileHandle.IsClosed;
 
-        private static bool IsIoRelatedException(Exception e) =>
+        protected static bool IsIoRelatedException(Exception e) =>
             // These all derive from IOException
             //     DirectoryNotFoundException
             //     DriveNotFoundException
@@ -431,7 +431,7 @@ namespace System.IO
         /// If the array hasn't been allocated, this will lazily allocate it.
         /// </summary>
         /// <returns>The buffer.</returns>
-        private byte[] GetBuffer()
+        protected byte[] GetBuffer()
         {
             Debug.Assert(_buffer == null || _buffer.Length == _bufferLength);
             if (_buffer == null)
@@ -463,7 +463,7 @@ namespace System.IO
         }
 
         /// <summary>Dumps any read data in the buffer and rewinds our position in the stream, accordingly, as necessary.</summary>
-        private void FlushReadBuffer()
+        protected void FlushReadBuffer()
         {
             // Reading is done by blocks from the file, but someone could read
             // 1 byte from the buffer then write.  At that point, the OS's file
