@@ -127,14 +127,15 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
-        if (Assemblies == null)
+
+        if (Assemblies?.Length == 0)
         {
-            Log.LogError($"Assemblies should not be null.");
+            Log.LogError("Cannot build Wasm app without any assemblies");
             return false;
         }
 
         var _assemblies = new List<string>();
-        foreach (var asm in Assemblies)
+        foreach (var asm in Assemblies!)
         {
             if (!_assemblies.Contains(asm))
                 _assemblies.Add(asm);
