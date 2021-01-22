@@ -745,7 +745,7 @@ public:
     void* GetUMEntryThunk()
     {
         LIMITED_METHOD_CONTRACT;
-        return (((UINT_PTR)m_pUMEntryThunk & 1) ? NULL : m_pUMEntryThunk);
+        return m_pUMEntryThunk;
     }
 
 private:
