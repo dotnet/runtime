@@ -130,10 +130,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 AcquiredLocks = context.AcquiredLocks | lockType
             });
             serviceProviderEngine.CaptureDisposable(resolved);
-            lock (resolvedServices)
-            {
-                resolvedServices.Add(callSite.Cache.Key, resolved);
-            }
+            resolvedServices.Add(callSite.Cache.Key, resolved);
             return resolved;
         }
 

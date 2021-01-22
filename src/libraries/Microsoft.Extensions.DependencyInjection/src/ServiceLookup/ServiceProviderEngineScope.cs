@@ -20,10 +20,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private bool _disposed;
         private readonly object _disposelock = new object();
 
-        public ServiceProviderEngineScope(ServiceProviderEngine engine, bool forRoot = false)
+        public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
         {
             Engine = engine;
-            ResolvedServices = forRoot ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>();
+            ResolvedServices = isRoot ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>();
         }
 
         internal IDictionary<ServiceCacheKey, object> ResolvedServices { get; }
