@@ -25,7 +25,7 @@ BOOL DLL_EXPORT STDMETHODVCALLTYPE NextUInt(/* out */ uint32_t *n)
 typedef int (STDMETHODVCALLTYPE *CALLBACKPROC)(int n);
 
 extern "C"
-BOOL DLL_EXPORT InvokeCallback(CALLBACKPROC cb, int* n)
+BOOL DLL_EXPORT STDMETHODVCALLTYPE InvokeCallback(CALLBACKPROC cb, int* n)
 {
     if (cb == nullptr || n == nullptr)
         return FALSE;

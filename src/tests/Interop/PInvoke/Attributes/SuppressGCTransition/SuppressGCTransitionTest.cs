@@ -24,32 +24,32 @@ unsafe static class SuppressGCTransitionNative
     [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "NextUInt")]
     public static extern unsafe bool NextUInt_NoInline_GCTransition(int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "InvokeCallback")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "InvokeCallback")]
     [SuppressGCTransition]
     public static extern unsafe int InvokeCallbackFuncPtr_Inline_NoGCTransition(delegate* unmanaged[Cdecl]<int, int> cb, int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "InvokeCallback")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "InvokeCallback")]
     public static extern unsafe int InvokeCallbackFuncPtr_Inline_GCTransition(delegate* unmanaged[Cdecl]<int, int> cb, int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "InvokeCallback")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "InvokeCallback")]
     [SuppressGCTransition]
     public static extern unsafe bool InvokeCallbackFuncPtr_NoInline_NoGCTransition(delegate* unmanaged[Cdecl]<int, int> cb, int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "InvokeCallback")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "InvokeCallback")]
     public static extern unsafe bool InvokeCallbackFuncPtr_NoInline_GCTransition(delegate* unmanaged[Cdecl]<int, int> cb, int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "InvokeCallback")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "InvokeCallback")]
     [SuppressGCTransition]
     public static extern unsafe int InvokeCallbackVoidPtr_Inline_NoGCTransition(void* cb, int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "InvokeCallback")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "InvokeCallback")]
     public static extern unsafe int InvokeCallbackVoidPtr_Inline_GCTransition(void* cb, int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "InvokeCallback")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "InvokeCallback")]
     [SuppressGCTransition]
     public static extern unsafe bool InvokeCallbackVoidPtr_NoInline_NoGCTransition(void* cb, int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "InvokeCallback")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "InvokeCallback")]
     public static extern unsafe bool InvokeCallbackVoidPtr_NoInline_GCTransition(void* cb, int* n);
 
     private static IntPtr nativeLibrary;
