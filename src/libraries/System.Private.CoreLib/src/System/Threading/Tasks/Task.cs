@@ -2851,6 +2851,11 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
+                if (Thread.CurrentThread.IsThreadPoolThread)
+                {
+                    ThreadPool.RecordBlockingCallsite();
+                }
+
                 var mres = new SetOnInvokeMres();
                 try
                 {

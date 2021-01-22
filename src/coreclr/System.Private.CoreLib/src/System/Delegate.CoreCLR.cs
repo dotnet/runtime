@@ -161,7 +161,7 @@ namespace System
                 return GetType().GetHashCode();
         }
 
-        protected virtual MethodInfo GetMethodImpl()
+        protected internal virtual MethodInfo GetMethodImpl()
         {
             if ((_methodBase == null) || !(_methodBase is MethodInfo))
             {

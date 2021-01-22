@@ -104,7 +104,7 @@ namespace System
             return base.GetHashCode();
         }
 
-        protected override MethodInfo GetMethodImpl()
+        protected internal override MethodInfo GetMethodImpl()
         {
             if (delegates != null)
                 return delegates[delegates.Length - 1].Method;

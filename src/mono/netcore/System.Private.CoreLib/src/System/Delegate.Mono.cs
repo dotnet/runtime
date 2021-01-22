@@ -533,7 +533,7 @@ namespace System
             return (m != null ? m.GetHashCode() : GetType().GetHashCode()) ^ RuntimeHelpers.GetHashCode(_target);
         }
 
-        protected virtual MethodInfo GetMethodImpl()
+        protected internal virtual MethodInfo GetMethodImpl()
         {
             if (method_info != null)
                 return method_info;

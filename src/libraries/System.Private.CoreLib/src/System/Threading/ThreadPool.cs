@@ -514,6 +514,13 @@ namespace System.Threading
             if (loggingEnabled && FrameworkEventSource.Log.IsEnabled())
                 FrameworkEventSource.Log.ThreadPoolEnqueueWorkObject(callback);
 
+            if (ThreadPoolBlockingQueue.IsEnabled &&
+                ThreadPoolBlockingQueue.RequiresMitigation(callback))
+            {
+                callback = ThreadPoolBlockingQueue.Enqueue(callback);
+                forceGlobal = true;
+            }
+
             ThreadPoolWorkQueueThreadLocals? tl = null;
             if (!forceGlobal)
                 tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
@@ -688,6 +695,18 @@ namespace System.Threading
                     //
                     workQueue.EnsureThreadRequested();
 
+                    if (ThreadPoolBlockingQueue.IsEnabled)
+                    {
+                        if (ThreadPoolBlockingQueue.RequiresMitigation(workItem))
+                        {
+                            workItem = ThreadPoolBlockingQueue.Enqueue(workItem);
+                        }
+                        else
+                        {
+                            ThreadPoolBlockingQueue.RegisterForBlockingDetection(workItem);
+                        }
+                    }
+
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
@@ -713,6 +732,10 @@ namespace System.Threading
 
                     // Release refs
                     workItem = null;
+                    if (ThreadPoolBlockingQueue.IsEnabled)
+                    {
+                        ThreadPoolBlockingQueue.ClearRegistration();
+                    }
 
                     // Return to clean ExecutionContext and SynchronizationContext. This may call user code (AsyncLocal value
                     // change notifications).
@@ -771,7 +794,7 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void DispatchWorkItemWithWorkerTracking(object workItem, Thread currentThread)
+        internal static void DispatchWorkItemWithWorkerTracking(object workItem, Thread currentThread)
         {
             Debug.Assert(ThreadPool.EnableWorkerTracking);
             Debug.Assert(currentThread == Thread.CurrentThread);
@@ -846,6 +869,13 @@ namespace System.Threading
 
     internal abstract class QueueUserWorkItemCallbackBase : IThreadPoolWorkItem
     {
+        protected internal readonly Delegate _delegate;
+
+        protected QueueUserWorkItemCallbackBase(Delegate deleg)
+        {
+            _delegate = deleg;
+        }
+
 #if DEBUG
         private int executed;
 
@@ -884,6 +914,7 @@ namespace System.Threading
         };
 
         internal QueueUserWorkItemCallback(WaitCallback callback, object? state, ExecutionContext context)
+            : base (callback)
         {
             Debug.Assert(context != null);
 
@@ -907,6 +938,7 @@ namespace System.Threading
         private readonly ExecutionContext _context;
 
         internal QueueUserWorkItemCallback(Action<TState> callback, TState state, ExecutionContext context)
+            : base(callback)
         {
             Debug.Assert(callback != null);
 
@@ -933,6 +965,7 @@ namespace System.Threading
         private readonly object? _state;
 
         internal QueueUserWorkItemCallbackDefaultContext(WaitCallback callback, object? state)
+            : base(callback)
         {
             Debug.Assert(callback != null);
 
@@ -961,6 +994,7 @@ namespace System.Threading
         private readonly TState _state;
 
         internal QueueUserWorkItemCallbackDefaultContext(Action<TState> callback, TState state)
+            : base(callback)
         {
             Debug.Assert(callback != null);
 

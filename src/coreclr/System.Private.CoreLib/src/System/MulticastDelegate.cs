@@ -523,7 +523,7 @@ namespace System
             return base.GetTarget();
         }
 
-        protected override MethodInfo GetMethodImpl()
+        protected internal override MethodInfo GetMethodImpl()
         {
             if (_invocationCount != (IntPtr)0 && _invocationList != null)
             {
