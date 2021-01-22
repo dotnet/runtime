@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
 
 namespace System.IO
 {
@@ -40,28 +41,23 @@ namespace System.IO
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            int offset = 0;
-            int count = buffer.Length;
-            while (count > 0)
+            while (!buffer.IsEmpty)
             {
                 if (_currentChunk != null)
                 {
                     int remaining = _currentChunk._buffer.Length - _currentChunk._freeOffset;
                     if (remaining > 0)
                     {
-                        int toCopy = Math.Min(remaining, count);
-                        ReadOnlySpan<byte> source = buffer.Slice(offset, toCopy);
-                        Span<byte> destination = new Span<byte>(_currentChunk._buffer, _currentChunk._freeOffset, toCopy);
-                        source.CopyTo(destination);
-                        count -= toCopy;
-                        offset += toCopy;
+                        int toCopy = Math.Min(remaining, buffer.Length);
+                        buffer.Slice(0, toCopy).CopyTo(new Span<byte>(_currentChunk._buffer, _currentChunk._freeOffset, toCopy));
+                        buffer = buffer.Slice(toCopy);
                         _totalLength += toCopy;
                         _currentChunk._freeOffset += toCopy;
                         continue;
                     }
                 }
 
-                AppendChunk(count);
+                AppendChunk(buffer.Length);
             }
         }
 

@@ -21,7 +21,7 @@ namespace System.IO.Compression
         private bool _isDisposed;                           // Prevents multiple disposals
         private readonly int _windowBits;                   // The WindowBits parameter passed to Inflater construction
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
-        private MemoryHandle _inputBufferHandle;       // The handle to the buffer that provides input to _zlibStream
+        private MemoryHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
 
@@ -183,7 +183,7 @@ namespace System.IO.Compression
             Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer.Length);
             Debug.Assert(!IsInputBufferHandleAllocated);
 
-            SetInput(inputBuffer.AsMemory().Slice(startIndex, count));
+            SetInput(inputBuffer.AsMemory(startIndex, count));
         }
 
         public unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)

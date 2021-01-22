@@ -920,7 +920,7 @@ namespace System.IO.Compression
                 {
                     // The buffer stream is either malicious or poorly implemented and returned a number of
                     // bytes larger than the buffer supplied to it.
-                    throw new InvalidDataException(SR.GenericInvalidData);
+                    return Task.FromException(new InvalidDataException(SR.GenericInvalidData));
                 }
 
                 return WriteAsyncCore(buffer.AsMemory().Slice(offset, count), cancellationToken).AsTask();
