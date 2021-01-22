@@ -27,6 +27,10 @@ namespace System.Net.Sockets.Tests
             using (sender)
             using (receiver)
             {
+                // accept() will create a DualMode socket on Mac (https://github.com/dotnet/runtime/issues/47335),
+                // while recvmsg() does not work with DualMode on that OS, so we need to flip the flag back:
+                if (ipv6) receiver.DualMode = false;
+
                 byte[] sendBuffer = { 1, 2, 3 };
                 sender.Send(sendBuffer);
 
