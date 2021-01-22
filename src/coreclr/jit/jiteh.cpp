@@ -4074,7 +4074,6 @@ void Compiler::verCheckNestingLevel(EHNodeDsc* root)
     }
 }
 
-
 #if defined(FEATURE_EH_FUNCLETS)
 
 #if defined(TARGET_ARM)

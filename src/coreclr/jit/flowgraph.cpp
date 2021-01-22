@@ -9,7 +9,6 @@
 
 // Flowgraph Miscellany
 
-
 //------------------------------------------------------------------------
 // blockNeedsGCPoll: Determine whether the block needs GC poll inserted
 //

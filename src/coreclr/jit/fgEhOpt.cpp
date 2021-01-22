@@ -9,7 +9,6 @@
 
 // Flowgraph EH Optimizations
 
-
 //------------------------------------------------------------------------
 // fgRemoveEmptyFinally: Remove try/finallys where the finally is empty
 //
