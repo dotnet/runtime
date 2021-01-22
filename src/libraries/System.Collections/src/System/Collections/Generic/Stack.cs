@@ -31,6 +31,7 @@ namespace System.Collections.Generic
         private int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
 
         private const int DefaultCapacity = 4;
+        private const int MaxArrayLength = 0X7FEFFFFF; // This is the maximum array length value from Array.MaxArrayLength
 
         public Stack()
         {
@@ -309,6 +310,13 @@ namespace System.Collections.Generic
                 {
                     newCapacity *= 2;
                 }
+
+                if ((uint)newCapacity > MaxArrayLength)
+                {
+                    newCapacity = MaxArrayLength;
+                    if (newCapacity < capacity) newCapacity = capacity;
+                }
+
                 Array.Resize(ref _array, newCapacity);
             }
 
