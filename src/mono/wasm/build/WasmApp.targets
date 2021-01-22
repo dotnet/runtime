@@ -120,13 +120,14 @@
     <PropertyGroup>
       <WasmIcuDataFileName Condition="'$(WasmInvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
 
-      <_WasmNativeAssetsSrcDir Condition="'%(_WasmAssemblies.FileName)%(_WasmAssemblies.Extension)' == 'System.Private.CoreLib.dll'">%(_WasmAssemblies.RelativeDir)</_WasmNativeAssetsSrcDir>
-      <_WasmNativeAssetsSrcDir Condition="'$(_WasmNativeAssetsSrcDir)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\</_WasmNativeAssetsSrcDir>
+      <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
+      <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmNativeAsset Include="$(_WasmNativeAssetsSrcDir)dotnet.wasm" />
-      <WasmNativeAsset Include="$(_WasmNativeAssetsSrcDir)dotnet.js" />
+      <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
 
       <WasmNativeAsset Include="$(PublishDir)\$(WasmIcuDataFileName)" Condition="'$(WasmInvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(PublishDir)\dotnet.timezones.blat" />
@@ -228,6 +229,11 @@
     <Exec Command="bash -c '$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/pinvoke.c -c -o pinvoke.o'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
     <Exec Command="bash -c '$(_EmccCommand) $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o dotnet.js'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" StandardOutputImportance="Low" />
     <Exec Condition="'$(WasmNativeStrip)' == 'true'" Command="bash -c '$(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf dotnet.wasm -o dotnet.wasm'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(WasmBuildDir)" />
+
+    <ItemGroup>
+      <WasmNativeAsset Include="$(WasmBuildDir)\dotnet.wasm" />
+      <WasmNativeAsset Include="$(WasmBuildDir)\dotnet.js" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_GenerateDriverGenC" Condition="'$(RunAOTCompilation)' != 'true' and '$(WasmProfilers)' != ''">
