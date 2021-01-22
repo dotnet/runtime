@@ -187,7 +187,7 @@ public:
         // If we get here we must have at least one stack slot left to shuffle (this method should only be called
         // when AnythingToShuffle(pArg) == true).
         if (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize)
-        {            
+        {
             const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
             index = byteIndex / TARGET_POINTER_SIZE;
             m_currentByteStackIndex += TARGET_POINTER_SIZE;
@@ -1375,31 +1375,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         // Also, mark this delegate as an unmanaged function pointer wrapper.
         delObj->SetInvocationCount(DELEGATE_MARKER_UNMANAGEDFPTR);
     }
-
-#if defined(TARGET_X86)
-    GCPROTECT_BEGIN(delObj);
-
-    Stub *pInterceptStub = NULL;
-
-    {
-        GCX_PREEMP();
-
-        MethodDesc *pStubMD = pClass->m_pForwardStubMD;
-        _ASSERTE(pStubMD != NULL && pStubMD->IsILStub());
-
-    }
-
-    if (pInterceptStub != NULL)
-    {
-        // install the outer-most stub to sync block
-        SyncBlock *pSyncBlock = delObj->GetSyncBlock();
-
-        InteropSyncBlockInfo *pInteropInfo = pSyncBlock->GetInteropInfo();
-        VERIFY(pInteropInfo->SetInterceptStub(pInterceptStub));
-    }
-
-    GCPROTECT_END();
-#endif // TARGET_X86
 
     return delObj;
 }
