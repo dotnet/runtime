@@ -335,7 +335,7 @@ namespace System.IO
             }
         }
 
-        private void FlushWriteBufferForWriteByte()
+        protected override void FlushWriteBufferForWriteByte()
         {
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();

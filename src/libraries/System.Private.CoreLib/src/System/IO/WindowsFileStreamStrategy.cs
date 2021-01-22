@@ -317,7 +317,7 @@ namespace System.IO
             return flushTask;
         }
 
-        private void FlushWriteBufferForWriteByte() => FlushWriteBuffer();
+        protected override void FlushWriteBufferForWriteByte() => FlushWriteBuffer();
 
         // Writes are buffered.  Anytime the buffer fills up
         // (_writePos + delta > _bufferSize) or the buffer switches to reading
