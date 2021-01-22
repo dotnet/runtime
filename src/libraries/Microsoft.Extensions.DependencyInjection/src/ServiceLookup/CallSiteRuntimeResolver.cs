@@ -116,7 +116,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private object ResolveService(ServiceCallSite callSite, RuntimeResolverContext context, RuntimeResolverLock lockType, ServiceProviderEngineScope serviceProviderEngine)
         {
-            object resolved;
             IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
 
             // Note: This method has already taken lock by the caller for resolution and access synchronization.
@@ -126,7 +125,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 (lockType == RuntimeResolverLock.Root && resolvedServices is ConcurrentDictionary<ServiceCacheKey, object>) ||
                 (lockType == RuntimeResolverLock.Scope && Monitor.IsEntered(resolvedServices)));
 
-            if (resolvedServices.TryGetValue(callSite.Cache.Key, out resolved))
+            if (resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
             {
                 return resolved;
             }
