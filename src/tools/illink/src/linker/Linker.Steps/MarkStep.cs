@@ -33,7 +33,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -57,6 +56,7 @@ namespace Mono.Linker.Steps
 		protected List<MethodBody> _unreachableBodies;
 
 		readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> _pending_isinst_instr;
+		UnreachableBlocksOptimizer _unreachableBlocksOptimizer;
 
 #if DEBUG
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
@@ -182,6 +182,7 @@ namespace Mono.Linker.Steps
 		public virtual void Process (LinkContext context)
 		{
 			_context = context;
+			_unreachableBlocksOptimizer = new UnreachableBlocksOptimizer (_context);
 
 			Initialize ();
 			Process ();
@@ -2528,6 +2529,8 @@ namespace Mono.Linker.Steps
 
 			if (CheckProcessed (method))
 				return;
+
+			_unreachableBlocksOptimizer.ProcessMethod (method);
 
 			if (!markedForCall)
 				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, method), method);
