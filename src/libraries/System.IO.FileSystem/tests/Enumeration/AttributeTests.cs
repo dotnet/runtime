@@ -116,9 +116,8 @@ namespace System.IO.Tests.Enumeration
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         public void IsHiddenAttribute_Windows_OSX()
         {
-            // Put a period in front to make it hidden on Unix
+            // Windows and MacOS hide a file by setting the hidden attribute
             IsHiddenAttributeInternal(useDotPrefix: false, useHiddenFlag: true);
-
         }
 
 
@@ -126,7 +125,7 @@ namespace System.IO.Tests.Enumeration
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void IsHiddenAttribute_Unix()
         {
-            // Windows and MacOS hide a file by setting the hidden attribute
+            // Put a period in front to make it hidden on Unix
             IsHiddenAttributeInternal(useDotPrefix: true, useHiddenFlag: false);
         }
 
