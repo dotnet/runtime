@@ -4447,6 +4447,9 @@ namespace System
                     copy.Append(dest.AsSpan(start, dest.Length - start));
 
                     dest.Length = start;
+
+                    // CS8350 & CS8352: We can't pass `copy` and `dest` as arguments together as that could leak the scope of the above stackalloc
+                    // As a workaround, re-create the Span in a way that avoids analysis
                     ReadOnlySpan<char> copySpan = MemoryMarshal.CreateReadOnlySpan(ref copy.GetPinnableReference(), copy.Length);
                     UriHelper.EscapeString(copySpan, ref dest, checkExistingEscaped: true, '\\');
                     start = dest.Length;
@@ -4506,6 +4509,9 @@ namespace System
                     copy.Append(dest.AsSpan(start, dest.Length - start));
 
                     dest.Length = start;
+
+                    // CS8350 & CS8352: We can't pass `copy` and `dest` as arguments together as that could leak the scope of the above stackalloc
+                    // As a workaround, re-create the Span in a way that avoids analysis
                     ReadOnlySpan<char> copySpan = MemoryMarshal.CreateReadOnlySpan(ref copy.GetPinnableReference(), copy.Length);
                     UriHelper.EscapeString(copySpan, ref dest, checkExistingEscaped: !IsImplicitFile, '?', '#');
                     start = dest.Length;

@@ -191,6 +191,8 @@ namespace System
             {
                 dest.Append(stringToEscape.Slice(0, i));
 
+                // CS8350 & CS8352: We can't pass `noEscape` and `dest` as arguments together as that could leak the scope of the above stackalloc
+                // As a workaround, re-create the Span in a way that avoids analysis
                 ReadOnlySpan<bool> noEscapeCopy = MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(noEscape), noEscape.Length);
 
                 EscapeStringToBuilder(stringToEscape.Slice(i), ref dest, noEscapeCopy, checkExistingEscaped);
