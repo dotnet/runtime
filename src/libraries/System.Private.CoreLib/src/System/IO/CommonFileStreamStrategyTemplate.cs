@@ -298,8 +298,6 @@ namespace System.IO
 
         public override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public override void SetLength(long value) => SetLengthInternal(value);
-
         internal override SafeFileHandle SafeFileHandle
         {
             get

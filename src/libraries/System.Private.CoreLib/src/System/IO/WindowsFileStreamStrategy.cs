@@ -353,7 +353,7 @@ namespace System.IO
             _writePos = 0;
         }
 
-        private void SetLengthInternal(long value)
+        public override void SetLength(long value)
         {
             // Handle buffering updates.
             if (_writePos > 0)

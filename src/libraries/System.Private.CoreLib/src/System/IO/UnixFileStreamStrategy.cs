@@ -354,7 +354,7 @@ namespace System.IO
 
         /// <summary>Sets the length of this stream to the given value.</summary>
         /// <param name="value">The new length of the stream.</param>
-        private void SetLengthInternal(long value)
+        public override void SetLength(long value)
         {
             FlushInternalBuffer();
 
