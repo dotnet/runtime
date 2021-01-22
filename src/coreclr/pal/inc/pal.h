@@ -4052,9 +4052,9 @@ PALIMPORT int __cdecl _finite(double);
 PALIMPORT int __cdecl _isnan(double);
 PALIMPORT double __cdecl _copysign(double, double);
 PALIMPORT double __cdecl acos(double);
-PALIMPORT double __cdecl acosh(double);
+PALIMPORT double __cdecl acosh(double) THROW_DECL;
 PALIMPORT double __cdecl asin(double);
-PALIMPORT double __cdecl asinh(double);
+PALIMPORT double __cdecl asinh(double) THROW_DECL;
 PALIMPORT double __cdecl atan(double) THROW_DECL;
 PALIMPORT double __cdecl atanh(double)
 #ifndef __sun
@@ -4074,10 +4074,10 @@ PALIMPORT double __cdecl exp(double);
 PALIMPORT double __cdecl fabs(double);
 PALIMPORT double __cdecl floor(double);
 PALIMPORT double __cdecl fmod(double, double);
-PALIMPORT double __cdecl fma(double, double, double);
+PALIMPORT double __cdecl fma(double, double, double) THROW_DECL;
 PALIMPORT int __cdecl ilogb(double);
 PALIMPORT double __cdecl log(double);
-PALIMPORT double __cdecl log2(double);
+PALIMPORT double __cdecl log2(double) THROW_DECL;
 PALIMPORT double __cdecl log10(double);
 PALIMPORT double __cdecl modf(double, double*);
 PALIMPORT double __cdecl pow(double, double);
@@ -4092,9 +4092,9 @@ PALIMPORT int __cdecl _finitef(float);
 PALIMPORT int __cdecl _isnanf(float);
 PALIMPORT float __cdecl _copysignf(float, float);
 PALIMPORT float __cdecl acosf(float);
-PALIMPORT float __cdecl acoshf(float);
+PALIMPORT float __cdecl acoshf(float) THROW_DECL;
 PALIMPORT float __cdecl asinf(float);
-PALIMPORT float __cdecl asinhf(float);
+PALIMPORT float __cdecl asinhf(float) THROW_DECL;
 PALIMPORT float __cdecl atanf(float)
 #ifndef __sun
 THROW_DECL
@@ -4118,10 +4118,10 @@ PALIMPORT float __cdecl expf(float);
 PALIMPORT float __cdecl fabsf(float);
 PALIMPORT float __cdecl floorf(float);
 PALIMPORT float __cdecl fmodf(float, float);
-PALIMPORT float __cdecl fmaf(float, float, float);
+PALIMPORT float __cdecl fmaf(float, float, float) THROW_DECL;
 PALIMPORT int __cdecl ilogbf(float);
 PALIMPORT float __cdecl logf(float);
-PALIMPORT float __cdecl log2f(float);
+PALIMPORT float __cdecl log2f(float) THROW_DECL;
 PALIMPORT float __cdecl log10f(float);
 PALIMPORT float __cdecl modff(float, float*);
 PALIMPORT float __cdecl powf(float, float);
