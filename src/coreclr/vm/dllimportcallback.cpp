@@ -644,6 +644,9 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCal
         // Set WinAPI as the default
         callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
 
+        bool foundBaseCallConv = false;
+        bool useMemberFunctionVariant = false;
+
         CaValue* arrayOfTypes = &namedArgs[0].val;
         for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
         {
@@ -653,21 +656,64 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCal
             // looking for type names that are equivalent in ASCII and UTF-8,
             // using a const char constant is acceptable. Type name strings are
             // in Fully Qualified form, so we include the ',' delimiter.
-            if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvCdecl,"))
+            if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, CMOD_CALLCONV_NAMESPACE "." CMOD_CALLCONV_NAME_CDECL ","))
             {
+                if (foundBaseCallConv)
+                {
+                    // We only allow one base calling convention at a time.
+                    return false;
+                }
                 callConvLocal = CorInfoCallConvExtension::C;
+                foundBaseCallConv = true;
             }
-            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvStdcall,"))
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, CMOD_CALLCONV_NAMESPACE "." CMOD_CALLCONV_NAME_STDCALL ","))
             {
+                if (foundBaseCallConv)
+                {
+                    // We only allow one base calling convention at a time.
+                    return false;
+                }
                 callConvLocal = CorInfoCallConvExtension::Stdcall;
+                foundBaseCallConv = true;
             }
-            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvFastcall,"))
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, CMOD_CALLCONV_NAMESPACE "." CMOD_CALLCONV_NAME_FASTCALL ","))
             {
+                if (foundBaseCallConv)
+                {
+                    // We only allow one base calling convention at a time.
+                    return false;
+                }
                 callConvLocal = CorInfoCallConvExtension::Fastcall;
+                foundBaseCallConv = true;
             }
-            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, "System.Runtime.CompilerServices.CallConvThiscall,"))
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, CMOD_CALLCONV_NAMESPACE "." CMOD_CALLCONV_NAME_THISCALL ","))
             {
+                if (foundBaseCallConv)
+                {
+                    // We only allow one base calling convention at a time.
+                    return false;
+                }
                 callConvLocal = CorInfoCallConvExtension::Thiscall;
+                foundBaseCallConv = true;
+            }
+            else if (BeginsWith(typeNameValue.str.cbStr, typeNameValue.str.pStr, CMOD_CALLCONV_NAMESPACE "." CMOD_CALLCONV_NAME_MEMBERFUNCTION ","))
+            {
+                useMemberFunctionVariant = true;
+            }
+        }
+        if (useMemberFunctionVariant)
+        {
+            switch (callConvLocal)
+            {
+            case CorInfoCallConvExtension::C:
+                callConvLocal = CorInfoCallConvExtension::CMemberFunction;
+                break;
+            case CorInfoCallConvExtension::Stdcall:
+                callConvLocal = CorInfoCallConvExtension::StdcallMemberFunction;
+                break;
+            case CorInfoCallConvExtension::Fastcall:
+                callConvLocal = CorInfoCallConvExtension::FastcallMemberFunction;
+                break;
             }
         }
     }

@@ -381,6 +381,9 @@ namespace Internal.JitInterface
         Thiscall,
         Fastcall
         // New calling conventions supported with the extensible calling convention encoding go here.
+        CMemberFunction,
+        StdcallMemberFunction,
+        FastcallMemberFunction
     }
 
     public enum CORINFO_CALLINFO_FLAGS

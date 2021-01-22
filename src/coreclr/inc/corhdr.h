@@ -1874,6 +1874,7 @@ typedef enum LoadHintEnum
 #define CMOD_CALLCONV_NAME_THISCALL             "CallConvThiscall"
 #define CMOD_CALLCONV_NAME_FASTCALL             "CallConvFastcall"
 #define CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION "CallConvSuppressGCTransition"
+#define CMOD_CALLCONV_NAME_MEMBERFUNCTION       "CallConvMemberFunction"
 
 #endif // MACROS_NOT_SUPPORTED
 

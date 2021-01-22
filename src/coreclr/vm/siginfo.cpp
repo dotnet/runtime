@@ -5351,6 +5351,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 
     *callConvOut = CorInfoCallConvExtension::Managed;
     bool found = false;
+    bool useMemberFunctionVariant = false;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
         BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
@@ -5384,6 +5385,12 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
             continue;
         }
 
+        if (::strcmp(typeName, CMOD_CALLCONV_NAME_MEMBERFUNCTION) == 0)
+        {
+            useMemberFunctionVariant = true;
+            continue;
+        }
+
         const struct {
             LPCSTR name;
             CorInfoCallConvExtension value;
@@ -5408,6 +5415,22 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
                 *callConvOut = callConv.value;
                 found = true;
             }
+        }
+    }
+
+    if (useMemberFunctionVariant)
+    {
+        switch (*callConvOut)
+        {
+        case CorInfoCallConvExtension::C:
+            *callConvOut = CorInfoCallConvExtension::CMemberFunction;
+            break;
+        case CorInfoCallConvExtension::Stdcall:
+            *callConvOut = CorInfoCallConvExtension::StdcallMemberFunction;
+            break;
+        case CorInfoCallConvExtension::Fastcall:
+            *callConvOut = CorInfoCallConvExtension::FastcallMemberFunction;
+            break;
         }
     }
 
