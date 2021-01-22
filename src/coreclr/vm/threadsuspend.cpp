@@ -3020,41 +3020,8 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
 
     //////////////////////////////////////
     // Get and save the thread's context
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    _ASSERTE((pCtx->ContextFlags & CONTEXT_XSTATE) ==
-        (pCurrentThreadCtx->ContextFlags & CONTEXT_XSTATE));
-
-    // copy AVX feature, if enabled
-    if (pCurrentThreadCtx->ContextFlags & CONTEXT_XSTATE)
-    {
-        DWORD length;
-        PVOID pSrcAvx = LocateXStateFeature(pCurrentThreadCtx, XSTATE_MASK_AVX, &length);
-        if (pSrcAvx)
-        {
-            DWORD length1;
-            PVOID pDstAvx = LocateXStateFeature(pCtx, XSTATE_MASK_AVX, &length1);
-            _ASSERTE(pDstAvx);
-            _ASSERTE(length = length1);
-            CopyMemory(pDstAvx, pSrcAvx, length1);
-        }
-        else
-        {
-            // if source does not have AVX feature, the destination should not have it either.
-            _ASSERTE(!LocateXStateFeature(pCtx, XSTATE_MASK_AVX, &length));
-        }
-    }
-#endif
-
-    CopyMemory(pCtx, pCurrentThreadCtx, sizeof(CONTEXT));
-
-    // Clear any new bits we don't understand in case we pass
-    // this context to RtlRestoreContext (like for gcstress)
-    pCtx->ContextFlags &= (CONTEXT_COMPLETE
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-        | CONTEXT_XSTATE
-#endif
-        );
+    BOOL success = CopyContext(pCtx, pCtx->ContextFlags, pCurrentThreadCtx);
+    _ASSERTE(success);
 
     // Ensure that this flag is set for the next time through the normal path,
     // RedirectThreadAtHandledJITCase.
