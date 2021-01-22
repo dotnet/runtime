@@ -8,7 +8,6 @@
   <Target Name="PrepareForWasmBuild">
     <PropertyGroup>
       <WasmBuildDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmBuildDir>
-      <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
     </PropertyGroup>
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />

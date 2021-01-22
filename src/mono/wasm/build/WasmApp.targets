@@ -9,7 +9,7 @@
       Public properties (required):
       - $(WasmBuildDir)    - Directory where build artifacts are stored (required if WasmBuildNative==true)
       - $(WasmAppDir)      - AppBundle dir
-      - $(WasmMainAssemblyPath)
+      - $(WasmMainAssemblyFileName)- Defaults to $(TargetFileName)
       - $(WasmMainJSPath)
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
@@ -106,14 +106,16 @@
   </Target>
 
   <Target Name="_BeforeWasmBuildApp">
-      <Error Condition="'$(WasmMainAssemblyPath)' == ''" Text="%24(WasmMainAssemblyPath) property needs to be set" />
-      <Error Condition="!Exists('$(WasmMainAssemblyPath)')" Text="WasmMainAssemblyPath=$(WasmMainAssemblyPath) does not exist" />
+    <PropertyGroup>
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == '' and '$(TargetFileName)' != ''">$(TargetFileName)</WasmMainAssemblyFileName>
+    </PropertyGroup>
+
       <Error Condition="'$(WasmAppDir)' == ''" Text="%24(WasmAppDir) property needs to be set" />
       <Error Condition="'$(WasmBuildNative)' == 'true' and '$(WasmBuildDir)' == ''" Text="%24(WasmBuildDir) property needs to be set" />
       <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
       <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
       <ItemGroup>
-          <_WasmAssemblies Include="$(WasmMainAssemblyPath);@(WasmAssembliesToBundle)" />
+          <_WasmAssemblies Include="@(WasmAssembliesToBundle)" />
       </ItemGroup>
   </Target>
 
@@ -262,9 +264,10 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == ''">$(WasmAppDir)run-v8.sh</WasmRunV8ScriptPath>
     </PropertyGroup>
 
+    <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunV8ScriptPath)." />
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
-      Lines="v8 --expose_wasm runtime.js -- --run $([System.IO.Path]::GetFileName('$(WasmMainAssemblyPath)')) $*"
+      Lines="v8 --expose_wasm runtime.js -- --run $(WasmMainAssemblyFileName) $*"
       Overwrite="true">
     </WriteLinesToFile>
 

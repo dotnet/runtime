@@ -9,7 +9,7 @@
     <PropertyGroup>
       <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
       <WasmBuildDir>$(PublishDir)</WasmBuildDir>
-      <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
+      <WasmMainAssemblyFileName>$(AssemblyName).dll</WasmMainAssemblyFileName>
     </PropertyGroup>
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />

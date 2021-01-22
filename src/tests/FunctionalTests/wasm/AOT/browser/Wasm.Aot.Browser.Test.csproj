@@ -3,6 +3,7 @@
     <RunAOTCompilation>true</RunAOTCompilation>
     <Scenario>WasmTestOnBrowser</Scenario>
     <ExpectedExitCode>42</ExpectedExitCode>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,12 +15,5 @@
 
   <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
     <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(WasmAppDir)" />
-  </Target>
-
-  <Target Name="SetMainAssemblyPath" BeforeTargets="Publish">
-    <PropertyGroup>
-      <WasmMainAssemblyPath>$(PublishDir)Wasm.AOT.Browser.Test.dll</WasmMainAssemblyPath>
-      <WasmMainJSPath>runtime.js</WasmMainJSPath>
-    </PropertyGroup>
   </Target>
 </Project>
