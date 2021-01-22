@@ -66,7 +66,8 @@ namespace System.IO.Enumeration
             }
 
             entry._status = default;
-            FileStatus.Initialize(ref entry._status, isDirectory);
+            entry._status.Invalidate();
+            entry._status.InitiallyDirectory = isDirectory;
 
             FileAttributes attributes = default;
             if (isSymlink)

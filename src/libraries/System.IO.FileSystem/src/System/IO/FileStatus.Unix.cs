@@ -80,7 +80,7 @@ namespace System.IO
 
         // We track intent of creation to know whether or not we want to (1) create a
         // DirectoryInfo around this status struct or (2) actually are part of a DirectoryInfo.
-        internal bool InitiallyDirectory { get; private set; }
+        internal bool InitiallyDirectory { get; set; }
 
         private bool IsValid =>
             _initializedMainCache == 0 && // Should always be successfully refreshed
@@ -204,12 +204,6 @@ namespace System.IO
         // you're certain the passed-in cache was successfully retrieved
         private bool HasDirectoryFlag(Interop.Sys.FileStatus cache) =>
             (cache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
-
-        internal static void Initialize(ref FileStatus status, bool isDirectory)
-        {
-            status.InitiallyDirectory = isDirectory;
-            status.Invalidate();
-        }
 
         internal void Invalidate()
         {
