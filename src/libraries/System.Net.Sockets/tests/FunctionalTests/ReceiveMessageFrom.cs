@@ -25,14 +25,20 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         public async Task ReceiveSent_TCP_Success(bool ipv6)
         {
+            if (ipv6 && PlatformDetection.IsOSX)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/47335")]
+                // accept() will create a (seemingly) DualMode socket on Mac,
+                // but since recvmsg() does not work with DualMode on that OS, we throw PNSE CheckDualModeReceiveSupport().
+                // Weirdly, the flag is readable, but an attempt to write it leads to EINVAL.
+                // The best option seems to be to skip this test for the Mac+IPV6 case
+                return;
+            }
+
             (Socket sender, Socket receiver) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
             using (sender)
             using (receiver)
             {
-                // accept() will create a DualMode socket on Mac (https://github.com/dotnet/runtime/issues/47335),
-                // while recvmsg() does not work with DualMode on that OS, so we need to flip the flag back:
-                if (ipv6) receiver.DualMode = false;
-
                 byte[] sendBuffer = { 1, 2, 3 };
                 sender.Send(sendBuffer);
 
