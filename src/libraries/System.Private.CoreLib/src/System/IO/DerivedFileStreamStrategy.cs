@@ -11,56 +11,56 @@ namespace System.IO
     // when FileStream was supposed to call base.Method() for such cases, we just call _fileStream.BaseMethod()
     // for everything else we fall back to the actual strategy (like FileStream does)
     //
-    // it's crucial to NOT use the "base" keyoword here! everything must be using _fileStream or _impl
-    internal sealed class DerivedFileStreamImpl : FileStreamStrategy
+    // it's crucial to NOT use the "base" keyoword here! everything must be using _fileStream or _strategy
+    internal sealed class DerivedFileStreamStrategy : FileStreamStrategy
     {
-        private readonly FileStreamStrategy _impl;
+        private readonly FileStreamStrategy _strategy;
 
-        internal DerivedFileStreamImpl(FileStream fileStream, FileStreamStrategy impl) : base(fileStream) => _impl = impl;
+        internal DerivedFileStreamStrategy(FileStream fileStream, FileStreamStrategy strategy) : base(fileStream) => _strategy = strategy;
 
-        public override bool CanRead => _impl.CanRead;
+        public override bool CanRead => _strategy.CanRead;
 
-        public override bool CanWrite => _impl.CanWrite;
+        public override bool CanWrite => _strategy.CanWrite;
 
-        public override bool CanSeek => _impl.CanSeek;
+        public override bool CanSeek => _strategy.CanSeek;
 
-        public override long Length => _impl.Length;
+        public override long Length => _strategy.Length;
 
         public override long Position
         {
-            get => _impl.Position;
-            set => _impl.Position = value;
+            get => _strategy.Position;
+            set => _strategy.Position = value;
         }
 
-        internal override bool IsAsync => _impl.IsAsync;
+        internal override bool IsAsync => _strategy.IsAsync;
 
-        internal override string Name => _impl.Name;
+        internal override string Name => _strategy.Name;
 
-        internal override IntPtr Handle => _impl.Handle;
+        internal override IntPtr Handle => _strategy.Handle;
 
-        internal override SafeFileHandle SafeFileHandle => _impl.SafeFileHandle;
+        internal override SafeFileHandle SafeFileHandle => _strategy.SafeFileHandle;
 
-        internal override bool IsClosed => _impl.IsClosed;
+        internal override bool IsClosed => _strategy.IsClosed;
 
-        internal override void Lock(long position, long length) => _impl.Lock(position, length);
+        internal override void Lock(long position, long length) => _strategy.Lock(position, length);
 
-        internal override void Unlock(long position, long length) => _impl.Unlock(position, length);
+        internal override void Unlock(long position, long length) => _strategy.Unlock(position, length);
 
-        public override long Seek(long offset, SeekOrigin origin) => _impl.Seek(offset, origin);
+        public override long Seek(long offset, SeekOrigin origin) => _strategy.Seek(offset, origin);
 
-        public override void SetLength(long value) => _impl.SetLength(value);
+        public override void SetLength(long value) => _strategy.SetLength(value);
 
-        public override int ReadByte() => _impl.ReadByte();
+        public override int ReadByte() => _strategy.ReadByte();
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => _impl.IsAsync
-                ? _impl.BeginRead(buffer, offset, count, callback, state)
+            => _strategy.IsAsync
+                ? _strategy.BeginRead(buffer, offset, count, callback, state)
                 : _fileStream.BaseBeginRead(buffer, offset, count, callback, state);
 
         public override int EndRead(IAsyncResult asyncResult)
-            => _impl.IsAsync ? _impl.EndRead(asyncResult) : _fileStream.BaseEndRead(asyncResult);
+            => _strategy.IsAsync ? _strategy.EndRead(asyncResult) : _fileStream.BaseEndRead(asyncResult);
 
-        public override int Read(byte[] buffer, int offset, int count) => _impl.Read(buffer, offset, count);
+        public override int Read(byte[] buffer, int offset, int count) => _strategy.Read(buffer, offset, count);
 
         // If this is a derived type, it may have overridden Read(byte[], int, int) prior to this Read(Span<byte>)
         // overload being introduced.  In that case, this Read(Span<byte>) overload should use the behavior
@@ -81,15 +81,15 @@ namespace System.IO
             => _fileStream.BaseReadAsync(buffer, cancellationToken);
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => _impl.IsAsync
-                ? _impl.BeginWrite(buffer, offset, count, callback, state)
+            => _strategy.IsAsync
+                ? _strategy.BeginWrite(buffer, offset, count, callback, state)
                 : _fileStream.BaseBeginWrite(buffer, offset, count, callback, state);
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            if (_impl.IsAsync)
+            if (_strategy.IsAsync)
             {
-                _impl.EndWrite(asyncResult);
+                _strategy.EndWrite(asyncResult);
             }
             else
             {
@@ -97,9 +97,9 @@ namespace System.IO
             }
         }
 
-        public override void WriteByte(byte value) => _impl.WriteByte(value);
+        public override void WriteByte(byte value) => _strategy.WriteByte(value);
 
-        public override void Write(byte[] buffer, int offset, int count) => _impl.Write(buffer, offset, count);
+        public override void Write(byte[] buffer, int offset, int count) => _strategy.Write(buffer, offset, count);
 
         // If this is a derived type, it may have overridden Write(byte[], int, int) prior to this Write(ReadOnlySpan<byte>)
         // overload being introduced. In that case, this Write(ReadOnlySpan<byte>) overload should use the behavior
@@ -121,7 +121,7 @@ namespace System.IO
 
         public override void Flush() => throw new InvalidOperationException("FileStream should never call this method.");
 
-        internal override void Flush(bool flushToDisk) => _impl.Flush(flushToDisk);
+        internal override void Flush(bool flushToDisk) => _strategy.Flush(flushToDisk);
 
         // If we have been inherited into a subclass, the following implementation could be incorrect
         // since it does not call through to Flush() which a subclass might have overridden.  To be safe
@@ -138,6 +138,6 @@ namespace System.IO
 
         public override ValueTask DisposeAsync() => _fileStream.BaseDisposeAsync();
 
-        internal override void DisposeInternal(bool disposing) => _impl.DisposeInternal(disposing);
+        internal override void DisposeInternal(bool disposing) => _strategy.DisposeInternal(disposing);
     }
 }

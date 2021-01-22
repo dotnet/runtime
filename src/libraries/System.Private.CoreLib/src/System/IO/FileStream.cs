@@ -17,7 +17,7 @@ namespace System.IO
         /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
         private static int s_cachedSerializationSwitch;
 
-        private readonly FileStreamStrategy _impl;
+        private readonly FileStreamStrategy _strategy;
 
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access)
@@ -49,10 +49,10 @@ namespace System.IO
                 switch (isAsync)
                 {
                     case true:
-                        _impl = WrapForDerivedType(new FileStreamImpl(this, safeHandle, access, bufferSize, true));
+                        _strategy = WrapForDerivedType(new FileStreamImpl(this, safeHandle, access, bufferSize, true));
                         return;
                     case false:
-                        _impl = WrapForDerivedType(new FileStreamImpl(this, safeHandle, access, bufferSize, false));
+                        _strategy = WrapForDerivedType(new FileStreamImpl(this, safeHandle, access, bufferSize, false));
                         return;
                 }
             }
@@ -87,7 +87,7 @@ namespace System.IO
         }
 
         private FileStreamStrategy WrapForDerivedType(FileStreamStrategy impl)
-            => GetType() == typeof(FileStream) ? impl : new DerivedFileStreamImpl(this, impl);
+            => GetType() == typeof(FileStream) ? impl : new DerivedFileStreamStrategy(this, impl);
 
         public FileStream(SafeFileHandle handle, FileAccess access)
             : this(handle, access, DefaultBufferSize)
@@ -106,10 +106,10 @@ namespace System.IO
             switch (isAsync)
             {
                 case true:
-                    _impl = WrapForDerivedType(new FileStreamImpl(this, handle, access, bufferSize, true));
+                    _strategy = WrapForDerivedType(new FileStreamImpl(this, handle, access, bufferSize, true));
                     return;
                 case false:
-                    _impl = WrapForDerivedType(new FileStreamImpl(this, handle, access, bufferSize, false));
+                    _strategy = WrapForDerivedType(new FileStreamImpl(this, handle, access, bufferSize, false));
                     return;
             }
         }
@@ -180,11 +180,11 @@ namespace System.IO
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }
 
-            _impl = WrapForDerivedType(new FileStreamImpl(this, path, mode, access, share, bufferSize, options));
+            _strategy = WrapForDerivedType(new FileStreamImpl(this, path, mode, access, share, bufferSize, options));
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public virtual IntPtr Handle => _impl.Handle;
+        public virtual IntPtr Handle => _strategy.Handle;
 
         public virtual void Lock(long position, long length)
         {
@@ -193,12 +193,12 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (_impl.IsClosed)
+            if (_strategy.IsClosed)
             {
                 throw Error.GetFileNotOpen();
             }
 
-            _impl.Lock(position, length);
+            _strategy.Lock(position, length);
         }
 
         public virtual void Unlock(long position, long length)
@@ -208,12 +208,12 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (_impl.IsClosed)
+            if (_strategy.IsClosed)
             {
                 throw Error.GetFileNotOpen();
             }
 
-            _impl.Unlock(position, length);
+            _strategy.Unlock(position, length);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
@@ -222,12 +222,12 @@ namespace System.IO
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            if (_impl.IsClosed)
+            if (_strategy.IsClosed)
             {
                 throw Error.GetFileNotOpen();
             }
 
-            return _impl.FlushAsync(cancellationToken);
+            return _strategy.FlushAsync(cancellationToken);
         }
 
         internal Task BaseFlushAsync(CancellationToken cancellationToken)
@@ -237,10 +237,10 @@ namespace System.IO
         {
             ValidateReadWriteArgs(buffer, offset, count);
 
-            return _impl.Read(buffer, offset, count);
+            return _strategy.Read(buffer, offset, count);
         }
 
-        public override int Read(Span<byte> buffer) => _impl.Read(buffer);
+        public override int Read(Span<byte> buffer) => _strategy.Read(buffer);
 
         internal int BaseRead(Span<byte> buffer) => base.Read(buffer);
 
@@ -251,10 +251,10 @@ namespace System.IO
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<int>(cancellationToken);
 
-            if (_impl.IsClosed)
+            if (_strategy.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            return _impl.ReadAsync(buffer, offset, count, cancellationToken);
+            return _strategy.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
         internal Task<int> BaseReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -267,12 +267,12 @@ namespace System.IO
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
-            if (_impl.IsClosed)
+            if (_strategy.IsClosed)
             {
                 throw Error.GetFileNotOpen();
             }
 
-            return _impl.ReadAsync(buffer, cancellationToken);
+            return _strategy.ReadAsync(buffer, cancellationToken);
         }
 
         internal ValueTask<int> BaseReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -282,10 +282,10 @@ namespace System.IO
         {
             ValidateReadWriteArgs(buffer, offset, count);
 
-            _impl.Write(buffer, offset, count);
+            _strategy.Write(buffer, offset, count);
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer) => _impl.Write(buffer);
+        public override void Write(ReadOnlySpan<byte> buffer) => _strategy.Write(buffer);
 
         internal void BaseWrite(ReadOnlySpan<byte> buffer) => base.Write(buffer);
 
@@ -296,10 +296,10 @@ namespace System.IO
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
-            if (_impl.IsClosed)
+            if (_strategy.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            return _impl.WriteAsync(buffer, offset, count, cancellationToken);
+            return _strategy.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         internal Task BaseWriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -312,12 +312,12 @@ namespace System.IO
                 return ValueTask.FromCanceled(cancellationToken);
             }
 
-            if (_impl.IsClosed)
+            if (_strategy.IsClosed)
             {
                 throw Error.GetFileNotOpen();
             }
 
-            return _impl.WriteAsync(buffer, cancellationToken);
+            return _strategy.WriteAsync(buffer, cancellationToken);
         }
 
         internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -338,16 +338,16 @@ namespace System.IO
         /// </summary>
         public virtual void Flush(bool flushToDisk)
         {
-            if (_impl.IsClosed) throw Error.GetFileNotOpen();
+            if (_strategy.IsClosed) throw Error.GetFileNotOpen();
 
-            _impl.Flush(flushToDisk);
+            _strategy.Flush(flushToDisk);
         }
 
         /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
-        public override bool CanRead => _impl.CanRead;
+        public override bool CanRead => _strategy.CanRead;
 
         /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
-        public override bool CanWrite => _impl.CanWrite;
+        public override bool CanWrite => _strategy.CanWrite;
 
         /// <summary>Validates arguments to Read and Write and throws resulting exceptions.</summary>
         /// <param name="buffer">The buffer to read from or write to.</param>
@@ -356,7 +356,7 @@ namespace System.IO
         private void ValidateReadWriteArgs(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_impl.IsClosed)
+            if (_strategy.IsClosed)
                 throw Error.GetFileNotOpen();
         }
 
@@ -366,32 +366,32 @@ namespace System.IO
         {
             if (value < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (_impl.IsClosed)
+            if (_strategy.IsClosed)
                 throw Error.GetFileNotOpen();
-            if (!_impl.CanSeek)
+            if (!_strategy.CanSeek)
                 throw Error.GetSeekNotSupported();
-            if (!_impl.CanWrite)
+            if (!_strategy.CanWrite)
                 throw Error.GetWriteNotSupported();
 
-            _impl.SetLength(value);
+            _strategy.SetLength(value);
         }
 
-        public virtual SafeFileHandle SafeFileHandle => _impl.SafeFileHandle;
+        public virtual SafeFileHandle SafeFileHandle => _strategy.SafeFileHandle;
 
         /// <summary>Gets the path that was passed to the constructor.</summary>
-        public virtual string Name => _impl.Name;
+        public virtual string Name => _strategy.Name;
 
         /// <summary>Gets a value indicating whether the stream was opened for I/O to be performed synchronously or asynchronously.</summary>
-        public virtual bool IsAsync => _impl.IsAsync;
+        public virtual bool IsAsync => _strategy.IsAsync;
 
         /// <summary>Gets the length of the stream in bytes.</summary>
         public override long Length
         {
             get
             {
-                if (_impl.IsClosed) throw Error.GetFileNotOpen();
-                if (!_impl.CanSeek) throw Error.GetSeekNotSupported();
-                return _impl.Length;
+                if (_strategy.IsClosed) throw Error.GetFileNotOpen();
+                if (!_strategy.CanSeek) throw Error.GetSeekNotSupported();
+                return _strategy.Length;
             }
         }
 
@@ -400,37 +400,37 @@ namespace System.IO
         {
             get
             {
-                if (_impl.IsClosed)
+                if (_strategy.IsClosed)
                     throw Error.GetFileNotOpen();
 
-                if (!_impl.CanSeek)
+                if (!_strategy.CanSeek)
                     throw Error.GetSeekNotSupported();
 
-                return _impl.Position;
+                return _strategy.Position;
             }
             set
             {
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-                _impl.Seek(value, SeekOrigin.Begin);
+                _strategy.Seek(value, SeekOrigin.Begin);
             }
         }
 
-        internal virtual bool IsClosed => _impl.IsClosed;
+        internal virtual bool IsClosed => _strategy.IsClosed;
 
         /// <summary>
         /// Reads a byte from the file stream.  Returns the byte cast to an int
         /// or -1 if reading from the end of the stream.
         /// </summary>
-        public override int ReadByte() => _impl.ReadByte();
+        public override int ReadByte() => _strategy.ReadByte();
 
         /// <summary>
         /// Writes a byte to the current position in the stream and advances the position
         /// within the stream by one byte.
         /// </summary>
         /// <param name="value">The byte to write to the stream.</param>
-        public override void WriteByte(byte value) => _impl.WriteByte(value);
+        public override void WriteByte(byte value) => _strategy.WriteByte(value);
 
         ~FileStream()
         {
@@ -442,18 +442,18 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            if (_impl != null) // possible in finalizer
+            if (_strategy != null) // possible in finalizer
             {
-                _impl.DisposeInternal(disposing);
+                _strategy.DisposeInternal(disposing);
             }
         }
 
-        public override ValueTask DisposeAsync() => _impl.DisposeAsync();
+        public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
 
         internal ValueTask BaseDisposeAsync() => base.DisposeAsync();
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-            => _impl.CopyToAsync(destination, bufferSize, cancellationToken);
+            => _strategy.CopyToAsync(destination, bufferSize, cancellationToken);
 
         internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => base.CopyToAsync(destination, bufferSize, cancellationToken);
@@ -461,10 +461,10 @@ namespace System.IO
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_impl.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!_impl.CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            if (_strategy.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (!_strategy.CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
-            return _impl.BeginRead(buffer, offset, count, callback, state);
+            return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
 
         internal IAsyncResult BaseBeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -475,7 +475,7 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            return _impl.EndRead(asyncResult);
+            return _strategy.EndRead(asyncResult);
         }
 
         internal int BaseEndRead(IAsyncResult asyncResult) => base.EndRead(asyncResult);
@@ -483,10 +483,10 @@ namespace System.IO
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_impl.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!_impl.CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            if (_strategy.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (!_strategy.CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
-            return _impl.BeginWrite(buffer, offset, count, callback, state);
+            return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
 
         internal IAsyncResult BaseBeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -497,13 +497,13 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            _impl.EndWrite(asyncResult);
+            _strategy.EndWrite(asyncResult);
         }
 
         internal void BaseEndWrite(IAsyncResult asyncResult) => base.EndWrite(asyncResult);
 
-        public override bool CanSeek => _impl.CanSeek;
+        public override bool CanSeek => _strategy.CanSeek;
 
-        public override long Seek(long offset, SeekOrigin origin) => _impl.Seek(offset, origin);
+        public override long Seek(long offset, SeekOrigin origin) => _strategy.Seek(offset, origin);
     }
 }
