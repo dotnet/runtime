@@ -5,6 +5,9 @@
 // Interface between the VM and Interop library.
 //
 
+#ifndef _INTEROPLIBINTERFACE_H_
+#define _INTEROPLIBINTERFACE_H_
+
 #ifdef FEATURE_COMWRAPPERS
 
 namespace InteropLibInterface
@@ -111,3 +114,5 @@ public:
     // Notify when GC finished
     static void OnGCFinished(_In_ int nCondemnedGeneration);
 };
+
+#endif // _INTEROPLIBINTERFACE_H_
