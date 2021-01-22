@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    internal sealed partial class FileStreamImpl : FileStreamStrategy
+    internal abstract class CommonFileStreamStrategyTemplate : FileStreamStrategy
     {
         private byte[]? _buffer;
         private readonly int _bufferLength;
