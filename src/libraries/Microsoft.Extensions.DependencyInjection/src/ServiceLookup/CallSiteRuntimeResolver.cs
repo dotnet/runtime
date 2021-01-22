@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -115,12 +116,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private object ResolveService(ServiceCallSite callSite, RuntimeResolverContext context, RuntimeResolverLock lockType, ServiceProviderEngineScope serviceProviderEngine)
         {
+            object resolved;
+            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
+
             // Note: This method has already taken lock by the caller for resolution and access synchronization.
             // For root: uses a concurrent dictionary and takes a per singleton lock for resolution.
             // For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
+            Debug.Assert(
+                (lockType == RuntimeResolverLock.Root && resolvedServices is ConcurrentDictionary<ServiceCacheKey, object>) ||
+                (lockType == RuntimeResolverLock.Scope && Monitor.IsEntered(resolvedServices)));
 
-            object resolved;
-            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
             if (resolvedServices.TryGetValue(callSite.Cache.Key, out resolved))
             {
                 return resolved;
