@@ -2873,18 +2873,27 @@ void MarshalInfo::SetupArgumentSizes()
     }
     CONTRACTL_END;
 
+    const unsigned targetPointerSize = TARGET_POINTER_SIZE;
+    const bool pointerIsValueType = false;
+    const bool pointerIsFloatHfa = false;
+    _ASSERTE(targetPointerSize == StackElemSize(TARGET_POINTER_SIZE, pointerIsValueType, pointerIsFloatHfa));
+
     if (m_byref)
     {
-        m_nativeArgSize = StackElemSize(TARGET_POINTER_SIZE);
+        m_nativeArgSize = targetPointerSize;
     }
     else
     {
-        m_nativeArgSize = StackElemSize(GetNativeSize(m_type));
+        const bool isValueType = IsValueClass(m_type);
+        const bool isFloatHfa = isValueType && (m_pMT->GetHFAType() == CORINFO_HFA_ELEM_FLOAT);
+        m_nativeArgSize = StackElemSize(GetNativeSize(m_type), isValueType, isFloatHfa);
     }
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
     if (m_nativeArgSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        m_nativeArgSize = StackElemSize(TARGET_POINTER_SIZE);
+    {
+        m_nativeArgSize = targetPointerSize;
+    }
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 }
 
@@ -2909,16 +2918,8 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype)
 
     if (nativeSize == VARIABLESIZE)
     {
-        switch (mtype)
-        {
-            case MARSHAL_TYPE_BLITTABLEVALUECLASS:
-            case MARSHAL_TYPE_VALUECLASS:
-            case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
-                return (UINT16) m_pMT->GetNativeSize();
-
-            default:
-                _ASSERTE(0);
-        }
+        _ASSERTE(IsValueClass(mtype));
+        return (UINT16) m_pMT->GetNativeSize();
     }
 
     return nativeSize;
@@ -2943,6 +2944,20 @@ bool MarshalInfo::IsInOnly(MarshalType mtype)
     };
 
     return ILMarshalerIsInOnly[mtype];
+}
+
+bool MarshalInfo::IsValueClass(MarshalType mtype)
+{
+    switch (mtype)
+    {
+    case MARSHAL_TYPE_BLITTABLEVALUECLASS:
+    case MARSHAL_TYPE_VALUECLASS:
+    case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
+        return true;
+
+    default:
+        return false;
+    }
 }
 
 OVERRIDEPROC MarshalInfo::GetArgumentOverrideProc(MarshalType mtype)

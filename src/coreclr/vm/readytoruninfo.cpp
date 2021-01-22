@@ -878,6 +878,11 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             pConfig->SetProfilerRejectedPrecompiledCode();
             goto done;
         }
+        if (CORProfilerTrackTransitions() && pMD->HasUnmanagedCallersOnlyAttribute())
+        {
+            pConfig->SetProfilerRejectedPrecompiledCode();
+            goto done;
+        }
 #endif // PROFILING_SUPPORTED
 #endif // CROSSGEN_COMPILE
 

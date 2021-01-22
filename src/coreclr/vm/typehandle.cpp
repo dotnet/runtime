@@ -388,6 +388,7 @@ Instantiation TypeHandle::GetInstantiation() const
 BOOL TypeHandle::IsValueType()  const
 {
     LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(!IsNull());
 
     if (!IsTypeDesc()) return AsMethodTable()->IsValueType();
     else return AsTypeDesc()->IsNativeValueType();
@@ -431,6 +432,16 @@ CorInfoHFAElemType TypeHandle::GetHFAType() const
         return AsNativeValueType()->GetNativeHFAType();
 
     return CORINFO_HFA_ELEM_NONE;
+}
+
+bool TypeHandle::IsFloatHfa() const
+{
+    WRAPPER_NO_CONTRACT;
+    if (IsNull() || !IsHFA())
+    {
+        return false;
+    }
+    return (GetHFAType() == CORINFO_HFA_ELEM_FLOAT);
 }
 
 

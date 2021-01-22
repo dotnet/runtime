@@ -412,7 +412,7 @@ namespace System.Net
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
-        internal SafeSslHandle()
+        public SafeSslHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

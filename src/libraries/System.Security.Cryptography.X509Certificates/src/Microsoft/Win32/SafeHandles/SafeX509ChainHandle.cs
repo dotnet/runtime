@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeX509ChainHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private SafeX509ChainHandle()
+        public SafeX509ChainHandle()
             : base(true)
         {
         }

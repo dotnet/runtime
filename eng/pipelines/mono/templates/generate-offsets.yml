@@ -62,10 +62,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOnly=true
+      - script: ./build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
         displayName: Generate AOT offsets
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOnly=true
+      - script: build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
         displayName: Generate AOT offsets
 
     # Upload offset files

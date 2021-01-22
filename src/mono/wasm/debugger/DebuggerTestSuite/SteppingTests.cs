@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,7 +9,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class SteppingTests : SingleSessionTestBase
+    public class SteppingTests : DebuggerTestBase
     {
         [Fact]
         public async Task TrivalStepping()
@@ -86,7 +89,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsInPreviousFramesDuringSteppingIn2(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
 
             var dep_cs_loc = "dotnet://debugger-test.dll/dependency.cs";
             await SetBreakpoint(dep_cs_loc, 33, 8);
@@ -153,7 +156,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsInPreviousFramesDuringSteppingIn(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
 
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
             await SetBreakpoint(debugger_test_loc, 111, 12);
@@ -313,7 +316,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsInAsyncMethods(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
 
             await SetBreakpoint(debugger_test_loc, 120, 12);
@@ -369,7 +372,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectValueTypeMethodArgsWhileStepping(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
             await SetBreakpoint(debugger_test_loc, 36, 12);
@@ -610,7 +613,7 @@ namespace DebuggerTests
 
             AssertEqual("WriteLine", top_frame["functionName"]?.Value<string>(), "Expected to be in WriteLine method");
             var script_id = top_frame["functionLocation"]["scriptId"].Value<string>();
-            Assert.Matches ("^dotnet://(mscorlib|System\\.Console)\\.dll/Console.cs", scripts[script_id]);
+            Assert.Matches("^dotnet://(mscorlib|System\\.Console)\\.dll/Console.cs", scripts[script_id]);
         }
 
         [Fact]
@@ -620,7 +623,7 @@ namespace DebuggerTests
             var bp2 = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); invoke_add()}, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs",  10, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
                 "IntAdd");
 
             Assert.Equal("other", pause_location["reason"]?.Value<string>());
@@ -638,7 +641,7 @@ namespace DebuggerTests
             var bp2 = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); invoke_add()}, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs",  10, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
                 "IntAdd");
 
             Assert.Equal("other", pause_location["reason"]?.Value<string>());
@@ -655,7 +658,7 @@ namespace DebuggerTests
             var bp2 = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); invoke_add(); invoke_add(); invoke_add()}, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs",  10, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
                 "IntAdd");
 
             Assert.Equal("other", pause_location["reason"]?.Value<string>());
@@ -845,7 +848,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 546, 4,
                 "StepOverHiddenSP2");
-    }
+        }
 
         [Fact]
         public async Task BreakpointOnHiddenLineOfMethodWithNoNextVisibleLineShouldNotPause()
@@ -853,7 +856,7 @@ namespace DebuggerTests
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 554, 12);
 
             string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);";
-            await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), ctx.token);
+            await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), token);
 
             Task pause_task = insp.WaitFor(Inspector.PAUSE);
             Task t = await Task.WhenAny(pause_task, Task.Delay(2000));

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Fakes;
@@ -406,6 +407,224 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
+        [ThreadStatic]
+        public static int ThreadId;
+
+        [Fact]
+        public async Task GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock()
+        {
+            // Thread 1: Thing1 (transient) -> Thing0 (singleton)
+            // Thread 2: Thing2 (singleton) -> Thing1 (transient) -> Thing0 (singleton)
+
+            // 1. Thread 1 resolves the Thing1 which is a transient service
+            // 2. In parallel, Thread 2 resolves Thing2 which is a singleton
+            // 3. Thread 1 enters the factory callback for Thing1 and takes the lazy lock
+            // 4. Thread 2 takes callsite for Thing2 as a singleton lock when it resolves Thing2
+            // 5. Thread 2 enters the factory callback for Thing1 and waits on the lazy lock
+            // 6. Thread 1 calls GetRequiredService<Thing0> on the service provider, takes callsite for Thing0 causing no deadlock
+            // (rather than taking the locks that are already taken - either the lazy lock or the Thing2 callsite lock)
+
+            Thing0 thing0 = null;
+            Thing1 thing1 = null;
+            Thing2 thing2 = null;
+            IServiceProvider sp = null;
+            var sb = new StringBuilder();
+
+            // Arrange
+            var services = new ServiceCollection();
+
+            var lazy = new Lazy<Thing1>(() =>
+            {
+                sb.Append("3");
+                _mreForThread2.Set();   // Now that thread 1 holds lazy lock, allow thread 2 to continue
+
+                // by this time, Thread 2 is holding a singleton lock for Thing2, 
+                // and Thread one holds the lazy lock
+                // the call below to resolve Thing0 does not hang
+                // since singletons do not share the same lock upon resolve anymore.
+                thing0 = sp.GetRequiredService<Thing0>();
+                return new Thing1(thing0);
+            });
+
+            services.AddSingleton<Thing0>();
+            services.AddTransient(sp =>
+            {
+                if (ThreadId == 2)
+                {
+                    sb.Append("1");
+                    _mreForThread1.Set();   // [b] Allow thread 1 to continue execution and take the lazy lock
+                    _mreForThread2.WaitOne();   // [c] Wait until thread 1 takes the lazy lock
+
+                    sb.Append("4");
+                }
+
+                // Let Thread 1 over take Thread 2
+                Thing1 value = lazy.Value;
+                return value;
+            });
+            services.AddSingleton<Thing2>();
+
+            sp = services.BuildServiceProvider();
+
+            var t1 = Task.Run(() =>
+            {
+                ThreadId = 1;
+                using var scope1 = sp.CreateScope();
+                _mreForThread1.WaitOne(); // [a] Waits until thread 2 reaches the transient call to ensure it holds Thing2 singleton lock
+
+                sb.Append("2");
+                thing1 = scope1.ServiceProvider.GetRequiredService<Thing1>();
+            });
+
+            var t2 = Task.Run(() =>
+            {
+                ThreadId = 2;
+                using var scope2 = sp.CreateScope();
+                thing2 = scope2.ServiceProvider.GetRequiredService<Thing2>();
+            });
+
+            // Act
+            await t1;
+            await t2;
+
+            // Assert
+            Assert.NotNull(thing0);
+            Assert.NotNull(thing1);
+            Assert.NotNull(thing2);
+            Assert.Equal("1234", sb.ToString()); // Expected order of execution
+        }
+
+        private ManualResetEvent _mreForThread2 = new ManualResetEvent(false);
+        private ManualResetEvent _mreForThread1 = new ManualResetEvent(false);
+
+        [Fact]
+        public async Task GetRequiredService_BiggerObjectGraphWithOpenGenerics_NoDeadlock()
+        {
+            // Test is similar to GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock (but for open generics and a larger object graph)
+
+            // Arrange
+            List<IFakeOpenGenericService<Thing4>> constrainedThing4Services = null;
+            List<IFakeOpenGenericService<Thing5>> constrainedThing5Services = null;
+
+            Thing3 thing3 = null;
+            IServiceProvider sp = null;
+            var sb = new StringBuilder();
+
+            var services = new ServiceCollection();
+
+            services.AddSingleton<Thing0>();
+            services.AddSingleton<Thing1>();
+            services.AddSingleton<Thing2>();
+            services.AddSingleton<Thing3>();
+            services.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+
+            var lazy = new Lazy<Thing4>(() =>
+            {
+                sb.Append("3");
+                _mreForThread2.Set();   // Now that thread 1 holds lazy lock, allow thread 2 to continue
+
+                thing3 = sp.GetRequiredService<Thing3>();
+                return new Thing4(thing3);
+            });
+
+            services.AddTransient(sp =>
+            { 
+                if (ThreadId == 2)
+                {
+                    sb.Append("1");
+                    _mreForThread1.Set();   // [b] Allow thread 1 to continue execution and take the lazy lock
+                    _mreForThread2.WaitOne();   // [c] Wait until thread 1 takes the lazy lock
+
+                    sb.Append("4");
+                }
+
+                // Let Thread 1 over take Thread 2
+                Thing4 value = lazy.Value;
+                return value;
+            });
+            services.AddSingleton<Thing5>();
+
+            sp = services.BuildServiceProvider();
+
+            // Act
+            var t1 = Task.Run(() =>
+            {
+                ThreadId = 1;
+                using var scope1 = sp.CreateScope();
+                _mreForThread1.WaitOne(); // Waits until thread 2 reaches the transient call to ensure it holds Thing4 singleton lock
+
+                sb.Append("2");
+                constrainedThing4Services = sp.GetServices<IFakeOpenGenericService<Thing4>>().ToList();
+            });
+
+            var t2 = Task.Run(() =>
+            {
+                ThreadId = 2;
+                using var scope2 = sp.CreateScope();
+                constrainedThing5Services = sp.GetServices<IFakeOpenGenericService<Thing5>>().ToList();
+            });
+
+            // Act
+            await t1;
+            await t2;
+
+            Assert.Equal("1234", sb.ToString()); // Expected order of execution
+
+            var thing4 = sp.GetRequiredService<Thing4>();
+            var thing5 = sp.GetRequiredService<Thing5>();
+
+            // Assert
+            Assert.NotNull(thing3);
+            Assert.NotNull(thing4);
+            Assert.NotNull(thing5);
+            Assert.Equal(1, constrainedThing4Services.Count);
+            Assert.Equal(1, constrainedThing5Services.Count);
+            Assert.Same(thing4, constrainedThing4Services[0].Value);
+            Assert.Same(thing5, constrainedThing5Services[0].Value);
+        }
+
+        private class Thing5
+        {
+            public Thing5(Thing4 thing)
+            {
+            }
+        }
+
+        private class Thing4
+        {
+            public Thing4(Thing3 thing)
+            {
+            }
+        }
+
+        private class Thing3
+        {
+            public Thing3(Thing2 thing)
+            {
+            }
+        }
+
+        private class Thing2
+        {
+            public Thing2(Thing1 thing1)
+            {
+            }
+        }
+
+        private class Thing1
+        {
+            public Thing1(Thing0 thing0)
+            {
+            }
+        }
+
+        private class Thing0
+        {
+            public Thing0()
+            {
+            }
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42160")] // We don't support value task services currently
         [Theory]
         [InlineData(ServiceLifetime.Transient)]
@@ -453,7 +672,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             Assert.Same(serviceRef1, servicesRef1);
         }
-
 
         [Fact]
         public async Task ProviderDisposeAsyncCallsDisposeAsyncOnServices()

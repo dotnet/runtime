@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
@@ -103,7 +104,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? MsymPath { get; set; }
 
-    public List<string> FileWrites { get; } = new();
+    [Output]
+    public string[]? FileWrites { get; private set; }
+
+    private List<string> _fileWrites = new();
 
     private ConcurrentBag<ITaskItem> compiledAssemblies = new ConcurrentBag<ITaskItem>();
     private MonoAotMode parsedAotMode;
@@ -196,6 +200,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         CompiledAssemblies = compiledAssemblies.ToArray();
+        FileWrites = _fileWrites.ToArray();
 
         return !Log.HasLoggedErrors;
     }
@@ -350,7 +355,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         using (var writer = File.CreateText(AotModulesTablePath!))
         {
-            FileWrites.Add(AotModulesTablePath!);
+            _fileWrites.Add(AotModulesTablePath!);
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
                 foreach (var symbol in symbols)
@@ -365,7 +370,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 }
                 writer.WriteLine("}");
 
-                foreach (var profiler in profilers!)
+                foreach (var profiler in profilers ?? Enumerable.Empty<string>())
                 {
                     writer.WriteLine($"void mono_profiler_init_{profiler} (const char *desc);");
                     writer.WriteLine("EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_" + profiler + " (const char *desc) { mono_profiler_init_" + profiler + " (desc); }");
@@ -406,6 +411,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 throw new NotSupportedException();
             }
+            Log.LogMessage(MessageImportance.Low, $"Generated {AotModulesTablePath}");
         }
     }
 }

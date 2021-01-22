@@ -8,8 +8,8 @@ namespace System.Net.Http.Headers
 {
     public class EntityTagHeaderValue : ICloneable
     {
-        private string _tag;
-        private bool _isWeak;
+        private readonly string _tag;
+        private readonly bool _isWeak;
 
         public string Tag
         {
@@ -159,13 +159,11 @@ namespace System.Net.Http.Headers
                     // Most of the time we'll have strong ETags without leading/trailing whitespace.
                     Debug.Assert(startIndex == 0);
                     Debug.Assert(!isWeak);
-                    parsedValue._tag = input;
-                    parsedValue._isWeak = false;
+                    parsedValue = new EntityTagHeaderValue(input);
                 }
                 else
                 {
-                    parsedValue._tag = input.Substring(tagStartIndex, tagLength);
-                    parsedValue._isWeak = isWeak;
+                    parsedValue = new EntityTagHeaderValue(input.Substring(tagStartIndex, tagLength), isWeak);
                 }
 
                 current = current + tagLength;

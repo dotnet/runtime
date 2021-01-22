@@ -7,19 +7,6 @@ using Debug = System.Diagnostics.Debug;
 namespace Internal.TypeSystem
 {
     /// <summary>
-    /// Specifies the target CPU architecture.
-    /// </summary>
-    public enum TargetArchitecture
-    {
-        Unknown,
-        ARM,
-        ARM64,
-        X64,
-        X86,
-        Wasm32,
-    }
-
-    /// <summary>
     /// Specifies the target ABI.
     /// </summary>
     public enum TargetOS

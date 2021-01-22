@@ -19,7 +19,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 
-        internal SafeProcessHandle()
+        public SafeProcessHandle()
             : this(IntPtr.Zero)
         {
         }
@@ -33,12 +33,6 @@ namespace Microsoft.Win32.SafeHandles
             : base(ownsHandle)
         {
             SetHandle(existingHandle);
-        }
-
-        internal void InitialSetHandle(IntPtr h)
-        {
-            Debug.Assert(IsInvalid, "Safe handle should only be set once");
-            base.handle = h;
         }
     }
 }

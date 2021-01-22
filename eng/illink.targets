@@ -222,8 +222,6 @@
   <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
   <Target Name="SetCommonILLinkArgs">
     <PropertyGroup>
-      <!-- keep type-forward assemblies (facades) -->
-      <ILLinkArgs>$(ILLinkArgs) -t</ILLinkArgs>
       <!-- don't remove the embedded link attributes xml resource since ILLink may run again on the assembly -->
       <!-- and ignore the link attributes xml file during the library build, since we need the attributes preserved until the final app is linked -->
       <ILLinkArgs>$(ILLinkArgs) --strip-link-attributes false --ignore-link-attributes true</ILLinkArgs>
@@ -245,7 +243,6 @@
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
           DependsOnTargets="SetCommonILLinkArgs">
     <PropertyGroup>
-      <ILLinkArgs>$(ILLinkArgs) -r $(TargetName)</ILLinkArgs>
       <!-- default action for core assemblies -->
       <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
       <!-- default action for non-core assemblies -->
@@ -309,6 +306,9 @@
       </_DependencyDirectoriesNoSlash>
       <_DependencyDirectories Remove="@(_DependencyDirectories)" />
       <_DependencyDirectories Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
+      <ILLinkTrimInputAssembly Include="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)">
+        <RootMode>visible</RootMode>
+      </ILLinkTrimInputAssembly>
     </ItemGroup>
 
     <PropertyGroup>
@@ -323,8 +323,8 @@
       <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
     </PropertyGroup>
 
-    <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"
-            RootAssemblyNames=""
+    <ILLink AssemblyPaths=""
+            RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"
