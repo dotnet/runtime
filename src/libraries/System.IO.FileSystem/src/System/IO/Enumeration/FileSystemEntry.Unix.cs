@@ -78,7 +78,11 @@ namespace System.IO.Enumeration
             {
                 attributes |= FileAttributes.Directory;
             }
-            if (entry.IsHidden)
+
+            // If at this point we have not collected the main cache (lstat) we don't have a hard requirement
+            // to hit the disk yet, so a soft check is enough to prevent perf regression.
+            // FileSystemEnumerator.MoveNext may hit the disk, if needed, when updating the attributes.
+            if (entry.HasHiddenPrefix || (entry._status.IsMainCacheValid && entry._status.HasHiddenFlag))
             {
                 attributes |= FileAttributes.Hidden;
             }
@@ -107,6 +111,8 @@ namespace System.IO.Enumeration
                 return _fullPath;
             }
         }
+
+        private bool HasHiddenPrefix => (_directoryEntry.NameLength > 0 && _directoryEntry.Name[0] == '.');
 
         public ReadOnlySpan<char> FileName
         {
@@ -153,7 +159,7 @@ namespace System.IO.Enumeration
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
         public bool IsDirectory => _status.InitiallyDirectory;
         public bool IsHidden =>
-            (_directoryEntry.NameLength > 0 && _directoryEntry.Name[0] == '.') || _status.IsHidden(FullPath, continueOnError: true);
+            HasHiddenPrefix || _status.IsHidden(FullPath, continueOnError: true); // Need to hit the disk (lstat) to check for flag
 
         public FileSystemInfo ToFileSystemInfo()
         {
