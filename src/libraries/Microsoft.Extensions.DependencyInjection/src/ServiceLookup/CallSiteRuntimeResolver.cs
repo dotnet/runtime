@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private object VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
         {
             bool lockTaken = false;
-            Dictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
+            ConcurrentDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
 
             // Taking locks only once allows us to fork resolution process
             // on another thread without causing the deadlock because we
@@ -116,13 +116,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private object ResolveService(ServiceCallSite callSite, RuntimeResolverContext context, RuntimeResolverLock lockType, ServiceProviderEngineScope serviceProviderEngine)
         {
             object resolved;
-            Dictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
-            lock (resolvedServices)
+            ConcurrentDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
+            if (resolvedServices.TryGetValue(callSite.Cache.Key, out resolved))
             {
-                if (resolvedServices.TryGetValue(callSite.Cache.Key, out resolved))
-                {
-                    return resolved;
-                }
+                return resolved;
             }
 
             // This method uses lock to synchronize access to the resolvedServices dictionary.
@@ -133,11 +130,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 AcquiredLocks = context.AcquiredLocks | lockType
             });
             serviceProviderEngine.CaptureDisposable(resolved);
-            lock (resolvedServices)
-            {
-                resolvedServices.Add(callSite.Cache.Key, resolved);
-            }
-            return resolved;
+            return resolvedServices.GetOrAdd(callSite.Cache.Key, resolved);
         }
 
         protected override object VisitConstant(ConstantCallSite constantCallSite, RuntimeResolverContext context)

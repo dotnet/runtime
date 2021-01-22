@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Engine = engine;
         }
 
-        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; } = new Dictionary<ServiceCacheKey, object>();
+        internal ConcurrentDictionary<ServiceCacheKey, object> ResolvedServices { get; } = new ConcurrentDictionary<ServiceCacheKey, object>();
 
         public ServiceProviderEngine Engine { get; }
 
