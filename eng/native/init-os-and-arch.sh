@@ -3,7 +3,7 @@
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 
-if getprop ro.product.system.model 2>&1 | grep -qi android; then
+if command -v getprop && getprop ro.product.system.model 2>&1 | grep -qi android; then
     OSName="Android"
 fi
 
