@@ -410,6 +410,91 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [ThreadStatic]
         public static int ThreadId;
 
+        private class Foo
+        {
+            public Bar Bar;
+            public Foo(Bar bar)
+            {
+                Bar = bar;
+            }
+        }
+
+        private class Bar
+        {
+            public Bar(ManualResetEvent mre1, ManualResetEvent mre2)
+            {
+                if (!mre1.WaitOne(0) && !mre2.WaitOne(0))
+                {
+                    // Use mre2 to signal execution reached this ctor call
+                    mre2.Set();
+                    mre1.WaitOne();
+                }
+                mre1.Set();
+            }
+        }
+
+        [Fact]
+        public async Task GetRequiredService_ResolvingSameSingletonInTwoThreads_SameServiceReturned()
+        {
+            Bar bar = null;
+            Foo foo = null;
+            IServiceProvider sp = null;
+            var sb = new StringBuilder();
+
+            // Arrange
+            var services = new ServiceCollection();
+
+            services.AddSingleton<Foo>();
+            services.AddSingleton<Bar>(sp => {
+                return new Bar(_mreForThread1, _mreForThread2);
+            });
+
+            sp = services.BuildServiceProvider();
+
+            var t1 = Task.Run(() =>
+            {
+                ThreadId = 1;
+                using var scope1 = sp.CreateScope();
+                foo = scope1.ServiceProvider.GetRequiredService<Foo>();
+            });
+
+            // Wait until mre2 gets set in Bar ctor
+            _mreForThread2.WaitOne();
+
+            var t2 = Task.Run(() =>
+            {
+                ThreadId = 2;
+                using var scope2 = sp.CreateScope();
+                _mreForThread3.Set();
+
+                // This waits on Bar singleton lock that is taken in thread 1
+                bar = scope2.ServiceProvider.GetRequiredService<Bar>();
+            });
+
+            var t3 = Task.Run(() =>
+            {
+                _mreForThread3.WaitOne();
+
+                // By this time thread 1 has already reached Bar ctor and is waiting for mre1. 
+                // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for Bar
+                // (rather than trying to instantiating Bar twice).
+                // Set a timeout before unblocking execution via mre1:
+                Assert.False(_mreForThread1.WaitOne(10));
+
+                _mreForThread1.Set();
+            });
+
+            // Act
+            await t1;
+            await t2;
+            await t3;
+
+            // Assert
+            Assert.NotNull(foo);
+            Assert.NotNull(bar);
+            Assert.Same(foo.Bar, bar);
+        }
+
         [Fact]
         public async Task GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock()
         {
@@ -494,6 +579,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal("1234", sb.ToString()); // Expected order of execution
         }
 
+        private ManualResetEvent _mreForThread3 = new ManualResetEvent(false);
         private ManualResetEvent _mreForThread2 = new ManualResetEvent(false);
         private ManualResetEvent _mreForThread1 = new ManualResetEvent(false);
 
@@ -905,6 +991,135 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 //forces ValueTask to be asynchronous and not be immediately completed
                 await Task.Yield();
                 DisposeCount++;
+            }
+        }
+
+        [Fact]
+        public async Task GetRequiredService_ResolveUniqueServicesConcurrently_StressTestSuccessful()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.True(await ResolveUniqueServicesConcurrently());
+            }
+        }
+
+        private async Task<bool> ResolveUniqueServicesConcurrently()
+        {
+            var types = new Type[]
+            {
+                typeof(A), typeof(B), typeof(C), typeof(D), typeof(E), 
+                typeof(F), typeof(G), typeof(H), typeof(I), typeof(J)
+            };
+
+            IServiceProvider sp = null;
+            var services = new ServiceCollection();
+            foreach (var type in types)
+            {
+                services.AddSingleton(type);
+            }
+
+            sp = services.BuildServiceProvider();
+            var tasks = new List<Task<bool>>();
+            foreach (var type in types)
+            {
+                tasks.Add(Task.Run(() =>
+                {
+                    using var scope = sp.CreateScope();
+                    var instance = scope.ServiceProvider.GetRequiredService(type);
+                    return instance != null;
+                }));
+            }
+
+            await Task<bool>.WhenAll(tasks);
+            bool succeeded = true;
+            foreach (var task in tasks)
+            {
+                if (!task.Result)
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+            return succeeded;
+        }
+
+        private class A
+        {
+            public A()
+            {
+                
+            }
+        }
+
+        private class B
+        {
+            public B()
+            {
+                
+            }
+        }
+
+        private class C
+        {
+            public C()
+            {
+                
+            }
+        }
+
+        private class D
+        {
+            public D()
+            {
+                
+            }
+        }
+
+        private class E
+        {
+            public E()
+            {
+                
+            }
+        }
+
+        private class F
+        {
+            public F()
+            {
+                
+            }
+        }
+
+        private class G
+        {
+            public G()
+            {
+                
+            }
+        }
+
+        private class H
+        {
+            public H()
+            {
+                
+            }
+        }
+
+        private class I
+        {
+            public I()
+            {
+                
+            }
+        }
+
+        private class J
+        {
+            public J()
+            {
+                
             }
         }
     }
