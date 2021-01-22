@@ -117,6 +117,8 @@ namespace System.IO
 
         protected abstract void Init(FileMode mode, FileShare share, string originalPath);
 
+        protected abstract void FlushWriteBuffer(bool calledFromFinalizer = false);
+
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         public override Task FlushAsync(CancellationToken cancellationToken)

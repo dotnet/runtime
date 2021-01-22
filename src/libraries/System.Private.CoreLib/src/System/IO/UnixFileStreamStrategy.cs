@@ -342,7 +342,7 @@ namespace System.IO
         }
 
         /// <summary>Writes any data in the write buffer to the underlying stream and resets the buffer.</summary>
-        private void FlushWriteBuffer()
+        protected sealed override void FlushWriteBuffer(bool calledFromFinalizer = false)
         {
             AssertBufferInvariants();
             if (_writePos > 0)

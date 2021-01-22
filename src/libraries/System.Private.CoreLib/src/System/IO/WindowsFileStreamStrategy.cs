@@ -319,7 +319,7 @@ namespace System.IO
         // Writes are buffered.  Anytime the buffer fills up
         // (_writePos + delta > _bufferSize) or the buffer switches to reading
         // and there is left over data (_writePos > 0), this function must be called.
-        private void FlushWriteBuffer(bool calledFromFinalizer = false)
+        protected sealed override void FlushWriteBuffer(bool calledFromFinalizer = false)
         {
             if (_writePos == 0) return;
             Debug.Assert(_readPos == 0 && _readLength == 0, "FileStream: Read buffer must be empty in FlushWrite!");
