@@ -7,12 +7,12 @@
 
   <!--
       Public properties (required):
-      - $(WasmAppDir)      - AppBundle dir
-      - $(WasmMainAssemblyFileName)- Defaults to $(TargetFileName)
       - $(WasmMainJSPath)
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
+      - $(WasmAppDir)        - AppBundle dir (Defaults to `$(OutputPath)\$(Configuration)\AppBundle`)
+      - $(WasmMainAssemblyFileName)- Defaults to $(TargetFileName)
       - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
       - $(WasmNativeStrip)   - Whenever to strip the native executable. Defaults to true.
       - $(RunAOTCompilation) - Defaults to false.
@@ -109,6 +109,8 @@
 
   <Target Name="_BeforeWasmBuildApp">
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+    <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
@@ -116,14 +118,13 @@
       <_WasmIntermediateOutputPath>$(IntermediateOutputPath)\wasm\</_WasmIntermediateOutputPath>
     </PropertyGroup>
 
-      <Error Condition="'$(WasmAppDir)' == ''" Text="%24(WasmAppDir) property needs to be set" />
-      <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-      <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
-
-      <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
-      <ItemGroup>
-          <_WasmAssemblies Include="@(WasmAssembliesToBundle)" />
-      </ItemGroup>
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
+    <PropertyGroup>
+      <MicrosoftNetCoreAppRuntimePackRidDir Condition="!HasTrailingSlash('$(MicrosoftNetCoreAppRuntimePackRidDir)')">$(MicrosoftNetCoreAppRuntimePackRidDir)\</MicrosoftNetCoreAppRuntimePackRidDir>
+    </PropertyGroup>
+    <ItemGroup>
+        <_WasmAssemblies Include="@(WasmAssembliesToBundle)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_WasmBuildApp" BeforeTargets="WasmBuildApp" DependsOnTargets="$(WasmBuildAppDependsOn)">
