@@ -821,7 +821,7 @@ static SimdIntrinsic sha256_methods [] = {
 	{SN_HashUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H},
 	{SN_HashUpdate2, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H2},
 	{SN_ScheduleUpdate0, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA256SU0},
-	{SN_ScheduleUpdate1, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA256SU1},
+	{SN_ScheduleUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256SU1},
 	{SN_get_IsSupported}
 };
 
@@ -901,7 +901,7 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 	}
 
 	if (is_hw_intrinsics_class (klass, "Sha256", &is_64bit)) {
-		feature =  MONO_CPU_ARM64_SHA256;
+		feature =  MONO_CPU_ARM64_CRYPTO;
 		intrinsics = sha256_methods;
 		intrinsics_size = sizeof (sha256_methods);
 	}
@@ -927,12 +927,12 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		}
 
 		if (!supported && cfg->compile_aot) {
-			/* Can't emit non-supported llvm intrinsics */
+			// Can't emit non-supported llvm intrinsics
 			if (cfg->method != cmethod) {
-				/* Keep the original call so we end up in the intrinsic method */
+				// Keep the original call so we end up in the intrinsic method
 				return NULL;
 			} else {
-				/* Emit an exception from the intrinsic method */
+				// Emit an exception from the intrinsic method
 				mono_emit_jit_icall (cfg, mono_throw_not_supported, NULL);
 				return NULL;
 			}

@@ -2871,7 +2871,7 @@ typedef enum {
 #ifdef TARGET_ARM64
 	MONO_CPU_ARM64_BASE   = 1 << 1,
 	MONO_CPU_ARM64_CRC    = 1 << 2,
-	MONO_CPU_ARM64_SHA256 = 1 << 3,
+	MONO_CPU_ARM64_CRYPTO = 1 << 3,
 #endif
 } MonoCPUFeatures;
 
