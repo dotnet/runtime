@@ -137,6 +137,8 @@ namespace System.IO
 
         protected abstract ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken);
 
+        protected abstract long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false);
+
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         public override Task FlushAsync(CancellationToken cancellationToken)

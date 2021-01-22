@@ -776,7 +776,7 @@ namespace System.IO
         /// point for offset, using a value of type SeekOrigin.
         /// </param>
         /// <returns>The new position in the stream.</returns>
-        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin)
+        protected override long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
             Debug.Assert(!fileHandle.IsClosed && CanSeekCore(fileHandle));
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
