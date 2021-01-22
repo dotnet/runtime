@@ -20,7 +20,7 @@ namespace System.IO
         internal unsafe void Init(ref FileStatus fileStatus)
         {
             _fileStatus = fileStatus;
-            _fileStatus.EnsureStatInitialized(FullPath);
+            _fileStatus.EnsureCachesInitialized(FullPath);
         }
 
         public FileAttributes Attributes

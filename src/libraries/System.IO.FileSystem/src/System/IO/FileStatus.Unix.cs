@@ -92,7 +92,7 @@ namespace System.IO
             _initializedMainCache == 0 && // Should always be successfully refreshed
             (_initializedSecondaryCache == -1 || _initializedSecondaryCache == 0); // Only refreshed when path is detected to be a symbolic link
 
-        internal void EnsureStatInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
+        internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             if (!IsValid)
             {
@@ -126,7 +126,7 @@ namespace System.IO
         {
             // IMPORTANT: Attribute logic must match the logic in FileSystemEntry
 
-            EnsureStatInitialized(path);
+            EnsureCachesInitialized(path);
 
             if (!_exists)
             {
@@ -161,7 +161,7 @@ namespace System.IO
 
         internal DateTimeOffset GetCreationTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path, continueOnError);
+            EnsureCachesInitialized(path, continueOnError);
             if (!_exists)
             {
                 return DateTimeOffset.FromFileTime(0);
@@ -185,13 +185,13 @@ namespace System.IO
 
         internal bool GetExists(ReadOnlySpan<char> path)
         {
-            EnsureStatInitialized(path, continueOnError: true);
+            EnsureCachesInitialized(path, continueOnError: true);
             return _exists && InitiallyDirectory == _isDirectory;
         }
 
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path, continueOnError);
+            EnsureCachesInitialized(path, continueOnError);
             if (!_exists)
             {
                 return DateTimeOffset.FromFileTime(0);
@@ -201,7 +201,7 @@ namespace System.IO
 
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path, continueOnError);
+            EnsureCachesInitialized(path, continueOnError);
             return _mainCache.Size;
         }
 
@@ -219,25 +219,25 @@ namespace System.IO
 
         internal bool IsDirectory(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path, continueOnError);
+            EnsureCachesInitialized(path, continueOnError);
             return _isDirectory; // Value should be set in Refresh
         }
 
         internal bool IsHidden(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path, continueOnError);
+            EnsureCachesInitialized(path, continueOnError);
             return HasHiddenFlag;
         }
 
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path, continueOnError);
+            EnsureCachesInitialized(path, continueOnError);
             return HasReadOnlyFlag;
         }
 
         internal bool IsSymbolicLink(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path, continueOnError);
+            EnsureCachesInitialized(path, continueOnError);
             return HasSymbolicLinkFlag;
         }
 
@@ -282,7 +282,7 @@ namespace System.IO
         {
             // force a refresh so that we have an up-to-date times for values not being overwritten
             Invalidate();
-            EnsureStatInitialized(path);
+            EnsureCachesInitialized(path);
 
             // we use utimes()/utimensat() to set the accessTime and writeTime
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
@@ -335,7 +335,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_InvalidFileAttrs, "Attributes");
             }
 
-            EnsureStatInitialized(path);
+            EnsureCachesInitialized(path);
 
             if (!_exists)
             {
@@ -403,7 +403,7 @@ namespace System.IO
 
         internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path, continueOnError);
+            EnsureCachesInitialized(path, continueOnError);
             if (!_exists)
             {
                 return DateTimeOffset.FromFileTime(0);
