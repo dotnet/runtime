@@ -285,6 +285,7 @@ namespace System.IO.Compression
             }
         }
 
+        // https://stackoverflow.com/questions/9456563/gzipstream-doesnt-detect-corrupt-data-even-crc32-passes
         [Fact]
         public void StrictValidation()
         {
@@ -312,7 +313,7 @@ namespace System.IO.Compression
 
                 using (var decomStream = new MemoryStream(cmpData))
                 {
-                    using (var hgs = new GZipStream(decomStream, CompressionMode.Decompress, false))
+                    using (var hgs = new GZipStream(decomStream, CompressionMode.Decompress, false, strictValidation: true))
                     {
                         using (var reader = new StreamReader(hgs))
                         {
@@ -348,7 +349,7 @@ namespace System.IO.Compression
             {
                (
                     s => new System.IO.Compression.GZipStream(s, System.IO.Compression.CompressionLevel.Fastest),
-                    s => new System.IO.Compression.GZipStream(s, CompressionMode.Decompress)
+                    s => new System.IO.Compression.GZipStream(s, CompressionMode.Decompress, false, strictValidation: true)
                )
             };
             string r = null;

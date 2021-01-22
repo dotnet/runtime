@@ -17,6 +17,7 @@ namespace System.IO.Compression
         private Stream _stream;
         private CompressionMode _mode;
         private bool _leaveOpen;
+        private bool _strictValidation;
         private Inflater? _inflater;
         private Deflater? _deflater;
         private byte[]? _buffer;
@@ -49,7 +50,7 @@ namespace System.IO.Compression
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
-        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
+        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1, bool strictValidation = false)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
@@ -60,10 +61,11 @@ namespace System.IO.Compression
                     if (!stream.CanRead)
                         throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-                    _inflater = new Inflater(windowBits, uncompressedSize);
+                    _inflater = new Inflater(windowBits, uncompressedSize, strictValidation);
                     _stream = stream;
                     _mode = CompressionMode.Decompress;
                     _leaveOpen = leaveOpen;
+                    _strictValidation = strictValidation;
                     break;
 
                 case CompressionMode.Compress:
@@ -266,6 +268,10 @@ namespace System.IO.Compression
             while (true)
             {
                 int bytesRead = _inflater.Inflate(buffer.Slice(totalRead));
+                if (bytesRead == -1 && _strictValidation)
+                {
+                    throw new InvalidDataException(SR.GenericInvalidData);
+                }
                 totalRead += bytesRead;
                 if (totalRead == buffer.Length)
                 {
@@ -858,10 +864,14 @@ namespace System.IO.Compression
                         {
                             await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), _cancellationToken).ConfigureAwait(false);
                         }
-                        else if (_deflateStream._inflater.NeedsInput())
+                        else if (_deflateStream._inflater.NeedsInput() && bytesRead == 0)
                         {
                             // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
                             break;
+                        }
+                        else if (bytesRead == -1 && _deflateStream._strictValidation)
+                        {
+                            throw new InvalidDataException(SR.GenericInvalidData);
                         }
                     }
 
@@ -890,10 +900,14 @@ namespace System.IO.Compression
                         {
                             _destination.Write(_arrayPoolBuffer, 0, bytesRead);
                         }
-                        else if (_deflateStream._inflater.NeedsInput())
+                        else if (_deflateStream._inflater.NeedsInput() && bytesRead == 0)
                         {
                             // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
                             break;
+                        }
+                        else if (bytesRead == -1 && _deflateStream._strictValidation)
+                        {
+                            throw new InvalidDataException(SR.GenericInvalidData);
                         }
                     }
 
@@ -935,10 +949,14 @@ namespace System.IO.Compression
                     {
                         await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
+                    else if (_deflateStream._inflater.NeedsInput() && bytesRead == 0)
                     {
                         // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
                         break;
+                    }
+                    else if (bytesRead == -1 && _deflateStream._strictValidation)
+                    {
+                        throw new InvalidDataException(SR.GenericInvalidData);
                     }
                 }
             }
@@ -972,10 +990,14 @@ namespace System.IO.Compression
                     {
                         _destination.Write(_arrayPoolBuffer, 0, bytesRead);
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
+                    else if (_deflateStream._inflater.NeedsInput() && bytesRead == 0)
                     {
                         // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
                         break;
+                    }
+                    else if (bytesRead == -1 && _deflateStream._strictValidation)
+                    {
+                        throw new InvalidDataException(SR.GenericInvalidData);
                     }
                 }
             }

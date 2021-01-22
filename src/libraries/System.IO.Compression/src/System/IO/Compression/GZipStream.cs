@@ -20,6 +20,11 @@ namespace System.IO.Compression
             _deflateStream = new DeflateStream(stream, mode, leaveOpen, ZLibNative.GZip_DefaultWindowBits);
         }
 
+        public GZipStream(Stream stream, CompressionMode mode, bool leaveOpen, bool strictValidation)
+        {
+            _deflateStream = new DeflateStream(stream, mode, leaveOpen, ZLibNative.GZip_DefaultWindowBits, strictValidation: strictValidation);
+        }
+
         // Implies mode = Compress
         public GZipStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false)
         {

@@ -22,6 +22,7 @@ namespace System.IO.Compression
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
         private GCHandle _inputBufferHandle;                // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
+        private readonly bool _strictValidation;
         private long _currentInflatedCount;
 
         private object SyncLock => this;                    // Used to make writing to unmanaged structures atomic
@@ -29,7 +30,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Initialized the Inflater with the given windowBits size
         /// </summary>
-        internal Inflater(int windowBits, long uncompressedSize = -1)
+        internal Inflater(int windowBits, long uncompressedSize = -1, bool strictValidation = false)
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
             _finished = false;
@@ -37,6 +38,7 @@ namespace System.IO.Compression
             _windowBits = windowBits;
             InflateInit(windowBits);
             _uncompressedSize = uncompressedSize;
+            _strictValidation = strictValidation;
         }
 
         public int AvailableOutput => (int)_zlibStream.AvailOut;
@@ -119,7 +121,8 @@ namespace System.IO.Compression
 
         private unsafe void ReadOutput(byte* bufPtr, int length, out int bytesRead)
         {
-            if (ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead) == ZLibNative.ErrorCode.StreamEnd)
+            var result = ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead);
+            if (result == ZLibNative.ErrorCode.StreamEnd)
             {
                 if (!NeedsInput() && IsGzipStream() && _inputBufferHandle.IsAllocated)
                 {
@@ -129,6 +132,10 @@ namespace System.IO.Compression
                 {
                     _finished = true;
                 }
+            }
+            else if (result == ZLibNative.ErrorCode.BufError && _strictValidation)
+            {
+                bytesRead = -1;
             }
         }
 
