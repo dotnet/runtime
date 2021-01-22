@@ -104,7 +104,7 @@ namespace System.IO
             }
         }
 
-        ~FileStreamImpl()
+        ~CommonFileStreamStrategyTemplate()
         {
             // it looks like having this finalizer is mandatory,
             // as we can not guarantee that the Strategy won't be null in FileStream finalizer
