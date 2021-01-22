@@ -3721,10 +3721,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             case NI_System_Math_Cosh:
                             case NI_System_Math_Exp:
                             case NI_System_Math_Floor:
+                            case NI_System_Math_FMod:
                             case NI_System_Math_FusedMultiplyAdd:
+                            case NI_System_Math_ILogB:
+                            case NI_System_Math_Log:
+                            case NI_System_Math_Log2:
                             case NI_System_Math_Log10:
                             case NI_System_Math_Pow:
                             case NI_System_Math_Round:
+                            case NI_System_Math_ScaleB:
                             case NI_System_Math_Sin:
                             case NI_System_Math_Sinh:
                             case NI_System_Math_Sqrt:
@@ -11625,8 +11630,20 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case NI_System_Math_Floor:
                         printf(" floor");
                         break;
+                    case NI_System_Math_FMod:
+                        printf(" fmod");
+                        break;
                     case NI_System_Math_FusedMultiplyAdd:
                         printf(" fma");
+                        break;
+                    case NI_System_Math_ILogB:
+                        printf(" ilogb");
+                        break;
+                    case NI_System_Math_Log:
+                        printf(" log");
+                        break;
+                    case NI_System_Math_Log2:
+                        printf(" log2");
                         break;
                     case NI_System_Math_Log10:
                         printf(" log10");
@@ -11636,6 +11653,9 @@ void Compiler::gtDispTree(GenTree*     tree,
                         break;
                     case NI_System_Math_Round:
                         printf(" round");
+                        break;
+                    case NI_System_Math_ScaleB:
+                        printf(" scaleb");
                         break;
                     case NI_System_Math_Sin:
                         printf(" sin");

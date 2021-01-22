@@ -4422,9 +4422,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Cosh:
             case NI_System_Math_Exp:
             case NI_System_Math_Floor:
+            case NI_System_Math_FMod:
+            case NI_System_Math_ILogB:
+            case NI_System_Math_Log:
+            case NI_System_Math_Log2:
             case NI_System_Math_Log10:
             case NI_System_Math_Pow:
             case NI_System_Math_Round:
+            case NI_System_Math_ScaleB
             case NI_System_Math_Sin:
             case NI_System_Math_Sinh:
             case NI_System_Math_Sqrt:
@@ -4774,9 +4779,25 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Math_Floor;
             }
+            else if (strcmp(methodName, "FMod") == 0)
+            {
+                result = NI_System_Math_FMod;
+            }
             else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
             {
                 result = NI_System_Math_FusedMultiplyAdd;
+            }
+            else if (strcmp(methodName, "ILogB") == 0)
+            {
+                result = NI_System_Math_ILogB;
+            }
+            else if (strcmp(methodName, "Log") == 0)
+            {
+                result = NI_System_Math_Log;
+            }
+            else if (strcmp(methodName, "Log2") == 0)
+            {
+                result = NI_System_Math_Log2;
             }
             else if (strcmp(methodName, "Log10") == 0)
             {
@@ -4789,6 +4810,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "Round") == 0)
             {
                 result = NI_System_Math_Round;
+            }
+            else if (strcmp(methodName, "ScaleB") == 0)
+            {
+                result = NI_System_Math_ScaleB;
             }
             else if (strcmp(methodName, "Sin") == 0)
             {
@@ -20646,10 +20671,15 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Cosh:
         case NI_System_Math_Exp:
         case NI_System_Math_Floor:
+        case NI_System_Math_FMod:
         case NI_System_Math_FusedMultiplyAdd:
+        case NI_System_Math_ILogB:
+        case NI_System_Math_Log:
+        case NI_System_Math_Log2:
         case NI_System_Math_Log10:
         case NI_System_Math_Pow:
         case NI_System_Math_Round:
+        case NI_System_Math_ScaleB:
         case NI_System_Math_Sin:
         case NI_System_Math_Sinh:
         case NI_System_Math_Sqrt:

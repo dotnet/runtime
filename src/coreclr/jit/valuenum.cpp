@@ -4704,6 +4704,15 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 break;
             case NI_System_Math_Floor:
                 vnf = VNF_Floor;
+                break
+            case NI_System_Math_ILogB:
+                vnf = VNF_ILogB;
+                break;
+            case NI_System_Math_Log:
+                vnf = VNF_Log;
+                break;
+            case NI_System_Math_Log2:
+                vnf = VNF_Log2;
                 break;
             case NI_System_Math_Log10:
                 vnf = VNF_Log10;
@@ -4766,8 +4775,16 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
             vnf = VNF_Atan2;
             break;
 
+        case NI_System_Math_FMod:
+            vnf = VNF_FMod;
+            break;
+
         case NI_System_Math_Pow:
             vnf = VNF_Pow;
+            break;
+
+        case NI_System_Math_ScaleB:
+            vnf = VNF_ScaleB;
             break;
 
         default:
