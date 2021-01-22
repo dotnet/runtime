@@ -223,21 +223,24 @@ namespace System.IO
             return _canSeek.GetValueOrDefault();
         }
 
-        private long GetLengthInternal()
+        public override long Length
         {
-            // Get the length of the file as reported by the OS
-            Interop.Sys.FileStatus status;
-            CheckFileCall(Interop.Sys.FStat(_fileHandle, out status));
-            long length = status.Size;
-
-            // But we may have buffered some data to be written that puts our length
-            // beyond what the OS is aware of.  Update accordingly.
-            if (_writePos > 0 && _filePosition + _writePos > length)
+            get
             {
-                length = _writePos + _filePosition;
-            }
+                // Get the length of the file as reported by the OS
+                Interop.Sys.FileStatus status;
+                CheckFileCall(Interop.Sys.FStat(_fileHandle, out status));
+                long length = status.Size;
 
-            return length;
+                // But we may have buffered some data to be written that puts our length
+                // beyond what the OS is aware of.  Update accordingly.
+                if (_writePos > 0 && _filePosition + _writePos > length)
+                {
+                    length = _writePos + _filePosition;
+                }
+
+                return length;
+            }
         }
 
         /// <summary>Releases the unmanaged resources used by the stream.</summary>

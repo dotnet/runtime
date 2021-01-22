@@ -312,8 +312,6 @@ namespace System.IO
 
         internal override bool IsAsync => _useAsyncIO;
 
-        public override long Length => GetLengthInternal();
-
         /// <summary>
         /// Verify that the actual position of the OS's handle equals what we expect it to.
         /// This will fail if someone else moved the UnixFileStream's handle or if

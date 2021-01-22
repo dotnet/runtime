@@ -199,21 +199,24 @@ namespace System.IO
 
         public override bool CanSeek => _canSeek;
 
-        private unsafe long GetLengthInternal()
+        public unsafe override long Length
         {
-            Interop.Kernel32.FILE_STANDARD_INFO info;
+            get
+            {
+                Interop.Kernel32.FILE_STANDARD_INFO info;
 
-            if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
-                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-            long len = info.EndOfFile;
+                if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+                    throw Win32Marshal.GetExceptionForLastWin32Error(_path);
+                long len = info.EndOfFile;
 
-            // If we're writing near the end of the file, we must include our
-            // internal buffer in our Length calculation.  Don't flush because
-            // we use the length of the file in our async write method.
-            if (_writePos > 0 && _filePosition + _writePos > len)
-                len = _writePos + _filePosition;
+                // If we're writing near the end of the file, we must include our
+                // internal buffer in our Length calculation.  Don't flush because
+                // we use the length of the file in our async write method.
+                if (_writePos > 0 && _filePosition + _writePos > len)
+                    len = _writePos + _filePosition;
 
-            return len;
+                return len;
+            }
         }
 
         protected override void Dispose(bool disposing)
