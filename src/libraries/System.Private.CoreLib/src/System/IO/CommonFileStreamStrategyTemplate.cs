@@ -119,6 +119,8 @@ namespace System.IO
 
         protected abstract void FlushWriteBuffer(bool calledFromFinalizer = false);
 
+        protected abstract void FlushOSBuffer();
+
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         public override Task FlushAsync(CancellationToken cancellationToken)

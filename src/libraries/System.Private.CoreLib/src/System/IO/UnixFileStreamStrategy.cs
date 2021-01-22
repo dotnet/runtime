@@ -313,7 +313,7 @@ namespace System.IO
         }
 
         /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
-        private void FlushOSBuffer()
+        protected override void FlushOSBuffer()
         {
             if (Interop.Sys.FSync(_fileHandle) < 0)
             {

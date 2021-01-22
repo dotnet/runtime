@@ -286,7 +286,7 @@ namespace System.IO
             }
         }
 
-        private void FlushOSBuffer()
+        protected override void FlushOSBuffer()
         {
             if (!Interop.Kernel32.FlushFileBuffers(_fileHandle))
             {
