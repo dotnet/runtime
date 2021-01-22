@@ -308,7 +308,7 @@ namespace System.IO
             // override may already exist on a derived type.
             if (_useAsyncIO && _writePos > 0)
             {
-                return new ValueTask(Task.Factory.StartNew(static s => ((FileStreamImpl)s!).Dispose(), this,
+                return new ValueTask(Task.Factory.StartNew(static s => ((UnixFileStreamStrategy)s!).Dispose(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
             }
 
@@ -533,7 +533,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStreamImpl)s!;
+                var thisRef = (UnixFileStreamStrategy)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {
@@ -694,7 +694,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStreamImpl)s!;
+                var thisRef = (UnixFileStreamStrategy)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {

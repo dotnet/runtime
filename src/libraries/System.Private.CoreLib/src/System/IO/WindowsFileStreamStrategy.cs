@@ -1470,7 +1470,7 @@ namespace System.IO
             internal static readonly IOCompletionCallback s_callback = IOCallback;
 
             /// <summary>The FileStream that owns this instance.</summary>
-            internal readonly FileStreamImpl _fileStream;
+            internal readonly WindowsFileStreamStrategy _fileStream;
 
             /// <summary>Tracked position representing the next location from which to read.</summary>
             internal long _position;
@@ -1491,7 +1491,7 @@ namespace System.IO
             internal object CancellationLock => this;
 
             /// <summary>Initialize the awaitable.</summary>
-            internal AsyncCopyToAwaitable(FileStreamImpl fileStream)
+            internal AsyncCopyToAwaitable(WindowsFileStreamStrategy fileStream)
             {
                 _fileStream = fileStream;
             }
