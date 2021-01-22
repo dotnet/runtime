@@ -114,6 +114,15 @@ namespace System.Tests
                 yield return new object[] { (sbyte)0x24, "x", defaultFormat, "24" };
                 yield return new object[] { (sbyte)-0x24, "x", defaultFormat, "dc" };
                 yield return new object[] { (sbyte)24, "N", defaultFormat, string.Format("{0:N}", 24.00) };
+
+                yield return new object[] { (sbyte)32, "C100", defaultFormat, "$32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+                yield return new object[] { (sbyte)32, "D100", defaultFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032" };
+                yield return new object[] { (sbyte)32, "E100", defaultFormat, "3.2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+                yield return new object[] { (sbyte)32, "F100", defaultFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+                yield return new object[] { (sbyte)32, "N100", defaultFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+                yield return new object[] { (sbyte)32, "P100", defaultFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000%" };
+                yield return new object[] { (sbyte)32, "X100", defaultFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
+
             }
 
             var customFormat = new NumberFormatInfo()
