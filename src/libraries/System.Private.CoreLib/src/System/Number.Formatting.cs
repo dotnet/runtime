@@ -1705,7 +1705,12 @@ namespace System
                     int i = 1;
                     while (i < format.Length && (((uint)format[i] - '0') < 10))
                     {
-                        n = checked((n * 10) + format[i++] - '0');
+                        int temp = ((n * 10) + format[i++] - '0');
+                        if (temp < n)
+                        {
+                            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                        }
+                        n = temp;
                     }
 
                     // If we're at the end of the digits rather than having stopped because we hit something
