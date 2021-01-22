@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
             DeformatterAlgorithm = el.SearchForTextOfTag("Deformatter");
         }
 
-        [RequiresUnreferencedCode("CreateDeformatter it not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
+        [RequiresUnreferencedCode("CreateDeformatter is not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
         public virtual AsymmetricSignatureDeformatter CreateDeformatter(AsymmetricAlgorithm key)
         {
             AsymmetricSignatureDeformatter? item = (AsymmetricSignatureDeformatter?)CryptoConfig.CreateFromName(DeformatterAlgorithm!);
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
             return item;
         }
 
-        [RequiresUnreferencedCode("CreateFormatter it not trim compatible because the algorithm implementation referenced by FormatterAlgorithm might be removed.")]
+        [RequiresUnreferencedCode("CreateFormatter is not trim compatible because the algorithm implementation referenced by FormatterAlgorithm might be removed.")]
         public virtual AsymmetricSignatureFormatter CreateFormatter(AsymmetricAlgorithm key)
         {
             AsymmetricSignatureFormatter? item = (AsymmetricSignatureFormatter?)CryptoConfig.CreateFromName(FormatterAlgorithm!);
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             return item;
         }
 
-        [RequiresUnreferencedCode("CreateDigest it not trim compatible because the algorithm implementation referenced by DigestAlgorithm might be removed.")]
+        [RequiresUnreferencedCode("CreateDigest is not trim compatible because the algorithm implementation referenced by DigestAlgorithm might be removed.")]
         public virtual HashAlgorithm? CreateDigest()
         {
             return (HashAlgorithm?)CryptoConfig.CreateFromName(DigestAlgorithm!);

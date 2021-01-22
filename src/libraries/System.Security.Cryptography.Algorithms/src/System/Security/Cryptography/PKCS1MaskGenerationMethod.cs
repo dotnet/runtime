@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
         private string _hashNameValue;
         private const string DefaultHash = "SHA1";
 
-        [RequiresUnreferencedCode("PKCS1MaskGenerationMethod it not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
+        [RequiresUnreferencedCode("PKCS1MaskGenerationMethod is not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
         public PKCS1MaskGenerationMethod()
         {
             _hashNameValue = DefaultHash;

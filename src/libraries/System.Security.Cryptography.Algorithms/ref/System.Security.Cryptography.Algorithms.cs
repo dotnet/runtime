@@ -534,7 +534,7 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class PKCS1MaskGenerationMethod : System.Security.Cryptography.MaskGenerationMethod
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PKCS1MaskGenerationMethod it not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PKCS1MaskGenerationMethod is not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
         public PKCS1MaskGenerationMethod() { }
         public string HashName { get { throw null; } set { } }
         public override byte[] GenerateMask(byte[] rgbSeed, int cbReturn) { throw null; }
@@ -884,11 +884,11 @@ namespace System.Security.Cryptography
         public string? DigestAlgorithm { get { throw null; } set { } }
         public string? FormatterAlgorithm { get { throw null; } set { } }
         public string? KeyAlgorithm { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateDeformatter it not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateDeformatter is not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
         public virtual System.Security.Cryptography.AsymmetricSignatureDeformatter CreateDeformatter(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateDigest it not trim compatible because the algorithm implementation referenced by DigestAlgorithm might be removed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateDigest is not trim compatible because the algorithm implementation referenced by DigestAlgorithm might be removed.")]
         public virtual System.Security.Cryptography.HashAlgorithm? CreateDigest() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateFormatter it not trim compatible because the algorithm implementation referenced by FormatterAlgorithm might be removed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateFormatter is not trim compatible because the algorithm implementation referenced by FormatterAlgorithm might be removed.")]
         public virtual System.Security.Cryptography.AsymmetricSignatureFormatter CreateFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
