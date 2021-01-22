@@ -410,18 +410,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [ThreadStatic]
         public static int ThreadId;
 
-        private class Foo
+        private class OuterSingleton
         {
-            public Bar Bar;
-            public Foo(Bar bar)
+            public InnerSingleton InnerSingleton;
+            public OuterSingleton(InnerSingleton innerSingleton)
             {
-                Bar = bar;
+                InnerSingleton = innerSingleton;
             }
         }
 
-        private class Bar
+        private class InnerSingleton
         {
-            public Bar(ManualResetEvent mre1, ManualResetEvent mre2)
+            public InnerSingleton(ManualResetEvent mre1, ManualResetEvent mre2)
             {
                 // Making sure ctor gets called only once
                 Assert.True(!mre1.WaitOne(0) && !mre2.WaitOne(0)); 
@@ -437,16 +437,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [Fact]
         public async Task GetRequiredService_ResolvingSameSingletonInTwoThreads_SameServiceReturned()
         {
-            Bar bar = null;
-            Foo foo = null;
+            InnerSingleton innerSingleton = null;
+            OuterSingleton outerSingleton = null;
             IServiceProvider sp = null;
 
             // Arrange
             var services = new ServiceCollection();
 
-            services.AddSingleton<Foo>();
-            services.AddSingleton<Bar>(sp => {
-                return new Bar(_mreForThread1, _mreForThread2);
+            services.AddSingleton<OuterSingleton>();
+            services.AddSingleton<InnerSingleton>(sp => {
+                return new InnerSingleton(_mreForThread1, _mreForThread2);
             });
 
             sp = services.BuildServiceProvider();
@@ -454,10 +454,10 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var t1 = Task.Run(() =>
             {
                 using var scope1 = sp.CreateScope();
-                foo = scope1.ServiceProvider.GetRequiredService<Foo>();
+                outerSingleton = scope1.ServiceProvider.GetRequiredService<OuterSingleton>();
             });
 
-            // Wait until mre2 gets set in Bar ctor
+            // Wait until mre2 gets set in InnerSingleton ctor
             _mreForThread2.WaitOne();
 
             var t2 = Task.Run(() =>
@@ -465,8 +465,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 using var scope2 = sp.CreateScope();
                 _mreForThread3.Set();
 
-                // This waits on Bar singleton lock that is taken in thread 1
-                bar = scope2.ServiceProvider.GetRequiredService<Bar>();
+                // This waits on InnerSingleton singleton lock that is taken in thread 1
+                innerSingleton = scope2.ServiceProvider.GetRequiredService<InnerSingleton>();
             });
 
             var t3 = Task.Run(() =>
@@ -476,9 +476,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 // Set a timeout before unblocking execution via mre1:
                 Assert.False(_mreForThread1.WaitOne(10));
 
-                // By this time thread 1 has already reached Bar ctor and is waiting for mre1. 
-                // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for Bar
-                // (rather than trying to instantiating Bar twice).
+                // By this time thread 1 has already reached InnerSingleton ctor and is waiting for mre1. 
+                // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for InnerSingleton
+                // (rather than trying to instantiating InnerSingleton twice).
                 _mreForThread1.Set();
             });
 
@@ -488,9 +488,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             await t3;
 
             // Assert
-            Assert.NotNull(foo);
-            Assert.NotNull(bar);
-            Assert.Same(foo.Bar, bar);
+            Assert.NotNull(outerSingleton);
+            Assert.NotNull(innerSingleton);
+            Assert.Same(outerSingleton.InnerSingleton, innerSingleton);
         }
 
         [Fact]
@@ -702,12 +702,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        private class Thing0
-        {
-            public Thing0()
-            {
-            }
-        }
+        private class Thing0 { }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42160")] // We don't support value task services currently
         [Theory]
@@ -1041,84 +1036,15 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             return succeeded;
         }
 
-        private class A
-        {
-            public A()
-            {
-                
-            }
-        }
-
-        private class B
-        {
-            public B()
-            {
-                
-            }
-        }
-
-        private class C
-        {
-            public C()
-            {
-                
-            }
-        }
-
-        private class D
-        {
-            public D()
-            {
-                
-            }
-        }
-
-        private class E
-        {
-            public E()
-            {
-                
-            }
-        }
-
-        private class F
-        {
-            public F()
-            {
-                
-            }
-        }
-
-        private class G
-        {
-            public G()
-            {
-                
-            }
-        }
-
-        private class H
-        {
-            public H()
-            {
-                
-            }
-        }
-
-        private class I
-        {
-            public I()
-            {
-                
-            }
-        }
-
-        private class J
-        {
-            public J()
-            {
-                
-            }
-        }
+        private class A { }
+        private class B { }
+        private class C { }
+        private class D { }
+        private class E { }
+        private class F { }
+        private class G { }
+        private class H { }
+        private class I { }
+        private class J { }
     }
 }
