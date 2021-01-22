@@ -2904,7 +2904,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
         JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema "
                 "elements, %d runs\n",
-                info.compFullName, hr, fgPgoSchema, fgPgoData, fgPgoSchemaCount, fgNumProfileRuns);
+                info.compFullName, hr, dspPtr(fgPgoSchema), dspPtr(fgPgoData), fgPgoSchemaCount, fgNumProfileRuns);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
