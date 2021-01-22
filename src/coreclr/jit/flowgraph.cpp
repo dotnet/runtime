@@ -3192,6 +3192,8 @@ bool Compiler::fgExpandRarelyRunBlocks()
     return result;
 }
 
+#if defined(FEATURE_EH_FUNCLETS)
+
 /*****************************************************************************
  * Introduce a new head block of the handler for the prolog to be put in, ahead
  * of the current handler head 'block'.
@@ -3417,6 +3419,8 @@ void Compiler::fgCreateFunclets()
     fgDebugCheckBBlist();
 #endif // DEBUG
 }
+
+#endif defined(FEATURE_EH_FUNCLETS)
 
 /*-------------------------------------------------------------------------
  *
@@ -3644,14 +3648,6 @@ EXIT:;
 
     fgFirstColdBlock = firstColdBlock;
 }
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
-
-/*****************************************************************************
- */
 
 /* static */
 unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
