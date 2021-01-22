@@ -101,6 +101,13 @@ namespace System.Net.Sockets.Tests
         [InlineData(false)]
         public async Task ClosedDuringOperation_Throws_ObjectDisposedExceptionOrSocketException(bool closeOrDispose)
         {
+            if (UsesSync && PlatformDetection.IsOSX)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/47342")]
+                // On Mac, Close/Dispose hangs when invoked concurrently with a blocking UDP receive.
+                return;
+            }
+
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket.BindToAnonymousPort(IPAddress.Any);
 
