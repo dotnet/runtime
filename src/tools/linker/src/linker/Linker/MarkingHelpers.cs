@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -14,7 +14,8 @@ namespace Mono.Linker
 
 		public void MarkExportedType (ExportedType type, ModuleDefinition module, in DependencyInfo reason)
 		{
-			_context.Annotations.Mark (type, reason);
+			if (!_context.Annotations.MarkProcessed (type, reason))
+				return;
 			if (_context.KeepTypeForwarderOnlyAssemblies)
 				_context.Annotations.Mark (module, new DependencyInfo (DependencyKind.ModuleOfExportedType, type));
 		}

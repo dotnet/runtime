@@ -51,6 +51,7 @@ namespace Mono.Linker
 
 		// Modules and assemblies
 		ScopeOfType = 28, // type -> module/assembly
+		AssemblyOfModule = 81, // module -> assembly
 		TypeInAssembly = 29, // assembly -> type
 		ModuleOfExportedType = 30, // exported type -> module
 		ExportedType = 31, // type -> exported type
