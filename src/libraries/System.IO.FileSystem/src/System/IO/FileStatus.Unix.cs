@@ -73,6 +73,8 @@ namespace System.IO
             }
         }
 
+        internal bool HasSecondaryDirectoryFlag => HasDirectoryFlag(_secondaryCache);
+
         // Checks if the main path is a symbolic link
         // Only call if Refresh has been successfully called at least once
         private bool HasSymbolicLinkFlag =>
@@ -81,6 +83,8 @@ namespace System.IO
         // We track intent of creation to know whether or not we want to (1) create a
         // DirectoryInfo around this status struct or (2) actually are part of a DirectoryInfo.
         internal bool InitiallyDirectory { get; set; }
+
+        internal bool IsSecondaryCacheValid => _initializedSecondaryCache == 0;
 
         private bool IsValid =>
             _initializedMainCache == 0 && // Should always be successfully refreshed
@@ -202,7 +206,7 @@ namespace System.IO
         // Checks if the specified stat or lstat cache has the directory attribute
         // Only call if Refresh has been successfully called at least once and
         // you're certain the passed-in cache was successfully retrieved
-        private bool HasDirectoryFlag(Interop.Sys.FileStatus cache) =>
+        private static bool HasDirectoryFlag(Interop.Sys.FileStatus cache) =>
             (cache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
 
         internal void Invalidate()
