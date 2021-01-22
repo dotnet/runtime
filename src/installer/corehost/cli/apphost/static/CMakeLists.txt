@@ -33,7 +33,7 @@ set(HEADERS
 
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
-add_definitions(-DEXPORT_SHARED_API=1)
+remove_definitions(-DEXPORT_SHARED_API)
 add_definitions(-DHOSTPOLICY_EMBEDDED)
 add_definitions(-DNATIVE_LIBS_EMBEDDED)
 
@@ -50,8 +50,32 @@ if(CLR_CMAKE_TARGET_WIN32)
         ../apphost.windows.h)
 endif()
 
+if(CLR_CMAKE_TARGET_WIN32)
+    add_linker_flag("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
+
+else()
+    if(CLR_CMAKE_TARGET_OSX)
+        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_OSXexports.src)
+    else()
+        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
+    endif()
+
+    set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/singlefilehost.exports)
+    generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+
+    set_exports_linker_option(${EXPORTS_FILE})
+endif()
+
 include(../../exe.cmake)
 include(configure.cmake)
+
+if(CLR_CMAKE_HOST_UNIX)
+    add_custom_target(singlefilehost_exports DEPENDS ${EXPORTS_FILE})
+    add_dependencies(singlefilehost singlefilehost_exports)
+
+    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+endif()
 
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
@@ -124,6 +148,9 @@ if(CLR_CMAKE_TARGET_WIN32)
         bcrypt.lib
         RuntimeObject.lib
     )
+
+    set(RUNTIMEINFO_LIB ${CORECLR_STATIC_LIB_LOCATION}/runtimeinfo.lib)
+
 else()
     set(NATIVE_LIBS
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
@@ -153,6 +180,9 @@ else()
     # Additional requirements for System.Security.Cryptography.Native.OpenSsl
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
     append_extra_cryptography_libs(NATIVE_LIBS)
+
+    set(RUNTIMEINFO_LIB ${CORECLR_STATIC_LIB_LOCATION}/libruntimeinfo.a)
+
 endif()
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -214,7 +244,25 @@ if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     )
 endif()
 
+if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+    # These options are used to force every object to be included even if it's unused.
+    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+
+if(CLR_CMAKE_TARGET_OSX)
+    # These options are used to force every object to be included even if it's unused.
+    set(START_WHOLE_ARCHIVE -force_load)
+    set(END_WHOLE_ARCHIVE )
+endif(CLR_CMAKE_TARGET_OSX)
+
+set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
+
 target_link_libraries(
     singlefilehost
     ${NATIVE_LIBS}
+
+    ${START_WHOLE_ARCHIVE}
+    ${RUNTIMEINFO_LIB}
+    ${END_WHOLE_ARCHIVE}
 )

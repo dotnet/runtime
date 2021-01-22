@@ -74,8 +74,6 @@ add_custom_target(coreclr_def DEPENDS ${DEF_FILE})
 
 add_dependencies(coreclr coreclr_def)
 add_dependencies(coreclr coreclr_exports)
-add_dependencies(coreclr_static coreclr_def)
-add_dependencies(coreclr_static coreclr_exports)
 
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
