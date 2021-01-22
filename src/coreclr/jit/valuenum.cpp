@@ -4834,7 +4834,8 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     }
     else
     {
-        assert((typ == TYP_DOUBLE) || (typ == TYP_FLOAT) || ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))));
+        assert((typ == TYP_DOUBLE) || (typ == TYP_FLOAT) ||
+               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))));
 
         VNFunc vnf = VNF_Boundary;
         switch (gtMathFN)
@@ -4941,7 +4942,8 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
 
-    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) && (!m_pComp->opts.IsReadyToRun() || m_pComp->IsTargetIntrinsic(gtMathFN)))
+    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) &&
+        (!m_pComp->opts.IsReadyToRun() || m_pComp->IsTargetIntrinsic(gtMathFN)))
     {
         if (typ == TYP_DOUBLE)
         {
