@@ -453,8 +453,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var t1 = Task.Run(() =>
             {
-                using var scope1 = sp.CreateScope();
-                outerSingleton = scope1.ServiceProvider.GetRequiredService<OuterSingleton>();
+                outerSingleton = sp.GetRequiredService<OuterSingleton>();
             });
 
             // Wait until mre2 gets set in InnerSingleton ctor
@@ -462,11 +461,10 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var t2 = Task.Run(() =>
             {
-                using var scope2 = sp.CreateScope();
                 _mreForThread3.Set();
 
                 // This waits on InnerSingleton singleton lock that is taken in thread 1
-                innerSingleton = scope2.ServiceProvider.GetRequiredService<InnerSingleton>();
+                innerSingleton = sp.GetRequiredService<InnerSingleton>();
             });
 
             var t3 = Task.Run(() =>
@@ -1016,11 +1014,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             foreach (var type in types)
             {
                 tasks.Add(Task.Run(() =>
-                {
-                    using var scope = sp.CreateScope();
-                    var instance = scope.ServiceProvider.GetRequiredService(type);
-                    return instance != null;
-                }));
+                    sp.GetRequiredService(type) != null)
+                );
             }
 
             await Task<bool>.WhenAll(tasks);
