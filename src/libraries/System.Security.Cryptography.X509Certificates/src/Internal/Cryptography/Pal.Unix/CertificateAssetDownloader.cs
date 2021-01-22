@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
@@ -121,14 +120,6 @@ namespace Internal.Cryptography.Pal
             return null;
         }
 
-        [DynamicDependency("#ctor(System.Net.Http.HttpMessageHandler)", "System.Net.Http.HttpClient", "System.Net.Http")]
-        [DynamicDependency("#ctor", "System.Net.Http.SocketsHttpHandler", "System.Net.Http")]
-        [DynamicDependency("#ctor", "System.Net.Http.HttpRequestMessage", "System.Net.Http")]
-        [DynamicDependency("set_PooledConnectionIdleTimeout", "System.Net.Http.SocketsHttpHandler", "System.Net.Http")]
-        [DynamicDependency("RequestUri", "System.Net.Http.HttpRequestMessage", "System.Net.Http")]
-        [DynamicDependency("Send", "System.Net.Http.HttpClient", "System.Net.Http")]
-        [DynamicDependency("Content", "System.Net.Http.HttpResponseMessage", "System.Net.Http")]
-        [DynamicDependency("ReadAsStream", "System.Net.Http.HttpContent", "System.Net.Http")]
         private static Func<string, CancellationToken, byte[]>? CreateDownloadBytesFunc()
         {
             try
@@ -171,6 +162,8 @@ namespace Internal.Cryptography.Pal
                 pooledConnectionIdleTimeoutProp.SetValue(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
                 object? httpClient = Activator.CreateInstance(httpClientType, new object?[] { socketsHttpHandler });
 
+                HttpReflectionHelper httpReflection = new HttpReflectionHelper(httpRequestMessageType);
+
                 // Return a delegate for getting the byte[] for a uri. This delegate references the HttpClient object and thus
                 // all accesses will be through that singleton.
                 return (string uri, CancellationToken cancellationToken) =>
@@ -178,7 +171,7 @@ namespace Internal.Cryptography.Pal
                     // Equivalent of:
                     // HttpResponseMessage resp = httpClient.Send(new HttpRequestMessage() { RequestUri = new Uri(uri) });
                     // using Stream responseStream = resp.Content.ReadAsStream();
-                    object requestMessage = Activator.CreateInstance(httpRequestMessageType)!;
+                    object requestMessage = Activator.CreateInstance(httpReflection.HttpRequestMessageType)!;
                     requestUriProp.SetValue(requestMessage, new Uri(uri));
                     object responseMessage = sendMethod.Invoke(httpClient, new object[] { requestMessage, cancellationToken })!;
                     object content = responseContentProp.GetValue(responseMessage)!;
@@ -193,6 +186,21 @@ namespace Internal.Cryptography.Pal
             {
                 // We shouldn't have any exceptions, but if we do, ignore them all.
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Allows the HttpRequestMessageType to be annotated correctly so the ILLinker can see
+        /// what is being used on the Type through the above lambda method.
+        /// </summary>
+        private class HttpReflectionHelper
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            public Type HttpRequestMessageType { get; }
+
+            public HttpReflectionHelper([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type httpRequestMessageType)
+            {
+                HttpRequestMessageType = httpRequestMessageType;
             }
         }
     }
