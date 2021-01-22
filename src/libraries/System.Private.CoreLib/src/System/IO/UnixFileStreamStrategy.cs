@@ -27,7 +27,7 @@ namespace System.IO
         /// the semaphore used to serialize all operation, the buffer/offset/count provided by the
         /// caller for ReadAsync/WriteAsync operations, and the last successful task returned
         /// synchronously from ReadAsync which can be reused if the count matches the next request.
-        /// Only initialized when <see cref="_useAsyncIO"/> is true.
+        /// Only initialized when <see cref="CommonFileStreamStrategyTemplate._useAsyncIO"/> is true.
         /// </summary>
         private AsyncState? _asyncState;
 
@@ -780,6 +780,7 @@ namespace System.IO
         /// Specifies the beginning, the end, or the current position as a reference
         /// point for offset, using a value of type SeekOrigin.
         /// </param>
+        /// <param name="closeInvalidHandle">not used in Unix implementation</param>
         /// <returns>The new position in the stream.</returns>
         protected override long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
