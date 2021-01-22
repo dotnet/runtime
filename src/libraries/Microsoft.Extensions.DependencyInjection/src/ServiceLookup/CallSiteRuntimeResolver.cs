@@ -62,11 +62,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var lockType = RuntimeResolverLock.Root;
             bool lockTaken = false;
 
-            if ((context.AcquiredLocks & lockType) == 0)
-            {
-                // using more granular locking (per singleton) for the root
-                Monitor.Enter(callSite, ref lockTaken);
-            }
+            // using more granular locking (per singleton) for the root
+            Monitor.Enter(callSite, ref lockTaken);
             try
             {
                 return ResolveService(callSite, context, lockType, serviceProviderEngine: context.Scope.Engine.Root);
@@ -118,19 +115,25 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private object ResolveService(ServiceCallSite callSite, RuntimeResolverContext context, RuntimeResolverLock lockType, ServiceProviderEngineScope serviceProviderEngine)
         {
+            object resolved;
             Dictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
-            if (!resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
+            lock (resolvedServices)
             {
-                resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
+                if (resolvedServices.TryGetValue(callSite.Cache.Key, out resolved))
                 {
-                    Scope = serviceProviderEngine,
-                    AcquiredLocks = context.AcquiredLocks | lockType
-                });
-
-                serviceProviderEngine.CaptureDisposable(resolved);
+                    return resolved;
+                }
+            }
+            resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
+            {
+                Scope = serviceProviderEngine,
+                AcquiredLocks = context.AcquiredLocks | lockType
+            });
+            serviceProviderEngine.CaptureDisposable(resolved);
+            lock (resolvedServices)
+            {
                 resolvedServices.Add(callSite.Cache.Key, resolved);
             }
-
             return resolved;
         }
 
