@@ -4429,7 +4429,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log10:
             case NI_System_Math_Pow:
             case NI_System_Math_Round:
-            case NI_System_Math_ScaleB
+            case NI_System_Math_ScaleB:
             case NI_System_Math_Sin:
             case NI_System_Math_Sinh:
             case NI_System_Math_Sqrt:
@@ -20591,7 +20591,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             // the scenario where it is supported we should have generated GT_HWINTRINSIC
             // noodes in place of the GT_INTRINSIC node.
 
-            assert(!compiler->compIsaSupportedDebugOnly(InstructionSet_FMA));
+            assert(!compIsaSupportedDebugOnly(InstructionSet_FMA));
             return false;
         }
 
@@ -20614,7 +20614,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             // the scenario where it is supported we should have generated GT_HWINTRINSIC
             // noodes in place of the GT_INTRINSIC node.
 
-            assert(!compiler->compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
+            assert(!compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
             return false;
         }
 
