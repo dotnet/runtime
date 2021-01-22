@@ -121,6 +121,10 @@ namespace System.IO
 
         protected abstract void FlushOSBuffer();
 
+        protected virtual void OnBufferAllocated()
+        {
+        }
+
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         public override Task FlushAsync(CancellationToken cancellationToken)
@@ -424,8 +428,6 @@ namespace System.IO
 
             return _buffer;
         }
-
-        partial void OnBufferAllocated();
 
         /// <summary>
         /// Flushes the internal read/write buffer for this stream.  If write data has been buffered,

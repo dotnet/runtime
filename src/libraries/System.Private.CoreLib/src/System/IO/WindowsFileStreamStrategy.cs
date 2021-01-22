@@ -626,7 +626,7 @@ namespace System.IO
             return ret;
         }
 
-        partial void OnBufferAllocated()
+        protected override void OnBufferAllocated()
         {
             Debug.Assert(_buffer != null);
             Debug.Assert(_preallocatedOverlapped == null);
