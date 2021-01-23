@@ -250,9 +250,21 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(items));
             }
 
-            foreach (var (element, priority) in items)
+            if (_size == 0)
             {
-                Enqueue(element, priority);
+                _nodes = EnumerableHelpers.ToArray(items, out _size);
+
+                if (_size > 1)
+                {
+                    Heapify();
+                }
+            }
+            else
+            {
+                foreach (var (element, priority) in items)
+                {
+                    Enqueue(element, priority);
+                }
             }
         }
 
@@ -266,9 +278,35 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(elements));
             }
 
-            foreach (var element in elements)
+            if (_size == 0)
             {
-                Enqueue(element, priority);
+                using (var eumerator = elements.GetEnumerator())
+                {
+                    if (eumerator.MoveNext())
+                    {
+                        _nodes = new (TElement, TPriority)[MinimumGrow];
+                        _nodes[0] = (eumerator.Current, priority);
+                        _size = 1;
+
+                        while (eumerator.MoveNext())
+                        {
+                            EnsureEnoughCapacityBeforeAddingNode();
+                            _nodes[_size++] = (eumerator.Current, priority);
+                        }
+                    }
+                }
+
+                if (_size > 1)
+                {
+                    Heapify();
+                }
+            }
+            else
+            {
+                foreach (var element in elements)
+                {
+                    Enqueue(element, priority);
+                }
             }
         }
 
@@ -317,8 +355,7 @@ namespace System.Collections.Generic
             int threshold = (int)(((double)_nodes.Length) * 0.9);
             if (_size < threshold)
             {
-                Array.Resize(ref _nodes, _size);
-                _version++;
+                SetCapacity(_size);
             }
         }
 
@@ -341,6 +378,7 @@ namespace System.Collections.Generic
         private void SetCapacity(int capacity)
         {
             Array.Resize(ref _nodes, capacity);
+            _version++;
         }
 
         /// <summary>
