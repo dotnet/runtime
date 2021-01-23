@@ -400,6 +400,7 @@ namespace System.Collections.Generic
             var lastNode = _nodes[lastNodeIndex];
             _size--;
             _version++;
+            _nodes[lastNodeIndex] = default;
 
             // In case we wanted to remove the node that was the last one,
             // we are done.
