@@ -403,7 +403,7 @@ namespace System.Collections.Generic
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
         public partial class UnorderedItemsCollection : System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)>, System.Collections.Generic.IReadOnlyCollection<(TElement element, TPriority priority)>, System.Collections.ICollection, System.Collections.IEnumerable
         {
-            public UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue) { }
+            internal UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue) { }
             public int Count { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }

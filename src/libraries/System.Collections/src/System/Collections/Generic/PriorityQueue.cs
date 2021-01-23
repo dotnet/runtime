@@ -538,7 +538,7 @@ namespace System.Collections.Generic
         {
             private readonly PriorityQueue<TElement, TPriority> _queue;
 
-            public UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue)
+            internal UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue)
             {
                 _queue = queue;
             }
