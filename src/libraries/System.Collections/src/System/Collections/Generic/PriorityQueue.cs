@@ -39,7 +39,12 @@ namespace System.Collections.Generic
         /// <summary>
         /// Specifies the arity of the d-ary heap, which here is quaternary.
         /// </summary>
-        private const uint Arity = 4;
+        private const int Arity = 4;
+
+        /// <summary>
+        /// The binary logarithm of <see cref="Arity" />.
+        /// </summary>
+        private const int ArityLog2 = 2;
 
         /// <summary>
         /// Creates an empty priority queue.
@@ -351,7 +356,7 @@ namespace System.Collections.Generic
         /// </summary>
         public void TrimExcess()
         {
-            int threshold = (int)(((double)_nodes.Length) * 0.9);
+            int threshold = (int)(_nodes.Length * 0.9);
             if (_size < threshold)
             {
                 SetCapacity(_size);
@@ -440,7 +445,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the index of an element's parent.
         /// </summary>
-        private int GetParentIndex(int index) => (int)((index - 1) / Arity);
+        private int GetParentIndex(int index) => (index - 1) >> ArityLog2;
 
         /// <summary>
         /// Gets the index of the first child of an element.
@@ -508,7 +513,7 @@ namespace System.Collections.Generic
                 // Check if the current node (pointed by 'nodeIndex') should really be extracted
                 // first, or maybe one of its children should be extracted earlier.
                 var topChild = _nodes[i];
-                int childrenIndexesLimit = (int)Math.Min(i + Arity, _size);
+                int childrenIndexesLimit = Math.Min(i + Arity, _size);
                 int topChildIndex = i;
 
                 while (++i < childrenIndexesLimit)
