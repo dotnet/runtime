@@ -346,6 +346,12 @@ namespace System.Collections.Generic
                 return currentCapacity;
             }
 
+            int capacityForNextGrowth = ComputeCapacityForNextGrowth();
+            if (capacityForNextGrowth > capacity)
+            {
+                capacity = capacityForNextGrowth;
+            }
+
             SetCapacity(capacity);
             return capacity;
         }
@@ -370,13 +376,30 @@ namespace System.Collections.Generic
                 return;
             }
 
+            int newCapacity = ComputeCapacityForNextGrowth();
+            SetCapacity(newCapacity);
+        }
+
+        private int ComputeCapacityForNextGrowth()
+        {
             const int GrowthFactor = 2;
+            const int MaxArrayLength = 0X7FEFFFFF;
+
             int newCapacity = _nodes.Length * GrowthFactor;
             if (newCapacity < _nodes.Length + MinimumElementsToGrowBy)
             {
                 newCapacity = _nodes.Length + MinimumElementsToGrowBy;
             }
-            SetCapacity(newCapacity);
+
+            // Allow the structure to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Note that this check works even when _nodes.Length overflowed thanks to the (uint) cast.
+
+            if ((uint)newCapacity > MaxArrayLength)
+            {
+                newCapacity = MaxArrayLength;
+            }
+
+            return newCapacity;
         }
 
         /// <summary>
