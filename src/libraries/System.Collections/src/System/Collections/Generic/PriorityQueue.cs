@@ -360,16 +360,18 @@ namespace System.Collections.Generic
 
         private void EnsureEnoughCapacityBeforeAddingNode()
         {
-            if (_size == _nodes.Length)
+            if (_size < _nodes.Length)
             {
-                const int GrowthFactor = 2;
-                int newCapacity = _nodes.Length * GrowthFactor;
-                if (newCapacity < _nodes.Length + MinimumElementsToGrowBy)
-                {
-                    newCapacity = _nodes.Length + MinimumElementsToGrowBy;
-                }
-                SetCapacity(newCapacity);
+                return;
             }
+
+            const int GrowthFactor = 2;
+            int newCapacity = _nodes.Length * GrowthFactor;
+            if (newCapacity < _nodes.Length + MinimumElementsToGrowBy)
+            {
+                newCapacity = _nodes.Length + MinimumElementsToGrowBy;
+            }
+            SetCapacity(newCapacity);
         }
 
         /// <summary>
