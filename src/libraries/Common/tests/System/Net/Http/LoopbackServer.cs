@@ -679,6 +679,11 @@ namespace System.Net.Test.Common
                 await WriteStringAsync(response);
             }
 
+            public async Task SendResponseAsync(byte[] response)
+            {
+                await _stream.WriteAsync(response);
+            }
+
             public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
             {
                 await SendResponseAsync(GetHttpResponse(statusCode, additionalHeaders, content)).ConfigureAwait(false);
@@ -893,7 +898,7 @@ namespace System.Net.Test.Common
 
             public override async Task SendResponseBodyAsync(byte[] body, bool isFinal = true, int requestId = 0)
             {
-                await SendResponseAsync(Encoding.UTF8.GetString(body)).ConfigureAwait(false);
+                await SendResponseAsync(body).ConfigureAwait(false);
             }
 
             public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
