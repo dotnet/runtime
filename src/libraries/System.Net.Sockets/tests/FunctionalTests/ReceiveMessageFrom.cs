@@ -54,6 +54,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         public async Task ReceiveSentMessages_UDP_Success(bool ipv4)
         {
+            const int Offset = 10;
             const int DatagramSize = 256;
             const int DatagramsToSend = 16;
 
@@ -69,7 +70,9 @@ namespace System.Net.Sockets.Tests
             sender.BindToAnonymousPort(address);
 
             byte[] sendBuffer = new byte[DatagramSize];
-            byte[] receiveBuffer = new byte[DatagramSize];
+            var receiveInternalBuffer = new byte[DatagramSize + Offset];
+            var emptyBuffer = new byte[Offset];
+            ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(receiveInternalBuffer, Offset, DatagramSize);
             Random rnd = new Random(0);
 
             IPEndPoint remoteEp = new IPEndPoint(ipv4 ? IPAddress.Any : IPAddress.IPv6Any, 0);
@@ -83,7 +86,8 @@ namespace System.Net.Sockets.Tests
                 IPPacketInformation packetInformation = result.PacketInformation;
 
                 Assert.Equal(DatagramSize, result.ReceivedBytes);
-                AssertExtensions.SequenceEqual(sendBuffer, receiveBuffer);
+                AssertExtensions.SequenceEqual(emptyBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, 0, Offset));
+                AssertExtensions.SequenceEqual(sendBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, Offset, DatagramSize));
                 Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
                 Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
             }
