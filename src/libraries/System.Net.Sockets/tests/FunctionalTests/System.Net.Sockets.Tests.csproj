@@ -28,7 +28,6 @@
     <Compile Include="NetworkStreamTest.cs" />
     <Compile Include="ReceiveFrom.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />
-    <Compile Include="ReceiveMessageFromSpan.cs" />
     <Compile Include="SafeHandleTest.cs" />
     <Compile Include="SelectTest.cs" />
     <Compile Include="SendPacketsAsync.cs" />
