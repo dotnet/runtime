@@ -48,7 +48,7 @@ int32_t GlobalizationNative_IsNormalized(
 
     if (U_SUCCESS(err))
     {
-        return isNormalized == true ? 1 : 0;
+        return isNormalized ? 1 : 0;
     }
     else
     {
