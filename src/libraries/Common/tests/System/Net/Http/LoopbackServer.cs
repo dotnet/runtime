@@ -397,7 +397,6 @@ namespace System.Net.Test.Common
             private const int BufferSize = 4000;
             private Socket _socket;
             private Stream _stream;
-            private StreamWriter _writer;
             private byte[] _readBuffer;
             private int _readStart;
             private int _readEnd;
@@ -409,8 +408,6 @@ namespace System.Net.Test.Common
                 _socket = socket;
                 _stream = stream;
 
-                _writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true };
-
                 _readBuffer = new byte[BufferSize];
                 _readStart = 0;
                 _readEnd = 0;
@@ -418,7 +415,6 @@ namespace System.Net.Test.Common
 
             public Socket Socket => _socket;
             public Stream Stream => _stream;
-            public StreamWriter Writer => _writer;
 
             public static async Task<Connection> CreateAsync(Socket socket, Stream stream, Options httpOptions)
             {
@@ -620,7 +616,6 @@ namespace System.Net.Test.Common
                 }
                 catch (Exception) { }
 
-                _writer.Dispose();
                 _stream.Dispose();
                 _socket?.Dispose();
             }
