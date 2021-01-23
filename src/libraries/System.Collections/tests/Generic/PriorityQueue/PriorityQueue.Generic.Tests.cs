@@ -13,7 +13,8 @@ namespace System.Collections.Tests
 
         protected IEnumerable<(TElement, TPriority)> GenericIEnumerableFactory(int count)
         {
-            int seed = count * 34;
+            const int MagicValue = 34;
+            int seed = count * MagicValue;
             for (int i = 0; i < count; i++)
             {
                 yield return CreateT(seed++);
@@ -113,10 +114,7 @@ namespace System.Collections.Tests
 
             Assert.Equal(count, queue.Count);
             var actualItems = queue.UnorderedItems.ToArray();
-            foreach (var (element, priority) in actualItems)
-            {
-                Assert.True(expectedItems.Contains((element, priority)));
-            }
+            Assert.True(expectedItems.SetEquals(actualItems));
         }
 
         [Fact]
@@ -284,6 +282,24 @@ namespace System.Collections.Tests
 
             trimAndEnsureCapacity();
             Assert.Equal(0, queue.Count);
+        }
+
+        #endregion
+
+        #region Enumeration ordering
+
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void PriorityQueue_EnumerationIsConsistent(int count)
+        {
+            PriorityQueue<TElement, TPriority> queue = this.GenericPriorityQueueFactory(initialCapacity: 0, count, out _);
+
+            (TElement, TPriority)[] firstEnumeration = queue.UnorderedItems.ToArray();
+            (TElement, TPriority)[] secondEnumeration = queue.UnorderedItems.ToArray();
+
+            Assert.Equal(firstEnumeration.Length, count);
+            Assert.True(firstEnumeration.SequenceEqual(secondEnumeration));
+
         }
 
         #endregion
