@@ -969,12 +969,11 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
-                        TextWriter writer = connection.Writer;
                         try
                         {
                             while (!cts.IsCancellationRequested) // infinite to make sure implementation doesn't OOM
                             {
-                                await writer.WriteAsync(new string(' ', 10000));
+                                await connection.WriteStringAsync(new string(' ', 10000));
                                 await Task.Delay(1);
                             }
                         }
