@@ -81,7 +81,7 @@ namespace System.Collections.Generic
                 ? Array.Empty<(TElement, TPriority)>()
                 : new (TElement, TPriority)[initialCapacity];
 
-            this.Comparer = comparer ?? Comparer<TPriority>.Default;
+            Comparer = comparer ?? Comparer<TPriority>.Default;
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace System.Collections.Generic
             }
 
             _nodes = EnumerableHelpers.ToArray(items, out _size);
-            this.Comparer = comparer ?? Comparer<TPriority>.Default;
+            Comparer = comparer ?? Comparer<TPriority>.Default;
 
             if (_size > 1)
             {
@@ -223,7 +223,7 @@ namespace System.Collections.Generic
         {
             var root = _nodes[RootIndex];
 
-            if (this.Comparer.Compare(priority, root.Priority) < 0)
+            if (Comparer.Compare(priority, root.Priority) < 0)
             {
                 return element;
             }
@@ -409,7 +409,7 @@ namespace System.Collections.Generic
 
             var nodeToRemove = _nodes[indexOfNodeToRemove];
 
-            int relation = this.Comparer.Compare(lastNode.Priority, nodeToRemove.Priority);
+            int relation = Comparer.Compare(lastNode.Priority, nodeToRemove.Priority);
             PutAt(lastNode, indexOfNodeToRemove);
 
             if (relation < 0)
@@ -477,7 +477,7 @@ namespace System.Collections.Generic
                 int parentIndex = GetParentIndex(nodeIndex);
                 var parent = _nodes[parentIndex];
 
-                if (this.Comparer.Compare(node.priority, parent.Priority) < 0)
+                if (Comparer.Compare(node.priority, parent.Priority) < 0)
                 {
                     PutAt(parent, nodeIndex);
                     nodeIndex = parentIndex;
@@ -512,7 +512,7 @@ namespace System.Collections.Generic
                 while (++i < childrenIndexesLimit)
                 {
                     var child = _nodes[i];
-                    if (this.Comparer.Compare(child.Priority, topChild.Priority) < 0)
+                    if (Comparer.Compare(child.Priority, topChild.Priority) < 0)
                     {
                         topChild = child;
                         topChildIndex = i;
@@ -521,7 +521,7 @@ namespace System.Collections.Generic
 
                 // In case no child needs to be extracted earlier than the current node,
                 // there is nothing more to do - the right spot was found.
-                if (this.Comparer.Compare(node.priority, topChild.Priority) <= 0)
+                if (Comparer.Compare(node.priority, topChild.Priority) <= 0)
                 {
                     break;
                 }
@@ -678,7 +678,7 @@ namespace System.Collections.Generic
                     throw new InvalidOperationException(message);
                 }
 
-                object IEnumerator.Current => this.Current;
+                object IEnumerator.Current => Current;
 
                 void IEnumerator.Reset()
                 {
