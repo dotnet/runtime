@@ -161,8 +161,10 @@ gint64 ves_icall_System_Threading_Interlocked_Exchange_Long(gint64 *location, gi
 ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*res);
 
+#ifndef ENABLE_NETCORE
 ICALL_EXPORT
 gpointer ves_icall_System_Threading_Interlocked_Exchange_IntPtr(gpointer *location, gpointer value);
+#endif
 
 ICALL_EXPORT
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *location, gfloat value);
@@ -182,8 +184,10 @@ gint64 ves_icall_System_Threading_Interlocked_CompareExchange_Long(gint64 *locat
 ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*comparand, MonoObject *volatile*res);
 
+#ifndef ENABLE_NETCORE
 ICALL_EXPORT
 gpointer ves_icall_System_Threading_Interlocked_CompareExchange_IntPtr(gpointer *location, gpointer value, gpointer comparand);
+#endif
 
 ICALL_EXPORT
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location, gfloat value, gfloat comparand);
