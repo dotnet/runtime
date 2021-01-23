@@ -18,7 +18,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Represents an implicit heap-ordered complete d-ary tree, stored as an array.
         /// </summary>
-        private (TElement element, TPriority priority)[] _nodes;
+        private (TElement Element, TPriority Priority)[] _nodes;
 
         private UnorderedItemsCollection? _unorderedItems;
 
@@ -224,7 +224,7 @@ namespace System.Collections.Generic
         {
             var root = _nodes[RootIndex];
 
-            if (this.Comparer.Compare(priority, root.priority) < 0)
+            if (this.Comparer.Compare(priority, root.Priority) < 0)
             {
                 return element;
             }
@@ -236,7 +236,7 @@ namespace System.Collections.Generic
                 MoveDown(newRoot, RootIndex);
                 _version++;
 
-                return root.element;
+                return root.Element;
             }
         }
 
@@ -409,7 +409,7 @@ namespace System.Collections.Generic
 
             var nodeToRemove = _nodes[indexOfNodeToRemove];
 
-            int relation = this.Comparer.Compare(lastNode.priority, nodeToRemove.priority);
+            int relation = this.Comparer.Compare(lastNode.Priority, nodeToRemove.Priority);
             PutAt(lastNode, indexOfNodeToRemove);
 
             if (relation < 0)
@@ -477,7 +477,7 @@ namespace System.Collections.Generic
                 int parentIndex = GetParentIndex(nodeIndex);
                 var parent = _nodes[parentIndex];
 
-                if (this.Comparer.Compare(node.priority, parent.priority) < 0)
+                if (this.Comparer.Compare(node.priority, parent.Priority) < 0)
                 {
                     PutAt(parent, nodeIndex);
                     nodeIndex = parentIndex;
@@ -512,7 +512,7 @@ namespace System.Collections.Generic
                 while (++i < childrenIndexesLimit)
                 {
                     var child = _nodes[i];
-                    if (this.Comparer.Compare(child.priority, topChild.priority) < 0)
+                    if (this.Comparer.Compare(child.Priority, topChild.Priority) < 0)
                     {
                         topChild = child;
                         topChildIndex = i;
@@ -521,7 +521,7 @@ namespace System.Collections.Generic
 
                 // In case no child needs to be extracted earlier than the current node,
                 // there is nothing more to do - the right spot was found.
-                if (this.Comparer.Compare(node.priority, topChild.priority) <= 0)
+                if (this.Comparer.Compare(node.priority, topChild.Priority) <= 0)
                 {
                     break;
                 }
