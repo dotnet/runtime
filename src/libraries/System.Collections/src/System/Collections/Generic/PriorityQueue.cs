@@ -139,9 +139,10 @@ namespace System.Collections.Generic
         {
             EnsureEnoughCapacityBeforeAddingNode();
 
-            // Add the node at the end
+            // Virtually add the node at the end of the underlying array.
+            // Note that the node being enqueued does not need to be physically placed
+            // there at this point, as such an assignment would be redundant.
             var node = (element, priority);
-            _nodes[_size] = node;
             _size++;
             _version++;
 
