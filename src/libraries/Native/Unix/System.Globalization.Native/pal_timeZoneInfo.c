@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "pal_errors_internal.h"

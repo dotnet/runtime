@@ -3,6 +3,7 @@
 //
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "pal_icushim_internal.h"
