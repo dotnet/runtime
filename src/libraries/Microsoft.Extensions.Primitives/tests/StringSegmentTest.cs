@@ -1363,6 +1363,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx has some IsPrefix / IsSuffix globalization bugs.")]
         [MemberData(nameof(GlobalizationStartsWithData))]
         public void StringSegment_StartsWith_Globalized(string a, string b, StringComparison comparisonType, bool expectedResult)
         {
@@ -1405,6 +1406,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx has some IsPrefix / IsSuffix globalization bugs.")]
         [MemberData(nameof(GlobalizationEndsWithData))]
         public void StringSegment_EndsWith_Globalized(string a, string b, StringComparison comparisonType, bool expectedResult)
         {
