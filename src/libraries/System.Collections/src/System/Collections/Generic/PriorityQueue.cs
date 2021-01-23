@@ -223,7 +223,7 @@ namespace System.Collections.Generic
         {
             var root = _nodes[RootIndex];
 
-            if (Comparer.Compare(priority, root.Priority) < 0)
+            if (Comparer.Compare(priority, root.Priority) <= 0)
             {
                 return element;
             }
