@@ -31,7 +31,6 @@ namespace System.Collections.Generic
         private int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
 
         private const int DefaultCapacity = 4;
-        private const int MaxArrayLength = 0X7FEFFFFF; // This is the maximum array length value from Array.MaxArrayLength
 
         public Stack()
         {
@@ -311,6 +310,11 @@ namespace System.Collections.Generic
                     newCapacity *= 2;
                 }
 
+                // MaxArrayLength is defined in Array.MaxArrayLength and in gchelpers in CoreCLR.
+                // It represents the maximum number of elements that can be in an array where
+                // the size of the element is greater than one byte; a separate, slightly larger constant,
+                // is used when the size of the element is one.
+                const int MaxArrayLength = 0x7FEFFFFF;
                 if ((uint)newCapacity > MaxArrayLength)
                 {
                     newCapacity = MaxArrayLength;
