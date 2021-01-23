@@ -32,8 +32,7 @@ namespace System.Collections.Generic
         /// </summary>
         private int _version;
 
-        private const int MinimumGrow = 4;
-        private const int GrowFactor = 200; // double each time
+        private const int MinimumElementsToGrowBy = 4;
 
         private const int RootIndex = 0;
 
@@ -284,7 +283,7 @@ namespace System.Collections.Generic
                 {
                     if (eumerator.MoveNext())
                     {
-                        _nodes = new (TElement, TPriority)[MinimumGrow];
+                        _nodes = new (TElement, TPriority)[MinimumElementsToGrowBy];
                         _nodes[0] = (eumerator.Current, priority);
                         _size = 1;
 
@@ -363,10 +362,11 @@ namespace System.Collections.Generic
         {
             if (_size == _nodes.Length)
             {
-                int newCapacity = (int)((long)_nodes.Length * (long)GrowFactor / 100);
-                if (newCapacity < _nodes.Length + MinimumGrow)
+                const int GrowthFactor = 2;
+                int newCapacity = _nodes.Length * GrowthFactor;
+                if (newCapacity < _nodes.Length + MinimumElementsToGrowBy)
                 {
-                    newCapacity = _nodes.Length + MinimumGrow;
+                    newCapacity = _nodes.Length + MinimumElementsToGrowBy;
                 }
                 SetCapacity(newCapacity);
             }
