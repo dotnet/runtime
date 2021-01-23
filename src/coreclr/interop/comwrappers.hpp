@@ -117,19 +117,19 @@ public: // Lifetime
     ULONG Release(void);
 };
 
+// ABI contract. This below offset is assumed in managed code and the DAC.
+ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
+
 static constexpr size_t ManagedObjectWrapperRefCountOffset()
 {
-    // _refCount is a private field and offsetof won't let you look at private fields. To overcome
-    // this RefCountOffset() is a friend function.
+    // _refCount is a private field and offsetof won't let you look at private fields.
+    // To overcome, this function is a friend function of ManagedObjectWrapper.
     return offsetof(ManagedObjectWrapper, _refCount);
 }
 
 // ABI contract used by the DAC.
 ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, ManagedObject));
 ABI_ASSERT(ManagedObjectWrapperRefCountOffset() == offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, RefCount));
-
-// ABI contract. This below offset is assumed in managed code.
-ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 
 // State ownership mechanism.
 enum class TrackerObjectState
