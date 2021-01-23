@@ -7448,14 +7448,14 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
                 }
                 else
                 {
-                    return sizeof(instrDescAmd);
+                    return sizeof(instrDescCns);
                 }
             }
             else
             {
                 if (id->idIsLargeDsp())
                 {
-                    return sizeof(instrDescDsp);
+                    return sizeof(instrDescAmd);
                 }
                 else
                 {
