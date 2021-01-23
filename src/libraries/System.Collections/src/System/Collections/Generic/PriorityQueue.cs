@@ -572,7 +572,7 @@ namespace System.Collections.Generic
             object ICollection.SyncRoot => this;
             bool ICollection.IsSynchronized => false;
 
-            public void CopyTo(Array array, int index)
+            void ICollection.CopyTo(Array array, int index)
             {
                 if (array == null)
                 {

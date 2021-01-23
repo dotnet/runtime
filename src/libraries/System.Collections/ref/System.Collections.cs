@@ -407,7 +407,7 @@ namespace System.Collections.Generic
             public int Count { get { throw null; } }
             bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
-            public void CopyTo(System.Array array, int index) { }
+            void ICollection.CopyTo(System.Array array, int index) { }
             public System.Collections.Generic.PriorityQueue<TElement, TPriority>.UnorderedItemsCollection.Enumerator GetEnumerator() { throw null; }
             System.Collections.Generic.IEnumerator<(TElement element, TPriority priority)> System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)>.GetEnumerator() { throw null; }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
