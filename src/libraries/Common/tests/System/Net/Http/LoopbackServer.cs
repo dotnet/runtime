@@ -673,9 +673,15 @@ namespace System.Net.Test.Common
                 return lines;
             }
 
+            public async Task WriteStringAsync(string s)
+            {
+                byte[] bytes = Encoding.ASCII.GetBytes(s);
+                await _stream.WriteAsync(bytes);
+            }
+
             public async Task SendResponseAsync(string response)
             {
-                await _writer.WriteAsync(response).ConfigureAwait(false);
+                await WriteStringAsync(response);
             }
 
             public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
@@ -686,7 +692,7 @@ namespace System.Net.Test.Common
             public async Task<List<string>> ReadRequestHeaderAndSendCustomResponseAsync(string response)
             {
                 List<string> lines = await ReadRequestHeaderAsync().ConfigureAwait(false);
-                await _writer.WriteAsync(response).ConfigureAwait(false);
+                await WriteStringAsync(response);
                 return lines;
             }
 
