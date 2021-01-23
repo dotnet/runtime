@@ -417,7 +417,7 @@ namespace System.Collections.Generic
             var nodeToRemove = _nodes[indexOfNodeToRemove];
 
             int relation = Comparer.Compare(lastNode.Priority, nodeToRemove.Priority);
-            PutAt(lastNode, indexOfNodeToRemove);
+            _nodes[indexOfNodeToRemove] = lastNode;
 
             if (relation < 0)
             {
@@ -427,14 +427,6 @@ namespace System.Collections.Generic
             {
                 MoveDown(lastNode, indexOfNodeToRemove);
             }
-        }
-
-        /// <summary>
-        /// Puts a node at the specified index.
-        /// </summary>
-        private void PutAt((TElement element, TPriority priority) node, int index)
-        {
-            _nodes[index] = node;
         }
 
         /// <summary>
@@ -486,7 +478,7 @@ namespace System.Collections.Generic
 
                 if (Comparer.Compare(node.priority, parent.Priority) < 0)
                 {
-                    PutAt(parent, nodeIndex);
+                    _nodes[nodeIndex] = parent;
                     nodeIndex = parentIndex;
                 }
                 else
@@ -495,7 +487,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            PutAt(node, nodeIndex);
+            _nodes[nodeIndex] = node;
         }
 
         /// <summary>
@@ -535,11 +527,11 @@ namespace System.Collections.Generic
 
                 // Move the top child up by one node and now investigate the
                 // node that was considered to be the top child (recursive).
-                PutAt(topChild, nodeIndex);
+                _nodes[nodeIndex] = topChild;
                 nodeIndex = topChildIndex;
             }
 
-            PutAt(node, nodeIndex);
+            _nodes[nodeIndex] = node;
         }
 
         public partial class UnorderedItemsCollection : IReadOnlyCollection<(TElement element, TPriority priority)>, ICollection
