@@ -64,7 +64,7 @@ namespace System.Numerics
 
             return SoftwareFallback((uint)value << 1);
 
-            static bool SoftwareFallback(uint value) => (value & (value - 1)) == 0 && value != 0;
+            static bool SoftwareFallback(uint value) => (value & (value - 1)) == 0 && value >= 0;
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace System.Numerics
 
             return SoftwareFallback((ulong)value << 1);
 
-            static bool SoftwareFallback(ulong value) => (value & (value - 1)) == 0 && value != 0;
+            static bool SoftwareFallback(ulong value) => (value & (value - 1)) == 0 && value >= 0;
         }
 
         /// <summary>
