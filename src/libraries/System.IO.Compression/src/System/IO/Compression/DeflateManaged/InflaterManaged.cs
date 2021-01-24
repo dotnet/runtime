@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Compression
 {
@@ -108,7 +110,7 @@ namespace System.IO.Compression
 
         public int AvailableOutput => _output.AvailableBytes;
 
-        public int Inflate(byte[] bytes, int offset, int length)
+        public int Inflate(Memory<byte> bytes)
         {
             // copy bytes from output to outputbytes if we have available bytes
             // if buffer is not filled up. keep decoding until no input are available
@@ -119,14 +121,14 @@ namespace System.IO.Compression
                 int copied = 0;
                 if (_uncompressedSize == -1)
                 {
-                    copied = _output.CopyTo(bytes, offset, length);
+                    copied = _output.CopyTo(bytes);
                 }
                 else
                 {
                     if (_uncompressedSize > _currentInflatedCount)
                     {
-                        length = (int)Math.Min(length, _uncompressedSize - _currentInflatedCount);
-                        copied = _output.CopyTo(bytes, offset, length);
+                        bytes = bytes.Slice(0, (int)Math.Min(bytes.Length, _uncompressedSize - _currentInflatedCount));
+                        copied = _output.CopyTo(bytes);
                         _currentInflatedCount += copied;
                     }
                     else
@@ -140,16 +142,27 @@ namespace System.IO.Compression
                     if (_hasFormatReader)
                     {
                         Debug.Assert(_formatReader != null);
-                        _formatReader.UpdateWithBytesRead(bytes, offset, copied);
+                        // Skip the copy if bytes is actually an array.
+                        if (MemoryMarshal.TryGetArray(bytes, out ArraySegment<byte> segment))
+                        {
+                            _formatReader.UpdateWithBytesRead(segment.Array!, segment.Offset, segment.Count);
+                        }
+                        else
+                        {
+                            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(copied);
+                            bytes.Slice(0, copied).CopyTo(rentedBuffer.AsMemory());
+                            _formatReader.UpdateWithBytesRead(rentedBuffer, 0, copied);
+                            ArrayPool<byte>.Shared.Return(rentedBuffer);
+                        }
                     }
 
-                    offset += copied;
+                    bytes = bytes.Slice(copied);
                     count += copied;
-                    length -= copied;
                 }
 
-                if (length == 0)
-                {   // filled in the bytes array
+                if (bytes.IsEmpty)
+                {
+                    // Filled in the buffer.
                     break;
                 }
                 // Decode will return false when more input is needed
@@ -167,6 +180,11 @@ namespace System.IO.Compression
             }
 
             return count;
+        }
+
+        public int Inflate(byte[] bytes, int offset, int length)
+        {
+            return Inflate(bytes.AsMemory(offset, length));
         }
 
         //Each block of compressed data begins with 3 header bits
