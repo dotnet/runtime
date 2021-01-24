@@ -1517,16 +1517,16 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32));
 
-        bool allBytesAreSame = true;
-        for (UINT32 i = 0; i < simdSize; i++)
+        bool i64ComponentsEqual = true;
+        for (UINT32 i = 0; i < simdSize / 8; i++)
         {
-            if (vecCns.i8[i] != vecCns.i8[0])
+            if (vecCns.i64[i] != vecCns.i64[0])
             {
-                allBytesAreSame = false;
+                i64ComponentsEqual = false;
             }
         }
 
-        if ((argCnt == 1) || allBytesAreSame)
+        if ((argCnt == 1) || i64ComponentsEqual)
         {
             // If we are a single constant or if all parts are the same, we might be able to optimize
             // this even further for certain values, such as Zero or AllBitsSet.
