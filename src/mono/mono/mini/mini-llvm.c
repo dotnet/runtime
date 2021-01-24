@@ -11916,7 +11916,7 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #endif
 #if defined(TARGET_ARM64)
 		{ "crc",	MONO_CPU_ARM64_CRC },
-		{ "crypto",	MONO_CPU_ARM64_CRYPTO},
+		{ "crypto",	MONO_CPU_ARM64_CRYPTO },
 #endif
 	};
 	if (!cpu_features)
