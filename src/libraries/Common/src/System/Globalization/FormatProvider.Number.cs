@@ -689,7 +689,7 @@ namespace System.Globalization
                             int temp = (n * 10) + format[i++] - '0';
                             if (temp < n)
                             {
-                                ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                                throw new FormatException(SR.Argument_BadFormatSpecifier);
                             }
                             n = temp;
                         }
