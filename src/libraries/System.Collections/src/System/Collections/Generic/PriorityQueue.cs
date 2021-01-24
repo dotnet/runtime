@@ -467,7 +467,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the index of the first child of an element.
         /// </summary>
-        private int GetFirstChildIndex(int index) => (int)(Arity * index + 1);
+        private int GetFirstChildIndex(int index) => Arity * index + 1;
 
         /// <summary>
         /// Converts an unordered list into a heap.
