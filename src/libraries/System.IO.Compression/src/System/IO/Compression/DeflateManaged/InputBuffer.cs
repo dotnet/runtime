@@ -17,9 +17,7 @@ namespace System.IO.Compression
 
     internal sealed class InputBuffer
     {
-        private byte[]? _buffer;           // byte array to store input
-        private int _start;               // start poisition of the buffer
-        private int _end;                 // end position of the buffer
+        private Memory<byte> _buffer;           // byte array to store input
         private uint _bitBuffer;      // store the bits here, we can quickly shift in this buffer
         private int _bitsInBuffer;    // number of bits available in bitBuffer
 
@@ -27,7 +25,7 @@ namespace System.IO.Compression
         public int AvailableBits => _bitsInBuffer;
 
         /// <summary>Total bytes available in the input buffer.</summary>
-        public int AvailableBytes => (_end - _start) + (_bitsInBuffer / 8);
+        public int AvailableBytes => _buffer.Length + (_bitsInBuffer / 8);
 
         /// <summary>Ensure that count bits are in the bit buffer.</summary>
         /// <param name="count">Can be up to 16.</param>
@@ -43,9 +41,9 @@ namespace System.IO.Compression
                 {
                     return false;
                 }
-                Debug.Assert(_buffer != null);
                 // insert a byte to bitbuffer
-                _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                _bitBuffer |= (uint)_buffer.Span[0] << _bitsInBuffer;
+                _buffer = _buffer.Slice(1);
                 _bitsInBuffer += 8;
 
                 if (_bitsInBuffer < count)
@@ -55,7 +53,8 @@ namespace System.IO.Compression
                         return false;
                     }
                     // insert a byte to bitbuffer
-                    _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                    _bitBuffer |= (uint)_buffer.Span[0] << _bitsInBuffer;
+                    _buffer = _buffer.Slice(1);
                     _bitsInBuffer += 8;
                 }
             }
@@ -72,26 +71,28 @@ namespace System.IO.Compression
         /// </summary>
         public uint TryLoad16Bits()
         {
-            Debug.Assert(_buffer != null);
             if (_bitsInBuffer < 8)
             {
-                if (_start < _end)
+                if (!_buffer.IsEmpty)
                 {
-                    _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                    _bitBuffer |= (uint)_buffer.Span[0] << _bitsInBuffer;
+                    _buffer = _buffer.Slice(1);
                     _bitsInBuffer += 8;
                 }
 
-                if (_start < _end)
+                if (!_buffer.IsEmpty)
                 {
-                    _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                    _bitBuffer |= (uint)_buffer.Span[0] << _bitsInBuffer;
+                    _buffer = _buffer.Slice(1);
                     _bitsInBuffer += 8;
                 }
             }
             else if (_bitsInBuffer < 16)
             {
-                if (_start < _end)
+                if (!_buffer.IsEmpty)
                 {
-                    _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                    _bitBuffer |= (uint)_buffer.Span[0] << _bitsInBuffer;
+                    _buffer = _buffer.Slice(1);
                     _bitsInBuffer += 8;
                 }
             }
@@ -147,15 +148,13 @@ namespace System.IO.Compression
                 return bytesFromBitBuffer;
             }
 
-            int avail = _end - _start;
-            if (length > avail)
+            if (length > _buffer.Length)
             {
-                length = avail;
+                length = _buffer.Length;
             }
 
-            Debug.Assert(_buffer != null);
-            Array.Copy(_buffer, _start, output, offset, length);
-            _start += length;
+            _buffer.CopyTo(output.AsMemory(offset, length));
+            _buffer = _buffer.Slice(length);
             return bytesFromBitBuffer + length;
         }
 
@@ -163,7 +162,22 @@ namespace System.IO.Compression
         /// Return true is all input bytes are used.
         /// This means the caller can call SetInput to add more input.
         /// </summary>
-        public bool NeedsInput() => _start == _end;
+        public bool NeedsInput() => _buffer.IsEmpty;
+
+        /// <summary>
+        /// Set the buffer to be processed.
+        /// All the bits remained in bitBuffer will be processed before the new bytes.
+        /// We don't clone the buffer here since it is expensive.
+        /// The caller should make sure after a buffer is passed in.
+        /// It will not be changed before calling this function again.
+        /// </summary>
+        public void SetInput(Memory<byte> buffer)
+        {
+            if (_buffer.IsEmpty)
+            {
+                _buffer = buffer;
+            }
+        }
 
         /// <summary>
         /// Set the byte array to be processed.
@@ -179,12 +193,7 @@ namespace System.IO.Compression
             Debug.Assert(length >= 0);
             Debug.Assert(offset <= buffer.Length - length);
 
-            if (_start == _end)
-            {
-                _buffer = buffer;
-                _start = offset;
-                _end = offset + length;
-            }
+            SetInput(buffer.AsMemory(offset, length));
         }
 
         /// <summary>Skip n bits in the buffer.</summary>
