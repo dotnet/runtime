@@ -223,6 +223,7 @@ namespace System.Security.Cryptography
     public sealed partial class CngProvider : System.IEquatable<System.Security.Cryptography.CngProvider>
     {
         public CngProvider(string provider) { }
+        public static System.Security.Cryptography.CngProvider MicrosoftPlatformCryptoProvider { get { throw null; } }
         public static System.Security.Cryptography.CngProvider MicrosoftSmartCardKeyStorageProvider { get { throw null; } }
         public static System.Security.Cryptography.CngProvider MicrosoftSoftwareKeyStorageProvider { get { throw null; } }
         public string Provider { get { throw null; } }
