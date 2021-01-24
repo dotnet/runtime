@@ -515,6 +515,10 @@ mono_llvm_jit_init ()
 	g_assert_not_reached ();
 #endif
 
+	llvm::StringMap<bool> host_cpu_features;
+	if (llvm::sys::getHostCPUFeatures (host_cpu_features))
+		EB.setMAttrs (host_cpu_features.keys ());
+
 	auto TM = EB.selectTarget ();
 	assert (TM);
 	dummy_pgo_module = unwrap (LLVMModuleCreateWithName("dummy-pgo-module"));
