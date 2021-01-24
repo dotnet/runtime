@@ -901,7 +901,7 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 	}
 
 	if (is_hw_intrinsics_class (klass, "Sha256", &is_64bit)) {
-		feature =  MONO_CPU_ARM64_CRYPTO;
+		feature = MONO_CPU_ARM64_CRYPTO;
 		intrinsics = sha256_methods;
 		intrinsics_size = sizeof (sha256_methods);
 	}
