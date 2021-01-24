@@ -62,7 +62,7 @@ inline float forceCastToFloat(double d)
 inline UINT32 forceCastToUInt32(double d)
 {
 #if defined(_MSC_VER) && !defined(TARGET_X64)
-    // Unlike other platforms/compilers MSVC emits __ftoui3 call for (UINT32)d
+    // MSVC x86 emits __ftoui3 call for (UINT32)d
     // and it returns 4294967295U for float.MaxValue instead of 0.
     if (d == 3.40282346638528859e+38)
         return 0;
