@@ -165,17 +165,15 @@ namespace System.Net
             {
                 state.RegisterForCancellation(cancellationToken);
             }
-            else if (errorCode == SocketError.TryAgain)
+            else if (errorCode == SocketError.TryAgain || (int)errorCode == Interop.Winsock.WSA_E_CANCELLED)
             {
                 // WSATRY_AGAIN indicates possible problem with reachability according to docs.
                 // However, if servers are really unreachable, we would still get IOPending here
                 // and final result would be posted via overlapped IO.
                 // synchronous failure here may signal issue when GetAddrInfoExW does not work from
                 // impersonated context.
-                     GetAddrInfoExContext.FreeContext(context);
-                     return null;
-                //ProcessResult(errorCode, context);
-
+                GetAddrInfoExContext.FreeContext(context);
+                return null;
             }
             else
             {
