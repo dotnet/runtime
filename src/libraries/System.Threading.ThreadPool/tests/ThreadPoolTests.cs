@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tests;
@@ -883,6 +884,76 @@ namespace System.Threading.ThreadPools.Tests
                 }, null, 0, true);
                 done.CheckedWait();
             }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public void CanExecuteManyAsyncItemsWhenBlockingItemsPresent()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
+            // would cause the thread pool to create threads
+            RemoteExecutor.Invoke(() => {
+                var done = new AutoResetEvent(false);
+
+                Task.Run(async () =>
+                {
+                    const int count = 10_000;
+
+                    // Start blocking
+                    Block.TriggerBlockingStreams();
+                    await Task.Delay(Block.blockMs * 2);
+
+                    var sw = Stopwatch.StartNew();
+                    for (int i = 0; i < count; i++)
+                    {
+                        // Run cold async
+                        await Task.Run(async () => await Task.Yield());
+                        // Run new blocking
+                        Block.TriggerBlockingStreams();
+                    }
+                    sw.Stop();
+
+                    Block.StopBlocking();
+
+                    // Should have completed the async in under 1/2 sec, unless blocked when it will run forever.
+                    // Will allow 2 sec.
+                    Assert.True(sw.ElapsedMilliseconds <= 2000, $"{sw.Elapsed} > 2 sec");
+                    done.Set();
+                });
+
+                done.CheckedWait();
+            }).Dispose();
+        }
+
+        class Block
+        {
+            public const int blockMs = 500;
+            public static CancellationTokenSource cts = new CancellationTokenSource();
+            public static Action s_blockingAction = () => Blocking();
+
+            public static void StopBlocking()
+            {
+                cts.Cancel();
+                cts.Dispose();
+            }
+
+            public static void TriggerBlockingStreams()
+            {
+                Task.Run(s_blockingAction);
+            }
+
+            static void Blocking()
+            {
+                try
+                {
+                    Task.Delay(blockMs).Wait(cts.Token);
+                    if (!cts.IsCancellationRequested)
+                    {
+                        // Spawn new blocking items in ThreadPool
+                        TriggerBlockingStreams();
+                    }
+                }
+                catch { }
+            }
         }
 
         public static bool IsThreadingAndRemoteExecutorSupported =>
