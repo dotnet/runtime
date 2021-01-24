@@ -449,8 +449,6 @@ protected:
     void genProfilingLeaveCallback(unsigned helper);
 #endif // PROFILING_SUPPORTED
 
-    void genPrologPadForReJit();
-
     // clang-format off
     void genEmitCall(int                   callType,
                      CORINFO_METHOD_HANDLE methHnd,
@@ -1369,9 +1367,6 @@ public:
     void instInit();
 
     void instGen(instruction ins);
-#ifdef TARGET_XARCH
-    void instNop(unsigned size);
-#endif
 
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 

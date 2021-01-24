@@ -2416,12 +2416,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static HRESULT _allocMethodBlockCounts(IntPtr thisHandle, IntPtr* ppException, uint count, BlockCounts** pBlockCounts)
+        static HRESULT _getPgoInstrumentationResults(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema** pSchema, uint* pCountSchemaItems, byte** pInstrumentationData)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.allocMethodBlockCounts(count, ref *pBlockCounts);
+                return _this.getPgoInstrumentationResults(ftnHnd, ref *pSchema, ref *pCountSchemaItems, pInstrumentationData);
             }
             catch (Exception ex)
             {
@@ -2431,12 +2431,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static HRESULT _getMethodBlockCounts(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, uint* pCount, BlockCounts** pBlockCounts, uint* pNumRuns)
+        static HRESULT _allocPgoInstrumentationBySchema(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getMethodBlockCounts(ftnHnd, ref *pCount, ref *pBlockCounts, ref *pNumRuns);
+                return _this.allocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
             }
             catch (Exception ex)
             {
@@ -2701,8 +2701,8 @@ namespace Internal.JitInterface
             callbacks[160] = (delegate* unmanaged<IntPtr, IntPtr*, uint, byte*, IntPtr, byte>)&_logMsg;
             callbacks[161] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, int, byte*, int>)&_doAssert;
             callbacks[162] = (delegate* unmanaged<IntPtr, IntPtr*, CorJitResult, void>)&_reportFatalError;
-            callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, uint, BlockCounts**, HRESULT>)&_allocMethodBlockCounts;
-            callbacks[164] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, BlockCounts**, uint*, HRESULT>)&_getMethodBlockCounts;
+            callbacks[163] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema**, uint*, byte**, HRESULT>)&_getPgoInstrumentationResults;
+            callbacks[164] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, PgoInstrumentationSchema*, uint, byte**, HRESULT>)&_allocPgoInstrumentationBySchema;
             callbacks[165] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*, uint, uint*, uint*, CORINFO_CLASS_STRUCT_*>)&_getLikelyClass;
             callbacks[166] = (delegate* unmanaged<IntPtr, IntPtr*, uint, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void>)&_recordCallSite;
             callbacks[167] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void*, ushort, ushort, int, void>)&_recordRelocation;

@@ -11,6 +11,7 @@ parameters:
   variables: []
   targetRid: ''
   timeoutInMinutes: ''
+  dependsOn: []
   pool: ''
   platform: ''
   condition: true
@@ -40,8 +41,14 @@ jobs:
     workspace:
       clean: all
 
+    ${{ if and(ne(parameters.dependOnEvaluatePaths, true),ne(parameters.dependsOn,'')) }}:
+      dependsOn: ${{ parameters.dependsOn }}
+
     ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-      dependsOn: evaluate_paths
+      dependsOn: 
+      - evaluate_paths
+      - ${{ if ne(parameters.dependsOn,'') }}:
+        - ${{ parameters.dependsOn }}
 
     variables:
       - name: _osParameter
@@ -81,6 +88,13 @@ jobs:
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
+
+    - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
+      - task: DownloadPipelineArtifact@2
+        displayName: Download ${{monoCrossAOTTargetOS}} AOT offset files
+        inputs:
+          artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
+          path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO

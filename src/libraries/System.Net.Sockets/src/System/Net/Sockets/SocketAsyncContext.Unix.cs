@@ -1505,6 +1505,7 @@ namespace System.Net.Sockets
             {
                 Buffer = buffer,
                 Flags = flags,
+                SetReceivedFlags = true,
                 SocketAddress = socketAddress,
                 SocketAddressLen = socketAddressLen,
             };

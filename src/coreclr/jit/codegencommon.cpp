@@ -2258,6 +2258,12 @@ void CodeGen::genGenerateMachineCode()
 
     GetEmitter()->emitJumpDistBind();
 
+#if FEATURE_LOOP_ALIGN
+    /* Perform alignment adjustments */
+
+    GetEmitter()->emitLoopAlignAdjustments();
+#endif
+
     /* The code is now complete and final; it should not change after this. */
 }
 
@@ -2345,10 +2351,12 @@ void CodeGen::genEmitMachineCode()
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d (MethodHash=%08x) for "
+        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
+               "code %d (MethodHash=%08x) for "
                "method %s\n",
-               codeSize, prologSize, compiler->info.compPerfScore, instrCount, compiler->info.compMethodHash(),
-               compiler->info.compFullName);
+               codeSize, prologSize, compiler->info.compPerfScore, instrCount,
+               GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize,
+               compiler->info.compMethodHash(), compiler->info.compFullName);
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
     }
@@ -6954,41 +6962,6 @@ ret
 
 /*****************************************************************************
  *
- *  Generates appropriate NOP padding for a function prolog to support ReJIT.
- */
-
-void CodeGen::genPrologPadForReJit()
-{
-    assert(compiler->compGeneratingProlog);
-
-#ifdef TARGET_XARCH
-    if (!compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_REJIT_NOPS))
-    {
-        return;
-    }
-
-#if defined(FEATURE_EH_FUNCLETS)
-
-    // No need to generate pad (nops) for funclets.
-    // When compiling the main function (and not a funclet)
-    // the value of funCurrentFunc->funKind is equal to FUNC_ROOT.
-    if (compiler->funCurrentFunc()->funKind != FUNC_ROOT)
-    {
-        return;
-    }
-
-#endif // FEATURE_EH_FUNCLETS
-
-    unsigned size = GetEmitter()->emitGetPrologOffsetEstimate();
-    if (size < 5)
-    {
-        instNop(5 - size);
-    }
-#endif
-}
-
-/*****************************************************************************
- *
  *  Reserve space for a function prolog.
  */
 
@@ -7987,17 +7960,10 @@ void CodeGen::genFnProlog()
 
     if (!GetInterruptible())
     {
-        /*-------------------------------------------------------------------------
-         *
-         * The 'real' prolog ends here for non-interruptible methods.
-         * For fully-interruptible methods, we extend the prolog so that
-         * we do not need to track GC inforation while shuffling the
-         * arguments.
-         *
-         * Make sure there's enough padding for ReJIT.
-         *
-         */
-        genPrologPadForReJit();
+        // The 'real' prolog ends here for non-interruptible methods.
+        // For fully-interruptible methods, we extend the prolog so that
+        // we do not need to track GC inforation while shuffling the
+        // arguments.
         GetEmitter()->emitMarkPrologEnd();
     }
 
@@ -8112,12 +8078,10 @@ void CodeGen::genFnProlog()
 
     //
     // Increase the prolog size here only if fully interruptible.
-    // And again make sure it's big enough for ReJIT
     //
 
     if (GetInterruptible())
     {
-        genPrologPadForReJit();
         GetEmitter()->emitMarkPrologEnd();
     }
     if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
@@ -8932,10 +8896,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         if (compiler->info.compIsVarArgs)
             fCalleePop = false;
 
-#ifdef UNIX_X86_ABI
         if (IsCallerPop(compiler->info.compCallConv))
             fCalleePop = false;
-#endif // UNIX_X86_ABI
 
         if (fCalleePop)
         {

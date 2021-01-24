@@ -48,6 +48,7 @@ void mono_icall_table_init (void);
 void mono_aot_register_module (void **aot_info);
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
+int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
@@ -502,6 +503,12 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
+#ifdef ENABLE_METADATA_UPDATE
+	if (monoeg_g_hasenv ("MONO_METADATA_UPDATE")) {
+		interp_opts = "-inline";
+	}
+#endif
+
 	/*
 	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
 	 * debug_level == 0 disables debugging and enables interpreter optimizations
@@ -514,6 +521,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		interp_opts = "-all";
 		mono_wasm_enable_debugging (debug_level);
 	}
+
 #endif
 
 #ifdef LINK_ICALLS
@@ -772,6 +780,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_INT64 26
 #define MARSHAL_TYPE_UINT64 27
 #define MARSHAL_TYPE_CHAR 28
+#define MARSHAL_TYPE_STRING_INTERNED 29
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -881,6 +890,12 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if (
+		(klass == mono_get_string_class ()) &&
+		(mono_string_is_interned (obj) == obj)
+	)
+		return MARSHAL_TYPE_STRING_INTERNED;
+
 	MonoType *type = mono_class_get_type (klass);
 	obj = NULL;
 
@@ -904,6 +919,14 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if (
+		(klass == mono_get_string_class ()) &&
+		(mono_string_is_interned (obj) == obj)
+	) {
+		*resultL = 0;
+		return MARSHAL_TYPE_STRING_INTERNED;
+	}
+
 	MonoType *type = mono_class_get_type (klass), *original_type = type;
 
 	if (mono_class_is_enum (klass))
@@ -1061,4 +1084,10 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enable_on_demand_gc (int enable)
 {
 	mono_wasm_enable_gc = enable ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_intern_string (MonoString *string) 
+{
+	return mono_string_intern (string);
 }

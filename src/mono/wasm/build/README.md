@@ -1,7 +1,12 @@
-# `WasmApp.targets`
+# `WasmApp.{props,targets}`, `WasmApp.InTree.{props,targets}`
 
-- Any project that wants to use this, can import the file, and set up the
+- Any project that wants to use this, can import the props+targets, and set up the
 various properties before the target `WasmBuildApp` gets executed.
+  - the recommended way to do this is to prepend the target to `$(WasmAppBuildDependsOn)`
+
+- Any wasm projects within the `dotnet/runtime` repo should use the `WasmApp.InTree.{props,targets}` files
+  - These files have relevant properties/targets to work with a local build
+- Generally, the props file can be imported at the top, and the targets file at the bottom of a project file.
 
 - `WasmBuildApp` target is not run by default. The importing project will have
 to do that.
@@ -33,6 +38,7 @@ The various task inputs correspond to properties as:
   SatelliteAssemblies               : @(WasmSatelliteAssemblies)
   FilesToIncludeInFileSystem        : @(WasmFilesToIncludeInFileSystem)
   DebugLevel                        : $(WasmDebugLevel)
+  ExtraFilesToDeploy                : @(WasmExtraFilesToDeploy)
 
   MicrosoftNetCoreAppRuntimePackDir : $(MicrosoftNetCoreAppRuntimePackRidDir)
 ```

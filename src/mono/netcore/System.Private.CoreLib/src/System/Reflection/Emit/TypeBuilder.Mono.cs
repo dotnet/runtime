@@ -796,10 +796,9 @@ namespace System.Reflection.Emit
         // We require emitted types to have all members on their bases to be accessible.
         // This is basically an identity function for `this`.
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:UnrecognizedReflectionPattern",
-            Justification = "Reflection emitted types have all of their members")]
+            Justification = "Reflection.Emit is not subject to trimming")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public
-        TypeInfo? CreateTypeInfo()
+        public TypeInfo? CreateTypeInfo()
         {
             /* handle nesting_type */
             if (createTypeCalled)

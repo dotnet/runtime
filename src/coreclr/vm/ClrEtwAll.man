@@ -85,6 +85,8 @@
                              message="$(string.RuntimePublisher.MethodDiagnosticKeywordMessage)" symbol="CLR_METHODDIAGNOSTIC_KEYWORD" />
                     <keyword name="TypeDiagnosticKeyword" mask="0x8000000000"
                              message="$(string.RuntimePublisher.TypeDiagnosticKeywordMessage)" symbol="CLR_TYPEDIAGNOSTIC_KEYWORD" />
+                    <keyword name="JitInstrumentationDataKeyword" mask="0x10000000000"
+                             message="$(string.RuntimePublisher.JitInstrumentationDataKeywordMessage)" symbol="CLR_JITINSTRUMENTEDDATA_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -412,8 +414,15 @@
                         <opcodes>
                         </opcodes>
                     </task>
-
-                <!--Next available ID is 34-->
+                    <task name="JitInstrumentationData" symbol="CLR_JITINSTRUMENTATIONDATA_TASK"
+                          value="34" eventGUID="{F8666925-22C8-4B70-A131-0738137E7F25}"
+                          message="$(string.RuntimePublisher.JitInstrumentationDataTaskMessage)">
+                        <opcodes>
+                            <opcode name="InstrumentationData" message="$(string.RuntimePublisher.InstrumentationDataOpcodeMessage)" symbol="CLR_INSTRUMENTATION_DATA_OPCODE" value="11"/>
+                            <opcode name="InstrumentationDataVerbose" message="$(string.RuntimePublisher.InstrumentationDataOpcodeMessage)" symbol="CLR_INSTRUMENTATION_DATA_VERBOSE_OPCODE" value="12"/>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 35-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -2831,6 +2840,42 @@
                         </Settings>
                       </UserData>
                     </template>
+
+                    <template tid="JitInstrumentationData">
+                      <data name="ClrInstanceID" inType="win:UInt16"/>
+                      <data name="MethodFlags" inType="win:UInt32" />
+                      <data name="DataSize" inType="win:UInt32" />
+                      <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="Data" inType="win:Binary" length="DataSize" />
+                      <UserData>
+                        <Settings xmlns="myNs">
+                                <MethodID> %4 </MethodID>
+                        </Settings>
+                      </UserData>
+                    </template>
+
+                    <template tid="JitInstrumentationDataVerbose">
+                      <data name="ClrInstanceID" inType="win:UInt16"/>
+                      <data name="MethodFlags" inType="win:UInt32" />
+                      <data name="DataSize" inType="win:UInt32" />
+                      <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
+                      <data name="MethodNamespace" inType="win:UnicodeString" />
+                      <data name="MethodName" inType="win:UnicodeString" />
+                      <data name="MethodSignature" inType="win:UnicodeString" />
+                      <data name="Data" inType="win:Binary" length="DataSize" />
+                      <UserData>
+                        <Settings xmlns="myNs">
+                                <MethodID> %4 </MethodID>
+                                <ModuleID> %5 </ModuleID>
+                                <MethodToken> %6 </MethodToken>
+                                <MethodNamespace> %7 </MethodNamespace>
+                                <MethodName> %8 </MethodName>
+                                <MethodSignature> %9 </MethodSignature>
+                        </Settings>
+                      </UserData>
+                    </template>
                 </templates>
 
                 <events>
@@ -3845,6 +3890,16 @@
                            keywords ="AssemblyLoaderKeyword" opcode="KnownPathProbed"
                            task="AssemblyLoader"
                            symbol="KnownPathProbed" message="$(string.RuntimePublisher.KnownPathProbedEventMessage)"/>
+
+                    <event value="297" version="0" level="win:Informational"  template="JitInstrumentationData"
+                           keywords ="JitInstrumentationDataKeyword" opcode="InstrumentationData"
+                           task="JitInstrumentationData"
+                           symbol="JitInstrumentationData" message="$(string.RuntimePublisher.JitInstrumentationDataEventMessage)"/>
+
+                    <event value="298" version="0" level="win:Informational"  template="JitInstrumentationDataVerbose"
+                           keywords ="JitInstrumentationDataKeyword" opcode="InstrumentationDataVerbose"
+                           task="JitInstrumentationData"
+                           symbol="JitInstrumentationDataVerbose" message="$(string.RuntimePublisher.JitInstrumentationDataEventMessage)"/>
                 </events>
             </provider>
 
@@ -7076,6 +7131,7 @@
                 <string id="RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nHandlerName=%3;%nResultAssemblyName=%4;%nResultAssemblyPath=%5" />
                 <string id="RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nIsTrackedLoad=%3;%nRequestingAssemblyPath=%4;%nComputedRequestedAssemblyPath=%5" />
                 <string id="RuntimePublisher.KnownPathProbedEventMessage" value="ClrInstanceID=%1;%nFilePath=%2;%nSource=%3;%nResult=%4" />
+                <string id="RuntimePublisher.JitInstrumentationDataEventMessage" value="%MethodId=%4" />
                 <string id="RuntimePublisher.ResolutionAttemptedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nStage=%3;%nAssemblyLoadContext=%4;%nResult=%5;%nResultAssemblyName=%6;%nResultAssemblyPath=%7;%nErrorMessage=%8" />
                 <string id="RuntimePublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedEventMessage" value="AppDomainID=%1;%nAllocated=%2;%nClrInstanceID=%3" />
@@ -7272,6 +7328,7 @@
                 <string id="RuntimePublisher.TieredCompilationTaskMessage" value="TieredCompilation" />
                 <string id="RuntimePublisher.AssemblyLoaderTaskMessage" value="AssemblyLoader" />
                 <string id="RuntimePublisher.TypeLoadTaskMessage" value="TypeLoad" />
+                <string id="RuntimePublisher.JitInstrumentationDataTaskMessage" value="JitInstrumentationData" />
 
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
@@ -7599,6 +7656,7 @@
                 <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
                 <string id="RuntimePublisher.MethodDiagnosticKeywordMessage" value="MethodDiagnostic" />
                 <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
+                <string id="RuntimePublisher.JitInstrumentationDataKeywordMessage" value="JitInstrumentationData" />
                 <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
@@ -7737,6 +7795,8 @@
                 <string id="RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedOpcodeMessage" value="AssemblyLoadFromResolveHandlerInvoked" />
                 <string id="RuntimePublisher.KnownPathProbedOpcodeMessage" value="KnownPathProbed" />
                 <string id="RuntimePublisher.ResolutionAttemptedOpcodeMessage" value="ResolutionAttempted" />
+
+                <string id="RuntimePublisher.InstrumentationDataOpcodeMessage" value="InstrumentationData" />
 
                 <string id="RundownPublisher.MethodDCStartOpcodeMessage" value="DCStart" />
                 <string id="RundownPublisher.MethodDCEndOpcodeMessage" value="DCStop" />

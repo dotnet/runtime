@@ -122,6 +122,8 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
              Link="Common\System\Net\ArrayBuffer.cs"/>
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs"
+             Link="Common\System\Net\MultiArrayBuffer.cs"/>
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">

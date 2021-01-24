@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System;
 using System.Reflection;
 using System.Text;
 using TestLibrary;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 unsafe class ThisCallNative
 {
@@ -18,6 +18,7 @@ unsafe class ThisCallNative
             public IntPtr getWidth;
             public IntPtr getHeightAsInt;
             public IntPtr getE;
+            public IntPtr getWidthAsLong;
         }
 
         public VtableLayout* vtable;
@@ -57,6 +58,9 @@ unsafe class ThisCallNative
     [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
     public delegate E GetEFn(C* c);
 
+    [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+    public delegate CLong GetWidthAsLongFn(C* c);
+
     [DllImport(nameof(ThisCallNative))]
     public static extern C* CreateInstanceOfC(float width, float height);
 
@@ -68,6 +72,8 @@ unsafe class ThisCallNative
     public static extern IntWrapper GetHeightAsIntFromManaged(C* c);
     [DllImport(nameof(ThisCallNative))]
     public static extern E GetEFromManaged(C* c);
+    [DllImport(nameof(ThisCallNative))]
+    public static extern CLong GetWidthAsLongFromManaged(C* c);
 }
 
 unsafe class ThisCallTest
@@ -83,14 +89,17 @@ unsafe class ThisCallTest
             Test4ByteHFA(instance);
             Test4ByteNonHFA(instance);
             TestEnum(instance);
+            TestCLong(instance);
             Test8ByteHFAReverse();
             Test4ByteHFAReverse();
             Test4ByteNonHFAReverse();
             TestEnumReverse();
+            TestCLongReverse();
             Test8ByteHFAUnmanagedCallersOnly();
             Test4ByteHFAUnmanagedCallersOnly();
             Test4ByteNonHFAUnmanagedCallersOnly();
             TestEnumUnmanagedCallersOnly();
+            TestCLongUnmanagedCallersOnly();
         }
         catch (System.Exception ex)
         {
@@ -137,15 +146,24 @@ unsafe class ThisCallTest
         Assert.AreEqual(instance->dummy, result);
     }
 
+    private static void TestCLong(ThisCallNative.C* instance)
+    {
+        ThisCallNative.GetWidthAsLongFn callback = Marshal.GetDelegateForFunctionPointer<ThisCallNative.GetWidthAsLongFn>(instance->vtable->getWidthAsLong);
+
+        CLong result = callback(instance);
+
+        Assert.AreEqual((nint)instance->width, result.Value);
+    }
+
     private static void Test8ByteHFAReverse()
     {
         ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
         ThisCallNative.SizeF result = ThisCallNative.GetSizeFromManaged(&c);
-        
+
         Assert.AreEqual(c.width, result.width);
         Assert.AreEqual(c.height, result.height);
     }
-    
+
     private static void Test4ByteHFAReverse()
     {
         ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
@@ -169,15 +187,24 @@ unsafe class ThisCallTest
 
         Assert.AreEqual(c.dummy, result);
     }
+
+    private static void TestCLongReverse()
+    {
+        ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
+        CLong result = ThisCallNative.GetWidthAsLongFromManaged(&c);
+
+        Assert.AreEqual((nint)c.width, result.Value);
+    }
+
     private static void Test8ByteHFAUnmanagedCallersOnly()
     {
         ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         ThisCallNative.SizeF result = ThisCallNative.GetSizeFromManaged(&c);
-        
+
         Assert.AreEqual(c.width, result.width);
         Assert.AreEqual(c.height, result.height);
     }
-    
+
     private static void Test4ByteHFAUnmanagedCallersOnly()
     {
         ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
@@ -200,6 +227,14 @@ unsafe class ThisCallTest
         ThisCallNative.E result = ThisCallNative.GetEFromManaged(&c);
 
         Assert.AreEqual(c.dummy, result);
+    }
+
+    private static void TestCLongUnmanagedCallersOnly()
+    {
+        ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
+        CLong result = ThisCallNative.GetWidthAsLongFromManaged(&c);
+
+        Assert.AreEqual((nint)c.width, result.Value);
     }
 
     private static ThisCallNative.C CreateCWithManagedVTable(float width, float height)
@@ -241,6 +276,8 @@ unsafe class ThisCallTest
                     (ThisCallNative.GetHeightAsIntFn)((ThisCallNative.C* c) => new ThisCallNative.IntWrapper { i = (int)c->height} ));
                 managedVtable->getE = Marshal.GetFunctionPointerForDelegate(
                     (ThisCallNative.GetEFn)((ThisCallNative.C* c) => c->dummy ));
+                managedVtable->getWidthAsLong = Marshal.GetFunctionPointerForDelegate(
+                    (ThisCallNative.GetWidthAsLongFn)((ThisCallNative.C* c) => new CLong((nint)c->width)));
             }
             return managedVtable;
         }
@@ -259,6 +296,7 @@ unsafe class ThisCallTest
                 unmanagedCallersOnlyVtable->getWidth = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.Width>)&GetWidth;
                 unmanagedCallersOnlyVtable->getHeightAsInt = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.IntWrapper>)&GetHeightAsInt;
                 unmanagedCallersOnlyVtable->getE = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.E>)&GetE;
+                unmanagedCallersOnlyVtable->getWidthAsLong = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, CLong>)&GetWidthAsLong;
             }
             return unmanagedCallersOnlyVtable;
         }
@@ -296,5 +334,11 @@ unsafe class ThisCallTest
     private static ThisCallNative.E GetE(ThisCallNative.C* c)
     {
         return c->dummy;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    private static CLong GetWidthAsLong(ThisCallNative.C* c)
+    {
+        return new CLong((nint)c->width);
     }
 }

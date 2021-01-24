@@ -117,7 +117,7 @@ In this system it is not defined how marshaling of specific types would be perfo
 
 In the current Source Generator design modification of any user written code is not permitted. This includes modification of any non-functional metadata (e.g. Attributes). The above design therefore introduces a new attribute and signature for consumption of a native export. In order to consume Source Generators, users would need to update their source and adoption could be stunted by this requirement.
 
-As a mitigation it would be possible to create a [Roslyn Analyzer and Code fix](https://github.com/dotnet/roslyn/wiki/Getting-Started-Writing-a-Custom-Analyzer-&-Code-Fix) to aid the developer in converting `DllImportAttribute` marked functions to use `GeneratedDllImportAttribute`. Additionally, the function signature would need to be updated to remove the `extern` keyword and add the `partial` keyword to the function and potentially the enclosing class.
+As a mitigation it would be possible to create a [Roslyn Analyzer and Code fix](https://github.com/dotnet/roslyn/blob/master/docs/wiki/Getting-Started-Writing-a-Custom-Analyzer-&-Code-Fix.md) to aid the developer in converting `DllImportAttribute` marked functions to use `GeneratedDllImportAttribute`. Additionally, the function signature would need to be updated to remove the `extern` keyword and add the `partial` keyword to the function and potentially the enclosing class.
 
 ## Proposed API
 

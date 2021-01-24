@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Platforms\src\Microsoft.NETCore.Platforms.csproj" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' Or '$(BuildAllConfigurations)' == 'true'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Targets\src\Microsoft.NETCore.Targets.csproj" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' Or '$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
                       Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true')"
                       Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>

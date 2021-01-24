@@ -481,12 +481,21 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private bool TryLocateNativeReadyToRunHeader()
         {
-            PEExportTable exportTable = CompositeReader.GetExportTable();
-            if (exportTable.TryGetValue("RTR_HEADER", out _readyToRunHeaderRVA))
+            try
             {
-                _composite = true;
-                return true;
+                PEExportTable exportTable = CompositeReader.GetExportTable();
+                if (exportTable.TryGetValue("RTR_HEADER", out _readyToRunHeaderRVA))
+                {
+                    _composite = true;
+                    return true;
+                }
             }
+            catch (BadImageFormatException)
+            {
+                // MSIL assemblies with no ready-to-run payload typically have no export table
+                return false;
+            }
+
             return false;
         }
 

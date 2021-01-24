@@ -1857,7 +1857,7 @@ def determine_jit_ee_version(coreclr_args):
         # The string is near the beginning of the somewhat large file, so just read a line at a time when searching.
         with open(jiteeversionguid_h_path, 'r') as file_handle:
             for line in file_handle:
-                match_obj = re.search(r'JITEEVersionIdentifier *= *{ */\* *([^ ]*) *\*/', line)
+                match_obj = re.search(r'^constexpr GUID JITEEVersionIdentifier *= *{ */\* *([^ ]*) *\*/', line)
                 if match_obj is not None:
                     jiteeversionguid_h_jit_ee_version = match_obj.group(1)
                     logging.info("Using JIT/EE Version from jiteeversionguid.h: %s", jiteeversionguid_h_jit_ee_version)

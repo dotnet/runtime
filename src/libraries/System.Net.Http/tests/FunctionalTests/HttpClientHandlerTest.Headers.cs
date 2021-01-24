@@ -71,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_LargeHeaders_CorrectlyWritten()
         {
-            if (UseVersion == HttpVersion30)
+            if (UseVersion == HttpVersion.Version30)
             {
                 // TODO: ActiveIssue
                 return;
@@ -338,7 +338,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
-            if (UseVersion == HttpVersion30)
+            if (UseVersion == HttpVersion.Version30)
             {
                 // External servers do not support HTTP3 currently.
                 return;

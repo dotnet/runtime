@@ -446,9 +446,6 @@ DEFINE_METHOD(COMWRAPPERS,                RELEASE_OBJECTS,  CallReleaseObjects, 
 DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_Obj_RefGuid_RefIntPtr_RetInt)
 #endif //FEATURE_COMINTEROP
 
-DEFINE_CLASS(SERIALIZATION_INFO,        Serialization,      SerializationInfo)
-DEFINE_CLASS(DESERIALIZATION_TRACKER,   Serialization,      DeserializationTracker)
-
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
 
 DEFINE_CLASS(IENUMERABLE,           Collections,            IEnumerable)
@@ -769,6 +766,12 @@ DEFINE_FIELD_U(ArgBuffer,                  TailCallTls,           m_argBuffer)
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
 DEFINE_FIELD(RUNTIME_WRAPPED_EXCEPTION, WRAPPED_EXCEPTION,  _wrappedException)
+
+DEFINE_CLASS(CALLCONV_CDECL,                 CompilerServices,       CallConvCdecl)
+DEFINE_CLASS(CALLCONV_STDCALL,               CompilerServices,       CallConvStdcall)
+DEFINE_CLASS(CALLCONV_THISCALL,              CompilerServices,       CallConvThiscall)
+DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFastcall)
+DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
 
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
 DEFINE_FIELD_U(handle,                     SafeHandle,            m_handle)

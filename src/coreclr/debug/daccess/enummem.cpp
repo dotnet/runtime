@@ -542,9 +542,12 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
             PCODE addr = pMD->GetNativeCode();
             if (addr != NULL)
             {
-                IJitManager::MethodRegionInfo methodRegionInfo = { NULL, 0, NULL, 0 };
                 EECodeInfo codeInfo(addr);
-                codeInfo.GetMethodRegionInfo(&methodRegionInfo);
+                if (codeInfo.IsValid())
+                {
+                    IJitManager::MethodRegionInfo methodRegionInfo = { NULL, 0, NULL, 0 };
+                    codeInfo.GetMethodRegionInfo(&methodRegionInfo);
+                }
             }
         }
 

@@ -66,8 +66,13 @@
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
 
+#ifndef ENABLE_NETCORE
 #define GET_APPCONTEXT() (mono_thread_internal_current ()->current_appcontext)
 #define SET_APPCONTEXT(x) MONO_OBJECT_SETREF_INTERNAL (mono_thread_internal_current (), current_appcontext, (x))
+#else
+#define GET_APPCONTEXT() NULL
+#define SET_APPCONTEXT(x)
+#endif
 
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
@@ -919,7 +924,12 @@ mono_cleanup (void)
 void
 mono_close_exe_image (void)
 {
-	if (exe_image)
+	gboolean do_close = exe_image != NULL;
+#ifdef ENABLE_METADATA_UPDATE
+	/* FIXME: shutdown hack. We mess something up and try to double-close/free it. */
+	do_close = do_close && !exe_image->delta_image;
+#endif
+	if (do_close)
 		mono_image_close (exe_image);
 }
 

@@ -20,7 +20,7 @@
 #else // !TARGET_UNIX
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
 #endif // !TARGET_UNIX
-
+#include "pgo.h"
 
 enum StompWriteBarrierCompletionAction
 {
@@ -669,18 +669,19 @@ public:
             CORINFO_EH_CLAUSE* clause               /* OUT */
             ) override final;
 
+    HRESULT allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            UINT32 countSchemaItems, /* IN */
+            BYTE** pInstrumentationData /* OUT */
+            ) override final;
 
-    HRESULT allocMethodBlockCounts (
-        UINT32                        count,         // the count of <ILOffset, ExecutionCount> tuples
-        ICorJitInfo::BlockCounts **   pBlockCounts   // pointer to array of <ILOffset, ExecutionCount> tuples
-    ) override final;
-
-    HRESULT getMethodBlockCounts(
-        CORINFO_METHOD_HANDLE         ftnHnd,
-        UINT32 *                      pCount,        // pointer to the count of <ILOffset, ExecutionCount> tuples
-        BlockCounts **                pBlockCounts,  // pointer to array of <ILOffset, ExecutionCount> tuples
-        UINT32 *                      pNumRuns
-    ) override final;
+    HRESULT getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema** pSchema, /* OUT */
+            UINT32* pCountSchemaItems, /* OUT */
+            BYTE**pInstrumentationData /* OUT */
+            ) override final;
 
     CORINFO_CLASS_HANDLE getLikelyClass(
             CORINFO_METHOD_HANDLE ftnHnd,
@@ -884,7 +885,18 @@ public:
         if (m_pPatchpointInfoFromJit != NULL)
             delete [] ((BYTE*) m_pPatchpointInfoFromJit);
 #endif
-
+#ifdef FEATURE_PGO
+        if (m_foundPgoData != NULL)
+        {
+            ComputedPgoData* current = m_foundPgoData;
+            while (current != NULL)
+            {
+                ComputedPgoData* next = current->m_next;
+                delete current;
+                current = next;
+            }
+        }
+#endif
     }
 
     // ICorDebugInfo stuff.
@@ -924,6 +936,23 @@ public:
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
 
 protected :
+
+#ifdef FEATURE_PGO
+    // PGO data
+    struct ComputedPgoData
+    {
+        ComputedPgoData(MethodDesc* pMD) : m_pMD(pMD) {}
+
+        ComputedPgoData* m_next = nullptr;
+        MethodDesc *m_pMD;
+        SArray<PgoInstrumentationSchema> m_schema;
+        BYTE *m_pInstrumentationData = nullptr;
+        HRESULT m_hr = E_NOTIMPL;
+    };
+    ComputedPgoData*        m_foundPgoData = nullptr;
+#endif
+
+
     EEJitManager*           m_jitManager;   // responsible for allocating memory
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file

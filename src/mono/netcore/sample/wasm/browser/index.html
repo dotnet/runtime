@@ -36,7 +36,7 @@
 
       var App = {
         init: function () {
-          var ret = BINDING.call_static_method("[WasmSample] Sample.Test:TestMeaning", []);
+          var ret = BINDING.call_static_method("[Wasm.Browser.Sample] Sample.Test:TestMeaning", []);
           document.getElementById("out").innerHTML = ret;
 
           if (is_testing)

@@ -52,12 +52,9 @@ typedef enum {
 #define READ64(x) (*(guint64 *)(x))
 #endif
 
-#define MINT_SWITCH_LEN(n) (3 + (n) * 2)
+#define MINT_SWITCH_LEN(n) (4 + (n) * 2)
 
-#define MINT_IS_LDLOC(op) ((op) >= MINT_LDLOC_I1 && (op) <= MINT_LDLOC_VT)
-#define MINT_IS_STLOC(op) ((op) >= MINT_STLOC_I1 && (op) <= MINT_STLOC_VT)
-#define MINT_IS_MOVLOC(op) ((op) >= MINT_MOVLOC_1 && (op) <= MINT_MOVLOC_VT)
-#define MINT_IS_STLOC_NP(op) ((op) >= MINT_STLOC_NP_I4 && (op) <= MINT_STLOC_NP_O)
+#define MINT_IS_MOV(op) ((op) >= MINT_MOV_I1 && (op) <= MINT_MOV_VT)
 #define MINT_IS_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BLT_UN_R8_S)
 #define MINT_IS_UNOP_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BRTRUE_R8_S)
 #define MINT_IS_BINOP_CONDITIONAL_BRANCH(op) ((op) >= MINT_BEQ_I4 && (op) <= MINT_BLT_UN_R8_S)
@@ -65,23 +62,17 @@ typedef enum {
 #define MINT_IS_PATCHABLE_CALL(op) ((op) >= MINT_CALL && (op) <= MINT_VCALL)
 #define MINT_IS_NEWOBJ(op) ((op) >= MINT_NEWOBJ && (op) <= MINT_NEWOBJ_MAGIC)
 #define MINT_IS_LDC_I4(op) ((op) >= MINT_LDC_I4_M1 && (op) <= MINT_LDC_I4)
-#define MINT_IS_UNOP(op) ((op) >= MINT_ADD1_I4 && (op) <= MINT_CONV_R8_R4_SP)
+#define MINT_IS_UNOP(op) ((op) >= MINT_ADD1_I4 && (op) <= MINT_CEQ0_I4)
 #define MINT_IS_BINOP(op) ((op) >= MINT_ADD_I4 && (op) <= MINT_CLT_UN_R8)
-#define MINT_IS_LDLOCFLD(op) ((op) >= MINT_LDLOCFLD_I1 && (op) <= MINT_LDLOCFLD_O)
-#define MINT_IS_STLOCFLD(op) ((op) >= MINT_STLOCFLD_I1 && (op) <= MINT_STLOCFLD_O)
-#define MINT_IS_LOCUNOP(op) ((op) >= MINT_LOCADD1_I4 && (op) <= MINT_LOCSUB1_I8)
 #define MINT_IS_LDFLD(op) ((op) >= MINT_LDFLD_I1 && (op) <= MINT_LDFLD_O)
+#define MINT_IS_STFLD(op) ((op) >= MINT_STFLD_I1 && (op) <= MINT_STFLD_O)
 
-
-#define MINT_POP_ALL	-2
-#define MINT_VAR_PUSH	-1
-#define MINT_VAR_POP	-1
+#define MINT_CALL_ARGS 2
 
 extern unsigned char const mono_interp_oplen[];
-extern int const mono_interp_oppop[];
-extern int const mono_interp_oppush[];
+extern int const mono_interp_op_dregs [];
+extern int const mono_interp_op_sregs [];
 extern MintOpArgType const mono_interp_opargtype[];
-extern char* mono_interp_dis_mintop (gint32 ins_offset, gboolean native_offset, const guint16 *ip, guint16 opcode);
 extern const guint16* mono_interp_dis_mintop_len (const guint16 *ip);
 
 // This, instead of an array of pointers, to optimize away a pointer and a relocation per string.

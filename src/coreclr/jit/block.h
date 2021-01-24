@@ -448,6 +448,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_PATCHPOINT                     MAKE_BBFLAG(36) // Block is a patchpoint
 #define BBF_HAS_CLASS_PROFILE              MAKE_BBFLAG(37) // BB contains a call needing a class profile
+#define BBF_LOOP_ALIGN                     MAKE_BBFLAG(39) // Block is lexically the first block in a loop we intend to align.
 
 // clang-format on
 
@@ -462,6 +463,10 @@ struct BasicBlock : private LIR::Range
     bool isLoopHead() const
     {
         return ((bbFlags & BBF_LOOP_HEAD) != 0);
+    }
+    bool isLoopAlign() const
+    {
+        return ((bbFlags & BBF_LOOP_ALIGN) != 0);
     }
 
 // Flags to update when two blocks are compacted
