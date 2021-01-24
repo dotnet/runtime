@@ -61,6 +61,10 @@ inline float forceCastToFloat(double d)
 // Enforce UInt32 narrowing for buggy compilers (notably Whidbey Beta 2 LKG)
 inline UINT32 forceCastToUInt32(double d)
 {
+#if defined(_MSC_VER) && !defined(TARGET_X64)
+    if (d == 3.40282346638528859e+38)
+        return 0;
+#endif
     Volatile<UINT32> u = (UINT32)d;
     return u;
 }
