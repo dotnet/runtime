@@ -11421,7 +11421,14 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal(unchecked((uint)value), f());
+            uint expectedUint32 = unchecked((uint)value);
+            if (value == float.MaxValue && !useInterpreter)
+            {
+                // Roslyn emits 0 for (uint)float.MaxValue whether coresponding hardware instructions 
+                // return (uint)-1. It's an undefined behavior according to the spec (ECMA-334, 11.3.2).
+                expectedUint32 = unchecked((uint)-1);
+            }
+            Assert.Equal(expectedUint32, f());
         }
 
         private static void VerifyFloatToNullableUInt(float value, bool useInterpreter)
@@ -11432,7 +11439,14 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal(unchecked((uint)value), f());
+            uint expectedUint32 = unchecked((uint)value);
+            if (value == float.MaxValue && !useInterpreter)
+            {
+                // Roslyn emits 0 for (uint)float.MaxValue whether coresponding hardware instructions 
+                // return (uint)-1. It's an undefined behavior according to the spec (ECMA-334, 11.3.2).
+                expectedUint32 = unchecked((uint)-1);
+            }
+            Assert.Equal(expectedUint32, f());
         }
 
         private static void VerifyFloatToULong(float value, bool useInterpreter)
