@@ -173,6 +173,7 @@ typedef struct {
 	gboolean *unreachable;
 	gboolean llvm_only;
 	gboolean has_got_access;
+	gboolean is_linkonce;
 	gboolean emit_dummy_arg;
 	gboolean has_safepoints;
 	int this_arg_pindex, rgctx_arg_pindex;
@@ -9397,6 +9398,25 @@ free_ctx (EmitContext *ctx)
 	g_free (ctx);
 }
 
+static gboolean
+is_linkonce_method (MonoMethod *method)
+{
+#ifdef TARGET_WASM
+	/*
+	 * Under wasm, linkonce works, so use it instead of the dedup pass for wrappers at least.
+	 * FIXME: Use for everything, i.e. can_dedup ().
+	 * FIXME: Fails System.Core tests
+	 * -> amodule->sorted_methods contains duplicates, screwing up jit tables.
+	 */
+	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
+			return TRUE;
+	}
+#endif
+	return FALSE;
+}
+
 /*
  * mono_llvm_emit_method:
  *
@@ -9407,6 +9427,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 {
 	EmitContext *ctx;
 	char *method_name;
+	gboolean is_linkonce = FALSE;
 	int i;
 
 	if (cfg->skip)
@@ -9448,7 +9469,15 @@ mono_llvm_emit_method (MonoCompile *cfg)
  	if (cfg->compile_aot) {
 		ctx->module = &aot_module;
 
-		if (mono_aot_is_externally_callable (cfg->method))
+		/*
+		 * Allow the linker to discard duplicate copies of wrappers, generic instances etc. by using the 'linkonce'
+		 * linkage for them. This requires the following:
+		 * - the method needs to have a unique mangled name
+		 * - llvmonly mode, since the code in aot-runtime.c would initialize got slots in the wrong aot image etc.
+		 */
+		if (ctx->module->llvm_only && ctx->module->static_link && is_linkonce_method (cfg->method))
+			is_linkonce = TRUE;
+		if (is_linkonce || mono_aot_is_externally_callable (cfg->method))
 			method_name = mono_aot_get_mangled_method_name (cfg->method);
 		else
 			method_name = mono_aot_get_method_name (cfg);
@@ -9459,6 +9488,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		method_name = mono_method_full_name (cfg->method, TRUE);
 	}
 	ctx->method_name = method_name;
+	ctx->is_linkonce = is_linkonce;
 
 	if (cfg->compile_aot) {
 		ctx->lmodule = ctx->module->lmodule;
@@ -9690,6 +9720,10 @@ emit_method_inner (EmitContext *ctx)
 				LLVMSetLinkage (method, LLVMExternalLinkage);
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
+		}
+		if (ctx->is_linkonce) {
+			LLVMSetLinkage (method, LLVMLinkOnceAnyLinkage);
+			LLVMSetVisibility (method, LLVMDefaultVisibility);
 		}
 	} else {
 		LLVMSetLinkage (method, LLVMExternalLinkage);
