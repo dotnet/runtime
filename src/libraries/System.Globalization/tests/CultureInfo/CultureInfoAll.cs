@@ -809,5 +809,25 @@ namespace System.Globalization.Tests
             e = AssertExtensions.Throws<CultureNotFoundException>("culture", () => new CultureInfo(0x1000));
             Assert.Equal(0x1000, e.InvalidCultureId);
         }
+
+        [Theory]
+        [InlineData("1", "xx-XY")]
+        [InlineData("1", "zx-ZY")]
+        [InlineData("0", "xx-XY")]
+        [InlineData("0", "zx-ZY")]
+        public void PredefinedCulturesOnlyEnvVarTest(string predefinedCulturesOnlyEnvVar, string cultureName)
+        {
+            Environment.SetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnlyEnvVar);
+
+            if (predefinedCulturesOnlyEnvVar == "1")
+            {
+                AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo(cultureName));
+            }
+            else
+            {
+                CultureInfo ci = new CultureInfo(cultureName);
+                Assert.Equal(cultureName, ci.Name);
+            }
+        }
     }
 }

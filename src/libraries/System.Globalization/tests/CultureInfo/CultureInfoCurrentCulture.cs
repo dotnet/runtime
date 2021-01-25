@@ -16,17 +16,32 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentCulture()
         {
-            var newCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
-            using (new ThreadCultureChange(newCulture))
+            CultureInfo newCulture;
+            try
             {
-                Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+                newCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
+                using (new ThreadCultureChange(newCulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+                }
+            }
+            catch (CultureNotFoundException)
+            {
+                return;
             }
 
-            newCulture = new CultureInfo("de-DE_phoneb");
-            using (new ThreadCultureChange(newCulture))
+            try
             {
-                Assert.Equal(CultureInfo.CurrentCulture, newCulture);
-                Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
+                newCulture = new CultureInfo("de-DE_phoneb");
+                using (new ThreadCultureChange(newCulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+                    Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
+                }
+            }
+            catch (CultureNotFoundException)
+            {
+                return;
             }
         }
 
@@ -39,17 +54,32 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentUICulture()
         {
-            var newUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
-            using (new ThreadCultureChange(null, newUICulture))
+            CultureInfo newUICulture;
+            try
             {
-                Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+                newUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
+                using (new ThreadCultureChange(null, newUICulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+                }
+            }
+            catch (CultureNotFoundException)
+            {
+                return;
             }
 
-            newUICulture = new CultureInfo("de-DE_phoneb");
-            using (new ThreadCultureChange(null, newUICulture))
+            try
             {
-                Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
-                Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
+                newUICulture = new CultureInfo("de-DE_phoneb");
+                using (new ThreadCultureChange(null, newUICulture))
+                {
+                    Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+                    Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
+                }
+            }
+            catch (CultureNotFoundException)
+            {
+                return;
             }
         }
 

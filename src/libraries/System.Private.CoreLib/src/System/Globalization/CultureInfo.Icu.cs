@@ -11,10 +11,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.UseNls);
 
-            if (!Interop.Globalization.IsPredefinedLocale(name))
-            {
-                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
-            }
+            CultureData.IcuIsEnsurePredefinedLocaleName(name);
 
             return GetCultureInfo(name);
         }
