@@ -537,8 +537,12 @@ int __cdecl main(int argc, char* argv[])
         {
             failToReplayCount++;
 
+            // Methods that don't compile due to missing JIT-EE information
+            // should still be added to the failing MC list but we don't create MC repro for them.
             if (o.mclFilename != nullptr)
+            {
                 failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+            }
 
             // The following only apply specifically to failures caused by errors (as opposed
             // to, for instance, failures caused by missing JIT-EE details).
