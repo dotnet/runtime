@@ -56,6 +56,7 @@ namespace System.IO
         /// <param name="mode">How the file should be opened.</param>
         /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
         /// <param name="originalPath">The original path specified for the FileStream.</param>
+        /// <param name="options">Options, passed via arguments as we have no guarantee that _options field was already set.</param>
         protected override void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
             _fileHandle.IsAsync = _useAsyncIO;
