@@ -53,19 +53,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsPow2(int value)
-        {
-            if (Popcnt.IsSupported)
-            {
-                // 1 set bit means number is a power of 2 unless it is the sign bit, so get rid of that
-                // Cast to unsigned type so logic shift not signed arithmetic shift
-                return PopCount((uint)value << 1) == 1;
-            }
-
-            return SoftwareFallback((uint)value << 1);
-
-            static bool SoftwareFallback(uint value) => (value & (value - 1)) == 0 && value >= 0;
-        }
+        public static bool IsPow2(int value) => (value & (value - 1)) == 0 && value >= 0;
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
@@ -90,19 +78,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsPow2(long value)
-        {
-            if (Popcnt.X64.IsSupported)
-            {
-                // 1 set bit means number is a power of 2 unless it is the sign bit, so get rid of that
-                // Cast to unsigned type so logic shift not signed arithmetic shift
-                return PopCount((ulong)value << 1) == 1;
-            }
-
-            return SoftwareFallback((ulong)value << 1);
-
-            static bool SoftwareFallback(ulong value) => (value & (value - 1)) == 0 && value >= 0;
-        }
+        public static bool IsPow2(long value) => (value & (value - 1)) == 0 && value >= 0;
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
