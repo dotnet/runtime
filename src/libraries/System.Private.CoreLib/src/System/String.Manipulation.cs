@@ -1557,6 +1557,13 @@ namespace System
 
         private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
+            // Redundant test so we won't prejit remainder of this method
+            // on platforms without SSE.
+            if (!Sse.IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
             Vector128<byte> shuffleConstant = Vector128.Create(0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
 
