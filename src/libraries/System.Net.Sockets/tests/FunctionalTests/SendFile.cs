@@ -8,11 +8,149 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SendFileTest
+    public abstract class SendFileBase<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    {
+        protected SendFileBase(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        public static IEnumerable<object[]> SendFile_MemberData()
+        {
+            foreach (IPAddress listenAt in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback })
+            {
+                foreach (bool sendPreAndPostBuffers in new[] { true, false })
+                {
+                    foreach (int bytesToSend in new[] { 512, 1024, 12345678 })
+                    {
+                        yield return new object[] { listenAt, sendPreAndPostBuffers, bytesToSend };
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> SendFileSync_MemberData()
+        {
+            foreach (object[] memberData in SendFile_MemberData())
+            {
+                yield return memberData.Concat(new object[] { true }).ToArray();
+                yield return memberData.Concat(new object[] { false }).ToArray();
+            }
+        }
+
+        [Fact]
+        public async Task Disposed_ThrowsException()
+        {
+            using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            s.Dispose();
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => SendFileAsync(s, null));
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => SendFileAsync(s, null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
+        }
+
+
+        [Fact]
+        public async Task NotConnected_ThrowsException()
+        {
+            using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            
+            await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(s, null));
+            await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(s, null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
+        }
+
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task UdpConnection_ThrowsException()
+        {
+            // Create file to send
+            byte[] preBuffer;
+            byte[] postBuffer;
+            Fletcher32 sentChecksum;
+            using TempFile tempFile = CreateFileToSend(size: 1, sendPreAndPostBuffers: false, out preBuffer, out postBuffer, out sentChecksum);
+
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+
+            client.Connect(listener.LocalEndPoint);
+
+            await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path));
+            await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task NoFile_Succeeds(bool usePreBuffer, bool usePostBuffer)
+        {
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            await SendFileAsync(server, null);
+            Assert.Equal(0, client.Available);
+
+            byte[] preBuffer = usePreBuffer ? new byte[1] : null;
+            byte[] postBuffer = usePostBuffer ? new byte[1] : null;
+            int bytesExpected = (usePreBuffer ? 1 : 0) + (usePostBuffer ? 1 : 0);
+
+            await SendFileAsync(server, null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
+
+            byte[] receiveBuffer = new byte[1];
+            for (int i = 0; i < bytesExpected; i++)
+            {
+                Assert.Equal(1, client.Receive(receiveBuffer));
+            }
+
+            Assert.Equal(0, client.Available);
+        }
+
+        private TempFile CreateFileToSend(int size, bool sendPreAndPostBuffers, out byte[] preBuffer, out byte[] postBuffer, out Fletcher32 checksum)
+        {
+            // Create file to send
+            var random = new Random();
+            int fileSize = sendPreAndPostBuffers ? size - 512 : size;
+
+            checksum = new Fletcher32();
+
+            preBuffer = null;
+            if (sendPreAndPostBuffers)
+            {
+                preBuffer = new byte[256];
+                random.NextBytes(preBuffer);
+                checksum.Add(preBuffer, 0, preBuffer.Length);
+            }
+
+            byte[] fileBuffer = new byte[fileSize];
+            random.NextBytes(fileBuffer);
+
+            var tempFile = TempFile.Create(fileBuffer);
+
+            checksum.Add(fileBuffer, 0, fileBuffer.Length);
+
+            postBuffer = null;
+            if (sendPreAndPostBuffers)
+            {
+                postBuffer = new byte[256];
+                random.NextBytes(postBuffer);
+                checksum.Add(postBuffer, 0, postBuffer.Length);
+            }
+
+            return tempFile;
+        }
+    }
+
+    public class SendFileTest_old
     {
         public static IEnumerable<object[]> SendFile_MemberData()
         {
@@ -69,155 +207,6 @@ namespace System.Net.Sockets.Tests
             }
 
             return tempFile;
-        }
-
-        [Fact]
-        public void Disposed_ThrowsException()
-        {
-            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                s.Dispose();
-                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null));
-                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
-                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread));
-                Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null));
-                Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
-                Assert.Throws<ObjectDisposedException>(() => s.EndSendFile(null));
-            }
-        }
-
-        [Fact]
-        public void EndSendFile_NullAsyncResult_Throws()
-        {
-            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Throws<ArgumentNullException>(() => s.EndSendFile(null));
-            }
-        }
-
-        [Fact]
-        public void NotConnected_ThrowsException()
-        {
-            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Throws<NotSupportedException>(() => s.SendFile(null));
-                Assert.Throws<NotSupportedException>(() => s.SendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
-                Assert.Throws<NotSupportedException>(() => s.SendFile(null, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread));
-                Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null));
-                Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
-            }
-        }
-
-        [ConditionalTheory]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task UdpConnection_ThrowsException(bool useAsync)
-        {
-            // Create file to send
-            byte[] preBuffer;
-            byte[] postBuffer;
-            Fletcher32 sentChecksum;
-            using TempFile tempFile = CreateFileToSend(size: 1, sendPreAndPostBuffers: false, out preBuffer, out postBuffer, out sentChecksum);
-
-            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            listener.BindToAnonymousPort(IPAddress.Loopback);
-
-            client.Connect(listener.LocalEndPoint);
-
-            if (useAsync)
-            {
-                await Assert.ThrowsAsync<SocketException>(() => Task.Factory.FromAsync<string>(client.BeginSendFile, client.EndSendFile, tempFile.Path, null));
-            }
-            else
-            {
-                Assert.Throws<SocketException>(() => client.SendFile(tempFile.Path));
-            }
-        }
-
-        [Theory]
-        [InlineData(false, false, false)]
-        [InlineData(false, false, true)]
-        [InlineData(false, true, false)]
-        [InlineData(false, true, true)]
-        [InlineData(true, false, false)]
-        [InlineData(true, false, true)]
-        [InlineData(true, true, false)]
-        [InlineData(true, true, true)]
-        public async Task SendFile_NoFile_Succeeds(bool useAsync, bool usePreBuffer, bool usePostBuffer)
-        {
-            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            listener.BindToAnonymousPort(IPAddress.Loopback);
-            listener.Listen(1);
-
-            client.Connect(listener.LocalEndPoint);
-            using Socket server = listener.Accept();
-
-            if (useAsync)
-            {
-                await Task.Factory.FromAsync<string>(server.BeginSendFile, server.EndSendFile, null, null);
-            }
-            else
-            {
-                server.SendFile(null);
-            }
-            Assert.Equal(0, client.Available);
-
-            byte[] preBuffer = usePreBuffer ? new byte[1] : null;
-            byte[] postBuffer = usePostBuffer ? new byte[1] : null;
-            int bytesExpected = (usePreBuffer ? 1 : 0) + (usePostBuffer ? 1 : 0);
-
-            if (useAsync)
-            {
-                await Task.Factory.FromAsync((c, s) => server.BeginSendFile(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread, c, s), server.EndSendFile, null);
-            }
-            else
-            {
-                server.SendFile(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
-            }
-
-            byte[] receiveBuffer = new byte[1];
-            for (int i = 0; i < bytesExpected; i++)
-            {
-                Assert.Equal(1, client.Receive(receiveBuffer));
-            }
-
-            Assert.Equal(0, client.Available);
-        }
-
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public void SendFileSpan_NoFile_Succeeds(bool usePreBuffer, bool usePostBuffer)
-        {
-            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            listener.BindToAnonymousPort(IPAddress.Loopback);
-            listener.Listen(1);
-
-            client.Connect(listener.LocalEndPoint);
-            using Socket server = listener.Accept();
-
-            server.SendFile(null);
-            Assert.Equal(0, client.Available);
-
-            byte[] preBuffer = usePreBuffer ? new byte[1] : null;
-            byte[] postBuffer = usePostBuffer ? new byte[1] : null;
-            int bytesExpected = (usePreBuffer ? 1 : 0) + (usePostBuffer ? 1 : 0);
-
-            server.SendFile(null, preBuffer.AsSpan(), postBuffer.AsSpan(), TransmitFileOptions.UseDefaultWorkerThread);
-
-            byte[] receiveBuffer = new byte[1];
-            for (int i = 0; i < bytesExpected; i++)
-            {
-                Assert.Equal(1, client.Receive(receiveBuffer));
-            }
-
-            Assert.Equal(0, client.Available);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
@@ -470,6 +459,48 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(bytesToSend, bytesReceived);
                 Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
             }
+        }
+    }
+
+    public sealed class SendFile_SyncSpan : SendFileBase<SocketHelperSpanSync>
+    {
+        public SendFile_SyncSpan(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendFile_SyncSpanForceNonBlocking : SendFileBase<SocketHelperSpanSyncForceNonBlocking>
+    {
+        public SendFile_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendFile_ArraySync : SendFileBase<SocketHelperArraySync>
+    {
+        public SendFile_ArraySync(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendFile_SyncForceNonBlocking : SendFileBase<SocketHelperSyncForceNonBlocking>
+    {
+        public SendFile_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendFile_Apm : SendFileBase<SocketHelperApm>
+    {
+        public SendFile_Apm(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public void IndividualBeginEndMethods_Disposed_ThrowsObjectDisposedException()
+        {
+            using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            s.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null));
+            Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
+            Assert.Throws<ObjectDisposedException>(() => s.EndSendFile(null));
+        }
+
+        [Fact]
+        public void EndSendFile_NullAsyncResult_Throws()
+        {
+            using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Assert.Throws<ArgumentNullException>(() => s.EndSendFile(null));
         }
     }
 }
