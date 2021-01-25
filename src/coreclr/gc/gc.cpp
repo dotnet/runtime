@@ -23117,8 +23117,8 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #ifdef MULTIPLE_HEAPS
 #ifdef MARK_LIST
     size_t total_mark_list_size = sort_mark_list();
-    // first thread to finish sorting will scan the sync syncblk cache
 #endif //MARK_LIST
+    // first thread to finish sorting will scan the sync syncblk cache
     if ((syncblock_scan_p == 0) && (Interlocked::Increment(&syncblock_scan_p) == 1))
 #endif //MULTIPLE_HEAPS
     {
@@ -25736,14 +25736,12 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     }
                     else
                     {
-#ifdef SIMPLE_DPRINTF
                         dprintf (3, ("(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix(%d), x: %Ix (%s)",
                             (size_t)(node_gap_size (plug_start)),
                             plug_start, plug_end, (size_t)new_address, (size_t)(plug_start - new_address),
                                 (size_t)new_address + ps, ps,
                                 (is_plug_padded (plug_start) ? 1 : 0), x,
                                 (allocated_in_older_p ? "O" : "C")));
-#endif //SIMPLE_DPRINTF
 
 #ifdef SHORT_PLUGS
                         if (is_plug_padded (plug_start))
