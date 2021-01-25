@@ -28,7 +28,7 @@ namespace System.Threading
 
         public static bool IsEnabled => s_enabled;
 
-        private readonly ConcurrentQueue<object> _workItems = new ConcurrentQueue<object>();
+        private readonly ConcurrentQueue<object> _workItems = new();
         private int _processingThreads;
 
         private ThreadPoolBlockingQueue() { }
@@ -200,20 +200,13 @@ namespace System.Threading
                 return null;
             }
 
-            if (workItem is QueueUserWorkItemCallbackBase quwi)
+            return workItem switch
             {
-                return quwi._delegate.GetMethodImpl();
-            }
-            if (workItem is IAsyncStateMachineBox sm)
-            {
-                return sm.GetType();
-            }
-            if (workItem is Task t)
-            {
-                return t.m_action?.GetMethodImpl();
-            }
-
-            return workItem?.GetType();
+                QueueUserWorkItemCallbackBase quwi => quwi._delegate.GetMethodImpl(),
+                 IAsyncStateMachineBox sm => sm.GetType(),
+                 Task t => t.m_action?.GetMethodImpl(),
+                 _ =>  workItem?.GetType()
+            };
         }
     }
 }
