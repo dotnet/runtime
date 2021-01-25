@@ -11,6 +11,8 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/mini/mini-runtime.h>
+#include <eglib/glib.h>
+#include <eglib/gmodule.h>
 #include <runtime_version.h>
 
 ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock = {0};
@@ -610,30 +612,24 @@ write_buffer_string_utf8_t (
 	if (!value)
 		return true;
 
-	bool result = false;
-	ep_char16_t *value_utf16 = NULL;
+	GConvertDefaultCustomAllocatorData custom_alloc_data;
+	custom_alloc_data.buffer = *buffer + *offset;
+	custom_alloc_data.buffer_size = *size - *offset;
+	custom_alloc_data.req_buffer_size = 0;
 
-	// TODO: Implement conversion into output buffer, eliminate heap allocation.
-	value_utf16 = ep_rt_utf8_to_utf16_string (value, -1);
-	ep_raise_error_if_nok (value_utf16 != NULL);
+	if (!g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_converter_default_custom_allocator_func, &custom_alloc_data, NULL)) {
+		ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + custom_alloc_data.req_buffer_size, fixed_buffer));
+		custom_alloc_data.buffer = *buffer + *offset;
+		custom_alloc_data.buffer_size = *size - *offset;
+		custom_alloc_data.req_buffer_size = 0;
+		ep_raise_error_if_nok (g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_converter_default_custom_allocator_func, &custom_alloc_data, NULL));
+	}
 
-	size_t value_utf16_size;
-	value_utf16_size = (ep_rt_utf16_string_len (value_utf16) + 1) * sizeof (ep_char16_t);
-
-	if ((value_utf16_size + *offset) > *size)
-		ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_utf16_size, fixed_buffer));
-
-	memcpy (*buffer + *offset, value_utf16, value_utf16_size);
-	*offset += value_utf16_size;
-
-	result = true;
-
-ep_on_exit:
-	ep_rt_utf16_string_free (value_utf16);
-	return result;
+	*offset += custom_alloc_data.req_buffer_size;
+	return true;
 
 ep_on_error:
-	ep_exit_error_handler ();
+	return false;
 }
 
 static
@@ -1461,14 +1457,16 @@ ep_rt_mono_fini_providers_and_events (void)
 void
 ep_rt_mono_execute_rundown (void)
 {
+	ep_char8_t runtime_module_path [256];
 	const uint8_t object_guid [EP_GUID_SIZE] = { 0 };
 	const uint16_t runtime_product_qfe_version = 0;
 	const uint32_t startup_flags = 0;
 	const uint8_t startup_mode = 0;
 	const ep_char8_t *command_line = "";
-	const ep_char8_t *runtime_dll_path = "";
 
-	// TODO: Add coreclr dll module file name.
+	if (!g_module_address ((void *)ep_rt_mono_execute_rundown, runtime_module_path, sizeof (runtime_module_path), NULL, NULL, 0, NULL))
+		runtime_module_path [0] = '\0';
+
 	FireEtwRuntimeInformationDCStart (
 		clr_instance_get_id (),
 		RUNTIME_SKU_CORECLR,
@@ -1484,7 +1482,7 @@ ep_rt_mono_execute_rundown (void)
 		startup_flags,
 		command_line,
 		object_guid,
-		runtime_dll_path);
+		runtime_module_path);
 
 	FireEtwDCEndInit_V1 (clr_instance_get_id ());
 

@@ -1004,7 +1004,8 @@ typedef enum {
 	G_CONVERT_ERROR_FAILED,
 	G_CONVERT_ERROR_PARTIAL_INPUT,
 	G_CONVERT_ERROR_BAD_URI,
-	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH
+	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH,
+	G_CONVERT_ERROR_ALLOC_FAILED
 } GConvertError;
 
 gchar     *g_utf8_strup (const gchar *str, gssize len);
@@ -1030,6 +1031,32 @@ size_t     g_utf16_len     (const gunichar2 *);
 #else
 #define u16to8(str) g_utf16_to_utf8(str, (glong)strlen(str), NULL, NULL, NULL)
 #endif
+
+typedef gpointer (*GConvertCustomAllocator) (gsize req_size, gpointer custom_alloc_data);
+
+typedef struct {
+	gpointer buffer;
+	gsize buffer_size;
+	gsize req_buffer_size;
+} GConvertDefaultCustomAllocatorData;
+
+static
+gpointer
+g_converter_default_custom_allocator_func (gsize req_size, gpointer custom_alloc_data)
+{
+	GConvertDefaultCustomAllocatorData *default_custom_alloc_data = (GConvertDefaultCustomAllocatorData *)custom_alloc_data;
+	if (!default_custom_alloc_data)
+		return NULL;
+
+	default_custom_alloc_data->req_buffer_size = req_size;
+	if (req_size > default_custom_alloc_data->buffer_size)
+		return NULL;
+
+	return default_custom_alloc_data->buffer;
+}
+
+gunichar2 *g_utf8_to_utf16_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GConvertCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
+gchar *g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GConvertCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
 
 /*
  * Path
