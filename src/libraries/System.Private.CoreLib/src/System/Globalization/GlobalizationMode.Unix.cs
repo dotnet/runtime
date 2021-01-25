@@ -11,7 +11,6 @@ namespace System.Globalization
 
         internal static bool UseNls => false;
 
-
         private static bool GetGlobalizationInvariantMode()
         {
             bool invariantEnabled = GetInvariantSwitchValue();

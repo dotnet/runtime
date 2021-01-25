@@ -803,7 +803,7 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
-            if (GlobalizationMode.GetPredefinedCulturesOnly())
+            if (GlobalizationMode.PredefinedCulturesOnly)
             {
                 if (GlobalizationMode.UseNls)
                 {

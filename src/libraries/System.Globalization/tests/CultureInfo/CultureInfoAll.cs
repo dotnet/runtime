@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Text;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -810,24 +811,30 @@ namespace System.Globalization.Tests
             Assert.Equal(0x1000, e.InvalidCultureId);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("1", "xx-XY")]
         [InlineData("1", "zx-ZY")]
         [InlineData("0", "xx-XY")]
         [InlineData("0", "zx-ZY")]
         public void PredefinedCulturesOnlyEnvVarTest(string predefinedCulturesOnlyEnvVar, string cultureName)
         {
-            Environment.SetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnlyEnvVar);
+            var psi = new ProcessStartInfo();
+            psi.Environment.Clear();
 
-            if (predefinedCulturesOnlyEnvVar == "1")
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnlyEnvVar);
+
+            RemoteExecutor.Invoke((culture, predefined) =>
             {
-                AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo(cultureName));
-            }
-            else
-            {
-                CultureInfo ci = new CultureInfo(cultureName);
-                Assert.Equal(cultureName, ci.Name);
-            }
+                if (predefined == "1")
+                {
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo(culture));
+                }
+                else
+                {
+                    CultureInfo ci = new CultureInfo(culture);
+                    Assert.Equal(culture, ci.Name);
+                }
+            }, cultureName, predefinedCulturesOnlyEnvVar, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }
