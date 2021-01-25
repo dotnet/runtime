@@ -19,7 +19,6 @@
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>
-      <WasmMainAssemblyFileName>debugger-test.dll</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
       <WasmDebugLevel>1</WasmDebugLevel>
@@ -28,7 +27,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmAssembliesToBundle Include="$(OutDir)\$(WasmMainAssemblyFileName)" />
+      <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 
