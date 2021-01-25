@@ -3,7 +3,7 @@
 
 namespace System.IO
 {
-    internal sealed partial class UnixFileStreamStrategy : CommonFileStreamStrategyTemplate
+    internal sealed partial class UnixFileStreamStrategy : FileStreamStrategyBase
     {
         /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
         /// <param name="position">The beginning of the range to lock.</param>

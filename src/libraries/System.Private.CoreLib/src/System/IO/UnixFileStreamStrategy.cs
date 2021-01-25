@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
-    internal sealed partial class UnixFileStreamStrategy : CommonFileStreamStrategyTemplate
+    internal sealed partial class UnixFileStreamStrategy : FileStreamStrategyBase
     {
         /// <summary>File mode.</summary>
         private FileMode _mode;
@@ -27,7 +27,7 @@ namespace System.IO
         /// the semaphore used to serialize all operation, the buffer/offset/count provided by the
         /// caller for ReadAsync/WriteAsync operations, and the last successful task returned
         /// synchronously from ReadAsync which can be reused if the count matches the next request.
-        /// Only initialized when <see cref="CommonFileStreamStrategyTemplate._useAsyncIO"/> is true.
+        /// Only initialized when <see cref="FileStreamStrategyBase._useAsyncIO"/> is true.
         /// </summary>
         private AsyncState? _asyncState;
 

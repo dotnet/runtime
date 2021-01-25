@@ -39,7 +39,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO
 {
-    internal sealed partial class WindowsFileStreamStrategy : CommonFileStreamStrategyTemplate
+    internal sealed partial class WindowsFileStreamStrategy : FileStreamStrategyBase
     {
         private bool _canSeek;
         private bool _isPipe;      // Whether to disable async buffering code.

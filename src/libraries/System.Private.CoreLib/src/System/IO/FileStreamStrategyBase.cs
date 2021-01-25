@@ -9,7 +9,11 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    internal abstract class CommonFileStreamStrategyTemplate : FileStreamStrategy
+    // This type exist so we can avoid code duplication between UnixFileStreamStrategy and WindowsFileStreamStrategy.
+    // As of now, it implements the Template pattern and defines multiple virtual methods, but in the future when we
+    // separate WindowsFileStreamStrategy into two separate strategies (Sync and Async),
+    // it should be just defining fields present in all implementations (and the non-virtual methods that use them)
+    internal abstract class FileStreamStrategyBase : FileStreamStrategy
     {
         protected byte[]? _buffer;
         protected readonly int _bufferLength;
@@ -60,7 +64,7 @@ namespace System.IO
         /// <summary>Whether the file stream's handle has been exposed.</summary>
         protected bool _exposedHandle;
 
-        protected CommonFileStreamStrategyTemplate(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
+        protected FileStreamStrategyBase(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
         {
             _exposedHandle = true;
             _bufferLength = bufferSize;
@@ -77,7 +81,7 @@ namespace System.IO
             _fileHandle = handle;
         }
 
-        protected CommonFileStreamStrategyTemplate(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options) : base(fileStream)
+        protected FileStreamStrategyBase(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options) : base(fileStream)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -104,7 +108,7 @@ namespace System.IO
             }
         }
 
-        ~CommonFileStreamStrategyTemplate()
+        ~FileStreamStrategyBase()
         {
             // it looks like having this finalizer is mandatory,
             // as we can not guarantee that the Strategy won't be null in FileStream finalizer
