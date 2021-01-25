@@ -27,7 +27,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-//    [OuterLoop]
+    [OuterLoop]
     public async Task RunImpersonatedAsync_TaskAndTaskOfT()
     {
         WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
@@ -61,7 +61,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-    //[OuterLoop]
+    [OuterLoop]
     public void RunImpersonated_NameResolution()
     {
         WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
@@ -79,7 +79,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-    //[OuterLoop]
+    [OuterLoop]
     public async Task RunImpersonatedAsync_NameResolution()
     {
         WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();

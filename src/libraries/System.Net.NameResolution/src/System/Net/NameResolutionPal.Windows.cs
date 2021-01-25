@@ -171,7 +171,7 @@ namespace System.Net
                 // However, if servers are really unreachable, we would still get IOPending here
                 // and final result would be posted via overlapped IO.
                 // synchronous failure here may signal issue when GetAddrInfoExW does not work from
-                // impersonated context.
+                // impersonated context. Windows 8 and Server 2012 fail for same reason with different errorCode.
                 GetAddrInfoExContext.FreeContext(context);
                 return null;
             }
