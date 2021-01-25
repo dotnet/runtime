@@ -10,10 +10,24 @@ namespace System.IO
     // this type defines a set of stateless FileStreamStrategy helper methods
     internal static class FileStreamStrategyHelper
     {
-        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
-            return CreateFileOpenHandle(path, mode, access, share, options);
+            // the switch exitst to measure the overhead of introducing a factory method to the FileStream ctor
+            // we are going to have more implementations soon and then it's going to make more sense
+            switch (isAsync)
+            {
+                case true:
+                    return new WindowsFileStreamStrategy(fileStream, handle, access, bufferSize, true);
+                case false:
+                    return new WindowsFileStreamStrategy(fileStream, handle, access, bufferSize, false);
+            }
         }
+
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+            => new WindowsFileStreamStrategy(fileStream, path, mode, access, share, bufferSize, options);
+
+        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+            => CreateFileOpenHandle(path, mode, access, share, options);
 
         private static unsafe SafeFileHandle CreateFileOpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {

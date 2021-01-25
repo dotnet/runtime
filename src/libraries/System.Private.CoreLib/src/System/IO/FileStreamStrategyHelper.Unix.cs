@@ -13,6 +13,13 @@ namespace System.IO
     // this type defines a set of stateless FileStreamStrategy helper methods
     internal static class FileStreamStrategyHelper
     {
+        // in the future we are most probably going to introduce more strategies (io_uring etc)
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+            => new UnixFileStreamStrategy(fileStream, handle, access, bufferSize, isAsync);
+
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+            => new UnixFileStreamStrategy(fileStream, path, mode, access, share, bufferSize, options);
+
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
             // Translate the arguments into arguments for an open call.
