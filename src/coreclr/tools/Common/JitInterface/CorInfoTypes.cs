@@ -296,6 +296,44 @@ namespace Internal.JitInterface
         public uint cbMethodSpec;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PgoInstrumentationSchema
+    {
+        public IntPtr Offset;
+        public PgoInstrumentationKind InstrumentationKind;
+        public int ILOffset;
+        public int Count;
+        public int Other;
+    }
+
+    public enum PgoInstrumentationKind
+    {
+        // Schema data types
+        None = 0,
+        FourByte = 1,
+        EightByte = 2,
+        TypeHandle = 3,
+
+        // Mask of all schema data types
+        MarshalMask = 0xF,
+
+        // ExcessAlignment
+        Align4Byte = 0x10,
+        Align8Byte = 0x20,
+        AlignPointer = 0x30,
+
+        // Mask of all schema data types
+        AlignMask = 0x30,
+
+        DescriptorMin = 0x40,
+
+        Done = None, // All instrumentation schemas must end with a record which is "Done"
+        BasicBlockIntCount = DescriptorMin | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
+        TypeHandleHistogramCount = (DescriptorMin * 1) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
+        TypeHandleHistogramTypeHandle = (DescriptorMin * 1) | TypeHandle, // TypeHandle that is part of a type histogram
+        Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
+        NumRuns = (DescriptorMin * 3) | None, // Number of runs is encoded in the Other field of the schema
+    }
 
     // Flags computed by a runtime compiler
     public enum CorInfoMethodRuntimeFlags
@@ -1313,7 +1351,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        CORJIT_FLAG_UNUSED10 = 38,
+        CORJIT_FLAG_TRACK_TRANSITIONS = 38, // The JIT should insert the helper variants that track transitions.
         CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records

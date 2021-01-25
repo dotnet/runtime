@@ -126,8 +126,26 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled())
             {
                 Task<IPHostEntry> t = GetHostEntryCoreAsync(hostNameOrAddress, justReturnParsedIp: false, throwOnIIPAny: true, family, cancellationToken);
-                t.ContinueWith((t, s) => NetEventSource.Info((string)s!, $"{t.Result} with {((IPHostEntry)t.Result).AddressList.Length} entries"),
-                    hostNameOrAddress, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+                t.ContinueWith(static (t, s) =>
+                {
+                    string hostNameOrAddress = (string)s!;
+
+                    if (t.Status == TaskStatus.RanToCompletion)
+                    {
+                        NetEventSource.Info(hostNameOrAddress, $"{t.Result} with {t.Result.AddressList.Length} entries");
+                    }
+
+                    Exception? ex = t.Exception?.InnerException;
+
+                    if (ex is SocketException soex)
+                    {
+                        NetEventSource.Error(hostNameOrAddress, $"{hostNameOrAddress} DNS lookup failed with {soex.ErrorCode}");
+                    }
+                    else if (ex is OperationCanceledException)
+                    {
+                        NetEventSource.Error(hostNameOrAddress, $"{hostNameOrAddress} DNS lookup was canceled");
+                    }
+                }, hostNameOrAddress, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 return t;
             }
             else
@@ -529,8 +547,6 @@ namespace System.Net
             {
                 if (NameResolutionPal.SupportsGetAddrInfoAsync)
                 {
-#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
-
                     // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
                     // instead of calling the synchronous version in the ThreadPool.
                     // If it fails, we will fall back to ThreadPool as well.
@@ -550,7 +566,7 @@ namespace System.Net
                         t = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, family, cancellationToken);
                     }
 
-                    // If async resolution started, return task to user. otherwise fall back to sync API on threadpool.
+                    // If async resolution started, return task to user, otherwise fall back to sync API on threadpool.
                     if (t != null)
                     {
                         return t;
@@ -631,7 +647,7 @@ namespace System.Net
             const int MaxHostName = 255;
 
             if (hostName.Length > MaxHostName ||
-                (hostName.Length == MaxHostName && hostName[MaxHostName - 1] != '.')) // If 255 chars, the last one must be a dot.
+               (hostName.Length == MaxHostName && hostName[MaxHostName - 1] != '.')) // If 255 chars, the last one must be a dot.
             {
                 throw new ArgumentOutOfRangeException(nameof(hostName),
                     SR.Format(SR.net_toolong, nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));

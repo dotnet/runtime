@@ -120,6 +120,55 @@ namespace System.Diagnostics.Tests
             Assert.Equal("4", a.GetBaggageItem("1"));
         }
 
+        [Fact]
+        public void TestSetBaggage()
+        {
+            Activity a = new Activity("SetBaggage");
+            Assert.Equal(0, a.Baggage.Count());
+
+            a.SetBaggage("1", "1");
+            a.SetBaggage("2", "2");
+            a.SetBaggage("3", "3");
+            a.SetBaggage("4", "4");
+            a.SetBaggage("5", "5");
+
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("1", a.GetBaggageItem("1"));
+            Assert.Equal("2", a.GetBaggageItem("2"));
+            Assert.Equal("3", a.GetBaggageItem("3"));
+            Assert.Equal("4", a.GetBaggageItem("4"));
+            Assert.Equal("5", a.GetBaggageItem("5"));
+
+            // Check not added item
+            Assert.Null(a.GetBaggageItem("6")); 
+
+            // Adding none existing key with null value is no-op
+            a.SetBaggage("6", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("6")); 
+
+            // Check updated item
+            a.SetBaggage("5", "5.1");
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Add() always add new entry even we have matching key in the list.
+            // Baggage always return last entered value
+            a.AddBaggage("5", "5.2");
+            Assert.Equal(6, a.Baggage.Count());
+            Assert.Equal("5.2", a.GetBaggageItem("5"));
+
+            // Now Remove first duplicated item
+            a.SetBaggage("5", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Now Remove second item
+            a.SetBaggage("5", null);
+            Assert.Equal(4, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("5")); 
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestBaggageWithChainedActivities()
         {

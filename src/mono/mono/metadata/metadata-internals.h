@@ -174,6 +174,10 @@ struct _MonoAssemblyName {
 #else
 	uint16_t major, minor, build, revision, arch;
 #endif
+	//Add members for correct work with mono_stringify_assembly_name
+	MonoBoolean without_version;
+	MonoBoolean without_culture;
+	MonoBoolean without_public_key_token;
 };
 
 struct MonoTypeNameParse {
@@ -801,6 +805,7 @@ struct _MonoMethodSignature {
 	unsigned int  pinvoke             : 1;
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
+	unsigned int  suppress_gc_transition : 1;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 

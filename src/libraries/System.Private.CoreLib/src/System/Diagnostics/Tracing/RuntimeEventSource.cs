@@ -73,7 +73,7 @@ namespace System.Diagnostics.Tracing
                 _timerCounter ??= new PollingCounter("active-timer-count", this, () => Timer.ActiveCount) { DisplayName = "Number of Active Timers" };
                 _fragmentationCounter ??= new PollingCounter("gc-fragmentation", this, () => {
                     var gcInfo = GC.GetGCMemoryInfo();
-                    return gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes;
+                    return gcInfo.HeapSizeBytes != 0 ? gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes : 0;
                  }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
 #if !MONO
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };

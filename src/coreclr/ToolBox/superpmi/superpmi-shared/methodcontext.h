@@ -635,20 +635,13 @@ public:
     void dmpGetFieldThreadLocalStoreID(DWORDLONG key, DLD value);
     DWORD repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection);
 
-    void recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result);
-    void dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value);
-    HRESULT repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts);
+    void recAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData, HRESULT result);
+    void dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agnostic_AllocPgoInstrumentationBySchema& value);
+    HRESULT repAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
 
-    void recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                                 UINT32 *                     pCount,
-                                 ICorJitInfo::BlockCounts**   pBlockCounts,
-                                 UINT32 *                     pNumRuns,
-                                 HRESULT                      result);
-    void dmpGetMethodBlockCounts(DWORDLONG key, const Agnostic_GetMethodBlockCounts& value);
-    HRESULT repGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                                    UINT32 *                     pCount,
-                                    ICorJitInfo::BlockCounts**   pBlockCounts,
-                                    UINT32 *                     pNumRuns);
+    void recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, HRESULT result);
+    void dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value);
+    HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData);
 
     void recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE  baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE classHnd, UINT32* pLikelihood, UINT32* pNumberOfClasses);
     void dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value);
@@ -823,14 +816,39 @@ private:
 
     // MD5 hasher
     static Hash m_hash;
+
+    // Scheme for jit time temporary allocations
+    struct DeletionNode
+    {
+        DeletionNode* pNext;
+    };
+    DeletionNode *nodesToDelete = nullptr;
+
+    void* AllocJitTempBuffer(size_t size)
+    {
+        DeletionNode *pDeletionNode = (DeletionNode *)malloc(sizeof(DeletionNode) + size);
+        pDeletionNode->pNext = this->nodesToDelete;
+        this->nodesToDelete = pDeletionNode;
+        return pDeletionNode + 1;
+    }
+
+    void FreeTempAllocations()
+    {
+        while (nodesToDelete != nullptr)
+        {
+            DeletionNode *next = nodesToDelete->pNext;
+            free(nodesToDelete);
+            nodesToDelete = next;
+        }
+    }
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 185
+// Highest packet number: 187
 // *************************************************************************************
 enum mcPackets
 {
-    Packet_AllocMethodBlockCounts     = 131,
+    Packet_AllocMethodBlockCounts     = 131, // retired 1/4/2021
     Packet_AppendClassName            = 149, // Added 8/6/2014 - needed for SIMD
     Packet_AreTypesEquivalent         = 1,
     Packet_AsCorInfoType              = 2,
@@ -988,6 +1006,8 @@ enum mcPackets
     Packet_SatisfiesMethodConstraints                    = 111,
     Packet_ShouldEnforceCallvirtRestriction              = 112, // Retired 2/18/2020
     Packet_SigInstHandleMap                              = 184,
+    Packet_AllocPgoInstrumentationBySchema               = 186, // Added 1/4/2021
+    Packet_GetPgoInstrumentationResults                  = 187, // Added 1/4/2021
 
     PacketCR_AddressMap                        = 113,
     PacketCR_AllocGCInfo                       = 114,

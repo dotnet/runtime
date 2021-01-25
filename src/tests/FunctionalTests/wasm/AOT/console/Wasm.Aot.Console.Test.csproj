@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RunAOTCompilation>true</RunAOTCompilation>
-    <WasmCopyAppZipToHelixTestDir>true</WasmCopyAppZipToHelixTestDir>
-    <WasmHelixTestAppRelativeDir>\aot\console\</WasmHelixTestAppRelativeDir>
-    <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
-    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    <TestRuntime>true</TestRuntime>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
 </Project>

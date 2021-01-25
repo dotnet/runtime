@@ -6,6 +6,7 @@ include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
+include(CMakePushCheckState)
 
 # CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
 if(POLICY CMP0075)
@@ -805,9 +806,14 @@ check_type_size(
      BUILTIN_TYPES_ONLY)
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 
-check_include_files(
-    "sys/types.h;sys/sysctl.h"
-    HAVE_SYS_SYSCTL_H)
+if (CLR_CMAKE_TARGET_LINUX)
+    # sysctl is deprecated on Linux
+    set(HAVE_SYS_SYSCTL_H 0)
+else ()
+    check_include_files(
+        "sys/types.h;sys/sysctl.h"
+        HAVE_SYS_SYSCTL_H)
+endif()
 
 check_include_files(
     "sys/ioctl.h"
@@ -899,6 +905,19 @@ check_symbol_exists(
     sys/inotify.h
     HAVE_INOTIFY_RM_WATCH)
 set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
+
+if (CLR_CMAKE_TARGET_LINUX)
+    cmake_push_check_state(RESET)
+    set (CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+    set (CMAKE_REQUIRED_LIBRARIES "-lanl")
+
+    check_symbol_exists(
+        getaddrinfo_a
+        netdb.h
+        HAVE_GETADDRINFO_A)
+
+    cmake_pop_check_state()
+endif ()
 
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)

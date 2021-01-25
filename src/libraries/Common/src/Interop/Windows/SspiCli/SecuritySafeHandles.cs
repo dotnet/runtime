@@ -148,7 +148,7 @@ namespace System.Net.Security
     {
 #endif
 
-        internal SafeFreeCertContext() : base(true) { }
+        public SafeFreeCertContext() : base(true) { }
 
         // This must be ONLY called from this file.
         internal void Set(IntPtr value)
@@ -1080,7 +1080,7 @@ namespace System.Net.Security
 
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
-        internal SafeDeleteSslContext() : base() { }
+        public SafeDeleteSslContext() : base() { }
 
         protected override bool ReleaseHandle()
         {

@@ -935,6 +935,7 @@ Debugger::Debugger()
     m_forceNonInterceptable(FALSE),
     m_pLazyData(NULL),
     m_defines(_defines),
+    m_isSuspendedForGarbageCollection(FALSE),
     m_isBlockedOnGarbageCollectionEvent(FALSE),
     m_willBlockOnGarbageCollectionEvent(FALSE),
     m_isGarbageCollectionEventsEnabled(FALSE),
@@ -5944,6 +5945,8 @@ void Debugger::SuspendForGarbageCollectionCompleted()
     }
     CONTRACTL_END;
 
+    this->m_isSuspendedForGarbageCollection = FALSE;
+
     if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabledLatch)
     {
         return;
@@ -5981,6 +5984,7 @@ void Debugger::ResumeForGarbageCollectionStarted()
     }
     CONTRACTL_END;
 
+    this->m_isSuspendedForGarbageCollection = TRUE;
     if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabledLatch)
     {
         return;
@@ -11345,14 +11349,21 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         {
             // DISPOSE an object handle
             OBJECTHANDLE objectHandle = pEvent->DisposeHandle.vmObjectHandle.GetRawPtr();
+            CorDebugHandleType handleType = pEvent->DisposeHandle.handleType;
 
-            if (pEvent->DisposeHandle.fStrong == TRUE)
+            switch (handleType)
             {
+            case HANDLE_STRONG:
                 DestroyStrongHandle(objectHandle);
-            }
-            else
-            {
+                break;
+            case HANDLE_WEAK_TRACK_RESURRECTION:
                 DestroyLongWeakHandle(objectHandle);
+                break;
+            case HANDLE_PINNED:
+                DestroyPinningHandle(objectHandle);
+                break;
+            default:
+                pEvent->hr = E_INVALIDARG;
             }
             break;
         }

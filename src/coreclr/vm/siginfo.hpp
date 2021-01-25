@@ -197,7 +197,7 @@ public:
         // Returns size of that element in bytes. This is the minimum size that a
         // field of this type would occupy inside an object.
         //------------------------------------------------------------------------
-        UINT SizeOf(Module* pModule, const SigTypeContext *pTypeContext) const;
+        UINT SizeOf(Module* pModule, const SigTypeContext *pTypeContext, TypeHandle* pTypeHandle) const;
 
 private:
 
@@ -794,16 +794,16 @@ class MetaSig
             _In_ CORINFO_MODULE_HANDLE pModule,
             _In_ PCCOR_SIGNATURE pSig,
             _In_ ULONG cSig,
-            _Out_ CorUnmanagedCallingConvention *callConvOut,
+            _Out_ CorInfoCallConvExtension *callConvOut,
             _Out_ bool* suppressGCTransitionOut,
             _Out_ UINT *errorResID);
 
-        static CorUnmanagedCallingConvention GetDefaultUnmanagedCallingConvention()
+        static CorInfoCallConvExtension GetDefaultUnmanagedCallingConvention()
         {
 #ifdef TARGET_UNIX
-            return IMAGE_CEE_UNMANAGED_CALLCONV_C;
+            return CorInfoCallConvExtension::C;
 #else // TARGET_UNIX
-            return IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL;
+            return CorInfoCallConvExtension::Stdcall;
 #endif // !TARGET_UNIX
         }
 
@@ -856,7 +856,8 @@ class MetaSig
         {
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
-            return m_pRetType.SizeOf(m_pModule, &m_typeContext);
+            TypeHandle thValueType;
+            return m_pRetType.SizeOf(m_pModule, &m_typeContext, &thValueType);
         }
 
         //------------------------------------------------------------------

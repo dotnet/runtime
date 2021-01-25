@@ -195,6 +195,8 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
   add_definitions(-D__EXTENSIONS__)
+elseif(CLR_CMAKE_HOST_OSX)
+  add_definitions(-D_XOPEN_SOURCE)
 endif()
 
 #------------------------------------

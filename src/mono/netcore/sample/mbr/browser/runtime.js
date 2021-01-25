@@ -6,6 +6,9 @@ var Module = {
         config.loaded_cb = function () {
             App.init ();
         };
+        config.environment_variables = {
+            "MONO_METADATA_UPDATE": "1"
+        };
         config.fetch_file_cb = function (asset) {
             return fetch (asset, { credentials: 'same-origin' });
         }

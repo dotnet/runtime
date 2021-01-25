@@ -9255,22 +9255,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     pResult->accessType = IAT_VALUE;
-
-#if defined(TARGET_X86) && !defined(CROSSGEN_COMPILE)
-    // Deferring X86 support until a need is observed or
-    // time permits investigation into all the potential issues.
-    // https://github.com/dotnet/runtime/issues/33582
-    if (pMD->HasUnmanagedCallersOnlyAttribute())
-    {
-        pResult->addr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMD);
-    }
-    else
-    {
-        pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
-    }
-#else
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
-#endif
 
     EE_TO_JIT_TRANSITION();
 }
@@ -9800,7 +9785,7 @@ namespace
             return CorInfoCallConvExtension::Fastcall;
         case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
-            CorUnmanagedCallingConvention callConvMaybe;
+            CorInfoCallConvExtension callConvMaybe;
             UINT errorResID;
             HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
 
@@ -9809,11 +9794,11 @@ namespace
 
             if (hr == S_OK)
             {
-                return (CorInfoCallConvExtension)callConvMaybe;
+                return callConvMaybe;
             }
             else
             {
-                return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+                return MetaSig::GetDefaultUnmanagedCallingConvention();
             }
         }
         case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:
@@ -9848,25 +9833,7 @@ namespace
                 }
 
                 PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-                switch (sigInfo.GetCallConv())
-                {
-                case pmCallConvCdecl:
-                    return CorInfoCallConvExtension::C;
-                    break;
-                case pmCallConvStdcall:
-                    return CorInfoCallConvExtension::Stdcall;
-                    break;
-                case pmCallConvThiscall:
-                    return CorInfoCallConvExtension::Thiscall;
-                    break;
-                case pmCallConvFastcall:
-                    return CorInfoCallConvExtension::Fastcall;
-                    break;
-                default:
-                    _ASSERTE_MSG(false, "bad callconv");
-                    return CorInfoCallConvExtension::Managed;
-                    break;
-                }
+                return sigInfo.GetCallConv();
             }
             else
             {
@@ -9874,36 +9841,16 @@ namespace
                 _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
                 return CorInfoCallConvExtension::Managed;
 #else
-                CorPinvokeMap unmanagedCallConv;
+                CorInfoCallConvExtension unmanagedCallConv;
                 if (TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
                     if (methodCallConv == IMAGE_CEE_CS_CALLCONV_VARARG)
                     {
                         return CorInfoCallConvExtension::C;
                     }
-                    switch (unmanagedCallConv)
-                    {
-                    case pmCallConvWinapi:
-                        return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
-                        break;
-                    case pmCallConvCdecl:
-                        return CorInfoCallConvExtension::C;
-                        break;
-                    case pmCallConvStdcall:
-                        return CorInfoCallConvExtension::Stdcall;
-                        break;
-                    case pmCallConvThiscall:
-                        return CorInfoCallConvExtension::Thiscall;
-                        break;
-                    case pmCallConvFastcall:
-                        return CorInfoCallConvExtension::Fastcall;
-                        break;
-                    default:
-                        _ASSERTE_MSG(false, "bad callconv");
-                        break;
-                    }
+                    return unmanagedCallConv;
                 }
-                return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+                return MetaSig::GetDefaultUnmanagedCallingConvention();
 #endif // CROSSGEN_COMPILE
             }
         }
@@ -10274,7 +10221,11 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
     pEEInfoOut->sizeOfReversePInvokeFrame = TARGET_POINTER_SIZE * READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits;
+
+    // The following assert doesn't work in cross-bitness scenarios since the pointer size differs.
+#if (defined(TARGET_64BIT) && defined(HOST_64BIT)) || (defined(TARGET_32BIT) && defined(HOST_32BIT))
     _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
+#endif
 
     pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
@@ -11948,10 +11899,12 @@ void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
 }
 
 /*********************************************************************/
-HRESULT CEEJitInfo::allocMethodBlockCounts (
-    UINT32                        count,           // count of <ILOffset, ExecutionCount> tuples
-    ICorJitInfo::BlockCounts **   pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
-    )
+HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            UINT32 countSchemaItems, /* IN */
+            BYTE** pInstrumentationData /* OUT */
+            )
 {
     CONTRACTL {
         THROWS;
@@ -11985,7 +11938,7 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
     hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
 #else // FEATURE_PREJIT
 #ifdef FEATURE_PGO
-    hr = PgoManager::allocMethodBlockCounts(m_pMethodBeingCompiled, count, pBlockCounts, codeSize);
+    hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);
 #else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
@@ -11999,12 +11952,13 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
 
 // Consider implementing getBBProfileData on CEEJitInfo.  This will allow us
 // to use profile info in codegen for non zapped images.
-HRESULT CEEJitInfo::getMethodBlockCounts (
-    CORINFO_METHOD_HANDLE         ftnHnd,
-    UINT32 *                      pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
-    ICorJitInfo::BlockCounts **   pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-    UINT32 *                      pNumRuns
-    )
+
+HRESULT CEEJitInfo::getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE      ftnHnd,
+            PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
+            UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
+            BYTE **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            )
 {
     CONTRACTL {
         THROWS;
@@ -12013,33 +11967,47 @@ HRESULT CEEJitInfo::getMethodBlockCounts (
     } CONTRACTL_END;
 
     HRESULT hr = E_FAIL;
-    *pCount = 0;
-    *pBlockCounts = NULL;
-    *pNumRuns = 0;
+    *pCountSchemaItems = 0;
+    *pInstrumentationData = NULL;
 
     JIT_TO_EE_TRANSITION();
 
 #ifdef FEATURE_PGO
 
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    unsigned codeSize = 0;
-    if (pMD->IsDynamicMethod())
+    ComputedPgoData* pDataCur = m_foundPgoData;
+
+    // Search linked list of previously found pgo information
+    for (; pDataCur != nullptr; pDataCur = pDataCur->m_next)
     {
-        unsigned stackSize, ehSize;
-        CorInfoOptions options;
-        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
-        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
-    }
-    else if (pMD->HasILHeader())
-    {
-        COR_ILMETHOD_DECODER decoder(pMD->GetILHeader());
-        codeSize = decoder.GetCodeSize();
+        if (pDataCur->m_pMD == pMD)
+        {
+            *pSchema = pDataCur->m_schema.GetElements();
+            *pCountSchemaItems = pDataCur->m_schema.GetCount();
+            *pInstrumentationData = pDataCur->m_pInstrumentationData;
+            hr = pDataCur->m_hr;
+            break;
+        }
     }
 
-    hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
+    if (pDataCur == nullptr)
+    {
+        // If not found in previous list, gather it here, and add to linked list
+        NewHolder<ComputedPgoData> newPgoData = new ComputedPgoData(pMD);
+        newPgoData->m_next = m_foundPgoData;
+        m_foundPgoData = newPgoData;
+        newPgoData.SuppressRelease();
+        
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_schema, &newPgoData->m_pInstrumentationData);
+        pDataCur = m_foundPgoData;
+    }
 
+    *pSchema = pDataCur->m_schema.GetElements();
+    *pCountSchemaItems = pDataCur->m_schema.GetCount();
+    *pInstrumentationData = pDataCur->m_pInstrumentationData;
+    hr = pDataCur->m_hr;
 #else
-    _ASSERTE(!"getMethodBlockCounts not implemented on CEEJitInfo!");
+    _ASSERTE(!"getPgoInstrumentationResults not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
 #endif
 
@@ -12699,7 +12667,6 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
          }
     }
 
-#if !defined(TARGET_X86)
     if (ftn->HasUnmanagedCallersOnlyAttribute())
     {
         // If the stub was generated by the runtime, don't validate
@@ -12710,8 +12677,11 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
             COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(ftn);
 
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+        if (CORProfilerTrackTransitions())
+        {
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
+        }
     }
-#endif // !TARGET_X86
 
     return flags;
 }
@@ -14299,21 +14269,24 @@ void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
     UNREACHABLE();      // only called on derived class.
 }
 
-HRESULT CEEInfo::allocMethodBlockCounts (
-        UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
-        BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
-        )
+HRESULT CEEInfo::allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            UINT32 countSchemaItems, /* IN */
+            BYTE** pInstrumentationData /* OUT */
+            )
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.
 }
 
-HRESULT CEEInfo::getMethodBlockCounts(
-        CORINFO_METHOD_HANDLE ftnHnd,
-        UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
-        BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-        UINT32 *              pNumRuns
-        )
+
+HRESULT CEEInfo::getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE      ftnHnd,
+            PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
+            UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
+            BYTE **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            )
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.

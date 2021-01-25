@@ -1,65 +1,62 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="WasmBuildApp">
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
+
   <PropertyGroup>
+    <Configuration>Release</Configuration>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <TargetArchitecture>wasm</TargetArchitecture>
-    <TargetOS>Browser</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
-    <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
+
+    <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <EnableDefaultItems>false</EnableDefaultItems>
+
+    <!-- Important - deltas don't support trimming! -->
+    <PublishTrimmed>false</PublishTrimmed>
+
+    <WasmBuildAppDependsOn>PrepareDeltasForWasmApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DeltaHelper\DeltaHelper.csproj" />
   </ItemGroup>
 
-
-  <Target Name="PrepareForWasmBuild" DependsOnTargets="RebuildWasmAppBuilder;Build" BeforeTargets="WasmBuildApp">
+  <Target Name="PrepareDeltasForWasmApp" DependsOnTargets="Build;CompileDiff;ComputeDeltaFileOutputNames">
     <PropertyGroup>
-        <WasmAppDir>$(AppDir)</WasmAppDir>
-        <WasmMainAssemblyPath>bin\WasmDelta.dll</WasmMainAssemblyPath>
-        <WasmMainJSPath>runtime.js</WasmMainJSPath>
-
-        <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
+      <WasmBuildDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmBuildDir>
+      <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
     </PropertyGroup>
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)\System.Private.Runtime.InteropServices.JavaScript.dll" />
 
-      <WasmAssemblySearchPaths Include="bin"/>
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="PrepareDeltasForWasmApp" DependsOnTargets="Build;CompileDiff;ComputeDeltaFileOutputNames" BeforeTargets="WasmBuildApp">
     <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
       <WasmFilesToIncludeInFileSystem Include="@(_DeltaFileForPublish)">
-	<TargetPath>\%(_DeltaFileForPublish.Filename)%(_DeltaFileForPublish.Extension)</TargetPath>
+        <TargetPath>\%(_DeltaFileForPublish.Filename)%(_DeltaFileForPublish.Extension)</TargetPath>
       </WasmFilesToIncludeInFileSystem>
     </ItemGroup>
   </Target>
 
   <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Content Include="index.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
- </ItemGroup>
-
-  <ItemGroup>
-    <DeltaBase Include="Program.cs">
-      <Deltas>Program_v1.cs;Program_v2.cs</Deltas>
-    </DeltaBase>
+    <WasmExtraFilesToDeploy Include="index.html" />
   </ItemGroup>
 
-  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
-    <Copy SourceFiles="bin\index.html" DestinationFolder="$(AppDir)" />
-  </Target>
+  <ItemGroup>
+    <Compile Include="Program.cs"/>
+  </ItemGroup>
 
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
+  <PropertyGroup>
+    <DeltaScript>deltascript.json</DeltaScript>
+    <DeltaCount>2</DeltaCount>
+  </PropertyGroup>
 
   <!-- Set RoslynILDiffFullPath property to the path of roslynildiff -->
   <Import Project="..\DeltaHelper.targets" />
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.targets" />
 </Project>

@@ -193,6 +193,7 @@ void CodeGen::instGen(instruction ins)
     GetEmitter()->emitIns(ins);
 
 #ifdef TARGET_XARCH
+#ifdef PSEUDORANDOM_NOP_INSERTION
     // A workaround necessitated by limitations of emitter
     // if we are scheduled to insert a nop here, we have to delay it
     // hopefully we have not missed any other prefix instructions or places
@@ -201,6 +202,7 @@ void CodeGen::instGen(instruction ins)
     {
         GetEmitter()->emitNextNop = 1;
     }
+#endif // PSEUDORANDOM_NOP_INSERTION
 #endif
 }
 
