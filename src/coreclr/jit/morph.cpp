@@ -480,7 +480,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
                             GenTree* zero = gtNewZeroConNode(TYP_INT);
                             return fgMorphTree(zero);
                         }
-                        else  // We do have a side-effect 
+                        else // We do have a side-effect
                         {
                             // We could create a GT_COMMA node here to keep the side-effect and return a zero
                             // Instead we just don't try to optimize this case.
