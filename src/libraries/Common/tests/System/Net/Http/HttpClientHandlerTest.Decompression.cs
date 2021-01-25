@@ -309,13 +309,15 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
 #if NETCOREAPP
-        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli, "gzip; q=1.0, deflate; q=1.0, br; q=1.0")]
+        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli, "gzip; q=1.0, deflate; q=1.0, br; q=1.0", "")]
 #endif
-        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0, deflate; q=1.0")]
+        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0, deflate; q=1.0", "")]
+        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0", "deflate")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetAsync_SetAutomaticDecompression_AcceptEncodingHeaderSentWithQualityWeightingsNoDuplicates(
             DecompressionMethods methods,
-            string manualAcceptEncodingHeaderValues)
+            string manualAcceptEncodingHeaderValues,
+            string expectedHandlerAddedAcceptEncodingHeaderValues)
         {
             // Brotli only supported on SocketsHttpHandler.
             if (IsWinHttpHandler && manualAcceptEncodingHeaderValues.Contains("br"))
@@ -345,7 +347,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         if (requestLine.StartsWith("Accept-Encoding", StringComparison.OrdinalIgnoreCase))
                         {
-                            acceptEncodingValid = requestLine.Equals("Accept-Encoding: " + manualAcceptEncodingHeaderValues, StringComparison.OrdinalIgnoreCase);
+                            acceptEncodingValid = requestLine.Equals($"Accept-Encoding: {manualAcceptEncodingHeaderValues}{(string.IsNullOrEmpty(expectedHandlerAddedAcceptEncodingHeaderValues) ? string.Empty : ", " + expectedHandlerAddedAcceptEncodingHeaderValues)}", StringComparison.OrdinalIgnoreCase);
                             break;
                         }
                     }
