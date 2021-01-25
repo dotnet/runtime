@@ -2468,6 +2468,71 @@ mono_metadata_signature_size (MonoMethodSignature *sig)
 }
 
 /**
+ * metadata_signature_set_modopt_call_conv:
+ *
+ * Reads the custom attributes from \p cmod_type and adds them to the signature \p sig.
+ *
+ * This follows the C# unmanaged function pointer encoding.
+ * The modopts are from the System.Runtime.CompilerServices namespace and all have a name of the form CallConvXXX.
+ *
+ * The calling convention will be one of:
+ * Cdecl, Thiscall, Stdcall, Fastcall
+ * plus an optional SuppressGCTransition
+ */
+static void
+metadata_signature_set_modopt_call_conv (MonoMethodSignature *sig, MonoType *cmod_type, MonoError *error)
+{
+	uint8_t count = mono_type_custom_modifier_count (cmod_type);
+	if (count == 0)
+		return;
+	int base_callconv = sig->call_convention;
+	gboolean suppress_gc_transition = sig->suppress_gc_transition;
+	for (uint8_t i = 0; i < count; ++i) {
+		gboolean req = FALSE;
+		MonoType *cmod = mono_type_get_custom_modifier (cmod_type, i, &req, error);
+		return_if_nok (error);
+		/* callconv is a modopt, not a modreq */
+		if (req)
+			continue;
+		/* shouldn't be a valuetype, array, gparam, gtd, ginst etc */
+		if (cmod->type != MONO_TYPE_CLASS)
+			continue;
+		MonoClass *cmod_klass = mono_class_from_mono_type_internal (cmod);
+		if (m_class_get_image (cmod_klass) != mono_defaults.corlib)
+			continue;
+		if (strcmp (m_class_get_name_space (cmod_klass), "System.Runtime.CompilerServices"))
+			continue;
+		const char *name = m_class_get_name (cmod_klass);
+		if (strstr (name, "CallConv") != name)
+			continue;
+		name += strlen ("CallConv"); /* skip the prefix */
+
+		/* Check for the known base unmanaged calling conventions */
+		if (!strcmp (name, "Cdecl")) {
+			base_callconv = MONO_CALL_C;
+			continue;
+		} else if (!strcmp (name, "Stdcall")) {
+			base_callconv = MONO_CALL_STDCALL;
+			continue;
+		} else if (!strcmp (name, "Thiscall")) {
+			base_callconv = MONO_CALL_THISCALL;
+			continue;
+		} else if (!strcmp (name, "Fastcall")) {
+			base_callconv = MONO_CALL_FASTCALL;
+			continue;
+		}
+
+		/* Check for known calling convention modifiers */
+		if (!strcmp (name, "SuppressGCTransition")) {
+			suppress_gc_transition = TRUE;
+			continue;
+		}
+	}
+	sig->call_convention = base_callconv;
+	sig->suppress_gc_transition = suppress_gc_transition;
+}
+
+/**
  * mono_metadata_parse_method_signature_full:
  * \param m metadata context
  * \param generic_container: generics container
@@ -2540,6 +2605,14 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 			return NULL;
 		}
 		is_open = mono_class_is_open_constructed_type (method->ret);
+		if (G_UNLIKELY (method->ret->has_cmods && method->call_convention == MONO_CALL_UNMANAGED_MD)) {
+			/* calling convention encoded in modopts */
+			metadata_signature_set_modopt_call_conv (method, method->ret, error);
+			if (!is_ok (error)) {
+				g_free (pattrs);
+				return NULL;
+			}
+		}
 	}
 
 	for (i = 0; i < method->param_count; ++i) {

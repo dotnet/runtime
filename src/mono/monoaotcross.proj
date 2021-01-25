@@ -5,7 +5,16 @@
 
   <PropertyGroup>
     <!-- OS name is case sensitive! -->
-    <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
+    <_MonoCrossAOTTargetOS Condition="'$(MonoCrossAOTTargetOS)' != ''">+$(MonoCrossAOTTargetOS.ToLowerInvariant())+</_MonoCrossAOTTargetOS>
+    <_MonoGenerateOffsetsOSGroups Condition="'$(MonoGenerateOffsetsOSGroups)' != ''">+$(MonoGenerateOffsetsOSGroups.ToLowerInvariant())+</_MonoGenerateOffsetsOSGroups>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+android+'))">$(_MonoCrossAOTTargetOS)+android+</_MonoCrossAOTTargetOS>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+browser+'))">$(_MonoCrossAOTTargetOS)+browser+</_MonoCrossAOTTargetOS>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+tvos+'))">$(_MonoCrossAOTTargetOS)+tvos+</_MonoCrossAOTTargetOS>
+    <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+ios+'))">$(_MonoCrossAOTTargetOS)+ios+</_MonoCrossAOTTargetOS>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))">$(MonoAotTargets);Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);Browser-wasm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvOS-x64;tvOS-arm64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iOS-x64;iOS-arm64;iOS-x86;iOS-arm</MonoAotTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,7 +40,7 @@
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+             Properties="RealTargetOS=$(TargetOS);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
     <ItemGroup>
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />
