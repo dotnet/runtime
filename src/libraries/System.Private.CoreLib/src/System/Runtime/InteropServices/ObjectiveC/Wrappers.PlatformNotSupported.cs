@@ -9,6 +9,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// <summary>
     /// An Objective-C object instance.
     /// </summary>
+    [SupportedOSPlatform("macos")]
+    [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     public struct Instance
     {
@@ -31,6 +33,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// See http://clang.llvm.org/docs/Block-ABI-Apple.html#high-level for a
     /// description of the ABI represented by this data structure.
     /// </remarks>
+    [SupportedOSPlatform("macos")]
+    [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     public struct BlockLiteral
     {
@@ -47,6 +51,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// <summary>
     /// Base type for all types participating in Objective-C interop.
     /// </summary>
+    [SupportedOSPlatform("macos")]
     public abstract class ObjectiveCBase : IDisposable
     {
         public static readonly IntPtr InvalidInstanceValue = (IntPtr)(-1);
@@ -73,6 +78,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// Class used to create wrappers for interoperability with the Objective-C runtime.
     /// </summary>
     [SupportedOSPlatform("macos")]
+    [CLSCompliant(false)]
     public abstract class Wrappers
     {
         /// <summary>
@@ -207,8 +213,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <param name="allocImpl">Alloc implementation</param>
         /// <param name="deallocImpl">Dealloc implementation</param>
         /// <remarks>
-        /// See <see href="https://developer.apple.com/documentation/objectivec/nsobject/1571958-alloc">alloc</see>.
-        /// See <see href="https://developer.apple.com/documentation/objectivec/nsobject/1571947-dealloc">dealloc</see>.
+        /// See <a href="https://developer.apple.com/documentation/objectivec/nsobject/1571958-alloc">alloc</a>.
+        /// See <a href="https://developer.apple.com/documentation/objectivec/nsobject/1571947-dealloc">dealloc</a>.
         /// </remarks>
         public static void GetLifetimeMethods(
             out IntPtr allocImpl,
@@ -233,7 +239,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <param name="signature">Type Encoding for returned block</param>
         /// <returns>A callable function pointer for Block dispatch by the Objective-C runtime</returns>
         /// <remarks>
-        /// Defer to the implementer for determining the <see cref="https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html#//apple_ref/doc/uid/TP40008048-CH100">Block signature</see>
+        /// Defer to the implementer for determining the <a cref="https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html#//apple_ref/doc/uid/TP40008048-CH100">Block signature</a>
         /// that should be used to project the managed Delegate.
         /// </remarks>
         protected abstract IntPtr GetBlockInvokeAndSignature(Delegate del, CreateBlockFlags flags, out string signature);
@@ -249,11 +255,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// Block, but does takes the block argument as the first argument.
         /// For example:
         /// <code>
-        /// ((delegate* unmanaged[Cdecl]&lt;IntPtr [, arg]*, ret&gt)invoker)(block, ...);
+        /// ((delegate* unmanaged[Cdecl]&lt;IntPtr [, arg]*, ret&gt;)invoker)(block, ...);
         /// </code>
         /// </remarks>
-        public delegate Delegate CreateDelegate(IntPtr block, IntPtr invoker)
-            => throw new PlatformNotSupportedException();
+        public delegate Delegate CreateDelegate(IntPtr block, IntPtr invoker);
 
         /// <summary>
         /// Get or create a Delegate to represent the supplied Objective-C Block.

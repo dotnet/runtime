@@ -9,6 +9,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// <summary>
     /// Data structure for managing object wrapper lifetime.
     /// </summary>
+    [SupportedOSPlatform("macos")]
+    [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     public struct ManagedObjectWrapperLifetime
     {

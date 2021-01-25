@@ -10,6 +10,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// An Objective-C object instance.
     /// </summary>
     [SupportedOSPlatform("macos")]
+    [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     public struct Instance
     {
@@ -21,12 +22,12 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <typeparam name="T">Managed type of the instance.</typeparam>
         /// <param name="instancePtr">Instance pointer</param>
         /// <returns>The managed instance</returns>
-        public unsafe static T GetInstance<T>(Instance* instancePtr) where T : class
+        public static unsafe T GetInstance<T>(Instance* instancePtr) where T : class
         {
             throw new NotImplementedException();
         }
     }
-    
+
     /// <summary>
     /// An Objective-C block instance.
     /// </summary>
@@ -35,6 +36,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// description of the ABI represented by this data structure.
     /// </remarks>
     [SupportedOSPlatform("macos")]
+    [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     public struct BlockLiteral
     {
@@ -44,7 +46,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <typeparam name="T">The delegate type the block is associated with.</typeparam>
         /// <param name="block">The block instance</param>
         /// <returns>A delegate</returns>
-        public unsafe static T GetDelegate<T>(BlockLiteral* block) where T : Delegate
+        public static unsafe T GetDelegate<T>(BlockLiteral* block) where T : Delegate
         {
             throw new NotImplementedException();
         }
