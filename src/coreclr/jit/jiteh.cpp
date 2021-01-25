@@ -4377,7 +4377,7 @@ bool Compiler::fgRelocateEHRegions()
     return result;
 }
 
-#endif // DEBUG
+#endif // !FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  * We've inserted a new block before 'block' that should be part of the same EH region as 'block'.

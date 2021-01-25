@@ -6,8 +6,6 @@
 #pragma hdrstop
 #endif
 
-// Flowgraph Construction and Maintenance
-
 void Compiler::fgInit()
 {
     impInit();
@@ -607,6 +605,16 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
     {
         block->ensurePredListOrder(this);
     }
+}
+
+/*****************************************************************************
+ *  For a block that is in a handler region, find the first block of the most-nested
+ *  handler containing the block.
+ */
+BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
+{
+    assert(block->hasHndIndex());
+    return ehGetDsc(block->getHndIndex())->ebdHndBeg;
 }
 
 /*****************************************************************************
@@ -3300,6 +3308,81 @@ bool Compiler::fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkD
     return true;
 }
 
+/*****************************************************************************
+ *  Returns the handler nesting level of the block.
+ *  *pFinallyNesting is set to the nesting level of the inner-most
+ *  finally-protected try the block is in.
+ */
+
+unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNesting)
+{
+    unsigned  curNesting = 0;            // How many handlers is the block in
+    unsigned  tryFin     = (unsigned)-1; // curNesting when we see innermost finally-protected try
+    unsigned  XTnum;
+    EHblkDsc* HBtab;
+
+    /* We find the block's handler nesting level by walking over the
+       complete exception table and find enclosing clauses. */
+
+    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+    {
+        noway_assert(HBtab->ebdTryBeg && HBtab->ebdHndBeg);
+
+        if (HBtab->HasFinallyHandler() && (tryFin == (unsigned)-1) && bbInTryRegions(XTnum, block))
+        {
+            tryFin = curNesting;
+        }
+        else if (bbInHandlerRegions(XTnum, block))
+        {
+            curNesting++;
+        }
+    }
+
+    if (tryFin == (unsigned)-1)
+    {
+        tryFin = curNesting;
+    }
+
+    if (pFinallyNesting)
+    {
+        *pFinallyNesting = curNesting - tryFin;
+    }
+
+    return curNesting;
+}
+
+//------------------------------------------------------------------------
+// fgFindBlockILOffset: Given a block, find the IL offset corresponding to the first statement
+//      in the block with a legal IL offset. Skip any leading statements that have BAD_IL_OFFSET.
+//      If no statement has an initialized statement offset (including the case where there are
+//      no statements in the block), then return BAD_IL_OFFSET. This function is used when
+//      blocks are split or modified, and we want to maintain the IL offset as much as possible
+//      to preserve good debugging behavior.
+//
+// Arguments:
+//      block - The block to check.
+//
+// Return Value:
+//      The first good IL offset of a statement in the block, or BAD_IL_OFFSET if such an IL offset
+//      cannot be found.
+//
+IL_OFFSET Compiler::fgFindBlockILOffset(BasicBlock* block)
+{
+    // This function searches for IL offsets in statement nodes, so it can't be used in LIR. We
+    // could have a similar function for LIR that searches for GT_IL_OFFSET nodes.
+    assert(!block->IsLIR());
+
+    for (Statement* stmt : block->Statements())
+    {
+        if (stmt->GetILOffsetX() != BAD_IL_OFFSET)
+        {
+            return jitGetILoffs(stmt->GetILOffsetX());
+        }
+    }
+
+    return BAD_IL_OFFSET;
+}
+
 //------------------------------------------------------------------------------
 // fgSplitBlockAtEnd - split the given block into two blocks.
 //                   All code in the block stays in the original block.
@@ -4348,6 +4431,53 @@ bool Compiler::fgRenumberBlocks()
 
 /*****************************************************************************
  *
+ *  Is the BasicBlock bJump a forward branch?
+ *   Optionally bSrc can be supplied to indicate that
+ *   bJump must be forward with respect to bSrc
+ */
+bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc /* = NULL */)
+{
+    bool result = false;
+
+    if ((bJump->bbJumpKind == BBJ_COND) || (bJump->bbJumpKind == BBJ_ALWAYS))
+    {
+        BasicBlock* bDest = bJump->bbJumpDest;
+        BasicBlock* bTemp = (bSrc == nullptr) ? bJump : bSrc;
+
+        while (true)
+        {
+            bTemp = bTemp->bbNext;
+
+            if (bTemp == nullptr)
+            {
+                break;
+            }
+
+            if (bTemp == bDest)
+            {
+                result = true;
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+/*****************************************************************************
+ *
+ *  Returns true if it is allowable (based upon the EH regions)
+ *  to place block bAfter immediately after bBefore. It is allowable
+ *  if the 'bBefore' and 'bAfter' blocks are in the exact same EH region.
+ */
+
+bool Compiler::fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter)
+{
+    return BasicBlock::sameEHRegion(bBefore, bAfter);
+}
+
+/*****************************************************************************
+ *
  *  Function called to move the range of blocks [bStart .. bEnd].
  *  The blocks are placed immediately after the insertAfterBlk.
  *  fgFirstFuncletBB is not updated; that is the responsibility of the caller, if necessary.
@@ -4741,6 +4871,30 @@ DONE:
     return bLast;
 }
 
+// return true if there is a possibility that the method has a loop (a backedge is present)
+bool Compiler::fgMightHaveLoop()
+{
+    // Don't use a BlockSet for this temporary bitset of blocks: we don't want to have to call EnsureBasicBlockEpoch()
+    // and potentially change the block epoch.
+
+    BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
+    BitVec       blocksSeen(BitVecOps::MakeEmpty(&blockVecTraits));
+
+    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    {
+        BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
+
+        for (BasicBlock* succ : block->GetAllSuccs(this))
+        {
+            if (BitVecOps::IsMember(&blockVecTraits, blocksSeen, succ->bbNum))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /*****************************************************************************
  *
  * Insert a BasicBlock before the given block.
@@ -4875,6 +5029,65 @@ void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
         fgLastBB = newBlk;
         assert(fgLastBB->bbNext == nullptr);
     }
+}
+
+// We have two edges (bAlt => bCur) and (bCur => bNext).
+//
+// Returns true if the weight of (bAlt => bCur)
+//  is greater than the weight of (bCur => bNext).
+// We compare the edge weights if we have valid edge weights
+//  otherwise we compare blocks weights.
+//
+bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
+{
+    // bCur can't be NULL and must be a fall through bbJumpKind
+    noway_assert(bCur != nullptr);
+    noway_assert(bCur->bbFallsThrough());
+    noway_assert(bAlt != nullptr);
+
+    // We only handle the cases when bAlt is a BBJ_ALWAYS or a BBJ_COND
+    if ((bAlt->bbJumpKind != BBJ_ALWAYS) && (bAlt->bbJumpKind != BBJ_COND))
+    {
+        return false;
+    }
+
+    // if bAlt doesn't jump to bCur it can't be a better fall through than bCur
+    if (bAlt->bbJumpDest != bCur)
+    {
+        return false;
+    }
+
+    // Currently bNext is the fall through for bCur
+    BasicBlock* bNext = bCur->bbNext;
+    noway_assert(bNext != nullptr);
+
+    // We will set result to true if bAlt is a better fall through than bCur
+    bool result;
+    if (fgHaveValidEdgeWeights)
+    {
+        // We will compare the edge weight for our two choices
+        flowList* edgeFromAlt = fgGetPredForBlock(bCur, bAlt);
+        flowList* edgeFromCur = fgGetPredForBlock(bNext, bCur);
+        noway_assert(edgeFromCur != nullptr);
+        noway_assert(edgeFromAlt != nullptr);
+
+        result = (edgeFromAlt->edgeWeightMin() > edgeFromCur->edgeWeightMax());
+    }
+    else
+    {
+        if (bAlt->bbJumpKind == BBJ_ALWAYS)
+        {
+            // Our result is true if bAlt's weight is more than bCur's weight
+            result = (bAlt->bbWeight > bCur->bbWeight);
+        }
+        else
+        {
+            noway_assert(bAlt->bbJumpKind == BBJ_COND);
+            // Our result is true if bAlt's weight is more than twice bCur's weight
+            result = (bAlt->bbWeight > (2 * bCur->bbWeight));
+        }
+    }
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -5579,4 +5792,16 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
 #endif
 
     return newBlk;
+}
+
+//------------------------------------------------------------------------
+// fgUseThrowHelperBlocks: Determinate does compiler use throw helper blocks.
+//
+// Note:
+//   For debuggable code, codegen will generate the 'throw' code inline.
+// Return Value:
+//    true if 'throw' helper block should be created.
+bool Compiler::fgUseThrowHelperBlocks()
+{
+    return !opts.compDbgCode;
 }

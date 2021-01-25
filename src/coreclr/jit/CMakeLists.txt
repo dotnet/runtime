@@ -90,10 +90,11 @@ set( JIT_SOURCES
   fgbasic.cpp
   fgdiagnostic.cpp
   fgehopt.cpp
-  fginfo.cpp
+  fgflow.cpp
   fginline.cpp
   fgopt.cpp
   fgprofile.cpp
+  fgstmt.cpp
   flowgraph.cpp
   gcdecode.cpp
   gcencode.cpp

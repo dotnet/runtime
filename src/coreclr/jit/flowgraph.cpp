@@ -9,6 +9,7 @@
 
 // Flowgraph Miscellany
 
+
 //------------------------------------------------------------------------
 // blockNeedsGCPoll: Determine whether the block needs GC poll inserted
 //
@@ -678,6 +679,41 @@ PhaseStatus Compiler::fgImport()
 }
 
 /*****************************************************************************
+ * This function returns true if tree is a node with a call
+ * that unconditionally throws an exception
+ */
+
+bool Compiler::fgIsThrow(GenTree* tree)
+{
+    if ((tree->gtOper != GT_CALL) || (tree->AsCall()->gtCallType != CT_HELPER))
+    {
+        return false;
+    }
+
+    // TODO-Throughput: Replace all these calls to eeFindHelper() with a table based lookup
+
+    if ((tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW)) ||
+        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VERIFICATION)) ||
+        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
+        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
+        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
+        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW)) ||
+        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RETHROW)) ||
+        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED)) ||
+        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED)))
+    {
+        noway_assert(tree->gtFlags & GTF_CALL);
+        noway_assert(tree->gtFlags & GTF_EXCEPT);
+        return true;
+    }
+
+    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
+    // that would be nice to recognize.
+
+    return false;
+}
+
+/*****************************************************************************
  * This function returns true for blocks that are in different hot-cold regions.
  * It returns false when the blocks are both in the same regions
  */
@@ -706,6 +742,88 @@ bool Compiler::fgIsBlockCold(BasicBlock* blk)
     }
 
     return ((blk->bbFlags & BBF_COLD) != 0);
+}
+
+/*****************************************************************************
+ * This function returns true if tree is a GT_COMMA node with a call
+ * that unconditionally throws an exception
+ */
+
+bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
+{
+    // Instead of always folding comma throws,
+    // with stress enabled we only fold half the time
+
+    if (forFolding && compStressCompile(STRESS_FOLD, 50))
+    {
+        return false; /* Don't fold */
+    }
+
+    /* Check for cast of a GT_COMMA with a throw overflow */
+    if ((tree->gtOper == GT_COMMA) && (tree->gtFlags & GTF_CALL) && (tree->gtFlags & GTF_EXCEPT))
+    {
+        return (fgIsThrow(tree->AsOp()->gtOp1));
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// fgIsIndirOfAddrOfLocal: Determine whether "tree" is an indirection of a local.
+//
+// Arguments:
+//    tree - The tree node under consideration
+//
+// Return Value:
+//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is:
+//    - an ADDR, whose arg in turn is a LCL_VAR, return that LCL_VAR node;
+//    - a LCL_VAR_ADDR, return that LCL_VAR_ADDR;
+//    - else nullptr.
+//
+// static
+GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
+{
+    GenTreeLclVar* res = nullptr;
+    if (tree->OperIsIndir())
+    {
+        GenTree* addr = tree->AsIndir()->Addr();
+
+        // Post rationalization, we can have Indir(Lea(..) trees. Therefore to recognize
+        // Indir of addr of a local, skip over Lea in Indir(Lea(base, index, scale, offset))
+        // to get to base variable.
+        if (addr->OperGet() == GT_LEA)
+        {
+            // We use this method in backward dataflow after liveness computation - fgInterBlockLocalVarLiveness().
+            // Therefore it is critical that we don't miss 'uses' of any local.  It may seem this method overlooks
+            // if the index part of the LEA has indir( someAddrOperator ( lclVar ) ) to search for a use but it's
+            // covered by the fact we're traversing the expression in execution order and we also visit the index.
+            GenTreeAddrMode* lea  = addr->AsAddrMode();
+            GenTree*         base = lea->Base();
+
+            if (base != nullptr)
+            {
+                if (base->OperGet() == GT_IND)
+                {
+                    return fgIsIndirOfAddrOfLocal(base);
+                }
+                // else use base as addr
+                addr = base;
+            }
+        }
+
+        if (addr->OperGet() == GT_ADDR)
+        {
+            GenTree* lclvar = addr->AsOp()->gtOp1;
+            if (lclvar->OperGet() == GT_LCL_VAR)
+            {
+                res = lclvar->AsLclVar();
+            }
+        }
+        else if (addr->OperGet() == GT_LCL_VAR_ADDR)
+        {
+            res = addr->AsLclVar();
+        }
+    }
+    return res;
 }
 
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
@@ -786,6 +904,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     {
         opModuleIDArg = gtNewIconNode((size_t)moduleID, TYP_I_IMPL);
     }
+#endif
 
     if (bNeedClassID)
     {
@@ -840,6 +959,112 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 
     // Call the shared non gc static helper, as its the fastest
     return fgGetStaticsCCtorHelper(cls, info.compCompHnd->getSharedCCtorHelper(cls));
+}
+
+//------------------------------------------------------------------------------
+// fgAddrCouldBeNull : Check whether the address tree can represent null.
+//
+//
+// Arguments:
+//    addr     -  Address to check
+//
+// Return Value:
+//    True if address could be null; false otherwise
+
+bool Compiler::fgAddrCouldBeNull(GenTree* addr)
+{
+    addr = addr->gtEffectiveVal();
+    if ((addr->gtOper == GT_CNS_INT) && addr->IsIconHandle())
+    {
+        return false;
+    }
+    else if (addr->OperIs(GT_CNS_STR))
+    {
+        return false;
+    }
+    else if (addr->gtOper == GT_LCL_VAR)
+    {
+        unsigned varNum = addr->AsLclVarCommon()->GetLclNum();
+
+        if (lvaIsImplicitByRefLocal(varNum))
+        {
+            return false;
+        }
+
+        LclVarDsc* varDsc = &lvaTable[varNum];
+
+        if (varDsc->lvStackByref)
+        {
+            return false;
+        }
+    }
+    else if (addr->gtOper == GT_ADDR)
+    {
+        if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
+        {
+            GenTree* cns1Tree = addr->AsOp()->gtOp1;
+            if (!cns1Tree->IsIconHandle())
+            {
+                // Indirection of some random constant...
+                // It is safest just to return true
+                return true;
+            }
+        }
+
+        return false; // we can't have a null address
+    }
+    else if (addr->gtOper == GT_ADD)
+    {
+        if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
+        {
+            GenTree* cns1Tree = addr->AsOp()->gtOp1;
+            if (!cns1Tree->IsIconHandle())
+            {
+                if (!fgIsBigOffset(cns1Tree->AsIntCon()->gtIconVal))
+                {
+                    // Op1 was an ordinary small constant
+                    return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
+                }
+            }
+            else // Op1 was a handle represented as a constant
+            {
+                // Is Op2 also a constant?
+                if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
+                {
+                    GenTree* cns2Tree = addr->AsOp()->gtOp2;
+                    // Is this an addition of a handle and constant
+                    if (!cns2Tree->IsIconHandle())
+                    {
+                        if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                        {
+                            // Op2 was an ordinary small constant
+                            return false; // we can't have a null address
+                        }
+                    }
+                }
+            }
+            call->gtCallArgs->GetNext()->SetNext(addArgs);
+        }
+        else
+        {
+            // Op1 is not a constant
+            // What about Op2?
+            if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
+            {
+                GenTree* cns2Tree = addr->AsOp()->gtOp2;
+                // Is this an addition of a small constant
+                if (!cns2Tree->IsIconHandle())
+                {
+                    if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                    {
+                        // Op2 was an ordinary small constant
+                        return fgAddrCouldBeNull(addr->AsOp()->gtOp1);
+                    }
+                }
+            }
+        }
+    }
+    return true; // default result: addr could be null
 }
 
 //------------------------------------------------------------------------------
@@ -1046,6 +1271,105 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         JITDUMP("not optimized, no target method\n");
     }
     return call;
+}
+
+bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
+{
+    //
+    // If tree is a relop and we need an 4-byte integer
+    //  then we never need to insert a cast
+    //
+    if ((tree->OperKind() & GTK_RELOP) && (genActualType(toType) == TYP_INT))
+    {
+        return false;
+    }
+
+    var_types fromType;
+
+    //
+    // Is the tree as GT_CAST or a GT_CALL ?
+    //
+    if (tree->OperGet() == GT_CAST)
+    {
+        fromType = tree->CastToType();
+    }
+    else if (tree->OperGet() == GT_CALL)
+    {
+        fromType = (var_types)tree->AsCall()->gtReturnType;
+    }
+    else
+    {
+        fromType = tree->TypeGet();
+    }
+
+    //
+    // If both types are the same then an additional cast is not necessary
+    //
+    if (toType == fromType)
+    {
+        return false;
+    }
+    //
+    // If the sign-ness of the two types are different then a cast is necessary
+    //
+    if (varTypeIsUnsigned(toType) != varTypeIsUnsigned(fromType))
+    {
+        return true;
+    }
+    //
+    // If the from type is the same size or smaller then an additional cast is not necessary
+    //
+    if (genTypeSize(toType) >= genTypeSize(fromType))
+    {
+        return false;
+    }
+
+    //
+    // Looks like we will need the cast
+    //
+    return true;
+}
+
+// If assigning to a local var, add a cast if the target is
+// marked as NormalizedOnStore. Returns true if any change was made
+GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
+{
+    //
+    // Only normalize the stores in the global morph phase
+    //
+    if (fgGlobalMorph)
+    {
+        noway_assert(tree->OperGet() == GT_ASG);
+
+        GenTree* op1 = tree->AsOp()->gtOp1;
+        GenTree* op2 = tree->AsOp()->gtOp2;
+
+        if (op1->gtOper == GT_LCL_VAR && genActualType(op1->TypeGet()) == TYP_INT)
+        {
+            // Small-typed arguments and aliased locals are normalized on load.
+            // Other small-typed locals are normalized on store.
+            // If it is an assignment to one of the latter, insert the cast on RHS
+            unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* varDsc = &lvaTable[varNum];
+
+            if (varDsc->lvNormalizeOnStore())
+            {
+                noway_assert(op1->gtType <= TYP_INT);
+                op1->gtType = TYP_INT;
+
+                if (fgCastNeeded(op2, varDsc->TypeGet()))
+                {
+                    op2                 = gtNewCastNode(TYP_INT, op2, false, varDsc->TypeGet());
+                    tree->AsOp()->gtOp2 = op2;
+
+                    // Propagate GTF_COLON_COND
+                    op2->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
+                }
+            }
+        }
+    }
+
+    return tree;
 }
 
 /*****************************************************************************
@@ -2543,7 +2867,7 @@ void Compiler::fgAddInternal()
 
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, gtNewCallArgs(tree));
         }
-        else
+        else if (comp->compMethodHasRetVal())
         {
             noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
 
@@ -2835,6 +3159,7 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
     {
         return fgFirstFuncletBB->bbPrev;
     }
+#endif // FEATURE_EH_FUNCLETS
 
 #endif // FEATURE_EH_FUNCLETS
 
@@ -3130,6 +3455,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 }
             }
         }
+#endif
 
         /* COMPACT blocks if possible */
         if (bPrev->bbJumpKind == BBJ_NONE)
@@ -3190,8 +3516,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
 
     return result;
 }
-
-#if defined(FEATURE_EH_FUNCLETS)
 
 /*****************************************************************************
  * Introduce a new head block of the handler for the prolog to be put in, ahead
@@ -3419,8 +3743,6 @@ void Compiler::fgCreateFunclets()
 #endif // DEBUG
 }
 
-#endif // defined(FEATURE_EH_FUNCLETS)
-
 /*-------------------------------------------------------------------------
  *
  * Walk the basic blocks list to determine the first block to place in the
@@ -3539,6 +3861,7 @@ void Compiler::fgDetermineFirstColdBlock()
         {
             return; // To keep Prefast happy
         }
+    }
 
         // If we only have one cold block
         // then it may not be worth it to move it
@@ -3647,6 +3970,14 @@ EXIT:;
 
     fgFirstColdBlock = firstColdBlock;
 }
+
+#ifdef _PREFAST_
+#pragma warning(push)
+#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
+#endif
+
+/*****************************************************************************
+ */
 
 /* static */
 unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
@@ -3917,12 +4248,412 @@ BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind)
         {
             gtDispStmt(compCurStmt);
         }
+
+        fgVerifyHandlerTab();
+        fgDebugCheckBBlist();
+#endif // DEBUG
     }
 #endif // DEBUG
 
     /* We attach the target label to the containing try block (if any) */
     noway_assert(!compIsForInlining());
     return fgAddCodeRef(block, bbThrowIndex(block), kind);
+}
+
+// Sequences the tree.
+// prevTree is what gtPrev of the first node in execution order gets set to.
+// Returns the first node (execution order) in the sequenced tree.
+GenTree* Compiler::fgSetTreeSeq(GenTree* tree, GenTree* prevTree, bool isLIR)
+{
+    GenTree list;
+
+    if (prevTree == nullptr)
+    {
+        prevTree = &list;
+    }
+    fgTreeSeqLst = prevTree;
+    fgTreeSeqNum = 0;
+    fgTreeSeqBeg = nullptr;
+    fgSetTreeSeqHelper(tree, isLIR);
+
+    GenTree* result = prevTree->gtNext;
+    if (prevTree == &list)
+    {
+        list.gtNext->gtPrev = nullptr;
+    }
+
+    return result;
+}
+
+/*****************************************************************************
+ *
+ *  Assigns sequence numbers to the given tree and its sub-operands, and
+ *  threads all the nodes together via the 'gtNext' and 'gtPrev' fields.
+ *  Uses 'global' - fgTreeSeqLst
+ */
+
+void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
+{
+    genTreeOps oper;
+    unsigned   kind;
+
+    noway_assert(tree);
+    assert(!IsUninitialized(tree));
+
+    /* Figure out what kind of a node we have */
+
+    oper = tree->OperGet();
+    kind = tree->OperKind();
+
+    /* Is this a leaf/constant node? */
+
+    if (kind & (GTK_CONST | GTK_LEAF))
+    {
+        fgSetTreeSeqFinish(tree, isLIR);
+        return;
+    }
+
+    // Special handling for dynamic block ops.
+    if (tree->OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK))
+    {
+        GenTreeDynBlk* dynBlk    = tree->AsDynBlk();
+        GenTree*       sizeNode  = dynBlk->gtDynamicSize;
+        GenTree*       dstAddr   = dynBlk->Addr();
+        GenTree*       src       = dynBlk->Data();
+        bool           isReverse = ((dynBlk->gtFlags & GTF_REVERSE_OPS) != 0);
+        if (dynBlk->gtEvalSizeFirst)
+        {
+            fgSetTreeSeqHelper(sizeNode, isLIR);
+        }
+
+        // We either have a DYN_BLK or a STORE_DYN_BLK. If the latter, we have a
+        // src (the Data to be stored), and isReverse tells us whether to evaluate
+        // that before dstAddr.
+        if (isReverse && (src != nullptr))
+        {
+            fgSetTreeSeqHelper(src, isLIR);
+        }
+        fgSetTreeSeqHelper(dstAddr, isLIR);
+        if (!isReverse && (src != nullptr))
+        {
+            fgSetTreeSeqHelper(src, isLIR);
+        }
+        if (!dynBlk->gtEvalSizeFirst)
+        {
+            fgSetTreeSeqHelper(sizeNode, isLIR);
+        }
+        fgSetTreeSeqFinish(dynBlk, isLIR);
+        return;
+    }
+
+    /* Is it a 'simple' unary/binary operator? */
+
+    if (kind & GTK_SMPOP)
+    {
+        GenTree* op1 = tree->AsOp()->gtOp1;
+        GenTree* op2 = tree->gtGetOp2IfPresent();
+
+        // Special handling for GT_LIST
+        if (tree->OperGet() == GT_LIST)
+        {
+            // First, handle the list items, which will be linked in forward order.
+            // As we go, we will link the GT_LIST nodes in reverse order - we will number
+            // them and update fgTreeSeqList in a subsequent traversal.
+            GenTree* nextList = tree;
+            GenTree* list     = nullptr;
+            while (nextList != nullptr && nextList->OperGet() == GT_LIST)
+            {
+                list              = nextList;
+                GenTree* listItem = list->AsOp()->gtOp1;
+                fgSetTreeSeqHelper(listItem, isLIR);
+                nextList = list->AsOp()->gtOp2;
+                if (nextList != nullptr)
+                {
+                    nextList->gtNext = list;
+                }
+                list->gtPrev = nextList;
+            }
+            // Next, handle the GT_LIST nodes.
+            // Note that fgSetTreeSeqFinish() sets the gtNext to null, so we need to capture the nextList
+            // before we call that method.
+            nextList = list;
+            do
+            {
+                assert(list != nullptr);
+                list     = nextList;
+                nextList = list->gtNext;
+                fgSetTreeSeqFinish(list, isLIR);
+            } while (list != tree);
+            return;
+        }
+
+        /* Special handling for AddrMode */
+        if (tree->OperIsAddrMode())
+        {
+            bool reverse = ((tree->gtFlags & GTF_REVERSE_OPS) != 0);
+            if (reverse)
+            {
+                assert(op1 != nullptr && op2 != nullptr);
+                fgSetTreeSeqHelper(op2, isLIR);
+            }
+            if (op1 != nullptr)
+            {
+                fgSetTreeSeqHelper(op1, isLIR);
+            }
+            if (!reverse && op2 != nullptr)
+            {
+                fgSetTreeSeqHelper(op2, isLIR);
+            }
+
+            fgSetTreeSeqFinish(tree, isLIR);
+            return;
+        }
+
+        /* Check for a nilary operator */
+
+        if (op1 == nullptr)
+        {
+            noway_assert(op2 == nullptr);
+            fgSetTreeSeqFinish(tree, isLIR);
+            return;
+        }
+
+        /* Is this a unary operator?
+         * Although UNARY GT_IND has a special structure */
+
+        if (oper == GT_IND)
+        {
+            /* Visit the indirection first - op2 may point to the
+             * jump Label for array-index-out-of-range */
+
+            fgSetTreeSeqHelper(op1, isLIR);
+            fgSetTreeSeqFinish(tree, isLIR);
+            return;
+        }
+
+        /* Now this is REALLY a unary operator */
+
+        if (!op2)
+        {
+            /* Visit the (only) operand and we're done */
+
+            fgSetTreeSeqHelper(op1, isLIR);
+            fgSetTreeSeqFinish(tree, isLIR);
+            return;
+        }
+
+        /*
+           For "real" ?: operators, we make sure the order is
+           as follows:
+
+               condition
+               1st operand
+               GT_COLON
+               2nd operand
+               GT_QMARK
+        */
+
+        if (oper == GT_QMARK)
+        {
+            noway_assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
+
+            fgSetTreeSeqHelper(op1, isLIR);
+            // Here, for the colon, the sequence does not actually represent "order of evaluation":
+            // one or the other of the branches is executed, not both.  Still, to make debugging checks
+            // work, we want the sequence to match the order in which we'll generate code, which means
+            // "else" clause then "then" clause.
+            fgSetTreeSeqHelper(op2->AsColon()->ElseNode(), isLIR);
+            fgSetTreeSeqHelper(op2, isLIR);
+            fgSetTreeSeqHelper(op2->AsColon()->ThenNode(), isLIR);
+
+            fgSetTreeSeqFinish(tree, isLIR);
+            return;
+        }
+
+        if (oper == GT_COLON)
+        {
+            fgSetTreeSeqFinish(tree, isLIR);
+            return;
+        }
+
+        /* This is a binary operator */
+
+        if (tree->gtFlags & GTF_REVERSE_OPS)
+        {
+            fgSetTreeSeqHelper(op2, isLIR);
+            fgSetTreeSeqHelper(op1, isLIR);
+        }
+        else
+        {
+            fgSetTreeSeqHelper(op1, isLIR);
+            fgSetTreeSeqHelper(op2, isLIR);
+        }
+
+        fgSetTreeSeqFinish(tree, isLIR);
+        return;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    /* See what kind of a special operator we have here */
+
+    switch (oper)
+    {
+        case GT_FIELD:
+            noway_assert(tree->AsField()->gtFldObj == nullptr);
+            break;
+
+        case GT_CALL:
+
+            /* We'll evaluate the 'this' argument value first */
+            if (tree->AsCall()->gtCallThisArg != nullptr)
+            {
+                fgSetTreeSeqHelper(tree->AsCall()->gtCallThisArg->GetNode(), isLIR);
+            }
+
+            for (GenTreeCall::Use& use : tree->AsCall()->Args())
+            {
+                fgSetTreeSeqHelper(use.GetNode(), isLIR);
+            }
+
+            for (GenTreeCall::Use& use : tree->AsCall()->LateArgs())
+            {
+                fgSetTreeSeqHelper(use.GetNode(), isLIR);
+            }
+
+            if ((tree->AsCall()->gtCallType == CT_INDIRECT) && (tree->AsCall()->gtCallCookie != nullptr))
+            {
+                fgSetTreeSeqHelper(tree->AsCall()->gtCallCookie, isLIR);
+            }
+
+            if (tree->AsCall()->gtCallType == CT_INDIRECT)
+            {
+                fgSetTreeSeqHelper(tree->AsCall()->gtCallAddr, isLIR);
+            }
+
+            if (tree->AsCall()->gtControlExpr)
+            {
+                fgSetTreeSeqHelper(tree->AsCall()->gtControlExpr, isLIR);
+            }
+
+            break;
+
+        case GT_ARR_ELEM:
+
+            fgSetTreeSeqHelper(tree->AsArrElem()->gtArrObj, isLIR);
+
+            unsigned dim;
+            for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
+            {
+                fgSetTreeSeqHelper(tree->AsArrElem()->gtArrInds[dim], isLIR);
+            }
+
+            break;
+
+        case GT_ARR_OFFSET:
+            fgSetTreeSeqHelper(tree->AsArrOffs()->gtOffset, isLIR);
+            fgSetTreeSeqHelper(tree->AsArrOffs()->gtIndex, isLIR);
+            fgSetTreeSeqHelper(tree->AsArrOffs()->gtArrObj, isLIR);
+            break;
+
+        case GT_PHI:
+            for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
+            {
+                fgSetTreeSeqHelper(use.GetNode(), isLIR);
+            }
+            break;
+
+        case GT_FIELD_LIST:
+            for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
+            {
+                fgSetTreeSeqHelper(use.GetNode(), isLIR);
+            }
+            break;
+
+        case GT_CMPXCHG:
+            // Evaluate the trees left to right
+            fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpLocation, isLIR);
+            fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpValue, isLIR);
+            fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpComparand, isLIR);
+            break;
+
+        case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+        case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
+            // Evaluate the trees left to right
+            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtIndex, isLIR);
+            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtArrLen, isLIR);
+            break;
+
+        case GT_STORE_DYN_BLK:
+        case GT_DYN_BLK:
+            noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
+            break;
+
+        case GT_INDEX_ADDR:
+            // Evaluate the array first, then the index....
+            assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
+            fgSetTreeSeqHelper(tree->AsIndexAddr()->Arr(), isLIR);
+            fgSetTreeSeqHelper(tree->AsIndexAddr()->Index(), isLIR);
+            break;
+
+        default:
+#ifdef DEBUG
+            gtDispTree(tree);
+            noway_assert(!"unexpected operator");
+#endif // DEBUG
+            break;
+    }
+
+    fgSetTreeSeqFinish(tree, isLIR);
+}
+
+void Compiler::fgSetTreeSeqFinish(GenTree* tree, bool isLIR)
+{
+    // If we are sequencing for LIR:
+    // - Clear the reverse ops flag
+    // - If we are processing a node that does not appear in LIR, do not add it to the list.
+    if (isLIR)
+    {
+        tree->gtFlags &= ~GTF_REVERSE_OPS;
+
+        if (tree->OperIs(GT_LIST, GT_ARGPLACE))
+        {
+            return;
+        }
+    }
+
+    /* Append to the node list */
+    ++fgTreeSeqNum;
+
+#ifdef DEBUG
+    tree->gtSeqNum = fgTreeSeqNum;
+
+    if (verbose & 0)
+    {
+        printf("SetTreeOrder: ");
+        printTreeID(fgTreeSeqLst);
+        printf(" followed by ");
+        printTreeID(tree);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    fgTreeSeqLst->gtNext = tree;
+    tree->gtNext         = nullptr;
+    tree->gtPrev         = fgTreeSeqLst;
+    fgTreeSeqLst         = tree;
+
+    /* Remember the very first node */
+
+    if (!fgTreeSeqBeg)
+    {
+        fgTreeSeqBeg = tree;
+        assert(tree->gtSeqNum == 1);
+    }
 }
 
 /*****************************************************************************
@@ -3959,6 +4690,8 @@ void Compiler::fgSetBlockOrder()
                 fgMarkLoopHead(block);
             }
         }
+
+        fgDispBasicBlocks();
     }
     else
     {
@@ -4052,6 +4785,89 @@ void Compiler::fgSetBlockOrder()
 
 /*****************************************************************************/
 
+void Compiler::fgSetStmtSeq(Statement* stmt)
+{
+    GenTree list; // helper node that we use to start the StmtList
+                  // It's located in front of the first node in the list
+
+    /* Assign numbers and next/prev links for this tree */
+
+    fgTreeSeqNum = 0;
+    fgTreeSeqLst = &list;
+    fgTreeSeqBeg = nullptr;
+
+    fgSetTreeSeqHelper(stmt->GetRootNode(), false);
+
+    /* Record the address of the first node */
+
+    stmt->SetTreeList(fgTreeSeqBeg);
+
+#ifdef DEBUG
+
+    if (list.gtNext->gtPrev != &list)
+    {
+        printf("&list ");
+        printTreeID(&list);
+        printf(" != list.next->prev ");
+        printTreeID(list.gtNext->gtPrev);
+        printf("\n");
+        goto BAD_LIST;
+    }
+
+    GenTree* temp;
+    GenTree* last;
+    for (temp = list.gtNext, last = &list; temp != nullptr; last = temp, temp = temp->gtNext)
+    {
+        if (temp->gtPrev != last)
+        {
+            printTreeID(temp);
+            printf("->gtPrev = ");
+            printTreeID(temp->gtPrev);
+            printf(", but last = ");
+            printTreeID(last);
+            printf("\n");
+
+        BAD_LIST:;
+
+            printf("\n");
+            gtDispTree(stmt->GetRootNode());
+            printf("\n");
+
+            for (GenTree* bad = &list; bad != nullptr; bad = bad->gtNext)
+            {
+                printf("  entry at ");
+                printTreeID(bad);
+                printf(" (prev=");
+                printTreeID(bad->gtPrev);
+                printf(",next=)");
+                printTreeID(bad->gtNext);
+                printf("\n");
+            }
+
+            printf("\n");
+            noway_assert(!"Badly linked tree");
+            break;
+        }
+    }
+#endif // DEBUG
+
+    /* Fix the first node's 'prev' link */
+
+    noway_assert(list.gtNext->gtPrev == &list);
+    list.gtNext->gtPrev = nullptr;
+
+#ifdef DEBUG
+    /* Keep track of the highest # of tree nodes */
+
+    if (BasicBlock::s_nMaxTrees < fgTreeSeqNum)
+    {
+        BasicBlock::s_nMaxTrees = fgTreeSeqNum;
+    }
+#endif // DEBUG
+}
+
+/*****************************************************************************/
+
 void Compiler::fgSetBlockOrder(BasicBlock* block)
 {
     for (Statement* stmt : block->Statements())
@@ -4083,6 +4899,110 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     }
 }
 
+//------------------------------------------------------------------------
+// fgGetFirstNode: Get the first node in the tree, in execution order
+//
+// Arguments:
+//    tree - The top node of the tree of interest
+//
+// Return Value:
+//    The first node in execution order, that belongs to tree.
+//
+// Assumptions:
+//     'tree' must either be a leaf, or all of its constituent nodes must be contiguous
+//     in execution order.
+//     TODO-Cleanup: Add a debug-only method that verifies this.
+
+/* static */
+GenTree* Compiler::fgGetFirstNode(GenTree* tree)
+{
+    GenTree* child = tree;
+    while (child->NumChildren() > 0)
+    {
+        if (child->OperIsBinary() && child->IsReverseOp())
+        {
+            child = child->GetChild(1);
+        }
+        else
+        {
+            child = child->GetChild(0);
+        }
+    }
+    return child;
+}
+
+/*****************************************************************************/
+/*static*/
+Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
+{
+    GenTree* tree = *pTree;
+
+    // If this tree doesn't have the EXCEPT flag set, then there is no
+    // way any of the child nodes could throw, so we can stop recursing.
+    if (!(tree->gtFlags & GTF_EXCEPT))
+    {
+        return Compiler::WALK_SKIP_SUBTREES;
+    }
+
+    switch (tree->gtOper)
+    {
+        case GT_MUL:
+        case GT_ADD:
+        case GT_SUB:
+        case GT_CAST:
+            if (tree->gtOverflow())
+            {
+                return Compiler::WALK_ABORT;
+            }
+            break;
+
+        case GT_INDEX:
+        case GT_INDEX_ADDR:
+            // These two call CORINFO_HELP_RNGCHKFAIL for Debug code
+            if (tree->gtFlags & GTF_INX_RNGCHK)
+            {
+                return Compiler::WALK_ABORT;
+            }
+            break;
+
+        case GT_ARR_BOUNDS_CHECK:
+            return Compiler::WALK_ABORT;
+
+        default:
+            break;
+    }
+
+    return Compiler::WALK_CONTINUE;
+}
+
+/*****************************************************************************/
+/*static*/
+Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
+{
+    GenTree* tree = *pTree;
+
+    if (tree->gtOper == GT_LCLHEAP)
+    {
+        return Compiler::WALK_ABORT;
+    }
+
+    return Compiler::WALK_CONTINUE;
+}
+
+/*****************************************************************************/
+/*static*/
+Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
+{
+    GenTree* tree = *pTree;
+
+    if (tree->gtOper == GT_QMARK)
+    {
+        return Compiler::WALK_ABORT;
+    }
+
+    return Compiler::WALK_CONTINUE;
+}
+
 void Compiler::fgLclFldAssign(unsigned lclNum)
 {
     assert(varTypeIsStruct(lvaTable[lclNum].lvType));
@@ -4090,4 +5010,38 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
     {
         lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
     }
+}
+
+/*****************************************************************************
+ *
+ *  The given basic block contains an array range check; return the label this
+ *  range check is to jump to upon failure.
+ */
+
+//------------------------------------------------------------------------
+// fgRngChkTarget: Create/find the appropriate "range-fail" label for the block.
+//
+// Arguments:
+//   srcBlk  - the block that needs an entry;
+//   kind    - the kind of exception;
+//
+// Return Value:
+//   The target throw helper block this check jumps to upon failure.
+//
+BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind)
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*** Computing fgRngChkTarget for block " FMT_BB "\n", block->bbNum);
+        if (!block->IsLIR())
+        {
+            gtDispStmt(compCurStmt);
+        }
+    }
+#endif // DEBUG
+
+    /* We attach the target label to the containing try block (if any) */
+    noway_assert(!compIsForInlining());
+    return fgAddCodeRef(block, bbThrowIndex(block), kind);
 }

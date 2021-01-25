@@ -11,6 +11,7 @@
 
 // Flowgraph Check and Dump Support
 
+
 #ifdef DEBUG
 void Compiler::fgPrintEdgeWeights()
 {
