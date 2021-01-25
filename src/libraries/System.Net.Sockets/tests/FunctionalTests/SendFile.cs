@@ -12,7 +12,7 @@ using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SendFileTest : FileCleanupTestBase
+    public class SendFileTest
     {
         public static IEnumerable<object[]> SendFile_MemberData()
         {
@@ -37,7 +37,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private string CreateFileToSend(int size, bool sendPreAndPostBuffers, out byte[] preBuffer, out byte[] postBuffer, out Fletcher32 checksum)
+        private TempFile CreateFileToSend(int size, bool sendPreAndPostBuffers, out byte[] preBuffer, out byte[] postBuffer, out Fletcher32 checksum)
         {
             // Create file to send
             var random = new Random();
@@ -56,8 +56,7 @@ namespace System.Net.Sockets.Tests
             byte[] fileBuffer = new byte[fileSize];
             random.NextBytes(fileBuffer);
 
-            string path = Path.GetTempFileName();
-            File.WriteAllBytes(path, fileBuffer);
+            var tempFile = TempFile.Create(fileBuffer);
 
             checksum.Add(fileBuffer, 0, fileBuffer.Length);
 
@@ -69,7 +68,7 @@ namespace System.Net.Sockets.Tests
                 checksum.Add(postBuffer, 0, postBuffer.Length);
             }
 
-            return path;
+            return tempFile;
         }
 
         [Fact]
@@ -119,7 +118,7 @@ namespace System.Net.Sockets.Tests
             byte[] preBuffer;
             byte[] postBuffer;
             Fletcher32 sentChecksum;
-            string filename = CreateFileToSend(size: 1, sendPreAndPostBuffers: false, out preBuffer, out postBuffer, out sentChecksum);
+            using TempFile tempFile = CreateFileToSend(size: 1, sendPreAndPostBuffers: false, out preBuffer, out postBuffer, out sentChecksum);
 
             using var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -129,15 +128,12 @@ namespace System.Net.Sockets.Tests
 
             if (useAsync)
             {
-                await Assert.ThrowsAsync<SocketException>(() => Task.Factory.FromAsync<string>(client.BeginSendFile, client.EndSendFile, filename, null));
+                await Assert.ThrowsAsync<SocketException>(() => Task.Factory.FromAsync<string>(client.BeginSendFile, client.EndSendFile, tempFile.Path, null));
             }
             else
             {
-                Assert.Throws<SocketException>(() => client.SendFile(filename));
+                Assert.Throws<SocketException>(() => client.SendFile(tempFile.Path));
             }
-
-            // Clean up the file we created
-            File.Delete(filename);
         }
 
         [Theory]
@@ -233,8 +229,8 @@ namespace System.Net.Sockets.Tests
         {
             const long FileLength = 100L + int.MaxValue;
 
-            string tmpFile = GetTestFilePath();
-            using (FileStream fs = File.Create(tmpFile))
+            using var tmpFile = TempFile.Create();
+            using (FileStream fs = File.Create(tmpFile.Path))
             {
                 fs.SetLength(FileLength);
             }
@@ -253,11 +249,11 @@ namespace System.Net.Sockets.Tests
                 {
                     if (useAsync)
                     {
-                        await Task.Factory.FromAsync(server.BeginSendFile, server.EndSendFile, tmpFile, null);
+                        await Task.Factory.FromAsync(server.BeginSendFile, server.EndSendFile, tmpFile.Path, null);
                     }
                     else
                     {
-                        server.SendFile(tmpFile);
+                        server.SendFile(tmpFile.Path);
                     }
                 }),
                 Task.Run(() =>
@@ -287,7 +283,7 @@ namespace System.Net.Sockets.Tests
             byte[] preBuffer;
             byte[] postBuffer;
             Fletcher32 sentChecksum;
-            string filename = CreateFileToSend(bytesToSend, sendPreAndPostBuffers, out preBuffer, out postBuffer, out sentChecksum);
+            using TempFile tempFile = CreateFileToSend(bytesToSend, sendPreAndPostBuffers, out preBuffer, out postBuffer, out sentChecksum);
 
             // Start server
             var server = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -337,7 +333,7 @@ namespace System.Net.Sockets.Tests
 
             using (client)
             {
-                client.SendFile(filename, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
+                client.SendFile(tempFile.Path, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
                 client.Shutdown(SocketShutdown.Send);
             }
 
@@ -345,9 +341,6 @@ namespace System.Net.Sockets.Tests
 
             Assert.Equal(bytesToSend, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
-
-            // Clean up the file we created
-            File.Delete(filename);
         }
 
         [Fact]
@@ -365,13 +358,13 @@ namespace System.Net.Sockets.Tests
                     Task socketOperation = Task.Run(() =>
                     {
                         // Create a large file that will cause SendFile to block until the peer starts reading.
-                        string filename = GetTestFilePath();
-                        using (var fs = new FileStream(filename, FileMode.CreateNew, FileAccess.Write))
+                        using var tempFile = TempFile.Create();
+                        using (var fs = new FileStream(tempFile.Path, FileMode.CreateNew, FileAccess.Write))
                         {
                             fs.SetLength(20 * 1024 * 1024 /* 20MB */);
                         }
 
-                        socket1.SendFile(filename);
+                        socket1.SendFile(tempFile.Path);
                     });
 
                     // Wait a little so the operation is started.
@@ -433,7 +426,7 @@ namespace System.Net.Sockets.Tests
             // Create file to send
             byte[] preBuffer, postBuffer;
             Fletcher32 sentChecksum;
-            string filename = CreateFileToSend(bytesToSend, sendPreAndPostBuffers, out preBuffer, out postBuffer, out sentChecksum);
+            using TempFile tempFile = CreateFileToSend(bytesToSend, sendPreAndPostBuffers, out preBuffer, out postBuffer, out sentChecksum);
 
             // Start server
             using (var listener = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -463,7 +456,7 @@ namespace System.Net.Sockets.Tests
                     {
                         await client.ConnectAsync(listener.LocalEndPoint);
                         await Task.Factory.FromAsync(
-                            (callback, state) => client.BeginSendFile(filename, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread, callback, state),
+                            (callback, state) => client.BeginSendFile(tempFile.Path, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread, callback, state),
                             iar => client.EndSendFile(iar),
                             null);
                         client.Shutdown(SocketShutdown.Send);
@@ -477,9 +470,6 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(bytesToSend, bytesReceived);
                 Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
             }
-
-            // Clean up the file we created
-            File.Delete(filename);
         }
     }
 }
