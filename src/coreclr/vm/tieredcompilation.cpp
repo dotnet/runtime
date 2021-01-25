@@ -348,6 +348,8 @@ void TieredCompilationManager::CreateBackgroundWorker()
     {
         if (!s_backgroundWorkAvailableEvent.IsValid())
         {
+            // An auto-reset event is used since it's a bit easier to manage and felt more natural in this case. It is also
+            // possible to use a manual-reset event instead, though there doesn't appear to be anything to gain from doing so.
             s_backgroundWorkAvailableEvent.CreateAutoEvent(false);
         }
 
