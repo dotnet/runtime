@@ -854,26 +854,18 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
 
     HRESULT hr = S_OK;
 
-    WCHAR wszBuffer[64];
-
     if (pModule->IsPEFile())
     {
         LPCWSTR fileName = pModule->GetPath();
         if (*fileName != 0) {
                 retString.Set(fileName);
         } else {
-            hr = UtilLoadStringRC(W("<Unknown>"), wszBuffer, sizeof( wszBuffer ) / sizeof( WCHAR ), true );
-            if (FAILED(hr))
-                COMPlusThrowHR(hr);
-            retString.Set(wszBuffer);
+            retString.Set(W("<Unknown>"));
         }
     }
     else
     {
-        hr = UtilLoadStringRC(W("<In Memory Module>"), wszBuffer, sizeof( wszBuffer ) / sizeof( WCHAR ), true );
-        if (FAILED(hr))
-            COMPlusThrowHR(hr);
-        retString.Set(wszBuffer);
+        retString.Set(W("<In Memory Module>"));
     }
 
     END_QCALL;
