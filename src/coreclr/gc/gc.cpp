@@ -41388,7 +41388,6 @@ void gc_heap::do_post_gc()
     }
 #endif //BGC_SERVO_TUNING
 
-#ifdef SIMPLE_DPRINTF
     dprintf (1, ("*EGC* %Id(gen0:%Id)(%Id)(%d)(%s)(%s)(%s)(ml: %d->%d)",
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
@@ -41399,7 +41398,6 @@ void gc_heap::do_post_gc()
         (settings.promotion ? "P" : "S"),
         settings.entry_memory_load,
         current_memory_load));
-#endif //SIMPLE_DPRINTF
 
     // Now record the gc info.
     last_recorded_gc_info* last_gc_info = 0;
