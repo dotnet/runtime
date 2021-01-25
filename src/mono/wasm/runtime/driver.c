@@ -418,7 +418,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	int len;
 
 	assert (strlen (name) < 100);
-	sprintf (key, "%s_%s_%s", name, class_name, method_name);
+	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
 	len = strlen (key);
 	for (int i = 0; i < len; ++i) {
 		if (key [i] == '.')
@@ -675,7 +675,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 		MonoClass *klass = mono_method_get_class (method);
 		char *async_name = malloc (name_length + 2);
-		sprintf (async_name, "%s$", name);
+		snprintf (async_name, name_length + 2, "%s$", name);
 
 		// look for "<Name>$"
 		MonoMethodSignature *sig = mono_method_get_signature (method, image, mono_method_get_token (method));
