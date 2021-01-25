@@ -9,7 +9,6 @@
 
 // Flowgraph Profile Support
 
-
 //------------------------------------------------------------------------
 // fgHaveProfileData: check if profile data is available
 //

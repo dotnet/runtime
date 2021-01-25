@@ -6,6 +6,8 @@
 #pragma hdrstop
 #endif
 
+// Flowgraph Construction and Maintenance
+
 void Compiler::fgInit()
 {
     impInit();

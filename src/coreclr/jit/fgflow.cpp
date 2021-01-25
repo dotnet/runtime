@@ -9,7 +9,6 @@
 
 // Flowgraph Predecessors and Successors
 
-
 //------------------------------------------------------------------------
 // fgGetPredForBlock: Find and return the predecessor edge corresponding to a given predecessor block.
 //

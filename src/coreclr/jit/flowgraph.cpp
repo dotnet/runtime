@@ -9,7 +9,6 @@
 
 // Flowgraph Miscellany
 
-
 //------------------------------------------------------------------------
 // blockNeedsGCPoll: Determine whether the block needs GC poll inserted
 //
@@ -904,7 +903,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     {
         opModuleIDArg = gtNewIconNode((size_t)moduleID, TYP_I_IMPL);
     }
-#endif
 
     if (bNeedClassID)
     {
@@ -1043,7 +1041,6 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                     }
                 }
             }
-            call->gtCallArgs->GetNext()->SetNext(addArgs);
         }
         else
         {
@@ -2867,7 +2864,7 @@ void Compiler::fgAddInternal()
 
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, gtNewCallArgs(tree));
         }
-        else if (comp->compMethodHasRetVal())
+        else
         {
             noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
 
@@ -3159,7 +3156,6 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
     {
         return fgFirstFuncletBB->bbPrev;
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #endif // FEATURE_EH_FUNCLETS
 
@@ -3455,7 +3451,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 }
             }
         }
-#endif
 
         /* COMPACT blocks if possible */
         if (bPrev->bbJumpKind == BBJ_NONE)
@@ -3861,7 +3856,6 @@ void Compiler::fgDetermineFirstColdBlock()
         {
             return; // To keep Prefast happy
         }
-    }
 
         // If we only have one cold block
         // then it may not be worth it to move it
@@ -4248,10 +4242,6 @@ BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind)
         {
             gtDispStmt(compCurStmt);
         }
-
-        fgVerifyHandlerTab();
-        fgDebugCheckBBlist();
-#endif // DEBUG
     }
 #endif // DEBUG
 
@@ -4492,7 +4482,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         fgSetTreeSeqFinish(tree, isLIR);
         return;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     /* See what kind of a special operator we have here */
 
@@ -4690,8 +4679,6 @@ void Compiler::fgSetBlockOrder()
                 fgMarkLoopHead(block);
             }
         }
-
-        fgDispBasicBlocks();
     }
     else
     {
@@ -5012,36 +4999,40 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
     }
 }
 
-/*****************************************************************************
- *
- *  The given basic block contains an array range check; return the label this
- *  range check is to jump to upon failure.
- */
-
 //------------------------------------------------------------------------
-// fgRngChkTarget: Create/find the appropriate "range-fail" label for the block.
+// fgCheckCallArgUpdate: check if we are replacing a call argument and add GT_PUTARG_TYPE if necessary.
 //
 // Arguments:
-//   srcBlk  - the block that needs an entry;
-//   kind    - the kind of exception;
+//    parent   - the parent that could be a call;
+//    child    - the new child node;
+//    origType - the original child type;
 //
-// Return Value:
-//   The target throw helper block this check jumps to upon failure.
+// Returns:
+//   PUT_ARG_TYPE node if it is needed, nullptr otherwise.
 //
-BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind)
+GenTree* Compiler::fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType)
 {
-#ifdef DEBUG
+    if ((parent == nullptr) || !parent->IsCall())
+    {
+        return nullptr;
+    }
+    const var_types newType = child->TypeGet();
+    if (newType == origType)
+    {
+        return nullptr;
+    }
+    if (varTypeIsStruct(origType) || (genTypeSize(origType) == genTypeSize(newType)))
+    {
+        assert(!varTypeIsStruct(newType));
+        return nullptr;
+    }
+    GenTree* putArgType = gtNewOperNode(GT_PUTARG_TYPE, origType, child);
+#if defined(DEBUG)
     if (verbose)
     {
-        printf("*** Computing fgRngChkTarget for block " FMT_BB "\n", block->bbNum);
-        if (!block->IsLIR())
-        {
-            gtDispStmt(compCurStmt);
-        }
+        printf("For call [%06d] the new argument's type [%06d]", dspTreeID(parent), dspTreeID(child));
+        printf(" does not match the original type size, add a GT_PUTARG_TYPE [%06d]\n", dspTreeID(parent));
     }
-#endif // DEBUG
-
-    /* We attach the target label to the containing try block (if any) */
-    noway_assert(!compIsForInlining());
-    return fgAddCodeRef(block, bbThrowIndex(block), kind);
+#endif
+    return putArgType;
 }
