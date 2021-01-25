@@ -479,13 +479,6 @@
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'arm64'" Include="-A ARM64" />
     </ItemGroup>
 
-     <!-- Select generator platform for VS generator -->
-      <MonoAOTCMakeArgs Condition="'$(OS)' == 'Windows_NT' and '$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x64'" Include="-A x64" />
-      <MonoAOTCMakeArgs Condition="'$(OS)' == 'Windows_NT' and '$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x86'" Include="-A Win32" />
-      <MonoAOTCMakeArgs Condition="'$(OS)' == 'Windows_NT' and '$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'arm'" Include="-A ARM" />
-      <MonoAOTCMakeArgs Condition="'$(OS)' == 'Windows_NT' and '$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'arm64'" Include="-A ARM64" />
-    </ItemGroup>
-
     <PropertyGroup>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoProjectRoot)</_MonoAotCMakeConfigureCommand>
