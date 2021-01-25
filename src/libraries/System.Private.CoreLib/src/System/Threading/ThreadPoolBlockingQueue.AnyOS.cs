@@ -59,31 +59,13 @@ namespace System.Threading
             }
 
             Thread? currentThread = Thread.CurrentThread;
+            ThreadPoolWorkQueue workQueue = ThreadPool.s_workQueue;
             while (true)
             {
                 ConcurrentQueue<object> workItems = _workItems;
                 while (workItems.TryDequeue(out object? workItem))
                 {
-                    // We found work, there may be more work, tell the ThreadPool that we are executing.
-                    // Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
-                    ThreadPool.s_workQueue.EnsureThreadRequested();
-
-                    if (ThreadPool.EnableWorkerTracking)
-                    {
-                        ThreadPoolWorkQueue.DispatchWorkItemWithWorkerTracking(workItem, currentThread);
-                    }
-                    else if (workItem is Task task)
-                    {
-                        task.ExecuteFromThreadPool(currentThread);
-                    }
-                    else
-                    {
-                        Debug.Assert(workItem is IThreadPoolWorkItem);
-                        Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
-                    }
-
-                    ExecutionContext.ResetThreadPoolThread(currentThread);
-                    currentThread.ResetThreadPoolThread();
+                    workQueue.RunWorkItem(currentThread, workItem);
                 }
 
                 MarkCompleted();

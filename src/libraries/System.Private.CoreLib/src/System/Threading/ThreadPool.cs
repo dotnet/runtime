@@ -686,63 +686,15 @@ namespace System.Threading
                         }
                     }
 
-                    if (workQueue.loggingEnabled && FrameworkEventSource.Log.IsEnabled())
-                        FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
-
-                    //
-                    // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
-                    // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
-                    //
-                    workQueue.EnsureThreadRequested();
-
-                    if (ThreadPoolBlockingQueue.IsEnabled)
-                    {
-                        if (ThreadPoolBlockingQueue.RequiresMitigation(workItem))
-                        {
-                            workItem = ThreadPoolBlockingQueue.Enqueue(workItem);
-                        }
-                        else
-                        {
-                            ThreadPoolBlockingQueue.RegisterForBlockingDetection(workItem);
-                        }
-                    }
-
-                    //
-                    // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
-                    //
-#pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.
-                    if (ThreadPool.EnableWorkerTracking)
-                    {
-                        DispatchWorkItemWithWorkerTracking(workItem, currentThread);
-                    }
-                    else if (workItem is Task task)
-                    {
-                        // Check for Task first as it's currently faster to type check
-                        // for Task and then Unsafe.As for the interface, rather than
-                        // vice versa, in particular when the object implements a bunch
-                        // of interfaces.
-                        task.ExecuteFromThreadPool(currentThread);
-                    }
-                    else
-                    {
-                        Debug.Assert(workItem is IThreadPoolWorkItem);
-                        Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
-                    }
-#pragma warning restore CS0162
+                    workQueue.RunWorkItem(currentThread, workItem);
 
                     // Release refs
                     workItem = null;
+
                     if (ThreadPoolBlockingQueue.IsEnabled)
                     {
                         ThreadPoolBlockingQueue.ClearRegistration();
                     }
-
-                    // Return to clean ExecutionContext and SynchronizationContext. This may call user code (AsyncLocal value
-                    // change notifications).
-                    ExecutionContext.ResetThreadPoolThread(currentThread);
-
-                    // Reset thread state after all user code for the work item has completed
-                    currentThread.ResetThreadPoolThread();
 
                     //
                     // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
@@ -791,6 +743,60 @@ namespace System.Threading
                 if (needAnotherThread)
                     outerWorkQueue.EnsureThreadRequested();
             }
+        }
+
+        internal void RunWorkItem(Thread currentThread, object workItem)
+        {
+            if (loggingEnabled && FrameworkEventSource.Log.IsEnabled())
+                FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
+
+            //
+            // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
+            // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
+            //
+            EnsureThreadRequested();
+
+            if (ThreadPoolBlockingQueue.IsEnabled)
+            {
+                if (ThreadPoolBlockingQueue.RequiresMitigation(workItem))
+                {
+                    workItem = ThreadPoolBlockingQueue.Enqueue(workItem);
+                }
+                else
+                {
+                    ThreadPoolBlockingQueue.RegisterForBlockingDetection(workItem);
+                }
+            }
+
+            //
+            // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
+            //
+#pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.
+            if (ThreadPool.EnableWorkerTracking)
+            {
+                DispatchWorkItemWithWorkerTracking(workItem, currentThread);
+            }
+            else if (workItem is Task task)
+            {
+                // Check for Task first as it's currently faster to type check
+                // for Task and then Unsafe.As for the interface, rather than
+                // vice versa, in particular when the object implements a bunch
+                // of interfaces.
+                task.ExecuteFromThreadPool(currentThread);
+            }
+            else
+            {
+                Debug.Assert(workItem is IThreadPoolWorkItem);
+                Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+            }
+#pragma warning restore CS0162
+
+            // Return to clean ExecutionContext and SynchronizationContext. This may call user code (AsyncLocal value
+            // change notifications).
+            ExecutionContext.ResetThreadPoolThread(currentThread);
+
+            // Reset thread state after all user code for the work item has completed
+            currentThread.ResetThreadPoolThread();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
