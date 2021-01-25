@@ -3592,6 +3592,9 @@
   <data name="InvalidOperation_ResetGlobalComWrappersInstance" xml:space="preserve">
     <value>Attempt to update previously set global instance.</value>
   </data>
+  <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
+    <value>Supplying a non-null inner should also be marked as Aggregated.</value>
+  </data>
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
     <value>Length of items must be same as length of keys.</value>
   </data>

@@ -171,7 +171,8 @@ Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
     else
         pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
 
-    _ASSERTE(GetThread() == NULL || GetThread()->GetFrame() <= pFrame);
+    // Assert that the exception frame is on the thread or that the exception frame is the top frame.
+    _ASSERTE(GetThread() == NULL || GetThread()->GetFrame() == (Frame*)-1 || GetThread()->GetFrame() <= pFrame);
 
     return pFrame;
 }
@@ -2012,8 +2013,8 @@ BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers)
     while ((LPVOID)pEHR < pTargetSP)
     {
         //
-        // The only handler type we're allowed to have below the limit on the FS:0 chain in these cases is a nested
-        // exception record, so we verify that here.
+        // The only handler types we're allowed to have below the limit on the FS:0 chain in these cases are a
+        // nested exception record or a fast NExport record, so we verify that here.
         //
         // There is a special case, of course: for an unhandled exception, when the default handler does the exit
         // unwind, we may have an exception that escapes a finally clause, thus replacing the original unhandled
@@ -2025,6 +2026,7 @@ BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers)
         // handler that we're removing, and that's the important point. The handler that ExecuteHandler2 pushes
         // isn't a public export from ntdll, but its named "UnwindHandler" and is physically shortly after
         // ExecuteHandler2 in ntdll.
+        // In this case, we don't want to pop off the NExportSEH handler since it's our outermost handler.
         //
         static HINSTANCE ExecuteHandler2Module = 0;
         static BOOL ExecuteHandler2ModuleInited = FALSE;
@@ -2048,8 +2050,8 @@ BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers)
         else
         {
             // Note: if we can't find the module containing ExecuteHandler2, we'll just be really strict and require
-            // that we're only popping nested handlers.
-            _ASSERTE(IsComPlusNestedExceptionRecord(pEHR) ||
+            // that we're only popping nested handlers or the FastNExportSEH handler.
+            _ASSERTE(FastNExportSEH(pEHR) || IsComPlusNestedExceptionRecord(pEHR) ||
                      ((ExecuteHandler2Module != NULL) && IsIPInModule(ExecuteHandler2Module, (PCODE)pEHR->Handler)));
         }
 #endif // _DEBUG
@@ -2248,7 +2250,11 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     if (!pExInfo->m_pPrevNestedInfo) {
         if (pData->pCurrentExceptionRecord) {
             if (pFrame) _ASSERTE(pData->pCurrentExceptionRecord > pFrame);
-            if (pCf->IsFrameless()) _ASSERTE((ULONG_PTR)pData->pCurrentExceptionRecord >= GetRegdisplaySP(pCf->GetRegisterSet()));
+            // The FastNExport SEH handler can be in the frame we just unwound and as a result just out of range.
+            if (pCf->IsFrameless() && !FastNExportSEH((PEXCEPTION_REGISTRATION_RECORD)pData->pCurrentExceptionRecord))
+            {
+                _ASSERTE((ULONG_PTR)pData->pCurrentExceptionRecord >= GetRegdisplaySP(pCf->GetRegisterSet()));
+            }
         }
         if (pData->pPrevExceptionRecord) {
             // FCALLS have an extra SEH record in debug because of the desctructor

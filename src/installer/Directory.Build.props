@@ -28,12 +28,6 @@
     <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DisableSourceLink)' == 'true'">
-    <EnableSourceLink>false</EnableSourceLink>
-    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
-    <DeterministicSourcePaths>false</DeterministicSourcePaths>
-  </PropertyGroup>
-
   <!-- Set up Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>

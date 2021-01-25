@@ -641,6 +641,12 @@
       <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:System.Linq.CachedReflectionInfo.Zip_TFirst_TSecond_TThird_3(System.Type,System.Type,System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:System.Linq.EnumerableRewriter.ArgsMatch(System.Reflection.MethodInfo,System.Collections.ObjectModel.ReadOnlyCollection{System.Linq.Expressions.Expression},System.Type[])</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">

@@ -9255,22 +9255,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     pResult->accessType = IAT_VALUE;
-
-#if defined(TARGET_X86) && !defined(CROSSGEN_COMPILE)
-    // Deferring X86 support until a need is observed or
-    // time permits investigation into all the potential issues.
-    // https://github.com/dotnet/runtime/issues/33582
-    if (pMD->HasUnmanagedCallersOnlyAttribute())
-    {
-        pResult->addr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMD);
-    }
-    else
-    {
-        pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
-    }
-#else
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
-#endif
 
     EE_TO_JIT_TRANSITION();
 }
@@ -9800,7 +9785,7 @@ namespace
             return CorInfoCallConvExtension::Fastcall;
         case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
-            CorUnmanagedCallingConvention callConvMaybe;
+            CorInfoCallConvExtension callConvMaybe;
             UINT errorResID;
             HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
 
@@ -9809,11 +9794,11 @@ namespace
 
             if (hr == S_OK)
             {
-                return (CorInfoCallConvExtension)callConvMaybe;
+                return callConvMaybe;
             }
             else
             {
-                return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+                return MetaSig::GetDefaultUnmanagedCallingConvention();
             }
         }
         case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:
@@ -9848,25 +9833,7 @@ namespace
                 }
 
                 PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-                switch (sigInfo.GetCallConv())
-                {
-                case pmCallConvCdecl:
-                    return CorInfoCallConvExtension::C;
-                    break;
-                case pmCallConvStdcall:
-                    return CorInfoCallConvExtension::Stdcall;
-                    break;
-                case pmCallConvThiscall:
-                    return CorInfoCallConvExtension::Thiscall;
-                    break;
-                case pmCallConvFastcall:
-                    return CorInfoCallConvExtension::Fastcall;
-                    break;
-                default:
-                    _ASSERTE_MSG(false, "bad callconv");
-                    return CorInfoCallConvExtension::Managed;
-                    break;
-                }
+                return sigInfo.GetCallConv();
             }
             else
             {
@@ -9874,36 +9841,16 @@ namespace
                 _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
                 return CorInfoCallConvExtension::Managed;
 #else
-                CorPinvokeMap unmanagedCallConv;
+                CorInfoCallConvExtension unmanagedCallConv;
                 if (TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
                     if (methodCallConv == IMAGE_CEE_CS_CALLCONV_VARARG)
                     {
                         return CorInfoCallConvExtension::C;
                     }
-                    switch (unmanagedCallConv)
-                    {
-                    case pmCallConvWinapi:
-                        return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
-                        break;
-                    case pmCallConvCdecl:
-                        return CorInfoCallConvExtension::C;
-                        break;
-                    case pmCallConvStdcall:
-                        return CorInfoCallConvExtension::Stdcall;
-                        break;
-                    case pmCallConvThiscall:
-                        return CorInfoCallConvExtension::Thiscall;
-                        break;
-                    case pmCallConvFastcall:
-                        return CorInfoCallConvExtension::Fastcall;
-                        break;
-                    default:
-                        _ASSERTE_MSG(false, "bad callconv");
-                        break;
-                    }
+                    return unmanagedCallConv;
                 }
-                return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+                return MetaSig::GetDefaultUnmanagedCallingConvention();
 #endif // CROSSGEN_COMPILE
             }
         }
@@ -10274,7 +10221,11 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
     pEEInfoOut->sizeOfReversePInvokeFrame = TARGET_POINTER_SIZE * READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits;
+
+    // The following assert doesn't work in cross-bitness scenarios since the pointer size differs.
+#if (defined(TARGET_64BIT) && defined(HOST_64BIT)) || (defined(TARGET_32BIT) && defined(HOST_32BIT))
     _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
+#endif
 
     pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
@@ -12716,7 +12667,6 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
          }
     }
 
-#if !defined(TARGET_X86)
     if (ftn->HasUnmanagedCallersOnlyAttribute())
     {
         // If the stub was generated by the runtime, don't validate
@@ -12727,8 +12677,11 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
             COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(ftn);
 
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+        if (CORProfilerTrackTransitions())
+        {
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
+        }
     }
-#endif // !TARGET_X86
 
     return flags;
 }

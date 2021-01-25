@@ -700,12 +700,6 @@ HRESULT NativeObjectWrapperContext::Create(
 {
     _ASSERTE(external != nullptr && context != nullptr);
 
-    // Aggregated inners are only currently supported for Aggregated
-    // scenarios involving IReferenceTracker.
-    _ASSERTE(inner == nullptr
-        || ((flags & InteropLib::Com::CreateObjectFlags_TrackerObject)
-            && (flags & InteropLib::Com::CreateObjectFlags_Aggregated)));
-
     HRESULT hr;
 
     ComHolder<IReferenceTracker> trackerObject;
