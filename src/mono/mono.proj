@@ -88,6 +88,27 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
+  <Target Name="ProvisionEmscripten"
+          Condition="'$(ShouldProvisionEmscripten)' == 'true'">
+    <PropertyGroup>
+      <EmsdkExt Condition="'$(OS)' != 'Windows_NT'">.sh</EmsdkExt>
+      <EmsdkExt Condition="'$(OS)' == 'Windows_NT'">.bat</EmsdkExt>
+      <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
+      <WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>
+      <EmsdkLocalPath>emsdk</EmsdkLocalPath>
+      <EmscriptenVersion>2.0.11</EmscriptenVersion>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(EMSDK_PATH)" />
+    <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
+          WorkingDirectory="$(WasmLocalPath)"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; emsdk$(EmsdkExt) install $(EmscriptenVersion) &amp;&amp; emsdk$(EmsdkExt) activate $(EmscriptenVersion)"
+          WorkingDirectory="$(EMSDK_PATH)"
+          IgnoreStandardErrorWarningFormat="true" />
+  </Target>
+
   <!-- Copy Mono runtime bits to $(Destination) -->
   <Target Name="CopyMonoRuntimeFilesFromArtifactsToDestination">
     <ItemGroup>
@@ -342,7 +363,7 @@
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(OS)' == 'Windows_NT'">$(EMSDK_PATH)/emsdk_env.bat &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(OS)' == 'Windows_NT'">$(EMSDK_PATH)emsdk_env.bat &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
 
       <_MonoCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoCMakeBuildCommand) --verbose</_MonoCMakeBuildCommand>
@@ -496,8 +517,14 @@
              Properties="NativeVersionFile=$(MonoObjDir)cross\_version.h;RuntimeVersionFile=$(MonoObjDir)cross\runtime_version.h" />
   </Target>
 
+  <!-- The standard set of targets that need to run before the BuildMono target runs -->
+  <PropertyGroup>
+    <MonoDependsOnTargets>CheckEnv;GenerateMonoVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
+    <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
+  </PropertyGroup>
+
   <!-- General targets -->
-  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="CheckEnv;GenerateMonoVersionFile;BuildMonoRuntime;BuildMonoCross">
+  <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="$(MonoDependsOnTargets)">
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true'">$(MonoObjDir)out\bin\monosgen-2.0.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>

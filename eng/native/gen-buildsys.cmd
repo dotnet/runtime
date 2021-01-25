@@ -10,8 +10,9 @@ for %%x in (%*) do Set /A argC+=1
 if %argC% lss 4 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
-setlocal
+setlocal enabledelayedexpansion
 set basePath=%~dp0
+set __repoRoot=%~dp0..\..\
 :: remove quotes
 set "basePath=%basePath:"=%"
 :: remove trailing slash
@@ -40,15 +41,18 @@ if /i "%__Ninja%" == "1" (
 )
 
 if /i "%__Arch%" == "wasm" (
+
     if "%EMSDK_PATH%" == "" (
-       echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
-       exit /B 1
+        if not exist "%__repoRoot%src\mono\wasm\emsdk" (
+            echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
+            exit /B 1
+        )
+
+        set EMSDK_PATH=%__repoRoot%src\mono\wasm\emsdk
+        set EMSDK_PATH=!EMSDK_PATH:\=/!
     )
 
-    echo EMSCRIPTEN ROOT: "%EMSDK_PATH%"
-
-    :: "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1"
-    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=%EMSDK_PATH%/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
     set __UseEmcmake=1
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
