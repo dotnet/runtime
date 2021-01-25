@@ -37,6 +37,13 @@ struct _SgenThreadPoolContext {
 	/* Only accessed with the lock held. */
 	SgenPointerQueue job_queue;
 
+	/*
+	 * LOCKING: Assumes the GC lock is held.
+	 */
+	void **deferred_jobs;
+	int deferred_jobs_len;
+	int deferred_jobs_count;
+
 	SgenThreadPoolThreadInitFunc thread_init_func;
 	SgenThreadPoolIdleJobFunc idle_job_func;
 	SgenThreadPoolContinueIdleJobFunc continue_idle_job_func;
@@ -57,6 +64,19 @@ SgenThreadPoolJob* sgen_thread_pool_job_alloc (const char *name, SgenThreadPoolJ
 void sgen_thread_pool_job_free (SgenThreadPoolJob *job);
 
 void sgen_thread_pool_job_enqueue (int context_id, SgenThreadPoolJob *job);
+
+/*
+ * LOCKING: Assumes the GC lock is held.
+ */
+void sgen_thread_pool_job_enqueue_deferred (int context_id, SgenThreadPoolJob *job);
+
+/*
+ * LOCKING: Assumes the GC lock is held.
+ */
+void sgen_thread_pool_flush_deferred_jobs (int context_id, gboolean signal);
+
+gboolean sgen_thread_pool_have_deferred_jobs (int context_id);
+
 /* This must only be called after the job has been enqueued. */
 void sgen_thread_pool_job_wait (int context_id, SgenThreadPoolJob *job);
 

@@ -195,7 +195,7 @@ namespace Internal.JitInterface
                 Debug.Assert(OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken);
                 Debug.Assert(OwningType == methodWithToken.OwningType);
             }
-            
+
             return equals;
         }
 
@@ -1477,7 +1477,7 @@ namespace Internal.JitInterface
                 bool devirt;
 
                 // Check For interfaces before the bubble check
-                // since interface methods shouldnt change from non-virtual to virtual between versions 
+                // since interface methods shouldnt change from non-virtual to virtual between versions
                 if (targetMethod.OwningType.IsInterface)
                 {
                     // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
@@ -1496,7 +1496,7 @@ namespace Internal.JitInterface
                     // check the Typical TargetMethod, not the Instantiation
                     !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod.GetTypicalMethodDefinition()))
                 {
-                    // For version resiliency we won't de-virtualize all final/sealed method calls.  Because during a 
+                    // For version resiliency we won't de-virtualize all final/sealed method calls.  Because during a
                     // servicing event it is legal to unseal a method or type.
                     //
                     // Note that it is safe to devirtualize in the following cases, since a servicing event cannot later modify it
@@ -1554,7 +1554,7 @@ namespace Internal.JitInterface
                 //    (a) some JITs may call instantiating stubs (it makes the JIT simpler) and
                 //    (b) if the method is a remote stub then the EE will force the
                 //        call through an instantiating stub and
-                //    (c) constraint calls that require runtime context lookup are never resolved 
+                //    (c) constraint calls that require runtime context lookup are never resolved
                 //        to underlying shared generic code
 
                 const CORINFO_CALLINFO_FLAGS LdVirtFtnMask = CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT;
@@ -1627,7 +1627,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                // At this point, we knew it is a virtual call to targetMethod, 
+                // At this point, we knew it is a virtual call to targetMethod,
                 // If it is also a default interface method call, it should go through instantiating stub.
                 useInstantiatingStub = useInstantiatingStub || (targetMethod.OwningType.IsInterface && !originalMethod.IsAbstract);
                 // Insert explicit null checks for cross-version bubble non-interface calls.
@@ -1735,25 +1735,19 @@ namespace Internal.JitInterface
             EcmaModule callerModule;
             bool useInstantiatingStub;
             ceeInfoGetCallInfo(
-                ref pResolvedToken, 
-                pConstrainedResolvedToken, 
-                callerHandle, 
-                flags, 
-                pResult, 
+                ref pResolvedToken,
+                pConstrainedResolvedToken,
+                callerHandle,
+                flags,
+                pResult,
                 out methodToCall,
-                out targetMethod, 
-                out constrainedType, 
-                out originalMethod, 
+                out targetMethod,
+                out constrainedType,
+                out originalMethod,
                 out exactType,
                 out callerMethod,
                 out callerModule,
                 out useInstantiatingStub);
-
-            var targetDetails = _compilation.TypeSystemContext.Target;
-            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsUnmanagedCallersOnly)
-            {
-                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with UnmanagedCallersOnlyAttribute not implemented");
-            }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
@@ -1831,7 +1825,7 @@ namespace Internal.JitInterface
                     break;
 
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE:
-                    // Only calls within the CoreLib version bubble support fragile NI codegen with vtable based calls, for better performance (because 
+                    // Only calls within the CoreLib version bubble support fragile NI codegen with vtable based calls, for better performance (because
                     // CoreLib and the runtime will always be updated together anyways - this is a special case)
 
                     // Eagerly check abi stability here as no symbol usage can be used to delay the check
@@ -1912,7 +1906,7 @@ namespace Internal.JitInterface
             MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
             TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);
 
-            // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup. 
+            // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
             if (!contextMethod.IsSharedByGenericInstantiations)
             {
                 ThrowHelper.ThrowInvalidProgramException();
@@ -1968,7 +1962,7 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(entryKind.ToString());
             }
 
-            // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a 
+            // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a
             // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
         }
 
@@ -2441,7 +2435,7 @@ namespace Internal.JitInterface
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
-        private int SizeOfReversePInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
+        private int SizeOfReversePInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits(_compilation.NodeFactory.Target.Architecture) * _compilation.NodeFactory.Target.PointerSize;
 
         private void setEHcount(uint cEH)
         {

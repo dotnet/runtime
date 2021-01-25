@@ -199,12 +199,12 @@ namespace System.IO
                         Debug.Assert(s_scheduledStreamsCount == 0);
                         s_scheduledStreamsCount = 1;
                         var runLoopStarted = new ManualResetEventSlim();
-                        new Thread(args =>
+                        new Thread(static args =>
                         {
                             object[] inputArgs = (object[])args!;
                             WatchForFileSystemEventsThreadStart((ManualResetEventSlim)inputArgs[0], (SafeEventStreamHandle)inputArgs[1]);
                         })
-                        { IsBackground = true }.Start(new object[] { runLoopStarted, eventStream });
+                        { IsBackground = true }.UnsafeStart(new object[] { runLoopStarted, eventStream });
 
                         runLoopStarted.Wait();
                     }

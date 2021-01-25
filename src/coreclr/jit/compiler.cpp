@@ -2600,6 +2600,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS));
     }
 
     opts.jitFlags  = jitFlags;
@@ -2903,7 +2904,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
         JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema "
                 "elements, %d runs\n",
-                info.compFullName, hr, fgPgoSchema, fgPgoData, fgPgoSchemaCount, fgNumProfileRuns);
+                info.compFullName, hr, dspPtr(fgPgoSchema), dspPtr(fgPgoData), fgPgoSchemaCount, fgNumProfileRuns);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -6184,10 +6185,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     {
         bool unused;
         info.compCallConv = info.compCompHnd->getUnmanagedCallConv(methodInfo->ftn, nullptr, &unused);
+        info.compArgOrder = Target::g_tgtUnmanagedArgOrder;
     }
     else
     {
         info.compCallConv = CorInfoCallConvExtension::Managed;
+        info.compArgOrder = Target::g_tgtArgOrder;
     }
 
     info.compIsVarArgs = false;

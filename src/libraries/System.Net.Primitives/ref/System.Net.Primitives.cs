@@ -208,6 +208,7 @@ namespace System.Net
         public static readonly System.Version Version10;
         public static readonly System.Version Version11;
         public static readonly System.Version Version20;
+        public static readonly System.Version Version30;
     }
     public partial interface ICredentials
     {

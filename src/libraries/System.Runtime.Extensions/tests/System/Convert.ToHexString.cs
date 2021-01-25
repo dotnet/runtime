@@ -1,5 +1,9 @@
-﻿using System.Text;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Xunit;
+using System.Text;
+using System.Collections.Generic;
 
 namespace System.Tests
 { 
@@ -61,6 +65,46 @@ namespace System.Tests
         public static unsafe void InputTooLarge()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bytes", () => Convert.ToHexString(new ReadOnlySpan<byte>((void*)0, Int32.MaxValue)));
+        }
+
+        public static IEnumerable<object[]> ToHexStringTestData()
+        {
+            yield return new object[] { new byte[0], "" };
+            yield return new object[] { new byte[] { 0x00 }, "00" };
+            yield return new object[] { new byte[] { 0x01 }, "01" };
+            yield return new object[] { new byte[] { 0xFF }, "FF" };
+            yield return new object[] { new byte[] { 0x00, 0x00 }, "0000" };
+            yield return new object[] { new byte[] { 0xAB, 0xCD }, "ABCD" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF }, "FFFF" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x00 }, "000000" };
+            yield return new object[] { new byte[] { 0x01, 0x02, 0x03 }, "010203" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFF }, "FFFFFF" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x00, 0x00 }, "00000000" };
+            yield return new object[] { new byte[] { 0xAB, 0xCD, 0xEF, 0x12 }, "ABCDEF12" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, "FFFFFFFF" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00 }, "0000000000" };
+            yield return new object[] { new byte[] { 0xAB, 0xCD, 0xEF, 0x12, 0x34 }, "ABCDEF1234" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, "FFFFFFFFFF" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, "000000000000" };
+            yield return new object[] { new byte[] { 0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56 }, "ABCDEF123456" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, "FFFFFFFFFFFF" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, "00000000000000" };
+            yield return new object[] { new byte[] { 0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78 }, "ABCDEF12345678" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, "FFFFFFFFFFFFFF" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, "0000000000000000" };
+            yield return new object[] { new byte[] { 0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78, 0x90 }, "ABCDEF1234567890" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, "FFFFFFFFFFFFFFFF" };
+            yield return new object[] { new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, "000000000000000000" };
+            yield return new object[] { new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 }, "010203040506070809" };
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, "FFFFFFFFFFFFFFFFFF" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToHexStringTestData))]
+        public static unsafe void ToHexString(byte[] input, string expected)
+        {
+            string actual = Convert.ToHexString(input);
+            Assert.Equal(expected, actual);
         }
     }
 }

@@ -19,10 +19,11 @@ namespace ILCompiler.Reflection.ReadyToRun
     public abstract class ReadyToRunSignature
     {
         private SignatureDecoder _decoder;
-
-        public ReadyToRunSignature(SignatureDecoder decoder)
+        public ReadyToRunFixupKind FixupKind {get;private set;}
+        public ReadyToRunSignature(SignatureDecoder decoder, ReadyToRunFixupKind fixupKind)
         {
             _decoder = decoder;
+            FixupKind = fixupKind;
         }
 
         public string ToString(SignatureFormattingOptions options)
@@ -40,7 +41,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public class TodoSignature : ReadyToRunSignature
     {
-        public TodoSignature(SignatureDecoder decoder) : base(decoder)
+        public TodoSignature(SignatureDecoder decoder, ReadyToRunFixupKind fixupKind) : base(decoder, fixupKind)
         {
         }
     }
@@ -49,7 +50,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     {
         public uint MethodDefToken { get; set; }
 
-        public MethodDefEntrySignature(SignatureDecoder decoder) : base(decoder)
+        public MethodDefEntrySignature(SignatureDecoder decoder) : base(decoder, ReadyToRunFixupKind.MethodEntry_DefToken)
         {
         }
     }
@@ -58,7 +59,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     {
         public uint MethodRefToken { get; set; }
 
-        public MethodRefEntrySignature(SignatureDecoder decoder) : base(decoder)
+        public MethodRefEntrySignature(SignatureDecoder decoder) : base(decoder, ReadyToRunFixupKind.MethodEntry_RefToken)
         {
         }
     }
@@ -1135,7 +1136,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="builder">Output signature builder</param>
         private ReadyToRunSignature ParseSignature(ReadyToRunFixupKind fixupType, StringBuilder builder)
         {
-            ReadyToRunSignature result = new TodoSignature(this);
+            ReadyToRunSignature result = new TodoSignature(this, fixupType);
             switch (fixupType)
             {
                 case ReadyToRunFixupKind.ThisObjDictionaryLookup:

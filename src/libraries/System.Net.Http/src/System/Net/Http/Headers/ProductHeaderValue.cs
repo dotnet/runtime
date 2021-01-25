@@ -8,8 +8,8 @@ namespace System.Net.Http.Headers
 {
     public class ProductHeaderValue : ICloneable
     {
-        private string _name = null!;
-        private string? _version;
+        private readonly string _name;
+        private readonly string? _version;
 
         public string Name
         {
@@ -46,10 +46,6 @@ namespace System.Net.Http.Headers
 
             _name = source._name;
             _version = source._version;
-        }
-
-        private ProductHeaderValue()
-        {
         }
 
         public override string ToString()
@@ -124,14 +120,13 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            ProductHeaderValue result = new ProductHeaderValue();
-            result._name = input.Substring(startIndex, nameLength);
+            string name = input.Substring(startIndex, nameLength);
             int current = startIndex + nameLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
             if ((current == input.Length) || (input[current] != '/'))
             {
-                parsedValue = result;
+                parsedValue = new ProductHeaderValue(name);
                 return current - startIndex;
             }
 
@@ -146,12 +141,12 @@ namespace System.Net.Http.Headers
                 return 0; // If there is a '/' separator it must be followed by a valid token.
             }
 
-            result._version = input.Substring(current, versionLength);
+            string version = input.Substring(current, versionLength);
 
             current = current + versionLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
-            parsedValue = result;
+            parsedValue = new ProductHeaderValue(name, version);
             return current - startIndex;
         }
 

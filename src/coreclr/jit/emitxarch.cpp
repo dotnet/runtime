@@ -8821,7 +8821,7 @@ void emitter::emitDispIns(
             }
             else if (ins == INS_mov_xmm2i)
             {
-                printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), EA_16BYTE));
+                printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
             }
             else if (ins == INS_pmovmskb)
             {

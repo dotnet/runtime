@@ -2763,6 +2763,73 @@ void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingC
     }
 }
 
+void ILStubLinker::SetStubTargetCallingConv(CorInfoCallConvExtension callConv)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(callConv != CorInfoCallConvExtension::Managed);
+
+    const CorCallingConvention originalCallingConvention = m_nativeFnSigBuilder.GetCallingConv();
+    if (originalCallingConvention != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+    {
+        // For performance reasons, we try to encode the calling convention using
+        // the flags-based method if possible before using modopts.
+        switch (callConv)
+        {
+            case CorInfoCallConvExtension::C:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_C);
+                break;
+            case CorInfoCallConvExtension::Stdcall:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_STDCALL);
+                break;
+            case CorInfoCallConvExtension::Thiscall:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_THISCALL);
+                break;
+            case CorInfoCallConvExtension::Fastcall:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_FASTCALL);
+                break;
+            default:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_UNMANAGED);
+                break;
+        }
+    }
+
+    // We may have updated the calling convention above, so reread the calling convention
+    // from the signature builder instead of using originalCallingConvention.
+    if (m_nativeFnSigBuilder.GetCallingConv() == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+    {
+        // In this case we're already using the "Unmanaged" calling convention, so encode the specific callconv
+        // with the requisite modopts for the calling convention.
+        switch (callConv)
+        {
+            case CorInfoCallConvExtension::C:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_CDECL)));
+                break;
+            case CorInfoCallConvExtension::Stdcall:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_STDCALL)));
+                break;
+            case CorInfoCallConvExtension::Thiscall:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_THISCALL)));
+                break;
+            case CorInfoCallConvExtension::Fastcall:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL)));
+                break;
+            default:
+                _ASSERTE("Unknown calling convention. Unable to encode it in the native function pointer signature.");
+                break;
+        }
+    }
+
+    if (!m_fIsReverseStub)
+    {
+        if (originalCallingConvention & CORINFO_CALLCONV_HASTHIS)
+        {
+            // Our calling convention had an implied-this beforehand and now it doesn't.
+            // Account for this in the target stack delta.
+            m_iTargetStackDelta++;
+        }
+    }
+}
+
 static size_t GetManagedTypeForMDArray(LocalDesc* pLoc, Module* pModule, PCCOR_SIGNATURE psigManagedArg, SigTypeContext *pTypeContext)
 {
     CONTRACTL
