@@ -1331,9 +1331,6 @@ namespace System.Diagnostics
                     /// <summary>
                     /// Create a property fetcher for a propertyName
                     /// </summary>
-                    [DynamicDependency("#ctor(System.Type)", typeof(EnumeratePropertyFetch<>))]
-                    [DynamicDependency("#ctor(System.Type,System.Reflection.PropertyInfo)", typeof(RefTypedFetchProperty<,>))]
-                    [DynamicDependency("#ctor(System.Type,System.Reflection.PropertyInfo)", typeof(ValueTypedFetchProperty<,>))]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
                         if (propertyName == null)
@@ -1382,10 +1379,14 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
+                            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:RequiresUnreferencedCode",
+                                Justification = "If the property is trimmed, a message gets logged to inform the user.")]
+                            static PropertyInfo? GetProperty(TypeInfo type, string name) => type.GetDeclaredProperty(name);
+
+                            PropertyInfo? propertyInfo = GetProperty(typeInfo, propertyName);
                             if (propertyInfo == null)
                             {
-                                Logger.Message($"Property {propertyName} not found on {type}");
+                                Logger.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
                                 return new PropertyFetch(type);
                             }
                             // Delegate creation below is incompatible with static properties.

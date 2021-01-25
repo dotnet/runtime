@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
@@ -29,8 +29,6 @@
     <None Include="DiagnosticSourceUsersGuide.md" />
   </ItemGroup>
   <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1'">
