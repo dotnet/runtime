@@ -3343,7 +3343,7 @@
     <value>Array of type {0} is not supported.</value>
   </data>
   <data name="Xml_MissingSerializationCodeException" xml:space="preserve">
-    <value>Type '{0}' cannot be serialized by XmlSerializer, serialization code for the type is missing. Consult the SDK documentation for adding it as a root serialization type. http://go.microsoft.com/fwlink/?LinkId=613136</value>
+    <value>Type '{0}' cannot be serialized by XmlSerializer, serialization code for the type is missing. Consult the SDK documentation for adding it as a root serialization type. https://go.microsoft.com/fwlink/?LinkId=613136</value>
   </data>
   <data name="Xslt_UpperCaseFirstNotSupported" xml:space="preserve">
     <value>Uppercase-First sorting option is not supported.</value>
@@ -3392,9 +3392,6 @@
   </data>
   <data name="DirectoryAccessDenied" xml:space="preserve">
     <value>Access to directory {0} is denied.  The process under which XmlSerializer is running does not have sufficient permission to access the directory.</value>
-  </data>
-  <data name="Xslt_NotSupported" xml:space="preserve">
-    <value>Compilation of XSLT is not supported on this platform.</value>
   </data>
   <data name="ErrLoadAssembly" xml:space="preserve">
     <value>File or assembly name '{0}', or one of its dependencies, was not found.</value>

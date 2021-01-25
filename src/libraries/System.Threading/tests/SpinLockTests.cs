@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -13,7 +12,7 @@ namespace System.Threading.Tests
     /// </summary>
     public class SpinLockTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void EnterExit()
         {
             var sl = new SpinLock();
@@ -70,7 +69,7 @@ namespace System.Threading.Tests
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(2, false)]
         [InlineData(128, false)]
         [InlineData(256, false)]
@@ -140,7 +139,7 @@ namespace System.Threading.Tests
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(2, false)]
         [InlineData(128, false)]
         [InlineData(256, false)]
@@ -194,7 +193,7 @@ namespace System.Threading.Tests
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(2, false)]
         [InlineData(128, false)]
         [InlineData(256, false)]

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -50,7 +49,7 @@ namespace Microsoft.Win32.SafeHandles
     /// </summary>
     internal sealed class SafeSharedX509NameHandle : SafeInteriorHandle
     {
-        private SafeSharedX509NameHandle() :
+        public SafeSharedX509NameHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -62,7 +61,7 @@ namespace Microsoft.Win32.SafeHandles
     /// </summary>
     internal sealed class SafeSharedX509NameStackHandle : SafeInteriorHandle
     {
-        private SafeSharedX509NameStackHandle() :
+        public SafeSharedX509NameStackHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,10 +33,10 @@ namespace System.Data.Common
 
         // synonyms hashtable is meant to be read-only translation of parsed string
         // keywords/synonyms to a known keyword string
-        public DbConnectionOptions(string connectionString, Dictionary<string, string> synonyms, bool useOdbcRules)
+        public DbConnectionOptions(string? connectionString, Dictionary<string, string>? synonyms, bool useOdbcRules)
         {
             _useOdbcRules = useOdbcRules;
-            _parsetable = new Dictionary<string, string>();
+            _parsetable = new Dictionary<string, string?>();
             _usersConnectionString = ((null != connectionString) ? connectionString : "");
 
             // first pass on parsing, initial syntax check
@@ -49,11 +48,11 @@ namespace System.Data.Common
             }
         }
 
-        internal Dictionary<string, string> Parsetable => _parsetable;
+        internal Dictionary<string, string?> Parsetable => _parsetable;
 
-        public string this[string keyword] => (string)_parsetable[keyword];
+        public string? this[string keyword] => _parsetable[keyword];
 
-        internal static void AppendKeyValuePairBuilder(StringBuilder builder, string keyName, string keyValue, bool useOdbcRules)
+        internal static void AppendKeyValuePairBuilder(StringBuilder builder, string keyName, string? keyValue, bool useOdbcRules)
         {
             ADP.CheckArgumentNull(builder, nameof(builder));
             ADP.CheckArgumentLength(keyName, nameof(keyName));
@@ -138,7 +137,7 @@ namespace System.Data.Common
             int copyPosition = 0;
 
             var builder = new StringBuilder(_usersConnectionString.Length);
-            for (NameValuePair current = _keyChain; null != current; current = current.Next)
+            for (NameValuePair? current = _keyChain; null != current; current = current.Next)
             {
                 if ((current.Name == keyword) && (current.Value == this[keyword]))
                 {
@@ -164,7 +163,7 @@ namespace System.Data.Common
         }
 
         [Conditional("DEBUG")]
-        static partial void DebugTraceKeyValuePair(string keyname, string keyvalue, Dictionary<string, string> synonyms)
+        static partial void DebugTraceKeyValuePair(string keyname, string? keyvalue, Dictionary<string, string>? synonyms)
         {
             Debug.Assert(keyname == keyname.ToLowerInvariant(), "missing ToLower");
 

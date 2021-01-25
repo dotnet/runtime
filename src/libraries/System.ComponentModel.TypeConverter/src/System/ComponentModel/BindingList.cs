@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Collections.ObjectModel;
@@ -82,7 +81,7 @@ namespace System.ComponentModel
                 }
 
                 const BindingFlags BindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.CreateInstance;
-                return itemType.GetConstructor(BindingFlags, null, Array.Empty<Type>(), null) != null;
+                return itemType.GetConstructor(BindingFlags, null, Type.EmptyTypes, null) != null;
             }
         }
 

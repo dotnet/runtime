@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
 
-namespace Microsoft.Extensions.Internal 
+namespace Microsoft.Extensions.Internal
 {
     internal struct ValueStopwatch
     {
@@ -31,9 +30,9 @@ namespace Microsoft.Extensions.Internal
                 throw new InvalidOperationException("An uninitialized, or 'default', ValueStopwatch cannot be used to get elapsed time.");
             }
 
-            var end = Stopwatch.GetTimestamp();
-            var timestampDelta = end - _startTimestamp;
-            var ticks = (long)(TimestampToTicks * timestampDelta);
+            long end = Stopwatch.GetTimestamp();
+            long timestampDelta = end - _startTimestamp;
+            long ticks = (long)(TimestampToTicks * timestampDelta);
             return new TimeSpan(ticks);
         }
     }

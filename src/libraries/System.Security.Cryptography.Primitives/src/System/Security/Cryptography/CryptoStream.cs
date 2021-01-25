@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -101,9 +101,23 @@ namespace System.Security.Cryptography
         // byte[] ciphertext = ms.ToArray();
         // cs.Close();
         public void FlushFinalBlock() =>
-            FlushFinalBlockAsync(useAsync: false).AsTask().GetAwaiter().GetResult();
+            FlushFinalBlockAsync(useAsync: false, default).AsTask().GetAwaiter().GetResult();
 
-        private async ValueTask FlushFinalBlockAsync(bool useAsync)
+        /// <summary>
+        /// Asynchronously updates the underlying data source or repository with the
+        /// current state of the buffer, then clears the buffer.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous flush operation.</returns>
+        public ValueTask FlushFinalBlockAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return ValueTask.FromCanceled(cancellationToken);
+
+            return FlushFinalBlockAsync(useAsync: true, cancellationToken);
+        }
+
+        private async ValueTask FlushFinalBlockAsync(bool useAsync, CancellationToken cancellationToken)
         {
             if (_finalBlockTransformed)
                 throw new NotSupportedException(SR.Cryptography_CryptoStream_FlushFinalBlockTwice);
@@ -117,7 +131,7 @@ namespace System.Security.Cryptography
                 byte[] finalBytes = _transform.TransformFinalBlock(_inputBuffer!, 0, _inputBufferIndex);
                 if (useAsync)
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(finalBytes)).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(finalBytes), cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -130,14 +144,14 @@ namespace System.Security.Cryptography
             {
                 if (!innerCryptoStream.HasFlushedFinalBlock)
                 {
-                    await innerCryptoStream.FlushFinalBlockAsync(useAsync).ConfigureAwait(false);
+                    await innerCryptoStream.FlushFinalBlockAsync(useAsync, cancellationToken).ConfigureAwait(false);
                 }
             }
             else
             {
                 if (useAsync)
                 {
-                    await _stream.FlushAsync().ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -154,7 +168,10 @@ namespace System.Security.Cryptography
 
         public override void Flush()
         {
-            return;
+            if (_canWrite)
+            {
+                _stream.Flush();
+            }
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
@@ -168,7 +185,8 @@ namespace System.Security.Cryptography
 
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled(cancellationToken) :
-                Task.CompletedTask;
+                !_canWrite ? Task.CompletedTask :
+                _stream.FlushAsync(cancellationToken);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -201,15 +219,14 @@ namespace System.Security.Cryptography
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
 
-            SemaphoreSlim semaphore = AsyncActiveSemaphore;
-            await semaphore.WaitAsync(cancellationToken).ForceAsync();
+            await AsyncActiveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 return await ReadAsyncCore(buffer, offset, count, cancellationToken, useAsync: true).ConfigureAwait(false);
             }
             finally
             {
-                semaphore.Release();
+                _lazyAsyncActiveSemaphore.Release();
             }
         }
 
@@ -256,14 +273,9 @@ namespace System.Security.Cryptography
 
         private void CheckReadArguments(byte[] buffer, int offset, int count)
         {
+            ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
         }
 
         private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken, bool useAsync)
@@ -483,15 +495,14 @@ namespace System.Security.Cryptography
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
 
-            SemaphoreSlim semaphore = AsyncActiveSemaphore;
-            await semaphore.WaitAsync(cancellationToken).ForceAsync();
+            await AsyncActiveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 await WriteAsyncCore(buffer, offset, count, cancellationToken, useAsync: true).ConfigureAwait(false);
             }
             finally
             {
-                semaphore.Release();
+                _lazyAsyncActiveSemaphore.Release();
             }
         }
 
@@ -503,14 +514,9 @@ namespace System.Security.Cryptography
 
         private void CheckWriteArguments(byte[] buffer, int offset, int count)
         {
+            ValidateBufferArguments(buffer, offset, count);
             if (!CanWrite)
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
         }
 
         private async ValueTask WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken, bool useAsync)
@@ -692,7 +698,7 @@ namespace System.Security.Cryptography
             {
                 if (!_finalBlockTransformed)
                 {
-                    await FlushFinalBlockAsync(useAsync: true).ConfigureAwait(false);
+                    await FlushFinalBlockAsync(useAsync: true, default).ConfigureAwait(false);
                 }
 
                 if (!_leaveOpen)
@@ -741,6 +747,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [MemberNotNull(nameof(_lazyAsyncActiveSemaphore))]
         private SemaphoreSlim AsyncActiveSemaphore
         {
             get

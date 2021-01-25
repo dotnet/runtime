@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -270,6 +269,15 @@ namespace System.Net.Sockets.Tests
         [InlineData(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)]
         public void Ctor_SafeHandle_BasicPropertiesPropagate_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
+            bool isRawPacket = (addressFamily == AddressFamily.Packet) &&
+                               (socketType == SocketType.Raw);
+            if (isRawPacket)
+            {
+                // protocol is the IEEE 802.3 protocol number in network byte order.
+                const short ETH_P_ARP = 0x0806;
+                protocolType = (ProtocolType)IPAddress.HostToNetworkOrder(ETH_P_ARP);
+            }
+
             Socket tmpOrig;
             try
             {
@@ -333,7 +341,13 @@ namespace System.Net.Sockets.Tests
 
             Assert.Equal(addressFamily, copy.AddressFamily);
             Assert.Equal(socketType, copy.SocketType);
-            Assert.Equal(protocolType, copy.ProtocolType);
+            ProtocolType expectedProtocolType = protocolType;
+            if (isRawPacket)
+            {
+                // raw packet doesn't support getting the protocol using getsockopt SO_PROTOCOL.
+                expectedProtocolType = ProtocolType.Unspecified;
+            }
+            Assert.Equal(expectedProtocolType, copy.ProtocolType);
 
             Assert.True(orig.Blocking);
             Assert.True(copy.Blocking);
@@ -571,10 +585,10 @@ namespace System.Net.Sockets.Tests
             {
                 Assert.Equal(AddressFamily.Unknown, netlink.AddressFamily);
 
-                netlink.Bind(new NlEndPoint(Process.GetCurrentProcess().Id));
+                netlink.Bind(new NlEndPoint(Environment.ProcessId));
 
                 nl_request req = default;
-                req.nlh.nlmsg_pid = (uint)Process.GetCurrentProcess().Id;
+                req.nlh.nlmsg_pid = (uint)Environment.ProcessId;
                 req.nlh.nlmsg_type = RTM_GETROUTE;  /* We wish to get routes */
                 req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
                 req.nlh.nlmsg_len = sizeof(nl_request);
@@ -595,7 +609,7 @@ namespace System.Net.Sockets.Tests
 
                 if (nlh.nlmsg_type == NLMSG_ERROR)
                 {
-                    MemoryMarshal.TryRead<nlmsgerr>(response.AsSpan().Slice(sizeof(nlmsghdr)), out nlmsgerr err);
+                    MemoryMarshal.TryRead<nlmsgerr>(response.AsSpan(sizeof(nlmsghdr)), out nlmsgerr err);
                     _output.WriteLine("Netlink request failed with {0}", err.error);
                 }
 

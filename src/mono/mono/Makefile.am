@@ -23,12 +23,8 @@ native_unit_test_dirs = unit-tests
 culture_dirs = culture
 endif
 
-if ENABLE_PERFTRACING
-eventpipe_dirs = eventpipe
-endif
-
 if ENABLE_NETCORE
-SUBDIRS = eglib arch utils sgen zlib $(eventpipe_dirs) metadata mini profiler $(native_unit_test_dirs)
+SUBDIRS = eglib arch utils sgen zlib metadata mini profiler $(native_unit_test_dirs)
 else
 
 if CROSS_COMPILING

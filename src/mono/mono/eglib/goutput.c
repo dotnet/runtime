@@ -183,6 +183,12 @@ g_log (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, .
 	va_end (args);
 }
 
+void
+g_log_disabled (const gchar *log_domain, GLogLevelFlags log_level, const char *file, int line)
+{
+	g_log (log_domain, log_level, "%s:%d <disabled>", file, line);
+}
+
 static char *failure_assertion = NULL;
 
 const char *

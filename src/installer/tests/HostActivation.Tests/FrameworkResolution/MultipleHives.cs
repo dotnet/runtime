@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -79,7 +78,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     SharedState.FrameworkReferenceApp,
                     new TestSettings()
                         .WithRuntimeConfigCustomizer(runtimeConfig)
-                        .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath),
+                        .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath)
+                        .WithEnvironment( // Redirect the default install location to an invalid location so that a machine-wide install is not used
+                            Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
+                            System.IO.Path.Combine(SharedState.DotNetMainHive.BinPath, "invalid")),
                     // Must enable multi-level lookup otherwise multiple hives are not enabled
                     multiLevelLookup: true);
             }

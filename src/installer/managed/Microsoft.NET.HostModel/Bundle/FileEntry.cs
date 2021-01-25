@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 
@@ -8,8 +7,8 @@ namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     /// FileEntry: Records information about embedded files.
-    /// 
-    /// The bundle manifest records the following meta-data for each 
+    ///
+    /// The bundle manifest records the following meta-data for each
     /// file embedded in the bundle:
     /// * Type       (1 byte)
     /// * NameLength (7-bit extension encoding, typically 1 byte)
@@ -29,7 +28,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public FileEntry(FileType fileType, string relativePath, long offset, long size)
         {
             Type = fileType;
-            RelativePath = relativePath.Replace(Path.DirectorySeparatorChar, DirectorySeparatorChar);
+            RelativePath = relativePath.Replace('\\', DirectorySeparatorChar);
             Offset = offset;
             Size = size;
         }
@@ -42,10 +41,6 @@ namespace Microsoft.NET.HostModel.Bundle
             writer.Write(RelativePath);
         }
 
-        public override string ToString()
-        {
-            return string.Format($"{RelativePath} [{Type}] @{Offset} Sz={Size}");
-        }
+        public override string ToString() => $"{RelativePath} [{Type}] @{Offset} Sz={Size}";
     }
 }
-

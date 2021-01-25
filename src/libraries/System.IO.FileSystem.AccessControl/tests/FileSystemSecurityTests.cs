@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information
 
 using System;
 using System.Collections.Generic;
@@ -424,7 +423,7 @@ namespace System.IO
             // - NetCore: a valid name because long paths are correctly handled, and non-existent, as expected
             AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() =>
             {
-                var security = new DirectorySecurity(longDir, AccessControlSections.Owner);
+                new DirectorySecurity(longDir, AccessControlSections.Owner);
             });
             
         }
@@ -441,7 +440,7 @@ namespace System.IO
             // - NetCore: a valid name because long paths are correctly handled, and non-existent, as expected
             AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() =>
             {
-                var security = new FileSecurity(filePath, AccessControlSections.Owner);
+                new FileSecurity(filePath, AccessControlSections.Owner);
             });
         }
 

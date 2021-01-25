@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -185,14 +184,13 @@ namespace System.Collections.Immutable
             /// Gets the maximum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The maximum value in the set.</value>
-            [MaybeNull]
-            internal T Max
+            internal T? Max
             {
                 get
                 {
                     if (this.IsEmpty)
                     {
-                        return default(T)!;
+                        return default;
                     }
 
                     Node n = this;
@@ -209,14 +207,13 @@ namespace System.Collections.Immutable
             /// Gets the minimum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The minimum value in the set.</value>
-            [MaybeNull]
-            internal T Min
+            internal T? Min
             {
                 get
                 {
                     if (this.IsEmpty)
                     {
-                        return default(T)!;
+                        return default;
                     }
 
                     Node n = this;

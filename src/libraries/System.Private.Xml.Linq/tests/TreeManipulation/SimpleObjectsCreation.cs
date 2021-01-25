@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -934,7 +933,7 @@ namespace XLinqTests
             TestLog.Compare(dtd.Name, data[0], "dtd.Name, data[0]");
             TestLog.Compare(dtd.PublicId, data[1], "dtd.SystemId, data[1]");
             TestLog.Compare(dtd.SystemId, data[2], "dtd.PublicId, data[2]");
-            TestLog.Compare(dtd.InternalSubset, data[3], "dtd.InternalSubset, data[3]");
+            TestLog.Compare(dtd.InternalSubset, data[3], data[3], "dtd.InternalSubset, data[3]");
             TestLog.Compare(dtd.NodeType, XmlNodeType.DocumentType, "nodetype");
             TestLog.Compare(dtd.ToString(), serial, "DTD construction");
         }

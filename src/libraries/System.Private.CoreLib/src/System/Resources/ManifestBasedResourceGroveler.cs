@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -422,23 +421,12 @@ namespace System.Resources
         private void HandleSatelliteMissing()
         {
             Debug.Assert(_mediator.MainAssembly != null);
-            string satAssemName = _mediator.MainAssembly.GetName().Name + ".resources.dll";
-            if (_mediator.SatelliteContractVersion != null)
-            {
-                satAssemName += ", Version=" + _mediator.SatelliteContractVersion.ToString();
-            }
-
-            byte[]? token = _mediator.MainAssembly.GetName().GetPublicKeyToken();
-            if (token != null)
-            {
-                int iLen = token.Length;
-                StringBuilder publicKeyTok = new StringBuilder(iLen * 2);
-                for (int i = 0; i < iLen; i++)
-                {
-                    publicKeyTok.Append(token[i].ToString("x", CultureInfo.InvariantCulture));
-                }
-                satAssemName += ", PublicKeyToken=" + publicKeyTok;
-            }
+            AssemblyName mname = _mediator.MainAssembly.GetName();
+            string satAssemName = AssemblyNameFormatter.ComputeDisplayName(
+                mname.Name + ".resources.dll",
+                _mediator.SatelliteContractVersion,
+                null,
+                mname.GetPublicKeyToken());
 
             Debug.Assert(_mediator.NeutralResourcesCulture != null);
             string missingCultureName = _mediator.NeutralResourcesCulture.Name;

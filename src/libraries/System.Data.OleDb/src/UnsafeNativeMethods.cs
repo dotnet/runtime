@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Security;
@@ -338,7 +337,7 @@ namespace System.Data.Common
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetProperties(
                 [In] int cPropertyIDSets,
-                [In] SafeHandle rgPropertyIDSets,
+                [In] SafeHandle? rgPropertyIDSets,
                 [Out] out int pcPropertySets,
                 [Out] out IntPtr prgPropertySets);
 
@@ -373,7 +372,7 @@ namespace System.Data.Common
             System.Data.OleDb.OleDbHResult Execute(
                 [In] IntPtr pUnkOuter,
                 [In] ref Guid riid,
-                [In] System.Data.OleDb.tagDBPARAMS pDBParams,
+                [In] System.Data.OleDb.tagDBPARAMS? pDBParams,
                 [Out] out IntPtr pcRowsAffected,
                 [Out, MarshalAs(UnmanagedType.Interface)] out object ppRowset);
 
@@ -437,7 +436,7 @@ namespace System.Data.Common
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetLiteralInfo(
                 [In] int cLiterals,
-                [In, MarshalAs(UnmanagedType.LPArray)] int[] rgLiterals,
+                [In, MarshalAs(UnmanagedType.LPArray)] int[]? rgLiterals,
                 [Out] out int pcLiteralInfo,
                 [Out] out IntPtr prgLiteralInfo,
                 [Out] out IntPtr ppCharBuffer);
@@ -456,7 +455,7 @@ namespace System.Data.Common
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetProperties(
                 [In] int cPropertyIDSets,
-                [In] SafeHandle rgPropertyIDSets,
+                [In] SafeHandle? rgPropertyIDSets,
                 [Out] out int pcPropertySets,
                 [Out] out IntPtr prgPropertySets);
 
@@ -493,7 +492,7 @@ namespace System.Data.Common
                 [In] IntPtr pUnkOuter,
                 [In] ref Guid rguidSchema,
                 [In] int cRestrictions,
-                [In, MarshalAs(UnmanagedType.LPArray)] object[] rgRestrictions,
+                [In, MarshalAs(UnmanagedType.LPArray)] object?[] rgRestrictions,
                 [In] ref Guid riid,
                 [In] int cPropertySets,
                 [In] IntPtr rgPropertySets,
@@ -716,7 +715,7 @@ namespace System.Data.Common
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetProperties(
                 [In] int cPropertyIDSets,
-                [In] SafeHandle rgPropertyIDSets,
+                [In] SafeHandle? rgPropertyIDSets,
                 [Out] out int pcPropertySets,
                 [Out] out IntPtr prgPropertySets);
 
@@ -724,7 +723,7 @@ namespace System.Data.Common
             System.Data.OleDb.OleDbHResult GetReferencedRowset(
                 [In] IntPtr iOrdinal,
                 [In] ref Guid riid,
-                [Out, MarshalAs(UnmanagedType.Interface)] out IRowset ppRowset);
+                [Out, MarshalAs(UnmanagedType.Interface)] out IRowset? ppRowset);
 
             //[PreserveSig]
             //int GetSpecification(/*deleted parameter signature*/);
@@ -812,7 +811,7 @@ namespace System.Data.Common
                 IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
                 IntPtr pUnkOuter,
                 ref Guid riid,
-                [MarshalAs(UnmanagedType.Interface)] ref object ppCommand);
+                [MarshalAs(UnmanagedType.Interface)] ref object? ppCommand);
 
         //
         // Advapi32.dll Integrated security functions
@@ -841,7 +840,7 @@ namespace System.Data.Common
         [DllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern int CreateWellKnownSid(
             int sidType,
-            byte[] domainSid,
+            byte[]? domainSid,
             [Out] byte[] resultSid,
             ref uint resultSidLength);
     }

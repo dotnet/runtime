@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.CoreSetup.Test;
 using System;
@@ -25,7 +24,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             using (var portableTestAppFixture = new TestProjectFixture("PortableTestApp", RepoDirectories))
             {
                 portableTestAppFixture
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
                 ActivateDotnetTestXunitOnTestProject(RepoDirectories, portableTestAppFixture);
@@ -38,7 +37,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             using (var standaloneTestAppFixture = new TestProjectFixture("StandaloneTestApp", RepoDirectories))
             {
                 standaloneTestAppFixture
-                    .EnsureRestoredForRid(standaloneTestAppFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(standaloneTestAppFixture.CurrentRid)
                     .BuildProject(runtime: standaloneTestAppFixture.CurrentRid);
 
                 ActivateDotnetTestXunitOnTestProject(RepoDirectories, standaloneTestAppFixture);

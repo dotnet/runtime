@@ -1,0 +1,115 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AddHighNarrowingUpper.Vector128.UInt16.cs" />
+    <Compile Include="AddHighNarrowingUpper.Vector128.UInt32.cs" />
+    <Compile Include="AddPairwise.Vector64.Byte.cs" />
+    <Compile Include="AddPairwise.Vector64.Int16.cs" />
+    <Compile Include="AddPairwise.Vector64.Int32.cs" />
+    <Compile Include="AddPairwise.Vector64.SByte.cs" />
+    <Compile Include="AddPairwise.Vector64.Single.cs" />
+    <Compile Include="AddPairwise.Vector64.UInt16.cs" />
+    <Compile Include="AddPairwise.Vector64.UInt32.cs" />
+    <Compile Include="AddPairwiseWidening.Vector64.Byte.cs" />
+    <Compile Include="AddPairwiseWidening.Vector64.Int16.cs" />
+    <Compile Include="AddPairwiseWidening.Vector64.SByte.cs" />
+    <Compile Include="AddPairwiseWidening.Vector64.UInt16.cs" />
+    <Compile Include="AddPairwiseWidening.Vector128.Byte.cs" />
+    <Compile Include="AddPairwiseWidening.Vector128.Int16.cs" />
+    <Compile Include="AddPairwiseWidening.Vector128.Int32.cs" />
+    <Compile Include="AddPairwiseWidening.Vector128.SByte.cs" />
+    <Compile Include="AddPairwiseWidening.Vector128.UInt16.cs" />
+    <Compile Include="AddPairwiseWidening.Vector128.UInt32.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector64.Byte.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector64.Int16.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector64.SByte.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector64.UInt16.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector128.Byte.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector128.Int16.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector128.Int32.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector128.SByte.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector128.UInt16.cs" />
+    <Compile Include="AddPairwiseWideningAndAdd.Vector128.UInt32.cs" />
+    <Compile Include="AddPairwiseWideningAndAddScalar.Vector64.Int32.cs" />
+    <Compile Include="AddPairwiseWideningAndAddScalar.Vector64.UInt32.cs" />
+    <Compile Include="AddPairwiseWideningScalar.Vector64.Int32.cs" />
+    <Compile Include="AddPairwiseWideningScalar.Vector64.UInt32.cs" />
+    <Compile Include="AddRoundedHighNarrowingLower.Vector64.Byte.cs" />
+    <Compile Include="AddRoundedHighNarrowingLower.Vector64.Int16.cs" />
+    <Compile Include="AddRoundedHighNarrowingLower.Vector64.Int32.cs" />
+    <Compile Include="AddRoundedHighNarrowingLower.Vector64.SByte.cs" />
+    <Compile Include="AddRoundedHighNarrowingLower.Vector64.UInt16.cs" />
+    <Compile Include="AddRoundedHighNarrowingLower.Vector64.UInt32.cs" />
+    <Compile Include="AddRoundedHighNarrowingUpper.Vector128.Byte.cs" />
+    <Compile Include="AddRoundedHighNarrowingUpper.Vector128.Int16.cs" />
+    <Compile Include="AddRoundedHighNarrowingUpper.Vector128.Int32.cs" />
+    <Compile Include="AddRoundedHighNarrowingUpper.Vector128.SByte.cs" />
+    <Compile Include="AddRoundedHighNarrowingUpper.Vector128.UInt16.cs" />
+    <Compile Include="AddRoundedHighNarrowingUpper.Vector128.UInt32.cs" />
+    <Compile Include="AddSaturate.Vector64.Byte.Vector64.Byte.cs" />
+    <Compile Include="AddSaturate.Vector64.Int16.Vector64.Int16.cs" />
+    <Compile Include="AddSaturate.Vector64.Int32.Vector64.Int32.cs" />
+    <Compile Include="AddSaturate.Vector64.SByte.Vector64.SByte.cs" />
+    <Compile Include="AddSaturate.Vector64.UInt16.Vector64.UInt16.cs" />
+    <Compile Include="AddSaturate.Vector64.UInt32.Vector64.UInt32.cs" />
+    <Compile Include="AddSaturate.Vector128.Byte.Vector128.Byte.cs" />
+    <Compile Include="AddSaturate.Vector128.Int16.Vector128.Int16.cs" />
+    <Compile Include="AddSaturate.Vector128.Int32.Vector128.Int32.cs" />
+    <Compile Include="AddSaturate.Vector128.Int64.Vector128.Int64.cs" />
+    <Compile Include="AddSaturate.Vector128.SByte.Vector128.SByte.cs" />
+    <Compile Include="AddSaturate.Vector128.UInt16.Vector128.UInt16.cs" />
+    <Compile Include="AddSaturate.Vector128.UInt32.Vector128.UInt32.cs" />
+    <Compile Include="AddSaturate.Vector128.UInt64.Vector128.UInt64.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.Int64.Vector64.Int64.cs" />
+    <Compile Include="AddSaturateScalar.Vector64.UInt64.Vector64.UInt64.cs" />
+    <Compile Include="AddScalar.Vector64.Double.cs" />
+    <Compile Include="AddScalar.Vector64.Int64.cs" />
+    <Compile Include="AddScalar.Vector64.Single.cs" />
+    <Compile Include="AddScalar.Vector64.UInt64.cs" />
+    <Compile Include="AddWideningLower.Vector64.Byte.cs" />
+    <Compile Include="AddWideningLower.Vector64.Int16.cs" />
+    <Compile Include="AddWideningLower.Vector64.Int32.cs" />
+    <Compile Include="AddWideningLower.Vector64.SByte.cs" />
+    <Compile Include="AddWideningLower.Vector64.UInt16.cs" />
+    <Compile Include="AddWideningLower.Vector64.UInt32.cs" />
+    <Compile Include="AddWideningLower.Vector128.Int16.cs" />
+    <Compile Include="AddWideningLower.Vector128.Int32.cs" />
+    <Compile Include="AddWideningLower.Vector128.Int64.cs" />
+    <Compile Include="AddWideningLower.Vector128.UInt16.cs" />
+    <Compile Include="AddWideningLower.Vector128.UInt32.cs" />
+    <Compile Include="AddWideningLower.Vector128.UInt64.cs" />
+    <Compile Include="AddWideningUpper.Vector128.Byte.Vector128.Byte.cs" />
+    <Compile Include="AddWideningUpper.Vector128.Int16.Vector128.Int16.cs" />
+    <Compile Include="AddWideningUpper.Vector128.Int16.Vector128.SByte.cs" />
+    <Compile Include="AddWideningUpper.Vector128.Int32.Vector128.Int16.cs" />
+    <Compile Include="AddWideningUpper.Vector128.Int32.Vector128.Int32.cs" />
+    <Compile Include="AddWideningUpper.Vector128.Int64.Vector128.Int32.cs" />
+    <Compile Include="AddWideningUpper.Vector128.SByte.Vector128.SByte.cs" />
+    <Compile Include="AddWideningUpper.Vector128.UInt16.Vector128.Byte.cs" />
+    <Compile Include="AddWideningUpper.Vector128.UInt16.Vector128.UInt16.cs" />
+    <Compile Include="AddWideningUpper.Vector128.UInt32.Vector128.UInt16.cs" />
+    <Compile Include="AddWideningUpper.Vector128.UInt32.Vector128.UInt32.cs" />
+    <Compile Include="AddWideningUpper.Vector128.UInt64.Vector128.UInt32.cs" />
+    <Compile Include="And.Vector64.Byte.cs" />
+    <Compile Include="And.Vector64.Double.cs" />
+    <Compile Include="And.Vector64.Int16.cs" />
+    <Compile Include="And.Vector64.Int32.cs" />
+    <Compile Include="And.Vector64.Int64.cs" />
+    <Compile Include="And.Vector64.SByte.cs" />
+    <Compile Include="And.Vector64.Single.cs" />
+    <Compile Include="And.Vector64.UInt16.cs" />
+    <Compile Include="And.Vector64.UInt32.cs" />
+    <Compile Include="And.Vector64.UInt64.cs" />
+    <Compile Include="And.Vector128.Byte.cs" />
+    <Compile Include="Program.AdvSimd_Part1.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

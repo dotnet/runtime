@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,11 +14,11 @@ namespace System.Data.ProviderBase
 
     internal class WrappedIUnknown : SafeHandle
     {
-        internal WrappedIUnknown() : base(IntPtr.Zero, true)
+        public WrappedIUnknown() : base(IntPtr.Zero, true)
         {
         }
 
-        internal WrappedIUnknown(object unknown) : this()
+        internal WrappedIUnknown(object? unknown) : this()
         {
             if (null != unknown)
             {
@@ -45,7 +44,7 @@ namespace System.Data.ProviderBase
         {
             // NOTE: Method, instead of property, to avoid being evaluated at
             // runtime in the debugger.
-            object value = null;
+            object? value = null;
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
             try

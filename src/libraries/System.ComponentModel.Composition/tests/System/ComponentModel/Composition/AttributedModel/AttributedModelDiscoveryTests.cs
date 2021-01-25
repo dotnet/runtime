@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Factories;
 using System.ComponentModel.Composition.Hosting;
@@ -16,7 +15,6 @@ namespace System.ComponentModel.Composition.AttributedModel
     public class AttributedModelDiscoveryTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void CreatePartDefinition_TypeWithExports_ShouldHaveMultipleExports()
         {
             var definition = CreateDefinition(typeof(PublicComponentWithPublicExports));
@@ -35,7 +33,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void CreatePartDefinition_TypeWithImports_ShouldHaveMultipleImports()
         {
             var definition = CreateDefinition(typeof(PublicImportsExpectingPublicExports));
@@ -158,7 +155,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void CreatePartDefinition_OneMarkedConstructorsAsPartTypeArgument_ShouldSetConstructorToMarked()
         {
             var definition = CreateDefinition(typeof(SimpleConstructorInjectedObject));
@@ -170,7 +166,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void CreatePartDefinition_OneDefaultConstructorAsPartTypeArgument_ShouldSetConstructorToDefault()
         {
             var definition = CreateDefinition(typeof(PublicComponentWithPublicExports));
@@ -183,7 +178,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void CreatePartDefinition_OneMarkedAndOneDefaultConstructorsAsPartTypeArgument_ShouldSetConstructorToMarked()
         {
             var definition = CreateDefinition(typeof(ClassWithOneMarkedAndOneDefaultConstructor));

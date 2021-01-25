@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -349,7 +348,7 @@ namespace System.Net
             CheckDisposed();
             if (_httpResponseMessage.Content != null)
             {
-                return _httpResponseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+                return _httpResponseMessage.Content.ReadAsStream();
             }
 
             return Stream.Null;
@@ -385,30 +384,6 @@ namespace System.Net
             }
         }
 
-        private string GetHeaderValueAsString(IEnumerable<string> values)
-        {
-            // There is always at least one value even if it is an empty string.
-            var enumerator = values.GetEnumerator();
-            bool success = enumerator.MoveNext();
-            Debug.Assert(success, "There should be at least one value");
-
-            string headerValue = enumerator.Current;
-
-            if (enumerator.MoveNext())
-            {
-                // Multi-valued header
-                var buffer = new StringBuilder(headerValue);
-
-                do
-                {
-                    buffer.Append(", ");
-                    buffer.Append(enumerator.Current);
-                } while (enumerator.MoveNext());
-
-                return buffer.ToString();
-            }
-
-            return headerValue;
-        }
+        private string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
     }
 }

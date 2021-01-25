@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
@@ -304,7 +303,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithClosedGenericImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfImport<>), typeof(OpenGenericPartWithClosedGenericImport<>));
@@ -332,7 +330,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PropertyExportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(PropertyExport<,>));
@@ -346,7 +343,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PropertyExportWithContractInferredTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(PropertyExportWithContractInferred<,>));
@@ -360,7 +356,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithPropertyImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithPropertyImport<,>), typeof(SelfImport<,>));
@@ -375,7 +370,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithLazyPropertyImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithLazyPropertyImport<,>), typeof(SelfImport<,>));
@@ -390,7 +384,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithNakedLazyPropertyImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithNakedLazyPropertyImport<>), typeof(Foo));
@@ -405,7 +398,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithExportFactoryPropertyImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithExportFactoryPropertyImport<,>), typeof(SelfImport<,>));
@@ -427,7 +419,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithNakedExportFactoryPropertyImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithNakedExportFactoryPropertyImport<>), typeof(Foo));
@@ -449,7 +440,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithExportFactoryParameterImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithExportFactoryParameterImport<,>), typeof(SelfImport<,>));
@@ -471,7 +461,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithCollectionPropertyImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithCollectionPropertyImport<,>), typeof(SelfImport<,>));
@@ -486,7 +475,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithLazyCollectionPropertyImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithLazyCollectionPropertyImport<,>), typeof(SelfImport<,>));
@@ -501,7 +489,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithPropertyImportWithContractInferredTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithPropertyImportWithContractInferred<,>), typeof(SelfImport<,>));
@@ -516,7 +503,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithParameterImportTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithParameterImport<,>), typeof(SelfImport<,>));
@@ -531,7 +517,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SelfExportWithMultipleGenericImportsTest()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SelfExportWithMultipleGenericImports<,>), typeof(SelfImport<,>), typeof(SelfImport<>), typeof(Foo));
@@ -563,7 +548,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SingletonBehavior()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SingletonExport<,>));
@@ -722,7 +706,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PartWithExportParametersInReverseOrder()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(PropertyExportWithChangedParameterOrder<,>));

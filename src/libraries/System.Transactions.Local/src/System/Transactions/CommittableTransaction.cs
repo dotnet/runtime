@@ -1,16 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Transactions
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class CommittableTransaction : Transaction, IAsyncResult
     {
-        internal bool _completedSynchronously = false;
-
         // Create a transaction with defaults
         public CommittableTransaction() : this(TransactionManager.DefaultIsolationLevel, TransactionManager.DefaultTimeout)
         {
@@ -194,7 +193,7 @@ namespace System.Transactions
 
         object? IAsyncResult.AsyncState => _internalTransaction._asyncState;
 
-        bool IAsyncResult.CompletedSynchronously => _completedSynchronously;
+        bool IAsyncResult.CompletedSynchronously => false;
 
         WaitHandle IAsyncResult.AsyncWaitHandle
         {

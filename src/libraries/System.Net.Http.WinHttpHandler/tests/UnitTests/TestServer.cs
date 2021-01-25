@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -159,18 +158,12 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             using (var memoryStream = new MemoryStream())
             {
-                Stream compressedStream = null;
-                if (useGZip)
+                using (Stream compressedStream = useGZip ?
+                    new GZipStream(memoryStream, CompressionMode.Compress) :
+                    new DeflateStream(memoryStream, CompressionMode.Compress))
                 {
-                    compressedStream = new GZipStream(memoryStream, CompressionMode.Compress);
+                    compressedStream.Write(bytes, 0, bytes.Length);
                 }
-                else
-                {
-                    compressedStream = new DeflateStream(memoryStream, CompressionMode.Compress);
-                }
-
-                compressedStream.Write(bytes, 0, bytes.Length);
-                compressedStream.Dispose();
 
                 return memoryStream.ToArray();
             }

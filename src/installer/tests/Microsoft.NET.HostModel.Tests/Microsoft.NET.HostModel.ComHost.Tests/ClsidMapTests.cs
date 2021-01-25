@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.CoreSetup.Test;
 using Newtonsoft.Json;
@@ -155,15 +154,15 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
                 RepoDirectories = new RepoDirectoriesProvider();
 
                 ComLibraryFixture = new TestProjectFixture("ComLibrary", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
                 ComLibraryMissingGuidFixture = new TestProjectFixture("ComLibraryMissingGuid", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
                 ComLibraryConflictingGuidFixture = new TestProjectFixture("ComLibraryConflictingGuid", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
             }
 

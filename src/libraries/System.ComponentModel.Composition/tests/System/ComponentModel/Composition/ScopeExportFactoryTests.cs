@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
@@ -8,7 +7,6 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeExportFactoryTests
     {
         public interface IFooContract
@@ -270,7 +268,6 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeExportFactoryWithPublicSurface
     {
         [Export] public class ClassA { }
@@ -313,7 +310,6 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeFactoryAutoResolveFromAncestorScope
     {
         [Export] public class Root { }
@@ -371,7 +367,6 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class DeeplyNestedCatalog
     {
         [Export]
@@ -450,7 +445,6 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class LocalSharedNonLocalInSameContainer
     {
         [Export]
@@ -547,7 +541,6 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeBridgingAdaptersConstructorInjection
     {
         [Export]
@@ -636,7 +629,6 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeBridgingAdaptersImportExportProperty
     {
         [Export]
@@ -720,7 +712,6 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class SelfExportFromExportFactory
     {
         [Export]

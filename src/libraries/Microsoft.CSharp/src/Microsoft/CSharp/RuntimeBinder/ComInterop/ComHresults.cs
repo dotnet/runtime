@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
@@ -25,7 +24,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         internal const int E_NOINTERFACE = unchecked((int)0x80004002);
         internal const int E_FAIL = unchecked((int)0x80004005);
-        internal const int E_NOTIMPL = unchecked((int)0x80000001);
 
         internal const int TYPE_E_LIBNOTREGISTERED = unchecked((int)0x8002801D);
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -21,7 +20,9 @@ internal partial class Interop
             int dwProvType,
             IntPtr pdwReserved,
             GetDefaultProviderFlags dwFlags,
-            StringBuilder? pszProvName,
+#pragma warning disable CA1838 // not on a hot path
+            [Out] StringBuilder? pszProvName,
+#pragma warning restore CA1838
             ref int pcbProvName);
     }
 }

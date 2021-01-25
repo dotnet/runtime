@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Drawing
 {
+    [System.ComponentModel.EditorAttribute("System.Drawing.Design.ColorEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.TypeConverterAttribute("System.Drawing.ColorConverter, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public readonly partial struct Color : System.IEquatable<System.Drawing.Color>
     {
@@ -135,6 +135,7 @@ namespace System.Drawing
         public static System.Drawing.Color PowderBlue { get { throw null; } }
         public static System.Drawing.Color Purple { get { throw null; } }
         public byte R { get { throw null; } }
+        public static System.Drawing.Color RebeccaPurple { get { throw null; } }
         public static System.Drawing.Color Red { get { throw null; } }
         public static System.Drawing.Color RosyBrown { get { throw null; } }
         public static System.Drawing.Color RoyalBlue { get { throw null; } }
@@ -366,6 +367,7 @@ namespace System.Drawing
         GradientInactiveCaption = 172,
         MenuBar = 173,
         MenuHighlight = 174,
+        RebeccaPurple = 175,
     }
     [System.ComponentModel.TypeConverterAttribute("System.Drawing.PointConverter, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial struct Point : System.IEquatable<System.Drawing.Point>

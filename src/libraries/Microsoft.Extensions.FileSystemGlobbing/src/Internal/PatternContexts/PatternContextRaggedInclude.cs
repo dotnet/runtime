@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
@@ -19,7 +18,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException("Can't declare path segment before entering a directory.");
+                throw new InvalidOperationException(SR.CannotDeclarePathSegment);
             }
 
             if (Frame.IsNotApplicable)
@@ -41,7 +40,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException("Can't test directory before entering a directory.");
+                throw new InvalidOperationException(SR.CannotTestDirectory);
             }
 
             if (Frame.IsNotApplicable)

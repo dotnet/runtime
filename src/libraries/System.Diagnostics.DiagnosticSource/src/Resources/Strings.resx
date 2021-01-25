@@ -153,4 +153,16 @@
   <data name="StartTimeNotUtc" xml:space="preserve">
     <value>"StartTime is not UTC"</value>
   </data>
+  <data name="KeyAlreadyExist" xml:space="preserve">
+    <value>"The collection already contains item with same key '{0}''"</value>
+  </data>
+  <data name="InvalidTraceParent" xml:space="preserve">
+    <value>"Invalid trace parent."</value>
+  </data>
+  <data name="UnableAccessServicePointTable" xml:space="preserve">
+    <value>Unable to access the ServicePointTable field</value>
+  </data>
+  <data name="UnableToInitialize" xml:space="preserve">
+    <value>Unable to initialize all required reflection objects</value>
+  </data>
 </root>

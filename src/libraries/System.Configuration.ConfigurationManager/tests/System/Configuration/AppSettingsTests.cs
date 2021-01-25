@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Configuration;
@@ -83,6 +82,29 @@ namespace System.ConfigurationTests
                 config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
                 Assert.NotEmpty(config.AppSettings.Settings);
                 Assert.Equal("NewValue", config.AppSettings.Settings["NewKey"].Value);
+            }
+        }
+
+        [Fact]
+        public void AddToAppSettings_SaveFull()
+        {
+            using (var temp = new TempConfig(TestData.EmptyConfig))
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
+                Assert.NotNull(config.AppSettings);
+                Assert.Empty(config.AppSettings.Settings);
+
+                config.AppSettings.Settings.Add("A", "1");
+                Assert.NotEmpty(config.AppSettings.Settings);
+                Assert.NotNull(config.AppSettings.Settings["A"]);
+                Assert.Equal("1", config.AppSettings.Settings["A"].Value);
+
+                config.Save(ConfigurationSaveMode.Full);
+
+                config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
+                Assert.NotEmpty(config.AppSettings.Settings);
+                Assert.NotNull(config.AppSettings.Settings["A"]);
+                Assert.Equal("1", config.AppSettings.Settings["A"].Value);
             }
         }
 

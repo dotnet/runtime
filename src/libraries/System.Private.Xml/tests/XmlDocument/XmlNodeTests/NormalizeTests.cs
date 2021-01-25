@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using Xunit;
@@ -72,8 +71,8 @@ namespace System.Xml.Tests
             var xmlDocument = new XmlDocument();
             var fragment = xmlDocument.CreateDocumentFragment();
 
-            var text1 = xmlDocument.CreateTextNode("test_test1");
-            var text2 = xmlDocument.CreateTextNode("test_test2");
+            xmlDocument.CreateTextNode("test_test1");
+            xmlDocument.CreateTextNode("test_test2");
 
             fragment.Normalize();
             Assert.Equal(string.Empty, fragment.OuterXml);

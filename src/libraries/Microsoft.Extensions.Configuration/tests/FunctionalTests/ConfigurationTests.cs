@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -207,7 +206,7 @@ CommonKey3:CommonKey4=IniValue6";
             Assert.False(error.Message.Contains(_basePath), error.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadAndCombineKeyValuePairsFromDifferentConfigurationProviders()
         {
@@ -247,7 +246,7 @@ CommonKey3:CommonKey4=IniValue6";
             Assert.Equal("MemValue6", config["CommonKey1:CommonKey2:CommonKey3:CommonKey4"]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadAndCombineKeyValuePairsFromDifferentConfigurationProvidersWithAbsolutePath()
         {
@@ -288,7 +287,7 @@ CommonKey3:CommonKey4=IniValue6";
             Assert.Equal("MemValue6", config["CommonKey1:CommonKey2:CommonKey3:CommonKey4"]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanOverrideValuesWithNewConfigurationProvider()
         {
@@ -418,7 +417,7 @@ CommonKey3:CommonKey4=IniValue6";
             Assert.NotNull(provider);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OnLoadErrorWillBeCalledOnIniLoadError()
         {
@@ -819,7 +818,7 @@ IniKey1=IniValue2");
             Assert.True(createAgainToken.HasChanged);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void LoadIncorrectJsonFile_ThrowException()
         {
@@ -836,7 +835,7 @@ IniKey1=IniValue2");
             Assert.Contains("Could not parse the JSON file.", exception.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void SetBasePathCalledMultipleTimesForEachSourceLastOneWins()
         {
@@ -902,6 +901,7 @@ IniKey1=IniValue2");
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnMono("System.IO.FileSystem.Watcher is not supported on wasm", TestPlatforms.Browser)]
         public void CanEnumerateProviders()
         {
             var config = CreateBuilder()

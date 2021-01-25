@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 
@@ -63,18 +62,40 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string parentPath)
         {
-            var prefix = parentPath == null ? string.Empty : parentPath + ConfigurationPath.KeyDelimiter;
+            var results = new List<string>();
 
-            return Data
-                .Where(kv => kv.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                .Select(kv => Segment(kv.Key, prefix.Length))
-                .Concat(earlierKeys)
-                .OrderBy(k => k, ConfigurationKeyComparer.Instance);
+            if (parentPath is null)
+            {
+                foreach (KeyValuePair<string, string> kv in Data)
+                {
+                    results.Add(Segment(kv.Key, 0));
+                }
+            }
+            else
+            {
+                Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
+
+                foreach (KeyValuePair<string, string> kv in Data)
+                {
+                    if (kv.Key.Length > parentPath.Length &&
+                        kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
+                        kv.Key[parentPath.Length] == ':')
+                    {
+                        results.Add(Segment(kv.Key, parentPath.Length + 1));
+                    }
+                }
+            }
+
+            results.AddRange(earlierKeys);
+
+            results.Sort(ConfigurationKeyComparer.Comparison);
+
+            return results;
         }
 
         private static string Segment(string key, int prefixLength)
         {
-            var indexOf = key.IndexOf(ConfigurationPath.KeyDelimiter, prefixLength, StringComparison.OrdinalIgnoreCase);
+            int indexOf = key.IndexOf(ConfigurationPath.KeyDelimiter, prefixLength, StringComparison.OrdinalIgnoreCase);
             return indexOf < 0 ? key.Substring(prefixLength) : key.Substring(prefixLength, indexOf - prefixLength);
         }
 
@@ -92,7 +113,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         protected void OnReload()
         {
-            var previousToken = Interlocked.Exchange(ref _reloadToken, new ConfigurationReloadToken());
+            ConfigurationReloadToken previousToken = Interlocked.Exchange(ref _reloadToken, new ConfigurationReloadToken());
             previousToken.OnReload();
         }
 

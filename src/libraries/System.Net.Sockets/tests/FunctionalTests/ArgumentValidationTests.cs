@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections;
@@ -506,7 +505,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void AcceptAsync_NullAsyncEventArgs_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().AcceptAsync(null));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().AcceptAsync((SocketAsyncEventArgs)null));
         }
 
         [Fact]
@@ -538,7 +537,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectAsync_NullAsyncEventArgs_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ConnectAsync(null));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().ConnectAsync((SocketAsyncEventArgs)null));
         }
 
         [Fact]

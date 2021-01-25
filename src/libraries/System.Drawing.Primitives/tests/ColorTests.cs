@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +11,7 @@ namespace System.Drawing.Primitives.Tests
 {
     public class ColorTests
     {
-        public static bool SupportsReadingUpdatedSystemColors => PlatformDetection.IsWindows && !PlatformDetection.IsInAppContainer && PlatformDetection.IsNotWindowsNanoServer;
+        public static bool SupportsReadingUpdatedSystemColors => PlatformDetection.IsWindows && !PlatformDetection.IsInAppContainer && PlatformDetection.IsNotWindowsNanoNorServerCore;
 
         public static readonly IEnumerable<object[]> NamedArgbValues =
             new[]
@@ -131,6 +130,7 @@ namespace System.Drawing.Primitives.Tests
                 new object[] {"Plum", 255, 221, 160, 221},
                 new object[] {"PowderBlue", 255, 176, 224, 230},
                 new object[] {"Purple", 255, 128, 0, 128},
+                new object[] {"RebeccaPurple", 255, 102, 51, 153},
                 new object[] {"Red", 255, 255, 0, 0},
                 new object[] {"RosyBrown", 255, 188, 143, 143},
                 new object[] {"RoyalBlue", 255, 65, 105, 225},
@@ -533,7 +533,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void FromOutOfRangeKnownColor(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -557,7 +557,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void FromOutOfRangeKnownColorToKnownColor(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -589,7 +589,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void IsSystemColorOutOfRangeKnown(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -613,7 +613,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [InlineData((KnownColor)(-1))]
         [InlineData((KnownColor)0)]
-        [InlineData(KnownColor.MenuHighlight + 1)]
+        [InlineData(KnownColor.RebeccaPurple + 1)]
         public void IsKnownColorOutOfRangeKnown(KnownColor known)
         {
             Color color = Color.FromKnownColor(known);
@@ -684,7 +684,8 @@ namespace System.Drawing.Primitives.Tests
                 KnownColor.SeaShell, KnownColor.Sienna, KnownColor.Silver, KnownColor.SkyBlue, KnownColor.SlateBlue,
                 KnownColor.SlateGray, KnownColor.Snow, KnownColor.SpringGreen, KnownColor.SteelBlue, KnownColor.Tan,
                 KnownColor.Teal, KnownColor.Thistle, KnownColor.Tomato, KnownColor.Turquoise, KnownColor.Violet,
-                KnownColor.Wheat, KnownColor.White, KnownColor.WhiteSmoke, KnownColor.Yellow, KnownColor.YellowGreen
+                KnownColor.Wheat, KnownColor.White, KnownColor.WhiteSmoke, KnownColor.Yellow, KnownColor.YellowGreen,
+                KnownColor.RebeccaPurple
             }.Select(kc => new object[] { kc }).ToArray();
 
         [DllImport("user32.dll", SetLastError = true)]

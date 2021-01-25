@@ -8,6 +8,7 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
+#include <mono/utils/mono-threads.h>
 
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
 #include <mono/mini/interp/interp-internals.h>
@@ -225,11 +226,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->gen_sdb_seq_points)
 		g_error ("gen_sdb_seq_points not supported");
 
-	if (cfg->method->save_lmf)
+	if (cfg->method->save_lmf) {
 		cfg->create_lmf_var = TRUE;
-
-	if (cfg->method->save_lmf)
 		cfg->lmf_ir = TRUE;
+	}
 }
 
 void
@@ -391,7 +391,10 @@ EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (int id);
 
 //JS functions imported that we use
 extern void mono_set_timeout (int t, int d);
+extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
+
+void mono_background_exec (void);
 
 #endif // HOST_WASM
 
@@ -582,13 +585,52 @@ mono_wasm_set_timeout (int timeout, int id)
 #endif
 }
 
+static void
+tp_cb (void)
+{
+	ERROR_DECL (error);
+
+	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
+	g_assert (klass);
+
+	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
+	mono_error_assert_ok (error);
+	g_assert (method);
+
+	MonoObject *exc = NULL;
+
+	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
+
+	if (!is_ok (error)) {
+		printf ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
+		mono_error_cleanup (error);
+	}
+
+	if (exc) {
+		char *type_name = mono_type_get_full_name (mono_object_class (exc));
+		printf ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
+		g_free (type_name);
+	}
+}
+
+#ifdef HOST_WASM
+void
+mono_wasm_queue_tp_cb (void)
+{
+	mono_threads_schedule_background_job (tp_cb);
+}
+#endif
+
 void
 mono_arch_register_icall (void)
 {
+#ifdef HOST_WASM
 #ifdef ENABLE_NETCORE
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
+	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
 #else
 	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
+#endif
 #endif
 }
 
@@ -722,24 +764,24 @@ ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
 
 ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
 {
-	g_error ("sendfile");
-	return 0;
+	errno = ENOTSUP;
+	return -1;
 }
 
 int
 getpwnam_r (const char *name, struct passwd *pwd, char *buffer, size_t bufsize,
 			struct passwd **result)
 {
-	g_error ("getpwnam_r");
-	return 0;
+	*result = NULL;
+	return ENOTSUP;
 }
 
 int
 getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
 			struct passwd **result)
 {
-	g_error ("getpwuid_r");
-	return 0;
+	*result = NULL;
+	return ENOTSUP;
 }
 
 G_END_DECLS

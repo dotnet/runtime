@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -11,7 +10,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class TaskDisposeTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Dispose_BeforeComplete()
         {
             // Verify that a task can only be disposed after it has completed
@@ -33,7 +32,7 @@ namespace System.Threading.Tasks.Tests
             task.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Dispose_InContinuation()
         {
             // Verify that a task can be disposed by a continuation
@@ -51,7 +50,7 @@ namespace System.Threading.Tasks.Tests
             task2.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Dispose_ThenAddContinuation()
         {
             // Verify that a continuation can be added after a task is completed and disposed

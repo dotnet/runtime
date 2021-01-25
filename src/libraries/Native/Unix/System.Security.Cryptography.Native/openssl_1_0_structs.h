@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Definitions of structures from OpenSSL 1.0.2, modified as relevant to
 // building .NET.
@@ -165,4 +164,19 @@ struct x509_store_st
     const void* _ignored1;
     const void* _ignored2;
     X509_VERIFY_PARAM* param;
+};
+
+struct bio_st {
+    const void* _ignored1;
+    const void* _ignored2;
+    const void* _ignored3;
+    int _ignored4;
+    int _ignored5;
+    int _ignored6;
+    int _ignored7;
+    int _ignored8;
+    const void*_ignored9;
+    const void*_ignored10;
+    const void*_ignored11;
+    int references;
 };

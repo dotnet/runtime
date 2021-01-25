@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Text;
 
 namespace System.Net.Mime
 {
@@ -28,7 +28,7 @@ namespace System.Net.Mime
         // Should we do RFC 2821 Section 4.5.2 encoding of leading dots on a line?
         // We make this optional because this stream may be used recursively and
         // the encoding should only be done once.
-        private readonly bool _shouldEncodeLeadingDots = false;
+        private readonly bool _shouldEncodeLeadingDots;
 
         private WriteStateInfoBase WriteState => _writeState ?? (_writeState = new WriteStateInfoBase());
 
@@ -53,18 +53,7 @@ namespace System.Net.Mime
         /// <param name="state">State to pass to callback</param>
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset >= buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             IAsyncResult result;
             if (_shouldEncodeLeadingDots)
@@ -95,18 +84,7 @@ namespace System.Net.Mime
         /// <param name="count">Count of bytes to write</param>
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset >= buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             if (_shouldEncodeLeadingDots)
             {
@@ -155,6 +133,8 @@ namespace System.Net.Mime
         public int DecodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
 
         public int EncodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
+
+        public int EncodeString(string value, Encoding encoding) { throw new NotImplementedException(); }
 
         public string GetEncodedString() { throw new NotImplementedException(); }
     }

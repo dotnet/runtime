@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -60,6 +59,12 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(8, Marshal.SizeOf<TestStructWithVector64>());
         }
 
+        [Fact]
+        public void SizeOf_TypeWithEmptyBase_ReturnsExpected()
+        {
+            Assert.Equal(4, Marshal.SizeOf<DerivedClass>());
+        }
+
         public static IEnumerable<object[]> SizeOf_InvalidType_TestData()
         {
             yield return new object[] { typeof(int).MakeByRefType(), null };
@@ -79,6 +84,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeBuilder, "t" };
 
             yield return new object[] { typeof(TestStructWithFxdLPSTRSAFld), null };
+            yield return new object[] { typeof(int[]), null };
         }
 
         [Theory]
@@ -135,6 +141,17 @@ namespace System.Runtime.InteropServices.Tests
         public struct TestStructWithVector64
         {
             public System.Runtime.Intrinsics.Vector64<double> v;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public class EmptyClass
+        {
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public class DerivedClass : EmptyClass
+        {
+            public int i;
         }
     }
 }

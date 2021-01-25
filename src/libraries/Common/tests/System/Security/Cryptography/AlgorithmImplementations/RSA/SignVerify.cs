@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -10,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public sealed class SignVerify_Array : SignVerify
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
@@ -38,6 +38,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
     }
 
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract class SignVerify
     {
         public static bool SupportsPss => RSAFactory.SupportsPss;

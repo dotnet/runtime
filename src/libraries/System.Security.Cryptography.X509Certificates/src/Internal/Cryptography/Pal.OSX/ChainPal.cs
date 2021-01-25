@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -256,18 +255,16 @@ namespace Internal.Cryptography.Pal
                 throw new CryptographicException();
             }
 
-            Tuple<X509Certificate2, int>[] elements = ParseResults(_chainHandle!, _revocationMode);
+            (X509Certificate2, int)[] elements = ParseResults(_chainHandle!, _revocationMode);
             Debug.Assert(elements.Length > 0);
 
             if (!IsPolicyMatch(elements, applicationPolicy, certificatePolicy))
             {
                 for (int i = 0; i < elements.Length; i++)
                 {
-                    Tuple<X509Certificate2, int> currentValue = elements[i];
+                    (X509Certificate2, int) currentValue = elements[i];
 
-                    elements[i] = Tuple.Create(
-                        currentValue.Item1,
-                        currentValue.Item2 | (int)X509ChainStatusFlags.NotValidForUsage);
+                    elements[i] = (currentValue.Item1, currentValue.Item2 | (int)X509ChainStatusFlags.NotValidForUsage);
                 }
             }
 
@@ -275,12 +272,12 @@ namespace Internal.Cryptography.Pal
             BuildAndSetProperties(elements);
         }
 
-        private static Tuple<X509Certificate2, int>[] ParseResults(
+        private static (X509Certificate2, int)[] ParseResults(
             SafeX509ChainHandle chainHandle,
             X509RevocationMode revocationMode)
         {
             long elementCount = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
-            var elements = new Tuple<X509Certificate2, int>[elementCount];
+            var elements = new (X509Certificate2, int)[elementCount];
 
             using (var trustResults = Interop.AppleCrypto.X509ChainGetTrustResults(chainHandle))
             {
@@ -304,7 +301,7 @@ namespace Internal.Cryptography.Pal
 
                     FixupStatus(cert, revocationMode, ref dwStatus);
 
-                    elements[elementIdx] = Tuple.Create(cert, dwStatus);
+                    elements[elementIdx] = (cert, dwStatus);
                 }
             }
 
@@ -312,7 +309,7 @@ namespace Internal.Cryptography.Pal
         }
 
         private bool IsPolicyMatch(
-            Tuple<X509Certificate2, int>[] elements,
+            (X509Certificate2, int)[] elements,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy)
         {
@@ -320,9 +317,9 @@ namespace Internal.Cryptography.Pal
             {
                 List<X509Certificate2> certsToRead = new List<X509Certificate2>();
 
-                foreach (var element in elements)
+                for (int i = 0; i < elements.Length; i++)
                 {
-                    certsToRead.Add(element.Item1);
+                    certsToRead.Add(elements[i].Item1);
                 }
 
                 CertificatePolicyChain policyChain = new CertificatePolicyChain(certsToRead);
@@ -347,14 +344,14 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        private void BuildAndSetProperties(Tuple<X509Certificate2, int>[] elementTuples)
+        private void BuildAndSetProperties((X509Certificate2, int)[] elementTuples)
         {
             X509ChainElement[] elements = new X509ChainElement[elementTuples.Length];
             int allStatus = 0;
 
             for (int i = 0; i < elementTuples.Length; i++)
             {
-                Tuple<X509Certificate2, int> tuple = elementTuples[i];
+                (X509Certificate2, int) tuple = elementTuples[i];
 
                 elements[i] = BuildElement(tuple.Item1, tuple.Item2);
                 allStatus |= tuple.Item2;
@@ -367,14 +364,14 @@ namespace Internal.Cryptography.Pal
         }
 
         private static void FixupRevocationStatus(
-            Tuple<X509Certificate2, int>[] elements,
+            (X509Certificate2, int)[] elements,
             X509RevocationFlag revocationFlag)
         {
             if (revocationFlag == X509RevocationFlag.ExcludeRoot)
             {
                 // When requested
                 int idx = elements.Length - 1;
-                Tuple<X509Certificate2, int> element = elements[idx];
+                (X509Certificate2, int) element = elements[idx];
                 X509ChainStatusFlags statusFlags = (X509ChainStatusFlags)element.Item2;
 
                 // Apple will terminate the chain at the first "root" or "trustAsRoot" certificate
@@ -384,7 +381,7 @@ namespace Internal.Cryptography.Pal
                 if ((statusFlags & X509ChainStatusFlags.PartialChain) == 0)
                 {
                     statusFlags &= ~RevocationRelevantFlags;
-                    elements[idx] = Tuple.Create(element.Item1, (int)statusFlags);
+                    elements[idx] = (element.Item1, (int)statusFlags);
                 }
             }
             else if (revocationFlag == X509RevocationFlag.EndCertificateOnly)
@@ -394,11 +391,11 @@ namespace Internal.Cryptography.Pal
                 // Start at element 1, and move to the end.
                 for (int i = 1; i < elements.Length; i++)
                 {
-                    Tuple<X509Certificate2, int> element = elements[i];
+                    (X509Certificate2, int) element = elements[i];
                     X509ChainStatusFlags statusFlags = (X509ChainStatusFlags)element.Item2;
 
                     statusFlags &= ~RevocationRelevantFlags;
-                    elements[i] = Tuple.Create(element.Item1, (int)statusFlags);
+                    elements[i] = (element.Item1, (int)statusFlags);
                 }
             }
         }

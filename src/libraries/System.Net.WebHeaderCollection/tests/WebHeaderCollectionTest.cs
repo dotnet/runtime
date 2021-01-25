@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -752,6 +751,26 @@ namespace System.Net.Tests
             Assert.NotEmpty(w.AllKeys);
             Assert.Equal(new[] { "firstName" }, w.AllKeys);
             Assert.Equal("first", w["firstName"]);
+        }
+
+        [Fact]
+        public void AddLongString_DoesNotThrow()
+        {
+            string longString = new string('a', 65536);
+            WebHeaderCollection headerCollection = new WebHeaderCollection();
+
+            headerCollection.Add("Long-Header", longString);
+            headerCollection["Long-Header-2"] = longString;
+
+            headerCollection.Add(HttpResponseHeader.SetCookie, "someValueToChangeType"); // this will implicitly change _type
+
+            headerCollection.Add("Long-Header-3", longString);
+            headerCollection["Long-Header-4"] = longString;
+
+            Assert.Equal(longString, headerCollection["Long-Header"]);
+            Assert.Equal(longString, headerCollection["Long-Header-2"]);
+            Assert.Equal(longString, headerCollection["Long-Header-3"]);
+            Assert.Equal(longString, headerCollection["Long-Header-4"]);
         }
     }
 }

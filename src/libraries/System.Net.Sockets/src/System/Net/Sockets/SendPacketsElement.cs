@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 
@@ -43,7 +42,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            Initialize(filepath, null, null, offset, count, endOfPacket);
+            Initialize(filepath, null, null, null, offset, count, endOfPacket);
         }
 
         // Constructors for fileStream elements.
@@ -76,7 +75,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            Initialize(null, fileStream, null, offset, count, endOfPacket);
+            Initialize(null, fileStream, null, null, offset, count, endOfPacket);
         }
 
         // Constructors for buffer elements.
@@ -103,14 +102,24 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            Initialize(null, null, buffer, offset, count, endOfPacket);
+            Initialize(null, null, buffer, new ReadOnlyMemory<byte>(buffer, offset, count), offset, count, endOfPacket);
         }
 
-        private void Initialize(string? filePath, FileStream? fileStream, byte[]? buffer, long offset, int count, bool endOfPacket)
+        public SendPacketsElement(ReadOnlyMemory<byte> buffer) :
+            this(buffer, endOfPacket: false)
+        { }
+
+        public SendPacketsElement(ReadOnlyMemory<byte> buffer, bool endOfPacket)
+        {
+            Initialize(null, null, null, buffer, 0, buffer.Length, endOfPacket);
+        }
+
+        private void Initialize(string? filePath, FileStream? fileStream, byte[]? buffer, ReadOnlyMemory<byte>? memoryBuffer, long offset, int count, bool endOfPacket)
         {
             FilePath = filePath;
             FileStream = fileStream;
             Buffer = buffer;
+            MemoryBuffer = memoryBuffer;
             OffsetLong = offset;
             Count = count;
             EndOfPacket = endOfPacket;
@@ -123,6 +132,8 @@ namespace System.Net.Sockets
         public byte[]? Buffer { get; private set; }
 
         public int Count { get; private set; }
+
+        public ReadOnlyMemory<byte>? MemoryBuffer { get; private set; }
 
         public int Offset => checked((int)OffsetLong);
 

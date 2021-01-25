@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -52,6 +51,11 @@ namespace System.IO.Compression
                 case CompressionLevel.NoCompression:
                     zlibCompressionLevel = ZLibNative.CompressionLevel.NoCompression;
                     memLevel = ZLibNative.Deflate_NoCompressionMemLevel;
+                    break;
+
+                case CompressionLevel.SmallestSize:
+                    zlibCompressionLevel = ZLibNative.CompressionLevel.BestCompression;
+                    memLevel = ZLibNative.Deflate_DefaultMemLevel;
                     break;
 
                 default:

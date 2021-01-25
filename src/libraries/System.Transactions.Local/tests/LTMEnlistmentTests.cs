@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
@@ -25,7 +24,7 @@ namespace System.Transactions.Tests
             Transaction.Current = null;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(1, EnlistmentOptions.None, Phase1Vote.Prepared, SinglePhaseVote.Committed, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(2, EnlistmentOptions.None, Phase1Vote.Prepared, SinglePhaseVote.Committed, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(1, EnlistmentOptions.None, Phase1Vote.Prepared, SinglePhaseVote.Aborted, true, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
@@ -76,7 +75,7 @@ namespace System.Transactions.Tests
             Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         // This test needs to change once we have promotion support.
         // Right now any attempt to create a two phase durable enlistment will attempt to promote and will fail because promotion is not supported. This results in the transaction being
         // aborted.
@@ -129,7 +128,7 @@ namespace System.Transactions.Tests
             Assert.Equal(expectedTxStatus, tx.TransactionInformation.Status);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(EnlistmentOptions.EnlistDuringPrepareRequired, Phase1Vote.Prepared, true, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         [InlineData(EnlistmentOptions.None, Phase1Vote.Prepared, false, true, EnlistmentOutcome.Committed, TransactionStatus.Committed)]
         public void EnlistDuringPhase0(EnlistmentOptions enlistmentOption, Phase1Vote phase1Vote, bool expectPhase0EnlistSuccess, bool commit, EnlistmentOutcome expectedOutcome, TransactionStatus expectedTxStatus)

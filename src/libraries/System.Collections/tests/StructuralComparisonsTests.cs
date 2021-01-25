@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -21,8 +20,9 @@ namespace System.Collections.Tests
             yield return new object[] { null, "abc", -1 };
             yield return new object[] { "abc", null, 1 };
             yield return new object[] { "abc", "abc", 0 };
-            yield return new object[] { "abc", "def", -1 };
-            yield return new object[] { "def", "abc", 1 };
+            // Invariant mode comparison of strings, ends up returning firstChar - secondChar when different, i.e 'd' - 'a'
+            yield return new object[] { "abc", "def", PlatformDetection.IsInvariantGlobalization ? -3 : -1 };
+            yield return new object[] { "def", "abc", PlatformDetection.IsInvariantGlobalization ? 3 : 1 };
             yield return new object[] { new StructuralObject(), "abc", 5 };
             yield return new object[] { new StructuralObject(), 123, -5 };
         }

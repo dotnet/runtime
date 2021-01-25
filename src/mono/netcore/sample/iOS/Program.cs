@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -34,7 +33,11 @@ public static class Program
         ios_set_text("OnButtonClick! #" + counter++);
     }
 
+#if CI_TEST
+    public static async Task<int> Main(string[] args)
+#else
     public static async Task Main(string[] args)
+#endif
     {
         // Register a managed callback (will be called by UIButton, see main.m)
         // Also, keep the handler alive so GC won't collect it.
@@ -49,6 +52,11 @@ public static class Program
         }
 
         Console.WriteLine("Done!");
+#if CI_TEST
+        await Task.Delay(5000);
+        return 42;
+#else
         await Task.Delay(-1);
+#endif 
     }
 }

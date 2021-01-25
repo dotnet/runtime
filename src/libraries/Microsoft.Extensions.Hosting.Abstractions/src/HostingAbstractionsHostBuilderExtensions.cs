@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,8 +26,8 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The started <see cref="IHost"/>.</returns>
         public static async Task<IHost> StartAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
-            var host = hostBuilder.Build();
-            await host.StartAsync(cancellationToken);
+            IHost host = hostBuilder.Build();
+            await host.StartAsync(cancellationToken).ConfigureAwait(false);
             return host;
         }
     }

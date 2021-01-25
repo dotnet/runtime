@@ -78,8 +78,24 @@ struct _WorkerContext {
 void sgen_workers_create_context (int generation, int num_workers);
 void sgen_workers_stop_all_workers (int generation);
 void sgen_workers_set_num_active_workers (int generation, int num_workers);
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 void sgen_workers_start_all_workers (int generation, SgenObjectOperations *object_ops_nopar, SgenObjectOperations *object_ops_par, SgenWorkersFinishCallback finish_job);
+#else
+#define sgen_workers_start_all_workers(...)
+#endif
+
 void sgen_workers_enqueue_job (int generation, SgenThreadPoolJob *job, gboolean enqueue);
+
+/*
+ * LOCKING: Assumes the GC lock is held.
+ */
+void sgen_workers_enqueue_deferred_job (int generation, SgenThreadPoolJob *job, gboolean enqueue);
+
+/*
+ * LOCKING: Assumes the GC lock is held.
+ */
+void sgen_workers_flush_deferred_jobs (int generation, gboolean signal);
+
 void sgen_workers_join (int generation);
 gboolean sgen_workers_have_idle_work (int generation);
 gboolean sgen_workers_all_done (void);
@@ -88,7 +104,11 @@ void sgen_workers_take_from_queue (int generation, SgenGrayQueue *queue);
 SgenObjectOperations* sgen_workers_get_idle_func_object_ops (WorkerData *worker);
 int sgen_workers_get_job_split_count (int generation);
 int sgen_workers_get_active_worker_count (int generation);
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 void sgen_workers_foreach (int generation, SgenWorkerCallback callback);
+#else
+#define sgen_workers_foreach(...)
+#endif
 gboolean sgen_workers_is_worker_thread (MonoNativeThreadId id);
 
 #endif

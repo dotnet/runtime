@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Collections;
@@ -24,15 +23,15 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ApplicationPartition : ActiveDirectoryPartition
     {
-        private bool _disposed = false;
+        private bool _disposed;
         private ApplicationPartitionType _appType = (ApplicationPartitionType)(-1);
         private bool _committed = true;
-        private DirectoryEntry _domainDNSEntry = null;
-        private DirectoryEntry _crossRefEntry = null;
-        private string _dnsName = null;
-        private DirectoryServerCollection _cachedDirectoryServers = null;
-        private bool _securityRefDomainModified = false;
-        private string _securityRefDomain = null;
+        private DirectoryEntry _domainDNSEntry;
+        private DirectoryEntry _crossRefEntry;
+        private string _dnsName;
+        private DirectoryServerCollection _cachedDirectoryServers;
+        private bool _securityRefDomainModified;
+        private string _securityRefDomain;
 
         #region constructors
         // Public Constructors

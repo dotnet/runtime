@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -43,8 +42,20 @@ namespace System.Net.NetworkInformation
             string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
+            // First line is header in each file. On WSL, this file may be empty.
+            int count = 0;
+            if (v4connections.Length > 0)
+            {
+                count += v4connections.Length - 1;
+            }
+
+            if (v6connections.Length > 0)
+            {
+                count += v6connections.Length - 1;
+            }
+
             // First line is header in each file.
-            TcpConnectionInformation[] connections = new TcpConnectionInformation[v4connections.Length + v6connections.Length - 2];
+            TcpConnectionInformation[] connections = new TcpConnectionInformation[count];
             int index = 0;
             int skip = 0;
 
@@ -99,8 +110,20 @@ namespace System.Net.NetworkInformation
             string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
+            // First line is header in each file. On WSL, this file may be empty.
+            int count = 0;
+            if (v4connections.Length > 0)
+            {
+                count += v4connections.Length - 1;
+            }
+
+            if (v6connections.Length > 0)
+            {
+                count += v6connections.Length - 1;
+            }
+
             // First line is header in each file.
-            IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2];
+            IPEndPoint[] endPoints = new IPEndPoint[count];
             int index = 0;
             int skip = 0;
 
@@ -155,8 +178,19 @@ namespace System.Net.NetworkInformation
             string udp6FileContents = File.ReadAllText(udp6File);
             string[] v6connections = udp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            // First line is header in each file.
-            IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2];
+            // First line is header in each file. On WSL, this file may be empty.
+            int count = 0;
+            if (v4connections.Length > 0)
+            {
+                count += v4connections.Length - 1;
+            }
+
+            if (v6connections.Length > 0)
+            {
+                count += v6connections.Length - 1;
+            }
+
+            IPEndPoint[] endPoints = new IPEndPoint[count];
             int index = 0;
 
             // UDP Connections
@@ -326,22 +360,13 @@ namespace System.Net.NetworkInformation
 
         private static byte HexToByte(char val)
         {
-            if (val <= '9' && val >= '0')
-            {
-                return (byte)(val - '0');
-            }
-            else if (val >= 'a' && val <= 'f')
-            {
-                return (byte)((val - 'a') + 10);
-            }
-            else if (val >= 'A' && val <= 'F')
-            {
-                return (byte)((val - 'A') + 10);
-            }
-            else
+            int result = HexConverter.FromChar(val);
+            if (result == 0xFF)
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }
+
+            return (byte)result;
         }
     }
 }

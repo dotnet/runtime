@@ -33,6 +33,21 @@ services:
     depends_on:
       - kdc
 
+  altweb:
+    image: apacheweb:latest
+    container_name: altweb
+    hostname: altweb
+    domainname: linux.contoso.com
+    dns_search: linux.contoso.com
+    volumes:
+      - shared-volume:/SHARED
+    networks:
+      network1:
+        aliases:
+          - altweb.linux.contoso.com
+    depends_on:
+      - kdc
+
   linuxclient:
     build:
       context: ./
@@ -49,6 +64,7 @@ services:
       - network1
     depends_on:
       - apacheweb
+      - altweb
       - kdc
 
 networks:

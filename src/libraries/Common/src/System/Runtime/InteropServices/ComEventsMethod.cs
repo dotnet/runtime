@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 
@@ -27,7 +26,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public class DelegateWrapper
         {
-            private bool _once = false;
+            private bool _once;
             private int _expectedParamsCount;
             private Type?[]? _cachedTargetTypes;
 
@@ -39,7 +38,7 @@ namespace System.Runtime.InteropServices
 
             public Delegate Delegate { get; set; }
 
-            public bool WrapArgs { get; private set; }
+            public bool WrapArgs { get; }
 
             public object? Invoke(object[] args)
             {
@@ -58,9 +57,9 @@ namespace System.Runtime.InteropServices
                 {
                     for (int i = 0; i < _expectedParamsCount; i++)
                     {
-                        if (_cachedTargetTypes[i] != null)
+                        if (_cachedTargetTypes[i] is Type t)
                         {
-                            args[i] = Enum.ToObject(_cachedTargetTypes[i]!, args[i]); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                            args[i] = Enum.ToObject(t, args[i]);
                         }
                     }
                 }

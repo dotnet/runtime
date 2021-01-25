@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -57,7 +58,23 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(options));
             }
 
-            return new ServiceProvider(services, options);
+            IServiceProviderEngine engine;
+
+#if !NETCOREAPP
+            engine = new DynamicServiceProviderEngine(services);
+#else
+            if (RuntimeFeature.IsDynamicCodeCompiled)
+            {
+                engine = new DynamicServiceProviderEngine(services);
+            }
+            else
+            {
+                // Don't try to compile Expressions/IL if they are going to get interpreted
+                engine = new RuntimeServiceProviderEngine(services);
+            }
+#endif
+
+            return new ServiceProvider(services, engine, options);
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -762,7 +761,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void LegacyNestedTxScope()
         {
             string txId1 = null;
@@ -823,7 +822,7 @@ namespace System.Transactions.Tests
             Assert.NotEqual(txId1, txId5);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         // Async TS nested inside Sync TS
         [InlineData(TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled)]
         [InlineData(TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled)]
@@ -897,7 +896,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled)]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled, TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeAsyncFlowOption.Enabled, TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled)]
@@ -977,7 +976,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress, TransactionScopeAsyncFlowOption.Enabled, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.Required, false)]
         [InlineData(TransactionScopeAsyncFlowOption.Enabled, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeAsyncFlowOption.Enabled, TransactionScopeOption.Required, false)]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress, TransactionScopeAsyncFlowOption.Enabled, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.Required, true)]
@@ -1077,7 +1076,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeAsyncFlowOption.Enabled)]
         public void VerifyBYOT(TransactionScopeAsyncFlowOption asyncFlowOption)

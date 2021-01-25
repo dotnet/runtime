@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
@@ -21,7 +20,7 @@ namespace System.Net
                 }
 
                 string? name = NegotiateStreamPal.QueryContextAssociatedName(_securityContext!);
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"NTAuthentication: The context is associated with [{name}]");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"NTAuthentication: The context is associated with [{name}]");
                 return name;
             }
         }

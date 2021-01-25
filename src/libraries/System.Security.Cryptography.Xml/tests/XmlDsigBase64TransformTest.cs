@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // XmlDsigBase64TransformTest.cs - Test Cases for XmlDsigBase64Transform
 //
 // Author:
@@ -8,9 +8,6 @@
 //
 // (C) 2002 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2004 Novell (http://www.novell.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;

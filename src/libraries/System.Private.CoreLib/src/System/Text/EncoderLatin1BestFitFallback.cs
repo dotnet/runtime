@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This is used internally to create best fit behavior as per the original windows best fit behavior.
@@ -30,7 +29,7 @@ namespace System.Text
     internal sealed partial class EncoderLatin1BestFitFallbackBuffer : EncoderFallbackBuffer
     {
         // Our variables
-        private char _cBestFit = '\0';
+        private char _cBestFit;
         private int _iCount = -1;
         private int _iSize;
 
@@ -120,7 +119,7 @@ namespace System.Text
         }
 
         // private helper methods
-        private char TryBestFit(char cUnknown)
+        private static char TryBestFit(char cUnknown)
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;

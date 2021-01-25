@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -8,6 +7,7 @@ using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using Microsoft.Extensions.Logging.EventSource;
 using Xunit;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,6 +51,113 @@ namespace Microsoft.Extensions.Logging.Test
                 Assert.False(logger.IsEnabled(LogLevel.Information));
                 Assert.False(logger.IsEnabled(LogLevel.Debug));
                 Assert.False(logger.IsEnabled(LogLevel.Trace));
+            }
+        }
+
+        [Fact]
+        public void FilterSpecs_UseAppFilters_IncreaseLoggingLevelForOneCategory_GuaranteesAllRulesRemainAvailable()
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var loggerFactory = LoggerFactory.Create(builder =>
+                    builder
+                        .AddEventSourceLogger()
+                        .AddFilter("Logger1*", LogLevel.Warning)
+                        .AddFilter("Logger2*", LogLevel.Error)
+                        .AddFilter("Logger3*", LogLevel.Critical)
+                        .AddFilter<EventSourceLoggerProvider>("Logger4*", LogLevel.Error)
+                );
+
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.FilterSpec = "UseAppFilters;Logger3:1";
+                testListener.EnableEvents(listenerSettings);
+
+                var logger = loggerFactory.CreateLogger("Logger1");
+                var logger2 = loggerFactory.CreateLogger("Logger2");
+                var logger3 = loggerFactory.CreateLogger("Logger3");
+                var logger4 = loggerFactory.CreateLogger("Logger4");
+
+                Assert.False(logger.IsEnabled(LogLevel.None));
+                Assert.True(logger.IsEnabled(LogLevel.Critical));
+                Assert.True(logger.IsEnabled(LogLevel.Error));
+                Assert.True(logger.IsEnabled(LogLevel.Warning));
+                Assert.False(logger.IsEnabled(LogLevel.Information));
+                Assert.False(logger.IsEnabled(LogLevel.Debug));
+                Assert.False(logger.IsEnabled(LogLevel.Trace));
+
+                Assert.False(logger2.IsEnabled(LogLevel.None));
+                Assert.True(logger2.IsEnabled(LogLevel.Critical));
+                Assert.True(logger2.IsEnabled(LogLevel.Error));
+                Assert.False(logger2.IsEnabled(LogLevel.Warning));
+                Assert.False(logger2.IsEnabled(LogLevel.Information));
+                Assert.False(logger2.IsEnabled(LogLevel.Debug));
+                Assert.False(logger2.IsEnabled(LogLevel.Trace));
+
+                Assert.False(logger3.IsEnabled(LogLevel.None));
+                Assert.True(logger3.IsEnabled(LogLevel.Critical));
+                Assert.True(logger3.IsEnabled(LogLevel.Error));
+                Assert.True(logger3.IsEnabled(LogLevel.Warning));
+                Assert.True(logger3.IsEnabled(LogLevel.Information));
+                Assert.True(logger3.IsEnabled(LogLevel.Debug));
+                Assert.False(logger3.IsEnabled(LogLevel.Trace));
+
+                Assert.False(logger4.IsEnabled(LogLevel.None));
+                Assert.True(logger4.IsEnabled(LogLevel.Critical));
+                Assert.True(logger4.IsEnabled(LogLevel.Error));
+                Assert.False(logger4.IsEnabled(LogLevel.Warning));
+                Assert.False(logger4.IsEnabled(LogLevel.Information));
+                Assert.False(logger4.IsEnabled(LogLevel.Debug));
+                Assert.False(logger4.IsEnabled(LogLevel.Trace));
+            }
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("UseAppFilters_StartsThisWay:Debug;")]
+        public void FilterSpecs_IncreaseLoggingLevelForOneCategory_DisablesExistingRulesByDefault(string prefix)
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var loggerFactory = LoggerFactory.Create(builder =>
+                    builder
+                        .AddEventSourceLogger()
+                        .AddFilter("Logger1*", LogLevel.Warning)
+                        .AddFilter("Logger2*", LogLevel.Error)
+                        .AddFilter("Logger3*", LogLevel.Critical)
+                        .AddFilter<EventSourceLoggerProvider>("Logger4*", LogLevel.Error)
+                );
+
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.FilterSpec = prefix + "Logger3:1";
+                testListener.EnableEvents(listenerSettings);
+
+                var logger = loggerFactory.CreateLogger("Logger1");
+                var logger2 = loggerFactory.CreateLogger("Logger2");
+                var logger3 = loggerFactory.CreateLogger("Logger3");
+                var logger4 = loggerFactory.CreateLogger("Logger4");
+                
+                foreach (LogLevel level in Enum.GetValues(typeof(LogLevel)))
+                {
+                    Assert.False(logger.IsEnabled(LogLevel.None));
+                    Assert.False(logger2.IsEnabled(LogLevel.None));
+                }
+
+                Assert.False(logger3.IsEnabled(LogLevel.None));
+                Assert.True(logger3.IsEnabled(LogLevel.Critical));
+                Assert.True(logger3.IsEnabled(LogLevel.Error));
+                Assert.True(logger3.IsEnabled(LogLevel.Warning));
+                Assert.True(logger3.IsEnabled(LogLevel.Information));
+                Assert.True(logger3.IsEnabled(LogLevel.Debug));
+                Assert.False(logger3.IsEnabled(LogLevel.Trace));
+
+                // Note: default disabling rule does not take precedence on filter rules that specify both a provider and a category
+                Assert.False(logger4.IsEnabled(LogLevel.None));
+                Assert.True(logger4.IsEnabled(LogLevel.Critical));
+                Assert.True(logger4.IsEnabled(LogLevel.Error));
+                Assert.False(logger4.IsEnabled(LogLevel.Warning));
+                Assert.False(logger4.IsEnabled(LogLevel.Information));
+                Assert.False(logger4.IsEnabled(LogLevel.Debug));
+                Assert.False(logger4.IsEnabled(LogLevel.Trace));
             }
         }
 
@@ -444,7 +551,8 @@ namespace Microsoft.Extensions.Logging.Test
 
                 LogStuff(factory);
 
-                var containsNullEventName = false;
+                bool containsNullEventName = false;
+                bool containsFormattedMessage = false;
 
                 foreach (var eventJson in testListener.Events)
                 {
@@ -452,9 +560,14 @@ namespace Microsoft.Extensions.Logging.Test
                     {
                         containsNullEventName = true;
                     }
+                    if (eventJson.Contains(@"""FormattedMessage"":""Logger1 Event1 Debug 1"""))
+                    {
+                        containsFormattedMessage = true;
+                    }
                 }
 
                 Assert.True(containsNullEventName, "EventName is supposed to be null but it isn't.");
+                Assert.True(containsFormattedMessage, "FormattedMessage is supposed to be present but it isn't.");
             }
         }
 
@@ -472,19 +585,25 @@ namespace Microsoft.Extensions.Logging.Test
                 // Write some MessageJson events with null string.
                 for (var i = 0; i < 100; i++)
                 {
-                    LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, null, "testJson");
+                    LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, null, "testJson", "formattedMessage");
                 }
 
                 bool containsNullEventName = false;
+                bool containsFormattedMessage = false;
                 foreach (var eventJson in testListener.Events)
                 {
                     if (eventJson.Contains(@"""__EVENT_NAME"":""MessageJson""") && eventJson.Contains(@"""EventName"":"""","))
                     {
                         containsNullEventName = true;
                     }
+                    if (eventJson.Contains(@"""FormattedMessage"":""formattedMessage"""))
+                    {
+                        containsFormattedMessage = true;
+                    }
                 }
 
                 Assert.True(containsNullEventName, "EventName and ExceptionJson is supposed to be null but it isn't.");
+                Assert.True(containsFormattedMessage, "FormattedMessage is supposed to be present but it isn't.");
             }
         }
 
@@ -836,7 +955,7 @@ namespace Microsoft.Extensions.Logging.Test
             { "OuterScopeStop", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityStop, null, null, null) },
 
             { "InnerScopeJsonStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStart, null, null, null,
-                        @"""ArgumentsJson"":{""timeParam"":""" + TimeParam.ToString() + @""",""guidParam"":""" + GuidParam.ToString("D")) },
+                        @"""ArgumentsJson"":{""timeParam"":""" + JsonEncodedText.Encode(TimeParam.ToString()).ToString() + @""",""guidParam"":""" + GuidParam.ToString("D")) },
             { "InnerScopeJsonStop", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStop, null, null, null) },
 
             { "InnerScopeStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityStart, null, null, null) },

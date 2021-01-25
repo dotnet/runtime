@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Buffers;
@@ -269,23 +268,12 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
-            Oid curveOid;
-
-            switch (domainParameters.Named)
-            {
-                case Oids.secp256r1:
-                    curveOid = new Oid(Oids.secp256r1, nameof(ECCurve.NamedCurves.nistP256));
-                    break;
-                case Oids.secp384r1:
-                    curveOid = new Oid(Oids.secp384r1, nameof(ECCurve.NamedCurves.nistP384));
-                    break;
-                case Oids.secp521r1:
-                    curveOid = new Oid(Oids.secp521r1, nameof(ECCurve.NamedCurves.nistP521));
-                    break;
-                default:
-                    curveOid = new Oid(domainParameters.Named);
-                    break;
-            }
+            Oid curveOid = domainParameters.Named switch {
+                Oids.secp256r1 => Oids.secp256r1Oid,
+                Oids.secp384r1 => Oids.secp384r1Oid,
+                Oids.secp521r1 => Oids.secp521r1Oid,
+                _ => new Oid(domainParameters.Named, null)
+            };
 
             return ECCurve.CreateFromOid(curveOid);
         }

@@ -114,6 +114,8 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 {
 	guint8 *code, *start;
 
+	MINI_BEGIN_CODEGEN ();
+
 	if (has_target) {
 		start = code = mono_global_codeman_reserve (12);
 
@@ -123,9 +125,6 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		arm_brx (code, ARMREG_IP0);
 
 		g_assert ((code - start) <= 12);
-
-		mono_arch_flush_icache (start, 12);
-		MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL));
 	} else {
 		int size, i;
 
@@ -139,10 +138,8 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		arm_brx (code, ARMREG_IP0);
 
 		g_assert ((code - start) <= size);
-
-		mono_arch_flush_icache (start, size);
-		MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL));
 	}
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
 
 	if (code_size)
 		*code_size = code - start;
@@ -255,7 +252,7 @@ mono_arch_init (void)
 
 	mono_arm_gsharedvt_init ();
 
-#if defined(TARGET_IOS) || defined(TARGET_WATCHOS)
+#if defined(TARGET_IOS) || defined(TARGET_WATCHOS) || defined(TARGET_OSX)
 	ios_abi = TRUE;
 #endif
 }
@@ -1076,7 +1073,11 @@ add_general (CallInfo *cinfo, ArgInfo *ainfo, int size, gboolean sign)
 {
 	if (cinfo->gr >= PARAM_REGS) {
 		ainfo->storage = ArgOnStack;
-		if (ios_abi) {
+		/*
+		 * FIXME: The vararg argument handling code in ves_icall_System_ArgIterator_IntGetNextArg
+		 * assumes every argument is allocated to a separate full size stack slot.
+		 */
+		if (ios_abi && !cinfo->vararg) {
 			/* Assume size == align */
 		} else {
 			/* Put arguments into 8 byte aligned stack slots */
@@ -1344,6 +1345,10 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	cinfo->nargs = n;
 	cinfo->pinvoke = sig->pinvoke;
+	// Constrain this to OSX only for now
+#ifdef TARGET_OSX
+	cinfo->vararg = sig->call_convention == MONO_CALL_VARARG;
+#endif
 
 	/* Return value */
 	add_param (cinfo, &cinfo->ret, sig->ret);
@@ -1505,7 +1510,7 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 
 /* Set return value in the ccontext (for n2i return) */
 void
-mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer retp)
 {
 	const MonoEECallbacks *interp_cb;
 	CallInfo *cinfo;
@@ -1519,7 +1524,11 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 	cinfo = get_call_info (NULL, sig);
 	ainfo = &cinfo->ret;
 
-	if (ainfo->storage != ArgVtypeByRef) {
+	if (retp) {
+		g_assert (ainfo->storage == ArgVtypeByRef);
+		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, retp);
+	} else {
+		g_assert (ainfo->storage != ArgVtypeByRef);
 		int temp_size = arg_need_temp (ainfo);
 
 		if (temp_size)
@@ -1536,21 +1545,13 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 }
 
 /* Gets the arguments from ccontext (for n2i entry) */
-void
+gpointer
 mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
 {
 	const MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
 	CallInfo *cinfo = get_call_info (NULL, sig);
 	gpointer storage;
 	ArgInfo *ainfo;
-
-	if (sig->ret->type != MONO_TYPE_VOID) {
-		ainfo = &cinfo->ret;
-		if (ainfo->storage == ArgVtypeByRef) {
-			storage = (gpointer) ccontext->gregs [cinfo->ret.reg];
-			interp_cb->frame_arg_set_storage ((MonoInterpFrameHandle)frame, sig, -1, storage);
-		}
-	}
 
 	for (int i = 0; i < sig->param_count + sig->hasthis; i++) {
 		ainfo = &cinfo->args [i];
@@ -1565,7 +1566,14 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, storage);
 	}
 
+	storage = NULL;
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		ainfo = &cinfo->ret;
+		if (ainfo->storage == ArgVtypeByRef)
+			storage = (gpointer) ccontext->gregs [cinfo->ret.reg];
+	}
 	g_free (cinfo);
+	return storage;
 }
 
 /* Gets the return value from ccontext (for i2n exit) */
@@ -4193,6 +4201,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_uxthw (code, dreg, dreg);
 			break;
 		case OP_FCONV_TO_I4:
+		case OP_FCONV_TO_I:
 			arm_fcvtzs_dx (code, dreg, sreg1);
 			arm_sxtwx (code, dreg, dreg);
 			break;
@@ -5344,11 +5353,15 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		}
 	}
 
-	if (fail_tramp)
-		buf = (guint8*)mono_method_alloc_generic_virtual_trampoline (domain, buf_len);
-	else
-		buf = mono_domain_code_reserve (domain, buf_len);
+	if (fail_tramp) {
+		buf = (guint8*)mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), buf_len);
+	} else {
+		MonoMemoryManager *mem_manager = m_class_get_mem_manager (domain, vtable->klass);
+		buf = mono_mem_manager_code_reserve (mem_manager, buf_len);
+	}
 	code = buf;
+
+	MINI_BEGIN_CODEGEN ();
 
 	/*
 	 * We are called by JITted code, which passes in the IMT argument in
@@ -5419,8 +5432,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 
 	g_assert ((code - buf) <= buf_len);
 
-	mono_arch_flush_icache (buf, code - buf);
-	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
+	MINI_END_CODEGEN (buf, code - buf, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 
 	return buf;
 }
@@ -5460,7 +5472,9 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 	} else {
 		/* ip points to an ldrx */
 		code += 4;
+		mono_codeman_enable_write ();
 		arm_blrx (code, ARMREG_IP0);
+		mono_codeman_disable_write ();
 		mono_arch_flush_icache (ip, code - ip);
 	}
 }
@@ -5479,7 +5493,9 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 	} else {
 		/* ip points to an ldrx */
 		code += 4;
+		mono_codeman_enable_write ();
 		arm_nop (code);
+		mono_codeman_disable_write ();
 		mono_arch_flush_icache (ip, code - ip);
 	}
 }

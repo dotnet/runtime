@@ -13,6 +13,7 @@
 #include "mini.h"
 #include "mini-arm64.h"
 #include "mini-arm64-gsharedvt.h"
+#include "mini-runtime.h"
 
 /*
  * GSHAREDVT
@@ -36,13 +37,16 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	 */
 	buf = code = mono_global_codeman_reserve (buf_len);
 
+	MINI_BEGIN_CODEGEN ();
+
 	code = mono_arm_emit_imm64 (code, ARMREG_IP1, (guint64)arg);
 	code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)addr);
 
 	arm_brx (code, ARMREG_IP0);
 
 	g_assert ((code - buf) < buf_len);
-	mono_arch_flush_icache (buf, code - buf);
+
+	MINI_END_CODEGEN (buf, code - buf, -1, NULL);
 
 	return buf;
 }
@@ -247,6 +251,8 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	g_assert (offset % MONO_ARCH_FRAME_ALIGNMENT == 0);
 
 	cfa_offset = offset;
+
+	MINI_BEGIN_CODEGEN ();
 
 	/* Setup frame */
 	arm_stpx_pre (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, -cfa_offset);
@@ -547,7 +553,8 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, code - buf, ji, unwind_ops);
 
-	mono_arch_flush_icache (buf, code - buf);
+	MINI_END_CODEGEN (buf, code - buf, -1, NULL);
+
 	return buf;
 }
 

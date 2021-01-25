@@ -12,7 +12,8 @@
 
 #include <windows.h>
 #include <winbase.h>
-#include "object-internals.h"
+#include <mono/metadata/object-internals.h>
+#include <mono/utils/w32subset.h>
 #include "icall-decl.h"
 
 void
@@ -20,19 +21,32 @@ mono_w32semaphore_init (void)
 {
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE || HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE_EX
 gpointer
 ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount, gint32 maximumCount,
 	const gunichar2 *name, gint32 name_length, gint32 *win32error)
-{ 
+{
 	HANDLE sem;
 	MONO_ENTER_GC_SAFE;
+#if HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE
 	sem = CreateSemaphoreW (NULL, initialCount, maximumCount, name);
+#elif HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE_EX
+	sem = CreateSemaphoreExW (NULL, initialCount, maximumCount, name, 0, SEMAPHORE_ALL_ACCESS);
+#endif
 	MONO_EXIT_GC_SAFE;
 	*win32error = GetLastError ();
 	return sem;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_CREATE_SEMAPHORE && !HAVE_EXTERN_DEFINED_WIN32_CREATE_SEMAPHORE_EX
+gpointer
+ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount, gint32 maximumCount,
+	const gunichar2 *name, gint32 name_length, gint32 *win32error)
+{
+	g_unsupported_api ("CreateSemaphore, CreateSemaphoreEx");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE || HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE_EX) */
 
 MonoBoolean
 ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle, gint32 releaseCount, gint32 *prevcount)

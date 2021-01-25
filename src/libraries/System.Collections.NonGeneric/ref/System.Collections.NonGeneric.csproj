@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <NoWarn>$(NoWarn);0618</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

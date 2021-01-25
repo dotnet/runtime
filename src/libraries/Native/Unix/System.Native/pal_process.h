@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -37,16 +36,6 @@ PALEXPORT int32_t SystemNative_ForkAndExecProcess(
                    int32_t* stdoutFd,      // [out] if redirectStdout, the parent's fd for the child's stdout
                    int32_t* stderrFd);     // [out] if redirectStderr, the parent's fd for the child's stderr
 
-/**
- * Shim for the popen function.
- */
-PALEXPORT FILE* SystemNative_POpen(const char* command, const char* type);
-
-/**
- * Shim for the pclose function.
- */
-PALEXPORT int32_t SystemNative_PClose(FILE* stream);
-
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.
  * We must never change them. The implementation must either static_assert that they are equal
@@ -73,7 +62,9 @@ typedef enum
 
 typedef enum
 {
+    PAL_NONE = 0,
     PAL_SIGKILL = 9, /* kill the specified process */
+    PAL_SIGSTOP = 19,
 } Signals;
 
 /**
@@ -234,20 +225,22 @@ PALEXPORT int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int
  */
 PALEXPORT char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
 
-#if HAVE_SCHED_SETAFFINITY
 /**
  * Sets the CPU affinity mask for a specified thread (or the current thread if 0).
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
 PALEXPORT int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
-#endif
 
-#if HAVE_SCHED_GETAFFINITY
 /**
  * Gets the affinity mask of the specified thread (or the current thread if 0).
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set.
  */
 PALEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
-#endif
+
+/**
+ * Returns the path of the executable that started the currently executing process, 
+ * resolving symbolic links. The caller is responsible for releasing the buffer.
+ */
+PALEXPORT char* SystemNative_GetProcessPath(void);

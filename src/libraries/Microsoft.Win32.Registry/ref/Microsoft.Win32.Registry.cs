@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -115,8 +114,8 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeRegistryHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
+        public SafeRegistryHandle() : base (default(bool)) {}
         public SafeRegistryHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
-        public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
 }

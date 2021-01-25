@@ -1,0 +1,32 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+
+#This test is negative and will exit with exit(1).
+#Therefore, the harness would record it as a failure
+c_runtime/exit/test2,1
+# A successful DebugBreak test run dumps core or throws up an ASSERT
+# dialog box (or...) and returns an exit code != 0
+debug_api/debugbreak/test1,1
+# debug_api/outputdebugstringa/test1 attempts to send "Foo!" to the debugger
+# The PAL behaviour is implementation dependant and can include an interactive
+# dialog
+debug_api/outputdebugstringw/test1,1
+debug_api/outputdebugstringa/test1,1
+# These tests require user intervention and cannot be automated
+pal_specific/pal_get_stdin/test1,1
+threading/setconsolectrlhandler/test1,1
+threading/setconsolectrlhandler/test4,1
+# These tests take several minutes to run and time out when run with the harness
+file_io/gettempfilenamea/test2,1
+file_io/gettempfilenamew/test2,1
+# getstdhandle fails under Windows if the output is redirected so 
+# it must be run from the command line
+file_io/getstdhandle/test1,1
+# This test runs calculations in a nested loop to occupy the processor. 
+# This causes the test harness to time out on some machines.
+threading/threadpriority/test1,1
+# This test runs for 96 minutes and will time out with the harness.
+threading/sleep/test2,1
+# This test runs forever by design.
+threading/waitformultipleobjects/test2,1
+

@@ -129,10 +129,10 @@
   <data name="Error_MissingParameterlessConstructor" xml:space="preserve">
     <value>Cannot create instance of type '{0}' because it is missing a public parameterless constructor.</value>
   </data>
-  <data name="Error_NoIConfigureOptions" xml:space="preserve">
-    <value>No IConfigureOptions&lt;&gt; or IPostConfigureOptions&lt;&gt; implementations were found.</value>
+  <data name="Error_NoConfigurationServices" xml:space="preserve">
+    <value>No IConfigureOptions&lt;&gt;, IPostConfigureOptions&lt;&gt;, or IValidateOptions&lt;&gt; implementations were found.</value>
   </data>
-  <data name="Error_NoIConfigureOptionsAndAction" xml:space="preserve">
-    <value>No IConfigureOptions&lt;&gt; or IPostConfigureOptions&lt;&gt; implementations were found, did you mean to call Configure&lt;&gt; or PostConfigure&lt;&gt;?</value>
+  <data name="Error_NoConfigurationServicesAndAction" xml:space="preserve">
+    <value>No IConfigureOptions&lt;&gt;, IPostConfigureOptions&lt;&gt;, or IValidateOptions&lt;&gt; implementations were found, did you mean to call Configure&lt;&gt; or PostConfigure&lt;&gt;?</value>
   </data>
 </root>

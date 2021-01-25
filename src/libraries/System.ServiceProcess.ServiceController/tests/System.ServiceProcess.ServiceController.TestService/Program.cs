@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Threading;
 
 namespace System.ServiceProcess.Tests
 {
@@ -8,6 +9,7 @@ namespace System.ServiceProcess.Tests
     {
         static int Main(string[] args)
         {
+            Thread.CurrentThread.Name = "Test Service";
             if (args.Length == 1 || args.Length == 2)
             {
                 TestService testService;

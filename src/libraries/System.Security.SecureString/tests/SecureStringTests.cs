@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Linq;
@@ -447,8 +446,8 @@ namespace System.Security.Tests
         }
 
         [OuterLoop]
-        [Theory]
         [InlineData(5)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThreadSafe_Stress(int executionTimeSeconds) // do some minimal verification that an instance can be used concurrently
         {
             using (var ss = new SecureString())

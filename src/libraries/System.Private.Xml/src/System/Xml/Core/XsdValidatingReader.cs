@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -86,7 +84,7 @@ namespace System.Xml
         private ArrayList _defaultAttributes;
 
         // Inline Schema
-        private Parser? _inlineSchemaParser = null;
+        private Parser? _inlineSchemaParser;
 
         // Typed Value & PSVI
         private object? _atomicValue;
@@ -346,7 +344,7 @@ namespace System.Xml
         }
 
         // Gets the base URI of the current node.
-        public override string? BaseURI
+        public override string BaseURI
         {
             get
             {
@@ -729,7 +727,7 @@ namespace System.Xml
             }
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             if (!CanReadContentAs(this.NodeType))
             {
@@ -1136,7 +1134,7 @@ namespace System.Xml
         }
 
         // Gets the value of the attribute with the specified LocalName and NamespaceURI.
-        public override string? GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             string? attValue = _coreReader.GetAttribute(name, namespaceURI);
 
@@ -1513,7 +1511,6 @@ namespace System.Xml
         // Skips to the end tag of the current element.
         public override void Skip()
         {
-            int startDepth = Depth;
             switch (NodeType)
             {
                 case XmlNodeType.Element:

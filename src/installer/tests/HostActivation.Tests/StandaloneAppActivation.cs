@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -312,12 +311,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 var buildFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 buildFixture
-                    .EnsureRestoredForRid(buildFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(buildFixture.CurrentRid)
                     .BuildProject(runtime: buildFixture.CurrentRid);
 
                 var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 publishFixture
-                    .EnsureRestoredForRid(publishFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(publishFixture.CurrentRid)
                     .PublishProject(runtime: publishFixture.CurrentRid);
 
                 ReplaceTestProjectOutputHostInTestProjectFixture(buildFixture);

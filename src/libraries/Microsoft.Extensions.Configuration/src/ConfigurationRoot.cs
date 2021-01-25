@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 
@@ -32,7 +30,7 @@ namespace Microsoft.Extensions.Configuration
 
             _providers = providers;
             _changeTokenRegistrations = new List<IDisposable>(providers.Count);
-            foreach (var p in providers)
+            foreach (IConfigurationProvider p in providers)
             {
                 p.Load();
                 _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
@@ -53,11 +51,11 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                for (var i = _providers.Count - 1; i >= 0; i--)
+                for (int i = _providers.Count - 1; i >= 0; i--)
                 {
-                    var provider = _providers[i];
+                    IConfigurationProvider provider = _providers[i];
 
-                    if (provider.TryGet(key, out var value))
+                    if (provider.TryGet(key, out string value))
                     {
                         return value;
                     }
@@ -67,12 +65,12 @@ namespace Microsoft.Extensions.Configuration
             }
             set
             {
-                if (!_providers.Any())
+                if (_providers.Count == 0)
                 {
                     throw new InvalidOperationException(SR.Error_NoSources);
                 }
 
-                foreach (var provider in _providers)
+                foreach (IConfigurationProvider provider in _providers)
                 {
                     provider.Set(key, value);
                 }
@@ -108,7 +106,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public void Reload()
         {
-            foreach (var provider in _providers)
+            foreach (IConfigurationProvider provider in _providers)
             {
                 provider.Load();
             }
@@ -117,7 +115,7 @@ namespace Microsoft.Extensions.Configuration
 
         private void RaiseChanged()
         {
-            var previousToken = Interlocked.Exchange(ref _changeToken, new ConfigurationReloadToken());
+            ConfigurationReloadToken previousToken = Interlocked.Exchange(ref _changeToken, new ConfigurationReloadToken());
             previousToken.OnReload();
         }
 
@@ -125,13 +123,13 @@ namespace Microsoft.Extensions.Configuration
         public void Dispose()
         {
             // dispose change token registrations
-            foreach (var registration in _changeTokenRegistrations)
+            foreach (IDisposable registration in _changeTokenRegistrations)
             {
                 registration.Dispose();
             }
 
             // dispose providers
-            foreach (var provider in _providers)
+            foreach (IConfigurationProvider provider in _providers)
             {
                 (provider as IDisposable)?.Dispose();
             }

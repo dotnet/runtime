@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -34,7 +36,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             else
             {
                 parameterValues = new object[constructorCallSite.ParameterCallSites.Length];
-                for (var index = 0; index < parameterValues.Length; index++)
+                for (int index = 0; index < parameterValues.Length; index++)
                 {
                     parameterValues[index] = VisitCallSite(constructorCallSite.ParameterCallSites[index], context);
                 }
@@ -56,26 +58,39 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 #endif
         }
 
-        protected override object VisitRootCache(ServiceCallSite singletonCallSite, RuntimeResolverContext context)
+        protected override object VisitRootCache(ServiceCallSite callSite, RuntimeResolverContext context)
         {
-            return VisitCache(singletonCallSite, context, context.Scope.Engine.Root, RuntimeResolverLock.Root);
+            var lockType = RuntimeResolverLock.Root;
+            bool lockTaken = false;
+
+            // using more granular locking (per singleton) for the root
+            Monitor.Enter(callSite, ref lockTaken);
+            try
+            {
+                return ResolveService(callSite, context, lockType, serviceProviderEngine: context.Scope.Engine.Root);
+            }
+            finally
+            {
+                if (lockTaken)
+                {
+                    Monitor.Exit(callSite);
+                }
+            }
         }
 
-        protected override object VisitScopeCache(ServiceCallSite singletonCallSite, RuntimeResolverContext context)
+        protected override object VisitScopeCache(ServiceCallSite callSite, RuntimeResolverContext context)
         {
             // Check if we are in the situation where scoped service was promoted to singleton
             // and we need to lock the root
-            var requiredScope = context.Scope == context.Scope.Engine.Root ?
-                RuntimeResolverLock.Root :
-                RuntimeResolverLock.Scope;
-
-            return VisitCache(singletonCallSite, context, context.Scope, requiredScope);
+            return context.Scope == context.Scope.Engine.Root ?
+                VisitRootCache(callSite, context) :
+                VisitCache(callSite, context, context.Scope, RuntimeResolverLock.Scope);
         }
 
         private object VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
         {
             bool lockTaken = false;
-            var resolvedServices = serviceProviderEngine.ResolvedServices;
+            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
 
             // Taking locks only once allows us to fork resolution process
             // on another thread without causing the deadlock because we
@@ -88,19 +103,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             try
             {
-                if (!resolvedServices.TryGetValue(callSite.Cache.Key, out var resolved))
-                {
-                    resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
-                    {
-                        Scope = serviceProviderEngine,
-                        AcquiredLocks = context.AcquiredLocks | lockType
-                    });
-
-                    serviceProviderEngine.CaptureDisposable(resolved);
-                    resolvedServices.Add(callSite.Cache.Key, resolved);
-                }
-
-                return resolved;
+                return ResolveService(callSite, context, lockType, serviceProviderEngine);
             }
             finally
             {
@@ -109,6 +112,32 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     Monitor.Exit(resolvedServices);
                 }
             }
+        }
+
+        private object ResolveService(ServiceCallSite callSite, RuntimeResolverContext context, RuntimeResolverLock lockType, ServiceProviderEngineScope serviceProviderEngine)
+        {
+            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
+
+            // Note: This method has already taken lock by the caller for resolution and access synchronization.
+            // For root: uses a concurrent dictionary and takes a per singleton lock for resolution.
+            // For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
+            Debug.Assert(
+                (lockType == RuntimeResolverLock.Root && resolvedServices is ConcurrentDictionary<ServiceCacheKey, object>) ||
+                (lockType == RuntimeResolverLock.Scope && Monitor.IsEntered(resolvedServices)));
+
+            if (resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
+            {
+                return resolved;
+            }
+
+            resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
+            {
+                Scope = serviceProviderEngine,
+                AcquiredLocks = context.AcquiredLocks | lockType
+            });
+            serviceProviderEngine.CaptureDisposable(resolved);
+            resolvedServices.Add(callSite.Cache.Key, resolved);
+            return resolved;
         }
 
         protected override object VisitConstant(ConstantCallSite constantCallSite, RuntimeResolverContext context)
@@ -132,9 +161,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 enumerableCallSite.ItemType,
                 enumerableCallSite.ServiceCallSites.Length);
 
-            for (var index = 0; index < enumerableCallSite.ServiceCallSites.Length; index++)
+            for (int index = 0; index < enumerableCallSite.ServiceCallSites.Length; index++)
             {
-                var value = VisitCallSite(enumerableCallSite.ServiceCallSites[index], context);
+                object value = VisitCallSite(enumerableCallSite.ServiceCallSites[index], context);
                 array.SetValue(value, index);
             }
             return array;

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -66,24 +65,22 @@ namespace System.Text.Json
         /// <summary>
         /// Initialize the state without delayed initialization of the JsonClassInfo.
         /// </summary>
-        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
+        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
+            JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
 
             Current.JsonClassInfo = jsonClassInfo;
+            Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+            Current.NumberHandling = Current.DeclaredJsonPropertyInfo.NumberHandling;
 
-            if ((jsonClassInfo.ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
-            {
-                Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
-            }
-
-            bool preserveReferences = options.ReferenceHandler != null;
-            if (preserveReferences)
+            if (options.ReferenceHandler != null)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: true);
             }
 
             SupportContinuation = supportContinuation;
+
+            return jsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
         }
 
         public void Push()
@@ -98,12 +95,15 @@ namespace System.Text.Json
                 else
                 {
                     JsonClassInfo jsonClassInfo = Current.GetPolymorphicJsonPropertyInfo().RuntimeClassInfo;
+                    JsonNumberHandling? numberHandling = Current.NumberHandling;
 
                     AddCurrent();
                     Current.Reset();
 
                     Current.JsonClassInfo = jsonClassInfo;
                     Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+                    // Allow number handling on property to win over handling on type.
+                    Current.NumberHandling = numberHandling ?? Current.DeclaredJsonPropertyInfo.NumberHandling;
                 }
             }
             else if (_continuationCount == 1)
@@ -204,7 +204,7 @@ namespace System.Text.Json
             void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)
             {
                 // Append the property name.
-                string? propertyName = frame.DeclaredJsonPropertyInfo?.PropertyInfo?.Name;
+                string? propertyName = frame.DeclaredJsonPropertyInfo?.MemberInfo?.Name;
                 if (propertyName == null)
                 {
                     // Attempt to get the JSON property name from the property name specified in re-entry.

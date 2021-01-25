@@ -1,0 +1,258 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp2.1-windows;netstandard2.0</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <!-- CS0649: uninitialized interop type fields -->
+    <!-- CA2249: Consider using String.Contains instead of String.IndexOf.  We compile for netcoreapp2.1 where this doesn't exist.-->
+    <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
+    <NoWarn>$(NoWarn);CS0649;CA2249;SA1129</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
+    <!-- On older TFM's we needed to disable obsoletion warnings about Marshalling VARIANTs -->
+    <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">$(NoWarn);IDE0079</NoWarn>
+    <!-- On newer TFM's we needed to disable obsoletion warning about WebRequest -->
+    <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.1-windows'">$(NoWarn);IDE0079</NoWarn>
+  </PropertyGroup>
+  <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
+  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+    <OmitResources>true</OmitResources>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Visible>true</Visible>
+      <ManifestResourceName>ExceptionStringTable</ManifestResourceName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="SR.cs" />
+    <Compile Include="SRID.cs" />
+    <Compile Include="AudioFormat\AudioFormatConverter.cs" />
+    <Compile Include="AudioFormat\EncodingFormat.cs" />
+    <Compile Include="AudioFormat\SpeechAudioFormatInfo.cs" />
+    <Compile Include="Internal\AlphabetConverter.cs" />
+    <Compile Include="Internal\AsyncSerializedWorker.cs" />
+    <Compile Include="Internal\Helpers.cs" />
+    <Compile Include="Internal\HGlobalSafeHandle.cs" />
+    <Compile Include="Internal\PhonemeConverter.cs" />
+    <Compile Include="Internal\RedBlackList.cs" />
+    <Compile Include="Internal\ResourceLoader.cs" />
+    <Compile Include="Internal\SapiAttributeParser.cs" />
+    <Compile Include="Internal\SeekableReadStream.cs" />
+    <Compile Include="Internal\StreamMarshaler.cs" />
+    <Compile Include="Internal\StringBlob.cs" />
+    <Compile Include="Internal\GrammarBuilding\BuilderElements.cs" />
+    <Compile Include="Internal\GrammarBuilding\GrammarBuilderBase.cs" />
+    <Compile Include="Internal\GrammarBuilding\GrammarBuilderDictation.cs" />
+    <Compile Include="Internal\GrammarBuilding\GrammarBuilderPhrase.cs" />
+    <Compile Include="Internal\GrammarBuilding\GrammarBuilderRuleRef.cs" />
+    <Compile Include="Internal\GrammarBuilding\GrammarBuilderWildcard.cs" />
+    <Compile Include="Internal\GrammarBuilding\IdentifierCollection.cs" />
+    <Compile Include="Internal\GrammarBuilding\ItemElement.cs" />
+    <Compile Include="Internal\GrammarBuilding\OneOfElement.cs" />
+    <Compile Include="Internal\GrammarBuilding\RuleElement.cs" />
+    <Compile Include="Internal\GrammarBuilding\RuleRefElement.cs" />
+    <Compile Include="Internal\GrammarBuilding\SemanticKeyElement.cs" />
+    <Compile Include="Internal\GrammarBuilding\TagElement.cs" />
+    <Compile Include="Internal\ObjectToken\ObjectToken.cs" />
+    <Compile Include="Internal\ObjectToken\ObjectTokenCategory.cs" />
+    <Compile Include="Internal\ObjectToken\RegistryDataKey.cs" />
+    <Compile Include="Internal\ObjectToken\SAPICategories.cs" />
+    <Compile Include="Internal\SapiInterop\EventNotify.cs" />
+    <Compile Include="Internal\SapiInterop\SapiEventInterop.cs" />
+    <Compile Include="Internal\SapiInterop\SapiGrammar.cs" />
+    <Compile Include="Internal\SapiInterop\SapiInterop.cs" />
+    <Compile Include="Internal\SapiInterop\SapiProxy.cs" />
+    <Compile Include="Internal\SapiInterop\SapiRecoContext.cs" />
+    <Compile Include="Internal\SapiInterop\SapiRecognizer.cs" />
+    <Compile Include="Internal\SapiInterop\SapiRecoInterop.cs" />
+    <Compile Include="Internal\SapiInterop\SapiStreamInterop.cs" />
+    <Compile Include="Internal\SapiInterop\SpAudioStreamWrapper.cs" />
+    <Compile Include="Internal\SapiInterop\SpeechEvent.cs" />
+    <Compile Include="Internal\SapiInterop\SpStreamWrapper.cs" />
+    <Compile Include="Internal\SrgsCompiler\AppDomainGrammarProxy.cs" />
+    <Compile Include="Internal\SrgsCompiler\Arc.cs" />
+    <Compile Include="Internal\SrgsCompiler\ArcList.cs" />
+    <Compile Include="Internal\SrgsCompiler\BackEnd.cs" />
+    <Compile Include="Internal\SrgsCompiler\CfgArc.cs" />
+    <Compile Include="Internal\SrgsCompiler\CFGGrammar.cs" />
+    <Compile Include="Internal\SrgsCompiler\CfgRule.cs" />
+    <Compile Include="Internal\SrgsCompiler\CfgScriptRef.cs" />
+    <Compile Include="Internal\SrgsCompiler\CfgSemanticTag.cs" />
+    <Compile Include="Internal\SrgsCompiler\CustomGrammar.cs" />
+    <Compile Include="Internal\SrgsCompiler\GrammarElement.cs" />
+    <Compile Include="Internal\SrgsCompiler\Graph.cs" />
+    <Compile Include="Internal\SrgsCompiler\Item.cs" />
+    <Compile Include="Internal\SrgsCompiler\OneOf.cs" />
+    <Compile Include="Internal\SrgsCompiler\ParseElement.cs" />
+    <Compile Include="Internal\SrgsCompiler\ParseElementCollection.cs" />
+    <Compile Include="Internal\SrgsCompiler\PropertyTag.cs" />
+    <Compile Include="Internal\SrgsCompiler\Rule.cs" />
+    <Compile Include="Internal\SrgsCompiler\RuleRef.cs" />
+    <Compile Include="Internal\SrgsCompiler\ScriptRef.cs" />
+    <Compile Include="Internal\SrgsCompiler\SemanticTag.cs" />
+    <Compile Include="Internal\SrgsCompiler\SrgsCompiler.cs" />
+    <Compile Include="Internal\SrgsCompiler\SrgsElementCompilerFactory.cs" />
+    <Compile Include="Internal\SrgsCompiler\State.cs" />
+    <Compile Include="Internal\SrgsCompiler\Subset.cs" />
+    <Compile Include="Internal\SrgsCompiler\Tag.cs" />
+    <Compile Include="Internal\SrgsParser\IElement.cs" />
+    <Compile Include="Internal\SrgsParser\IElementFactory.cs" />
+    <Compile Include="Internal\SrgsParser\IElementText.cs" />
+    <Compile Include="Internal\SrgsParser\IGrammar.cs" />
+    <Compile Include="Internal\SrgsParser\IItem.cs" />
+    <Compile Include="Internal\SrgsParser\IOneOf.cs" />
+    <Compile Include="Internal\SrgsParser\IPropertyTag.cs" />
+    <Compile Include="Internal\SrgsParser\IRule.cs" />
+    <Compile Include="Internal\SrgsParser\IRuleRef.cs" />
+    <Compile Include="Internal\SrgsParser\IScript.cs" />
+    <Compile Include="Internal\SrgsParser\ISemanticTag.cs" />
+    <Compile Include="Internal\SrgsParser\ISrgsParser.cs" />
+    <Compile Include="Internal\SrgsParser\ISubset.cs" />
+    <Compile Include="Internal\SrgsParser\IToken.cs" />
+    <Compile Include="Internal\SrgsParser\SrgsDocumentParser.cs" />
+    <Compile Include="Internal\SrgsParser\XmlParser.cs" />
+    <Compile Include="Internal\Synthesis\AudioBase.cs" />
+    <Compile Include="Internal\Synthesis\AudioDeviceOut.cs" />
+    <Compile Include="Internal\Synthesis\AudioException.cs" />
+    <Compile Include="Internal\Synthesis\AudioFileOut.cs" />
+    <Compile Include="Internal\Synthesis\AudioFormatConverter.cs" />
+    <Compile Include="Internal\Synthesis\ConvertTextFrag.cs" />
+    <Compile Include="Internal\Synthesis\EngineSite.cs" />
+    <Compile Include="Internal\Synthesis\EngineSiteSapi.cs" />
+    <Compile Include="Internal\Synthesis\ISsmlParser.cs" />
+    <Compile Include="Internal\Synthesis\PcmConverter.cs" />
+    <Compile Include="Internal\Synthesis\SafeNativeMethods.cs" />
+    <Compile Include="Internal\Synthesis\SpeakInfo.cs" />
+    <Compile Include="Internal\Synthesis\SpeechSeg.cs" />
+    <Compile Include="Internal\Synthesis\SsmlParser.cs" />
+    <Compile Include="Internal\Synthesis\TextFragmentEngine.cs" />
+    <Compile Include="Internal\Synthesis\TextWriterEngine.cs" />
+    <Compile Include="Internal\Synthesis\TtsEngineProxy.cs" />
+    <Compile Include="Internal\Synthesis\TtsEvent.cs" />
+    <Compile Include="Internal\Synthesis\TtsVoice.cs" />
+    <Compile Include="Internal\Synthesis\VoiceSynthesis.cs" />
+    <Compile Include="Internal\Synthesis\WaveHeader.cs" />
+    <Compile Include="Recognition\AudioLevelUpdatedEventArgs.cs" />
+    <Compile Include="Recognition\AudioSignalProblem.cs" />
+    <Compile Include="Recognition\AudioSignalProblemOccurredEventArgs.cs" />
+    <Compile Include="Recognition\AudioState.cs" />
+    <Compile Include="Recognition\AudioStateChangedEventArgs.cs" />
+    <Compile Include="Recognition\Choices.cs" />
+    <Compile Include="Recognition\DictationGrammar.cs" />
+    <Compile Include="Recognition\EmulateRecognizeCompletedEventArgs.cs" />
+    <Compile Include="Recognition\Grammar.cs" />
+    <Compile Include="Recognition\GrammarBuilder.cs" />
+    <Compile Include="Recognition\IRecognizerInternal.cs" />
+    <Compile Include="Recognition\LoadGrammarCompletedEventArgs.cs" />
+    <Compile Include="Recognition\RecognizeCompletedEventArgs.cs" />
+    <Compile Include="Recognition\RecognizeMode.cs" />
+    <Compile Include="Recognition\RecognizerBase.cs" />
+    <Compile Include="Recognition\RecognizerInfo.cs" />
+    <Compile Include="Recognition\RecognizerState.cs" />
+    <Compile Include="Recognition\RecognizerStateChangedEventArgs.cs" />
+    <Compile Include="Recognition\SemanticResultKey.cs" />
+    <Compile Include="Recognition\SemanticResultValue.cs" />
+    <Compile Include="Recognition\SpeechDetectedEventArgs.cs" />
+    <Compile Include="Recognition\SpeechRecognitionEngine.cs" />
+    <Compile Include="Recognition\SpeechRecognizer.cs" />
+    <Compile Include="Recognition\SpeechUI.cs" />
+    <Compile Include="Recognition\SubsetMatchingMode.cs" />
+    <Compile Include="Recognition\UpdateEventArgs.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsDocument.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsElement.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsElementFactory.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsElementList.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsGrammar.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsGrammarCompiler.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsItem.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsItemList.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsNameValueTag.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsOneOf.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsRule.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsRuleRef.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsRulesCollection.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsSemanticInterpretationTag.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsSubset.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsTagFormat.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsText.cs" />
+    <Compile Include="Recognition\SrgsGrammar\SrgsToken.cs" />
+    <Compile Include="Result\RecognitionEventArgs.cs" />
+    <Compile Include="Result\RecognitionResult.cs" />
+    <Compile Include="Result\RecognizedAudio.cs" />
+    <Compile Include="Result\RecognizedPhrase.cs" />
+    <Compile Include="Result\RecognizedWordUnit.cs" />
+    <Compile Include="Result\ReplacementText.cs" />
+    <Compile Include="Result\SemanticValue.cs" />
+    <Compile Include="Synthesis\BookmarkEventArgs.cs" />
+    <Compile Include="Synthesis\FilePrompt.cs" />
+    <Compile Include="Synthesis\InstalledVoice.cs" />
+    <Compile Include="Synthesis\PhonemeEventArgs.cs" />
+    <Compile Include="Synthesis\Prompt.cs" />
+    <Compile Include="Synthesis\PromptBuilder.cs" />
+    <Compile Include="Synthesis\PromptEventArgs.cs" />
+    <Compile Include="Synthesis\PromptStyle.cs" />
+    <Compile Include="Synthesis\SpeakCompletedEventArgs.cs" />
+    <Compile Include="Synthesis\SpeakProgressEventArgs.cs" />
+    <Compile Include="Synthesis\SpeechSynthesizer.cs" />
+    <Compile Include="Synthesis\SynthesizerStateChangedEventArgs.cs" />
+    <Compile Include="Synthesis\VisemeEventArgs.cs" />
+    <Compile Include="Synthesis\VoiceChangeEventArgs.cs" />
+    <Compile Include="Synthesis\VoiceInfo.cs" />
+    <Compile Include="Synthesis\TTSEngine\SAPIEngineTypes.cs" />
+    <Compile Include="Synthesis\TTSEngine\TTSEngineTypes.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="upstable_chs.upsmap">
+      <LogicalName>upstable_chs.upsmap</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="upstable_cht.upsmap">
+      <LogicalName>upstable_cht.upsmap</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="upstable_deu.upsmap">
+      <LogicalName>upstable_deu.upsmap</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="upstable_enu.upsmap">
+      <LogicalName>upstable_enu.upsmap</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="upstable_esp.upsmap">
+      <LogicalName>upstable_esp.upsmap</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="upstable_fra.upsmap">
+      <LogicalName>upstable_fra.upsmap</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="upstable_jpn.upsmap">
+      <LogicalName>upstable_jpn.upsmap</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Net.WebClient" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel.EventBasedAsync" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.Requests" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Serialization.Formatters" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Xml.ReaderWriter" />
+  </ItemGroup>
+</Project>

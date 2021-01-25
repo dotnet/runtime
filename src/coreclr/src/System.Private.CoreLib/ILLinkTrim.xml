@@ -1,9 +1,0 @@
-<linker>
-  <assembly fullname="System.Private.CoreLib">
-    <type fullname="System.GC">
-      <!-- Methods are used to register and unregister frozen segments. They are private and experimental. -->
-      <method name="_RegisterFrozenSegment" />
-      <method name="_UnregisterFrozenSegment" />
-    </type>
-  </assembly>
-</linker>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Configuration;
 using System.Diagnostics.CodeAnalysis;
@@ -16,7 +15,7 @@ namespace System.Windows.Forms
     internal static class DpiHelper
     {
         private const double LogicalDpi = 96.0;
-        private static bool s_isInitialized = false;
+        private static bool s_isInitialized;
         /// <summary>
         /// The primary screen's (device) current horizontal DPI
         /// </summary>
@@ -27,8 +26,8 @@ namespace System.Windows.Forms
         /// </summary>
         private static double s_deviceDpiY = LogicalDpi;
 
-        private static double s_logicalToDeviceUnitsScalingFactorX = 0.0;
-        private static double s_logicalToDeviceUnitsScalingFactorY = 0.0;
+        private static double s_logicalToDeviceUnitsScalingFactorX;
+        private static double s_logicalToDeviceUnitsScalingFactorY;
         private static InterpolationMode s_interpolationMode = InterpolationMode.Invalid;
 
         private static void Initialize()

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -20,6 +19,23 @@ namespace Internal.Cryptography
 {
     internal static partial class PkcsHelpers
     {
+        private static readonly bool s_oidIsInitOnceOnly = DetectInitOnlyOid();
+
+        private static bool DetectInitOnlyOid()
+        {
+            Oid testOid = new Oid(Oids.Sha256, null);
+
+            try
+            {
+                testOid.Value = Oids.Sha384;
+                return false;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return true;
+            }
+        }
+
 #if !NETCOREAPP && !NETSTANDARD2_1
         // Compatibility API.
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
@@ -211,7 +227,20 @@ namespace Internal.Cryptography
             if (octets.Length < 2)
                 return string.Empty;   // .NET Framework compat: 0-length byte array maps to string.empty. 1-length byte array gets passed to Marshal.PtrToStringUni() with who knows what outcome.
 
-            string s = Encoding.Unicode.GetString(octets, 0, octets.Length - 2);
+            int end = octets.Length;
+            int endMinusOne = end - 1;
+
+            // Truncate the string to before the first embedded \0 (probably the last two bytes).
+            for (int i = 0; i < endMinusOne; i += 2)
+            {
+                if (octets[i] == 0 && octets[i + 1] == 0)
+                {
+                    end = i;
+                    break;
+                }
+            }
+
+            string s = Encoding.Unicode.GetString(octets, 0, end);
             return s;
         }
 
@@ -688,6 +717,21 @@ namespace Internal.Cryptography
             {
                 exception = e;
                 return false;
+            }
+        }
+
+        // Creates a defensive copy of an OID on platforms where OID
+        // is mutable. On platforms where OID is immutable, return the OID as-is.
+        [return: NotNullIfNotNull("oid")]
+        public static Oid? CopyOid(this Oid? oid)
+        {
+            if (s_oidIsInitOnceOnly)
+            {
+                return oid;
+            }
+            else
+            {
+                return oid is null ? null : new Oid(oid);
             }
         }
     }

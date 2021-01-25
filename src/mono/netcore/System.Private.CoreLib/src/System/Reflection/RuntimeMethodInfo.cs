@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 // Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
@@ -134,6 +137,7 @@ namespace System.Reflection
         }
     }
 
+#region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
     internal class RuntimeMethodInfo : MethodInfo
     {
@@ -142,14 +146,8 @@ namespace System.Reflection
         private string? name;
         private Type? reftype;
 #pragma warning restore 649
-
-        internal BindingFlags BindingFlags
-        {
-            get
-            {
-                return 0;
-            }
-        }
+#endregion
+        private string? toString;
 
         public override Module Module
         {
@@ -175,9 +173,9 @@ namespace System.Reflection
             if (IsGenericMethod)
                 sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
 
-            sbName.Append("(");
+            sbName.Append('(');
             RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
-            sbName.Append(")");
+            sbName.Append(')');
 
             return sbName.ToString();
         }
@@ -192,9 +190,28 @@ namespace System.Reflection
             return Delegate.CreateDelegate(delegateType, target, this);
         }
 
+        // copied from CoreCLR's RuntimeMethodInfo
         public override string ToString()
         {
-            return ReturnType.FormatTypeName() + " " + FormatNameAndSig();
+            if (toString == null)
+            {
+                var sbName = new ValueStringBuilder(MethodNameBufferSize);
+
+                sbName.Append(ReturnType.FormatTypeName());
+                sbName.Append(' ');
+                sbName.Append(Name);
+
+                if (IsGenericMethod)
+                    sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
+
+                sbName.Append('(');
+                AppendParameters(ref sbName, GetParameterTypes(), CallingConvention);
+                sbName.Append(')');
+
+                toString = sbName.ToString();
+            }
+
+            return toString;
         }
 
         internal RuntimeModule GetRuntimeModule()
@@ -216,6 +233,7 @@ namespace System.Reflection
         [DynamicDependency("#ctor(System.Reflection.ExceptionHandlingClause[],System.Reflection.LocalVariableInfo[],System.Byte[],System.Boolean,System.Int32,System.Int32)", typeof(RuntimeMethodBody))]
         internal static extern MethodBody GetMethodBodyInternal(IntPtr handle);
 
+        [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         internal static MethodBody GetMethodBody(IntPtr handle)
         {
             return GetMethodBodyInternal(handle);
@@ -409,7 +427,7 @@ namespace System.Reflection
                 if (arg == Type.Missing)
                 {
                     if (pi.DefaultValue == DBNull.Value)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_VarMissNull"), "parameters");
+                        throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
 
                     args[i] = pi.DefaultValue;
                     continue;
@@ -732,6 +750,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public override MethodBody GetMethodBody()
         {
             return GetMethodBody(mhandle);
@@ -744,7 +763,7 @@ namespace System.Reflection
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeMethodInfo>(other);
     }
-
+#region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
     internal class RuntimeConstructorInfo : ConstructorInfo
     {
@@ -753,6 +772,8 @@ namespace System.Reflection
         private string? name;
         private Type? reftype;
 #pragma warning restore 649
+#endregion
+        private string? toString;
 
         public override Module Module
         {
@@ -765,14 +786,6 @@ namespace System.Reflection
         internal RuntimeModule GetRuntimeModule()
         {
             return RuntimeTypeHandle.GetModule((RuntimeType)DeclaringType);
-        }
-
-        internal BindingFlags BindingFlags
-        {
-            get
-            {
-                return 0;
-            }
         }
 
         private RuntimeType? ReflectedTypeInternal
@@ -961,21 +974,32 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
+        [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public override MethodBody GetMethodBody()
         {
             return RuntimeMethodInfo.GetMethodBody(mhandle);
         }
 
+        // copied from CoreCLR's RuntimeConstructorInfo
         public override string ToString()
         {
-            StringBuilder sbName = new StringBuilder(Name);
-            sbName.Append("Void ");
+            if (toString == null)
+            {
+                var sbName = new ValueStringBuilder(MethodNameBufferSize);
 
-            sbName.Append("(");
-            RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
-            sbName.Append(")");
+                // "Void" really doesn't make sense here. But we'll keep it for compat reasons.
+                sbName.Append("Void ");
 
-            return sbName.ToString();
+                sbName.Append(Name);
+
+                sbName.Append('(');
+                AppendParameters(ref sbName, GetParameterTypes(), CallingConvention);
+                sbName.Append(')');
+
+                toString = sbName.ToString();
+            }
+
+            return toString;
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()

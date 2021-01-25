@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -9,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -79,6 +79,8 @@ namespace System.Net.Sockets.Tests
             {
                 s.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => s.SendFile(null));
+                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
+                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread));
                 Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null));
                 Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
                 Assert.Throws<ObjectDisposedException>(() => s.EndSendFile(null));
@@ -100,9 +102,177 @@ namespace System.Net.Sockets.Tests
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 Assert.Throws<NotSupportedException>(() => s.SendFile(null));
+                Assert.Throws<NotSupportedException>(() => s.SendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
+                Assert.Throws<NotSupportedException>(() => s.SendFile(null, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread));
                 Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null));
                 Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
             }
+        }
+
+        [ConditionalTheory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UdpConnection_ThrowsException(bool useAsync)
+        {
+            // Create file to send
+            byte[] preBuffer;
+            byte[] postBuffer;
+            Fletcher32 sentChecksum;
+            string filename = CreateFileToSend(size: 1, sendPreAndPostBuffers: false, out preBuffer, out postBuffer, out sentChecksum);
+
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+
+            client.Connect(listener.LocalEndPoint);
+
+            if (useAsync)
+            {
+                await Assert.ThrowsAsync<SocketException>(() => Task.Factory.FromAsync<string>(client.BeginSendFile, client.EndSendFile, filename, null));
+            }
+            else
+            {
+                Assert.Throws<SocketException>(() => client.SendFile(filename));
+            }
+
+            // Clean up the file we created
+            File.Delete(filename);
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task SendFile_NoFile_Succeeds(bool useAsync, bool usePreBuffer, bool usePostBuffer)
+        {
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            if (useAsync)
+            {
+                await Task.Factory.FromAsync<string>(server.BeginSendFile, server.EndSendFile, null, null);
+            }
+            else
+            {
+                server.SendFile(null);
+            }
+            Assert.Equal(0, client.Available);
+
+            byte[] preBuffer = usePreBuffer ? new byte[1] : null;
+            byte[] postBuffer = usePostBuffer ? new byte[1] : null;
+            int bytesExpected = (usePreBuffer ? 1 : 0) + (usePostBuffer ? 1 : 0);
+
+            if (useAsync)
+            {
+                await Task.Factory.FromAsync((c, s) => server.BeginSendFile(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread, c, s), server.EndSendFile, null);
+            }
+            else
+            {
+                server.SendFile(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
+            }
+
+            byte[] receiveBuffer = new byte[1];
+            for (int i = 0; i < bytesExpected; i++)
+            {
+                Assert.Equal(1, client.Receive(receiveBuffer));
+            }
+
+            Assert.Equal(0, client.Available);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void SendFileSpan_NoFile_Succeeds(bool usePreBuffer, bool usePostBuffer)
+        {
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            server.SendFile(null);
+            Assert.Equal(0, client.Available);
+
+            byte[] preBuffer = usePreBuffer ? new byte[1] : null;
+            byte[] postBuffer = usePostBuffer ? new byte[1] : null;
+            int bytesExpected = (usePreBuffer ? 1 : 0) + (usePostBuffer ? 1 : 0);
+
+            server.SendFile(null, preBuffer.AsSpan(), postBuffer.AsSpan(), TransmitFileOptions.UseDefaultWorkerThread);
+
+            byte[] receiveBuffer = new byte[1];
+            for (int i = 0; i < bytesExpected; i++)
+            {
+                Assert.Equal(1, client.Receive(receiveBuffer));
+            }
+
+            Assert.Equal(0, client.Available);
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
+        [OuterLoop("Creates and sends a file several gigabytes long")]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendFile_GreaterThan2GBFile_SendsAllBytes(bool useAsync)
+        {
+            const long FileLength = 100L + int.MaxValue;
+
+            string tmpFile = GetTestFilePath();
+            using (FileStream fs = File.Create(tmpFile))
+            {
+                fs.SetLength(FileLength);
+            }
+
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            await new Task[]
+            {
+                Task.Run(async () =>
+                {
+                    if (useAsync)
+                    {
+                        await Task.Factory.FromAsync(server.BeginSendFile, server.EndSendFile, tmpFile, null);
+                    }
+                    else
+                    {
+                        server.SendFile(tmpFile);
+                    }
+                }),
+                Task.Run(() =>
+                {
+                    byte[] buffer = new byte[100_000];
+                    long count = 0;
+                    while (count < FileLength)
+                    {
+                        int received = client.Receive(buffer);
+                        Assert.NotEqual(0, received);
+                        count += received;
+                    }
+                    Assert.Equal(0, client.Available);
+                })
+            }.WhenAllOrAnyFailed();
         }
 
         [OuterLoop]
@@ -209,11 +379,7 @@ namespace System.Net.Sockets.Tests
                     msDelay *= 2;
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
-                    var cts = new CancellationTokenSource();
-                    Task timeoutTask = Task.Delay(30000, cts.Token);
-                    Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, socketOperation, timeoutTask));
-                    cts.Cancel();
-
+                    await Task.WhenAny(disposeTask, socketOperation).TimeoutAfter(30000);
                     await disposeTask;
 
                     SocketError? localSocketError = null;
@@ -254,7 +420,7 @@ namespace System.Net.Sockets.Tests
                         Assert.Equal(SocketError.ConnectionReset, peerSocketError);
                     }
                 }
-            }, maxAttempts: 10);
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
         [OuterLoop]

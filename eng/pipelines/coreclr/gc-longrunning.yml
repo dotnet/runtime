@@ -1,7 +1,5 @@
 trigger: none
 
-pr: none
-
 schedules:
 - cron: "0 11 * * 2,4"
   displayName: Every Tuesday and Thursday at 3:00 AM (UTC-8:00)
@@ -11,10 +9,6 @@ schedules:
   always: true
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -23,8 +17,8 @@ jobs:
     platforms:
     - Linux_x64
     - Linux_arm64
-    - Windows_NT_x64
-    - Windows_NT_arm64
+    - windows_x64
+    - windows_arm64
     - OSX_x64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
@@ -47,8 +41,8 @@ jobs:
     platforms:
     - Linux_x64
     - Linux_arm64
-    - Windows_NT_x64
-    - Windows_NT_arm64
+    - windows_x64
+    - windows_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

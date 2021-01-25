@@ -263,6 +263,9 @@
   <data name="InvalidArgumentValue" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'.</value>
   </data>
+    <data name="InvalidArgumentValueFontConverter" xml:space="preserve">
+    <value>Value of '{0}' is not valid for font size unit.</value>
+  </data>
   <data name="InvalidBoundArgument" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than {2} and less than or equal to {3}.</value>
   </data>
@@ -437,6 +440,9 @@
   <data name="NotImplementedUnderX11" xml:space="preserve">
     <value>Operation not implemented under X11</value>
   </data>
+  <data name="none" xml:space="preserve">
+    <value>(none)</value>
+  </data>
   <data name="NoValidIconImageFound" xml:space="preserve">
     <value>No valid icon image found</value>
   </data>
@@ -457,5 +463,8 @@
   </data>
   <data name="TargetDirectoryDoesNotExist" xml:space="preserve">
     <value>The directory {0} of the filename {1} does not exist.</value>
+  </data>
+  <data name="SystemDrawingCommon_PlatformNotSupported" xml:space="preserve">
+    <value>System.Drawing.Common is not supported on this platform.</value>
   </data>
 </root>

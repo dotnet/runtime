@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -178,7 +177,7 @@ namespace System.Collections.Generic
 
         public void TrimExcess()
         {
-            int threshold = (int)(((double)_array.Length) * 0.9);
+            int threshold = (int)(_array.Length * 0.9);
             if (_size < threshold)
             {
                 Array.Resize(ref _array, _size);
@@ -316,7 +315,7 @@ namespace System.Collections.Generic
             private readonly Stack<T> _stack;
             private readonly int _version;
             private int _index;
-            [AllowNull] private T _currentElement;
+            private T? _currentElement;
 
             internal Enumerator(Stack<T> stack)
             {
@@ -362,7 +361,7 @@ namespace System.Collections.Generic
                 {
                     if (_index < 0)
                         ThrowEnumerationNotStartedOrEnded();
-                    return _currentElement;
+                    return _currentElement!;
                 }
             }
 

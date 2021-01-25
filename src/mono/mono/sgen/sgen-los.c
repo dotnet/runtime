@@ -679,6 +679,33 @@ sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 	} END_FOREACH_LOS_OBJECT_HAS_REFERENCES_NO_LOCK;
 }
 
+static void
+get_los_object_range_for_job (int job_index, int job_split_count, int *start, int *end)
+{
+	int object_count = sgen_los_object_array_list.next_slot / job_split_count;
+
+	*start = object_count * job_index;
+	if (job_index == job_split_count - 1)
+		*end = sgen_los_object_array_list.next_slot;
+	else
+		*end = object_count * (job_index + 1);
+}
+
+void
+sgen_los_iterate_live_block_range_jobs (sgen_cardtable_block_callback callback, int job_index, int job_split_count)
+{
+	LOSObject *obj;
+	gboolean has_references;
+	int first_object, last_object, index;
+
+	get_los_object_range_for_job (job_index, job_split_count, &first_object, &last_object);
+
+	FOREACH_LOS_OBJECT_RANGE_HAS_REFERENCES_NO_LOCK (obj, first_object, last_object, index, has_references) {
+		if (has_references)
+			callback ((mword)obj->data, sgen_los_object_size (obj));
+	} END_FOREACH_LOS_OBJECT_RANGE_HAS_REFERENCES_NO_LOCK;
+}
+
 static guint8*
 get_cardtable_mod_union_for_object (LOSObject *obj)
 {
@@ -703,15 +730,10 @@ sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int 
 	LOSObject *obj;
 	gboolean has_references;
 	int first_object, last_object, index;
-	int object_count = sgen_los_object_array_list.next_slot / job_split_count;
 
 	sgen_binary_protocol_los_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
 
-	first_object = object_count * job_index;
-	if (job_index == job_split_count - 1)
-		last_object = sgen_los_object_array_list.next_slot;
-	else
-		last_object = object_count * (job_index + 1);
+	get_los_object_range_for_job (job_index, job_split_count, &first_object, &last_object);
 
 	FOREACH_LOS_OBJECT_RANGE_HAS_REFERENCES_NO_LOCK (obj, first_object, last_object, index, has_references) {
 		mword num_cards = 0;

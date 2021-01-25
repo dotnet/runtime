@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "hostpolicy_context.h"
 
@@ -24,18 +23,7 @@ namespace
     // This function is an API exported to the runtime via the BUNDLE_PROBE property.
     // This function used by the runtime to probe for bundled assemblies
     // This function assumes that the currently executing app is a single-file bundle.
-    //
-    // bundle_probe recieves its path argument as cha16_t* instead of pal::char_t*, because:
-    // * The host uses Unicode strings on Windows and UTF8 strings on Unix
-    // * The runtime uses Unicode strings on all platforms
-    // * Using a unicode encoded path presents a uniform interface to the runtime
-    //   and minimizes the number if Unicode <-> UTF8 conversions necessary.
-    //
-    // The unicode char type is char16_t* instead of whcar_t*, because:
-    // * wchar_t is 16-bit encoding on Windows while it is 32-bit encoding on most Unix systems
-    // * The runtime uses 16-bit encoded unicode characters.
-
-    bool STDMETHODCALLTYPE bundle_probe(const char16_t* path, int64_t* offset, int64_t* size)
+    bool STDMETHODCALLTYPE bundle_probe(const char* path, int64_t* offset, int64_t* size)
     {
         if (path == nullptr)
         {
@@ -44,7 +32,7 @@ namespace
 
         pal::string_t file_path;
 
-        if (!pal::unicode_palstring(path, &file_path))
+        if (!pal::clr_palstring(path, &file_path))
         {
             trace::warning(_X("Failure probing contents of the application bundle."));
             trace::warning(_X("Failed to convert path [%ls] to UTF8"), path);
@@ -54,6 +42,55 @@ namespace
 
         return bundle::runner_t::app()->probe(file_path, offset, size);
     }
+
+#if defined(NATIVE_LIBS_EMBEDDED)
+    extern "C" const void* CompressionResolveDllImport(const char* name);
+    extern "C" const void* SecurityResolveDllImport(const char* name);
+    extern "C" const void* SystemResolveDllImport(const char* name);
+    extern "C" const void* CryptoResolveDllImport(const char* name);
+    extern "C" const void* CryptoAppleResolveDllImport(const char* name);
+
+    // pinvoke_override:
+    // Check if given function belongs to one of statically linked libraries and return a pointer if found.
+    const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
+    {
+#if defined(_WIN32)
+        if (strcmp(libraryName, "System.IO.Compression.Native") == 0)
+        {
+            return CompressionResolveDllImport(entrypointName);
+        }
+#else
+        if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
+        {
+            return CompressionResolveDllImport(entrypointName);
+        }
+
+        if (strcmp(libraryName, "libSystem.Net.Security.Native") == 0)
+        {
+            return SecurityResolveDllImport(entrypointName);
+        }
+
+        if (strcmp(libraryName, "libSystem.Native") == 0)
+        {
+            return SystemResolveDllImport(entrypointName);
+        }
+
+        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.OpenSsl") == 0)
+        {
+            return CryptoResolveDllImport(entrypointName);
+        }
+#endif
+
+#if defined(TARGET_OSX)
+        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.Apple") == 0)
+        {
+            return CryptoAppleResolveDllImport(entrypointName);
+        }
+#endif
+
+        return nullptr;
+    }
+#endif
 }
 
 int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
@@ -106,12 +143,22 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     clr_path = probe_paths.coreclr;
     if (clr_path.empty() || !pal::realpath(&clr_path))
     {
-        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
-        return StatusCode::CoreClrResolveFailure;
-    }
+        // in a single-file case we may not need coreclr,
+        // otherwise fail early.
+        if (!bundle::info_t::is_single_file_bundle())
+        {
+            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
+            return StatusCode::CoreClrResolveFailure;
+        }
 
-    // Get path in which CoreCLR is present.
-    clr_dir = get_directory(clr_path);
+        // save for tracing purposes.
+        clr_dir = clr_path;
+    }
+    else
+    {
+        // Get path in which CoreCLR is present.
+        clr_dir = get_directory(clr_path);
+    }
 
     // If this is a self-contained single-file bundle,
     // System.Private.CoreLib.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
@@ -143,7 +190,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
     fx_definition_vector_t::iterator fx_begin;
     fx_definition_vector_t::iterator fx_end;
-    resolver.get_app_fx_definition_range(&fx_begin, &fx_end);
+    resolver.get_app_context_deps_files_range(&fx_begin, &fx_end);
 
     pal::string_t app_context_deps_str;
     fx_definition_vector_t::iterator fx_curr = fx_begin;
@@ -152,12 +199,26 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         if (fx_curr != fx_begin)
             app_context_deps_str += _X(';');
 
-        app_context_deps_str += (*fx_curr)->get_deps_file();
+        // For the application's .deps.json if this is single file, 3.1 backward compat
+        // then the path used internally is the bundle path, but externally we need to report
+        // the path to the extraction folder.
+        if (fx_curr == fx_begin && bundle::info_t::is_single_file_bundle() && bundle::runner_t::app()->is_netcoreapp3_compat_mode())
+        {
+            pal::string_t deps_path = bundle::runner_t::app()->extraction_path();
+            append_path(&deps_path, get_filename((*fx_curr)->get_deps_file()).c_str());
+            app_context_deps_str += deps_path;
+        }
+        else
+        {
+            app_context_deps_str += (*fx_curr)->get_deps_file();
+        }
+
         ++fx_curr;
     }
 
     // Build properties for CoreCLR instantiation
-    pal::string_t app_base = resolver.get_app_dir();
+    pal::string_t app_base;
+    resolver.get_app_dir(&app_base);
     coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
     coreclr_properties.add(common_property::NativeDllSearchDirectories, probe_paths.native.c_str());
     coreclr_properties.add(common_property::PlatformResourceRoots, probe_paths.resources.c_str());
@@ -222,8 +283,36 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         pal::stringstream_t ptr_stream;
         ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
 
-        coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str());
+        if (!coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            return StatusCode::LibHostDuplicateProperty;
+        }
     }
+
+#if defined(NATIVE_LIBS_EMBEDDED)
+    // PInvoke Override
+    if (bundle::info_t::is_single_file_bundle())
+    {
+        // Encode the pinvoke_override function pointer as a string, and pass it to the runtime.
+        pal::stringstream_t ptr_stream;
+        ptr_stream << "0x" << std::hex << (size_t)(&pinvoke_override);
+
+        if (!coreclr_properties.add(common_property::PInvokeOverride, ptr_stream.str().c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            return StatusCode::LibHostDuplicateProperty;
+        }
+    }
+#endif
+
+#if defined(HOSTPOLICY_EMBEDDED)
+    if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))
+    {
+        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+        return StatusCode::LibHostDuplicateProperty;
+    }
+#endif
 
     return StatusCode::Success;
 }

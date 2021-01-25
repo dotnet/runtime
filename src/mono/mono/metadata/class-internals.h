@@ -53,6 +53,21 @@ typedef enum {
 } MonoRemotingTarget;
 
 #define MONO_METHOD_PROP_GENERIC_CONTAINER 0
+/* verification success bit, protected by the image lock */
+#define MONO_METHOD_PROP_VERIFICATION_SUCCESS 1
+/* infrequent vtable layout bits protected by the loader lock */
+#define MONO_METHOD_PROP_INFREQUENT_BITS 2
+
+/* Infrequently accessed bits of method definitions stored in the image properties.
+ * The method must not be inflated.
+ *
+ * LOCKING: Reading the bits acquires the image lock.  Writing the bits assumes
+ * the loader lock is held.
+ */
+typedef struct _MonoMethodDefInfrequentBits {
+	unsigned int is_reabstracted:1;  /* whenever this is a reabstraction of another interface */
+	unsigned int is_covariant_override_impl:1; /* whether this is an override with a signature different from its declared method */
+} MonoMethodDefInfrequentBits;
 
 struct _MonoMethod {
 	guint16 flags;  /* method flags */
@@ -73,8 +88,7 @@ struct _MonoMethod {
 	unsigned int is_generic:1; /* whenever this is a generic method definition */
 	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
-	unsigned int verification_success:1; /* whether this method has been verified successfully.*/
-	unsigned int is_reabstracted:1; /* whenever this is a reabstraction of another interface */
+	unsigned int _unused : 2; /* unused */
 	signed int slot : 16;
 
 	/*
@@ -98,7 +112,10 @@ struct _MonoMethodPInvoke {
 	MonoMethod method;
 	gpointer addr;
 	/* add marshal info */
-	guint16 piflags;  /* pinvoke flags */
+	union {
+		guint16 piflags;  /* pinvoke flags */
+		guint16 icflags;  /* icall flags */
+	};
 	guint32 implmap_idx;  /* index into IMPLMAP */
 };
 
@@ -246,6 +263,7 @@ typedef enum {
 	MONO_CLASS_GPARAM, /* generic parameter */
 	MONO_CLASS_ARRAY, /* vector or array, bounded or not */
 	MONO_CLASS_POINTER, /* pointer or function pointer*/
+	MONO_CLASS_GC_FILLER = 0xAC /* not a real class kind - used for sgen nursery filler arrays */
 } MonoTypeKind;
 
 typedef struct _MonoClassDef MonoClassDef;
@@ -280,9 +298,13 @@ union _MonoClassSizes {
 
 /* If MonoClass definition is hidden, just declare the getters.
  * Otherwise, define them as static inline functions.
+ *
+ * In-tree profilers are allowed to use the getters.  So if we're compiling
+ * with --enable-checked-build=private_types, mark the symbols with
+ * MONO_PROFILER_API
  */
 #ifdef MONO_CLASS_DEF_PRIVATE
-#define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass);
+#define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) MONO_PROFILER_API rettype funcname (argtype *klass);
 #else
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) static inline rettype funcname (argtype *klass) { return optref klass-> fieldname ; }
 #endif
@@ -886,6 +908,30 @@ mono_generic_class_get_context (MonoGenericClass *gclass);
 void
 mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* container);
 
+void
+mono_method_set_verification_success (MonoMethod *method);
+
+gboolean
+mono_method_get_verification_success (MonoMethod *method);
+
+const MonoMethodDefInfrequentBits *
+mono_method_lookup_infrequent_bits (MonoMethod *methoddef);
+
+MonoMethodDefInfrequentBits *
+mono_method_get_infrequent_bits (MonoMethod *methoddef);
+
+gboolean
+mono_method_get_is_reabstracted (MonoMethod *method);
+
+void
+mono_method_set_is_reabstracted (MonoMethod *methoddef);
+
+gboolean
+mono_method_get_is_covariant_override_impl (MonoMethod *method);
+
+void
+mono_method_set_is_covariant_override_impl (MonoMethod *methoddef);
+
 MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error);
 
@@ -958,7 +1004,9 @@ typedef struct {
 	MonoClass *iremotingtypeinfo_class;
 #endif
 	MonoClass *mono_method_message_class;
+#ifndef ENABLE_NETCORE
 	MonoClass *appdomain_class;
+#endif
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
 	MonoClass *stack_frame_class;
@@ -1052,8 +1100,10 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
 
 #endif
 
-GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_setup)
+MonoClass* mono_class_get_appdomain_class (void);
+#ifndef ENABLE_NETCORE
+GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_setup);
+#endif
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
@@ -1248,6 +1298,9 @@ mono_class_vtable_checked (MonoDomain *domain, MonoClass *klass, MonoError *erro
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error);
 
+void
+mono_class_signature_is_assignable_from (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error);
+
 gboolean
 mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate);
 
@@ -1262,6 +1315,9 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc, gboolea
 
 mono_bool
 mono_class_is_assignable_from_internal (MonoClass *klass, MonoClass *oklass);
+
+gboolean
+mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment);
 
 gboolean mono_is_corlib_image (MonoImage *image);
 
@@ -1509,6 +1565,9 @@ mono_method_is_constructor (MonoMethod *method);
 gboolean
 mono_class_has_default_constructor (MonoClass *klass, gboolean public_only);
 
+gboolean
+mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method);
+
 // There are many ways to do on-demand initialization.
 //   Some allow multiple concurrent initializations. Some do not.
 //   Some allow multiple concurrent writes to the global. Some do not.
@@ -1543,6 +1602,59 @@ m_field_get_offset (MonoClassField *field)
 {
 	g_assert (m_class_is_fields_inited (field->parent));
 	return field->offset;
+}
+
+/*
+ * Memory allocation for classes/methods
+ *
+ *   These should be used to allocate memory whose lifetime is equal to
+ * the lifetime of the domain+class/method pair.
+ */
+
+static inline MonoMemoryManager*
+m_class_get_mem_manager (MonoDomain *domain, MonoClass *klass)
+{
+#ifdef ENABLE_NETCORE
+	// FIXME:
+	return mono_domain_memory_manager (domain);
+#else
+	return mono_domain_memory_manager (domain);
+#endif
+}
+
+static inline void *
+m_class_alloc (MonoDomain *domain, MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc (m_class_get_mem_manager (domain, klass), size);
+}
+
+static inline void *
+m_class_alloc0 (MonoDomain *domain, MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc0 (m_class_get_mem_manager (domain, klass), size);
+}
+
+static inline MonoMemoryManager*
+m_method_get_mem_manager (MonoDomain *domain, MonoMethod *method)
+{
+#ifdef ENABLE_NETCORE
+	// FIXME:
+	return mono_domain_memory_manager (domain);
+#else
+	return mono_domain_memory_manager (domain);
+#endif
+}
+
+static inline void *
+m_method_alloc (MonoDomain *domain, MonoMethod *method, guint size)
+{
+	return mono_mem_manager_alloc (m_method_get_mem_manager (domain, method), size);
+}
+
+static inline void *
+m_method_alloc0 (MonoDomain *domain, MonoMethod *method, guint size)
+{
+	return mono_mem_manager_alloc0 (m_method_get_mem_manager (domain, method), size);
 }
 
 // Enum and static storage for JIT icalls.

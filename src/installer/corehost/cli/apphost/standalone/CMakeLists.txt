@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 project(apphost)
 set(DOTNET_PROJECT_NAME "apphost")
@@ -21,12 +20,12 @@ include_directories(..)
 
 set(SOURCES
     ../bundle_marker.cpp
-    ./hostfxr_resolver_t.cpp
+    ./hostfxr_resolver.cpp
 )
 
 set(HEADERS
     ../bundle_marker.h
-    ../../../hostfxr_resolver_t.h
+    ../../../hostfxr_resolver.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

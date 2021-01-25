@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Reflection.Emit.DerivedTypes.cs
 //
@@ -38,8 +41,11 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     internal abstract partial class SymbolType : TypeInfo
     {
-        internal Type m_baseType;
+#region Sync with MonoReflectionDerivedType in object-internals.h
+        private protected Type m_baseType;
+#endregion
 
+        [DynamicDependency(nameof(m_baseType))]  // Automatically keeps all previous fields too due to StructLayout
         internal SymbolType(Type elementType)
         {
             this.m_baseType = elementType;
@@ -140,15 +146,13 @@ namespace System.Reflection.Emit
             return InternalResolve();
         }
 
-        public override Guid GUID
-        {
-            get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType")); }
-        }
+        public override Guid GUID => throw new NotSupportedException(SR.NotSupported_NonReflectedType);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override Module Module
@@ -174,10 +178,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override RuntimeTypeHandle TypeHandle
-        {
-            get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType")); }
-        }
+        public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException(SR.NotSupported_NonReflectedType);
 
         public override string? Namespace
         {
@@ -189,97 +190,112 @@ namespace System.Reflection.Emit
             get { return typeof(System.Array); }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo GetField(string name, BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override Type GetInterface(string name, bool ignoreCase)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override Type[] GetInterfaces()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         public override EventInfo[] GetEvents()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
                 Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type GetNestedType(string name, BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo[] GetEvents(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         protected override TypeAttributes GetAttributeFlagsImpl()
@@ -325,25 +341,28 @@ namespace System.Reflection.Emit
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class ArrayType : SymbolType
+    internal sealed class ArrayType : SymbolType
     {
+#region Sync with MonoReflectionArrayType in object-internals.h
         private int rank;
+#endregion
 
+        [DynamicDependency(nameof(rank))]  // Automatically keeps all previous fields too due to StructLayout
         internal ArrayType(Type elementType, int rank) : base(elementType)
         {
             this.rank = rank;
@@ -394,18 +413,18 @@ namespace System.Reflection.Emit
             if (elementName == null)
                 return null;
             StringBuilder sb = new StringBuilder(elementName);
-            sb.Append("[");
+            sb.Append('[');
             for (int i = 1; i < rank; ++i)
-                sb.Append(",");
+                sb.Append(',');
             if (rank == 1)
-                sb.Append("*");
-            sb.Append("]");
+                sb.Append('*');
+            sb.Append(']');
             return sb.ToString();
         }
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class ByRefType : SymbolType
+    internal sealed class ByRefType : SymbolType
     {
         internal ByRefType(Type elementType) : base(elementType)
         {
@@ -451,7 +470,7 @@ namespace System.Reflection.Emit
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class PointerType : SymbolType
+    internal sealed class PointerType : SymbolType
     {
         internal PointerType(Type elementType) : base(elementType)
         {

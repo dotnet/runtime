@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 ////////////////////////////////////////////////////////////////////////////
 //
@@ -187,7 +186,6 @@ namespace System.Globalization
             Debug.Assert(cultureData != null);
             _cultureData = cultureData;
             _name = cultureData.CultureName;
-            _isInherited = false;
             _isReadOnly = isReadOnly;
         }
 
@@ -498,6 +496,42 @@ namespace System.Globalization
                     CultureInfo culture;
                     string parentName = _cultureData.ParentName;
 
+                    if (parentName == "zh")
+                    {
+                        if (_name.Length == 5 && _name[2] == '-')
+                        {
+                            // We need to keep the parent chain for the zh cultures as follows to preserve the resource lookup compatability
+                            //      zh-CN -> zh-Hans -> zh -> Invariant
+                            //      zh-HK -> zh-Hant -> zh -> Invariant
+                            //      zh-MO -> zh-Hant -> zh -> Invariant
+                            //      zh-SG -> zh-Hans -> zh -> Invariant
+                            //      zh-TW -> zh-Hant -> zh -> Invariant
+
+                            if ((_name[3] == 'C' && _name[4] == 'N' ) || // zh-CN
+                                (_name[3] == 'S' && _name[4] == 'G' ))   // zh-SG
+                            {
+                                parentName = "zh-Hans";
+                            }
+                            else if ((_name[3] == 'H' && _name[4] == 'K' ) ||   // zh-HK
+                                    (_name[3] == 'M' && _name[4] == 'O' ) ||    // zh-MO
+                                    (_name[3] == 'T' && _name[4] == 'W' ))      // zh-TW
+                            {
+                                parentName = "zh-Hant";
+                            }
+                        }
+                        else if (_name.Length > 8 && _name.AsSpan(2, 4).Equals("-Han", StringComparison.Ordinal) && _name[7] == '-') // cultures like zh-Hant-* and zh-Hans-*
+                        {
+                            if (_name[6] == 't') // zh-Hant-*
+                            {
+                                parentName = "zh-Hant";
+                            }
+                            else if (_name[6] == 's') // zh-Hans-*
+                            {
+                                parentName = "zh-Hans";
+                            }
+                        }
+                    }
+
                     if (string.IsNullOrEmpty(parentName))
                     {
                         culture = InvariantCulture;
@@ -674,7 +708,7 @@ namespace System.Globalization
                     CultureTypes.NeutralCultures :
                     CultureTypes.SpecificCultures;
 
-                if (_cultureData.IsWin32Installed)
+                if (CultureData.IsWin32Installed)
                 {
                     types |= CultureTypes.InstalledWin32Cultures;
                 }
@@ -750,6 +784,9 @@ namespace System.Globalization
         public void ClearCachedData()
         {
             // reset the default culture values
+#if TARGET_WINDOWS
+            UserDefaultLocaleName = GetUserDefaultLocaleName();
+#endif
             s_userDefaultCulture = GetUserDefaultCulture();
             s_userDefaultUICulture = GetUserDefaultUICulture();
 
@@ -1129,7 +1166,7 @@ namespace System.Globalization
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (predefinedOnly)
+            if (predefinedOnly && !GlobalizationMode.Invariant)
             {
                 return GlobalizationMode.UseNls ?
                     NlsGetPredefinedCultureInfo(name) :

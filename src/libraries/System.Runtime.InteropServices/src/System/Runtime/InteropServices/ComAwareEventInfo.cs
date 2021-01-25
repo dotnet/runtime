@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Versioning;
 
 // This type is obsolete, and is expected to be used in very specific ways or it may
 // throw null reference exceptions.
@@ -15,11 +16,12 @@ namespace System.Runtime.InteropServices
     {
         private readonly EventInfo _innerEventInfo;
 
-        public ComAwareEventInfo(Type type, string eventName)
+        public ComAwareEventInfo([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)] Type type, string eventName)
         {
             _innerEventInfo = type.GetEvent(eventName)!;
         }
 
+        [SupportedOSPlatform("windows")]
 #pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void AddEventHandler(object target, Delegate handler)
 #pragma warning restore CS8765
@@ -37,6 +39,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        [SupportedOSPlatform("windows")]
 #pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void RemoveEventHandler(object target, Delegate handler)
 #pragma warning restore CS8765

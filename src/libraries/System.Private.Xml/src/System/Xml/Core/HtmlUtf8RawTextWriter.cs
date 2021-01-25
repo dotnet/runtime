@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify HtmlRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Text;
@@ -549,7 +549,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F)
                     {
                         *pDst++ = (byte)ch;
                         pSrc++;
@@ -637,7 +637,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80)
                     {
                         *pDst++ = (byte)ch;
                         pSrc++;
@@ -780,7 +780,6 @@ namespace System.Xml
         //
         // Constructors
         //
-
         public HtmlUtf8RawTextWriterIndent(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
             Init(settings);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -37,17 +36,6 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
             type.CreateTypeInfo().AsType();
             Assert.Throws<InvalidOperationException>(() => type.SetParent(typeof(string)));
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/19478")]
-        public void SetParent_This_LoopsForever()
-        {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
-            type.SetParent(type.AsType());
-            Assert.Equal(type.AsType(), type.BaseType);
-
-            Assert.ThrowsAny<Exception>(() => type.CreateTypeInfo());
         }
 
         [Fact]

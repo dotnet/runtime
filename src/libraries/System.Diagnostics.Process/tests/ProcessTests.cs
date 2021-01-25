@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +8,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -53,7 +52,7 @@ namespace System.Diagnostics.Tests
 
         private void AssertNonZeroWindowsZeroUnix(long value)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.NotEqual(0, value);
             }
@@ -65,7 +64,7 @@ namespace System.Diagnostics.Tests
 
         private void AssertNonZeroAllZeroDarwin(long value)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 Assert.Equal(0, value);
             }
@@ -149,7 +148,8 @@ namespace System.Diagnostics.Tests
                 BeginInvokeDelegate = (d, args) =>
                 {
                     Assert.Null(beginInvokeTask);
-                    beginInvokeTask = Task.Run(() => d.DynamicInvoke(args));
+                    beginInvokeTask = new Task(() => d.DynamicInvoke(args));
+                    beginInvokeTask.Start(TaskScheduler.Default);
                     return beginInvokeTask;
                 }
             };
@@ -409,12 +409,21 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.StartTime);
         }
 
+        [Fact]
+        public void GetCurrentProcess_Id_EqualsCurrentProcessId()
+        {
+            using Process current = Process.GetCurrentProcess();
+            Assert.Equal(Environment.ProcessId, current.Id);
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestId()
         {
             CreateDefaultProcess();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            Assert.NotEqual(Environment.ProcessId, _process.Id);
+
+            if (OperatingSystem.IsWindows())
             {
                 Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
             }
@@ -487,15 +496,10 @@ namespace System.Diagnostics.Tests
         {
             Process p = Process.GetCurrentProcess();
 
-            // On UAP casing may not match - we use Path.GetFileName(exePath) instead of kernel32!GetModuleFileNameEx which is not available on UAP
-            Func<string, string> normalize = PlatformDetection.IsInAppContainer ?
-                (Func<string, string>)((s) => s.ToLowerInvariant()) :
-                (s) => s;
-
             Assert.InRange(p.Modules.Count, 1, int.MaxValue);
-            Assert.Equal(normalize(RemoteExecutor.HostRunnerName), normalize(p.MainModule.ModuleName));
-            Assert.EndsWith(normalize(RemoteExecutor.HostRunnerName), normalize(p.MainModule.FileName));
-            Assert.Equal(normalize(string.Format("System.Diagnostics.ProcessModule ({0})", RemoteExecutor.HostRunnerName)), normalize(p.MainModule.ToString()));
+            Assert.Equal(RemoteExecutor.HostRunnerName, p.MainModule.ModuleName);
+            Assert.EndsWith(RemoteExecutor.HostRunnerName, p.MainModule.FileName);
+            Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", RemoteExecutor.HostRunnerName), p.MainModule.ToString());
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -509,14 +513,14 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"))) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
             long curValue = (long)_process.MaxWorkingSet;
             Assert.InRange(curValue, 0, long.MaxValue);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 try
                 {
@@ -564,14 +568,14 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"))) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
             long curValue = (long)_process.MinWorkingSet;
             Assert.InRange(curValue, 0, long.MaxValue);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 try
                 {
@@ -750,7 +754,7 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 // resident memory can be 0 on OSX.
                 Assert.InRange(_process.WorkingSet64, 0, long.MaxValue);
@@ -1051,12 +1055,7 @@ namespace System.Diagnostics.Tests
             Process current = Process.GetCurrentProcess();
             Assert.NotNull(current);
 
-            int currentProcessId =
-#if TargetsWindows
-                Interop.GetCurrentProcessId();
-#else
-                Interop.getpid();
-#endif
+            int currentProcessId = Environment.ProcessId;
 
             Assert.Equal(currentProcessId, current.Id);
         }
@@ -1136,7 +1135,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/27615
+        [Fact]
         public void GetProcessesByName_ProcessName_ReturnsExpected()
         {
             // Get the current process using its name
@@ -1558,15 +1557,16 @@ namespace System.Diagnostics.Tests
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
         }
-        
-        [Fact]
-        [OuterLoop]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+
+        [ConditionalFact(typeof(PlatformDetection),
+            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
+            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
+        [OuterLoop("Pops UI")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
         {
             const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath));
+            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
 
             using (Process process = Process.Start(ExePath))
             {
@@ -1591,6 +1591,111 @@ namespace System.Diagnostics.Tests
                     Assert.True(process.WaitForExit(WaitInMS));
                 }
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection),
+            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
+            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
+        [OuterLoop("Pops UI")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
+        {
+            const string ExePath = "notepad.exe";
+            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
+
+            using (Process process = Process.Start(new ProcessStartInfo(ExePath)))
+            {
+                try
+                {
+                    for (int attempt = 0; attempt < 50; ++attempt)
+                    {
+                        process.Refresh();
+                        if (process.MainWindowTitle != string.Empty)
+                        {
+                            break;
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    Assert.NotEqual(string.Empty, process.MainWindowTitle);
+                }
+                finally
+                {
+                    process.Kill();
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
+            }
+        }
+
+        [Fact]
+        public void RefreshResetsAllRefreshableFields()
+        {
+            // testing Process.Responding using a real unresponsive process would be very hard to do properly
+            // instead of this, we just test the implementation to ensure that #36768 is not coming back
+            var process = new Process();
+
+            VerifyPrivateFieldsValues(process, shouldHaveDefaultValues: true);
+
+            SetPrivateFieldsToNonDefaultValues(process);
+
+            VerifyPrivateFieldsValues(process, shouldHaveDefaultValues: false);
+
+            process.Refresh();
+
+            VerifyPrivateFieldsValues(process, shouldHaveDefaultValues: true);
+
+            static void VerifyPrivateFieldsValues(Process process, bool shouldHaveDefaultValues)
+            {
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_exited"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveWorkingSetLimits"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveProcessorAffinity"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_havePriorityClass"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveExitTime"));
+                Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_havePriorityBoostEnabled"));
+
+                Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_processInfo"));
+                Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_threads"));
+                Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_modules"));
+
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.Equal(shouldHaveDefaultValues, null == GetPrivateFieldValue(process, "_mainWindowTitle"));
+                    Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_signaled"));
+                    Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveMainWindow"));
+                    Assert.Equal(shouldHaveDefaultValues, !(bool)GetPrivateFieldValue(process, "_haveResponding"));
+                }
+            }
+
+            static void SetPrivateFieldsToNonDefaultValues(Process process)
+            {
+                SetPrivateFieldValue(process, "_exited", true);
+                SetPrivateFieldValue(process, "_haveWorkingSetLimits", true);
+                SetPrivateFieldValue(process, "_haveProcessorAffinity", true);
+                SetPrivateFieldValue(process, "_havePriorityClass", true);
+                SetPrivateFieldValue(process, "_haveExitTime", true);
+                SetPrivateFieldValue(process, "_havePriorityBoostEnabled", true);
+
+                SetPrivateFieldValue(process, "_processInfo", typeof(Process).Assembly.GetType("System.Diagnostics.ProcessInfo").GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>()).Invoke(null));
+                SetPrivateFieldValue(process, "_threads", new ProcessThreadCollection(Array.Empty<ProcessThread>()));
+                SetPrivateFieldValue(process, "_modules",  new ProcessModuleCollection(Array.Empty<ProcessModule>()));
+
+                if (OperatingSystem.IsWindows())
+                {
+                    SetPrivateFieldValue(process, "_signaled", true);
+                    SetPrivateFieldValue(process, "_haveMainWindow", true);
+                    SetPrivateFieldValue(process, "_mainWindowTitle", "notNull");
+                    SetPrivateFieldValue(process, "_haveResponding", true);
+                }
+            }
+
+            static object GetPrivateFieldValue(Process process, string fieldName) => typeof(Process)
+                .GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(process);
+
+            static void SetPrivateFieldValue(Process process, string fieldName, object value) => typeof(Process)
+                .GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(process, value);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1812,7 +1917,7 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 // resident memory can be 0 on OSX.
 #pragma warning disable 0618
@@ -1844,6 +1949,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<Win32Exception>(() => Process.Start("exe", string.Empty, new SecureString(), "thisDomain"));
         }
 
+        [OuterLoop("May take many seconds the first time it's run")]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Starting process with authentication not supported on Unix
         public void Process_StartWithInvalidUserNamePassword()
@@ -1931,23 +2037,27 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void LongProcessNamesAreSupported()
         {
-            // Alpine implements sleep as a symlink to the busybox executable.
-            // If we rename it, the program will no longer sleep.
-            if (PlatformDetection.IsAlpine)
+            string sleepPath;
+            if (OperatingSystem.IsLinux())
             {
-                return;
+                // On some distros sleep is implemented using a script/symlink, which causes this test to fail.
+                // Instead of using sleep directly, we wrap it with a script.
+                sleepPath = GetTestFilePath();
+                File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
+                ChMod(sleepPath, "744");
             }
-
-            string programPath = GetProgramPath("sleep");
-
-            if (programPath == null)
+            else
             {
-                return;
+                sleepPath = GetProgramPath("sleep");
+                if (sleepPath == null)
+                {
+                    return;
+                }
             }
 
             const string LongProcessName = "123456789012345678901234567890";
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
-            File.Copy(programPath, sleepCommandPathFileName);
+            File.Copy(sleepPath, sleepCommandPathFileName);
 
             using (Process px = Process.Start(sleepCommandPathFileName, "600"))
             {
@@ -2228,6 +2338,43 @@ namespace System.Diagnostics.Tests
                         // Test cleanup code, so ignore any exceptions.
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public void Start_ThrowsArgumentNullExceptionForNullFileName()
+        {
+            Assert.Throws<ArgumentNullException>("fileName", () => Process.Start(null, Enumerable.Repeat("notNull", 1)));
+        }
+
+        [Fact]
+        public void Start_ThrowsArgumentNullExceptionForNullArgumentsList()
+        {
+            IEnumerable<string> @null = null;
+            Assert.Throws<ArgumentNullException>("arguments", () => Process.Start("notNull", @null));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // cmd.exe is available only on Windows
+        public void Start_PassesArgumentsList_WhichGetsEscaped()
+        {
+            string folderNameWithSpaces = "folder name with spaces"; // this needs escaping
+            string fullPath = Path.Combine(TestDirectory, folderNameWithSpaces);
+            string[] arguments = new string[] { "/c", "mkdir", "-p", fullPath };
+
+            if (Directory.Exists(fullPath))
+            {
+                Directory.Delete(fullPath);
+            }
+
+            using (Process mkdir = Process.Start("cmd.exe", arguments))
+            {
+                Assert.Equal(arguments, mkdir.StartInfo.ArgumentList);
+
+                mkdir.WaitForExit(WaitInMS);
+
+                Assert.True(Directory.Exists(fullPath));
+                Directory.Delete(fullPath);
             }
         }
 

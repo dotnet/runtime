@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using BundleTests.Helpers;
 using FluentAssertions;
@@ -33,7 +32,9 @@ namespace Microsoft.NET.HostModel.Tests
 
             var hostName = BundleHelper.GetHostName(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            Bundler bundler = new Bundler(hostName, bundleDir.FullName);
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
+            Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
 
             FileSpec[][] invalidSpecs =
             {
@@ -56,13 +57,15 @@ namespace Microsoft.NET.HostModel.Tests
             var hostName = BundleHelper.GetHostName(fixture);
             var appName = Path.GetFileNameWithoutExtension(hostName);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
 
             // Generate a file specification without the apphost
             var fileSpecs = new List<FileSpec>();
             string[] files = { $"{appName}.dll", $"{appName}.deps.json", $"{appName}.runtimeconfig.json" };
             Array.ForEach(files, x => fileSpecs.Add(new FileSpec(x, x)));
 
-            Bundler bundler = new Bundler(hostName, bundleDir.FullName);
+            Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
 
             Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
         }
@@ -74,6 +77,8 @@ namespace Microsoft.NET.HostModel.Tests
 
             var hostName = BundleHelper.GetHostName(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
 
             // Generate a file specification with duplicate entries
             var fileSpecs = new List<FileSpec>();
@@ -81,7 +86,7 @@ namespace Microsoft.NET.HostModel.Tests
             fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "app.repeat"));
             fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "app.repeat"));
 
-            Bundler bundler = new Bundler(hostName, bundleDir.FullName);
+            Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
             Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
         }
 
@@ -91,6 +96,8 @@ namespace Microsoft.NET.HostModel.Tests
             var fixture = sharedTestState.TestFixture.Copy();
             var publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
 
             // Rename the host from "StandaloneApp" to "Stand.Alone.App" to check that baseName computation
             // (and consequently deps.json and runtimeconfig.json name computations) in the bundler
@@ -111,7 +118,7 @@ namespace Microsoft.NET.HostModel.Tests
             var depsJson = newBaseName + ".deps.json";
             var runtimeconfigJson = newBaseName + ".runtimeconfig.json";
 
-            var bundler = new Bundler(hostName, bundleDir.FullName);
+            var bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
             BundleHelper.GenerateBundle(bundler, publishPath, bundleDir.FullName);
 
             string[] jsonFiles = { depsJson, runtimeconfigJson };
@@ -197,9 +204,11 @@ namespace Microsoft.NET.HostModel.Tests
         {
             var fixture = sharedTestState.TestFixture.Copy();
             var bundler = BundleHelper.Bundle(fixture);
-
+            var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
+            var targetArch = BundleHelper.GetTargetArch(fixture.CurrentRid);
+            var alignment = (targetOS == OSPlatform.Linux && targetArch == Architecture.Arm64) ? 4096 : 16;
             bundler.BundleManifest.Files.ForEach(file => 
-                Assert.True((file.Type != FileType.Assembly) || (file.Offset % Bundler.AssemblyAlignment == 0)));
+                Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
         }
 
         [Fact]
@@ -236,7 +245,7 @@ namespace Microsoft.NET.HostModel.Tests
 
                 TestFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(TestFixture.CurrentRid)
                     .PublishProject(runtime: TestFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFixture));
             }

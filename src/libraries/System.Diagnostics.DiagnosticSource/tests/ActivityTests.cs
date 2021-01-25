@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -85,9 +84,9 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("world", anotherActivity.GetBaggageItem("hello"));
                     Assert.Equal(4, anotherActivity.Baggage.Count());
                     Assert.Equal(new KeyValuePair<string, string>("hello", "world"), anotherActivity.Baggage.First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(1).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(1).First());
                     Assert.Equal(new KeyValuePair<string, string>(Key + 1, Value + 1), anotherActivity.Baggage.Skip(2).First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(3).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(3).First());
                 }
                 finally
                 {
@@ -98,6 +97,118 @@ namespace System.Diagnostics.Tests
             {
                 activity.Stop();
             }
+        }
+
+        [Fact]
+        public void TestBaggageOrderAndDuplicateKeys()
+        {
+            Activity a = new Activity("Baggage");
+            a.AddBaggage("1", "1");
+            a.AddBaggage("1", "2");
+            a.AddBaggage("1", "3");
+            a.AddBaggage("1", "4");
+
+            int value = 4;
+
+            foreach (KeyValuePair<string, string> kvp in a.Baggage)
+            {
+                Assert.Equal("1", kvp.Key);
+                Assert.Equal(value.ToString(), kvp.Value);
+                value--;
+            }
+
+            Assert.Equal("4", a.GetBaggageItem("1"));
+        }
+
+        [Fact]
+        public void TestSetBaggage()
+        {
+            Activity a = new Activity("SetBaggage");
+            Assert.Equal(0, a.Baggage.Count());
+
+            a.SetBaggage("1", "1");
+            a.SetBaggage("2", "2");
+            a.SetBaggage("3", "3");
+            a.SetBaggage("4", "4");
+            a.SetBaggage("5", "5");
+
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("1", a.GetBaggageItem("1"));
+            Assert.Equal("2", a.GetBaggageItem("2"));
+            Assert.Equal("3", a.GetBaggageItem("3"));
+            Assert.Equal("4", a.GetBaggageItem("4"));
+            Assert.Equal("5", a.GetBaggageItem("5"));
+
+            // Check not added item
+            Assert.Null(a.GetBaggageItem("6")); 
+
+            // Adding none existing key with null value is no-op
+            a.SetBaggage("6", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("6")); 
+
+            // Check updated item
+            a.SetBaggage("5", "5.1");
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Add() always add new entry even we have matching key in the list.
+            // Baggage always return last entered value
+            a.AddBaggage("5", "5.2");
+            Assert.Equal(6, a.Baggage.Count());
+            Assert.Equal("5.2", a.GetBaggageItem("5"));
+
+            // Now Remove first duplicated item
+            a.SetBaggage("5", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Now Remove second item
+            a.SetBaggage("5", null);
+            Assert.Equal(4, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("5")); 
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestBaggageWithChainedActivities()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity a1 = new Activity("a1");
+                a1.Start();
+
+                a1.AddBaggage("1", "1");
+                a1.AddBaggage("2", "2");
+
+                IEnumerable<KeyValuePair<string, string>> baggages = a1.Baggage;
+                Assert.Equal(2, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(1));
+
+                Activity a2 = new Activity("a2");
+                a2.Start();
+
+                a2.AddBaggage("3", "3");
+                baggages = a2.Baggage;
+                Assert.Equal(3, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("3", "3"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(1));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(2));
+
+                Activity a3 = new Activity("a3");
+                a3.Start();
+
+                a3.AddBaggage("4", "4");
+                baggages = a3.Baggage;
+                Assert.Equal(4, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("4", "4"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("3", "3"), baggages.ElementAt(1));
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(2));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(3));
+
+                a3.Dispose();
+                a2.Dispose();
+                a1.Dispose();
+            }).Dispose();
         }
 
         /// <summary>
@@ -188,32 +299,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
         }
 
-        /// <summary>
-        /// Tests overflow in Id generation when parentId has a single (root) node
-        /// </summary>
-        [Fact]
-        public void ActivityIdNonHierarchicalOverflow()
-        {
-            // find out Activity Id length on this platform in this AppDomain
-            Activity testActivity = new Activity("activity")
-                .Start();
-            var expectedIdLength = testActivity.Id.Length;
-            testActivity.Stop();
-
-            // check that if parentId '|aaa...a' 1024 bytes long is set with single node (no dots or underscores in the Id)
-            // it causes overflow during Id generation, and new root Id is generated for the new Activity
-            var parentId = '|' + new string('a', 1022) + '.';
-
-            var activity = new Activity("activity")
-                .SetParentId(parentId)
-                .Start();
-
-            Assert.Equal(parentId, activity.ParentId);
-
-            // With probability 1/MaxLong, Activity.Id length may be expectedIdLength + 1
-            Assert.InRange(activity.Id.Length, expectedIdLength, expectedIdLength + 1);
-            Assert.DoesNotContain('#', activity.Id);
-        }
 
         /// <summary>
         /// Tests activity start and stop
@@ -238,7 +323,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Id generation
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void IdGenerationNoParent()
         {
             var orphan1 = new Activity("orphan1");
@@ -254,10 +339,11 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Id generation
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void IdGenerationInternalParent()
         {
             var parent = new Activity("parent");
+            parent.SetIdFormat(ActivityIdFormat.Hierarchical);
             parent.Start();
             var child1 = new Activity("child1");
             var child2 = new Activity("child2");
@@ -535,11 +621,11 @@ namespace System.Diagnostics.Tests
         /****** WC3 Format tests *****/
 
         [Fact]
-        public void IdFormat_HierarchicalIsDefault()
+        public void IdFormat_W3CIsDefaultForNet5()
         {
             Activity activity = new Activity("activity1");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            Assert.Equal(PlatformDetection.IsNetCore ? ActivityIdFormat.W3C : ActivityIdFormat.Hierarchical, activity.IdFormat);
         }
 
         [Fact]
@@ -562,22 +648,28 @@ namespace System.Diagnostics.Tests
             Activity activity0 = new Activity("activity0");
             Activity activity1 = new Activity("activity1");
             Activity activity2 = new Activity("activity2");
+            Activity activity3 = new Activity("activity3");
             activity0.SetParentId("01-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
             activity0.Start();
             activity1.SetParentId("cc-1123456789abcdef0123456789abcdef-1123456789abcdef-00");
             activity1.Start();
             activity2.SetParentId("fe-2123456789abcdef0123456789abcdef-2123456789abcdef-00");
             activity2.Start();
+            activity3.SetParentId("ef-3123456789abcdef0123456789abcdef-3123456789abcdef-00");
+            activity3.Start();
 
             Assert.Equal(ActivityIdFormat.W3C, activity0.IdFormat);
             Assert.Equal(ActivityIdFormat.W3C, activity1.IdFormat);
             Assert.Equal(ActivityIdFormat.W3C, activity2.IdFormat);
+            Assert.Equal(ActivityIdFormat.W3C, activity3.IdFormat);
             Assert.Equal("0123456789abcdef0123456789abcdef", activity0.TraceId.ToHexString());
             Assert.Equal("1123456789abcdef0123456789abcdef", activity1.TraceId.ToHexString());
             Assert.Equal("2123456789abcdef0123456789abcdef", activity2.TraceId.ToHexString());
+            Assert.Equal("3123456789abcdef0123456789abcdef", activity3.TraceId.ToHexString());
             Assert.Equal("0123456789abcdef", activity0.ParentSpanId.ToHexString());
             Assert.Equal("1123456789abcdef", activity1.ParentSpanId.ToHexString());
             Assert.Equal("2123456789abcdef", activity2.ParentSpanId.ToHexString());
+            Assert.Equal("3123456789abcdef", activity3.ParentSpanId.ToHexString());
         }
 
         [Fact]
@@ -618,6 +710,20 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void IdFormat_WithTheEnvironmentSwitch()
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_DIAGNOSTICS_DEFAULTACTIVITYIDFORMATISHIERARCHIAL", "true");
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Activity activity = new Activity("activity15");
+                activity.Start();
+                 Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            }, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -633,13 +739,23 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void IdFormat_ZeroTraceIdAndSpanIdWithHierarchicalFormat()
+        public void IdFormat_ZeroTraceIdAndSpanIdWithW3CFormat()
         {
             Activity activity = new Activity("activity");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
-            Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
-            Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.NotEqual("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.NotEqual("0000000000000000", activity.SpanId.ToHexString());
+            }
+            else
+            {
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1239,7 +1355,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentFlowsWithAsyncSimple()
         {
             Activity activity = new Activity("activity").Start();
@@ -1256,7 +1372,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentFlowsWithAsyncComplex()
         {
             Activity originalActivity = Activity.Current;
@@ -1295,7 +1411,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current could be set
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentSet()
         {
             Activity activity = new Activity("activity");
@@ -1413,11 +1529,11 @@ namespace System.Diagnostics.Tests
             Assert.Equal(2, activity.Events.Count());
             Assert.Equal("Event1", activity.Events.ElementAt(0).Name);
             Assert.Equal(ts1, activity.Events.ElementAt(0).Timestamp);
-            Assert.Equal(0, activity.Events.ElementAt(0).Attributes.Count());
+            Assert.Equal(0, activity.Events.ElementAt(0).Tags.Count());
 
             Assert.Equal("Event2", activity.Events.ElementAt(1).Name);
             Assert.Equal(ts2, activity.Events.ElementAt(1).Timestamp);
-            Assert.Equal(0, activity.Events.ElementAt(1).Attributes.Count());
+            Assert.Equal(0, activity.Events.ElementAt(1).Tags.Count());
         }
 
         [Fact]
@@ -1428,6 +1544,120 @@ namespace System.Diagnostics.Tests
             Assert.True(a1.IsAllDataRequested);
             Assert.True(object.ReferenceEquals(a1, a1.AddTag("k1", "v1")));
             Assert.Equal(1, a1.Tags.Count());
+        }
+
+        [Fact]
+        public void TestTagObjects()
+        {
+            Activity activity = new Activity("TagObjects");
+            Assert.Equal(0, activity.Tags.Count());
+            Assert.Equal(0, activity.TagObjects.Count());
+
+            activity.AddTag("s1", "s1").AddTag("s2", "s2").AddTag("s3", null);
+            Assert.Equal(3, activity.Tags.Count());
+            Assert.Equal(3, activity.TagObjects.Count());
+
+            KeyValuePair<string, string>[] tags = activity.Tags.ToArray();
+            KeyValuePair<string, object>[] tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(tags.Length, tagObjects.Length);
+
+            for (int i = 0; i < tagObjects.Length; i++)
+            {
+                Assert.Equal(tags[i].Key, tagObjects[i].Key);
+                Assert.Equal(tags[i].Value, tagObjects[i].Value);
+            }
+
+            activity.AddTag("s4", (object) null);
+            Assert.Equal(4, activity.Tags.Count());
+            Assert.Equal(4, activity.TagObjects.Count());
+            tags = activity.Tags.ToArray();
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(tags[3].Key, tagObjects[3].Key);
+            Assert.Equal(tags[3].Value, tagObjects[3].Value);
+
+            activity.AddTag("s5", 5);
+            Assert.Equal(4, activity.Tags.Count());
+            Assert.Equal(5, activity.TagObjects.Count());
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(5, tagObjects[4].Value);
+
+            activity.AddTag(null, null); // we allow that and we keeping the behavior for the compatability reason
+            Assert.Equal(5, activity.Tags.Count());
+            Assert.Equal(6, activity.TagObjects.Count());
+
+            activity.SetTag("s6", "s6");
+            Assert.Equal(6, activity.Tags.Count());
+            Assert.Equal(7, activity.TagObjects.Count());
+
+            activity.SetTag("s5", "s6");
+            Assert.Equal(7, activity.Tags.Count());
+            Assert.Equal(7, activity.TagObjects.Count());
+
+            activity.SetTag("s3", null); // remove the tag
+            Assert.Equal(6, activity.Tags.Count());
+            Assert.Equal(6, activity.TagObjects.Count());
+
+            tags = activity.Tags.ToArray();
+            tagObjects = activity.TagObjects.ToArray();
+            for (int i = 0; i < tagObjects.Length; i++)
+            {
+                Assert.Equal(tags[i].Key, tagObjects[i].Key);
+                Assert.Equal(tags[i].Value, tagObjects[i].Value);
+            }
+        }
+
+        [Theory]
+        [InlineData("key1", null, true,  1)]
+        [InlineData("key2", null, false, 0)]
+        [InlineData("key3", "v1", true,  1)]
+        [InlineData("key4", "v2", false, 1)]
+        public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
+        {
+            Activity a = new Activity("SetFirstTag");
+            if (add)
+            {
+                a.AddTag(key, value);
+            }
+            else
+            {
+                a.SetTag(key, value);
+            }
+
+            Assert.Equal(resultCount, a.TagObjects.Count());
+        }
+
+        [Fact]
+        public void StructEnumerator_TagsLinkedList()
+        {
+            // Note: This test verifies the presence of the struct Enumerator on TagsLinkedList used by customers dynamically to avoid allocations.
+
+            Activity a = new Activity("TestActivity");
+            a.AddTag("Tag1", true);
+
+            IEnumerable<KeyValuePair<string, object>> enumerable = a.TagObjects;
+
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
+        }
+
+        [Fact]
+        public void StructEnumerator_GenericLinkedList()
+        {
+            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+
+            Activity a = new Activity("TestActivity");
+            a.AddEvent(new ActivityEvent());
+
+            IEnumerable<ActivityEvent> enumerable = a.Events;
+
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
         }
 
         public void Dispose()

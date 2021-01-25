@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Data.ProviderBase;
@@ -101,7 +100,7 @@ namespace System.Data.Common
             return ((byte)_values[i]);
         }
 
-        public override long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
+        public override long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length)
         {
             int cbytes = 0;
             int ndataIndex;
@@ -171,7 +170,7 @@ namespace System.Data.Common
 
         public override char GetChar(int i) => ((string)_values[i])[0];
 
-        public override long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
+        public override long GetChars(int i, long dataIndex, char[]? buffer, int bufferIndex, int length)
         {
             // if the object doesn't contain a char[] then the user will get an exception
             string s = (string)_values[i];
@@ -306,6 +305,8 @@ namespace System.Data.Common
             return new AttributeCollection(null);
         }
 
+// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+#nullable disable
         string ICustomTypeDescriptor.GetClassName()
         {
             return null;
@@ -336,6 +337,7 @@ namespace System.Data.Common
         {
             return null;
         }
+#nullable enable
 
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {

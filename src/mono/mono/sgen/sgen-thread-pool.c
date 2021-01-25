@@ -15,6 +15,8 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-os-mutex.h"
 
+
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 static mono_mutex_t lock;
 static mono_cond_t work_cond;
 static mono_cond_t done_cond;
@@ -259,6 +261,11 @@ sgen_thread_pool_create_context (int num_threads, SgenThreadPoolThreadInitFunc i
 
 	sgen_pointer_queue_init (&pool_contexts [contexts_num].job_queue, 0);
 
+	// Job batches normally split into num_threads * 4 jobs. Make room for up to four job batches in the deferred queue (should reduce flushes during minor collections).
+	pool_contexts [context_id].deferred_jobs_len = (num_threads * 4 * 4) + 1;
+	pool_contexts [context_id].deferred_jobs = (void **)sgen_alloc_internal_dynamic (sizeof (void *) * pool_contexts [context_id].deferred_jobs_len, INTERNAL_MEM_THREAD_POOL_JOB, TRUE);
+	pool_contexts [context_id].deferred_jobs_count = 0;
+
 	contexts_num++;
 
 	return context_id;
@@ -339,6 +346,45 @@ sgen_thread_pool_job_enqueue (int context_id, SgenThreadPoolJob *job)
 	mono_os_mutex_unlock (&lock);
 }
 
+/*
+ * LOCKING: Assumes the GC lock is held  (or it will race with sgen_thread_pool_flush_deferred_jobs)
+ */
+void
+sgen_thread_pool_job_enqueue_deferred (int context_id, SgenThreadPoolJob *job)
+{
+	// Fast path assumes the GC lock is held.
+	pool_contexts [context_id].deferred_jobs [pool_contexts [context_id].deferred_jobs_count++] = job;
+	if (pool_contexts [context_id].deferred_jobs_count >= pool_contexts [context_id].deferred_jobs_len) {
+		// Slow path, flush jobs into queue, but don't signal workers.
+		sgen_thread_pool_flush_deferred_jobs (context_id, FALSE);
+	}
+}
+
+/*
+ * LOCKING: Assumes the GC lock is held (or it will race with sgen_thread_pool_job_enqueue_deferred).
+ */
+void
+sgen_thread_pool_flush_deferred_jobs (int context_id, gboolean signal)
+{
+	if (!signal && !sgen_thread_pool_have_deferred_jobs (context_id))
+		return;
+
+	mono_os_mutex_lock (&lock);
+	for (int i = 0; i < pool_contexts [context_id].deferred_jobs_count; i++) {
+		sgen_pointer_queue_add (&pool_contexts[context_id].job_queue, pool_contexts [context_id].deferred_jobs [i]);
+		pool_contexts [context_id].deferred_jobs [i] = NULL;
+	}
+	pool_contexts [context_id].deferred_jobs_count = 0;
+	if (signal)
+		mono_os_cond_broadcast (&work_cond);
+	mono_os_mutex_unlock (&lock);
+}
+
+gboolean sgen_thread_pool_have_deferred_jobs (int context_id)
+{
+	return pool_contexts [context_id].deferred_jobs_count != 0;
+}
+
 void
 sgen_thread_pool_job_wait (int context_id, SgenThreadPoolJob *job)
 {
@@ -402,5 +448,86 @@ sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread)
 
 	return 0;
 }
+#else
+
+int
+sgen_thread_pool_create_context (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, SgenThreadPoolContinueIdleJobFunc continue_idle_func, SgenThreadPoolShouldWorkFunc should_work_func, void **thread_datas)
+{
+	return 0;
+}
+
+void
+sgen_thread_pool_start (void)
+{
+}
+
+void
+sgen_thread_pool_shutdown (void)
+{
+}
+
+SgenThreadPoolJob*
+sgen_thread_pool_job_alloc (const char *name, SgenThreadPoolJobFunc func, size_t size)
+{
+	SgenThreadPoolJob *job = (SgenThreadPoolJob *)sgen_alloc_internal_dynamic (size, INTERNAL_MEM_THREAD_POOL_JOB, TRUE);
+	job->name = name;
+	job->size = size;
+	job->func = func;
+	return job;
+}
+
+void
+sgen_thread_pool_job_free (SgenThreadPoolJob *job)
+{
+	sgen_free_internal_dynamic (job, job->size, INTERNAL_MEM_THREAD_POOL_JOB);
+}
+
+void
+sgen_thread_pool_job_enqueue (int context_id, SgenThreadPoolJob *job)
+{
+}
+
+void
+sgen_thread_pool_job_enqueue_deferred (int context_id, SgenThreadPoolJob *job)
+{
+}
+
+void
+sgen_thread_pool_flush_deferred_jobs (int context_id, gboolean signal)
+{
+}
+
+gboolean sgen_thread_pool_have_deferred_jobs (int context_id)
+{
+	return FALSE;
+}
+
+void
+sgen_thread_pool_job_wait (int context_id, SgenThreadPoolJob *job)
+{
+}
+
+void
+sgen_thread_pool_idle_signal (int context_id)
+{
+}
+
+void
+sgen_thread_pool_idle_wait (int context_id, SgenThreadPoolContinueIdleWaitFunc continue_wait)
+{
+}
+
+void
+sgen_thread_pool_wait_for_all_jobs (int context_id)
+{
+}
+
+int
+sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread)
+{
+	return 0;
+}
+
+#endif
 
 #endif

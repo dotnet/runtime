@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -166,26 +165,25 @@ namespace System.Net.Http.Headers
         public IEnumerator<T> GetEnumerator()
         {
             object? storeValue = _store.GetParsedValues(_descriptor);
+            return storeValue is null ?
+                ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() : // use singleton empty array enumerator
+                Iterate(storeValue);
 
-            if (storeValue == null)
+            static IEnumerator<T> Iterate(object storeValue)
             {
-                yield break;
-            }
-
-            List<object>? storeValues = storeValue as List<object>;
-
-            if (storeValues == null)
-            {
-                Debug.Assert(storeValue is T);
-                yield return (T)storeValue;
-            }
-            else
-            {
-                // We have multiple values. Iterate through the values and return them.
-                foreach (object item in storeValues)
+                if (storeValue is List<object> storeValues)
                 {
-                    Debug.Assert(item is T);
-                    yield return (T)item;
+                    // We have multiple values. Iterate through the values and return them.
+                    foreach (object item in storeValues)
+                    {
+                        Debug.Assert(item is T);
+                        yield return (T)item;
+                    }
+                }
+                else
+                {
+                    Debug.Assert(storeValue is T);
+                    yield return (T)storeValue;
                 }
             }
         }

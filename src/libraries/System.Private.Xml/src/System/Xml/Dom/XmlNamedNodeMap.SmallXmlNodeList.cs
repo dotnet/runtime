@@ -1,9 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Xml
 {
@@ -17,7 +17,7 @@ namespace System.Xml
             // object.
             // Otherwise, field is an List<object>. Once the field upgrades to an List<object>, it
             // never degrades back, even if all elements are removed.
-            private object _field;
+            private object? _field;
 
             public int Count
             {
@@ -26,7 +26,7 @@ namespace System.Xml
                     if (_field == null)
                         return 0;
 
-                    List<object> list = _field as List<object>;
+                    List<object>? list = _field as List<object>;
                     if (list != null)
                         return list.Count;
 
@@ -41,7 +41,7 @@ namespace System.Xml
                     if (_field == null)
                         throw new ArgumentOutOfRangeException(nameof(index));
 
-                    List<object> list = _field as List<object>;
+                    List<object>? list = _field as List<object>;
                     if (list != null)
                         return list[index];
 
@@ -58,10 +58,11 @@ namespace System.Xml
                 {
                     if (value == null)
                     {
+                        Debug.Fail("Null was added to the collection which didn't expect it");
                         // If a single null value needs to be stored, then
                         // upgrade to an ArrayList
                         List<object> temp = new List<object>();
-                        temp.Add(null);
+                        temp.Add(null!);
                         _field = temp;
                     }
                     else
@@ -70,7 +71,7 @@ namespace System.Xml
                     return;
                 }
 
-                List<object> list = _field as List<object>;
+                List<object>? list = _field as List<object>;
                 if (list != null)
                 {
                     list.Add(value);
@@ -89,7 +90,7 @@ namespace System.Xml
                 if (_field == null)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
-                List<object> list = _field as List<object>;
+                List<object?>? list = _field as List<object?>;
                 if (list != null)
                 {
                     list.RemoveAt(index);
@@ -112,7 +113,7 @@ namespace System.Xml
                     return;
                 }
 
-                List<object> list = _field as List<object>;
+                List<object>? list = _field as List<object>;
                 if (list != null)
                 {
                     list.Insert(index, value);
@@ -157,6 +158,7 @@ namespace System.Xml
                         {
                             throw new InvalidOperationException();
                         }
+
                         return _loneValue;
                     }
                 }
@@ -168,6 +170,7 @@ namespace System.Xml
                         _position = 0;
                         return true;
                     }
+
                     _position = 1;
                     return false;
                 }
@@ -185,7 +188,7 @@ namespace System.Xml
                     return XmlDocument.EmptyEnumerator;
                 }
 
-                List<object> list = _field as List<object>;
+                List<object>? list = _field as List<object>;
                 if (list != null)
                 {
                     return list.GetEnumerator();

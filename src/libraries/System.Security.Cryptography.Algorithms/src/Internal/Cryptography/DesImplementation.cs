@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for DES, not consuming it.")]
     internal sealed partial class DesImplementation : DES
     {
         private const int BitsPerByte = 8;
@@ -34,9 +33,7 @@ namespace Internal.Cryptography
 
         public override void GenerateIV()
         {
-            byte[] iv = new byte[BlockSize / BitsPerByte];
-            RandomNumberGenerator.Fill(iv);
-            IV = iv;
+            IV = RandomNumberGenerator.GetBytes(BlockSize / BitsPerByte);
         }
 
         public sealed override void GenerateKey()
@@ -74,7 +71,21 @@ namespace Internal.Cryptography
                     throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(rgbIV));
             }
 
-            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, encrypting);
+            if (Mode == CipherMode.CFB)
+            {
+                ValidateCFBFeedbackSize(FeedbackSize);
+            }
+
+            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, FeedbackSize / BitsPerByte, this.GetPaddingSize(), encrypting);
+        }
+
+        private static void ValidateCFBFeedbackSize(int feedback)
+        {
+            // only 8bits feedback is available on all platforms
+            if (feedback != 8)
+            {
+                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+            }
         }
     }
 }

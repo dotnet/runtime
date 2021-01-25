@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Text;
@@ -91,6 +90,7 @@ namespace System.IO.Tests
 
             // test non-integer numeric types
 
+            RunTest(writer => writer.Write((Half)0.1234), reader => reader.ReadHalf());
             RunTest(writer => writer.Write((float)0.1234), reader => reader.ReadSingle());
             RunTest(writer => writer.Write((double)0.1234), reader => reader.ReadDouble());
             RunTest(writer => writer.Write((decimal)0.1234), reader => reader.ReadDecimal());
@@ -202,6 +202,7 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadChars(1));
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadDecimal());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadDouble());
+            Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadHalf());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadInt16());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadInt32());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadInt64());

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Taken from https://github.com/dotnet/aspnetcore/blob/master/src/Mvc/Mvc.Core/test/Formatters/TranscodingReadStreamTest.cs
 
@@ -229,15 +228,6 @@ namespace System.Net.Http.Json.Functional.Tests
         public Task ReadAsync_Works_WhenInputIs_Unicode(string message)
         {
             Encoding sourceEncoding = Encoding.Unicode;
-            return ReadAsyncTest(sourceEncoding, message);
-        }
-
-        [Theory]
-        [MemberData(nameof(ReadAsyncInputLatin), "utf-7")]
-        [MemberData(nameof(ReadAsyncInputUnicode), "utf-7")]
-        public Task ReadAsync_Works_WhenInputIs_UTF7(string message)
-        {
-            Encoding sourceEncoding = Encoding.UTF7;
             return ReadAsyncTest(sourceEncoding, message);
         }
 

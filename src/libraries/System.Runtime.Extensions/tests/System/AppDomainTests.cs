@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -45,6 +44,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws pNSE
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
@@ -130,7 +130,7 @@ namespace System.Tests
 
             // GetEntryAssembly may be null (i.e. desktop)
             if (expected == null)
-                expected = Assembly.GetExecutingAssembly().GetName().Name;
+                expected = "DefaultDomain";
 
             Assert.Equal(expected, s);
         }
@@ -358,6 +358,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void LoadBytes()
         {
             Assembly assembly = typeof(AppDomainTests).Assembly;
@@ -372,6 +373,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Throws PNSE
         public void MonitoringIsEnabled()
         {
             Assert.True(AppDomain.MonitoringIsEnabled);
@@ -389,8 +391,10 @@ namespace System.Tests
             using (Process p = Process.GetCurrentProcess())
             {
                 TimeSpan processTime = p.UserProcessorTime;
+                Assert.InRange(processTime, TimeSpan.Zero, TimeSpan.MaxValue);
+
                 TimeSpan monitoringTime = AppDomain.CurrentDomain.MonitoringTotalProcessorTime;
-                Assert.InRange(monitoringTime, processTime, TimeSpan.MaxValue);
+                Assert.InRange(monitoringTime, processTime * 0.95, TimeSpan.MaxValue); // *0.95 for a bit of wiggle room due to precision differences with employed timing mechanisms
             }
 
             GC.KeepAlive(o);
@@ -637,6 +641,48 @@ namespace System.Tests
             }).Dispose();
         }
 
+        class CorrectlyPropagatesException : Exception
+        {
+            public CorrectlyPropagatesException(string message) : base(message)
+            { }
+        }
+
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43909", TestRuntimes.Mono)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AssemblyResolve_ExceptionPropagatesCorrectly(bool throwOnError)
+        {
+            bool handlerExceptionThrown = false;
+
+            ResolveEventHandler handler = (sender, args) =>
+            {
+                if (args.Name.StartsWith("Some.Assembly"))
+                    throw new CorrectlyPropagatesException("Failure");
+                return null;
+            };
+
+            AppDomain.CurrentDomain.AssemblyResolve += handler;
+
+            try
+            {
+                Type.GetType("Some.Assembly.Type, Some.Assembly", throwOnError);
+            }
+            catch (FileLoadException e)
+            {
+                Assert.NotNull(e.InnerException);
+                Assert.IsAssignableFrom<CorrectlyPropagatesException>(e.InnerException);
+                Assert.Equal("Failure", e.InnerException.Message);
+                handlerExceptionThrown = true;
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.AssemblyResolve -= handler;
+            }
+
+            Assert.True(handlerExceptionThrown);
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TypeResolve()
         {
@@ -738,9 +784,11 @@ namespace System.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetPermissionSet()
         {
+#pragma warning disable SYSLIB0003 // Obsolete: CAS
             RemoteExecutor.Invoke(() => {
                 Assert.Equal(new PermissionSet(PermissionState.Unrestricted), AppDomain.CurrentDomain.PermissionSet);
             }).Dispose();
+#pragma warning restore SYSLIB0003 // Obsolete: CAS
         }
 
         [Theory]
@@ -909,7 +957,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37871", TestRuntimes.Mono)]
         public void AssemblyResolve_FirstChanceException()
         {
             RemoteExecutor.Invoke(() => {

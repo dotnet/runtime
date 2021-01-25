@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Reflection.Emit/AssemblyBuilder.cs
 //
@@ -173,15 +176,10 @@ namespace System.Reflection.Emit
         //
         // AssemblyBuilder inherits from Assembly, but the runtime thinks its layout inherits from RuntimeAssembly
         //
-        #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
-#pragma warning disable 649
+#region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
-#pragma warning restore 649
         private object? _evidence;
-        #endregion
 
-#pragma warning disable 169, 414, 649
-        #region Sync with object-internals.h
         private UIntPtr dynamic_assembly; /* GC-tracked */
         private MethodInfo? entry_point;
         private ModuleBuilder[] modules;
@@ -202,13 +200,12 @@ namespace System.Reflection.Emit
         private object? permissions_minimum;
         private object? permissions_optional;
         private object? permissions_refused;
-        private PortableExecutableKinds peKind;
-        private ImageFileMachine machine;
+        private int peKind;
+        private int machine;
         private bool corlib_internal;
         private Type[]? type_forwarders;
         private byte[]? pktoken;
-        #endregion
-#pragma warning restore 169, 414, 649
+#endregion
 
         private AssemblyName aname;
         private string? assemblyName;
@@ -224,7 +221,8 @@ namespace System.Reflection.Emit
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
-        internal AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
+        [DynamicDependency(nameof(pktoken))] // Automatically keeps all previous fields too due to StructLayout
+        private AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
         {
             aname = (AssemblyName)n.Clone();
 
@@ -338,6 +336,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetExportedTypes()
         {
             throw not_supported();
@@ -420,65 +419,19 @@ namespace System.Reflection.Emit
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             // Strange message but this is what MS.NET prints...
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
 
-        private string create_assembly_version(string version)
-        {
-            string[] parts = version.Split('.');
-            int[] ver = new int[4] { 0, 0, 0, 0 };
-
-            if ((parts.Length < 0) || (parts.Length > 4))
-                throw new ArgumentException("The version specified '" + version + "' is invalid");
-
-            for (int i = 0; i < parts.Length; ++i)
-            {
-                if (parts[i] == "*")
-                {
-                    DateTime now = DateTime.Now;
-
-                    if (i == 2)
-                    {
-                        ver[2] = (now - new DateTime(2000, 1, 1)).Days;
-                        if (parts.Length == 3)
-                            ver[3] = (now.Second + (now.Minute * 60) + (now.Hour * 3600)) / 2;
-                    }
-                    else
-                        if (i == 3)
-                        ver[3] = (now.Second + (now.Minute * 60) + (now.Hour * 3600)) / 2;
-                    else
-                        throw new ArgumentException("The version specified '" + version + "' is invalid");
-                }
-                else
-                {
-                    try
-                    {
-                        ver[i] = int.Parse(parts[i]);
-                    }
-                    catch (FormatException)
-                    {
-                        throw new ArgumentException("The version specified '" + version + "' is invalid");
-                    }
-                }
-            }
-
-            return ver[0] + "." + ver[1] + "." + ver[2] + "." + ver[3];
-        }
-
-        private string GetCultureString(string str)
-        {
-            return (str == "neutral" ? string.Empty : str);
-        }
-
         /*Warning, @typeArguments must be a mscorlib internal array. So make a copy before passing it in*/
-        internal Type MakeGenericType(Type gtd, Type[] typeArguments)
+        internal static Type MakeGenericType(Type gtd, Type[] typeArguments)
         {
             return new TypeBuilderInstantiation(gtd, typeArguments);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             if (name == null)
@@ -525,6 +478,7 @@ namespace System.Reflection.Emit
             return AssemblyName.Create(_mono_assembly, null);
         }
 
+        [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
 
         public override Module[] GetLoadedModules(bool getResourceModules)
@@ -554,6 +508,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override bool GlobalAssemblyCache
         {
             get

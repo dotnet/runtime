@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Xml.XPath;
@@ -11,11 +10,11 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NodeFunctions : ValueQuery
     {
-        private readonly Query _arg = null;
+        private readonly Query? _arg;
         private readonly FT _funcType;
-        private XsltContext _xsltContext;
+        private XsltContext? _xsltContext;
 
-        public NodeFunctions(FT funcType, Query arg)
+        public NodeFunctions(FT funcType, Query? arg)
         {
             _funcType = funcType;
             _arg = arg;
@@ -30,7 +29,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        private XPathNavigator EvaluateArg(XPathNodeIterator context)
+        private XPathNavigator? EvaluateArg(XPathNodeIterator context)
         {
             if (_arg == null)
             {
@@ -42,7 +41,7 @@ namespace MS.Internal.Xml.XPath
 
         public override object Evaluate(XPathNodeIterator context)
         {
-            XPathNavigator argVal;
+            XPathNavigator? argVal;
 
             switch (_funcType)
             {
@@ -72,11 +71,11 @@ namespace MS.Internal.Xml.XPath
                     }
                     break;
                 case FT.FuncCount:
-                    _arg.Evaluate(context);
+                    _arg!.Evaluate(context);
                     int count = 0;
                     if (_xsltContext != null)
                     {
-                        XPathNavigator nav;
+                        XPathNavigator? nav;
                         while ((nav = _arg.Advance()) != null)
                         {
                             if (nav.NodeType != XPathNodeType.Whitespace || _xsltContext.PreserveWhitespace(nav))

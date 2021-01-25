@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -64,10 +63,23 @@ Return 0 on success, -1 on failure.
 */
 int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength)
 {
+    assert(buffer != NULL);
+
+#ifdef __EMSCRIPTEN__
+    extern int32_t dotnet_browser_entropy(uint8_t* buffer, int32_t bufferLength);
+    static bool sMissingBrowserCrypto;
+    if (!sMissingBrowserCrypto)
+    {
+        int32_t bff = dotnet_browser_entropy(buffer, bufferLength);
+        if (bff == -1)
+            sMissingBrowserCrypto = true;
+        else
+            return 0;
+    }
+#else
+
     static volatile int rand_des = -1;
     static bool sMissingDevURandom;
-
-    assert(buffer != NULL);
 
     if (!sMissingDevURandom)
     {
@@ -122,6 +134,6 @@ int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int3
             return 0;
         }
     }
-
+#endif
     return -1;
 }

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,7 +16,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Schema
 {
-    public delegate object XmlValueGetter();
+    public delegate object? XmlValueGetter();
 
     [Flags]
     public enum XmlSchemaValidationFlags
@@ -146,9 +144,6 @@ namespace System.Xml.Schema
         //Empty arrays
         private static readonly XmlSchemaParticle[] s_emptyParticleArray = Array.Empty<XmlSchemaParticle>();
         private static readonly XmlSchemaAttribute[] s_emptyAttributeArray = Array.Empty<XmlSchemaAttribute>();
-
-        //Whitespace check for text nodes
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         internal static bool[,] ValidStates = new bool[12, 12] {
                                                /*ValidatorState.None*/      /*ValidatorState.Start  /*ValidatorState.TopLevelAttribute*/     /*ValidatorState.TopLevelTOrWS*/ /*ValidatorState.Element*/      /*ValidatorState.Attribute*/    /*ValidatorState.EndAttributes*/    /*ValidatorState.Text/      /*ValidatorState.WS/*       /*ValidatorState.EndElement*/   /*ValidatorState.SkipToEndElement*/         /*ValidatorState.Finish*/
@@ -678,7 +673,7 @@ namespace System.Xml.Schema
                         object attValue;
                         if (attributeValueGetter != null)
                         {
-                            attValue = attributeValueGetter();
+                            attValue = attributeValueGetter()!;
                         }
                         else
                         {
@@ -822,7 +817,7 @@ namespace System.Xml.Schema
                     case XmlSchemaContentType.TextOnly:
                         if (elementValueGetter != null)
                         {
-                            SaveTextValue(elementValueGetter());
+                            SaveTextValue(elementValueGetter()!);
                         }
                         else
                         {
@@ -831,8 +826,8 @@ namespace System.Xml.Schema
                         break;
 
                     case XmlSchemaContentType.ElementOnly:
-                        string textValue = elementValueGetter != null ? elementValueGetter().ToString()! : elementStringValue!;
-                        if (_xmlCharType.IsOnlyWhitespace(textValue))
+                        string textValue = elementValueGetter != null ? elementValueGetter()!.ToString()! : elementStringValue!;
+                        if (XmlCharType.IsOnlyWhitespace(textValue))
                         {
                             break;
                         }
@@ -853,7 +848,7 @@ namespace System.Xml.Schema
                         {
                             if (elementValueGetter != null)
                             {
-                                SaveTextValue(elementValueGetter());
+                                SaveTextValue(elementValueGetter()!);
                             }
                             else
                             {
@@ -906,7 +901,7 @@ namespace System.Xml.Schema
                     case XmlSchemaContentType.TextOnly:
                         if (elementValueGetter != null)
                         {
-                            SaveTextValue(elementValueGetter());
+                            SaveTextValue(elementValueGetter()!);
                         }
                         else
                         {
@@ -919,7 +914,7 @@ namespace System.Xml.Schema
                         {
                             if (elementValueGetter != null)
                             {
-                                SaveTextValue(elementValueGetter());
+                                SaveTextValue(elementValueGetter()!);
                             }
                             else
                             {

@@ -1175,7 +1175,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 #endif
 }
 
-#if MONO_SUPPORT_TASKLETS
+#if MONO_SUPPORT_TASKLETS && !defined(ENABLE_NETCORE)
 MonoContinuationRestore
 mono_tasklets_arch_restore (void)
 {

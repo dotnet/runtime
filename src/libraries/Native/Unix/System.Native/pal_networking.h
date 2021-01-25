@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -302,7 +301,15 @@ typedef struct
     uint32_t Padding;    // Pad out to 8-byte alignment
 } SocketEvent;
 
-PALEXPORT int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entry);
+PALEXPORT int32_t SystemNative_PlatformSupportsGetAddrInfoAsync(void);
+
+PALEXPORT int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry);
+
+typedef void (*GetHostEntryForNameCallback)(HostEntry* entry, int status);
+PALEXPORT int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address,
+                                                        int32_t addressFamily,
+                                                        HostEntry* entry,
+                                                        GetHostEntryForNameCallback callback);
 
 PALEXPORT void SystemNative_FreeHostEntry(HostEntry* entry);
 

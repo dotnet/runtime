@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -87,9 +86,7 @@ namespace System.Text.RegularExpressions
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-#pragma warning disable CS8614 // Nullability of reference types in type of parameter doesn't match implicitly implemented member.
         public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.RegularExpressions.Group? value) { throw null; }
-#pragma warning restore CS8614
     }
     public partial class Match : System.Text.RegularExpressions.Group
     {
@@ -158,8 +155,8 @@ namespace System.Text.RegularExpressions
         public System.Text.RegularExpressions.RegexOptions Options { get { throw null; } }
         public bool RightToLeft { get { throw null; } }
         public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname) { }
-        public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[] attributes) { }
-        public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[] attributes, string resourceFile) { }
+        public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[]? attributes) { }
+        public static void CompileToAssembly(System.Text.RegularExpressions.RegexCompilationInfo[] regexinfos, System.Reflection.AssemblyName assemblyname, System.Reflection.Emit.CustomAttributeBuilder[]? attributes, string? resourceFile) { }
         public static string Escape(string str) { throw null; }
         public string[] GetGroupNames() { throw null; }
         public int[] GetGroupNumbers() { throw null; }
@@ -243,6 +240,48 @@ namespace System.Text.RegularExpressions
         RightToLeft = 64,
         ECMAScript = 256,
         CultureInvariant = 512,
+    }
+    public enum RegexParseError
+    {
+        Unknown = 0,
+        AlternationHasTooManyConditions = 1,
+        AlternationHasMalformedCondition = 2,
+        InvalidUnicodePropertyEscape = 3,
+        MalformedUnicodePropertyEscape = 4,
+        UnrecognizedEscape = 5,
+        UnrecognizedControlCharacter = 6,
+        MissingControlCharacter = 7,
+        InsufficientOrInvalidHexDigits = 8,
+        QuantifierOrCaptureGroupOutOfRange = 9,
+        UndefinedNamedReference = 10,
+        UndefinedNumberedReference = 11,
+        MalformedNamedReference = 12,
+        UnescapedEndingBackslash = 13,
+        UnterminatedComment = 14,
+        InvalidGroupingConstruct = 15,
+        AlternationHasNamedCapture = 16,
+        AlternationHasComment = 17,
+        AlternationHasMalformedReference = 18,
+        AlternationHasUndefinedReference = 19,
+        CaptureGroupNameInvalid = 20,
+        CaptureGroupOfZero = 21,
+        UnterminatedBracket = 22,
+        ExclusionGroupNotLast = 23,
+        ReversedCharacterRange = 24,
+        ShorthandClassInCharacterRange = 25,
+        InsufficientClosingParentheses = 26,
+        ReversedQuantifierRange = 27,
+        NestedQuantifiersNotParenthesized = 28,
+        QuantifierAfterNothing = 29,
+        InsufficientOpeningParentheses = 30,
+        UnrecognizedUnicodeProperty = 31,
+    }
+    public sealed partial class RegexParseException : System.ArgumentException
+    {
+        private RegexParseException() { }
+        public System.Text.RegularExpressions.RegexParseError Error { get { throw null; } }
+        public int Offset { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class RegexRunner
     {

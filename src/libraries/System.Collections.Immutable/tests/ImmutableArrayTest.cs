@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Tests;
@@ -17,7 +16,7 @@ namespace System.Collections.Immutable.Tests
 {
     public class ImmutableArrayTest : SimpleElementImmutablesTestBase
     {
-        private static readonly ImmutableArray<int> s_emptyDefault;
+        private static readonly ImmutableArray<int> s_emptyDefault = default; // init explicitly to avoid CS0649
         private static readonly ImmutableArray<int> s_empty = ImmutableArray.Create<int>();
         private static readonly ImmutableArray<int> s_oneElement = ImmutableArray.Create(1);
         private static readonly ImmutableArray<int> s_manyElements = ImmutableArray.Create(1, 2, 3);

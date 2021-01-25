@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -12,7 +11,7 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public class LoggerExternalScopeProvider : IExternalScopeProvider
     {
-        private readonly AsyncLocal<Scope> _currentScope = new AsyncLocal<Scope>();
+        private readonly AsyncLocal<Scope?> _currentScope = new AsyncLocal<Scope?>();
 
         /// <summary>
         /// Creates a new <see cref="LoggerExternalScopeProvider"/>.
@@ -21,9 +20,9 @@ namespace Microsoft.Extensions.Logging
         { }
 
         /// <inheritdoc />
-        public void ForEachScope<TState>(Action<object, TState> callback, TState state)
+        public void ForEachScope<TState>(Action<object?, TState> callback, TState state)
         {
-            void Report(Scope current)
+            void Report(Scope? current)
             {
                 if (current == null)
                 {
@@ -36,9 +35,9 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <inheritdoc />
-        public IDisposable Push(object state)
+        public IDisposable Push(object? state)
         {
-            var parent = _currentScope.Value;
+            Scope? parent = _currentScope.Value;
             var newScope = new Scope(this, state, parent);
             _currentScope.Value = newScope;
 
@@ -50,18 +49,18 @@ namespace Microsoft.Extensions.Logging
             private readonly LoggerExternalScopeProvider _provider;
             private bool _isDisposed;
 
-            internal Scope(LoggerExternalScopeProvider provider, object state, Scope parent)
+            internal Scope(LoggerExternalScopeProvider provider, object? state, Scope? parent)
             {
                 _provider = provider;
                 State = state;
                 Parent = parent;
             }
 
-            public Scope Parent { get; }
+            public Scope? Parent { get; }
 
-            public object State { get; }
+            public object? State { get; }
 
-            public override string ToString()
+            public override string? ToString()
             {
                 return State?.ToString();
             }

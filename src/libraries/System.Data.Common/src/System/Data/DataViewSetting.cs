@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
     [TypeConverter((typeof(ExpandableObjectConverter)))]
     public class DataViewSetting
     {
-        private DataViewManager _dataViewManager;
-        private DataTable _table;
+        private DataViewManager? _dataViewManager;
+        private DataTable? _table;
         private string _sort = string.Empty;
         private string _rowFilter = string.Empty;
         private DataViewRowState _rowStateFilter = DataViewRowState.CurrentRows;
-        private bool _applyDefaultSort = false;
+        private bool _applyDefaultSort;
 
         internal DataViewSetting() { }
 
@@ -31,7 +31,7 @@ namespace System.Data
         }
 
         [Browsable(false)]
-        public DataViewManager DataViewManager => _dataViewManager;
+        public DataViewManager? DataViewManager => _dataViewManager;
 
         internal void SetDataViewManager(DataViewManager dataViewManager)
         {
@@ -42,7 +42,7 @@ namespace System.Data
         }
 
         [Browsable(false)]
-        public DataTable Table => _table;
+        public DataTable? Table => _table;
 
         internal void SetDataTable(DataTable table)
         {
@@ -52,6 +52,7 @@ namespace System.Data
             }
         }
 
+        [AllowNull]
         public string RowFilter
         {
             get { return _rowFilter; }
@@ -81,6 +82,7 @@ namespace System.Data
             }
         }
 
+        [AllowNull]
         public string Sort
         {
             get { return _sort; }

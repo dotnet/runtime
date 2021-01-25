@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -16,6 +17,8 @@ namespace System.Security.Cryptography
             return new RandomNumberGeneratorImplementation();
         }
 
+        [UnsupportedOSPlatform("browser")]
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static RandomNumberGenerator? Create(string rngName)
         {
             return (RandomNumberGenerator?)CryptoConfig.CreateFromName(rngName);
@@ -143,6 +146,26 @@ namespace System.Security.Cryptography
                 throw new ArgumentOutOfRangeException(nameof(toExclusive), SR.ArgumentOutOfRange_NeedPosNum);
 
             return GetInt32(0, toExclusive);
+        }
+
+        /// <summary>
+        /// Creates an array of bytes with a cryptographically strong random sequence of values.
+        /// </summary>
+        /// <param name="count">The number of bytes of random values to create.</param>
+        /// <returns>
+        /// An array populated with cryptographically strong random values.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="count" /> is less than zero.
+        /// </exception>
+        public static byte[] GetBytes(int count)
+        {
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            byte[] ret = new byte[count];
+            RandomNumberGeneratorImplementation.FillSpan(ret);
+            return ret;
         }
 
         internal void VerifyGetBytes(byte[] data, int offset, int count)

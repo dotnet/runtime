@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -47,14 +50,6 @@ namespace System.Reflection
         private FieldAttributes attrs;
 #pragma warning restore 649
 
-        internal BindingFlags BindingFlags
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
         public override Module Module
         {
             get
@@ -93,12 +88,12 @@ namespace System.Reflection
                 {
                     if (target == null)
                     {
-                        throw new TargetException(Environment.GetResourceString("RFLCT.Targ_StatFldReqTarg"));
+                        throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                     }
                     else
                     {
                         throw new ArgumentException(
-                            string.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Arg_FieldDeclTarget"),
+                            SR.Format(SR.Arg_FieldDeclTarget,
                                 Name, DeclaringType, target.GetType()));
                     }
                 }
@@ -118,7 +113,7 @@ namespace System.Reflection
         public override void SetValueDirect(TypedReference obj, object value)
         {
             if (obj.IsNull)
-                throw new ArgumentException(Environment.GetResourceString("Arg_TypedReference_Null"));
+                throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             unsafe
             {
@@ -132,7 +127,7 @@ namespace System.Reflection
         public override object GetValueDirect(TypedReference obj)
         {
             if (obj.IsNull)
-                throw new ArgumentException(Environment.GetResourceString("Arg_TypedReference_Null"));
+                throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             unsafe
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Buffers;
@@ -166,6 +165,15 @@ namespace System.Net.Http.QPack
                 Pool.Return(_headerValueOctets, true);
                 _headerValueOctets = null!;
             }
+        }
+
+        /// <summary>
+        /// Reset the decoder state back to its initial value. Resetting state is required when reusing a decoder with multiple
+        /// header frames. For example, decoding a response's headers and trailers.
+        /// </summary>
+        public void Reset()
+        {
+            _state = State.RequiredInsertCount;
         }
 
         public void Decode(in ReadOnlySequence<byte> headerBlock, IHttpHeadersHandler handler)

@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+#nullable enable
 
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Internal
 {
@@ -32,7 +34,8 @@ namespace Microsoft.Extensions.Internal
             { typeof(ushort), "ushort" }
         };
 
-        public static string GetTypeDisplayName(object item, bool fullName = true)
+        [return: NotNullIfNotNull("item")]
+        public static string? GetTypeDisplayName(object? item, bool fullName = true)
         {
             return item == null ? null : GetTypeDisplayName(item.GetType(), fullName);
         }
@@ -57,14 +60,14 @@ namespace Microsoft.Extensions.Internal
         {
             if (type.IsGenericType)
             {
-                var genericArguments = type.GetGenericArguments();
+                Type[] genericArguments = type.GetGenericArguments();
                 ProcessGenericType(builder, type, genericArguments, genericArguments.Length, options);
             }
             else if (type.IsArray)
             {
                 ProcessArrayType(builder, type, options);
             }
-            else if (_builtInTypeNames.TryGetValue(type, out var builtInName))
+            else if (_builtInTypeNames.TryGetValue(type, out string? builtInName))
             {
                 builder.Append(builtInName);
             }
@@ -77,7 +80,7 @@ namespace Microsoft.Extensions.Internal
             }
             else
             {
-                var name = options.FullName ? type.FullName : type.Name;
+                string name = options.FullName ? type.FullName! : type.Name;
                 builder.Append(name);
 
                 if (options.NestedTypeDelimiter != DefaultNestedTypeDelimiter)
@@ -89,10 +92,10 @@ namespace Microsoft.Extensions.Internal
 
         private static void ProcessArrayType(StringBuilder builder, Type type, in DisplayNameOptions options)
         {
-            var innerType = type;
+            Type innerType = type;
             while (innerType.IsArray)
             {
-                innerType = innerType.GetElementType();
+                innerType = innerType.GetElementType()!;
             }
 
             ProcessType(builder, innerType, options);
@@ -102,23 +105,23 @@ namespace Microsoft.Extensions.Internal
                 builder.Append('[');
                 builder.Append(',', type.GetArrayRank() - 1);
                 builder.Append(']');
-                type = type.GetElementType();
+                type = type.GetElementType()!;
             }
         }
 
         private static void ProcessGenericType(StringBuilder builder, Type type, Type[] genericArguments, int length, in DisplayNameOptions options)
         {
-            var offset = 0;
+            int offset = 0;
             if (type.IsNested)
             {
-                offset = type.DeclaringType.GetGenericArguments().Length;
+                offset = type.DeclaringType!.GetGenericArguments().Length;
             }
 
             if (options.FullName)
             {
                 if (type.IsNested)
                 {
-                    ProcessGenericType(builder, type.DeclaringType, genericArguments, offset, options);
+                    ProcessGenericType(builder, type.DeclaringType!, genericArguments, offset, options);
                     builder.Append(options.NestedTypeDelimiter);
                 }
                 else if (!string.IsNullOrEmpty(type.Namespace))
@@ -128,7 +131,7 @@ namespace Microsoft.Extensions.Internal
                 }
             }
 
-            var genericPartIndex = type.Name.IndexOf('`');
+            int genericPartIndex = type.Name.IndexOf('`');
             if (genericPartIndex <= 0)
             {
                 builder.Append(type.Name);
@@ -140,7 +143,7 @@ namespace Microsoft.Extensions.Internal
             if (options.IncludeGenericParameters)
             {
                 builder.Append('<');
-                for (var i = offset; i < length; i++)
+                for (int i = offset; i < length; i++)
                 {
                     ProcessType(builder, genericArguments[i], options);
                     if (i + 1 == length)

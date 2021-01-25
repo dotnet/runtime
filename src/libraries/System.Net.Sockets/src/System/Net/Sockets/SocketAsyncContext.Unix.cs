@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -430,7 +429,8 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 int bufferIndex = 0;
-                return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, Offset + Count), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                int bufferLength = Offset + Count; // TryCompleteSendTo expects the entire buffer, which it then indexes into with the ref Offset and ref Count arguments
+                return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, bufferLength), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
         }
 
@@ -844,7 +844,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false, bool processAsyncEvents = true)
+            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false)
             {
                 AsyncOperation op;
                 using (Lock())
@@ -865,7 +865,6 @@ namespace System.Net.Sockets
                             Debug.Assert(_isNextOperationSynchronous == (op.Event != null));
                             if (skipAsyncEvents && !_isNextOperationSynchronous)
                             {
-                                Debug.Assert(!processAsyncEvents);
                                 // Return the operation to indicate that the async operation was not processed, without making
                                 // any state changes because async operations are being skipped
                                 return op;
@@ -903,11 +902,6 @@ namespace System.Net.Sockets
                 {
                     // Async operation.  The caller will figure out how to process the IO.
                     Debug.Assert(!skipAsyncEvents);
-                    if (processAsyncEvents)
-                    {
-                        op.Process();
-                        return null;
-                    }
                     return op;
                 }
             }
@@ -1511,6 +1505,7 @@ namespace System.Net.Sockets
             {
                 Buffer = buffer,
                 Flags = flags,
+                SetReceivedFlags = true,
                 SocketAddress = socketAddress,
                 SocketAddressLen = socketAddressLen,
             };
@@ -2079,12 +2074,14 @@ namespace System.Net.Sockets
 
             if ((events & Interop.Sys.SocketEvents.Read) != 0)
             {
-                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this, processAsyncEvents: true);
+                AsyncOperation? receiveOperation = _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this);
+                receiveOperation?.Process();
             }
 
             if ((events & Interop.Sys.SocketEvents.Write) != 0)
             {
-                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this, processAsyncEvents: true);
+                AsyncOperation? sendOperation = _sendQueue.ProcessSyncEventOrGetAsyncEvent(this);
+                sendOperation?.Process();
             }
         }
 

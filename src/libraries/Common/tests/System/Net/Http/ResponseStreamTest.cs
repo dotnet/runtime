@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -193,7 +192,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             using (HttpResponseMessage response =
                     await client.GetAsync(remoteServer.EchoUri, HttpCompletionOption.ResponseHeadersRead))
-            using (Stream stream = await response.Content.ReadAsStreamAsync())
+            using (Stream stream = await response.Content.ReadAsStreamAsync(TestAsync))
             {
                 var buffer = new byte[2048];
                 Task task = stream.ReadAsync(buffer, 0, buffer.Length, cts.Token);
@@ -253,6 +252,29 @@ namespace System.Net.Http.Functional.Tests
             await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
             {
                 await ReadAsStreamHelper(uri);
+            });
+        }
+
+        [Theory]
+        [InlineData(TransferType.None, TransferError.None)]
+        [InlineData(TransferType.ContentLength, TransferError.None)]
+        [InlineData(TransferType.Chunked, TransferError.None)]
+        public async Task ReadAsStreamAsync_StreamCanReadIsFalseAfterDispose(
+            TransferType transferType,
+            TransferError transferError)
+        {
+            await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                using (HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    Stream stream = await response.Content.ReadAsStreamAsync();
+                    Assert.True(stream.CanRead);
+
+                    stream.Dispose();
+
+                    Assert.False(stream.CanRead);
+                }
             });
         }
 #endif
@@ -336,7 +358,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var response = await client.GetAsync(
                     serverUri,
                     HttpCompletionOption.ResponseHeadersRead))
-                using (var stream = await response.Content.ReadAsStreamAsync())
+                using (var stream = await response.Content.ReadAsStreamAsync(TestAsync))
                 {
                     var buffer = new byte[1];
                     while (await stream.ReadAsync(buffer, 0, 1) > 0) ;

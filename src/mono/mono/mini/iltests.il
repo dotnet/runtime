@@ -3845,4 +3845,29 @@ L3:
 		ret
 	}
 
+	.method public hidebysig static !!T	createinstance_intrins_primitive<.ctor T>() cil managed noinlining
+	{
+		.maxstack	8
+		call			 !!0 [mscorlib]System.Activator::CreateInstance<!!0>()
+		ret
+	}
+
+	.method public static int32 test_0_createinstance_intrins_primitive () cil managed
+	{
+		.maxstack	8
+		call			 !!0 Tests::createinstance_intrins_primitive<bool>()
+		ldc.i4.0
+		beq L1
+		ldc.i4.1
+		ret
+	L1:
+		call			 !!0 Tests::createinstance_intrins_primitive<int64>()
+		ldc.i8 0
+		beq L2
+		ldc.i4.2
+		ret
+	L2:
+		ldc.i4.0
+		ret
+	}
 }

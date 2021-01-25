@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -32,7 +31,7 @@ namespace System.IO.Enumeration
         private readonly object _lock = new object();
 
         private Interop.NtDll.FILE_FULL_DIR_INFORMATION* _entry;
-        private TResult _current = default!;
+        private TResult? _current;
 
         private IntPtr _buffer;
         private int _bufferLength;

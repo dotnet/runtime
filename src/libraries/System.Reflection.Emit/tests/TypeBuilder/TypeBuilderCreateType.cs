@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -27,7 +26,13 @@ namespace System.Reflection.Emit.Tests
             Type createdType = type.CreateType();
             Assert.Equal(type.Name, createdType.Name);
 
-            Assert.Equal(type.CreateTypeInfo(), createdType.GetTypeInfo());
+            TypeInfo typeInfo = type.CreateTypeInfo();
+            Assert.Equal(typeInfo, createdType.GetTypeInfo());
+
+            // Verify MetadataToken
+            Assert.Equal(type.MetadataToken, typeInfo.MetadataToken);
+            TypeInfo typeFromToken = (TypeInfo)type.Module.ResolveType(typeInfo.MetadataToken);
+            Assert.Equal(createdType, typeFromToken);
         }
 
         [Theory]

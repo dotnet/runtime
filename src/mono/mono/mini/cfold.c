@@ -45,13 +45,13 @@ mono_is_power_of_two (guint32 val)
 
 #define FOLD_FBINOP(name, op) \
 	case name: \
-	dest->inst_p0 = (double *)mono_domain_alloc (cfg->domain, sizeof (double)); \
+	dest->inst_p0 = (double *)mono_mem_manager_alloc (cfg->mem_manager, sizeof (double)); \
 	*(double *)dest->inst_p0 = (*((double *) arg1->inst_p0)) op (*((double *) arg2->inst_p0)); \
 	break;
 
 #define FOLD_RBINOP(name, op) \
 	case name: \
-	dest->inst_p0 = (float *)mono_domain_alloc (cfg->domain, sizeof (float)); \
+	dest->inst_p0 = (float *)mono_mem_manager_alloc (cfg->mem_manager, sizeof (float)); \
 	*(float *)dest->inst_p0 = (*((float *) arg1->inst_p0)) op (*((float *) arg2->inst_p0)); \
 	break;
 

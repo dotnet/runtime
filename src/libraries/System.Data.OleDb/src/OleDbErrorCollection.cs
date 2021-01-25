@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
@@ -13,10 +12,10 @@ namespace System.Data.OleDb
     {
         private readonly ArrayList items;
 
-        internal OleDbErrorCollection(UnsafeNativeMethods.IErrorInfo errorInfo)
+        internal OleDbErrorCollection(UnsafeNativeMethods.IErrorInfo? errorInfo)
         {
             ArrayList items = new ArrayList();
-            UnsafeNativeMethods.IErrorRecords errorRecords = (errorInfo as UnsafeNativeMethods.IErrorRecords);
+            UnsafeNativeMethods.IErrorRecords? errorRecords = (errorInfo as UnsafeNativeMethods.IErrorRecords);
             if (null != errorRecords)
             {
                 int recordCount = errorRecords.GetRecordCount();
@@ -53,7 +52,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                return (this.items[index] as OleDbError);
+                return (this.items[index] as OleDbError)!;
             }
         }
 

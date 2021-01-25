@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * Ordered String/Object collection of name/value pairs with support for null key
@@ -24,7 +23,7 @@ namespace System.Collections.Specialized
     /// </devdoc>
     public abstract class NameObjectCollectionBase : ICollection, ISerializable, IDeserializationCallback
     {
-        private bool _readOnly = false;
+        private bool _readOnly;
         private ArrayList _entriesArray;
         private IEqualityComparer _keyComparer;
         private volatile Hashtable _entriesTable;

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -92,7 +91,7 @@ namespace System.Threading.Tests
             Assert.Equal(43u, value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void InterlockedDecrement_Int32()
         {
             int value = 42;
@@ -118,7 +117,7 @@ namespace System.Threading.Tests
             Assert.Equal(41u, value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void InterlockedDecrement_Int64()
         {
             long value = 42;
@@ -302,7 +301,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x17755771u, value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/11177")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MemoryBarrierProcessWide()
         {
             // Stress MemoryBarrierProcessWide correctness using a simple AsymmetricLock
@@ -406,6 +405,15 @@ namespace System.Threading.Tests
                     SpinWait sw = new SpinWait();
                     while (oldEntry.Taken)
                         sw.SpinOnce();
+
+                    // We have seen that the other thread released the lock by setting Taken to false.
+                    // However, on platforms with weak memory ordering (ex: ARM32, ARM64) observing that does not guarantee that the writes executed by that
+                    // thread prior to releasing the lock are all committed to the shared memory.
+                    // We could fix that by doing the release via Volatile.Write, but we do not want to add expense to every release on the fast path.
+                    // Instead we will do another MemoryBarrierProcessWide here.
+
+                    // NOTE: not needed on x86/x64
+                    Interlocked.MemoryBarrierProcessWide();
 
                     _current.Taken = true;
                     return _current;

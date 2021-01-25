@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -31,7 +30,7 @@ namespace System.Net
 
         internal HttpListenerResponse()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             _nativeResponse = default;
             _nativeResponse.StatusCode = (ushort)HttpStatusCode.OK;
             _nativeResponse.Version.MajorVersion = 1;
@@ -41,7 +40,7 @@ namespace System.Net
 
         internal HttpListenerResponse(HttpListenerContext httpContext) : this()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, httpContext);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, httpContext);
             _httpContext = httpContext;
         }
 
@@ -63,7 +62,7 @@ namespace System.Net
 
         public void CopyFrom(HttpListenerResponse templateResponse)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"templateResponse {templateResponse}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"templateResponse {templateResponse}");
             _nativeResponse = default;
             _responseState = ResponseState.Created;
             _webHeaders = templateResponse._webHeaders;
@@ -98,77 +97,60 @@ namespace System.Net
 
         public void Abort()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            try
+            if (Disposed)
             {
-                if (Disposed)
-                {
-                    return;
-                }
+                return;
+            }
 
-                _responseState = ResponseState.Closed;
-                HttpListenerContext.Abort();
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            }
+            _responseState = ResponseState.Closed;
+            HttpListenerContext.Abort();
         }
 
         public void Close()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
                 ((IDisposable)this).Dispose();
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
         public void Close(byte[] responseEntity, bool willBlock)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"responseEntity={responseEntity},willBlock={willBlock}");
-            try
+            CheckDisposed();
+            if (responseEntity == null)
             {
-                CheckDisposed();
-                if (responseEntity == null)
+                throw new ArgumentNullException(nameof(responseEntity));
+            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ResponseState:{_responseState}, BoundaryType:{_boundaryType}, ContentLength:{_contentLength}");
+            if (!SentHeaders && _boundaryType != BoundaryType.Chunked)
+            {
+                ContentLength64 = responseEntity.Length;
+            }
+            EnsureResponseStream();
+            Debug.Assert(_responseStream != null);
+            if (willBlock)
+            {
+                try
                 {
-                    throw new ArgumentNullException(nameof(responseEntity));
+                    _responseStream!.Write(responseEntity, 0, responseEntity.Length);
                 }
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ResponseState:{_responseState}, BoundaryType:{_boundaryType}, ContentLength:{_contentLength}");
-                if (!SentHeaders && _boundaryType != BoundaryType.Chunked)
+                catch (Win32Exception)
                 {
-                    ContentLength64 = responseEntity.Length;
                 }
-                EnsureResponseStream();
-                if (willBlock)
+                finally
                 {
-                    try
-                    {
-                        _responseStream.Write(responseEntity, 0, responseEntity.Length);
-                    }
-                    catch (Win32Exception)
-                    {
-                    }
-                    finally
-                    {
-                        _responseStream.Close();
-                        _responseState = ResponseState.Closed;
-                        HttpListenerContext.Close();
-                    }
-                }
-                else
-                {
-                    _responseStream.BeginWrite(responseEntity, 0, responseEntity.Length, new AsyncCallback(NonBlockingCloseCallback), null);
+                    _responseStream!.Close();
+                    _responseState = ResponseState.Closed;
+                    HttpListenerContext!.Close();
                 }
             }
-            finally
+            else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                _responseStream!.BeginWrite(responseEntity, 0, responseEntity.Length, new AsyncCallback(NonBlockingCloseCallback), null);
             }
         }
 
@@ -179,10 +161,10 @@ namespace System.Net
                 return;
             }
             EnsureResponseStream();
-            _responseStream.Close();
+            _responseStream!.Close();
             _responseState = ResponseState.Closed;
 
-            HttpListenerContext.Close();
+            HttpListenerContext!.Close();
         }
 
         internal BoundaryType BoundaryType => _boundaryType;
@@ -191,7 +173,7 @@ namespace System.Net
         {
             if (_responseStream == null)
             {
-                _responseStream = new HttpResponseStream(HttpListenerContext);
+                _responseStream = new HttpResponseStream(HttpListenerContext!);
             }
         }
 
@@ -199,14 +181,14 @@ namespace System.Net
         {
             try
             {
-                _responseStream.EndWrite(asyncResult);
+                _responseStream!.EndWrite(asyncResult);
             }
             catch (Win32Exception)
             {
             }
             finally
             {
-                _responseStream.Close();
+                _responseStream!.Close();
                 HttpListenerContext.Close();
                 _responseState = ResponseState.Closed;
             }
@@ -236,11 +218,11 @@ namespace System.Net
             not after. Thus, flag is not applicable to HttpSendHttpResponse.
         */
         internal unsafe uint SendHeaders(Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk,
-            HttpResponseStreamAsyncResult asyncResult,
+            HttpResponseStreamAsyncResult? asyncResult,
             Interop.HttpApi.HTTP_FLAGS flags,
             bool isWebSocketHandshake)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"pDataChunk: { ((IntPtr)pDataChunk)}, asyncResult: {asyncResult}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"pDataChunk: { ((IntPtr)pDataChunk)}, asyncResult: {asyncResult}");
             Debug.Assert(!SentHeaders, "SentHeaders is true.");
 
             if (StatusCode == (int)HttpStatusCode.Unauthorized)
@@ -253,7 +235,7 @@ namespace System.Net
             }
 
             // Log headers
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 StringBuilder sb = new StringBuilder("HttpListenerResponse Headers:\n");
                 for (int i = 0; i < Headers.Count; i++)
@@ -264,13 +246,13 @@ namespace System.Net
                     sb.Append(Headers.Get(i));
                     sb.Append('\n');
                 }
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, sb.ToString());
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, sb.ToString());
             }
             _responseState = ResponseState.SentHeaders;
 
             uint statusCode;
             uint bytesSent;
-            List<GCHandle> pinnedHeaders = SerializeHeaders(ref _nativeResponse.Headers, isWebSocketHandshake);
+            List<GCHandle>? pinnedHeaders = SerializeHeaders(ref _nativeResponse.Headers, isWebSocketHandshake);
             try
             {
                 if (pDataChunk != null)
@@ -288,7 +270,7 @@ namespace System.Net
                     _nativeResponse.EntityChunkCount = 0;
                     _nativeResponse.pEntityChunks = null;
                 }
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpSendHttpResponse flags:" + flags);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling Interop.HttpApi.HttpSendHttpResponse flags:" + flags);
                 if (StatusDescription.Length > 0)
                 {
                     byte[] statusDescriptionBytes = new byte[WebHeaderEncoding.GetByteCount(StatusDescription)];
@@ -348,7 +330,7 @@ namespace System.Net
                         }
                     }
                 }
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpSendHttpResponse returned:" + statusCode);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpSendHttpResponse returned:" + statusCode);
             }
             finally
             {
@@ -360,13 +342,13 @@ namespace System.Net
         internal Interop.HttpApi.HTTP_FLAGS ComputeHeaders()
         {
             Interop.HttpApi.HTTP_FLAGS flags = Interop.HttpApi.HTTP_FLAGS.NONE;
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             Debug.Assert(!ComputedHeaders, "ComputedHeaders is true.");
             _responseState = ResponseState.ComputedHeaders;
 
             ComputeCoreHeaders();
 
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
                 NetEventSource.Info(this,
 $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength} _keepAlive: {_keepAlive}");
             if (_boundaryType == BoundaryType.None)
@@ -379,7 +361,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                 {
                     _boundaryType = BoundaryType.Chunked;
                 }
-                if (CanSendResponseBody(_httpContext.Response.StatusCode))
+                if (CanSendResponseBody(_httpContext!.Response.StatusCode))
                 {
                     _contentLength = -1;
                 }
@@ -389,7 +371,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"flags:{flags} _BoundaryType:{_boundaryType} _contentLength:{_contentLength} _keepAlive: {_keepAlive}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"flags:{flags} _BoundaryType:{_boundaryType} _contentLength:{_contentLength} _keepAlive: {_keepAlive}");
             if (_boundaryType == BoundaryType.ContentLength)
             {
                 Headers[HttpResponseHeader.ContentLength] = _contentLength.ToString("D", NumberFormatInfo.InvariantInfo);
@@ -425,7 +407,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                     Headers[HttpResponseHeader.KeepAlive] = "true";
                 }
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"flags:{flags} _BoundaryType:{_boundaryType} _contentLength:{_contentLength} _keepAlive: {_keepAlive}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"flags:{flags} _BoundaryType:{_boundaryType} _contentLength:{_contentLength} _keepAlive: {_keepAlive}");
             return flags;
         }
 
@@ -439,14 +421,14 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             ComputeCookies();
         }
 
-        private List<GCHandle> SerializeHeaders(ref Interop.HttpApi.HTTP_RESPONSE_HEADERS headers,
+        private List<GCHandle>? SerializeHeaders(ref Interop.HttpApi.HTTP_RESPONSE_HEADERS headers,
             bool isWebSocketHandshake)
         {
-            Interop.HttpApi.HTTP_UNKNOWN_HEADER[] unknownHeaders = null;
+            Interop.HttpApi.HTTP_UNKNOWN_HEADER[]? unknownHeaders = null;
             List<GCHandle> pinnedHeaders;
             GCHandle gcHandle;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "SerializeHeaders(HTTP_RESPONSE_HEADERS)");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "SerializeHeaders(HTTP_RESPONSE_HEADERS)");
             if (Headers.Count == 0)
             {
                 return null;
@@ -454,7 +436,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             string headerName;
             string headerValue;
             int lookup;
-            byte[] bytes = null;
+            byte[]? bytes = null;
             pinnedHeaders = new List<GCHandle>();
 
             //---------------------------------------------------
@@ -509,7 +491,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
 
                 if (lookup == -1)
                 {
-                    string[] headerValues = Headers.GetValues(index);
+                    string[] headerValues = Headers.GetValues(index)!;
                     numUnknownHeaders += headerValues.Length;
                 }
             }
@@ -521,14 +503,14 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                     for (int index = 0; index < Headers.Count; index++)
                     {
                         headerName = Headers.GetKey(index) as string;
-                        headerValue = Headers.Get(index) as string;
+                        headerValue = (Headers.Get(index) as string)!;
                         lookup = Interop.HttpApi.HTTP_RESPONSE_HEADER_ID.IndexOfKnownHeader(headerName);
                         if (lookup == (int)HttpResponseHeader.SetCookie ||
                             isWebSocketHandshake && lookup == (int)HttpResponseHeader.Connection)
                         {
                             lookup = -1;
                         }
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Info(this,
   $"index={index},headers.count={Headers.Count},headerName:{headerName},lookup:{lookup} headerValue:{headerValue}");
                         if (lookup == -1)
@@ -545,7 +527,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                             //FOR UNKNOWN HEADERS
                             //ALLOW MULTIPLE HEADERS to be added
                             //---------------------------------------
-                            string[] headerValues = Headers.GetValues(index);
+                            string[] headerValues = Headers.GetValues(index)!;
                             for (int headerValueIndex = 0; headerValueIndex < headerValues.Length; headerValueIndex++)
                             {
                                 //Add Name
@@ -565,12 +547,12 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                                 pinnedHeaders.Add(gcHandle);
                                 unknownHeaders[headers.UnknownHeaderCount].pRawValue = (sbyte*)gcHandle.AddrOfPinnedObject();
                                 headers.UnknownHeaderCount++;
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "UnknownHeaderCount:" + headers.UnknownHeaderCount);
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "UnknownHeaderCount:" + headers.UnknownHeaderCount);
                             }
                         }
                         else
                         {
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"HttpResponseHeader[{lookup}]:{((HttpResponseHeader)lookup)} headerValue:{headerValue}");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HttpResponseHeader[{lookup}]:{((HttpResponseHeader)lookup)} headerValue:{headerValue}");
                             if (headerValue != null)
                             {
                                 bytes = new byte[WebHeaderEncoding.GetByteCount(headerValue)];
@@ -579,7 +561,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                                 gcHandle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
                                 pinnedHeaders.Add(gcHandle);
                                 pKnownHeaders[lookup].pRawValue = (sbyte*)gcHandle.AddrOfPinnedObject();
-                                if (NetEventSource.IsEnabled)
+                                if (NetEventSource.Log.IsEnabled())
                                 {
                                     NetEventSource.Info(this, $"pRawValue:{((IntPtr)(pKnownHeaders[lookup].pRawValue))} RawValueLength:{pKnownHeaders[lookup].RawValueLength} lookup: {lookup}");
                                 }
@@ -596,7 +578,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             return pinnedHeaders;
         }
 
-        private void FreePinnedHeaders(List<GCHandle> pinnedHeaders)
+        private void FreePinnedHeaders(List<GCHandle>? pinnedHeaders)
         {
             if (pinnedHeaders != null)
             {

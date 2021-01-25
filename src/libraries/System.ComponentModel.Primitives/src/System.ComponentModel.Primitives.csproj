@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.ComponentModel.Primitives</RootNamespace>
-    <AssemblyName>System.ComponentModel.Primitives</AssemblyName>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -12,11 +10,14 @@
     <Compile Include="System\ComponentModel\Component.cs" />
     <Compile Include="System\ComponentModel\ComponentCollection.cs" />
     <Compile Include="System\ComponentModel\DescriptionAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignerAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignerCategoryAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignOnlyAttribute.cs" />
+    <Compile Include="System\ComponentModel\Design\Serialization\DesignerSerializerAttribute.cs" />
     <Compile Include="System\ComponentModel\DisplayNameAttribute.cs" />
+    <Compile Include="System\ComponentModel\EditorAttribute.cs" />
     <Compile Include="System\ComponentModel\EventHandlerList.cs" />
     <Compile Include="System\ComponentModel\IComponent.cs" />
     <Compile Include="System\ComponentModel\IContainer.cs" />

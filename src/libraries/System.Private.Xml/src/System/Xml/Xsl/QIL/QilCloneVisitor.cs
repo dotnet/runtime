@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 using System.Xml.Xsl;
 
@@ -53,10 +53,10 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         protected override QilNode Visit(QilNode oldNode)
         {
-            QilNode newNode = null;
+            QilNode? newNode = null;
 
             if (oldNode == null)
-                return null;
+                return null!;
 
             // ShallowClone any nodes which have not yet been cloned
             if (oldNode is QilReference)
@@ -94,7 +94,7 @@ namespace System.Xml.Xsl.Qil
                 else
                 {
                     // Otherwise, visit the node and substitute its copy
-                    parent[i] = Visit(child);
+                    parent[i] = Visit(child)!;
                 }
             }
 
@@ -106,7 +106,7 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         protected override QilNode VisitReference(QilNode oldNode)
         {
-            QilNode newNode = FindClonedReference(oldNode);
+            QilNode? newNode = FindClonedReference(oldNode);
             return base.VisitReference(newNode == null ? oldNode : newNode);
         }
 
@@ -139,7 +139,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Find the clone of an in-scope reference.
         /// </summary>
-        protected QilNode FindClonedReference(QilNode node)
+        protected QilNode? FindClonedReference(QilNode node)
         {
             return _subs.FindReplacement(node);
         }

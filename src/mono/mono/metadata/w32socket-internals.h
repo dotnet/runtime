@@ -23,17 +23,22 @@
 #define socklen_t int
 #endif
 
-#ifndef HOST_WIN32
+#include <mono/utils/w32subset.h>
 
-#define TF_DISCONNECT 0x01
-#define TF_REUSE_SOCKET 0x02
-
+#if defined(HOST_WIN32) && (HAVE_API_SUPPORT_WIN32_TRANSMIT_FILE || HAVE_API_SUPPORT_WIN32_DISCONNECT_EX)
+#include <mswsock.h>
+#else
 typedef struct {
 	gpointer Head;
 	guint32 HeadLength;
 	gpointer Tail;
 	guint32 TailLength;
 } TRANSMIT_FILE_BUFFERS, *LPTRANSMIT_FILE_BUFFERS;
+#endif
+
+#ifndef HOST_WIN32
+#define TF_DISCONNECT 0x01
+#define TF_REUSE_SOCKET 0x02
 
 typedef struct {
 	guint32 Data1;
@@ -51,7 +56,6 @@ typedef struct {
 	gpointer handle1;
 	gpointer handle2;
 } OVERLAPPED;
-
 #endif
 
 void
@@ -64,7 +68,7 @@ SOCKET
 mono_w32socket_accept (SOCKET s, struct sockaddr *addr, socklen_t *addrlen, gboolean blocking);
 
 int
-mono_w32socket_connect (SOCKET s, const struct sockaddr *name, int namelen, gboolean blocking);
+mono_w32socket_connect (SOCKET s, const struct sockaddr *name, socklen_t namelen, gboolean blocking);
 
 int
 mono_w32socket_recv (SOCKET s, char *buf, int len, int flags, gboolean blocking);
@@ -84,12 +88,9 @@ mono_w32socket_sendto (SOCKET s, const char *buf, int len, int flags, const stru
 int
 mono_w32socket_sendbuffers (SOCKET s, LPWSABUF lpBuffers, guint32 dwBufferCount, guint32 *lpNumberOfBytesRecvd, guint32 lpFlags, gpointer lpOverlapped, gpointer lpCompletionRoutine, gboolean blocking);
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
-
 BOOL
-mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, LPTRANSMIT_FILE_BUFFERS lpTransmitBuffers, guint32 dwReserved, gboolean blocking);
+mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, gpointer lpTransmitBuffers, guint32 dwReserved, gboolean blocking);
 
-#endif
 
 #ifndef HOST_WIN32
 

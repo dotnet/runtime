@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 
@@ -12,11 +11,11 @@ namespace System.Data
         {
             internal DataRowTree() : base(TreeAccessMethod.INDEX_ONLY) { }
 
-            protected override int CompareNode(DataRow record1, DataRow record2)
+            protected override int CompareNode(DataRow? record1, DataRow? record2)
             {
                 throw ExceptionBuilder.InternalRBTreeError(RBTreeError.CompareNodeInDataRowTree);
             }
-            protected override int CompareSateliteTreeNode(DataRow record1, DataRow record2)
+            protected override int CompareSateliteTreeNode(DataRow? record1, DataRow? record2)
             {
                 throw ExceptionBuilder.InternalRBTreeError(RBTreeError.CompareSateliteTreeNodeInDataRowTree);
             }
@@ -24,7 +23,7 @@ namespace System.Data
 
         private readonly DataTable _table;
         private readonly DataRowTree _list = new DataRowTree();
-        internal int _nullInList = 0;
+        internal int _nullInList;
 
         /// <summary>
         /// Creates the DataRowCollection for the given table.
@@ -100,7 +99,7 @@ namespace System.Data
             }
         }
 
-        public int IndexOf(DataRow row) => (null == row) || (row.Table != _table) || ((0 == row.RBTreeNodeId) && (row.RowState == DataRowState.Detached)) ?
+        public int IndexOf(DataRow? row) => (null == row) || (row.Table != _table) || ((0 == row.RBTreeNodeId) && (row.RowState == DataRowState.Detached)) ?
             -1 :
             _list.IndexOf(row.RBTreeNodeId, row);
 
@@ -115,7 +114,7 @@ namespace System.Data
             return row;
         }
 
-        public DataRow Add(params object[] values)
+        public DataRow Add(params object?[] values)
         {
             int record = _table.NewRecordFromArray(values);
             DataRow row = _table.NewRow(record);
@@ -142,12 +141,12 @@ namespace System.Data
         /// <summary>
         /// Gets the row specified by the primary key value.
         /// </summary>
-        public DataRow Find(object key) => _table.FindByPrimaryKey(key);
+        public DataRow? Find(object? key) => _table.FindByPrimaryKey(key);
 
         /// <summary>
         /// Gets the row containing the specified primary key values.
         /// </summary>
-        public DataRow Find(object[] keys) => _table.FindByPrimaryKey(keys);
+        public DataRow? Find(object?[] keys) => _table.FindByPrimaryKey(keys);
 
         /// <summary>
         /// Clears the collection of all rows.
@@ -158,13 +157,13 @@ namespace System.Data
         /// Gets a value indicating whether the primary key of any row in the
         /// collection contains the specified value.
         /// </summary>
-        public bool Contains(object key) => (_table.FindByPrimaryKey(key) != null);
+        public bool Contains(object? key) => (_table.FindByPrimaryKey(key) != null);
 
         /// <summary>
         /// Gets a value indicating if the <see cref='System.Data.DataRow'/> with
         /// the specified primary key values exists.
         /// </summary>
-        public bool Contains(object[] keys) => (_table.FindByPrimaryKey(keys) != null);
+        public bool Contains(object?[] keys) => (_table.FindByPrimaryKey(keys) != null);
 
         public override void CopyTo(Array ar, int index) => _list.CopyTo(ar, index);
 

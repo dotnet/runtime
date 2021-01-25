@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NoVarianceCheckForStaticMethods.il" />
+  </ItemGroup>
+</Project>

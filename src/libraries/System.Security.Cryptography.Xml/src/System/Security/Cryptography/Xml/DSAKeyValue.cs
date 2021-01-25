@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
+
+#pragma warning disable CA5384 // Do Not Use Digital Signature Algorithm (DSA)
 
 namespace System.Security.Cryptography.Xml
 {
@@ -143,7 +144,7 @@ namespace System.Security.Cryptography.Xml
             if (value.Name != KeyValueElementName
                 || value.NamespaceURI != SignedXml.XmlDsigNamespaceUrl)
             {
-                throw new CryptographicException($"Root element must be {KeyValueElementName} element in namepsace {SignedXml.XmlDsigNamespaceUrl}");
+                throw new CryptographicException(SR.Format(SR.WrongRootElement, KeyValueElementName, SignedXml.XmlDsigNamespaceUrl));
             }
 
             const string xmlDsigNamespacePrefix = "dsig";
@@ -153,18 +154,18 @@ namespace System.Security.Cryptography.Xml
             XmlNode dsaKeyValueElement = value.SelectSingleNode($"{xmlDsigNamespacePrefix}:{DSAKeyValueElementName}", xmlNamespaceManager);
             if (dsaKeyValueElement == null)
             {
-                throw new CryptographicException($"{KeyValueElementName} must contain child element {DSAKeyValueElementName}");
+                throw new CryptographicException(SR.Format(SR.MustContainChildElement, KeyValueElementName, DSAKeyValueElementName));
             }
 
             XmlNode yNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{YElementName}", xmlNamespaceManager);
             if (yNode == null)
-                throw new CryptographicException($"{YElementName} is missing");
+                throw new CryptographicException(SR.Format(SR.ElementMissing, YElementName));
 
             XmlNode pNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PElementName}", xmlNamespaceManager);
             XmlNode qNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{QElementName}", xmlNamespaceManager);
 
             if ((pNode == null && qNode != null) || (pNode != null && qNode == null))
-                throw new CryptographicException($"{PElementName} and {QElementName} can only occur in combination");
+                throw new CryptographicException(SR.Format(SR.ElementCombinationMissing, PElementName, QElementName));
 
 
             XmlNode gNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{GElementName}", xmlNamespaceManager);
@@ -173,7 +174,7 @@ namespace System.Security.Cryptography.Xml
             XmlNode seedNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{SeedElementName}", xmlNamespaceManager);
             XmlNode pgenCounterNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PgenCounterElementName}", xmlNamespaceManager);
             if ((seedNode == null && pgenCounterNode != null) || (seedNode != null && pgenCounterNode == null))
-                throw new CryptographicException($"{SeedElementName} and {PgenCounterElementName} can only occur in combination");
+                throw new CryptographicException(SR.Format(SR.ElementCombinationMissing, SeedElementName, PgenCounterElementName));
 
             try
             {

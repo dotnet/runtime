@@ -227,7 +227,7 @@ generic collections are only supported in the Framework version 2.0 and above.
 
 &#10003; **DO** prefer throwing existing common general purpose exceptions like
 `ArgumentNullException`, `ArgumentOutOfRangeException`,
-`InvalidOperationException` instead of defining custom exceptions. throw the
+`InvalidOperationException` instead of defining custom exceptions. Throw the
 most specific exception possible.
 
 &#10003; **DO** ensure that exception messages are clear and actionable.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -21,12 +20,7 @@ namespace System.Drawing.Printing
         /// </remarks>
         internal sealed class SafeDeviceModeHandle : SafeHandle
         {
-            /// <summary>
-            /// This constructor is used by the P/Invoke marshaling layer
-            /// to allocate a SafeHandle instance. P/Invoke then does the
-            /// appropriate method call, storing the handle in this class.
-            /// </summary>
-            private SafeDeviceModeHandle() : base(IntPtr.Zero, ownsHandle: true)
+            public SafeDeviceModeHandle() : base(IntPtr.Zero, ownsHandle: true)
             {
             }
 
@@ -65,7 +59,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        private protected SafeDeviceModeHandle? _modeHandle = null;
+        private protected SafeDeviceModeHandle? _modeHandle;
 
         /// <remarks>
         /// If you have nested PrintControllers, this method won't get called on the inner one.

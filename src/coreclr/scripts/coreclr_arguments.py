@@ -2,7 +2,6 @@
 #
 ## Licensed to the .NET Foundation under one or more agreements.
 ## The .NET Foundation licenses this file to you under the MIT license.
-## See the LICENSE file in the project root for more information.
 #
 ##
 # Title               : coreclr_arguments.py
@@ -16,26 +15,18 @@
 ################################################################################
 
 import argparse
-import datetime
-import json
 import os
 import platform
-import shutil
 import subprocess
 import sys
-import tempfile
-import time
-import re
-import string
-
-import xml.etree.ElementTree
-
-from collections import defaultdict
 
 ################################################################################
 ################################################################################
+
 
 class CoreclrArguments:
+    """ Class to process arguments for CoreCLR specific Python code.
+    """
 
     ############################################################################
     # ctor
@@ -72,9 +63,9 @@ class CoreclrArguments:
         self.require_built_core_root = require_built_core_root
         self.require_built_test_dir = require_built_test_dir
 
-        self.valid_arches = ["x64", "x86", "arm", "arm64"]
+        self.valid_arches = ["x64", "x86", "arm", "arm64", "wasm"]
         self.valid_build_types = ["Debug", "Checked", "Release"]
-        self.valid_host_os = ["Windows_NT", "OSX", "Linux"]
+        self.valid_host_os = ["windows", "OSX", "Linux", "illumos", "Solaris", "Browser", "Android"]
 
         self.__initialize__(args)
 
@@ -83,9 +74,14 @@ class CoreclrArguments:
     ############################################################################
 
     def check_build_type(self, build_type):
-        if build_type == None:
+        """ Process the `build_type` argument.
+
+            If unset, provide a default. Otherwise, check that it is valid.
+        """
+
+        if build_type is None:
             build_type = self.default_build_type
-            assert(build_type in self.valid_build_types)
+            assert build_type in self.valid_build_types
             return build_type
 
         if len(build_type) > 0:
@@ -147,7 +143,7 @@ class CoreclrArguments:
         else:
             arg_value = args
 
-        if modify_arg != None and not modify_after_validation:
+        if modify_arg is not None and not modify_after_validation:
             arg_value = modify_arg(arg_value)
 
         try:
@@ -155,17 +151,17 @@ class CoreclrArguments:
         except:
             pass
 
-        if verified == False and isinstance(failure_str, str):
+        if verified is False and isinstance(failure_str, str):
             print(failure_str)
             sys.exit(1)
-        elif verified == False:
+        elif verified is False:
             print(failure_str(arg_value))
             sys.exit(1)
 
-        if modify_arg != None and modify_after_validation:
+        if modify_arg is not None and modify_after_validation:
             arg_value = modify_arg(arg_value)
 
-        if verified != True and arg_value is None:
+        if verified is not True and arg_value is None:
             arg_value = verified
 
         # Add a new member variable based on the verified arg
@@ -177,18 +173,31 @@ class CoreclrArguments:
 
     @staticmethod
     def provide_default_host_os():
+        """ Return a string representing the current host operating system.
+
+            Returns one of: Linux, OSX, windows, illumos, Solaris
+        """
+
         if sys.platform == "linux" or sys.platform == "linux2":
             return "Linux"
         elif sys.platform == "darwin":
             return "OSX"
         elif sys.platform == "win32":
-            return "Windows_NT"
+            return "windows"
+        elif sys.platform.startswith("sunos"):
+            is_illumos = ('illumos' in subprocess.Popen(["uname", "-o"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode('utf-8'))
+            return 'illumos' if is_illumos else 'Solaris'
         else:
-            print("Unknown OS: %s" % self.host_os)
+            print("Unknown OS: %s" % sys.platform)
             sys.exit(1)
 
     @staticmethod
     def provide_default_arch():
+        """ Return a string representing the current processor architecture.
+
+            Returns one of: x64, x86, arm, armel, arm64.
+        """
+
         platform_machine = platform.machine().lower()
         if platform_machine == "x86_64" or platform_machine == "amd64":
             return "x64"

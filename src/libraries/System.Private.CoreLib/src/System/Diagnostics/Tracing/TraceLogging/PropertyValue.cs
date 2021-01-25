@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -165,7 +164,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public static Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property)
         {
-            if (property.DeclaringType!.GetTypeInfo().IsValueType)
+            if (property.DeclaringType!.IsValueType)
                 return GetBoxedValueTypePropertyGetter(property);
             else
                 return GetReferenceTypePropertyGetter(property);
@@ -181,7 +180,7 @@ namespace System.Diagnostics.Tracing
         {
             Type type = property.PropertyType;
 
-            if (type.GetTypeInfo().IsEnum)
+            if (type.IsEnum)
                 type = Enum.GetUnderlyingType(type);
 
             Func<object?, PropertyValue> factory = GetFactory(type);
@@ -206,7 +205,7 @@ namespace System.Diagnostics.Tracing
         {
             public abstract Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property);
 
-            protected Delegate GetGetMethod(PropertyInfo property, Type propertyType)
+            protected static Delegate GetGetMethod(PropertyInfo property, Type propertyType)
             {
                 return property.GetMethod!.CreateDelegate(typeof(Func<,>).MakeGenericType(property.DeclaringType!, propertyType));
             }
@@ -218,14 +217,14 @@ namespace System.Diagnostics.Tracing
             {
                 Type type = property.PropertyType;
 
-                if (!Statics.IsValueType(type))
+                if (!type.IsValueType)
                 {
                     var getter = (Func<TContainer, object?>)GetGetMethod(property, type);
                     return container => new PropertyValue(getter((TContainer)container.ReferenceValue!));
                 }
                 else
                 {
-                    if (type.GetTypeInfo().IsEnum)
+                    if (type.IsEnum)
                         type = Enum.GetUnderlyingType(type);
 
                     if (type == typeof(bool)) { var f = (Func<TContainer, bool>)GetGetMethod(property, type); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }

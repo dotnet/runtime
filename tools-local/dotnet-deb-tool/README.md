@@ -1,6 +1,6 @@
 # Debian Package Tool
 
-This is a tool which simplifies the creation process of a debian package. 
+This is a tool which simplifies the creation process of a debian package.
 Use of this tool requires creating a json configuration, and appropriate
 directory structure with your desired files to be included.
 
@@ -8,7 +8,7 @@ directory structure with your desired files to be included.
 ## Usage
 
 ```
-Usage: package_tool [-i <INPUT_DIR>] [-o <OUTPUT_DIRECTORY>] 
+Usage: package_tool [-i <INPUT_DIR>] [-o <OUTPUT_DIRECTORY>]
 [-n <PACKAGE_NAME>] [-v <PACKAGE_VERSION>] [-h]
 
 REQUIRED:
@@ -65,7 +65,7 @@ Note: Use the commentless version [here](example_config.json).
     "control": {                                                // (optional)
         "priority":"standard",                                  // (optional default="standard") https://www.debian.org/doc/debian-policy/ch-archive.html#s-priorities
         "section":"devel",                                      // (optional default="misc") https://www.debian.org/doc/debian-policy/ch-archive.html#s-subsections
-        "architecture":"all"                                    // (optional default="all" ) 
+        "architecture":"all"                                    // (optional default="all" )
     },
 
     "copyright": "2015 Microsoft",                              // [required]
@@ -78,10 +78,10 @@ Note: Use the commentless version [here](example_config.json).
         "package_name": {
             "package_version" : "1.0.0"                         // (optional within package_name no default)
         }
-    }, 
+    },
 
     "symlinks": {                                               // (optional no defaults)
-        "path_relative_to_package_root/test_exe.sh" : "usr/bin/test_exe.sh" 
+        "path_relative_to_package_root/test_exe.sh" : "usr/bin/test_exe.sh"
     }
 }
 ```

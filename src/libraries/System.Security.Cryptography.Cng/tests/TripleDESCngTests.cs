@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -12,7 +11,20 @@ namespace System.Security.Cryptography.Cng.Tests
 
         private static readonly CngAlgorithm s_cngAlgorithm = new CngAlgorithm("3DES");
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31092")]
+        [Fact]
+        public static void VerifyDefaults()
+        {
+            using TripleDES tdes = new TripleDESCng();
+            Assert.Equal(64, tdes.BlockSize);
+            Assert.Equal(192, tdes.KeySize);
+            Assert.Equal(CipherMode.CBC, tdes.Mode);
+            Assert.Equal(PaddingMode.PKCS7, tdes.Padding);
+
+            // .NET Framework Compat: The default feedback size of TripleDESCng
+            // is 64 while TripleDESCryptoServiceProvider defaults to 8.
+            Assert.Equal(64, tdes.FeedbackSize);
+        }
+
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
         [ConditionalTheory(nameof(SupportsPersistedSymmetricKeys))]
         // 3DES192-ECB-NoPadding 2 blocks.
@@ -47,7 +59,6 @@ namespace System.Security.Cryptography.Cng.Tests
                 keyName => new TripleDESCng(keyName));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31092")]
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
         [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
         public static void SetKey_DetachesFromPersistedKey()
@@ -74,7 +85,6 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31092")]
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
         [ConditionalFact(nameof(SupportsPersistedSymmetricKeys), nameof(IsAdministrator))]
         public static void VerifyMachineKey()

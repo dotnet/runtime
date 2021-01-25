@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Formats.Asn1.Tests.Reader;
@@ -330,6 +329,7 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
@@ -361,6 +361,7 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]

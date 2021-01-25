@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.XUnitExtensions;
 using System.Linq;
@@ -80,7 +79,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Contains(pingReply.Address, localIpAddresses); ///, "Reply address {pingReply.Address} is not expected local address.");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsync_InvalidArgs()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -147,7 +146,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         public async Task SendPingAsyncWithIPAddress(AddressFamily addressFamily)
@@ -187,7 +186,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithIPAddress_AddressAsString()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -213,7 +212,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeout()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -243,7 +242,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer()
         {
             byte[] buffer = TestSettings.PayloadAsBytes;
@@ -284,7 +283,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer_Unix()
         {
             byte[] buffer = TestSettings.PayloadAsBytes;
@@ -327,7 +326,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -377,7 +376,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix(AddressFamily addressFamily)
@@ -421,7 +420,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHost()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -447,7 +446,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeout()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -477,7 +476,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -518,7 +517,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer_Unix()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -560,7 +559,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -602,7 +601,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions_Unix()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -626,7 +625,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendPings_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -656,7 +655,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendAsyncs_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -714,7 +713,7 @@ namespace System.Net.NetworkInformation.Tests
             p.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task PingAsync_DisposeAfterSend_Success()
         {
             Ping p = new Ping();
@@ -788,7 +787,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.True(FinalizingPing.WasFinalized);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SendPingAsyncWithHostAndTtlAndFragmentPingOptions(bool fragment)
@@ -809,7 +808,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // Depends on external host and assumption that network respects and does not change TTL
         public async Task SendPingToExternalHostWithLowTtlTest()
         {

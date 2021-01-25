@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Diagnostics;
@@ -10,16 +9,16 @@ namespace System.Data.OleDb
 {
     internal sealed class Bindings
     {
-        private readonly tagDBPARAMBINDINFO[] _bindInfo;
+        private readonly tagDBPARAMBINDINFO[]? _bindInfo;
         private readonly tagDBBINDING[] _dbbindings;
         private readonly tagDBCOLUMNACCESS[] _dbcolumns;
 
-        private OleDbParameter[] _parameters;
+        private OleDbParameter[]? _parameters;
         private readonly int _collectionChangeID;
 
-        private OleDbDataReader _dataReader;
-        private ColumnBinding[] _columnBindings;
-        private RowBinding _rowBinding;
+        private OleDbDataReader? _dataReader;
+        private ColumnBinding[]? _columnBindings;
+        private RowBinding? _rowBinding;
 
         private int _index;
         private readonly int _count;
@@ -54,7 +53,7 @@ namespace System.Data.OleDb
             _ifIRowsetElseIRow = ifIRowsetElseIRow;
         }
 
-        internal tagDBPARAMBINDINFO[] BindInfo
+        internal tagDBPARAMBINDINFO[]? BindInfo
         {
             get { return _bindInfo; }
         }
@@ -85,7 +84,7 @@ namespace System.Data.OleDb
             return _parameters;
         }
 
-        internal RowBinding RowBinding()
+        internal RowBinding? RowBinding()
         {
             //Debug.Assert(null != _rowBinding, "null RowBinding");
             return _rowBinding;
@@ -103,7 +102,7 @@ namespace System.Data.OleDb
             //get { return _bindInfo[_index].pwszDataSourceType; }
             set
             {
-                _bindInfo[_index].pwszDataSourceType = value;
+                _bindInfo![_index].pwszDataSourceType = value;
             }
         }
         internal IntPtr Name
@@ -111,7 +110,7 @@ namespace System.Data.OleDb
             //get { return _bindInfo[_index].pwszName; }
             set
             {
-                _bindInfo[_index].pwszName = value;
+                _bindInfo![_index].pwszName = value;
             }
         }
         internal IntPtr ParamSize
@@ -126,7 +125,7 @@ namespace System.Data.OleDb
             }
             set
             {
-                _bindInfo[_index].ulParamSize = value;
+                _bindInfo![_index].ulParamSize = value;
             }
         }
         internal int Flags
@@ -134,7 +133,7 @@ namespace System.Data.OleDb
             //get { return _bindInfo[_index].dwFlag; }
             set
             {
-                _bindInfo[_index].dwFlags = value;
+                _bindInfo![_index].dwFlags = value;
             }
         }
 
@@ -247,7 +246,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal int AllocateForAccessor(OleDbDataReader dataReader, int indexStart, int indexForAccessor)
+        internal int AllocateForAccessor(OleDbDataReader? dataReader, int indexStart, int indexForAccessor)
         {
             Debug.Assert(null == _rowBinding, "row binding already allocated");
             Debug.Assert(null == _columnBindings, "column bindings already allocated");
@@ -284,7 +283,7 @@ namespace System.Data.OleDb
             ColumnBinding[] columnBindings = this.ColumnBindings();
             OleDbParameter[] parameters = this.Parameters();
 
-            RowBinding().StartDataBlock();
+            RowBinding()!.StartDataBlock();
             for (int i = 0; i < parameters.Length; ++i)
             {
                 if (ADP.IsDirection(parameters[i], ParameterDirection.Input))
@@ -346,7 +345,7 @@ namespace System.Data.OleDb
 
         internal void CleanupBindings()
         {
-            RowBinding rowBinding = this.RowBinding();
+            RowBinding? rowBinding = this.RowBinding();
             if (null != rowBinding)
             {
                 rowBinding.ResetValues();
@@ -385,7 +384,7 @@ namespace System.Data.OleDb
             _dataReader = null;
             _columnBindings = null;
 
-            RowBinding rowBinding = _rowBinding;
+            RowBinding? rowBinding = _rowBinding;
             _rowBinding = null;
             if (null != rowBinding)
             {

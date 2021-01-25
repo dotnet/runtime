@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -25,7 +24,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Util
                 case StringComparison.InvariantCultureIgnoreCase:
                     return StringComparer.InvariantCultureIgnoreCase;
                 default:
-                    throw new InvalidOperationException($"Unexpected StringComparison type: {comparisonType}");
+                    throw new InvalidOperationException(SR.Format(SR.UnexpectedStringComparisonType, comparisonType));
             }
         }
     }

@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NETFRAMEWORK
 using System.Numerics.Hashing;
 #endif
 
@@ -51,7 +50,7 @@ namespace System
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode()
         {
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return HashCode.Combine(Start.GetHashCode(), End.GetHashCode());
 #else
             return HashHelpers.Combine(Start.GetHashCode(), End.GetHashCode());
@@ -61,7 +60,7 @@ namespace System
         /// <summary>Converts the value of the current Range object to its equivalent string representation.</summary>
         public override string ToString()
         {
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             Span<char> span = stackalloc char[2 + (2 * 11)]; // 2 for "..", then for each index 1 for '^' and 10 for longest possible uint
             int pos = 0;
 

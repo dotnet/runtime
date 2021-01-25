@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -37,7 +36,7 @@ namespace System.IO
                 Initialize(ptr, len, len, FileAccess.Read);
         }
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         public override int Read(Span<byte> buffer) => ReadCore(buffer);
 
         public override void Write(ReadOnlySpan<byte> buffer) => WriteCore(buffer);

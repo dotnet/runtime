@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System;
 using System.Xml;
 using System.Diagnostics;
@@ -41,7 +39,6 @@ namespace System.Xml
         private readonly DtdProcessing _dtdProcessing; // -1 means do nothing
 
         private XmlNodeType _lastNodeType;
-        private XmlCharType _xmlCharType;
 
         private ReadContentAsBinaryHelper? _readBinaryHelper;
 
@@ -62,11 +59,6 @@ namespace System.Xml
             _dtdProcessing = dtdProcessing;
 
             _lastNodeType = XmlNodeType.None;
-
-            if (checkCharacters)
-            {
-                _xmlCharType = XmlCharType.Instance;
-            }
         }
 
         //
@@ -120,7 +112,7 @@ namespace System.Xml
             return base.reader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             if (_state == State.InReadBinary)
             {
@@ -322,7 +314,7 @@ namespace System.Xml
                             if (str != null)
                             {
                                 int i;
-                                if ((i = _xmlCharType.IsPublicId(str)) >= 0)
+                                if ((i = XmlCharType.IsPublicId(str)) >= 0)
                                 {
                                     Throw(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(str, i));
                                 }
@@ -624,7 +616,7 @@ namespace System.Xml
         private void CheckWhitespace(string value)
         {
             int i;
-            if ((i = _xmlCharType.IsOnlyWhitespaceWithPos(value)) != -1)
+            if ((i = XmlCharType.IsOnlyWhitespaceWithPos(value)) != -1)
             {
                 Throw(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(value, i));
             }

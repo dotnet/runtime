@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build;
 using System;
@@ -270,15 +269,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 RepoDirectories = new RepoDirectoriesProvider();
 
                 HostApiInvokerAppFixture = new TestProjectFixture("HostApiInvokerApp", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
                 PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
 
                 PortableAppWithExceptionFixture = new TestProjectFixture("PortableAppWithException", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
 
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

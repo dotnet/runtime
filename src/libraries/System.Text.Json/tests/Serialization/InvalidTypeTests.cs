@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TypesWithInvalidMembers_WithMembers))]
-        public void TypeWithInvalidMember(Type classType, Type invalidMemberType, string invalidMemberName)
+        public async Task TypeWithInvalidMember(Type classType, Type invalidMemberType, string invalidMemberName)
         {
             static void ValidateException(InvalidOperationException ex, Type classType, Type invalidMemberType, string invalidMemberName)
             {
@@ -64,10 +64,10 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             object obj = Activator.CreateInstance(classType);
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Serializer.Serialize(obj, classType));
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(obj, classType));
             ValidateException(ex, classType, invalidMemberType, invalidMemberName);
 
-            ex = Assert.Throws<InvalidOperationException>(() => Serializer.Serialize(null, classType));
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(null, classType));
             ValidateException(ex, classType, invalidMemberType, invalidMemberName);
 
             ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("", classType));
@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(OpenGenericTypes_ToSerialize))]
-        public void SerializeOpenGeneric(Type type)
+        public async Task SerializeOpenGeneric(Type type)
         {
             object obj;
 
@@ -89,24 +89,24 @@ namespace System.Text.Json.Serialization.Tests
                 obj = Activator.CreateInstance(type.MakeGenericType(typeof(string), typeof(int)));
             }
 
-            Assert.Throws<ArgumentException>(() => Serializer.Serialize(obj, type));
+            await Assert.ThrowsAsync<ArgumentException>(() => Serializer.SerializeWrapper(obj, type));
         }
 
         [Theory]
         [MemberData(nameof(OpenGenericTypes))]
-        public void SerializeInvalidTypes_NullValue(Type type)
+        public async Task SerializeInvalidTypes_NullValue(Type type)
         {
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Serializer.Serialize(null, type));
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(null, type));
             Assert.Contains(type.ToString(), ex.ToString());
         }
 
         [Fact]
-        public void SerializeOpenGeneric_NullableOfT()
+        public async Task SerializeOpenGeneric_NullableOfT()
         {
             Type openNullableType = typeof(Nullable<>);
             object obj = Activator.CreateInstance(openNullableType.MakeGenericType(typeof(int)));
 
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Serializer.Serialize(obj, openNullableType));
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(obj, openNullableType));
             Assert.Contains(openNullableType.ToString(), ex.ToString());
         }
 

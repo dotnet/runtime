@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using Internal.Cryptography;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [UnsupportedOSPlatform("browser")]
     public abstract class RC2 : SymmetricAlgorithm
     {
         protected int EffectiveKeySizeValue;
@@ -26,6 +28,7 @@ namespace System.Security.Cryptography
             return new RC2Implementation();
         }
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new RC2? Create(string AlgName)
         {
             return (RC2?)CryptoConfig.CreateFromName(AlgName);

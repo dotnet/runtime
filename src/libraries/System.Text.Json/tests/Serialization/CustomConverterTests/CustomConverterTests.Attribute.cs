@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -170,7 +169,7 @@ namespace System.Text.Json.Serialization.Tests
 
             ClassWithJsonConverterAttributeOverride point = JsonSerializer.Deserialize<ClassWithJsonConverterAttributeOverride>(json);
 
-            // The property attribute overides the type attribute.
+            // The property attribute overrides the type attribute.
             Assert.Equal(101, point.Point1.X);
             Assert.Equal(102, point.Point1.Y);
 
@@ -188,7 +187,7 @@ namespace System.Text.Json.Serialization.Tests
 
             ClassWithJsonConverterAttributeOverride point = JsonSerializer.Deserialize<ClassWithJsonConverterAttributeOverride>(json);
 
-            // The property attribute overides the runtime.
+            // The property attribute overrides the runtime.
             Assert.Equal(101, point.Point1.X);
             Assert.Equal(102, point.Point1.Y);
 

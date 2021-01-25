@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System.Threading.Tasks;
 
 using System;
@@ -95,21 +93,21 @@ namespace System.Xml
                 {
                     if (pubid != null)
                     {
-                        if ((i = _xmlCharType.IsPublicId(pubid)) >= 0)
+                        if ((i = XmlCharType.IsPublicId(pubid)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(pubid, i)), nameof(pubid));
                         }
                     }
                     if (sysid != null)
                     {
-                        if ((i = _xmlCharType.IsOnlyCharData(sysid)) >= 0)
+                        if ((i = XmlCharType.IsOnlyCharData(sysid)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(sysid, i)), nameof(sysid));
                         }
                     }
                     if (subset != null)
                     {
-                        if ((i = _xmlCharType.IsOnlyCharData(subset)) >= 0)
+                        if ((i = XmlCharType.IsOnlyCharData(subset)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(subset, i)), nameof(subset));
                         }
@@ -771,7 +769,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteCDataAsync(string text)
+        public override async Task WriteCDataAsync(string? text)
         {
             try
             {
@@ -779,6 +777,7 @@ namespace System.Xml
                 {
                     text = string.Empty;
                 }
+
                 await AdvanceStateAsync(Token.CData).ConfigureAwait(false);
                 await _writer.WriteCDataAsync(text).ConfigureAwait(false);
             }
@@ -789,7 +788,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteCommentAsync(string text)
+        public override async Task WriteCommentAsync(string? text)
         {
             try
             {
@@ -797,6 +796,7 @@ namespace System.Xml
                 {
                     text = string.Empty;
                 }
+
                 await AdvanceStateAsync(Token.Comment).ConfigureAwait(false);
                 await _writer.WriteCommentAsync(text).ConfigureAwait(false);
             }
@@ -807,7 +807,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteProcessingInstructionAsync(string name, string text)
+        public override async Task WriteProcessingInstructionAsync(string name, string? text)
         {
             try
             {
@@ -939,7 +939,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task WriteWhitespaceAsync(string ws)
+        public override async Task WriteWhitespaceAsync(string? ws)
         {
             try
             {
@@ -947,7 +947,8 @@ namespace System.Xml
                 {
                     ws = string.Empty;
                 }
-                if (!XmlCharType.Instance.IsOnlyWhitespace(ws))
+
+                if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }
@@ -969,7 +970,7 @@ namespace System.Xml
             }
         }
 
-        public override Task WriteStringAsync(string text)
+        public override Task WriteStringAsync(string? text)
         {
             try
             {
@@ -1461,6 +1462,7 @@ namespace System.Xml
                     await _nsStack[i].WriteDeclAsync(_writer, _rawWriter).ConfigureAwait(false);
                 }
             }
+
             if (_rawWriter != null)
             {
                 _rawWriter.StartElementContent();
@@ -1478,6 +1480,7 @@ namespace System.Xml
             {
                 _rawWriter.StartElementContent();
             }
+
             return Task.CompletedTask;
         }
 

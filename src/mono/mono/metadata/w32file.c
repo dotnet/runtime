@@ -913,4 +913,8 @@ mono_filesize_from_fd (int fd)
 	return (gint64)buf.st_size;
 }
 
+#else
+
+MONO_EMPTY_SOURCE_FILE (w32file);
+
 #endif

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
@@ -12,7 +11,7 @@ namespace System.DirectoryServices.Protocols
     public class DirectoryAttribute : CollectionBase
     {
         private string _attributeName = "";
-        internal bool _isSearchResult = false;
+        internal bool _isSearchResult;
         // Does not request Unicode byte order mark prefix be emitted, but turn on error detection.
         private static readonly UTF8Encoding s_utf8EncoderWithErrorDetection = new UTF8Encoding(false, true);
         // No Error detection.

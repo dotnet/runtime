@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -709,7 +708,7 @@ namespace System.Text.Json
             }
         }
 
-        public static void AssertContents(string expectedValue, ArrayBufferWriter<byte> buffer)
+        public static void AssertContents(string expectedValue, ArrayBufferWriter<byte> buffer, bool skipSpecialRules = false)
         {
             string value = Encoding.UTF8.GetString(
                     buffer.WrittenSpan
@@ -718,17 +717,17 @@ namespace System.Text.Json
 #endif
                     );
 
-            AssertContentsAgainstJsonNet(expectedValue, value);
+            AssertContentsAgainstJsonNet(expectedValue, value, skipSpecialRules);
         }
 
-        public static void AssertContents(string expectedValue, MemoryStream stream)
+        public static void AssertContents(string expectedValue, MemoryStream stream, bool skipSpecialRules = false)
         {
             string value = Encoding.UTF8.GetString(stream.ToArray());
 
-            AssertContentsAgainstJsonNet(expectedValue, value);
+            AssertContentsAgainstJsonNet(expectedValue, value, skipSpecialRules);
         }
 
-        public static void AssertContentsNotEqual(string expectedValue, ArrayBufferWriter<byte> buffer)
+        public static void AssertContentsNotEqual(string expectedValue, ArrayBufferWriter<byte> buffer, bool skipSpecialRules = false)
         {
             string value = Encoding.UTF8.GetString(
                     buffer.WrittenSpan
@@ -737,17 +736,17 @@ namespace System.Text.Json
 #endif
                     );
 
-            AssertContentsNotEqualAgainstJsonNet(expectedValue, value);
+            AssertContentsNotEqualAgainstJsonNet(expectedValue, value, skipSpecialRules);
         }
 
-        public static void AssertContentsAgainstJsonNet(string expectedValue, string value)
+        public static void AssertContentsAgainstJsonNet(string expectedValue, string value, bool skipSpecialRules)
         {
-            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(skipSpecialRules), value.NormalizeToJsonNetFormat(skipSpecialRules));
         }
 
-        public static void AssertContentsNotEqualAgainstJsonNet(string expectedValue, string value)
+        public static void AssertContentsNotEqualAgainstJsonNet(string expectedValue, string value, bool skipSpecialRules)
         {
-            Assert.NotEqual(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
+            Assert.NotEqual(expectedValue.NormalizeToJsonNetFormat(skipSpecialRules), value.NormalizeToJsonNetFormat(skipSpecialRules));
         }
 
         public delegate void AssertThrowsActionUtf8JsonReader(Utf8JsonReader json);

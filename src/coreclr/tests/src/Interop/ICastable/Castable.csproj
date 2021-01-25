@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="Castable.cs" />
-  </ItemGroup>
-</Project>

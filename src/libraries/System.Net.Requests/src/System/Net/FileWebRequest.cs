@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -26,6 +25,7 @@ namespace System.Net
         private bool _syncHint;
         private int _aborted;
 
+#pragma warning disable SYSLIB0014
         internal FileWebRequest(Uri uri)
         {
             if (uri.Scheme != (object)Uri.UriSchemeFile)
@@ -41,6 +41,7 @@ namespace System.Net
         {
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore SYSLIB0014
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             GetObjectData(serializationInfo, streamingContext);

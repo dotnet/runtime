@@ -182,9 +182,6 @@
   <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
     <value>The process cannot access the file because it is being used by another process.</value>
   </data>
-  <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
-    <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
-  </data>
   <data name="Arg_InvalidConsoleColor" xml:space="preserve">
     <value>The ConsoleColor enum value was not defined on that enum. Please use a defined color from the enum.</value>
   </data>

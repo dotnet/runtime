@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Test.Common;
@@ -18,6 +17,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45674", TestPlatforms.Browser)]
         public async Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithmessage(Uri server)
         {
             using (var cws = new ClientWebSocket())
@@ -43,6 +43,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45674", TestPlatforms.Browser)]
         public async Task Abort_SendAndAbort_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
@@ -63,6 +64,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45674", TestPlatforms.Browser)]
         public async Task Abort_ReceiveAndAbort_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
@@ -87,6 +89,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45674", TestPlatforms.Browser)]
         public async Task Abort_CloseAndAbort_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
@@ -111,6 +114,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45468", TestPlatforms.Browser)]
         public async Task ClientWebSocket_Abort_CloseOutputAsync(Uri server)
         {
             await TestCancellation(async (cws) =>

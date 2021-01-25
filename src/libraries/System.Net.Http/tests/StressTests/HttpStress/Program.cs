@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.AspNetCore;
 using System;
@@ -19,7 +18,6 @@ using HttpStress;
 /// </summary>
 public static class Program
 {
-
     public enum ExitCode { Success = 0, StressError = 1, CliError = 2 };
 
     public static async Task<int> Main(string[] args)
@@ -47,7 +45,7 @@ public static class Program
         cmd.AddOption(new Option("-connectionLifetime", "Max connection lifetime length (milliseconds).") { Argument = new Argument<int?>("connectionLifetime", null) });
         cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]?>("space-delimited indices", null) });
         cmd.AddOption(new Option("-xops", "Indices of the operations to exclude") { Argument = new Argument<int[]?>("space-delimited indices", null) });
-        cmd.AddOption(new Option("-trace", "Enable Microsoft-System-Net-Http tracing.") { Argument = new Argument<string>("\"console\" or path") });
+        cmd.AddOption(new Option("-trace", "Enable System.Net.Http.InternalDiagnostics (client) and/or ASP.NET dignostics (server) tracing.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-aspnetlog", "Enable ASP.NET warning and error logging.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-listOps", "List available options.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-seed", "Seed for generating pseudo-random parameters for a given -n argument.") { Argument = new Argument<int?>("seed", null) });
@@ -56,7 +54,7 @@ public static class Program
         cmd.AddOption(new Option("-httpSys", "Use http.sys instead of Kestrel.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-winHttp", "Use WinHttpHandler for the stress client.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-displayInterval", "Client stats display interval in seconds. Defaults to 5 seconds.") { Argument = new Argument<int>("seconds", 5) });
-        cmd.AddOption(new Option("-clientTimeout", "Default HttpClient timeout in seconds. Defaults to 10 seconds.") { Argument = new Argument<int>("seconds", 10) });
+        cmd.AddOption(new Option("-clientTimeout", "Default HttpClient timeout in seconds. Defaults to 60 seconds.") { Argument = new Argument<int>("seconds", 60) });
         cmd.AddOption(new Option("-serverMaxConcurrentStreams", "Overrides kestrel max concurrent streams per connection.") { Argument = new Argument<int?>("streams", null) });
         cmd.AddOption(new Option("-serverMaxFrameSize", "Overrides kestrel max frame size setting.") { Argument = new Argument<int?>("bytes", null) });
         cmd.AddOption(new Option("-serverInitialConnectionWindowSize", "Overrides kestrel initial connection window size setting.") { Argument = new Argument<int?>("bytes", null) });
@@ -100,7 +98,7 @@ public static class Program
 
             UseHttpSys = cmdline.ValueForOption<bool>("-httpSys"),
             LogAspNet = cmdline.ValueForOption<bool>("-aspnetlog"),
-            LogPath = cmdline.HasOption("-trace") ? cmdline.ValueForOption<string>("-trace") : null,
+            Trace = cmdline.ValueForOption<bool>("-trace"),
             ServerMaxConcurrentStreams = cmdline.ValueForOption<int?>("-serverMaxConcurrentStreams"),
             ServerMaxFrameSize = cmdline.ValueForOption<int?>("-serverMaxFrameSize"),
             ServerInitialConnectionWindowSize = cmdline.ValueForOption<int?>("-serverInitialConnectionWindowSize"),
@@ -159,11 +157,12 @@ public static class Program
         Console.WriteLine(" System.Net.Http: " + GetAssemblyInfo(typeof(System.Net.Http.HttpClient).Assembly));
         Console.WriteLine("          Server: " + (config.UseHttpSys ? "http.sys" : "Kestrel"));
         Console.WriteLine("      Server URL: " + config.ServerUri);
-        Console.WriteLine("         Tracing: " + (config.LogPath == null ? (object)false : config.LogPath.Length == 0 ? (object)true : config.LogPath));
+        Console.WriteLine("  Client Tracing: " + (config.Trace && config.RunMode.HasFlag(RunMode.client) ? "ON (client.log)" : "OFF"));
+        Console.WriteLine("  Server Tracing: " + (config.Trace && config.RunMode.HasFlag(RunMode.server) ? "ON (server.log)" : "OFF"));
         Console.WriteLine("     ASP.NET Log: " + config.LogAspNet);
         Console.WriteLine("     Concurrency: " + config.ConcurrentRequests);
         Console.WriteLine("  Content Length: " + config.MaxContentLength);
-        Console.WriteLine("   HTTP2 Version: " + config.HttpVersion);
+        Console.WriteLine("    HTTP Version: " + config.HttpVersion);
         Console.WriteLine("        Lifetime: " + (config.ConnectionLifetime.HasValue ? $"{config.ConnectionLifetime.Value.TotalMilliseconds}ms" : "(infinite)"));
         Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.name)));
         Console.WriteLine("     Random Seed: " + config.RandomSeed);

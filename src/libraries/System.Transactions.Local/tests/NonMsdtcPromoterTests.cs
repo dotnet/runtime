@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
@@ -2122,7 +2121,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// PSPE Non-MSDTC Abort From Volatile.
         /// </summary>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false, EnlistmentOptions.EnlistDuringPrepareRequired)]
         [InlineData(true, EnlistmentOptions.EnlistDuringPrepareRequired)]
         [InlineData(false, EnlistmentOptions.None)]
@@ -2149,7 +2148,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Blocking Clone Completed After Commit.
         /// </summary>
         [OuterLoop] // long delay
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcBlockingCloneCompletedAfterCommit(bool promote)
@@ -2162,7 +2161,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Timeout.
         /// </summary>
         [OuterLoop] // long timeout
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcTimeout(bool promote)
@@ -2216,7 +2215,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// PSPE Non-MSDTC Completed Event.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcCompletedEvent(bool promote)
@@ -2258,7 +2257,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// Make SetDistributedTransactionIdentifier calls at the wrong time - negative test.
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void PSPENonMsdtcInCorrectSetDistributedTransactionIdentifierCalls()
         {
             // Call SetDistributedTransactionIdentifier at the wrong time.

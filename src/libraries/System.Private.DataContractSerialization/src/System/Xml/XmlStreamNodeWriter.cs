@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -11,13 +10,13 @@ namespace System.Xml
 {
     internal abstract class XmlStreamNodeWriter : XmlNodeWriter
     {
-        private Stream _stream;
+        private Stream _stream = null!; // initialized by SetOutput
         private readonly byte[] _buffer;
         private int _offset;
         private bool _ownsStream;
         private const int bufferLength = 512;
         private const int maxBytesPerChar = 3;
-        private Encoding _encoding;
+        private Encoding? _encoding;
         private static readonly UTF8Encoding s_UTF8Encoding = new UTF8Encoding(false, true);
 
         protected XmlStreamNodeWriter()
@@ -25,7 +24,7 @@ namespace System.Xml
             _buffer = new byte[bufferLength];
         }
 
-        protected void SetOutput(Stream stream, bool ownsStream, Encoding encoding)
+        protected void SetOutput(Stream stream, bool ownsStream, Encoding? encoding)
         {
             _stream = stream;
             _ownsStream = ownsStream;
@@ -463,7 +462,7 @@ namespace System.Xml
                 {
                     _stream.Dispose();
                 }
-                _stream = null;
+                _stream = null!;
             }
         }
     }

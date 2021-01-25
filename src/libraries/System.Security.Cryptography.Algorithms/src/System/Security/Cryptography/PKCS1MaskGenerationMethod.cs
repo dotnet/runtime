@@ -1,17 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
-using Internal.Cryptography;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class PKCS1MaskGenerationMethod : MaskGenerationMethod
     {
         private string _hashNameValue;
         private const string DefaultHash = "SHA1";
 
+        [RequiresUnreferencedCode("PKCS1MaskGenerationMethod is not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
         public PKCS1MaskGenerationMethod()
         {
             _hashNameValue = DefaultHash;
@@ -23,6 +26,9 @@ namespace System.Security.Cryptography
             set { _hashNameValue = value ?? DefaultHash; }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The constructor of this class is marked as RequiresUnreferencedCode. Don't mark this method as " +
+            "RequiresUnreferencedCode because it is an override and would then need to mark the base method (and all other overrides) as well.")]
         public override byte[] GenerateMask(byte[] rgbSeed, int cbReturn)
         {
             using (HashAlgorithm? hasher = CryptoConfig.CreateFromName(_hashNameValue) as HashAlgorithm)
@@ -39,7 +45,7 @@ namespace System.Security.Cryptography
                 for (int ib = 0; ib < rgbT.Length;)
                 {
                     //  Increment counter -- up to 2^32 * sizeof(Hash)
-                    Helpers.ConvertIntToByteArray(counter++, rgbCounter);
+                    BinaryPrimitives.WriteUInt32BigEndian(rgbCounter, counter++);
                     hasher.TransformBlock(rgbSeed, 0, rgbSeed.Length, rgbSeed, 0);
                     hasher.TransformFinalBlock(rgbCounter, 0, 4);
                     Debug.Assert(hasher.Hash != null);

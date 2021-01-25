@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -24,7 +23,7 @@ namespace System.Linq.Parallel
     {
         // Moves the position of the enumerator forward by one, and simultaneously returns
         // the (new) current element and key. If empty, false is returned.
-        internal abstract bool MoveNext([MaybeNullWhen(false), AllowNull] ref TElement currentElement, ref TKey currentKey);
+        internal abstract bool MoveNext([MaybeNullWhen(false), AllowNull] ref TElement currentElement, [AllowNull] ref TKey currentKey);
 
         // Standard implementation of the disposable pattern.
         public void Dispose()

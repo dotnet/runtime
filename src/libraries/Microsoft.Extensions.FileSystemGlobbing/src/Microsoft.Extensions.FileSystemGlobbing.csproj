@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs"
-             Link="Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs"
+             Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
 
 </Project>

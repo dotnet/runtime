@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.IO;
@@ -48,7 +47,7 @@ namespace System.Text
         protected int dataTableCodePage;
 
         // Variables to help us allocate/mark our memory section correctly
-        protected int iExtraBytes = 0;
+        protected int iExtraBytes;
 
         // Our private unicode-to-bytes best-fit-array, and vice versa.
         protected char[]? arrayUnicodeBestFit;
@@ -158,7 +157,7 @@ namespace System.Text
             // NOTE: We must reflect on a public type that is exposed in the contract here
             // (i.e. CodePagesEncodingProvider), otherwise we will not get a reference to
             // the right assembly.
-            Stream? stream = typeof(CodePagesEncodingProvider).GetTypeInfo().Assembly.GetManifestResourceStream(tableName);
+            Stream? stream = typeof(CodePagesEncodingProvider).Assembly.GetManifestResourceStream(tableName);
 
             if (stream == null)
             {

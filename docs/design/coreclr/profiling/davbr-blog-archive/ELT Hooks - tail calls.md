@@ -79,7 +79,7 @@ typedef void FunctionTailcall2(
                 COR_PRF_FRAME_INFO func);
 ```
 
-**Tip** : More than once I've seen profiler writers make the following mistake. They will take their naked assembly-language wrapper for their Enter2 and Leave2 hooks, and paste it again to use as the Tailcall2 assembly-language wrapper. The problem is they forget that the Tailcall2 hook takes a different number of parameters than the Enter2 / Leave2 hooks (or, more to the point, a different number of _bytes_ is passed on the stack to invoke the Tailcall2 hook). So, they'll take the "ret 16" at the end of their Enter2/Leave2 hook wrappers and stick that into their Tailcall2 hook wrapper, forgetting to change it to a "ret 12". Don't make the same mistake! 
+**Tip** : More than once I've seen profiler writers make the following mistake. They will take their naked assembly-language wrapper for their Enter2 and Leave2 hooks, and paste it again to use as the Tailcall2 assembly-language wrapper. The problem is they forget that the Tailcall2 hook takes a different number of parameters than the Enter2 / Leave2 hooks (or, more to the point, a different number of _bytes_ is passed on the stack to invoke the Tailcall2 hook). So, they'll take the "ret 16" at the end of their Enter2/Leave2 hook wrappers and stick that into their Tailcall2 hook wrapper, forgetting to change it to a "ret 12". Don't make the same mistake!
 
 It's worth noting what these parameters mean. With the Enter and Leave hooks it's pretty obvious that the parameters your hook is given (e.g., funcId) apply to the function being Entered or Left. But what about the Tailcall hook? Do the Tailcall hook's parameters describe the caller (function making the tail call) or the callee (function being tail called into)?
 
@@ -95,7 +95,7 @@ Ok, enough dilly-dallying. What should your profiler do in its Tailcall hook? Tw
 
 The [CLRProfiler](http://www.microsoft.com/downloads/details.aspx?FamilyID=a362781c-3870-43be-8926-862b40aa0cd0&DisplayLang=en) is a great example of using Enter/Leave/Tailcall hooks to maintain shadow stacks. A shadow stack is your profiler's own copy of the current stack of function calls on a given thread at any given time. Upon Enter of a function, you push that FunctionID (and whatever other info interests you, such as arguments) onto your data structure that represents that thread's stack. Upon Leave of a function, you pop that FunctionID. This gives you a live list of managed calls in play on the thread. The CLRProfiler uses shadow stacks so that whenever the managed app being profiled chooses to allocate a new object, the CLRProfiler can know the managed call stack that led to the allocation. (Note that an alternate way of accomplishing this would be to call DoStackSnapshot at every allocation point instead of maintaining a shadow stack. Since objects are allocated so frequently, however, you'd end up calling DoStackSnapshot extremely frequently and will often see worse performance than if you had been maintaining shadow stacks in the first place.)
 
- 
+
 
 OK, so when your profiler maintains a shadow stack, it's clear what your profiler should do on Enter or Leave, but what should it do on Tailcall? There are a couple ways one could imagine answering that question, but only one of them will work! Taking the example from the top of this post, imagine the stack looks like this:
 
@@ -121,9 +121,11 @@ Method 2: On tailcall, "mark" the FunctionID at the top of your stack as needing
 
 With this strategy, for the duration of the call to Three(), the shadow stack will look like this:
 
-Three  
-Helper (marked for deferred pop)  
-Main 
+```
+Three
+Helper (marked for deferred pop)
+Main
+```
 
 which some might consider more user-friendly. And as soon as Three() returns, your profiler will sneakily do a double-pop leaving just this:
 
@@ -163,9 +165,11 @@ Method 2: Shadow stack fails
 
 At stage (4), the shadow stack looks like this:
 
-Helper  
-Thread.Sleep (marked for "deferred pop")  
+```
+Helper
+Thread.Sleep (marked for "deferred pop")
 Main
+```
 
 If you think it might be complicated to explain tail calls to your users so they can understand the Method 1 form of shadow stack presentation, just try explaining why it makes sense to present to them that Thread.Sleep() is calling Helper()!
 
@@ -184,11 +188,11 @@ static public void Main()
 
 would yield:
 ```
-Helper  
-Thread.Sleep (marked for "deferred pop")  
-Thread.Sleep (marked for "deferred pop")  
-Thread.Sleep (marked for "deferred pop")  
-Thread.Sleep (marked for "deferred pop")  
+Helper
+Thread.Sleep (marked for "deferred pop")
+Thread.Sleep (marked for "deferred pop")
+Thread.Sleep (marked for "deferred pop")
+Thread.Sleep (marked for "deferred pop")
 Main
 ```
 
@@ -211,11 +215,11 @@ static public void Helper()
 
 would yield:
 ```
-Thread.Sleep (marked for "deferred pop")  
-Thread.Sleep (marked for "deferred pop")  
-Thread.Sleep (marked for "deferred pop")  
-Thread.Sleep (marked for "deferred pop")  
-Helper  
+Thread.Sleep (marked for "deferred pop")
+Thread.Sleep (marked for "deferred pop")
+Thread.Sleep (marked for "deferred pop")
+Thread.Sleep (marked for "deferred pop")
+Helper
 Main
 ```
 
@@ -337,7 +341,7 @@ ildasm Class1.exe
 Inside ildasm, use File.Dump to generate a text file that contains a textual representation of the IL from Class1.exe.  Call it Class1WithTail.il.  Open up that file and add the tail. prefix just before the call you want optimized into a tail call (see highlighted yellow for changes):
 
 ```
-.method private hidebysig static int32 
+.method private hidebysig static int32
  Helper(int32 i) cil managed
  {
 ~~// Code size 45 (0x2d)
@@ -386,5 +390,5 @@ If you didn't learn anything, I hope you at least got some refreshing sleep than
 - Since some managed functions may tail call into native helper functions inside the CLR (for which you won't get an Enter hook notification), your Tailcall hook should treat the tail call as if it were a Leave, and not depend on the next Enter hook correlating to the target of the last tail call.  With shadow stacks, for example, this means you should simply pop the calling function off your shadow stack in your Tailcall hook.
 - Since tail calls can be elusive to find in practice, it's well worth your while to use ildasm/ilasm to manufacture explicit tail calls so you can step through your Tailcall hook and test its logic.
 
-_David has been a developer at Microsoft for over 70 years (allowing for his upcoming time-displacement correction). He joined Microsoft in 2079, first starting in the experimental time-travel group. His current assignment is to apply his knowledge of the future to eliminate the "Wait for V3" effect customers commonly experience in his source universe. By using Retroactive Hindsight-ellisenseTM his goal is to "get it right the first time, this time" in a variety of product groups._ 
+_David has been a developer at Microsoft for over 70 years (allowing for his upcoming time-displacement correction). He joined Microsoft in 2079, first starting in the experimental time-travel group. His current assignment is to apply his knowledge of the future to eliminate the "Wait for V3" effect customers commonly experience in his source universe. By using Retroactive Hindsight-ellisenseTM his goal is to "get it right the first time, this time" in a variety of product groups._
 

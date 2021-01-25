@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -37,10 +36,10 @@ namespace System.Security.AccessControl
 
         internal readonly CommonSecurityDescriptor _securityDescriptor = null!;
 
-        private bool _ownerModified = false;
-        private bool _groupModified = false;
-        private bool _saclModified = false;
-        private bool _daclModified = false;
+        private bool _ownerModified;
+        private bool _groupModified;
+        private bool _saclModified;
+        private bool _daclModified;
 
         // only these SACL control flags will be automatically carry forward
         // when update with new security descriptor.
@@ -676,7 +675,7 @@ namespace System.Security.AccessControl
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            if (!this.AccessRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()))
+            if (!this.AccessRuleType.IsAssignableFrom(rule.GetType()))
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAccessRuleType,
@@ -702,7 +701,7 @@ namespace System.Security.AccessControl
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            if (!this.AuditRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()))
+            if (!this.AuditRuleType.IsAssignableFrom(rule.GetType()))
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAuditRuleType,

@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System
 {
-    public class Lazy<T, TMetadata> : Lazy<T>
+    public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T, TMetadata> : Lazy<T>
     {
         private readonly TMetadata _metadata;
 

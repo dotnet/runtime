@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -9,8 +8,8 @@ namespace System.Net.Http.Headers
 {
     public class AuthenticationHeaderValue : ICloneable
     {
-        private string _scheme = null!;
-        private string? _parameter;
+        private readonly string _scheme;
+        private readonly string? _parameter;
 
         public string Scheme
         {
@@ -49,10 +48,6 @@ namespace System.Net.Http.Headers
 
             _scheme = source._scheme;
             _parameter = source._parameter;
-        }
-
-        private AuthenticationHeaderValue()
-        {
         }
 
         public override string ToString()
@@ -136,7 +131,6 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            var result = new AuthenticationHeaderValue();
             string? targetScheme = null;
             switch (schemeLength)
             {
@@ -146,7 +140,8 @@ namespace System.Net.Http.Headers
                 case 4: targetScheme = "NTLM"; break;
                 case 9: targetScheme = "Negotiate"; break;
             }
-            result._scheme = targetScheme != null && string.CompareOrdinal(input, startIndex, targetScheme, 0, schemeLength) == 0 ?
+
+            string scheme = targetScheme != null && string.CompareOrdinal(input, startIndex, targetScheme, 0, schemeLength) == 0 ?
                 targetScheme :
                 input.Substring(startIndex, schemeLength);
 
@@ -157,7 +152,7 @@ namespace System.Net.Http.Headers
             if ((current == input.Length) || (input[current] == ','))
             {
                 // If we only have a scheme followed by whitespace, we're done.
-                parsedValue = result;
+                parsedValue = new AuthenticationHeaderValue(scheme);
                 return current - startIndex;
             }
 
@@ -189,8 +184,8 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            result._parameter = input.Substring(parameterStartIndex, parameterEndIndex - parameterStartIndex + 1);
-            parsedValue = result;
+            string parameter = input.Substring(parameterStartIndex, parameterEndIndex - parameterStartIndex + 1);
+            parsedValue = new AuthenticationHeaderValue(scheme, parameter);
             return current - startIndex;
         }
 

@@ -1,25 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Xml;
     using System.Xml.XPath;
     using KeywordsTable = System.Xml.Xsl.Xslt.KeywordsTable;
 
     internal class NavigatorInput
     {
-        private XPathNavigator _Navigator;
-        private PositionInfo _PositionInfo;
+        private XPathNavigator? _Navigator;
+        private PositionInfo? _PositionInfo;
         private readonly InputScopeManager _Manager;
-        private NavigatorInput _Next;
+        private NavigatorInput? _Next;
         private readonly string _Href;
         private readonly KeywordsTable _Atoms;
 
-        internal NavigatorInput Next
+        internal NavigatorInput? Next
         {
             get
             {
@@ -99,12 +99,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal int LineNumber
         {
-            get { return _PositionInfo.LineNumber; }
+            get { return _PositionInfo!.LineNumber; }
         }
 
         internal int LinePosition
         {
-            get { return _PositionInfo.LinePosition; }
+            get { return _PositionInfo!.LinePosition; }
         }
 
         internal XPathNodeType NodeType
@@ -174,7 +174,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                return _Navigator.BaseURI;
+                return _Navigator!.BaseURI;
             }
         }
 
@@ -204,7 +204,7 @@ namespace System.Xml.Xsl.XsltOld
         //
         // Constructor
         //
-        internal NavigatorInput(XPathNavigator navigator, string baseUri, InputScope rootScope)
+        internal NavigatorInput(XPathNavigator navigator, string baseUri, InputScope? rootScope)
         {
             if (navigator == null)
             {
@@ -236,6 +236,7 @@ namespace System.Xml.Xsl.XsltOld
         // Debugging support
         //
         [System.Diagnostics.Conditional("DEBUG")]
+        [MemberNotNull(nameof(_Navigator))]
         internal void AssertInput()
         {
             Debug.Assert(_Navigator != null);

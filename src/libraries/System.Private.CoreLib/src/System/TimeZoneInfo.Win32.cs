@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -417,7 +416,7 @@ namespace System
             // * FloatingDateRule -
             //   To select the correct day in the month, set the Year member to zero, the Hour and Minute
             //   members to the transition time, the DayOfWeek member to the appropriate weekday, and the
-            //   Day member to indicate the occurence of the day of the week within the month (first through fifth).
+            //   Day member to indicate the occurrence of the day of the week within the month (first through fifth).
             //
             //   Using this notation, specify the 2:00a.m. on the first Sunday in April as follows:
             //   Hour      = 2,

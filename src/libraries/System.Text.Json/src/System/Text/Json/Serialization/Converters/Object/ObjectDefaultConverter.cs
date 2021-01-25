@@ -1,9 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -48,10 +48,10 @@ namespace System.Text.Json.Serialization.Converters
                     // Read method would have thrown if otherwise.
                     Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj,
-                        ref reader,
-                        options,
+                        unescapedPropertyName,
                         ref state,
                         out bool useExtensionProperty);
 
@@ -77,10 +77,11 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (options.ReferenceHandler != null)
                     {
-                        if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
+                        if (JsonSerializer.ResolveMetadataForJsonObject<T>(ref reader, ref state, options))
                         {
                             if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                             {
+                                // This will never throw since it was previously validated in ResolveMetadataForJsonObject.
                                 value = (T)state.Current.ReturnValue!;
                                 return true;
                             }
@@ -91,8 +92,6 @@ namespace System.Text.Json.Serialization.Converters
                             return false;
                         }
                     }
-
-                    state.Current.ObjectState = StackFrameObjectState.PropertyValue;
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
@@ -103,13 +102,6 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     obj = state.Current.JsonClassInfo.CreateObject!()!;
-                    if (state.Current.MetadataId != null)
-                    {
-                        state.ReferenceResolver.AddReference(state.Current.MetadataId, obj);
-                        // Clear metadata name, if the next read fails
-                        // we want to point the JSON path to the property's object.
-                        state.Current.JsonPropertyName = null;
-                    }
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
@@ -152,10 +144,10 @@ namespace System.Text.Json.Serialization.Converters
                         // Read method would have thrown if otherwise.
                         Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj,
-                            ref reader,
-                            options,
+                            unescapedPropertyName,
                             ref state,
                             out bool useExtensionProperty);
 
@@ -229,7 +221,11 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal sealed override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal sealed override bool OnTryWrite(
+            Utf8JsonWriter writer,
+            T value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
         {
             // Minimize boxing for structs by only boxing once here
             object objectValue = value!;
@@ -261,6 +257,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     // Remember the current property for JsonPath support if an exception is thrown.
                     state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                    state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
@@ -317,6 +314,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     JsonPropertyInfo jsonPropertyInfo = propertyCacheArray![state.Current.EnumeratorIndex];
                     state.Current.DeclaredJsonPropertyInfo = jsonPropertyInfo;
+                    state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                     if (jsonPropertyInfo.ShouldSerialize)
                     {
@@ -356,6 +354,8 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
+        // AggressiveInlining since this method is only called from two locations and is on a hot path.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void ReadPropertyValue(
             object obj,
             ref ReadStack state,
@@ -409,6 +409,17 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return true;
+        }
+
+        internal sealed override void CreateInstanceForReferenceResolver(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        {
+            if (state.Current.JsonClassInfo.CreateObject == null)
+            {
+                ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(state.Current.JsonClassInfo.Type, ref reader, ref state);
+            }
+
+            object obj = state.Current.JsonClassInfo.CreateObject!()!;
+            state.Current.ReturnValue = obj;
         }
     }
 }

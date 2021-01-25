@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -119,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             Assert.Equal(Pkcs12ConfidentialityMode.None, authSafe[1].ConfidentialityMode);
 
             Assert.ThrowsAny<CryptographicException>(
-                () => authSafe[0].Decrypt(loader.Password.AsSpan().Slice(1)));
+                () => authSafe[0].Decrypt(loader.Password.AsSpan(1)));
 
             Assert.Equal(Pkcs12ConfidentialityMode.Password, authSafe[0].ConfidentialityMode);
             authSafe[0].Decrypt(loader.Password);

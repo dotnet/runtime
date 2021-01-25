@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -147,24 +146,20 @@ namespace Microsoft.Extensions.Primitives
         /// </returns>
         public static int Compare(StringSegment a, StringSegment b, StringComparison comparisonType)
         {
-            var minLength = Math.Min(a.Length, b.Length);
-            var diff = string.Compare(a.Buffer, a.Offset, b.Buffer, b.Offset, minLength, comparisonType);
-            if (diff == 0)
+            if (a.HasValue && b.HasValue)
             {
-                diff = a.Length - b.Length;
+                return a.AsSpan().CompareTo(b.AsSpan(), comparisonType);
             }
-
-            return diff;
+            else
+            {
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return !a.HasValue ? (b.HasValue ? -1 : 0) : 1; // null sorts less than non-null, and two nulls sort as equal
+            }
         }
 
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj))
-            {
-                return false;
-            }
-
             return obj is StringSegment segment && Equals(segment);
         }
 
@@ -183,12 +178,15 @@ namespace Microsoft.Extensions.Primitives
         /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
         public bool Equals(StringSegment other, StringComparison comparisonType)
         {
-            if (Length != other.Length)
+            if (HasValue && other.HasValue)
             {
-                return false;
+                return AsSpan().Equals(other.AsSpan(), comparisonType);
             }
-
-            return string.Compare(Buffer, Offset, other.Buffer, other.Offset, other.Length, comparisonType) == 0;
+            else
+            {
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return !HasValue && !other.HasValue; // only return true if both are null
+            }
         }
 
         // This handles StringSegment.Equals(string, StringSegment, StringComparison) and StringSegment.Equals(StringSegment, string, StringComparison)
@@ -233,22 +231,22 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            var textLength = text.Length;
-            if (!HasValue || Length != textLength)
+            if (!HasValue)
             {
+                CheckStringComparison(comparisonType); // must arg check before returning
                 return false;
             }
 
-            return string.Compare(Buffer, Offset, text, 0, textLength, comparisonType) == 0;
+            return AsSpan().Equals(text.AsSpan(), comparisonType);
         }
 
         /// <inheritdoc />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-#if NETCOREAPP || NETSTANDARD2_1
+#if NETCOREAPP
             return string.GetHashCode(AsSpan());
-#elif NETSTANDARD2_0
+#elif (NETSTANDARD2_0 || NETFRAMEWORK)
             // This GetHashCode is expensive since it allocates on every call.
             // However this is required to ensure we retain any behavior (such as hash code randomization) that
             // string.GetHashCode has.
@@ -256,7 +254,6 @@ namespace Microsoft.Extensions.Primitives
 #else
 #error Target frameworks need to be updated.
 #endif
-
         }
 
         /// <summary>
@@ -311,15 +308,13 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            var result = false;
-            var textLength = text.Length;
-
-            if (HasValue && Length >= textLength)
+            if (!HasValue)
             {
-                result = string.Compare(Buffer, Offset, text, 0, textLength, comparisonType) == 0;
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return false;
             }
 
-            return result;
+            return AsSpan().StartsWith(text.AsSpan(), comparisonType);
         }
 
         /// <summary>
@@ -339,16 +334,13 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            var result = false;
-            var textLength = text.Length;
-            var comparisonLength = Offset + Length - textLength;
-
-            if (HasValue && comparisonLength > 0)
+            if (!HasValue)
             {
-                result = string.Compare(Buffer, comparisonLength, text, 0, textLength, comparisonType) == 0;
+                CheckStringComparison(comparisonType); // must arg check before returning
+                return false;
             }
 
-            return result;
+            return AsSpan().EndsWith(text.AsSpan(), comparisonType);
         }
 
         /// <summary>
@@ -434,7 +426,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(char c, int start, int count)
         {
-            var offset = Offset + start;
+            int offset = Offset + start;
 
             if (!HasValue || start < 0 || (uint)offset > (uint)Buffer.Length)
             {
@@ -446,10 +438,10 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
             }
 
-            var index = Buffer.IndexOf(c, offset, count);
-            if (index != -1)
+            int index = AsSpan().Slice(start, count).IndexOf(c);
+            if (index >= 0)
             {
-                index -= Offset;
+                index += start;
             }
 
             return index;
@@ -494,7 +486,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOfAny(char[] anyOf, int startIndex, int count)
         {
-            var index = -1;
+            int index = -1;
 
             if (HasValue)
             {
@@ -553,18 +545,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The zero-based index position of value if that character is found, or -1 if it is not.</returns>
         public int LastIndexOf(char value)
         {
-            var index = -1;
-
-            if (HasValue)
-            {
-                index = Buffer.LastIndexOf(value, Offset + Length - 1, Length);
-                if (index != -1)
-                {
-                    index -= Offset;
-                }
-            }
-
-            return index;
+            return AsSpan().LastIndexOf(value);
         }
 
         /// <summary>
@@ -577,54 +558,40 @@ namespace Microsoft.Extensions.Primitives
         /// Removes all leading whitespaces.
         /// </summary>
         /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
-        public unsafe StringSegment TrimStart()
+        public StringSegment TrimStart()
         {
-            var trimmedStart = Offset;
-            var length = Offset + Length;
+            ReadOnlySpan<char> span = AsSpan();
 
-            fixed (char* p = Buffer)
+            int i;
+            for (i = 0; i < span.Length; i++)
             {
-                while (trimmedStart < length)
+                if (!char.IsWhiteSpace(span[i]))
                 {
-                    var c = p[trimmedStart];
-
-                    if (!char.IsWhiteSpace(c))
-                    {
-                        break;
-                    }
-
-                    trimmedStart++;
+                    break;
                 }
             }
 
-            return new StringSegment(Buffer, trimmedStart, length - trimmedStart);
+            return Subsegment(i);
         }
 
         /// <summary>
         /// Removes all trailing whitespaces.
         /// </summary>
         /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
-        public unsafe StringSegment TrimEnd()
+        public StringSegment TrimEnd()
         {
-            var offset = Offset;
-            var trimmedEnd = offset + Length - 1;
+            ReadOnlySpan<char> span = AsSpan();
 
-            fixed (char* p = Buffer)
+            int i;
+            for (i = span.Length - 1; i >= 0; i--)
             {
-                while (trimmedEnd >= offset)
+                if (!char.IsWhiteSpace(span[i]))
                 {
-                    var c = p[trimmedEnd];
-
-                    if (!char.IsWhiteSpace(c))
-                    {
-                        break;
-                    }
-
-                    trimmedEnd--;
+                    break;
                 }
             }
 
-            return new StringSegment(Buffer, offset, trimmedEnd - offset + 1);
+            return Subsegment(0, i + 1);
         }
 
         /// <summary>
@@ -646,7 +613,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns></returns>
         public static bool IsNullOrEmpty(StringSegment value)
         {
-            var res = false;
+            bool res = false;
 
             if (!value.HasValue || value.Length == 0)
             {
@@ -657,12 +624,21 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <summary>
-        /// Returns the <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="String.Empty" /> if the <see cref="StringSegment"/> does not contain a value.
+        /// Returns the <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="string.Empty" /> if the <see cref="StringSegment"/> does not contain a value.
         /// </summary>
-        /// <returns>The <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="String.Empty" /> if the <see cref="StringSegment"/> does not contain a value.</returns>
+        /// <returns>The <see cref="string"/> represented by this <see cref="StringSegment"/> or <see cref="string.Empty" /> if the <see cref="StringSegment"/> does not contain a value.</returns>
         public override string ToString()
         {
             return Value ?? string.Empty;
+        }
+
+        private static void CheckStringComparison(StringComparison comparisonType)
+        {
+            // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
+            if ((uint)comparisonType > (uint)StringComparison.OrdinalIgnoreCase)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.comparisonType);
+            }
         }
 
         // Methods that do no return (i.e. throw) are not inlined
@@ -716,6 +692,15 @@ namespace Microsoft.Extensions.Primitives
 
                 return ThrowHelper.GetArgumentException(ExceptionResource.Argument_InvalidOffsetLengthStringSegment);
             }
+        }
+
+        /// <inheritdoc />
+        bool IEquatable<string>.Equals(string other)
+        {
+            // Explicit interface implementation for IEquatable<string> because
+            // the interface's Equals method allows null strings, which we return
+            // as not-equal.
+            return other != null && Equals(other);
         }
     }
 }

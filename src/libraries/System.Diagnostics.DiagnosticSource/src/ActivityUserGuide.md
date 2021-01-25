@@ -5,7 +5,7 @@ This document describes Activity, a class that allows storing and accessing diag
 This document provides Activity architecture [overview](#overview) and [usage](#activity-usage).
 
 # Overview
-When application starts processing an operation e.g. HTTP request or task from queue, it creates an `Activity` to track it through the system as the request is processed. Examples of context stored in `Activity` could be HTTP request path, method, user-agent, or correlation id: all the details important to be logged along with every trace. 
+When application starts processing an operation e.g. HTTP request or task from queue, it creates an `Activity` to track it through the system as the request is processed. Examples of context stored in `Activity` could be HTTP request path, method, user-agent, or correlation id: all the details important to be logged along with every trace.
 When application calls external dependency to complete an operation, it may need to pass some of the context (e.g. correlation id) along with dependency call to be able to correlate logs from multiple services.
 
 `Activity` provides [Tags](#tags) to represent context which is needed for logging only and [Baggage](#baggage) to represent context which needs to be propagated to external dependencies. It has other properties described in [Activity Reference](#activity-reference).
@@ -63,18 +63,18 @@ When that activity is started, it gets an [Id](id) and [Parent](parent).
            {
                var baggageItem = NameValueHeaderValue.Parse(pair);
                activity.AddBaggage(baggageItem.Key, baggageItem.Value);
-           }     
+           }
            httpListener.StartActivity(activity, new  {context});
            try {
                //process request ...
            } finally {
                //stop activity
                httpListener.StopActivity(activity, new {context} );
-           }       
+           }
        }
    }
 ```
-**Note** 
+**Note**
 - instead of Activity.Start() and Stop() methods, in above example we call `DiagnosticSource.StartActivity()` and `StopActivity()` methods that write events to DiagnosticSource.
 - Activity creation is guarded with a call to `DiagnosticSource.IsEnabled` thus eliminating any unnecessary performance impact if no-one is listening to this `DiagnosticSource`.
 
@@ -96,8 +96,8 @@ When an application makes an outbound call, for example to an external web-servi
             } finally {
                 //stop activity
                 httpListener.StopActivity(activity, new {request} );
-            }       
-        }   
+            }
+        }
     }
 ```
 
@@ -144,7 +144,7 @@ Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we 
             ["StartTime"] = activity.StartTimeUtc,
         }
         //log tags and baggage if needed
-        //...send document to log storage       
+        //...send document to log storage
     }
 
     public void LogActivityStop()
@@ -157,7 +157,7 @@ Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we 
             ["ParentId"] = activity.ParentId,
             ["Duration"] = activity.Duration
         };
-        
+
         //warning: Baggage or Tag could have duplicated keys!
         foreach (var kv in activity.Tags)
             document[kv.Key] = kv.Value;
@@ -190,32 +190,32 @@ It's crucial that Activity Id is logged along with every event. ParentId, Tags a
 ## Activity Id
 The main goal of Activity is to ensure telemetry events could be correlated in order to trace user requests and Activity.Id is the key part of this functionality.
 
-Applications start Activity to represent logical piece of work to be done; one Activity may be started as a child of another Activity. 
+Applications start Activity to represent logical piece of work to be done; one Activity may be started as a child of another Activity.
 The whole operation may be represented as a tree of Activities. All operations done by the distributed system may be represented as a forest of Activities trees.
 Id uniquely identifies Activity in the forest. It has an hierarchical structure to efficiently describe the operation as Activity tree.
 
-Activity.Id serves as hierarchical Request-Id in terms of [HTTP Correlation Protocol](HttpCorrelationProtocol.md) 
+Activity.Id serves as hierarchical Request-Id in terms of [HTTP Correlation Protocol](HttpCorrelationProtocol.md)
 
 ### Id Format
 
 `|root-id.id1_id2.id3_id4.`
 
-e.g. 
+e.g.
 
 `|a000b421-5d183ab6.1.8e2d4c28_1.`
 
-It starts with '|' followed by [root-id](#root-id) followed by '.' and small identifiers of local Activities, separated by '.' or '_'. 
+It starts with '|' followed by [root-id](#root-id) followed by '.' and small identifiers of local Activities, separated by '.' or '_'.
 
 [Root-id](#root-id) identifies the whole operation and 'Id' identifies particular Activity involved in operation processing.
 
-'|' indicates Id has hierarchical structure, which is useful information for logging system. 
+'|' indicates Id has hierarchical structure, which is useful information for logging system.
 
 * Id is 1024 bytes or shorter
-* Id consist of [Base64](https://en.wikipedia.org/wiki/Base64), '-' (hyphen), '.' (dot), '_' (underscore) and '#' (pound) characters. 
+* Id consist of [Base64](https://en.wikipedia.org/wiki/Base64), '-' (hyphen), '.' (dot), '_' (underscore) and '#' (pound) characters.
 Where base64 and '-' are used in nodes and other characters delimit nodes. Id always ends with one of the delimiters.
 
 ### Root Id
-When you start the first Activity for the operation, you may optionally provide root-id through `Activity.SetParentId(string)` API. 
+When you start the first Activity for the operation, you may optionally provide root-id through `Activity.SetParentId(string)` API.
 
 If you don't provide it, Activity will generate root-id: e.g. `a000b421-5d183ab6`
 
@@ -223,7 +223,7 @@ If don't have ParentId from external process and want to generate one, keep in m
 * MUST be sufficiently large to identify single operation in entire system: use 64(or 128) bit random number or Guid
 * MUST contain only [Base64 characters](https://en.wikipedia.org/wiki/Base64) and '-' (dash)
 
-To get root id, use `Activity.RootId` property after providing ParentId or after starting Activity. 
+To get root id, use `Activity.RootId` property after providing ParentId or after starting Activity.
 
 ### Child Activities and Parent Id
 #### Internal Parent
@@ -234,7 +234,7 @@ Activity generates Id in following format `parent-id.local-id.`.
 
 #### External Parent
 Activities which parent is external to the process, should be assigned with Parent-Id (before start) with `Activity.SetParentId(string)` API.
-Activity would use another suffix for Id, as described in [Root Id](#root-id) section and will append '_' delimiter that indicates 
+Activity would use another suffix for Id, as described in [Root Id](#root-id) section and will append '_' delimiter that indicates
 that parent came from the external process.
 
 If external ParentId does not start with '|', Activity will add prepend it's own Id with '|' and will keep ParentId intact.
@@ -249,7 +249,7 @@ and '#' delimiter that indicates overflow: `<Beginning-Of-Parent-Id>.local-id#`
 
 # Reference
 
-## Activity 
+## Activity
 ### Tags
 `IEnumerable<KeyValuePair<string, string>> Tags { get; }` - Represents information to be logged along with the activity. Good examples of tags are instance/machine name, incoming request HTTP method, path, user/user-agent, etc. Tags are **not passed** to child of activities.
 Typical tag usage includes adding a few custom tags and enumeration through them to fill log event payload. Retrieving a tag by its key is not supported.
@@ -257,15 +257,15 @@ Typical tag usage includes adding a few custom tags and enumeration through them
 ### Baggage
 `IEnumerable<KeyValuePair<string, string>> Baggage { get; }` - Represents information to be logged with the activity **and** passed to its children. Examples of baggage include correlation id, sampling and feature flags.
 Baggage is serialized and **passed along with external dependency requests**.
-Typical Baggage usage includes adding a few baggage properties and enumeration through them to fill log event payload. 
+Typical Baggage usage includes adding a few baggage properties and enumeration through them to fill log event payload.
 
 ### OperationName
 `string OperationName { get; }` - Coarsest name for an activity. This name must be set in the constructor.
- 
+
 ### StartTimeUtc
 `DateTime StartTimeUtc { get; private set; }`  - DateTime in UTC (Greenwich Mean Time) when activity was started. If it's not already initialized, it will be set to DateTime.UtcNow in `Start`.
 
-### Duration 
+### Duration
 `TimeSpan Duration { get; private set; }` - Represents Activity duration if activity was stopped, TimeSpan.Zero otherwise.
 
 ### Id

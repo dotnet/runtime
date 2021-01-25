@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -137,7 +136,7 @@ namespace System.Net.Http.Functional.Tests
                         var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                         requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
-                        await client.SendAsync(requestMessage);
+                        await client.SendAsync(TestAsync, requestMessage);
                     }
                 },
                 async server =>
@@ -160,7 +159,7 @@ namespace System.Net.Http.Functional.Tests
                         requestMessage.Headers.Add("Cookie", "B=2");
                         requestMessage.Headers.Add("Cookie", "C=3");
 
-                        await client.SendAsync(requestMessage);
+                        await client.SendAsync(TestAsync, requestMessage);
                     }
                 },
                 async server =>
@@ -211,7 +210,7 @@ namespace System.Net.Http.Functional.Tests
             return cookieHeaderValue;
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GetAsync_SetCookieContainerAndCookieHeader_BothCookiesSent()
         {
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
@@ -224,7 +223,7 @@ namespace System.Net.Http.Functional.Tests
                     var requestMessage = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, requestMessage);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -238,7 +237,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GetAsync_SetCookieContainerAndMultipleCookieHeaders_BothCookiesSent()
         {
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
@@ -252,7 +251,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Headers.Add("Cookie", "A=1");
                     requestMessage.Headers.Add("Cookie", "B=2");
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, requestMessage);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -294,18 +293,19 @@ namespace System.Net.Http.Functional.Tests
         {
             const string path1 = "/foo";
             const string path2 = "/bar";
+            const string unusedPath = "/unused";
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 Uri url1 = new Uri(url, path1);
                 Uri url2 = new Uri(url, path2);
-                Uri unusedUrl = new Uri(url, "/unused");
+                Uri unusedUrl = new Uri(url, unusedPath);
 
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = new CookieContainer();
-                handler.CookieContainer.Add(url1, new Cookie("cookie1", "value1"));
-                handler.CookieContainer.Add(url2, new Cookie("cookie2", "value2"));
-                handler.CookieContainer.Add(unusedUrl, new Cookie("cookie3", "value3"));
+                handler.CookieContainer.Add(url1, new Cookie("cookie1", "value1", path1));
+                handler.CookieContainer.Add(url2, new Cookie("cookie2", "value2", path2));
+                handler.CookieContainer.Add(unusedUrl, new Cookie("cookie3", "value3", unusedPath));
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
@@ -392,6 +392,112 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains(cookies, c => c.Name == "C" && c.Value == "3");
                 }
             });
+        }
+
+        // Default path should be calculated according to https://tools.ietf.org/html/rfc6265#section-5.1.4
+        // When a cookie is being sent without an explicitly defined Path for a URL with URL-Path /path/sub,
+        // the cookie should be added with Path=/path.
+        // ConditionalFact: CookieContainer does not follow RFC6265 on .NET Framework, therefore the (WinHttpHandler) test is expected to fail
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public async Task GetAsync_NoPathDefined_CookieAddedWithDefaultPath()
+        {
+            await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
+            {
+                Uri requestUrl = new Uri(serverUrl, "path/sub");
+                HttpClientHandler handler = CreateHttpClientHandler();
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(requestUrl);
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync(
+                        HttpStatusCode.OK,
+                        new HttpHeaderData[]
+                        {
+                            new HttpHeaderData("Set-Cookie", "A=1"),
+                        },
+                        s_simpleContent);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    Cookie cookie = handler.CookieContainer.GetCookies(requestUrl)[0];
+                    Assert.Equal("/path", cookie.Path);
+                }
+            });
+        }
+
+        // According to RFC6265, cookie path is not expected to match the request's path,
+        // these cookies should be accepted by the client.
+        // ConditionalFact: CookieContainer does not follow RFC6265 on .NET Framework, therefore the (WinHttpHandler) test is expected to fail
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public async Task GetAsync_CookiePathDoesNotMatchRequestPath_CookieAccepted()
+        {
+            await LoopbackServerFactory.CreateServerAsync(async (server, serverUrl) =>
+            {
+                Uri requestUrl = new Uri(serverUrl, "original");
+                Uri otherUrl = new Uri(serverUrl, "other");
+                HttpClientHandler handler = CreateHttpClientHandler();
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(requestUrl);
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync(
+                        HttpStatusCode.OK,
+                        new[]
+                        {
+                            new HttpHeaderData("Set-Cookie", "A=1; Path=/other"),
+                        },
+                        s_simpleContent);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    Cookie cookie = handler.CookieContainer.GetCookies(otherUrl)[0];
+                    Assert.Equal("/other", cookie.Path);
+                }
+            });
+        }
+
+        // Based on the OIDC login scenario described in comments:
+        // https://github.com/dotnet/runtime/pull/39250#issuecomment-659783480
+        // https://github.com/dotnet/runtime/issues/26141#issuecomment-612097147
+        // ConditionalFact: CookieContainer does not follow RFC6265 on .NET Framework, therefore the (WinHttpHandler) test is expected to fail
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public async Task GetAsync_Redirect_CookiesArePreserved()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+
+            string loginPath = "/login/user";
+            string returnPath = "/return";
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async serverUrl =>
+                {
+                    Uri loginUrl = new Uri(serverUrl, loginPath);
+                    Uri returnUrl = new Uri(serverUrl, returnPath);
+                    CookieContainer cookies = handler.CookieContainer;
+
+                    using (HttpClient client = CreateHttpClient(handler))
+                    {
+                        client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
+                        HttpResponseMessage response = await client.GetAsync(loginUrl);
+                        string content = await response.Content.ReadAsStringAsync();
+                        Assert.Equal(s_simpleContent, content);
+
+                        Cookie cookie = handler.CookieContainer.GetCookies(returnUrl)[0];
+                        Assert.Equal("LoggedIn", cookie.Name);
+                    }
+                },
+                async server =>
+                {
+                    HttpRequestData requestData1 = await server.HandleRequestAsync(HttpStatusCode.Found, new[]
+                    {
+                        new HttpHeaderData("Location", returnPath),
+                        new HttpHeaderData("Set-Cookie", "LoggedIn=true; Path=/return"),
+                    });
+
+                    Assert.Equal(0, requestData1.GetHeaderValueCount("Cookie"));
+
+                    HttpRequestData requestData2 = await server.HandleRequestAsync(content: s_simpleContent, headers: new[]{
+                        new HttpHeaderData("Set-Cookie", "LoggedIn=true; Path=/return"),
+                    });
+                    Assert.Equal("LoggedIn=true", requestData2.GetSingleHeaderValue("Cookie"));
+                });
         }
 
         [Fact]
@@ -602,7 +708,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> CookieNamesValuesAndUseCookies()
         {
-            foreach (bool useCookies in new[] { true, false })
+            foreach (bool useCookies in BoolValues)
             {
                 yield return new object[] { "ABC", "123", useCookies };
                 yield return new object[] { "Hello", "World", useCookies };

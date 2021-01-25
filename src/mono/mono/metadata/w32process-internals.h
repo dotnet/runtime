@@ -7,9 +7,11 @@
 
 #include <config.h>
 #include <glib.h>
+#include <mono/utils/w32subset.h>
 
-#ifndef HOST_WIN32
-
+#ifdef HOST_WIN32
+#include <windows.h>
+#else
 typedef struct {
 	guint32 dwSignature; /* Should contain 0xFEEF04BD on le machines */
 	guint32 dwStrucVersion;
@@ -38,6 +40,7 @@ typedef struct {
 #define VS_FF_PRIVATEBUILD	0x0008
 #define VS_FF_INFOINFERRED	0x0010
 #define VS_FF_SPECIALBUILD	0x0020
+#endif
 
 guint32
 mono_w32process_get_pid (gpointer handle);
@@ -52,7 +55,7 @@ gboolean
 mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar2 **str, guint32 *len);
 
 gboolean
-mono_w32process_module_get_information (gpointer process, gpointer module, MODULEINFO *modinfo, guint32 size);
+mono_w32process_module_get_information (gpointer process, gpointer module, gpointer modinfo, guint32 size);
 
 gboolean
 mono_w32process_get_fileversion_info (const gunichar2 *filename, gpointer *data);
@@ -62,7 +65,5 @@ mono_w32process_ver_query_value (gconstpointer datablock, const gunichar2 *subbl
 
 guint32
 mono_w32process_ver_language_name (guint32 lang, gunichar2 *lang_out, guint32 lang_len);
-
-#endif /* HOST_WIN32 */
 
 #endif /* _MONO_METADATA_W32PROCESS_INTERNALS_H_ */

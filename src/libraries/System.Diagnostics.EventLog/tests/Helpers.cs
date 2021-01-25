@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics.Eventing.Reader;
@@ -16,7 +15,7 @@ namespace System.Diagnostics.Tests
     {
         public static bool NotElevatedAndSupportsEventLogs { get => !AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
         public static bool IsElevatedAndSupportsEventLogs { get => AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
-        public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsNotWindowsIoTCore; }
+        public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoNorServerCore && PlatformDetection.IsNotWindowsIoTCore; }
 
         // Retry that eats exceptions: for "best effort cleanup"
         public static void RetrySilently(Action func)

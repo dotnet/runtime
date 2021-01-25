@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Buffers;
@@ -437,7 +436,7 @@ namespace System.Security.Cryptography
             ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
         }
 
-        public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+        public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
             ThrowIfDisposed();
 

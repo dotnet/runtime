@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -35,6 +34,7 @@ namespace Microsoft.Extensions.FileProviders
 
         private bool? _usePollingFileWatcher;
         private bool? _useActivePolling;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of a PhysicalFileProvider at the given root directory.
@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.FileProviders
                 throw new ArgumentException("The path must be absolute.", nameof(root));
             }
 
-            var fullRoot = Path.GetFullPath(root);
+            string fullRoot = Path.GetFullPath(root);
             // When we do matches in GetFullPath, we want to only match full directory names.
             Root = PathUtils.EnsureTrailingSlash(fullRoot);
             if (!Directory.Exists(Root))
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.FileProviders
             {
                 if (_fileWatcher != null)
                 {
-                    throw new InvalidOperationException($"Cannot modify {nameof(UsePollingFileWatcher)} once file watcher has been initialized.");
+                    throw new InvalidOperationException(SR.Format(SR.CannotModifyWhenFileWatcherInitialized, nameof(UsePollingFileWatcher)));
                 }
                 _usePollingFileWatcher = value;
             }
@@ -158,8 +158,11 @@ namespace Microsoft.Extensions.FileProviders
 
         internal PhysicalFilesWatcher CreateFileWatcher()
         {
-            var root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
-            return new PhysicalFilesWatcher(root, new FileSystemWatcher(root), UsePollingFileWatcher, _filters)
+            string root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
+
+            // When both UsePollingFileWatcher & UseActivePolling are set, we won't use a FileSystemWatcher.
+            FileSystemWatcher watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher(root);
+            return new PhysicalFilesWatcher(root, watcher, UsePollingFileWatcher, _filters)
             {
                 UseActivePolling = UseActivePolling,
             };
@@ -167,8 +170,8 @@ namespace Microsoft.Extensions.FileProviders
 
         private void ReadPollingEnvironmentVariables()
         {
-            var environmentValue = Environment.GetEnvironmentVariable(PollingEnvironmentKey);
-            var pollForChanges = string.Equals(environmentValue, "1", StringComparison.Ordinal) ||
+            string environmentValue = Environment.GetEnvironmentVariable(PollingEnvironmentKey);
+            bool pollForChanges = string.Equals(environmentValue, "1", StringComparison.Ordinal) ||
                 string.Equals(environmentValue, "true", StringComparison.OrdinalIgnoreCase);
 
             _usePollingFileWatcher = pollForChanges;
@@ -178,7 +181,11 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Disposes the provider. Change tokens may not trigger after the provider is disposed.
         /// </summary>
-        public void Dispose() => Dispose(true);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Disposes the provider.
@@ -186,13 +193,15 @@ namespace Microsoft.Extensions.FileProviders
         /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
-            _fileWatcher?.Dispose();
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _fileWatcher?.Dispose();
+                }
+                _disposed = true;
+            }
         }
-
-        /// <summary>
-        /// Destructor for <see cref="PhysicalFileProvider"/>.
-        /// </summary>
-        ~PhysicalFileProvider() => Dispose(false);
 
         /// <summary>
         /// The root directory for this instance.
@@ -250,7 +259,7 @@ namespace Microsoft.Extensions.FileProviders
                 return new NotFoundFileInfo(subpath);
             }
 
-            var fullPath = GetFullPath(subpath);
+            string fullPath = GetFullPath(subpath);
             if (fullPath == null)
             {
                 return new NotFoundFileInfo(subpath);
@@ -292,7 +301,7 @@ namespace Microsoft.Extensions.FileProviders
                     return NotFoundDirectoryContents.Singleton;
                 }
 
-                var fullPath = GetFullPath(subpath);
+                string fullPath = GetFullPath(subpath);
                 if (fullPath == null || !Directory.Exists(fullPath))
                 {
                     return NotFoundDirectoryContents.Singleton;

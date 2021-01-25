@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Reflection;
@@ -620,6 +619,10 @@ namespace System.Tests
             e = (E)Delegate.CreateDelegate(typeof(E), new C(), "DoExecute");
             Assert.NotNull(e);
             Assert.Equal(102, e(new C()));
+
+            e = (E)Delegate.CreateDelegate(typeof(E), new B() { field = 42 }, "GetField");
+            Assert.NotNull(e);
+            Assert.Equal(42, e(new C()));
         }
 
         [Fact]
@@ -1104,6 +1107,7 @@ namespace System.Tests
 
         public class B
         {
+            public int field;
 
             public virtual string retarg3(string s)
             {
@@ -1136,6 +1140,11 @@ namespace System.Tests
             public int StartExecute(C c, B b)
             {
                 return 3;
+            }
+
+            public int GetField(C c)
+            {
+                return field;
             }
         }
 

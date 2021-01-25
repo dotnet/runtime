@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+
+    <WasmBuildAppDependsOn>_BeforeWasmBuildApp;_WasmResolveReferences;_WasmBuildNative</WasmBuildAppDependsOn>
+  </PropertyGroup>
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -12,7 +11,6 @@ using Xunit;
 
 namespace Tests.Integration
 {
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class RequiredCreationPolicyTests
     {
         // Matrix that details which policy to use for a given part to satisfy a given import.

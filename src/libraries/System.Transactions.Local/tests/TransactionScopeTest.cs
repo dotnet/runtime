@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Xunit;
@@ -29,7 +28,7 @@ namespace System.Transactions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("scopeTimeout", () => new TransactionScope(TransactionScopeOption.Required, TimeSpan.FromSeconds(-1)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TransactionScopeCommit()
         {
             Assert.Null(Transaction.Current);
@@ -42,7 +41,7 @@ namespace System.Transactions.Tests
             Assert.Null(Transaction.Current);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TransactionScopeAbort()
         {
             Assert.Null(Transaction.Current);
@@ -60,7 +59,7 @@ namespace System.Transactions.Tests
             Assert.Null(Transaction.Current);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TransactionScopeCompleted1()
         {
             Assert.Throws<InvalidOperationException>(() =>
@@ -74,7 +73,7 @@ namespace System.Transactions.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TransactionScopeCompleted2()
         {
             using (TransactionScope scope = new TransactionScope())
@@ -87,7 +86,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void TransactionScopeCompleted3()
         {
             Assert.Throws<InvalidOperationException>(() =>
@@ -101,7 +100,7 @@ namespace System.Transactions.Tests
         }
 
         #region NestedTransactionScope tests
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope1()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -121,7 +120,7 @@ namespace System.Transactions.Tests
             irm.Check(1, 1, 0, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope2()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -139,7 +138,7 @@ namespace System.Transactions.Tests
             irm.Check(0, 0, 1, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope3()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -168,7 +167,7 @@ namespace System.Transactions.Tests
             irm2.Check(1, 1, 0, 0, "irm2");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope4()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -200,7 +199,7 @@ namespace System.Transactions.Tests
             irm.Check(0, 0, 1, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope5()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -230,7 +229,7 @@ namespace System.Transactions.Tests
             irm2.Check(0, 0, 1, 0, "irm2");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope6()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -260,7 +259,7 @@ namespace System.Transactions.Tests
             irm.Check(1, 1, 0, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope7()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -293,7 +292,7 @@ namespace System.Transactions.Tests
             irm.Check(1, 1, 0, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope8()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -322,7 +321,7 @@ namespace System.Transactions.Tests
             irm.Check(1, 1, 0, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope8a()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -349,7 +348,7 @@ namespace System.Transactions.Tests
             irm.Check(0, 0, 0, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope9()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -388,7 +387,7 @@ namespace System.Transactions.Tests
             irm.Check(2, 2, 0, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope10()
         {
             Assert.Throws<TransactionAbortedException>(() =>
@@ -418,7 +417,7 @@ namespace System.Transactions.Tests
            });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope12()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -446,7 +445,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void NestedTransactionScope13()
         {
             Assert.Throws<TransactionAbortedException>(() =>
@@ -474,7 +473,7 @@ namespace System.Transactions.Tests
 
         /* Tests using IntResourceManager */
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void RMFail1()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -506,7 +505,7 @@ namespace System.Transactions.Tests
             Assert.Null(Transaction.Current);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // 30 second timeout
         public void RMFail2()
         {
@@ -539,7 +538,7 @@ namespace System.Transactions.Tests
 
         #region Explicit Transaction Tests
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransactionCommit()
         {
             Assert.Null(Transaction.Current);
@@ -557,7 +556,7 @@ namespace System.Transactions.Tests
             Transaction.Current = oldTransaction;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransactionRollback()
         {
             Assert.Null(Transaction.Current);
@@ -581,7 +580,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction1()
         {
             Assert.Null(Transaction.Current);
@@ -616,7 +615,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction2()
         {
             Assert.Null(Transaction.Current);
@@ -650,7 +649,7 @@ namespace System.Transactions.Tests
             Assert.Throws<TransactionAbortedException>(() => ct.Commit());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction3()
         {
             Assert.Null(Transaction.Current);
@@ -684,7 +683,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction4()
         {
             Assert.Null(Transaction.Current);
@@ -716,7 +715,7 @@ namespace System.Transactions.Tests
             irm.Check(1, 1, 0, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction5()
         {
             Assert.Null(Transaction.Current);
@@ -746,7 +745,7 @@ namespace System.Transactions.Tests
             irm.Check(0, 0, 1, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction6()
         {
             Assert.Throws<InvalidOperationException>(() =>
@@ -761,7 +760,7 @@ namespace System.Transactions.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction6a()
         {
             Assert.Throws<InvalidOperationException>(() =>
@@ -779,7 +778,7 @@ namespace System.Transactions.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction6b()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -806,7 +805,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction6c()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -831,7 +830,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction6d()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -855,7 +854,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction6e()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -879,7 +878,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction7()
         {
             Assert.Throws<TransactionException>(() =>
@@ -894,7 +893,7 @@ namespace System.Transactions.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction8()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -908,7 +907,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction8a()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -923,7 +922,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction9()
         {
             Assert.Throws<InvalidOperationException>(() =>
@@ -936,7 +935,7 @@ namespace System.Transactions.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction10()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -958,7 +957,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction10a()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -983,7 +982,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction10b()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -1007,7 +1006,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction12()
         {
             AssertExtensions.Throws<ArgumentException>("asyncResult", () =>
@@ -1021,7 +1020,7 @@ namespace System.Transactions.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction13()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -1044,7 +1043,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction14()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -1067,7 +1066,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction15()
         {
             CommittableTransaction ct = new CommittableTransaction();
@@ -1096,7 +1095,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ExplicitTransaction16()
         {
             CommittableTransaction ct = new CommittableTransaction();

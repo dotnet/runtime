@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -1005,7 +1004,10 @@ namespace System.Text.Json
             {
                 Debug.Assert(_arrayBufferWriter != null);
 
-                _memory = _arrayBufferWriter.GetMemory(checked(BytesPending + sizeHint));
+                int needed = BytesPending + sizeHint;
+                JsonHelpers.ValidateInt32MaxArrayLength((uint)needed);
+
+                _memory = _arrayBufferWriter.GetMemory(needed);
 
                 Debug.Assert(_memory.Length >= sizeHint);
             }

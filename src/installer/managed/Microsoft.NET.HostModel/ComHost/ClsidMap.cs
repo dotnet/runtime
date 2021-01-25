@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -66,7 +65,7 @@ namespace Microsoft.NET.HostModel.ComHost
 
             using (StreamWriter writer = File.CreateText(clsidMapPath))
             {
-                writer.Write(JsonSerializer.Serialize(clsidMap, new JsonSerializerOptions { IgnoreNullValues = true }));
+                writer.Write(JsonSerializer.Serialize(clsidMap, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }));
             }
         }
 
@@ -181,7 +180,7 @@ namespace Microsoft.NET.HostModel.ComHost
                     return attr;
                 }
             }
-            return new CustomAttributeHandle();
+            return default;
         }
 
         private static Guid GetTypeGuid(MetadataReader reader, TypeDefinition type)

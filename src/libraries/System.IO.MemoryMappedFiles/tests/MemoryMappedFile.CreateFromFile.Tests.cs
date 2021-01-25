@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -615,6 +613,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test exceptional behavior when trying to create a map for a non-shared file that's currently in use.
         /// </summary>
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // the emscripten implementation ignores FileShare.None
         public void FileInUse_CreateFromFile_FailsWithExistingNoShareFile()
         {
             // Already opened with a FileStream
@@ -697,13 +696,13 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
             WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
-                            (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0));
+                            PlatformDetection.IsSuperUser);
         }
 
         [Fact]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
-            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0));
+            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
         }
 
         /// <summary>
@@ -769,6 +768,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to validate we can create multiple maps from the same FileStream.
         /// </summary>
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // the emscripten implementation doesn't share data
         public void MultipleMapsForTheSameFileStream()
         {
             const int Capacity = 4096;

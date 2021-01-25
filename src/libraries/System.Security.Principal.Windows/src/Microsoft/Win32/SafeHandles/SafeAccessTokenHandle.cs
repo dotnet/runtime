@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -10,7 +9,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeAccessTokenHandle : SafeHandle
     {
-        private SafeAccessTokenHandle() : base(IntPtr.Zero, true) { }
+        public SafeAccessTokenHandle() : base(IntPtr.Zero, true) { }
 
         // 0 is an Invalid Handle
         public SafeAccessTokenHandle(IntPtr handle) : base(handle, true) { }

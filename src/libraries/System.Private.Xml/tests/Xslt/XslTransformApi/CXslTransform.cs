@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using Xunit.Abstractions;
@@ -474,7 +473,6 @@ namespace System.Xml.Tests
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15353", TestRuntimes.Mono)]
         public void TC_AbsolutePath_Transform(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
@@ -2098,7 +2096,6 @@ namespace System.Xml.Tests
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15353", TestRuntimes.Mono)]
         public void TC_AbsolutePath_Transform(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>

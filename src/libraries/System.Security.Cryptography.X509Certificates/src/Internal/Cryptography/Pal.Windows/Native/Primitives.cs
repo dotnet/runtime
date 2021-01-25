@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -798,5 +797,12 @@ namespace Internal.Cryptography.Pal.Native
         public int CycleDetectionModulus;
         public IntPtr hExclusiveRoot;
         public IntPtr hExclusiveTrustedPeople;
+    }
+
+    [Flags]
+    internal enum CryptImportPublicKeyInfoFlags
+    {
+        NONE = 0,
+        CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG = 0x40000000,
     }
 }

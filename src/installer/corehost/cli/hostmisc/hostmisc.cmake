@@ -1,9 +1,9 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 include(${CMAKE_CURRENT_LIST_DIR}/configure.cmake)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories("${CLR_SRC_NATIVE_DIR}/common")
 
 if(CLR_CMAKE_TARGET_OS_ILLUMOS)
     add_definitions(-DTARGET_ILLUMOS)

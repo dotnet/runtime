@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
@@ -82,9 +81,6 @@ namespace System.Threading
         public static extern long CompareExchange(ref long location1, long value, long comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern double CompareExchange(ref double location1, double value, double comparand);
 
         [return: NotNullIfNotNull("location1")]
@@ -105,9 +101,7 @@ namespace System.Threading
             //
             // This is not entirely convincing due to lack of volatile.
             //
-#pragma warning disable 8654 // null problems; is there another way?
-            T result = null;
-#pragma warning restore 8654
+            T? result = null;
             // T : class so call the object overload.
             CompareExchange(ref Unsafe.As<T, object?>(ref location1), ref Unsafe.As<T, object?>(ref value), ref Unsafe.As<T, object?>(ref comparand), ref Unsafe.As<T, object?>(ref result!));
             return result;
@@ -116,10 +110,6 @@ namespace System.Threading
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
-
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr Exchange(ref IntPtr location1, IntPtr value);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -138,9 +128,7 @@ namespace System.Threading
             //
             // This is not entirely convincing due to lack of volatile.
             //
-#pragma warning disable 8654 // null problems; is there another way?
-            T result = null;
-#pragma warning restore 8654
+            T? result = null;
             // T : class so call the object overload.
             Exchange(ref Unsafe.As<T, object?>(ref location1), ref Unsafe.As<T, object?>(ref value), ref Unsafe.As<T, object?>(ref result!));
             return result;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build.Framework;
 using System;
@@ -35,7 +34,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             string nethostName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost");
             NethostPath = Path.Combine(Path.GetDirectoryName(NativeHostPath), nethostName);
             File.Copy(
-                Path.Combine(RepoDirectories.CorehostPackages, nethostName),
+                Path.Combine(RepoDirectories.HostArtifacts, nethostName),
                 NethostPath);
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -192,6 +191,7 @@ namespace System.Security.Cryptography
             //
             // This is called via PRF, which turns (label || seed) into seed.
 
+#if NETFRAMEWORK || NETCOREAPP3_0
             byte[] secretTmp = new byte[secret.Length];
 
             // Keep secretTmp pinned the whole time it has a secret in it, so it
@@ -202,6 +202,9 @@ namespace System.Security.Cryptography
 
                 try
                 {
+#else
+                    ReadOnlySpan<byte> secretTmp = secret;
+#endif
                     Span<byte> retSpan = ret;
 
                     using (IncrementalHash hasher = IncrementalHash.CreateHMAC(algorithmName, secretTmp))
@@ -249,12 +252,14 @@ namespace System.Security.Cryptography
                             }
                         }
                     }
+#if NETFRAMEWORK || NETCOREAPP3_0
                 }
                 finally
                 {
                     Array.Clear(secretTmp, 0, secretTmp.Length);
                 }
             }
+#endif
         }
     }
 }

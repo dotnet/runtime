@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Collections;
@@ -13,18 +12,18 @@ namespace System.DirectoryServices.ActiveDirectory
     public class ConfigurationSet
     {
         // Private Variables
-        private readonly DirectoryContext _context = null;
-        private readonly DirectoryEntryManager _directoryEntryMgr = null;
-        private bool _disposed = false;
+        private readonly DirectoryContext _context;
+        private readonly DirectoryEntryManager _directoryEntryMgr;
+        private bool _disposed;
 
         // variables corresponding to public properties
-        private readonly string _configSetName = null;
-        private ReadOnlySiteCollection _cachedSites = null;
-        private AdamInstanceCollection _cachedADAMInstances = null;
-        private ApplicationPartitionCollection _cachedApplicationPartitions = null;
-        private ActiveDirectorySchema _cachedSchema = null;
-        private AdamInstance _cachedSchemaRoleOwner = null;
-        private AdamInstance _cachedNamingRoleOwner = null;
+        private readonly string _configSetName;
+        private ReadOnlySiteCollection _cachedSites;
+        private AdamInstanceCollection _cachedADAMInstances;
+        private ApplicationPartitionCollection _cachedApplicationPartitions;
+        private ActiveDirectorySchema _cachedSchema;
+        private AdamInstance _cachedSchemaRoleOwner;
+        private AdamInstance _cachedNamingRoleOwner;
         private ReplicationSecurityLevel _cachedSecurityLevel = (ReplicationSecurityLevel)(-1);
 
         // 4 minutes timeout for locating an ADAM instance in the configset

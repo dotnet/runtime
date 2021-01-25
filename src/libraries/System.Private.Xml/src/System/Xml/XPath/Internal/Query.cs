@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
@@ -54,9 +54,9 @@ namespace MS.Internal.Xml.XPath
         public virtual void SetXsltContext(XsltContext context) { }
 
         public abstract object Evaluate(XPathNodeIterator nodeIterator);
-        public abstract XPathNavigator Advance();
+        public abstract XPathNavigator? Advance();
 
-        public virtual XPathNavigator MatchNode(XPathNavigator current)
+        public virtual XPathNavigator? MatchNode(XPathNavigator? current)
         {
             throw XPathException.Create(SR.Xp_InvalidPattern);
         }
@@ -66,7 +66,8 @@ namespace MS.Internal.Xml.XPath
         public virtual QueryProps Properties { get { return QueryProps.Merge; } }
 
         // ----------------- Helper methods -------------
-        public static Query Clone(Query input)
+        [return: NotNullIfNotNull("input")]
+        public static Query? Clone(Query? input)
         {
             if (input != null)
             {
@@ -75,7 +76,8 @@ namespace MS.Internal.Xml.XPath
             return null;
         }
 
-        protected static XPathNodeIterator Clone(XPathNodeIterator input)
+        [return: NotNullIfNotNull("input")]
+        protected static XPathNodeIterator? Clone(XPathNodeIterator? input)
         {
             if (input != null)
             {
@@ -84,7 +86,8 @@ namespace MS.Internal.Xml.XPath
             return null;
         }
 
-        protected static XPathNavigator Clone(XPathNavigator input)
+        [return: NotNullIfNotNull("input")]
+        protected static XPathNavigator? Clone(XPathNavigator? input)
         {
             if (input != null)
             {

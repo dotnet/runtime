@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable CS0067 // events are declared but not used
 
@@ -21,7 +20,6 @@ namespace System
     public sealed partial class AppDomain : MarshalByRefObject
     {
         private static readonly AppDomain s_domain = new AppDomain();
-        private readonly object _forLock = new object();
         private IPrincipal? _defaultPrincipal;
         private PrincipalPolicy _principalPolicy = PrincipalPolicy.NoPrincipal;
         private Func<IPrincipal>? s_getWindowsPrincipal;
@@ -37,6 +35,7 @@ namespace System
 
         public AppDomainSetup SetupInformation => new AppDomainSetup();
 
+        [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public PermissionSet PermissionSet => new PermissionSet(PermissionState.Unrestricted);
 
         public event UnhandledExceptionEventHandler? UnhandledException
@@ -272,14 +271,10 @@ namespace System
                 throw new ArgumentNullException(nameof(principal));
             }
 
-            lock (_forLock)
+            // Set the principal while checking it has not been set previously.
+            if (Interlocked.CompareExchange(ref _defaultPrincipal, principal, null) is not null)
             {
-                // Check that principal has not been set previously.
-                if (_defaultPrincipal != null)
-                {
-                    throw new SystemException(SR.AppDomain_Policy_PrincipalTwice);
-                }
-                _defaultPrincipal = principal;
+                throw new SystemException(SR.AppDomain_Policy_PrincipalTwice);
             }
         }
 
@@ -406,7 +401,9 @@ namespace System
 
         // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
         [DynamicDependency("GetDefaultInstance", "System.Security.Principal.GenericPrincipal", "System.Security.Claims")]
+#if TARGET_WINDOWS
         [DynamicDependency("GetDefaultInstance", "System.Security.Principal.WindowsPrincipal", "System.Security.Principal.Windows")]
+#endif
         internal IPrincipal? GetThreadPrincipal()
         {
             IPrincipal? principal = _defaultPrincipal;

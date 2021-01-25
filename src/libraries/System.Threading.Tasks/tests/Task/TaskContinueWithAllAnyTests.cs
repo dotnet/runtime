@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System;
@@ -778,7 +777,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
     public sealed class TaskContinueWithAllAnyTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest0()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -789,7 +788,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest1()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -802,7 +801,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest2()
         {
@@ -818,7 +817,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest3()
         {
@@ -832,7 +831,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest4()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -843,7 +842,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest5()
         {
@@ -857,7 +856,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest6()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -872,7 +871,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest7()
         {
@@ -888,7 +887,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest8()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Cancelled);
@@ -899,7 +898,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest9()
         {
@@ -913,7 +912,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest10()
         {
@@ -929,7 +928,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest11()
         {
@@ -946,7 +945,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest12()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -956,7 +955,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             TaskContinueWithAllAnyTest test = new TaskContinueWithAllAnyTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest13()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -969,7 +968,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest14()
         {
@@ -985,7 +984,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest15()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -997,7 +996,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest16()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -1009,7 +1008,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest17()
         {
@@ -1023,7 +1022,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest18()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -1038,7 +1037,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest19()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryLight);
@@ -1051,7 +1050,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest20()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -1062,7 +1061,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest21()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Cancelled);
@@ -1073,7 +1072,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest22()
         {
@@ -1087,7 +1086,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest23()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.VeryLight);
@@ -1100,7 +1099,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest24()
         {
@@ -1116,7 +1115,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest25()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Medium);
@@ -1127,7 +1126,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest26()
         {
@@ -1148,7 +1147,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest27()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -1165,7 +1164,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest28()
         {
@@ -1186,7 +1185,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest29()
         {
@@ -1207,7 +1206,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest30()
         {
@@ -1227,7 +1226,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             TaskContinueWithAllAnyTest test = new TaskContinueWithAllAnyTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest31()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -1239,7 +1238,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             TaskContinueWithAllAnyTest test = new TaskContinueWithAllAnyTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest32()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -1251,7 +1250,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             TaskContinueWithAllAnyTest test = new TaskContinueWithAllAnyTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest33()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -1263,7 +1262,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             TaskContinueWithAllAnyTest test = new TaskContinueWithAllAnyTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest34()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Cancelled);
@@ -1274,7 +1273,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             TaskContinueWithAllAnyTest test = new TaskContinueWithAllAnyTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest35()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -1285,7 +1284,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             TaskContinueWithAllAnyTest test = new TaskContinueWithAllAnyTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest36()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -1298,7 +1297,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskContinueWithAllAnyTest37()
         {
             TaskInfo node1 = new TaskInfo(WorkloadType.Exceptional);
@@ -1311,7 +1310,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest38()
         {
@@ -1324,7 +1323,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest39()
         {

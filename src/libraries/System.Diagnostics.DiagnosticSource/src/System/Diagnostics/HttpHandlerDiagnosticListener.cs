@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -730,7 +729,7 @@ namespace System.Diagnostics
                 s_coreHeadersAccessor == null)
             {
                 // If anything went wrong here, just return false. There is nothing we can do.
-                throw new InvalidOperationException("Unable to initialize all required reflection objects");
+                throw new InvalidOperationException(SR.UnableToInitialize);
             }
         }
 
@@ -740,7 +739,7 @@ namespace System.Diagnostics
             if (servicePointTableField == null)
             {
                 // If anything went wrong here, just return false. There is nothing we can do.
-                throw new InvalidOperationException("Unable to access the ServicePointTable field");
+                throw new InvalidOperationException(SR.UnableAccessServicePointTable);
             }
 
             Hashtable originalTable = servicePointTableField.GetValue(null) as Hashtable;
@@ -807,7 +806,7 @@ namespace System.Diagnostics
         private const string TraceStateHeaderName = "tracestate";
 
         // Fields for controlling initialization of the HttpHandlerDiagnosticListener singleton
-        private bool initialized = false;
+        private bool initialized;
 
         // Fields for reflection
         private static FieldInfo s_connectionGroupListField;

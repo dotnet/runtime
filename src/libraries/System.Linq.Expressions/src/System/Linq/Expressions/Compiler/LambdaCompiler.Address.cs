@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -132,7 +131,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitMemberAddress(MemberInfo member, Type? objectType)
         {
             FieldInfo? field = member as FieldInfo;
-            if ((object?)field != null)
+            if (field is not null)
             {
                 // Verifiable code may not take the address of an init-only field.
                 // If we are asked to do so then get the value out of the field, stuff it
@@ -261,7 +260,7 @@ namespace System.Linq.Expressions.Compiler
         private WriteBack? AddressOfWriteBack(MemberExpression node)
         {
             var property = node.Member as PropertyInfo;
-            if ((object?)property == null || !property.CanWrite)
+            if (property is null || !property.CanWrite)
             {
                 return null;
             }

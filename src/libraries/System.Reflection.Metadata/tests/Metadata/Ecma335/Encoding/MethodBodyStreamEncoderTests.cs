@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Reflection.Metadata.Tests;
@@ -374,7 +373,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             }
         }
 
-        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/24948")]
+        [Fact]
         public unsafe void LocAlloc()
         {
             var streamBuilder = new BlobBuilder();
@@ -419,7 +418,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             }, bodyBytes);
         }
 
-        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/24948")]
+        [Fact]
         public unsafe void LocAlloc_WithInstructionEncoder()
         {
             var streamBuilder = new BlobBuilder();

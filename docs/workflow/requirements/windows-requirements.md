@@ -10,7 +10,7 @@ You must install several components to build the dotnet/runtime repository. Thes
 
 ## Enable Long Paths
 
-The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
+The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
 
 If using Git for Windows you might need to also configure long paths there. Using an admin terminal simply type:
 ```cmd
@@ -19,22 +19,22 @@ git config --system core.longpaths true
 
 ## Visual Studio
 
-- Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community version is completely free.
+- Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community edition is available free of charge.
 
 Visual Studio 2019 installation process:
 - It's recommended to use 'Workloads' installation approach. The following are the minimum requirements:
   - .NET Desktop Development with all default components.
   - Desktop Development with C++ with all default components.
-- To build for Arm32 or Arm64, make sure that you have the right architecture specific compilers installed:
-  - In addition, ensure you install the ARM tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM build tools" (v14.23 or newer).
-  - Also, ensure you install the ARM64 tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.23 or newer)".
+- To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section:
+  - For Arm32, check the box for "MSVC v142 - VS 2019 C++ ARM build tools (v14.23 or newer)".
+  - For Arm64, check the box for "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.23 or newer)".
 - To build the tests, you will need some additional components:
   - Windows 10 SDK component version 10.0.18362 or newer. This component is installed by default as a part of 'Desktop Development with C++' workload.
   - C++/CLI support for v142 build tools (v14.23 or newer)
 
 A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2019#import-a-configuration) to install all necessary components.
 
-The dotnet/runtime repository requires at least Visual Studio 2019 16.6 Preview 2.
+The dotnet/runtime repository requires at least Visual Studio 2019 16.6.
 
 ## CMake
 
@@ -42,7 +42,13 @@ The dotnet/runtime repository requires at least Visual Studio 2019 16.6 Preview 
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.
   The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
-The dotnet/runtime repository requires at least CMake 3.15.5.
+The dotnet/runtime repository recommends using CMake 3.16.0 or newer, but works with CMake 3.15.5.
+
+## Ninja (optional)
+
+- Install Ninja in one of the two following ways
+  - [Download the executable](https://github.com/ninja-build/ninja/releases) and add its location to [the Default PATH variable](#adding-to-the-default-path-variable).
+  - [Install via a package manager](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages), which should automatically add it to the PATH environment variable.
 
 ## Python
 

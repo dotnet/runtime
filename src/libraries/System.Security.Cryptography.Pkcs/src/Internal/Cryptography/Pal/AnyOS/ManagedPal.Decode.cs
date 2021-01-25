@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -17,7 +17,7 @@ namespace Internal.Cryptography.Pal.AnyOS
     internal sealed partial class ManagedPkcsPal : PkcsPal
     {
         public override DecryptorPal Decode(
-            byte[] encodedMessage,
+            ReadOnlySpan<byte> encodedMessage,
             out int version,
             out ContentInfo contentInfo,
             out AlgorithmIdentifier contentEncryptionAlgorithm,
@@ -25,20 +25,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             out CryptographicAttributeObjectCollection unprotectedAttributes)
         {
             // Read using BER because the CMS specification says the encoding is BER.
-            AsnValueReader reader = new AsnValueReader(encodedMessage, AsnEncodingRules.BER);
-
-            ContentInfoAsn.Decode(
-                ref reader,
-                encodedMessage,
-                out ContentInfoAsn parsedContentInfo);
-
-            if (parsedContentInfo.ContentType != Oids.Pkcs7Enveloped)
-            {
-                throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
-            }
-
-            byte[] copy = parsedContentInfo.Content.ToArray();
-
+            byte[] copy = CopyContent(encodedMessage);
             EnvelopedDataAsn data = EnvelopedDataAsn.Decode(copy, AsnEncodingRules.BER);
 
             version = data.Version;
@@ -89,6 +76,32 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
 
             return new ManagedDecryptorPal(copy, data, new RecipientInfoCollection(recipientInfos));
+        }
+
+        private static byte[] CopyContent(ReadOnlySpan<byte> encodedMessage)
+        {
+            unsafe
+            {
+                fixed (byte* pin = encodedMessage)
+                {
+                    using (var manager = new PointerMemoryManager<byte>(pin, encodedMessage.Length))
+                    {
+                        AsnValueReader reader = new AsnValueReader(encodedMessage, AsnEncodingRules.BER);
+
+                        ContentInfoAsn.Decode(
+                            ref reader,
+                            manager.Memory,
+                            out ContentInfoAsn parsedContentInfo);
+
+                        if (parsedContentInfo.ContentType != Oids.Pkcs7Enveloped)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
+                        }
+
+                        return parsedContentInfo.Content.ToArray();
+                    }
+                }
+            }
         }
     }
 }

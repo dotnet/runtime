@@ -7,6 +7,7 @@ parameters:
   helixType: '(unspecified)'
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   liveLibrariesBuildConfig: ''
   stagedBuild: false
@@ -17,6 +18,7 @@ parameters:
   condition: true
   continueOnError: false
   dependsOn: ''
+  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
@@ -34,6 +36,7 @@ jobs:
     name: ${{ parameters.name }}
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
@@ -43,6 +46,7 @@ jobs:
     condition: and(succeeded(), ${{ parameters.condition }})
     continueOnError: ${{ parameters.continueOnError }}
     dependsOn: ${{ parameters.dependsOn }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     displayName: ${{ parameters.displayName }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
@@ -57,21 +61,40 @@ jobs:
       - name: testArtifactRootName
         value: ${{ parameters.Group }}${{ parameters.Subgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
 
-    - name: coreClrRepoRoot
-      value: '$(Build.SourcesDirectory)/src/coreclr'
-
-    - name: coreClrRepoRootDir
-      value: '$(coreClrRepoRoot)$(dir)'
-
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
-     
+
     # Build product defines what we are trying to build, either coreclr or mono
     - name: buildProductArtifactName
       value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - name: buildCrossDacArtifactName
+      value: CoreCLRCrossDacArtifacts
+
+    - name: crossDacArtifactPath
+      value: $(Build.SourcesDirectory)/artifacts/$(buildCrossDacArtifactName)
+
+    - name: buildMuslDacRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/alpine.$(archType).$(buildConfigUpper)'
+
+    - name: buildMuslDacStagingPath
+      value: '$(crossDacArtifactPath)/Linux_musl.$(archType).$(buildConfigUpper)'
+
+    - name: buildLinuxDacRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/Linux.$(archType).$(buildConfigUpper)'
+
+    - name: buildLinuxDacStagingPath
+      value: '$(crossDacArtifactPath)/Linux.$(archType).$(buildConfigUpper)'
+
+    - name: crossDacHostArch
+      value: x64
+
+    - ${{ if eq(parameters.archType, 'arm') }}:
+      - name: crossDacHostArch
+        value: x86
 
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName
@@ -104,11 +127,12 @@ jobs:
     - name: priorityArg
       value: ''
 
-    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
+    - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter')) }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: priorityArg
           value: 'priority1'
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: priorityArg
           value: '-priority=1'
 

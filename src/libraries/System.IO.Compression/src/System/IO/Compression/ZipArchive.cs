@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 // Zip Spec here: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
@@ -369,14 +368,7 @@ namespace System.IO.Compression
 
                 if (value != null &&
                         (value.Equals(Encoding.BigEndianUnicode)
-                        || value.Equals(Encoding.Unicode)
-#if FEATURE_UTF32
-                        || value.Equals(Encoding.UTF32)
-#endif // FEATURE_UTF32
-#if FEATURE_UTF7
-                        || value.Equals(Encoding.UTF7)
-#endif // FEATURE_UTF7
-                        ))
+                        || value.Equals(Encoding.Unicode)))
                 {
                     throw new ArgumentException(SR.EntryNameEncodingNotSupported, nameof(EntryNameEncoding));
                 }

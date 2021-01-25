@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Globalization;
@@ -11,12 +10,12 @@ namespace System.Net
     // _SecPkgInfoW in sspi.h.
     internal class SecurityPackageInfoClass
     {
-        internal int Capabilities = 0;
-        internal short Version = 0;
-        internal short RPCID = 0;
-        internal int MaxToken = 0;
-        internal string? Name = null;
-        internal string? Comment = null;
+        internal int Capabilities;
+        internal short Version;
+        internal short RPCID;
+        internal int MaxToken;
+        internal string? Name;
+        internal string? Comment;
 
         /*
             This is to support SSL with no client cert.
@@ -28,12 +27,12 @@ namespace System.Net
         {
             if (safeHandle.IsInvalid)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Invalid handle: {safeHandle}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Invalid handle: {safeHandle}");
                 return;
             }
 
             IntPtr unmanagedAddress = safeHandle.DangerousGetHandle() + (sizeof(SecurityPackageInfo) * index);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"unmanagedAddress: {unmanagedAddress}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"unmanagedAddress: {unmanagedAddress}");
 
             SecurityPackageInfo* pSecurityPackageInfo = (SecurityPackageInfo*)unmanagedAddress;
 
@@ -48,17 +47,17 @@ namespace System.Net
             if (unmanagedString != IntPtr.Zero)
             {
                 Name = Marshal.PtrToStringUni(unmanagedString);
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Name: {Name}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Name: {Name}");
             }
 
             unmanagedString = pSecurityPackageInfo->Comment;
             if (unmanagedString != IntPtr.Zero)
             {
                 Comment = Marshal.PtrToStringUni(unmanagedString);
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Comment: {Comment}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Comment: {Comment}");
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, this.ToString());
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, this.ToString());
         }
 
         public override string ToString()

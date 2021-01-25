@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -96,8 +95,8 @@ namespace System.Linq.Parallel
 
             protected override bool MoveNextCore(ref long currentElement)
             {
-                TSource elementUnused = default(TSource)!;
-                TKey keyUnused = default(TKey)!;
+                TSource? elementUnused = default(TSource);
+                TKey? keyUnused = default(TKey);
 
                 QueryOperatorEnumerator<TSource, TKey> source = _source;
                 if (source.MoveNext(ref elementUnused, ref keyUnused))

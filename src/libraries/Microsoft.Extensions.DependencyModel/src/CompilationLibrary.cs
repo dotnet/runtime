@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -62,7 +61,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (customResolvers?.Length > 0)
             {
-                foreach (var resolver in customResolvers)
+                foreach (ICompilationAssemblyResolver resolver in customResolvers)
                 {
                     if (resolver.TryResolveAssemblyPaths(this, assemblies))
                     {
@@ -78,7 +77,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (!resolver.TryResolveAssemblyPaths(this, assemblies))
             {
-                throw new InvalidOperationException($"Cannot find compilation library location for package '{Name}'");
+                throw new InvalidOperationException(SR.Format(SR.LibraryLocationNotFound, Name));
             }
             return assemblies;
         }

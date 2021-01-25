@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -27,8 +26,8 @@ namespace System.Security.AccessControl
         #region Private Members
 
         private readonly ResourceType _resourceType;
-        private readonly ExceptionFromErrorCode? _exceptionFromErrorCode = null;
-        private readonly object? _exceptionContext = null;
+        private readonly ExceptionFromErrorCode? _exceptionFromErrorCode;
+        private readonly object? _exceptionContext;
         private readonly uint ProtectedDiscretionaryAcl = 0x80000000;
         private readonly uint ProtectedSystemAcl = 0x40000000;
         private readonly uint UnprotectedDiscretionaryAcl = 0x20000000;

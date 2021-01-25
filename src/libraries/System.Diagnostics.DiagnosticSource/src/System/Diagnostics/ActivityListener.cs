@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
@@ -9,7 +8,7 @@ namespace System.Diagnostics
     /// <summary>
     /// Define the callback that can be used in <see cref="ActivityListener"/> to allow deciding to create the Activity objects and with what data state.
     /// </summary>
-    public delegate ActivityDataRequest GetRequestedData<T>(ref ActivityCreationOptions<T> options);
+    public delegate ActivitySamplingResult SampleActivity<T>(ref ActivityCreationOptions<T> options);
 
     /// <summary>
     /// ActivityListener allows listening to the start and stop Activity events and give the oppertunity to decide creating the Activity for sampling scenarios.
@@ -41,12 +40,12 @@ namespace System.Diagnostics
         /// <summary>
         /// Set or get the callback used to decide allowing creating <see cref="Activity"/> objects with specific data state.
         /// </summary>
-        public GetRequestedData<string>? GetRequestedDataUsingParentId { get; set; }
+        public SampleActivity<string>? SampleUsingParentId { get; set; }
 
         /// <summary>
         /// Set or get the callback used to decide allowing creating <see cref="Activity"/> objects with specific data state.
         /// </summary>
-        public GetRequestedData<ActivityContext>? GetRequestedDataUsingContext { get; set; }
+        public SampleActivity<ActivityContext>? Sample { get; set; }
 
         /// <summary>
         /// Dispose will unregister this <see cref="ActivityListener"/> object from listeneing to <see cref="Activity"/> events.

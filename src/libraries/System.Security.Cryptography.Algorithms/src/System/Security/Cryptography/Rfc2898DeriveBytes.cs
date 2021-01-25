@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using System.Text;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class Rfc2898DeriveBytes : DeriveBytes
     {
         private const int MinimumSaltSize = 8;
@@ -27,6 +27,9 @@ namespace System.Security.Cryptography
         private int _startIndex;
         private int _endIndex;
 
+        /// <summary>
+        /// Gets the hash algorithm used for byte derivation.
+        /// </summary>
         public HashAlgorithmName HashAlgorithm { get; }
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations)
@@ -252,7 +255,7 @@ namespace System.Security.Cryptography
             if (_buffer != null)
                 Array.Clear(_buffer, 0, _buffer.Length);
             _buffer = new byte[_blockSize];
-            _block = 1;
+            _block = 0;
             _startIndex = _endIndex = 0;
         }
 
@@ -261,7 +264,12 @@ namespace System.Security.Cryptography
         // where i is the block number.
         private void Func()
         {
-            BinaryPrimitives.WriteUInt32BigEndian(_salt.AsSpan(_salt.Length - sizeof(uint)), _block);
+            // Block number is going to overflow, exceeding the maximum total possible bytes
+            // that can be extracted.
+            if (_block == uint.MaxValue)
+                throw new CryptographicException(SR.Cryptography_ExceedKdfExtractLimit);
+
+            BinaryPrimitives.WriteUInt32BigEndian(_salt.AsSpan(_salt.Length - sizeof(uint)), _block + 1);
             Debug.Assert(_blockSize == _buffer.Length);
 
             // The biggest _blockSize we have is from SHA512, which is 64 bytes.

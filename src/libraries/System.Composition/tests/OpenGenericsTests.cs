@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -65,7 +64,6 @@ namespace System.Composition.UnitTests
         private class ExportsBase<T> : SomeGenericType<T> { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CanExportBasicOpenGeneric()
         {
             var cc = CreateContainer(typeof(BasicRepository<>));
@@ -74,7 +72,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void OpenGenericProvidesMultipleInstantiations()
         {
             var cc = CreateContainer(typeof(BasicRepository<>));
@@ -84,7 +81,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void CanExportOpenGenericProperty()
         {
             var cc = CreateContainer(typeof(RepositoryProperty<>));
@@ -93,7 +89,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ASharedOpenGenericWithTwoExportsIsProvidedByASingleInstance()
         {
             var cc = CreateContainer(typeof(TwoGenericExports<>));
@@ -105,7 +100,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void APartWithMultipleGenericExportsIsOnlyDiscoveredOnce()
         {
             var cc = CreateContainer(typeof(BasicRepository<>), typeof(TwoGenericExports<>));
@@ -119,7 +113,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void MultipleGenericExportsCanBeSpecifiedAtTheClassLevel()
         {
             var cc = CreateContainer(typeof(FirstAndSecond<>));
@@ -130,7 +123,6 @@ namespace System.Composition.UnitTests
         // In future, the set of allowable generic type mappings will be expanded (see
         // ignored tests above).
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void TypesWithMismatchedGenericParameterListsAreDetectedDuringDiscovery()
         {
             var x = Assert.Throws<CompositionFailedException>(() => CreateContainer(typeof(RepositoryWithKey<,>)));
@@ -138,7 +130,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void TypesWithNonGenericExportsAreDetectedDuringDiscovery()
         {
             var x = Assert.Throws<CompositionFailedException>(() => CreateContainer(typeof(RepositoryWithNonGenericExport<>)));
@@ -146,7 +137,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void OpenGenericsCanExportSelf()
         {
             var cc = CreateContainer(typeof(ExportSelf<>));
@@ -155,7 +145,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void OpenGenericsCanExportBase()
         {
             var cc = CreateContainer(typeof(ExportsBase<>));

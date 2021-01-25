@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.Internal;
 using Xunit;
 
@@ -98,14 +96,8 @@ namespace Microsoft.Extensions.Caching.Memory
             var key = "myKey";
             var value = new object();
 
-            ExceptionAssert.ThrowsArgumentOutOfRange(() =>
-            {
-                var result = cache.Set(key, value, new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(-1)));
-            },
-            nameof(MemoryCacheEntryOptions.AbsoluteExpirationRelativeToNow),
-            "The relative expiration value must be positive.",
-            TimeSpan.FromMinutes(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(MemoryCacheEntryOptions.AbsoluteExpirationRelativeToNow), () =>
+                cache.Set(key, value, new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(-1))));
         }
 
         [Fact]
@@ -116,13 +108,8 @@ namespace Microsoft.Extensions.Caching.Memory
             var key = "myKey";
             var value = new object();
 
-            ExceptionAssert.ThrowsArgumentOutOfRange(() =>
-            {
-                var result = cache.Set(key, value, new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.Zero));
-            },
-            nameof(MemoryCacheEntryOptions.AbsoluteExpirationRelativeToNow),
-            "The relative expiration value must be positive.",
-            TimeSpan.Zero);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(MemoryCacheEntryOptions.AbsoluteExpirationRelativeToNow), () =>
+                cache.Set(key, value, new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.Zero)));
         }
 
         [Fact]
@@ -155,14 +142,8 @@ namespace Microsoft.Extensions.Caching.Memory
             var key = "myKey";
             var value = new object();
 
-            ExceptionAssert.ThrowsArgumentOutOfRange(() =>
-            {
-                var result = cache.Set(key, value, new MemoryCacheEntryOptions()
-                    .SetSlidingExpiration(TimeSpan.FromMinutes(-1)));
-            },
-            nameof(MemoryCacheEntryOptions.SlidingExpiration),
-            "The sliding expiration value must be positive.",
-            TimeSpan.FromMinutes(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(MemoryCacheEntryOptions.SlidingExpiration), () =>
+                cache.Set(key, value, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(-1))));
         }
 
         [Fact]
@@ -173,14 +154,8 @@ namespace Microsoft.Extensions.Caching.Memory
             var key = "myKey";
             var value = new object();
 
-            ExceptionAssert.ThrowsArgumentOutOfRange(() =>
-            {
-                var result = cache.Set(key, value, new MemoryCacheEntryOptions()
-                    .SetSlidingExpiration(TimeSpan.Zero));
-            },
-            nameof(MemoryCacheEntryOptions.SlidingExpiration),
-            "The sliding expiration value must be positive.",
-            TimeSpan.Zero);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(nameof(MemoryCacheEntryOptions.SlidingExpiration), () =>
+                cache.Set(key, value, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.Zero)));
         }
 
         [Fact]

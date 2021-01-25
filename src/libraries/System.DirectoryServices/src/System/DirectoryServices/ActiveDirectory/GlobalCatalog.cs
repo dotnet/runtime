@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -11,8 +10,8 @@ namespace System.DirectoryServices.ActiveDirectory
     public class GlobalCatalog : DomainController
     {
         // private variables
-        private ActiveDirectorySchema _schema = null;
-        private bool _disabled = false;
+        private ActiveDirectorySchema _schema;
+        private bool _disabled;
 
         #region constructors
         internal GlobalCatalog(DirectoryContext context, string globalCatalogName)

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -26,7 +25,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             TypeLib = typeLibDesc;
         }
 
-
         internal static ComTypeDesc FromITypeInfo(ITypeInfo typeInfo, TYPEATTR typeAttr)
         {
             switch (typeAttr.typekind)
@@ -40,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     ComTypeDesc typeDesc = new ComTypeDesc(typeInfo, null);
                     return typeDesc;
                 default:
-                    throw new InvalidOperationException("Attempting to wrap an unsupported enum type.");
+                    throw new InvalidOperationException(SR.UnsupportedEnum);
             }
         }
 

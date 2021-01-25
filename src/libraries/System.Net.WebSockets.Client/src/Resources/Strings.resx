@@ -191,4 +191,10 @@
   <data name="net_WebSockets_RemoteValidationCallbackNotSupported" xml:space="preserve">
     <value>ClientWebSocketOptions.RemoteCertificateValidationCallback is not supported on this platform.</value>
   </data>
+  <data name="net_WebSockets_Connection_Aborted" xml:space="preserve">
+    <value>Connection was aborted.</value>
+  </data>  
+  <data name="net_WebSockets_Invalid_Binary_Type" xml:space="preserve">
+    <value>WebSocket binary type '{0}' not supported.</value>
+  </data>   
 </root>

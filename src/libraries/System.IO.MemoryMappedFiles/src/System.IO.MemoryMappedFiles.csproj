@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.IO.MemoryMappedFiles</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>
+    <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileOptions.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAccess.cs" />
@@ -75,7 +75,7 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Windows.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"

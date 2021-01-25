@@ -15,7 +15,7 @@ Recommended reading to better understand this document:
 
 ### Determine what library
 
-- Propose a library for exposing it as part of the [API review process](http://aka.ms/apireview).
+- Propose a library for exposing it as part of the [API review process](https://aka.ms/apireview).
 - Keep in mind the API might be exposed in a reference assembly that
 doesn't match the identity of the implementation. There are many reasons for this but
 the primary reason is to abstract the runtime assembly identities across

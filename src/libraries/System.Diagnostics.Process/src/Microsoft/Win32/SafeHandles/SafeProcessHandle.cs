@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -20,7 +19,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 
-        internal SafeProcessHandle()
+        public SafeProcessHandle()
             : this(IntPtr.Zero)
         {
         }
@@ -34,12 +33,6 @@ namespace Microsoft.Win32.SafeHandles
             : base(ownsHandle)
         {
             SetHandle(existingHandle);
-        }
-
-        internal void InitialSetHandle(IntPtr h)
-        {
-            Debug.Assert(IsInvalid, "Safe handle should only be set once");
-            base.handle = h;
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace System.Resources.Extensions
     {
         // indicates if the types of resources saved will require the DeserializingResourceReader
         // in order to read them.
-        private bool _requiresDeserializingResourceReader = false;
+        private bool _requiresDeserializingResourceReader;
 
         // use hard-coded strings rather than typeof so that the version doesn't leak into resources files
         internal const string DeserializingResourceReaderFullyQualifiedName = "System.Resources.Extensions.DeserializingResourceReader, System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";

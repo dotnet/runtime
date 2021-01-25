@@ -1,0 +1,266 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include "resource.h"
+
+#ifndef TARGET_UNIX
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include <winresrc.h>
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+#endif // !TARGET_UNIX
+
+#define FX_VER_FILEDESCRIPTION_STR "Microsoft .NET Framework IL disassembler\0"
+
+#include <fxver.h>
+#include <fxver.rc>
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE
+BEGIN
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_USAGE_TITLE         L"ILDASM command line syntax"
+    IDS_USAGE_01            L"Usage: ildasm [options] <file_name> [options]\n\n"
+    IDS_USAGE_02            L"Options for output redirection:\n"
+    IDS_USAGE_03            L"  /OUT=<file name>    Direct output to file rather than to console.\n"
+    IDS_USAGE_04A           L"  /HTML               Output in HTML format (valid with /OUT option only).\n"
+    IDS_USAGE_04B           L"  /RTF                Output in rich text format (valid with /OUT option only).\n"
+    IDS_USAGE_05            L"Options for file/console output:\n"
+#ifdef OWNER_OPTION_ENABLED
+    IDS_USAGE_06            L"  /OWNER=<owner name> Set owner name to disassemble a protected PE file.\n"
+#endif
+    IDS_USAGE_07            L"  /BYTES              Show actual bytes (in hex) as instruction comments.\n"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_USAGE_08            L"  /RAWEH              Show exception handling clauses in raw form.\n"
+    IDS_USAGE_09            L"  /TOKENS             Show metadata tokens of classes and members.\n"
+    IDS_USAGE_10            L"  /SOURCE             Show original source lines as comments.\n"
+#ifdef _DEBUG
+    IDS_USAGE_10A           L"  /PRETTY             This option is obsolete and no longer supported.\n"
+#endif
+    IDS_USAGE_11            L"  /LINENUM            Include references to original source lines.\n"
+    IDS_USAGE_12            L"  /VISIBILITY=<vis>[+<vis>...]    Only disassemble the items with specified\n"
+    IDS_USAGE_13            L"          visibility. (<vis> = PUB | PRI | FAM | ASM | FAA | FOA | PSC)\n"
+    IDS_USAGE_14            L"  /PUBONLY            Only disassemble the public items (same as /VIS=PUB).\n"
+    IDS_USAGE_15            L"  /QUOTEALLNAMES      Include all names into single quotes.\n"
+    IDS_USAGE_15A           L"  /NOCA               Suppress output of custom attributes.\n"
+    IDS_USAGE_15B           L"  /CAVERBAL           Output CA blobs in verbal form (default - in binary form).\n"
+    IDS_USAGE_17            L"The following options are valid for file/console output only:\n"
+    IDS_USAGE_18            L"Options for EXE and DLL files:\n"
+    IDS_USAGE_19            L"  /UTF8               Use UTF-8 encoding for output (default - ANSI).\n"
+    IDS_USAGE_20            L"  /UNICODE            Use UNICODE encoding for output.\n"
+    IDS_USAGE_21            L"  /NOIL               Suppress IL assembler code output.\n"
+    IDS_USAGE_21A           L"  /FORWARD            Use forward class declaration.\n"
+    IDS_USAGE_21B           L"  /TYPELIST           Output full list of types (to preserve type ordering in round-trip).\n"
+    IDS_USAGE_21C           L"  /PROJECT            Display .NET projection view if input is a .winmd file.\n"
+    IDS_USAGE_22            L"  /HEADERS            Include file headers information in the output.\n"
+    IDS_USAGE_23            L"  /ITEM=<class>[::<method>[(<sig>)]  Disassemble the specified item only\n\n"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_USAGE_24            L"  /STATS              Include statistics on the image.\n"
+    IDS_USAGE_25            L"  /CLASSLIST          Include list of classes defined in the module.\n"
+    IDS_USAGE_26            L"  /ALL                Combination of /HEADER,/BYTES,/STATS,/CLASSLIST,/TOKENS\n\n"
+#ifndef TARGET_UNIX
+    IDS_USAGE_27            L"Options for EXE,DLL,OBJ and LIB files:\n"
+#else
+    IDS_USAGE_27            L""
+#endif // !TARGET_UNIX
+    IDS_USAGE_28            L"  /METADATA[=<specifier>] Show MetaData, where <specifier> is:\n"
+    IDS_USAGE_29            L"          MDHEADER    Show MetaData header information and sizes.\n"
+    IDS_USAGE_30            L"          HEX         Show more things in hex as well as words.\n"
+    IDS_USAGE_31            L"          CSV         Show the record counts and heap sizes.\n"
+    IDS_USAGE_32            L"          UNREX       Show unresolved externals.\n"
+#ifndef TARGET_UNIX
+    IDS_USAGE_33            L"          DEBUG       Show debug information in addition to other MetaData.\n"
+#else
+    IDS_USAGE_33            L""
+#endif // !TARGET_UNIX
+    IDS_USAGE_34            L"          SCHEMA      Show the MetaData header and schema information.\n"
+    IDS_USAGE_35            L"          RAW         Show the raw MetaData tables.\n"
+    IDS_USAGE_36            L"          HEAPS       Show the raw heaps.\n"
+    IDS_USAGE_37            L"          VALIDATE    Validate the consistency of the metadata.\n"
+#ifndef TARGET_UNIX
+    IDS_USAGE_38            L"Options for LIB files only:\n"
+    IDS_USAGE_39            L"  /OBJECTFILE=<obj_file_name> Show MetaData of a single object file in library\n"
+#else
+    IDS_USAGE_38            L""
+    IDS_USAGE_39            L""
+#endif // !TARGET_UNIX
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_USAGE_40            L"  /ALL        Combination of /HEADER, /BYTES, /TOKENS\n\n"
+    IDS_USAGE_41            L"\nOption key is '-' or '/', options are recognized by first 3 characters\n\n"
+    IDS_USAGE_42            L"Example:  ildasm /tok /byt myfile.exe /out=myfile.il\n\n"
+    IDS_USAGE_43            L"\n\nPress any key to close the console window..."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_E_INITLDR           L"error : PELoader initialization failed"
+    IDS_E_FILEOPEN          L"error : File '%s' not found or not a PE file"
+    IDS_E_NOCORHDR          L"error : '%s' has no valid CLR header and cannot be disassembled"
+    IDS_E_BADCORHDR         L"error : Bad CLR header, or the version of the file format is not supported"
+    IDS_E_OPENMD            L"error : Failed to open meta data"
+    IDS_E_COPYRIGHT         L"error : Copyrighted material - can not disassemble!"
+    IDS_E_DASMOK            L"*********** DISASSEMBLY COMPLETE ***********************"
+    IDS_E_PARTDASM          L"warning : THIS IS A PARTIAL DISASSEMBLY, NOT SUITABLE FOR RE-ASSEMBLING"
+    IDS_E_INSTRDT           L"error : Failed to create instruction decoding table"
+    IDS_E_NOCOMPR           L"error : Compression not supported"
+    IDS_E_CLSENUM           L"error : Unable to enumerate classes"
+    IDS_E_SELFNSTD          L"error : class %08X is nested in itself"
+    IDS_E_NOENCLOS          L"error : class %08X is nested in missing class %08x"
+    IDS_E_INVALIDTK         L"error :  invalid token (%08x)"
+    IDS_E_INVALIDRECORD     L"error : Invalid record (%08x)"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_E_UNEXPTYPE         L"error : unexpected token type, expected %02x, got %02x"
+    IDS_E_AUTOCA            L"--- The following custom attribute is added automatically, do not uncomment -------"
+    IDS_E_PARAMSEQNO        L"error : parameter %d has sequence number %d (0x%X), parameter info skipped"
+    IDS_E_METHBEG           L"Method begins at RVA 0x%x"
+    IDS_E_DASMERR           L"%s ********* ERROR DISASSEMBLING THE METHOD IL CODE ***********"
+    IDS_E_DASMNATIVE        L"Disassembly of native methods is not supported."
+    IDS_E_METHODRT          L"Method provided by Runtime"
+    IDS_E_NORVA             L"COULD NOT GET RVA"
+    IDS_E_MEMBRENUM         L"Unable to enum members"
+    IDS_E_ODDMEMBER         L"Unidentified member 0x%08X of class '%s'"
+    IDS_E_ENUMINIT          L"*** EnumInit(mdtInterfaceImpl) failed"
+    IDS_E_NODATA            L"No data."
+    IDS_E_VTFUTABLE         L"Failed to get vtable fix-up table."
+    IDS_E_BOGUSRVA          L"Bogus RVA for entry."
+    IDS_E_EATJTABLE         L"Failed to get export address table jumps table."
+    IDS_E_EATJSIZE          L"Error!  size of ExportAddressTableJumps %d not a multiple of reserved size %d"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_E_RESFLAGS          L"Error!  reserved flags need to be 0."
+    IDS_E_MIHENTRY          L"Failed to get vtable method data."
+    IDS_E_CODEMGRTBL        L"Failed to get Code Manager table."
+    IDS_E_IMPORTDATA        L"Failed to read import data."
+    IDS_E_COMIMAGE          L"Not a CLR image"
+    IDS_E_MDDETAILS         L"Unable to get MetaData details."
+    IDS_E_MISTART           L"================================= M E T A I N F O ================================================\n"
+    IDS_E_MIEND             L"================================= END OF METAINFO ================================================\n"
+    IDS_E_ONLYITEMS         L"Only shown items having accessibility:"
+    IDS_E_ROGUEPTR          L"ERROR: One of used pointers references undefined data (D_%8.8X)"
+    IDS_E_DECOMPRESS        L"Failed to decompress method"
+    IDS_E_COMPRESSED        L"Method is compressed"
+    IDS_E_CODESIZE          L"Code size       %d (0x%x)"
+    IDS_E_BOGUSLVSIG        L"******** ERROR: Bogus local variable signature (0x%08X) ***********"
+    IDS_E_INSTRDECOD        L"***Instruction decoding ERROR: %02X at position 0x%X (%d)"
+    IDS_E_INSTRTYPE         L"ERROR: Unknown type 0x%X of instruction 0x%X"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_E_ARGINDEX          L"%-10s %d // ERROR: invalid arg index (>=%d)"
+    IDS_E_LVINDEX           L"%-10s %d // ERROR: invalid local var index (>=%d)"
+    IDS_E_SECTHEADER        L"Error: no section header for RVA 0x%x, defaulting to empty string"
+    IDS_E_BADTOKENTYPE      L"%-10s 0x%8.8X // ERROR: invalid token type"
+    IDS_E_MDAIMPORT         L"ERROR: failed to obtain IMetaDataAssemblyImport (0x%08X)"
+    IDS_E_MDAFROMMDI        L"ERROR: failed to obtain IMetaDataAssemblyImport from IMDInternalImport (0x%08X)"
+    IDS_E_MDIIMPORT         L"ERROR: failed to obtain IMDInternalImport (0x%08X)"
+    IDS_E_NOMANIFEST        L"Module contains no Manifest data"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_E_MULTIPLEINPUT     L"MULTIPLE INPUT FILES SPECIFIED\n\n"
+    IDS_E_INVALIDOPTION     L"INVALID COMMAND LINE OPTION: %s\n\n"
+    IDS_PROGRESSBOX         L"ProgressBox"
+    IDS_DISASSEMBLING       L"Disassembling"
+    IDS_PB_FILE             L"File  %s"
+    IDS_PB_FILE1            L"File ...%s"
+    IDS_PB_TOFILE           L"To file  %s"
+    IDS_PB_TOFILE1          L"To file ...%s"
+    IDS_PB_CLASSESDONE      L"%d classes, %d done"
+    IDS_PB_GLOBALSDONE      L"%d global methods, %d done"
+    IDS_PB_CANCEL           L"Cancel"
+    IDS_PB_WRITINGDATA      L"Writing global data"
+    IDS_W_CREATEDW32RES     L"WARNING: Created Win32 resource file %s"
+    IDS_E_CORRUPTW32RES     L"ERROR: Corrupt Win32 resources"
+    IDS_E_CANTOPENW32RES    L"ERROR: Unable to open file %s"
+    IDS_E_CANTACCESSW32RES  L"ERROR: Unable to access Win32 resources"
+    IDS_CANTVIEW_TX         L"Can't view %s::%s(%s)"
+    IDS_CANTVIEW_HD         L"Can't View IL"
+    IDS_ONLYPEINGUI         L"ILDASM supports only PE files in graphic mode"
+    IDS_BADFILETYPE         L"Invalid File Type"
+    IDS_E_CANTOPENOUT       L"Unable to open '%s' for output."
+    IDS_E_CANTCREATEPROC    L"Failed to CreateProcess\n\n"
+    IDS_TEXTTOOLARGEFORGUI  L"Text too large for GUI. Use File/Dump menu entry to disassemble to file."
+    IDS_FILTER_IN           L"PE file (*.exe,*.dll,*.mod,*.mdl,*.winmd)\t*.exe;*.dll;*.mod;*.mdl;*.winmd\tAny type (*.*)\t*.*\t\0"
+    IDS_FILTER_OUT          L"IL file (*.il)\t*.il\tText file (*.txt) \t*.txt\tAny type (*.*)\t*.*\t\0"
+    IDS_FILTER_OUT2         L"Text file (*.txt) \t*.txt\tAny type (*.*)\t*.*\t\0"
+    IDS_CANNOTOPENFILE      L"Cannot open file"
+    IDS_UNABLETOREGLIBS     L"Unable to register libraries!"
+    IDS_ERRORREOPENINGFILE  L"Error reopening the file with FileToken 0x%08X"
+    IDS_ASSEMNAMETOOLONG    L"error *** Assembly name too long, truncated to 1023 characters"
+    IDS_ASMREFNAMETOOLONG   L"error *** AssemblyRef name too long, truncated to 1023 characters"
+    IDS_ERRORCAPTION        L"ERROR"
+    IDS_ILDASM_TITLE        L"Microsoft (R) .NET Framework IL Disassembler"
+    IDS_VERSION             L"Version %s"
+    IDS_W_CREATEDMRES       L"WARNING: managed resource file %s created"
+    IDS_E_READINGMRES       L"ERROR: reading managed resource %s at offset 0x%X"
+    IDS_RTL                 L"RTL_False"    // change this to RTL_True on Arabic/Hebrew system
+    IDS_E_SUPPRESSED        L"Protected module -- cannot disassemble"
+    IDS_LEGALCOPYRIGHT      L"\251 Microsoft Corporation.  All rights reserved."
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+#ifndef TARGET_UNIX
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
+#endif    // !TARGET_UNIX

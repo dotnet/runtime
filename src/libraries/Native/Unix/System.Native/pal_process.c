@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_process.h"
@@ -29,8 +28,17 @@
 #include <sched.h>
 #endif
 
-// Validate that our Signals enum values are correct for the platform
-c_static_assert(PAL_SIGKILL == SIGKILL);
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#endif
+
+#include <getexepath.h>
 
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
@@ -519,19 +527,6 @@ done:;
 #endif
 }
 
-FILE* SystemNative_POpen(const char* command, const char* type)
-{
-    assert(command != NULL);
-    assert(type != NULL);
-    return popen(command, type);
-}
-
-int32_t SystemNative_PClose(FILE* stream)
-{
-    assert(stream != NULL);
-    return pclose(stream);
-}
-
 // Each platform type has it's own RLIMIT values but the same name, so we need
 // to convert our standard types into the platform specific ones.
 static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
@@ -567,6 +562,10 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
+#if !defined(RLIMIT_RSS) || !(defined(RLIMIT_MEMLOCK) || defined(RLIMIT_VMEM)) || !defined(RLIMIT_NPROC)
+        default:
+            break;
+#endif
     }
 
     assert_msg(false, "Unknown RLIMIT value", (int)value);
@@ -654,6 +653,26 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
+    switch (signal)
+    {
+        case PAL_NONE:
+             signal = 0;
+             break;
+
+        case PAL_SIGKILL:
+             signal = SIGKILL;
+             break;
+
+        case PAL_SIGSTOP:
+             signal = SIGSTOP;
+             break;
+
+        default:
+             assert_msg(false, "Unknown signal", signal);
+             errno = EINVAL;
+             return -1;
+    }
+
     return kill(pid, signal);
 }
 
@@ -821,6 +840,14 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 
     return sched_setaffinity(pid, sizeof(cpu_set_t), &set);
 }
+#else
+int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+}
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
@@ -853,4 +880,17 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 
     return result;
 }
+#else
+int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
+{
+    (void)pid;
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+}
 #endif
+
+char* SystemNative_GetProcessPath()
+{
+    return getexepath();
+}

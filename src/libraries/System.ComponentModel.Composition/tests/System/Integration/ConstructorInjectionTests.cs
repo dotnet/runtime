@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -13,7 +12,6 @@ namespace Tests.Integration
     public class ConstructorInjectionTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SimpleConstructorInjection()
         {
             var container = ContainerFactory.Create();
@@ -178,7 +176,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportMany_ConstructorParameter_OnNonAssiganbleType_ShouldThrowCompositionException()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(InvalidImportManyCI));

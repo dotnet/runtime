@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Primitives" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -83,15 +82,7 @@ namespace System.Text.Json.Serialization.Converters
                     return default;
                 }
 
-                // Try parsing case sensitive first
-                string? enumString = reader.GetString();
-                if (!Enum.TryParse(enumString, out T value)
-                    && !Enum.TryParse(enumString, ignoreCase: true, out value))
-                {
-                    ThrowHelper.ThrowJsonException();
-                    return default;
-                }
-                return value;
+                return ReadWithQuotes(ref reader);
             }
 
             if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
@@ -128,35 +119,28 @@ namespace System.Text.Json.Serialization.Converters
                         return Unsafe.As<long, T>(ref int64);
                     }
                     break;
-
-                // When utf8reader/writer will support all primitive types we should remove custom bound checks
-                // https://github.com/dotnet/runtime/issues/29000
                 case TypeCode.SByte:
-                    if (reader.TryGetInt32(out int byte8) && JsonHelpers.IsInRangeInclusive(byte8, sbyte.MinValue, sbyte.MaxValue))
+                    if (reader.TryGetSByte(out sbyte byte8))
                     {
-                        sbyte byte8Value = (sbyte)byte8;
-                        return Unsafe.As<sbyte, T>(ref byte8Value);
+                        return Unsafe.As<sbyte, T>(ref byte8);
                     }
                     break;
                 case TypeCode.Byte:
-                    if (reader.TryGetUInt32(out uint ubyte8) && JsonHelpers.IsInRangeInclusive(ubyte8, byte.MinValue, byte.MaxValue))
+                    if (reader.TryGetByte(out byte ubyte8))
                     {
-                        byte ubyte8Value = (byte)ubyte8;
-                        return Unsafe.As<byte, T>(ref ubyte8Value);
+                        return Unsafe.As<byte, T>(ref ubyte8);
                     }
                     break;
                 case TypeCode.Int16:
-                    if (reader.TryGetInt32(out int int16) && JsonHelpers.IsInRangeInclusive(int16, short.MinValue, short.MaxValue))
+                    if (reader.TryGetInt16(out short int16))
                     {
-                        short shortValue = (short)int16;
-                        return Unsafe.As<short, T>(ref shortValue);
+                        return Unsafe.As<short, T>(ref int16);
                     }
                     break;
                 case TypeCode.UInt16:
-                    if (reader.TryGetUInt32(out uint uint16) && JsonHelpers.IsInRangeInclusive(uint16, ushort.MinValue, ushort.MaxValue))
+                    if (reader.TryGetUInt16(out ushort uint16))
                     {
-                        ushort ushortValue = (ushort)uint16;
-                        return Unsafe.As<ushort, T>(ref ushortValue);
+                        return Unsafe.As<ushort, T>(ref uint16);
                     }
                     break;
             }
@@ -316,6 +300,92 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return converted;
+        }
+
+        internal override T ReadWithQuotes(ref Utf8JsonReader reader)
+        {
+            string? enumString = reader.GetString();
+
+            // Try parsing case sensitive first
+            if (!Enum.TryParse(enumString, out T value)
+                && !Enum.TryParse(enumString, ignoreCase: true, out value))
+            {
+                ThrowHelper.ThrowJsonException();
+            }
+
+            return value;
+        }
+
+        internal override void WriteWithQuotes(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            // An EnumConverter that invokes this method
+            // can only be created by JsonSerializerOptions.GetDictionaryKeyConverter
+            // hence no naming policy is expected.
+            Debug.Assert(_namingPolicy == null);
+
+            ulong key = ConvertToUInt64(value);
+
+            if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
+            {
+                writer.WritePropertyName(formatted);
+                return;
+            }
+
+            string original = value.ToString();
+            if (IsValidIdentifier(original))
+            {
+                // We are dealing with a combination of flag constants since
+                // all constant values were cached during warm-up.
+                JavaScriptEncoder? encoder = options.Encoder;
+
+                if (_nameCache.Count < NameCacheSizeSoftLimit)
+                {
+                    formatted = JsonEncodedText.Encode(original, encoder);
+
+                    writer.WritePropertyName(formatted);
+
+                    _nameCache.TryAdd(key, formatted);
+                }
+                else
+                {
+                    // We also do not create a JsonEncodedText instance here because passing the string
+                    // directly to the writer is cheaper than creating one and not caching it for reuse.
+                    writer.WritePropertyName(original);
+                }
+
+                return;
+            }
+
+            switch (s_enumTypeCode)
+            {
+                case TypeCode.Int32:
+                    writer.WritePropertyName(Unsafe.As<T, int>(ref value));
+                    break;
+                case TypeCode.UInt32:
+                    writer.WritePropertyName(Unsafe.As<T, uint>(ref value));
+                    break;
+                case TypeCode.UInt64:
+                    writer.WritePropertyName(Unsafe.As<T, ulong>(ref value));
+                    break;
+                case TypeCode.Int64:
+                    writer.WritePropertyName(Unsafe.As<T, long>(ref value));
+                    break;
+                case TypeCode.Int16:
+                    writer.WritePropertyName(Unsafe.As<T, short>(ref value));
+                    break;
+                case TypeCode.UInt16:
+                    writer.WritePropertyName(Unsafe.As<T, ushort>(ref value));
+                    break;
+                case TypeCode.Byte:
+                    writer.WritePropertyName(Unsafe.As<T, byte>(ref value));
+                    break;
+                case TypeCode.SByte:
+                    writer.WritePropertyName(Unsafe.As<T, sbyte>(ref value));
+                    break;
+                default:
+                    ThrowHelper.ThrowJsonException();
+                    break;
+            }
         }
     }
 }

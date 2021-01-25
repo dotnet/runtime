@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net.NetworkInformation
 {
@@ -25,7 +24,7 @@ namespace System.Net.NetworkInformation
         }
 
         // IPV6 version of the Tcp row.
-        internal unsafe SystemTcpConnectionInformation(in Interop.IpHlpApi.MibTcp6RowOwnerPid row)
+        internal SystemTcpConnectionInformation(in Interop.IpHlpApi.MibTcp6RowOwnerPid row)
         {
             _state = row.state;
 

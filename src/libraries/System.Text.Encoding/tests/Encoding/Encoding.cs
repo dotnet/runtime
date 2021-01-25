@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Text;
@@ -65,6 +64,7 @@ namespace System.Text.Encodings.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Theory]
         [MemberData(nameof(Encoding_TestData))]
         public static void VerifyCodePageAttributes(int codepage, string name, string bodyName, string headerName, bool isBrowserDisplay,
@@ -81,6 +81,7 @@ namespace System.Text.Encodings.Tests
             Assert.Equal(windowsCodePage, encoding.WindowsCodePage);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
         [Theory]
         [MemberData(nameof(Normalization_TestData))]
         public static void NormalizationTest(int codepage, bool normalized, bool normalizedC, bool normalizedD, bool normalizedKC, bool normalizedKD)

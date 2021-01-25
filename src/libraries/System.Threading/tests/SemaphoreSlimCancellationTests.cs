@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
 using Xunit;
@@ -26,7 +25,7 @@ namespace System.Threading.Tests
             semaphoreSlim.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -50,7 +49,7 @@ namespace System.Threading.Tests
             // currently we don't expose this.. but it was verified manually
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task Cancel_WaitAsync_ContinuationInvokedAsynchronously()
         {
             await Task.Run(async () => // escape xunit's SynchronizationContext

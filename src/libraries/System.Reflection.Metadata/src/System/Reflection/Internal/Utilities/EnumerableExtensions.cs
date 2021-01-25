@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -14,8 +13,7 @@ namespace System.Reflection.Internal
     /// </summary>
     internal static class EnumerableExtensions
     {
-        [return: MaybeNull]
-        public static T FirstOrDefault<T>(this ImmutableArray<T> collection, Func<T, bool> predicate)
+        public static T? FirstOrDefault<T>(this ImmutableArray<T> collection, Func<T, bool> predicate)
         {
             foreach (var item in collection)
             {
@@ -25,7 +23,7 @@ namespace System.Reflection.Internal
                 }
             }
 
-            return default!;
+            return default;
         }
 
         // used only in debugger display so we needn't get fancy with optimizations.

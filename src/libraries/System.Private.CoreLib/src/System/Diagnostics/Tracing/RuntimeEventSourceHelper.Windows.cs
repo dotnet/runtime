@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Diagnostics.Tracing
 {
     internal static class RuntimeEventSourceHelper
     {
-        private static long s_prevProcUserTime = 0;
-        private static long s_prevProcKernelTime = 0;
-        private static long s_prevSystemUserTime = 0;
-        private static long s_prevSystemKernelTime = 0;
+        private static long s_prevProcUserTime;
+        private static long s_prevProcKernelTime;
+        private static long s_prevSystemUserTime;
+        private static long s_prevSystemKernelTime;
 
         internal static int GetCpuUsage()
         {

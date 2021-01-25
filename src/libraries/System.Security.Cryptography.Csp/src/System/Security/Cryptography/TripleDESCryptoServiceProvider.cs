@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using Internal.Cryptography;
@@ -17,7 +16,6 @@ namespace System.Security.Cryptography
         {
             // This class wraps TripleDES
             _impl = TripleDES.Create();
-            _impl.FeedbackSize = 8;
         }
 
         public override int FeedbackSize

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System;
@@ -18,7 +17,7 @@ namespace System.Threading.Tasks.Tests
     {
         #region ContinueWith Tests
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinueWithAsyncStateCheckTests()
         {
             Task t = new Task(() => { });
@@ -41,7 +40,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Stresses on multiple continuations from a single antecedent
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [SkipOnCoreClr("Test timing out: https://github.com/dotnet/runtime/issues/2271", RuntimeConfiguration.Checked)]
         public static void RunContinueWithStressTestsNoState()
         {
@@ -72,7 +71,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinueWithPreCancelTests()
         {
             Action<Task, bool, string> EnsureCompletionStatus = delegate (Task task, bool shouldBeCompleted, string message)
@@ -131,7 +130,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinuationChainingTest()
         {
             int x = 0;
@@ -173,7 +172,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinueWithParamsTest_Cancellation()
         {
             //
@@ -221,7 +220,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinueWithParamsTest_IllegalArgs()
         {
             Task t1 = new Task(delegate { });
@@ -256,7 +255,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test what happens when you cancel a task in the middle of a continuation chain.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinuationCancelTest()
         {
             bool t1Ran = false;
@@ -295,7 +294,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinueWithExceptionTestsNoState()
         {
             //
@@ -346,7 +345,7 @@ namespace System.Threading.Tasks.Tests
                () => { f1.ContinueWith(_ => 5, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinueWithAllParamsTestsNoState()
         {
             for (int i = 0; i < 2; i++)
@@ -602,7 +601,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Make sure that cancellation works for monadic versions of ContinueWith()
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunUnwrapTests()
         {
             Task taskRoot = null;
@@ -773,7 +772,7 @@ namespace System.Threading.Tasks.Tests
             //catch (Exception e) {  }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunUnwrapTests_ExceptionTests()
         {
             Task taskRoot = null;
@@ -1024,7 +1023,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test what happens when you cancel a task in the middle of a continuation chain.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunContinuationCancelTest_State()
         {
             bool t1Ran = false;
@@ -1064,7 +1063,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestNoDeadlockOnContinueWith()
         {
             Debug.WriteLine("TestNoDeadlockOnContinueWith:  shouldn't deadlock if it passes.");
@@ -1081,7 +1080,7 @@ namespace System.Threading.Tasks.Tests
             Debug.WriteLine("Success!");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunLazyCancellationTests()
         {
             for (int i = 0; i < 2; i++)
@@ -1137,7 +1136,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunLazyCancellationTests_Negative()
         {
             for (int i = 0; i < 2; i++)
@@ -1227,7 +1226,7 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void LongContinuationChain_Unwrap_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;
@@ -1243,7 +1242,7 @@ namespace System.Threading.Tasks.Tests
             func(DiveDepth).Wait();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void LongContinuationChain_Await_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;
@@ -1258,7 +1257,7 @@ namespace System.Threading.Tasks.Tests
             func(0).Wait();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public static void TestNoDeadlockOnContinueWithExecuteSynchronously(bool useWaitAll)

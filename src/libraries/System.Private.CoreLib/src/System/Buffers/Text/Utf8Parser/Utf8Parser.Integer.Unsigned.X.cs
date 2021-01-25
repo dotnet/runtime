@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Buffers.Text
 {
@@ -17,8 +16,7 @@ namespace System.Buffers.Text
             byte nextCharacter;
             byte nextDigit;
 
-            // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            ReadOnlySpan<byte> hexLookup = ParserHelpers.HexLookup;
+            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
@@ -100,8 +98,7 @@ namespace System.Buffers.Text
             byte nextCharacter;
             byte nextDigit;
 
-            // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            ReadOnlySpan<byte> hexLookup = ParserHelpers.HexLookup;
+            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
@@ -183,8 +180,7 @@ namespace System.Buffers.Text
             byte nextCharacter;
             byte nextDigit;
 
-            // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            ReadOnlySpan<byte> hexLookup = ParserHelpers.HexLookup;
+            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
@@ -266,8 +262,7 @@ namespace System.Buffers.Text
             byte nextCharacter;
             byte nextDigit;
 
-            // Cache Parsers.s_HexLookup in order to avoid static constructor checks
-            ReadOnlySpan<byte> hexLookup = ParserHelpers.HexLookup;
+            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];

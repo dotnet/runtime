@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,7 +22,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportsSatisfiedOnComponentWithoutImports()
         {
             CompositionContainer container = ContainerFactory.CreateWithAttributedCatalog(typeof(PartWithoutImports));
@@ -36,7 +34,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportCompletedTest()
         {
             var container = ContainerFactory.Create();
@@ -58,7 +55,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportCompletedWithRecomposing()
         {
             var container = ContainerFactory.Create();
@@ -97,7 +93,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportCompletedAddPartAndBindComponent()
         {
             var container = ContainerFactory.Create();

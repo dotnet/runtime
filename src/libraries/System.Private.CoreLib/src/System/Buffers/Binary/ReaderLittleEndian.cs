@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -24,6 +23,23 @@ namespace System.Buffers.Binary
             return !BitConverter.IsLittleEndian ?
                 BitConverter.Int64BitsToDouble(ReverseEndianness(MemoryMarshal.Read<long>(source))) :
                 MemoryMarshal.Read<double>(source);
+        }
+
+        /// <summary>
+        /// Reads a <see cref="Half" /> from the beginning of a read-only span of bytes, as little endian.
+        /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The little endian value.</returns>
+        /// <remarks>Reads exactly 2 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="Half" />.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half ReadHalfLittleEndian(ReadOnlySpan<byte> source)
+        {
+            return !BitConverter.IsLittleEndian ?
+                BitConverter.Int16BitsToHalf(ReverseEndianness(MemoryMarshal.Read<short>(source))) :
+                MemoryMarshal.Read<Half>(source);
         }
 
         /// <summary>
@@ -146,6 +162,28 @@ namespace System.Buffers.Binary
             {
                 bool success = MemoryMarshal.TryRead(source, out long tmp);
                 value = BitConverter.Int64BitsToDouble(ReverseEndianness(tmp));
+                return success;
+            }
+
+            return MemoryMarshal.TryRead(source, out value);
+        }
+
+        /// <summary>
+        /// Reads a <see cref="Half" /> from the beginning of a read-only span of bytes, as little endian.
+        /// </summary>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, the value read out of the read-only span of bytes, as little endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="Half" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 2 bytes from the beginning of the span.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadHalfLittleEndian(ReadOnlySpan<byte> source, out Half value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                bool success = MemoryMarshal.TryRead(source, out short tmp);
+                value = BitConverter.Int16BitsToHalf(ReverseEndianness(tmp));
                 return success;
             }
 

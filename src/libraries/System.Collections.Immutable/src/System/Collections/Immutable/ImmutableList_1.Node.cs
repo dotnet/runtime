@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -999,8 +998,7 @@ namespace System.Collections.Immutable
             /// The first element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
-            [return: MaybeNull]
-            internal T Find(Predicate<T> match)
+            internal T? Find(Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
 
@@ -1012,7 +1010,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                return default(T)!;
+                return default;
             }
 
             /// <summary>
@@ -1145,8 +1143,7 @@ namespace System.Collections.Immutable
             /// The last element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
-            [return: MaybeNull]
-            internal T FindLast(Predicate<T> match)
+            internal T? FindLast(Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
 
@@ -1161,7 +1158,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                return default(T)!;
+                return default;
             }
 
             /// <summary>

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Text.Json.Serialization;
@@ -29,7 +28,6 @@ namespace System.Text.Json
             }
             else
             {
-
                 string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
                 Debug.Assert(referenceId != null);
 
@@ -66,10 +64,10 @@ namespace System.Text.Json
             else
             {
                 string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
+                Debug.Assert(referenceId != null);
 
                 if (alreadyExists)
                 {
-                    Debug.Assert(referenceId != null);
                     writer.WriteStartObject();
                     writer.WriteString(s_metadataRef, referenceId);
                     writer.WriteEndObject();
@@ -77,7 +75,6 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    Debug.Assert(referenceId != null);
                     writer.WriteStartObject();
                     writer.WriteString(s_metadataId, referenceId);
                     writer.WriteStartArray(s_metadataValues);

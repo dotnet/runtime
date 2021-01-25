@@ -19,4 +19,7 @@
     <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilderTests.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\RegistrationContextUnitTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ComponentModel.Composition.Registration.csproj" />
+  </ItemGroup>
 </Project>

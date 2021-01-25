@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,10 +36,10 @@ namespace System.Net.Security
             return HandshakeInternal(credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate? certificate,
+        public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext,
             SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
-            return new SafeFreeSslCredentials(certificate, protocols, policy);
+            return new SafeFreeSslCredentials(certificateContext?.Certificate, protocols, policy);
         }
 
         public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)

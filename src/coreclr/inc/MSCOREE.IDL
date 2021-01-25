@@ -1,0 +1,242 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
+
+//
+/**************************************************************************************
+ **                                                                                  **
+ ** Mscoree.idl - interface definitions for mscoree.dll                              **
+ **                                                                                  **
+ **************************************************************************************/
+
+//
+// Interface descriptions
+//
+import "unknwn.idl";
+
+cpp_quote("struct IActivationFactory;")
+interface IActivationFactory;
+
+cpp_quote("struct IHostControl;")
+interface IHostControl;
+
+cpp_quote("struct ICLRControl;")
+interface ICLRControl;
+
+// IID ICLRRuntimeHost: uuid(90F1A06C-7712-4762-86B5-7A5EBA6BDB02)
+cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost, 0x90F1A06C, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02);")
+
+// IID ICLRRuntimeHost2: uuid(712AB73F-2C22-4807-AD7E-F501D7B72C2D)
+cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost2, 0x712AB73F, 0x2C22, 0x4807, 0xAD, 0x7E, 0xF5, 0x01, 0xD7, 0xb7, 0x2C, 0x2D);")
+
+// IID ICLRRuntimeHost4: uuid(64F6D366-D7C2-4F1F-B4B2-E8160CAC43AF)
+cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost4, 0x64F6D366, 0xD7C2, 0x4F1F, 0xB4, 0xB2, 0xE8, 0x16, 0x0C, 0xAC, 0x43, 0xAF);")
+
+#pragma midl_echo("typedef HRESULT  (STDAPICALLTYPE *FnGetCLRRuntimeHost)(REFIID riid, IUnknown **pUnk);")
+
+typedef HRESULT (__stdcall *FExecuteInAppDomainCallback) (void* cookie);
+
+// By default GC is concurrent and only the base system library is loaded into the domain-neutral area.
+typedef enum {
+  STARTUP_CONCURRENT_GC         = 0x1,
+
+  STARTUP_LOADER_OPTIMIZATION_MASK = 0x3<<1,                    // loader optimization mask
+  STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN = 0x1<<1,           // no domain neutral loading
+  STARTUP_LOADER_OPTIMIZATION_MULTI_DOMAIN = 0x2<<1,            // all domain neutral loading
+  STARTUP_LOADER_OPTIMIZATION_MULTI_DOMAIN_HOST = 0x3<<1,       // strong name domain neutral loading
+
+
+  STARTUP_LOADER_SAFEMODE = 0x10,                               // Do not apply runtime version policy to the version passed in
+  STARTUP_LOADER_SETPREFERENCE = 0x100,                         // Set preferred runtime. Do not actally start it
+
+  STARTUP_SERVER_GC             = 0x1000,                       // Use server GC
+  STARTUP_HOARD_GC_VM           = 0x2000,                       // GC keeps virtual address used
+  STARTUP_SINGLE_VERSION_HOSTING_INTERFACE = 0x4000,                    // Disallow mixing hosting interface
+  STARTUP_LEGACY_IMPERSONATION             = 0x10000,                        // Do not flow impersonation across async points by default
+  STARTUP_DISABLE_COMMITTHREADSTACK        = 0x20000,           // Don't eagerly commit thread stack
+  STARTUP_ALWAYSFLOW_IMPERSONATION             = 0x40000,                        // Force flow impersonation across async points
+  																// (impersonations achieved thru p/invoke and managed will flow.
+  																// default is to flow only managed impersonation)
+  STARTUP_TRIM_GC_COMMIT        = 0x80000,                      // GC uses less committed space when system memory low
+  STARTUP_ETW                   = 0x100000,
+  STARTUP_ARM                   = 0x400000,                     // Enable the ARM feature.
+  STARTUP_SINGLE_APPDOMAIN      = 0x800000,                      // application runs in default domain, no more domains are created
+  STARTUP_APPX_APP_MODEL        = 0x1000000,                     // jupiter app
+  STARTUP_DISABLE_RANDOMIZED_STRING_HASHING     = 0x2000000      // Disable the randomized string hashing (not supported)
+} STARTUP_FLAGS;
+
+typedef enum
+{
+    APPDOMAIN_SECURITY_DEFAULT =0x0,
+    APPDOMAIN_SECURITY_SANDBOXED = 0x1,       // appdomain is sandboxed
+    APPDOMAIN_SECURITY_FORBID_CROSSAD_REVERSE_PINVOKE = 0x2,         // no cross ad reverse pinvokes
+    APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS = 0x4, //
+    APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS = 0x08, // do not pump messages during wait operations, do not call sync context
+    // When passed by the host, this flag will allow any assembly to perform PInvoke or COMInterop operations.
+    // Otherwise, by default, only platform assemblies can perform those operations.
+    APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP = 0x10,
+
+    APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS = 0x40,
+    APPDOMAIN_ENABLE_ASSEMBLY_LOADFILE = 0x80,
+
+    APPDOMAIN_DISABLE_TRANSPARENCY_ENFORCEMENT = 0x100,
+} APPDOMAIN_SECURITY_FLAGS;
+
+typedef enum {
+    WAIT_MSGPUMP = 0x1,
+    WAIT_ALERTABLE = 0x2,
+    WAIT_NOTINDEADLOCK = 0x4
+}WAIT_OPTION;
+
+typedef enum {
+    // Default to minidump
+        DUMP_FLAVOR_Mini = 0,
+
+        // Include critical CLR state
+        DUMP_FLAVOR_CriticalCLRState = 1,
+
+        // Include critical CLR state and ngen images without including hosted heap
+        // It is host's responsibility to report hosted heap.
+        DUMP_FLAVOR_NonHeapCLRState = 2,
+
+    DUMP_FLAVOR_Default = DUMP_FLAVOR_Mini
+
+} ECustomDumpFlavor;
+
+const DWORD BucketParamsCount = 10;
+const DWORD BucketParamLength = 255;
+
+// used for indexing into BucketParameters::pszParams
+typedef enum
+{
+    Parameter1 = 0,
+    Parameter2,
+    Parameter3,
+    Parameter4,
+    Parameter5,
+    Parameter6,
+    Parameter7,
+    Parameter8,
+    Parameter9,
+    InvalidBucketParamIndex
+} BucketParameterIndex;
+
+typedef struct _BucketParameters
+{
+    BOOL  fInited;                                            // Set to TRUE if the rest of this structure is valid.
+    WCHAR pszEventTypeName[BucketParamLength];                // Name of the event type.
+    WCHAR pszParams[BucketParamsCount][BucketParamLength];    // Parameter strings.
+} BucketParameters;
+
+//*****************************************************************************
+// New interface for hosting mscoree
+//*****************************************************************************
+[
+    uuid(90F1A06C-7712-4762-86B5-7A5EBA6BDB02),
+    version(1.0),
+    helpstring("Common Language Runtime Hosting Interface"),
+    pointer_default(unique),
+    local
+]
+interface ICLRRuntimeHost : IUnknown
+{
+    // Starts the runtime. This is equivalent to CoInitializeCor().
+    HRESULT Start();
+
+    // Terminates the runtime, This is equivalent CoUninitializeCor();
+    HRESULT Stop();
+
+    // Returns an object for configuring runtime, e.g. threading, lock
+    // prior it starts.  If the runtime has been initialized this
+    // routine returns an error.  See IHostControl.
+    HRESULT SetHostControl([in] IHostControl* pHostControl);
+
+    HRESULT GetCLRControl([out] ICLRControl** pCLRControl);
+
+    HRESULT UnloadAppDomain([in] DWORD dwAppDomainId,
+                            [in] BOOL fWaitUntilDone);
+
+    HRESULT ExecuteInAppDomain([in] DWORD dwAppDomainId,
+                               [in] FExecuteInAppDomainCallback pCallback,
+                               [in] void* cookie);
+
+    HRESULT GetCurrentAppDomainId([out] DWORD *pdwAppDomainId);
+
+    HRESULT ExecuteApplication([in] LPCWSTR   pwzAppFullName,
+                               [in] DWORD     dwManifestPaths,
+                               [in] LPCWSTR   *ppwzManifestPaths,   // optional
+                               [in] DWORD     dwActivationData,
+                               [in] LPCWSTR   *ppwzActivationData,  // optional
+                               [out] int      *pReturnValue);
+
+    HRESULT ExecuteInDefaultAppDomain([in] LPCWSTR pwzAssemblyPath,
+                                      [in] LPCWSTR pwzTypeName,
+                                      [in] LPCWSTR pwzMethodName,
+                                      [in] LPCWSTR pwzArgument,
+                                      [out] DWORD  *pReturnValue);
+};
+
+//*****************************************************************************
+// New interface for hosting mscoree
+//*****************************************************************************
+[
+    object,
+    uuid(712AB73F-2C22-4807-AD7E-F501D7B72C2D),
+    version(2.0),
+    helpstring("Common Language Runtime Hosting Interface"),
+    pointer_default(unique),
+    local
+]
+interface ICLRRuntimeHost2 : ICLRRuntimeHost
+{
+    // Creates an app domain (sandboxed or not) with the given manager class and the given
+    // set of properties.
+    HRESULT CreateAppDomainWithManager([in] LPCWSTR wszFriendlyName,
+                                [in] DWORD dwFlags,
+                                [in] LPCWSTR wszAppDomainManagerAssemblyName,
+                                [in] LPCWSTR wszAppDomainManagerTypeName,
+                                [in] int nProperties,
+                                [in] LPCWSTR* pPropertyNames,
+                                [in] LPCWSTR* pPropertyValues,
+                                [out] DWORD* pAppDomainID);
+
+    HRESULT CreateDelegate([in] DWORD appDomainID,
+                                 [in] LPCWSTR wszAssemblyName,
+                                 [in] LPCWSTR wszClassName,
+                                 [in] LPCWSTR wszMethodName,
+                                 [out] INT_PTR* fnPtr);
+
+    // Authenticates a host based upon a key value. No longer required.
+    HRESULT Authenticate([in] ULONGLONG authKey);
+
+    // Ensures CLR-set Mac (Mach) EH port is registered.
+    HRESULT RegisterMacEHPort();
+
+    HRESULT SetStartupFlags([in] STARTUP_FLAGS dwFlags);
+
+    HRESULT DllGetActivationFactory([in] DWORD appDomainID,
+                                       [in] LPCWSTR wszTypeName,
+                                       [out] IActivationFactory ** factory);
+
+    HRESULT ExecuteAssembly([in] DWORD dwAppDomainId,
+                                 [in] LPCWSTR pwzAssemblyPath,
+                                 [in] int argc,
+                                 [in] LPCWSTR* argv,
+                                 [out] DWORD   *pReturnValue);
+
+};
+
+[
+    object,
+    uuid(64F6D366-D7C2-4F1F-B4B2-E8160CAC43AF),
+    version(4.0),
+    helpstring("Common Language Runtime Hosting Interface"),
+    pointer_default(unique),
+    local
+]
+interface ICLRRuntimeHost4 : ICLRRuntimeHost2
+{
+    HRESULT UnloadAppDomain2([in] DWORD dwAppDomainId,
+                                          [in] BOOL fWaitUntilDone,
+                                          [out] int *pLatchedExitCode);
+};

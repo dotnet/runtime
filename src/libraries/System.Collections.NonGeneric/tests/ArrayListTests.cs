@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1317,6 +1316,32 @@ namespace System.Collections.Tests
                 ArrayList range = arrList2.GetRange(0, 0);
                 Assert.Equal(0, range.Count);
             });
+        }
+
+        [Fact]
+        public static void GetRange_OnAnotherRange_YieldsProperSubset()
+        {
+            var list = new ArrayList() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
+            ArrayList range1 = list.GetRange(2, 6);
+            Assert.Equal(6, range1.Count);
+            Assert.Equal(3, range1[0]);
+            Assert.Equal(8, range1[5]);
+            Assert.Equal(new object[] { 3, 4, 5, 6, 7, 8 }, range1.ToArray());
+
+            ArrayList range2 = range1.GetRange(3, 2);
+            Assert.Equal(2, range2.Count);
+            Assert.Equal(6, range2[0]);
+            Assert.Equal(7, range2[1]);
+            Assert.Equal(new object[] { 6, 7 }, range2.ToArray());
+
+            ArrayList range3 = range2.GetRange(0, 1);
+            Assert.Equal(1, range3.Count);
+            Assert.Equal(6, range3[0]);
+            Assert.Equal(new object[] { 6 }, range3.ToArray());
+
+            range3[0] = 42;
+            Assert.Equal(42, range1[3]);
         }
 
         [Fact]

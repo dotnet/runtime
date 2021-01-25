@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Http;
@@ -19,7 +18,6 @@ namespace System.Net.Tests
         {
         }
 
-        [OuterLoop]
         [Fact]
         public async Task HttpWebRequest_ContinueDelegateProperty_Success()
         {
@@ -29,14 +27,12 @@ namespace System.Net.Tests
                 request.Method = HttpMethod.Get.Method;
                 HttpContinueDelegate continueDelegate = new HttpContinueDelegate(HttpContinueMethod);
                 request.ContinueDelegate = continueDelegate;
-                Task<WebResponse> getResponse = request.GetResponseAsync();
-                DateTimeOffset utcNow = DateTimeOffset.UtcNow;
+                _ = request.GetResponseAsync();
                 await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK, "Content-Type: application/json;charset=UTF-8\r\n", "12345");
                 Assert.Equal(continueDelegate, request.ContinueDelegate);
             });
         }
 
-        [OuterLoop]
         [Fact]
         public async Task HttpHeader_Set_Success()
         {
@@ -45,25 +41,34 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(url);
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                DateTimeOffset utcNow = DateTimeOffset.UtcNow;
                 await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK, "Content-Type: application/json;charset=UTF-8\r\n", "12345");
 
                 using (WebResponse response = await getResponse)
                 {
                     HttpWebResponse httpResponse = (HttpWebResponse)response;
+
                     Assert.Equal("UTF-8", httpResponse.CharacterSet);
+                    Assert.Equal("", httpResponse.ContentEncoding);
+                    Assert.Equal(5, httpResponse.ContentLength);
+                    Assert.Equal(5, int.Parse(httpResponse.GetResponseHeader("Content-Length")));
+                    Assert.Equal("application/json; charset=UTF-8", httpResponse.ContentType);
+                    Assert.False(httpResponse.IsFromCache);
+                    Assert.False(httpResponse.IsMutuallyAuthenticated);
+                    Assert.Equal("GET", httpResponse.Method);
+                    Assert.Equal(HttpVersion.Version11, httpResponse.ProtocolVersion);
+                    Assert.Equal(url, httpResponse.ResponseUri);
+                    Assert.Equal("", httpResponse.Server);
                     Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
                     Assert.Equal("OK", httpResponse.StatusDescription);
+                    Assert.True(httpResponse.SupportsHeaders);
+
                     CookieCollection cookieCollection = new CookieCollection();
                     httpResponse.Cookies = cookieCollection;
                     Assert.Equal(cookieCollection, httpResponse.Cookies);
-                    Assert.Equal(5,httpResponse.ContentLength);
-                    Assert.Equal(5, int.Parse(httpResponse.GetResponseHeader("Content-Length")));
                 }
             });
         }
 
-        [OuterLoop]
         [Fact]
         public async Task HttpWebResponse_Close_Success()
         {
@@ -72,7 +77,6 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(url);
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                DateTimeOffset utcNow = DateTimeOffset.UtcNow;
                 await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK, "Content-Type: application/json;charset=UTF-8\r\n", "12345");
                 WebResponse response = await getResponse;
                 HttpWebResponse httpResponse = (HttpWebResponse)response;
@@ -105,7 +109,6 @@ namespace System.Net.Tests
         [Fact]
         public async Task LastModified_InvalidDate_Throws()
         {
-            DateTime expected = TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2018, 4, 10, 3, 4, 5, DateTimeKind.Utc), TimeZoneInfo.Local);
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpWebRequest request = WebRequest.CreateHttp(url);
@@ -127,12 +130,10 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(url);
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                DateTimeOffset utcNow = DateTimeOffset.UtcNow;
                 await server.AcceptConnectionSendResponseAndCloseAsync();
 
                 using (WebResponse response = await getResponse)
                 {
-                    HttpWebResponse httpResponse = (HttpWebResponse)response;
                     using (MemoryStream fs = new MemoryStream())
                     {
                         BinaryFormatter formatter = new BinaryFormatter();

@@ -138,6 +138,7 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_iface_call_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
 MONO_JIT_ICALL (mini_llvmonly_throw_aot_failed_exception) \
+MONO_JIT_ICALL (mini_llvmonly_pop_lmf) \
 MONO_JIT_ICALL (mono_amd64_resume_unwind)	\
 MONO_JIT_ICALL (mono_amd64_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_amd64_throw_corlib_exception)	\
@@ -308,6 +309,8 @@ MONO_JIT_ICALL (mono_threads_state_poll) \
 MONO_JIT_ICALL (mono_throw_exception) \
 MONO_JIT_ICALL (mono_throw_method_access) \
 MONO_JIT_ICALL (mono_throw_bad_image) \
+MONO_JIT_ICALL (mono_throw_not_supported) \
+MONO_JIT_ICALL (mono_throw_invalid_program) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
 MONO_JIT_ICALL (mono_trace_tail_method) \
@@ -338,6 +341,7 @@ MONO_JIT_ICALL (ves_icall_runtime_class_init) \
 MONO_JIT_ICALL (ves_icall_string_alloc) \
 MONO_JIT_ICALL (ves_icall_string_new_wrapper) \
 MONO_JIT_ICALL (ves_icall_thread_finish_async_abort) \
+MONO_JIT_ICALL (mono_marshal_lookup_pinvoke) \
 	\
 MONO_JIT_ICALL (count) \
 

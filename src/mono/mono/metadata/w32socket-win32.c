@@ -125,7 +125,7 @@ int mono_w32socket_sendbuffers (SOCKET s, WSABUF *lpBuffers, guint32 dwBufferCou
 	return ret;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_TRANSMIT_FILE
 static gint
 internal_w32socket_transmit_file (SOCKET sock, gpointer file, TRANSMIT_FILE_BUFFERS *lpTransmitBuffers, guint32 dwReserved, gboolean blocking)
 {
@@ -169,7 +169,9 @@ internal_w32socket_transmit_file (SOCKET sock, gpointer file, TRANSMIT_FILE_BUFF
 
 	return ret;
 }
+#endif /* HAVE_API_SUPPORT_WIN32_TRANSMIT_FILE */
 
+#if HAVE_API_SUPPORT_WIN32_DISCONNECT_EX
 static gint
 internal_w32socket_disconnect (SOCKET sock, gboolean reuse, gboolean blocking)
 {
@@ -213,24 +215,45 @@ internal_w32socket_disconnect (SOCKET sock, gboolean reuse, gboolean blocking)
 
 	return ret;
 }
+#endif /* HAVE_API_SUPPORT_WIN32_DISCONNECT_EX */
 
-BOOL mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, TRANSMIT_FILE_BUFFERS *lpTransmitBuffers, guint32 dwReserved, gboolean blocking)
+#if HAVE_API_SUPPORT_WIN32_TRANSMIT_FILE
+BOOL mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, gpointer lpTransmitBuffers, guint32 dwReserved, gboolean blocking)
 {
-	return internal_w32socket_transmit_file (hSocket, hFile, lpTransmitBuffers, dwReserved, blocking) == 0 ? TRUE : FALSE;
+	return internal_w32socket_transmit_file (hSocket, hFile, (LPTRANSMIT_FILE_BUFFERS)lpTransmitBuffers, dwReserved, blocking) == 0 ? TRUE : FALSE;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_TRANSMIT_FILE
+BOOL mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, gpointer lpTransmitBuffers, guint32 dwReserved, gboolean blocking)
+{
+	g_unsupported_api ("TransmitFile");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_TRANSMIT_FILE */
 
+#if HAVE_API_SUPPORT_WIN32_DISCONNECT_EX
 gint
 mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
 {
 	gint ret = SOCKET_ERROR;
 
 	ret = internal_w32socket_disconnect (sock, reuse, TRUE);
+#if HAVE_API_SUPPORT_WIN32_TRANSMIT_FILE
 	if (ret == 0)
 		ret = internal_w32socket_transmit_file (sock, NULL, NULL, TF_DISCONNECT | (reuse ? TF_REUSE_SOCKET : 0), TRUE);
+#endif /* HAVE_API_SUPPORT_WIN32_TRANSMIT_FILE */
 
 	return ret;
 }
-#endif /* #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_DISCONNECT_EX
+gint
+mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
+{
+	g_unsupported_api ("DisconnectEx");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return ERROR_NOT_SUPPORTED;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_DISCONNECT_EX */
 
 gint
 mono_w32socket_set_blocking (SOCKET sock, gboolean blocking)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -263,7 +262,7 @@ namespace System.Collections
             else
             {
                 for (int i = 0; i < _size; i++)
-                    if ((_items[i] != null) && (_items[i]!.Equals(item))) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (_items[i] is object o && o.Equals(item))
                         return true;
                 return false;
             }
@@ -917,7 +916,7 @@ namespace System.Collections
                 else
                 {
                     for (int i = startIndex; i < endIndex; i++)
-                        if (_list[i] != null && _list[i]!.Equals(value)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if (_list[i] is object o && o.Equals(value))
                             return i;
                     return -1;
                 }
@@ -985,7 +984,7 @@ namespace System.Collections
                 else
                 {
                     for (int i = startIndex; i >= endIndex; i--)
-                        if (_list[i] != null && _list[i]!.Equals(value)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if (_list[i] is object o && o.Equals(value))
                             return i;
                     return -1;
                 }
@@ -2312,7 +2311,7 @@ namespace System.Collections
                 else
                 {
                     for (int i = 0; i < _baseSize; i++)
-                        if (_baseList[_baseIndex + i] != null && _baseList[_baseIndex + i]!.Equals(item)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if (_baseList[_baseIndex + i] is object o && o.Equals(item))
                             return true;
                     return false;
                 }
@@ -2575,7 +2574,7 @@ namespace System.Collections
                 if (_baseSize == 0)
                     return Array.Empty<object?>();
                 object[] array = new object[_baseSize];
-                Array.Copy(_baseList._items, _baseIndex, array, 0, _baseSize);
+                _baseList.CopyTo(_baseIndex, array, 0, _baseSize);
                 return array;
             }
 

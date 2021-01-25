@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Collections;
@@ -27,21 +26,21 @@ namespace System.DirectoryServices.ActiveDirectory
     public class Domain : ActiveDirectoryPartition
     {
         /// Private Variables
-        private string _crossRefDN = null;
-        private string _trustParent = null;
+        private string _crossRefDN;
+        private string _trustParent;
 
         // internal variables corresponding to public properties
-        private DomainControllerCollection _cachedDomainControllers = null;
-        private DomainCollection _cachedChildren = null;
+        private DomainControllerCollection _cachedDomainControllers;
+        private DomainCollection _cachedChildren;
         private DomainMode _currentDomainMode = (DomainMode)(-1);
         private int _domainModeLevel = -1;
-        private DomainController _cachedPdcRoleOwner = null;
-        private DomainController _cachedRidRoleOwner = null;
-        private DomainController _cachedInfrastructureRoleOwner = null;
-        private Domain _cachedParent = null;
-        private Forest _cachedForest = null;
+        private DomainController _cachedPdcRoleOwner;
+        private DomainController _cachedRidRoleOwner;
+        private DomainController _cachedInfrastructureRoleOwner;
+        private Domain _cachedParent;
+        private Forest _cachedForest;
         // this is needed because null value for parent is valid
-        private bool _isParentInitialized = false;
+        private bool _isParentInitialized;
 
         #region constructors
         // internal constructors

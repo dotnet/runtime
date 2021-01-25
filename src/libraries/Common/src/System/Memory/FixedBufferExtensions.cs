@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -22,7 +21,7 @@ namespace System
         /// <summary>
         /// Gets the null-terminated string length of the given span.
         /// </summary>
-        internal static unsafe int GetFixedBufferStringLength(this ReadOnlySpan<char> span)
+        internal static int GetFixedBufferStringLength(this ReadOnlySpan<char> span)
         {
             int length = span.IndexOf('\0');
             return length < 0 ? span.Length : length;
@@ -32,7 +31,7 @@ namespace System
         /// Returns true if the given string equals the given span.
         /// The span's logical length is to the first null if present.
         /// </summary>
-        internal static unsafe bool FixedBufferEqualsString(this ReadOnlySpan<char> span, string value)
+        internal static bool FixedBufferEqualsString(this ReadOnlySpan<char> span, string value)
         {
             if (value == null || value.Length > span.Length)
                 return false;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading.Tasks;
@@ -14,7 +13,7 @@ namespace TaskCoverage
     public class Coverage
     {
         // Regression test: Validates that tasks can wait on int.MaxValue without assertion.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWait_MaxInt32()
         {
             Task t = Task.Delay(1);
@@ -90,7 +89,7 @@ namespace TaskCoverage
         /// <summary>
         /// Test various Task.WhenAll and Wait overloads - EH
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitWithCTS()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -139,7 +138,7 @@ namespace TaskCoverage
         /// <summary>
         /// test WaitAny and when Any overloads
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAny_WhenAny()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -265,7 +264,7 @@ namespace TaskCoverage
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationTokenRegitration()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -282,7 +281,7 @@ namespace TaskCoverage
         /// <summary>
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -302,7 +301,7 @@ namespace TaskCoverage
         /// <summary>
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskConfigurableAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -322,7 +321,7 @@ namespace TaskCoverage
         /// <summary>
         /// FromAsync testing: Not supported in .NET Native
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void FromAsync()
         {
             Task emptyTask = new Task(() => { });

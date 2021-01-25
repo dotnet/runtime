@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -726,22 +725,22 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // True indicates this is a new Principal object that has not yet been persisted to the store
-        internal bool unpersisted = false;
+        internal bool unpersisted;
 
         // True means our store object has been deleted
-        private bool _isDeleted = false;
+        private bool _isDeleted;
 
         // True means that StoreCtx.Load() has been called on this Principal to load in the values
         // of all the delay-loaded properties.
-        private bool _loaded = false;
+        private bool _loaded;
 
         // True means this principal corresponds to one of the well-known SIDs that do not have a
         // corresponding store object (e.g., NT AUTHORITY\NETWORK SERVICE).  Such principals
         // should be treated as read-only.
-        internal bool fakePrincipal = false;
+        internal bool fakePrincipal;
 
         // Directly corresponds to the Principal.PrincipalContext public property
-        private PrincipalContext _ctx = null;
+        private PrincipalContext _ctx;
 
         internal bool Loaded
         {
@@ -821,7 +820,7 @@ namespace System.DirectoryServices.AccountManagement
         // Set by StoreCtx.GetAsPrincipal when this Principal was instantiated by it.
         // If not set, this is a unpersisted principal and StoreCtx.PushChangesToNative()
         // has not yet been called on it
-        private object _underlyingObject = null;
+        private object _underlyingObject;
         internal object UnderlyingObject
         {
             get
@@ -842,7 +841,7 @@ namespace System.DirectoryServices.AccountManagement
         // Set by StoreCtx.GetAsPrincipal when this Principal was instantiated by it.
         // If not set, this object was not created from a search.  We need to store the searchresult until the object is persisted because
         // we may need to load properties from it.
-        private object _underlyingSearchObject = null;
+        private object _underlyingSearchObject;
         internal object UnderlyingSearchObject
         {
             get
@@ -863,7 +862,7 @@ namespace System.DirectoryServices.AccountManagement
         // can correspond to more than one possible principal in the store (e.g., WinFS's "multiple principals
         // per contact" model), the StoreCtx can use this to track and discern which principal in the
         // UnderlyingObject this Principal object corresponds to.  Set by GetAsPrincipal(), if set at all.
-        private object _discriminant = null;
+        private object _discriminant;
         internal object Discriminant
         {
             get { return _discriminant; }
@@ -872,14 +871,14 @@ namespace System.DirectoryServices.AccountManagement
 
         // A store-specific key, used to determine if two CLR Principal objects represent the same store principal.
         // Set by GetAsPrincipal when Principal is created from a query, or when a unpersisted Principal is persisted.
-        private StoreKey _key = null;
+        private StoreKey _key;
         internal StoreKey Key
         {
             get { return _key; }
             set { _key = value; }
         }
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         // Checks if the principal has been disposed or deleted, and throws an appropriate exception if it has.
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]

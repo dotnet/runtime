@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
 #include "pal_compiler.h"
@@ -63,3 +62,10 @@ PALEXPORT int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, in
  * Returns 1 for success or 0 for failure. (Always succeeds on platforms where HMAC_Update returns void.)
  */
 PALEXPORT int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len);
+
+/**
+ * Retrieves the HMAC for the data already accumulated in ctx without finalizing the state.
+ *
+ * Returns 1 for success or 0 for failure.
+ */
+PALEXPORT int32_t CryptoNative_HmacCurrent(const HMAC_CTX* ctx, uint8_t* md, int32_t* len);

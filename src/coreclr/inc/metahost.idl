@@ -1,0 +1,547 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/**************************************************************************************
+ ** Motivation for redesigning the shim APIs:                                        **
+ ** - old APIs assume that there is only one runtime in the process                  **
+ ** - old APIs are redundant (multiple ways for achieving the same effect)           **
+ ** - old APIs are flat and difficult to version (*Ex variants etc.)                 **
+ ** - old APIs mix together totally different concepts - choosing a runtime vs.      **
+ **   activating the runtime vs. performing an operation on the activated runtime    **
+ ** - old APIs are poorly named (incosistent use of the Cor* prefix etc.)            **
+ ** - all in all there's a lot of legacy behavior in the old APIs that it makes      **
+ **   sense to start from scratch                                                    **
+ **                                                                                  **
+ ** Design goals:                                                                    **
+ ** - clear separation between the no-policy base part and the policy-decision-      **
+ **   making part                                                                    **
+ ** - easy to extend with additional functionality by introducing new versions of    **
+ **   the interfaces (interface types are not hardcoded in method signatures)        **
+ ** - functions performing clearly defined steps rather than poorly documented       **
+ **   heavy-weight black boxes                                                       **
+ **************************************************************************************/
+
+/**************************************************************************************
+ ** Interfaces described in this IDL file follow the "Nano-COM" model. Basically     **
+ ** lifetime management (AddRef/Release) and encapsulation (implicit context) are    **
+ ** used from COM. There are no COM types (BSTR, SAFEARRAY, VARIANT), apartment      **
+ ** models, aggregation, or registry activation (CoCreateInstance).                  **
+ **************************************************************************************/
+
+
+import "unknwn.idl";
+import "oaidl.idl";
+import "ocidl.idl";
+
+import "mscoree.idl";
+
+cpp_quote("#include <winapifamily.h>")
+
+cpp_quote("STDAPI CLRCreateInstance(REFCLSID clsid, REFIID riid, /*iid_is(riid)*/ LPVOID *ppInterface);")
+
+// IID ICLRMetaHost : uuid(D332DB9E-B9B3-4125-8207-A14884F53216)
+cpp_quote("EXTERN_GUID(IID_ICLRMetaHost, 0xD332DB9E, 0xB9B3, 0x4125, 0x82, 0x07, 0xA1, 0x48, 0x84, 0xF5, 0x32, 0x16);")
+
+// CLSID_CLRMetaHost : uuid(9280188D-0E8E-4867-B30C-7FA83884E8DE)
+cpp_quote("EXTERN_GUID(CLSID_CLRMetaHost, 0x9280188d, 0xe8e, 0x4867, 0xb3, 0xc, 0x7f, 0xa8, 0x38, 0x84, 0xe8, 0xde);")
+
+// IID ICLRDebugging : uuid(D28F3C5A-9634-4206-A509-477552EEFB10)
+cpp_quote("EXTERN_GUID(IID_ICLRDebugging, 0xd28f3c5a, 0x9634, 0x4206, 0xa5, 0x9, 0x47, 0x75, 0x52, 0xee, 0xfb, 0x10);")
+
+// CLSID_CLRDebugging : uuid(BACC578D-FBDD-48a4-969F-02D932B74634)
+cpp_quote("EXTERN_GUID(CLSID_CLRDebugging, 0xbacc578d, 0xfbdd, 0x48a4, 0x96, 0x9f, 0x2, 0xd9, 0x32, 0xb7, 0x46, 0x34);")
+
+// IID ICLRRuntimeInfo : uuid(BD39D1D2-BA2F-486a-89B0-B4B0CB466891)
+cpp_quote("EXTERN_GUID(IID_ICLRRuntimeInfo, 0xBD39D1D2, 0xBA2F, 0x486a, 0x89, 0xB0, 0xB4, 0xB0, 0xCB, 0x46, 0x68, 0x91);")
+
+// IID ICLRDebuggingLibraryProvider interface : uuid{3151C08D-4D09-4f9b-8838-2880BF18FE51}
+cpp_quote("EXTERN_GUID(IID_ICLRDebuggingLibraryProvider, 0x3151c08d, 0x4d09, 0x4f9b, 0x88, 0x38, 0x28, 0x80, 0xbf, 0x18, 0xfe, 0x51);")
+
+// IID ICLRDebuggingLibraryProvider2 interface : uuid{E04E2FF1-DCFD-45D5-BCD1-16FFF2FAF7BA}
+cpp_quote("EXTERN_GUID(IID_ICLRDebuggingLibraryProvider2, 0xE04E2FF1, 0xDCFD, 0x45D5, 0xBC, 0xD1, 0x16, 0xFF, 0xF2, 0xFA, 0xF7, 0xBA);")
+
+// For use in ICLRMetaHost::RequestRuntimeLoadedNotification
+interface ICLRRuntimeInfo;
+
+typedef HRESULT (__stdcall *CallbackThreadSetFnPtr)();
+typedef HRESULT (__stdcall *CallbackThreadUnsetFnPtr)();
+
+typedef void (__stdcall *RuntimeLoadedCallbackFnPtr)(
+    ICLRRuntimeInfo          *pRuntimeInfo,
+    CallbackThreadSetFnPtr    pfnCallbackThreadSet,
+    CallbackThreadUnsetFnPtr  pfnCallbackThreadUnset);
+
+/**************************************************************************************
+ ** ICLRMetaHost                                                                     **
+ ** Activated using mscoree!CLRCreateInstance. Does not do any policy decisions, get **
+ ** ICLRMetaHostPolicy if you need that.                                             **
+ **************************************************************************************/
+[
+    uuid(D332DB9E-B9B3-4125-8207-A14884F53216),
+    version(1.0),
+    helpstring("CLR meta hosting interface"),
+    local
+]
+interface ICLRMetaHost : IUnknown
+{
+    /**********************************************************************************
+     ** Returns installed runtime with the specific version. Fails if not found.     **
+     ** NULL or any other wildcard is not accepted as pwzVersion                     **
+     ** Supersedes: CorBindToRuntimeEx with STARTUP_LOADER_SAFEMODE                  **
+     **********************************************************************************/
+    HRESULT GetRuntime(
+        [in]  LPCWSTR pwzVersion,
+        [in]  REFIID  riid,   // IID_ICLRRuntimeInfo
+        [out, iid_is(riid), retval] LPVOID *ppRuntime);
+
+    /**********************************************************************************
+     ** Returns runtime version burned into a file's metadata.                       **
+     ** Supersedes: GetFileVersion                                                   **
+     **********************************************************************************/
+    HRESULT GetVersionFromFile(
+        [in]      LPCWSTR pwzFilePath,
+        [out, size_is(*pcchBuffer), annotation("_Out_writes_all_(*pcchBuffer)")]
+                  LPWSTR pwzBuffer,
+        [in, out] DWORD *pcchBuffer);
+
+    /**********************************************************************************
+     ** Returns an enumerator of runtimes installed on the machine.                  **
+     ** Supersedes: (none)                                                           **
+     **********************************************************************************/
+    HRESULT EnumerateInstalledRuntimes(
+        [out, retval] IEnumUnknown **ppEnumerator);
+
+    /**********************************************************************************
+     ** Provides an enumerator of runtimes loaded into the given process.            **
+     ** Supersedes: GetVersionFromProcess                                            **
+     **********************************************************************************/
+    HRESULT EnumerateLoadedRuntimes(
+        [in]  HANDLE hndProcess,
+        [out, retval] IEnumUnknown **ppEnumerator);
+
+    /**********************************************************************************
+     ** Provides a callback when a new runtime version has just been loaded, but not **
+     ** started.                                                                     **
+     **                                                                              **
+     ** The callback works in the following way:                                     **
+     **   - the callback is invoked only when a runtime is loaded for the first time **
+     **   - the callback will not be invoked for reentrant loads of the same runtime **
+     **   - the callback will be for reentrant loads of other runtimes               **
+     **   - it is guaranteed that no other thread may load the runtime until the     **
+     **     callback returns; any thread that does so blocks until this time.        **
+     **   - for non-reentrant multi-threaded runtime loads, callbacks are serialized **
+     **   - if the host intends to load (or cause to be loaded) another runtime in a **
+     **     reentrant fashion, or intends to perform any operations on the runtime   **
+     **     corresponding to the callback instance, the pfnCallbackThreadSet and     **
+     **     pfnCallbackThreadUnset arguments provided in the callback must be used   **
+     **     in the following way:                                                    **
+     **     - pfnCallbackThreadSet must be called by the thread that might cause a   **
+     **       runtime load before such a load is attempted                           **
+     **     - pfnCallbackThreadUnset must be called when the thread will no longer   **
+     **       cause such a runtime load (and before returning from the initial       **
+     **       callback)                                                              **
+     **     - pfnCallbackThreadSet and pfnCallbackThreadUnset are non-reentrant.     **
+     **                                                                              **
+     **   pCallbackFunction: This function is invoked when a new runtime has just    **
+     **                      been loaded. A value of NULL results in a failure       **
+     **                      return value of E_POINTER.                              **
+     **                                                                              **
+     ** Supersedes: LockClrVersion                                                   **
+     **********************************************************************************/
+    HRESULT RequestRuntimeLoadedNotification(
+        [in] RuntimeLoadedCallbackFnPtr pCallbackFunction);
+
+    /**********************************************************************************
+     ** Returns interface representing the runtime to which the legacy activation    **
+     ** policy has been bound (for example, by a useLegacyV2RuntimeActivationPolicy  **
+     ** config entry or by a call to ICLRRuntimeInfo::BindAsLegacyV2Runtime).        **
+     **********************************************************************************/
+    HRESULT QueryLegacyV2RuntimeBinding(
+        [in] REFIID riid,
+        [out, iid_is(riid), retval] LPVOID *ppUnk);
+
+    /**********************************************************************************
+     ** Shuts down the current process.                                              **
+     ** Supersedes: CorExitProcess                                                   **
+     **********************************************************************************/
+    HRESULT ExitProcess(
+        [in] INT32 iExitCode);
+} // interface ICLRMetaHost
+
+/*************************************************************************************
+ ** This structure defines the version of a CLR for debugging purposes.             **
+ ** The wStructVersion field allows for future revisions to this structure to be    **
+ ** made. Currently it must be set to 0. The remaining fields represent the         **
+ ** typical major.minor.build.revision product version information.                 **
+ *************************************************************************************/
+typedef struct _CLR_DEBUGGING_VERSION
+{
+    WORD wStructVersion;
+    WORD wMajor;
+    WORD wMinor;
+    WORD wBuild;
+    WORD wRevision;
+}
+CLR_DEBUGGING_VERSION;
+
+typedef enum
+{
+    /**********************************************************************************
+     ** This runtime has a non-catchup managed debug event to send                   **
+     ** Catchup events include process, app domain, assembly, module, and thread     **
+     ** creation notifications that bring the debugger up to the current state after **
+     ** attaching. Non-catchup events are everything else.                           **
+     **********************************************************************************/
+    CLR_DEBUGGING_MANAGED_EVENT_PENDING  = 1,
+
+    /**********************************************************************************
+     ** The managed event that is pending is a Debugger.Launch request               **
+     **********************************************************************************/
+    CLR_DEBUGGING_MANAGED_EVENT_DEBUGGER_LAUNCH = 2,
+}
+CLR_DEBUGGING_PROCESS_FLAGS;
+
+ /**************************************************************************************
+ ** ICLRDebuggingLibraryProvider                                                     **
+ ** Implemented by API user                                                          **
+ ** This interface allows the debugger to provide modules which are needed for       **
+ ** debugging a particular CLR such as mscordbi and mscordacwks. The module handles  **
+ ** need to remain valid until a call to ICLRDebugging::CanUnloadNow indicates they  **
+ ** may be freed, at which point it is the caller's responsibility to free the       **
+ ** handles.                                                                         **
+ **************************************************************************************/
+[
+    uuid(3151C08D-4D09-4f9b-8838-2880BF18FE51),
+    version(1.0),
+    helpstring("CLR debugging LibraryProvider callback interface"),
+    local
+]
+interface ICLRDebuggingLibraryProvider : IUnknown
+{
+    /**********************************************************************************
+    ** The goal of this method is to allow the debugger to provide a handle to a     **
+    ** module which is needed for debugging. The debugger may use any available means**
+    ** to locate and/or procure the module. See the security note below for important**
+    ** information about implementing this method securely.                          **
+    ** Arguments:                                                                    **
+    ** pwzFileName - The name of the module being requested                          **
+    ** dwTimeStamp - The date time stamp stored in the COFF file header of PE files  **
+    ** dwSizeOfImage - The SizeOfImage field stored in the COFF optional file header **
+    **                 of PE files                                                   **
+    ** phModule - Set this to the handle to the requested module on success. On      **
+    **            failure leave it untouched. See security note below!               **
+    **                                                                               **
+    ** Return value - S_OK if the module was provided, or any other convenient       **
+    **                error HRESULT if the module could not be provided              **
+    **                                                                               **
+    **                                                                               **
+    **                               !!!!!!!!!!!!!!                                  **
+    ** SECURITY NOTE: Anything the caller would not be willing to execute itself, it **
+    ** should not provide to the this API call                                       **
+    ***********************************************************************************/
+    HRESULT ProvideLibrary(
+        [in] const WCHAR* pwszFileName,
+        [in] DWORD dwTimestamp,
+        [in] DWORD dwSizeOfImage,
+        [out] HMODULE* phModule);
+}
+
+ /**************************************************************************************
+ ** ICLRDebuggingLibraryProvider2                                                     **
+ ** Implemented by API user                                                           **
+ ** This interface allows the debugger to provide module paths which are needed for   **
+ ** debugging a particular CLR such as mscordbi and mscordacwks.                      **
+ **************************************************************************************/
+[
+    uuid(E04E2FF1-DCFD-45D5-BCD1-16FFF2FAF7BA),
+    version(1.0),
+    helpstring("CLR debugging LibraryProvider callback interface"),
+    local
+]
+interface ICLRDebuggingLibraryProvider2 : IUnknown
+{
+    /**********************************************************************************
+    ** The goal of this method is to allow the debugger to provide a module path     **
+    ** which is needed for debugging. The debugger may use any available means to    **
+    ** locate and/or procure the module. See the security note below for important   **
+    ** information about implementing this method securely.                          **
+    ** Arguments:                                                                    **
+    ** pwzFileName - The name of the module being requested                          **
+    ** dwTimeStamp - The date time stamp stored in the COFF file header of PE files  **
+    ** dwSizeOfImage - The SizeOfImage field stored in the COFF optional file header **
+    **                 of PE files                                                   **
+    ** ppResolvedModulePath - Where *ppResolvedModulePath is a null terminated       **
+    **                        path to the module dll. On Windows it should be        **
+    **                        allocated with CoTaskMemAlloc. On Unix it should be    **
+    **                        allocated with malloc. Failure leave it untouched. See **
+    **                        security note below!                                   **
+    **                                                                               **
+    ** Return value - S_OK if the module was provided, or any other convenient       **
+    **                error HRESULT if the module could not be provided              **
+    **                                                                               **
+    **                               !!!!!!!!!!!!!!                                  **
+    ** SECURITY NOTE: Anything the caller would not be willing to execute itself, it **
+    ** should not provide to the this API call                                       **
+    ***********************************************************************************/
+    HRESULT ProvideLibrary2(
+        [in] const WCHAR* pwszFileName,
+        [in] DWORD dwTimestamp,
+        [in] DWORD dwSizeOfImage,
+        [out] LPWSTR* ppResolvedModulePath);
+}
+
+/**************************************************************************************
+ ** ICLRDebugging                                                                    **
+ ** Activated using mscoree!CLRCreateInstance.                                       **
+ **************************************************************************************/
+[
+    uuid(D28F3C5A-9634-4206-A509-477552EEFB10),
+    version(1.0),
+    helpstring("CLR debugging interface for MetaHost interface"),
+    local
+]
+interface ICLRDebugging : IUnknown
+{
+    /**********************************************************************************
+    ** Get the ICorDebugProcess and other information corresponding to a clr module  **
+    ** loaded in the process                                                         **
+    ** Arguments:                                                                    **
+    ** moduleBaseAddress - The base address of a module in the target process.       **
+    **                     COR_E_NOT_CLR will be returned if the indicated module is **
+    **                     not a clr.                                                **
+    ** pDataTarget       - A data target abstraction which allows the managed        **
+    **                     debugger to inspect process state. It must implement      **
+    **                     at least ICorDebugDataTarget.                             **
+    ** pLibraryProvider  - A library provider callback interface that allows version **
+    **                     specific debugging libraries to be located and loaded on  **
+    **                     demand. This parameter is only required if ppProcess or   **
+    **                     pFlags is non-NULL.                                       **
+    ** pMaxDebuggerSupportedVersion - The version of the CLR this debugger is        **
+    **                     designed to support.  The debugger should specify the     **
+    **                     major and minor versions from the newest CLR version this **
+    **                     debugger supports.  The function may still succeed with   **
+    **                     a newer version of the CLR than this if the CLR           **
+    **                     determines that it should be compatible.  The build and   **
+    **                     revision values are currently ignored.                    **
+    ** riidProcess       - The interface ID of the desired ICorDebugProcess          **
+    **                     interface. Currently the only legal values are            **
+    **                     IID_CORDEBUGPROCESS3, IID_CORDEBUGPROCESS2, and           **
+    **                     IID_CORDEBUGPROCESS.                                      **
+    ** ppProcess         - Returns a pointer to a COM interface identified by        **
+    **                     riidProcess. Future versions of the runtime may implement **
+    **                     other interfaces.                                         **
+    ** pwszVersion       - On input this is either null, or points to a              **
+    **                     CLR_DEBUGGING_VERSION structure. The wStructVersion field **
+    **                     must be initialized to 0. On output the structure will be **
+    **                     filled in with the CLR version information.               **
+    ** pFlags            - Informational flags about the specified runtime, see      **
+    **                     CLR_DEBUGGING_PROCESS_FLAGS for a description of the      **
+    **                     flags.                                                    **
+    **                                                                               **
+    ** The return value is S_OK if succeeded or:                                     **
+    **   E_POINTER                       if pDataTarget is NULL                      **
+    **   CORDBG_E_LIBRARY_PROVIDER_ERROR if the ICLRDebuggingLibraryProvider callback**
+    **                                   returns an error or does not provide a valid**
+    **                                   handle                                      **
+    **    CORDBG_E_MISSING_DATA_TARGET_INTERFACE if the pDataTarget argument does not**
+    **                                   implement the required data target          **
+    **                                   interfaces for this version of the runtime. **
+    **    CORDBG_E_NOT_CLR               if the indicated module is not a clr. It is **
+    **                                   possible that modules which do represent a  **
+    **                                   CLR will not be detected if memory has been **
+    **                                   corrupted, is not available, or the CLR is  **
+    **                                   of a newer version than the shim.           **
+    **    CORDBG_E_UNSUPPORTED_DEBUGGING_MODEL if this runtime version does not      **
+    **                                   support this debugging model. Currently v4  **
+    **                                   supports this model and no previous version **
+    **                                   does. The pVersion output argument will     **
+    **                                   still be set to the correct value after     **
+    **                                   receiving this error.                       **
+    **    CORDBG_E_UNSUPPORTED_FORWARD_COMPAT if the version of the CLR is not       **
+    **                                   compatible with the version this debugger   **
+    **                                   claims to support. The pVersion output      **
+    **                                   argument will still be set to the correct   **
+    **                                   value after receiving this error.           **
+    **    E_NO_INTERFACE                 if the riidProcess interface is not         **
+    **                                   available.                                  **
+    **    CORDBG_E_UNSUPPORTED_VERSION_STRUCT if the version struct does not have a  **
+    **                                   recognized value for wStructVersion. The    **
+    **                                   only accepted value at this time is 0.      **
+    **    Any other convenient HRESULT error, depending on the execution.            **
+    **********************************************************************************/
+    HRESULT OpenVirtualProcess(
+        [in] ULONG64 moduleBaseAddress,
+        [in] IUnknown * pDataTarget,
+        [in] ICLRDebuggingLibraryProvider * pLibraryProvider,
+        [in] CLR_DEBUGGING_VERSION * pMaxDebuggerSupportedVersion,
+        [in] REFIID riidProcess,
+        [out, iid_is(riidProcess)] IUnknown ** ppProcess,
+        [in, out] CLR_DEBUGGING_VERSION * pVersion,
+        [out] CLR_DEBUGGING_PROCESS_FLAGS * pdwFlags);
+
+    /**********************************************************************************
+    ** Determines if a library provided via an ICLRDebuggingLibraryProvider is still **
+    ** in use. Functionally this checks to see if all instances of ICorDebug*        **
+    ** interfaces have been released and no thread is currently within a call to     **
+    ** OpenVirtualProcess.                                                           **
+    ** Arguments:                                                                    **
+    **   hModule - A module handle previously provided by the                        **
+    **             ICLRDebuggingLibraryProvider used in OpenVirtualProcess           **
+    ** Returns:                                                                      **
+    **   S_OK if the module can be unloaded now                                      **
+    **   S_FALSE if the module is still in use                                       **
+    **   Any other error HRESULT if a failure occurs                                 **
+    **                                                                               **
+    ** Notes: As of the V4.0 implementation unloading is still not fully supported   **
+    **   and all calls to this method will return S_FALSE.                           **
+    **********************************************************************************/
+    HRESULT CanUnloadNow(HMODULE hModule);
+} // interface ICLRDebugging
+
+/**************************************************************************************
+ ** ICLRRuntimeInfo                                                                  **
+ ** Represents a runtime - installed on the machine and/or loaded into a process.    **
+ ** Includes functionality for obtaining various properties and for loading the      **
+ ** runtime into the current process. The same installed runtime can be loaded       **
+ ** multiple times in the same process (may not be supported in Dev10).              **
+ **************************************************************************************/
+[
+    uuid(BD39D1D2-BA2F-486a-89B0-B4B0CB466891),
+    version(1.0),
+    helpstring("CLR runtime instance"),
+    local
+]
+interface ICLRRuntimeInfo : IUnknown
+{
+    // Methods that query information:
+
+    /**********************************************************************************
+     ** Returns the version of this runtime in the usual v-prefixed dotted form.     **
+     ** Supersedes: GetRequestedRuntimeInfo, GetRequestedRuntimeVersion,             **
+     **     GetCORVersion                                                            **
+     **********************************************************************************/
+    HRESULT GetVersionString(
+        [out, size_is(*pcchBuffer), annotation("_Out_writes_all_opt_(*pcchBuffer)")]
+                   LPWSTR pwzBuffer,
+        [in, out]  DWORD *pcchBuffer);
+
+    /**********************************************************************************
+     ** Returns the directory where this runtime is installed.                       **
+     ** Supersedes: GetCORSystemDirectory                                            **
+     **********************************************************************************/
+    HRESULT GetRuntimeDirectory(
+        [out, size_is(*pcchBuffer), annotation("_Out_writes_all_(*pcchBuffer)")]
+                   LPWSTR pwzBuffer,
+        [in, out]  DWORD *pcchBuffer);
+
+    /**********************************************************************************
+     ** Returns TRUE if this runtime is loaded into the specified process.           **
+     ** Supersedes: GetCORSystemDirectory                                            **
+     **********************************************************************************/
+    HRESULT IsLoaded(
+        [in]  HANDLE hndProcess,
+        [out, retval] BOOL *pbLoaded);
+
+    // Methods that may load the runtime:
+
+    /**********************************************************************************
+     ** Translates an HRESULT value into an error message. Use iLocaleID -1 for the  **
+     ** default culture of the current thread.                                       **
+     ** Supersedes: LoadStringRC, LoadStringRCEx                                     **
+     **********************************************************************************/
+    HRESULT LoadErrorString(
+        [in]       UINT iResourceID,
+        [out, size_is(*pcchBuffer), annotation("_Out_writes_all_(*pcchBuffer)")]
+                   LPWSTR pwzBuffer,
+        [in, out]  DWORD *pcchBuffer,
+        [in, lcid] LONG iLocaleID);
+
+    /**********************************************************************************
+     ** Loads a library located alongside this runtime.                              **
+     ** Supersedes: LoadLibraryShim                                                  **
+     **********************************************************************************/
+    HRESULT LoadLibrary(
+        [in]  LPCWSTR pwzDllName,
+        [out, retval] HMODULE *phndModule);
+
+    /**********************************************************************************
+     ** Gets the address of the specified function exported from this runtime.       **
+     ** It should NOT be documented what module the function lives in. We may want   **
+     ** to implement some forwarding policy here. The reason for exposing            **
+     ** GetProcAddress are functions like mscorwks!GetCLRIdentityManager.            **
+     ** Supersedes: GetRealProcAddress                                               **
+     **********************************************************************************/
+    HRESULT GetProcAddress(
+        [in]  LPCSTR pszProcName,
+        [out, retval] LPVOID *ppProc);
+
+    /**********************************************************************************
+     ** Loads the runtime into the current process and returns an interface through  **
+     ** which runtime functionality is provided.                                     **
+     **                                                                              **
+     ** Supported CLSIDs/IIDs:                                                       **
+     ** CLSID_CorMetaDataDispenser   IID_IMetaDataDispenser,IID_IMetaDataDispenserEx **
+     ** CLSID_CorMetaDataDispenserRuntime  dtto                                      **
+     ** CLSID_CorRuntimeHost         IID_ICorRuntimeHost                             **
+     ** CLSID_CLRRuntimeHost         IID_ICLRRuntimeHost                             **
+     ** CLSID_TypeNameFactory        IID_ITypeNameFactory                            **
+     ** CLSID_CLRStrongName          IID_ICLRStrongName                              **
+     ** CLSID_CLRDebuggingLegacy     IID_ICorDebug                                   **
+     **                                                                              **
+     ** Supersedes: CorBindTo* and others                                            **
+     **********************************************************************************/
+    HRESULT GetInterface(
+        [in]  REFCLSID rclsid,
+        [in]  REFIID   riid,
+        [out, iid_is(riid), retval] LPVOID *ppUnk);
+
+    // Does not load runtime
+
+    /**********************************************************************************
+     ** Returns TRUE if this runtime could be loaded into the current process. Note  **
+     ** that this method is side-effect free, and thus does not represent a			 **
+     ** commitment to be able to load this runtime if it sets *pbLoadable to be TRUE.**
+     ** Supersedes: none                                                             **
+     **********************************************************************************/
+    HRESULT IsLoadable(
+        [out, retval] BOOL *pbLoadable);
+
+    /**********************************************************************************
+     ** Sets startup flags and host config file that will be used at startup.        **
+     ** Supersedes: The startupFlags parameter in CorBindToRuntimeEx/Host            **
+     **********************************************************************************/
+    HRESULT SetDefaultStartupFlags(
+        [in]  DWORD dwStartupFlags,
+        [in]  LPCWSTR pwzHostConfigFile);
+
+    /**********************************************************************************
+     ** Gets startup flags and host config file that will be used at startup.        **
+     ** Supersedes: GetStartupFlags, GetHostConfigurationFile                        **
+     **********************************************************************************/
+    HRESULT GetDefaultStartupFlags(
+        [out]      DWORD *pdwStartupFlags,
+        [out, size_is(*pcchHostConfigFile), annotation("_Out_writes_all_opt_(*pcchHostConfigFile)")]
+                   LPWSTR pwzHostConfigFile,
+        [in, out]  DWORD *pcchHostConfigFile);
+
+    /**********************************************************************************
+     ** If not already bound (for example, with a useLegacyV2RuntimeActivationPolicy **
+     ** config setting), binds this runtime for all legacy V2 activation policy      **
+     ** decisions. If a different runtime was already bound to the legacy V2         **
+     ** activation policy, returns CLR_E_SHIM_LEGACYRUNTIMEALREADYBOUND. If this     **
+     ** runtime was already bound as the legacy V2 activation policy runtime,        **
+     ** returns S_OK.                                                                **
+     **********************************************************************************/
+    HRESULT BindAsLegacyV2Runtime();
+
+    /**********************************************************************************
+     ** Returns TRUE if the runtime has been started, i.e. Start() has been called.  **
+     ** If it has been started, its STARTUP_FLAGS are returned.                      **
+     **                                                                              **
+     ** IMPORTANT: This method is valid only for v4+ runtimes. This method will      **
+     ** return E_NOTIMPL for all pre-v4 runtimes.                                    **
+     **********************************************************************************/
+    HRESULT IsStarted(
+        [out] BOOL *pbStarted,
+        [out] DWORD *pdwStartupFlags);
+};

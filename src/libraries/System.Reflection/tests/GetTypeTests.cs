@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -260,6 +260,15 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(int), Type.GetType("System.Int32", throwOnError: true));
             Assert.Equal(typeof(int), Type.GetType("system.int32", throwOnError: true, ignoreCase: true));
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37871", TestRuntimes.Mono)]
+        public void GetType_GenericTypeArgumentList()
+        {
+            Assert.NotNull(Type.GetType("System.Reflection.Tests.GenericClass`1", throwOnError: true));
+            Assert.Equal(typeof(System.Reflection.Tests.GenericClass<System.String>), Type.GetType("System.Reflection.Tests.GenericClass`1[[System.String, System.Private.CoreLib]]", throwOnError: true));
+            Assert.Throws<FileNotFoundException>(() => Type.GetType("System.Reflection.Tests.GenericClass`1[[Bogus, BogusAssembly]]", throwOnError: true));
+        }
     }
 
     namespace MyNamespace1
@@ -307,4 +316,6 @@ namespace System.Reflection.Tests
     }
 
     public class MyClass1 { }
+
+    public class GenericClass<T> { }
 }

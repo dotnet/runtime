@@ -1,0 +1,51 @@
+Disabled Test Cases
+~~~~~~~~~~~~~~~~~~~
+
+Below is a list of all disabled test cases currently listed in
+testconfig.dat and an explanation as to why they are disabled.
+
+debug_api/debugbreak/test1
+debug_api/outputdebugstringa/test1
+debug_api/outputdebugstringw/test1
+debug_api/writeprocessmemory/test1
+debug_api/writeprocessmemory/test3
+debug_api/writeprocessmemory/test4
+=======================================
+The above testcases were disabled in the palsuite, because they depend heavily on
+WaitForDebugEvent,DebugActiveProcess and ContinueDebugEvent, where these api's
+have been removed from the PAL.
+
+
+file_io/gettempfilenamea/test2 :
+=======================================
+This test takes longer than 60 seconds to run. The test creates
+about 65000 files and then deletes them. The test that takes longer
+than 60 seconds will be flagged as an error and so in such a case
+the test will have to be run manually.
+
+file_io/gettempfilenamew/test2 :
+=======================================
+This test takes longer than 60 seconds to run. The test creates
+about 65000 files and then deletes them. The test that takes longer
+than 60 seconds will be flagged as an error and so in such a case
+the test will have to be run manually.
+
+locale_info/getcpinfo/test2:
+=======================================
+This test will be useful in future versions for testing various
+languages (code pages).  Currently only U.S. English (tested by -
+test1) is supported.
+
+locale_info/getcpinfo/test3:
+=======================================
+This test will be useful in future versions for testing various
+languages (code pages).  Currently only U.S. English (tested by -
+test1) is supported.
+
+pal_specific/pal_get_stdin/test1 :
+=======================================
+This test case should be run manually.  Requires user input.
+
+filemapping_memmgt\MapViewOfFile\test1
+=======================================
+Refer this github issue https://github.com/dotnet/runtime/issues/5924

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Http;
@@ -9,6 +8,7 @@ using Xunit;
 
 namespace System.Net.Http.Tests
 {
+    [SkipOnMono("System.Security.Cryptography is not supported on Browser, see https://github.com/dotnet/runtime/pull/38379", TestPlatforms.Browser)]
     public class DigestAuthenticationTests
     {
         private static readonly List<string> s_keyListWithCountTwo = new List<string> { "key1", "key2" };

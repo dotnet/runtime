@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Xunit;
@@ -15,7 +14,7 @@ namespace Microsoft.Win32.SystemEventsTests
             SendMessage(User32.WM_POWERBROADCAST, (IntPtr)pmEvent, IntPtr.Zero);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [InlineData(User32.PBT_APMBATTERYLOW, PowerModes.StatusChange)]
         [InlineData(User32.PBT_APMOEMEVENT, PowerModes.StatusChange)]
         [InlineData(User32.PBT_APMPOWERSTATUSCHANGE, PowerModes.StatusChange)]
@@ -49,7 +48,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [InlineData(User32.PBT_APMQUERYSTANDBY)]
         [InlineData(User32.PBT_APMQUERYSTANDBYFAILED)]
         [InlineData(User32.PBT_APMQUERYSUSPEND)]

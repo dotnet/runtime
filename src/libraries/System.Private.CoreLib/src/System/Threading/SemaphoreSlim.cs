@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -28,13 +28,13 @@ namespace System.Threading
     {
         #region Private Fields
 
-        // The semaphore count, initialized in the constructor to the initial value, every release call incremetns it
+        // The semaphore count, initialized in the constructor to the initial value, every release call increments it
         // and every wait call decrements it as long as its value is positive otherwise the wait will block.
         // Its value must be between the maximum semaphore value and zero
         private volatile int m_currentCount;
 
         // The maximum semaphore value, it is initialized to Int.MaxValue if the client didn't specify it. it is used
-        // to check if the count excceeded the maxi value or not.
+        // to check if the count exceeded the maximum value or not.
         private readonly int m_maxCount;
 
         // The number of synchronously waiting threads, it is set to zero in the constructor and increments before blocking the
@@ -61,13 +61,6 @@ namespace System.Threading
 
         // Tail of list representing asynchronous waits on the semaphore.
         private TaskNode? m_asyncTail;
-
-        // A pre-completed task with Result==true
-        private static readonly Task<bool> s_trueTask =
-            new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
-        // A pre-completed task with Result==false
-        private static readonly Task<bool> s_falseTask =
-            new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         // No maximum constant
         private const int NO_MAXIMUM = int.MaxValue;
@@ -180,6 +173,7 @@ namespace System.Threading
         /// </summary>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void Wait()
         {
             // Call wait with infinite timeout
@@ -196,6 +190,7 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void Wait(CancellationToken cancellationToken)
         {
             // Call wait with infinite timeout
@@ -214,6 +209,7 @@ namespace System.Threading
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/>.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout)
         {
             // Validate the timeout
@@ -244,6 +240,7 @@ namespace System.Threading
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             // Validate the timeout
@@ -268,6 +265,7 @@ namespace System.Threading
         /// otherwise, false.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
         /// negative number other than -1, which represents an infinite time-out.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout)
         {
             return Wait(millisecondsTimeout, CancellationToken.None);
@@ -285,6 +283,7 @@ namespace System.Threading
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a negative number other than -1,
         /// which represents an infinite time-out.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             CheckDispose();
@@ -342,17 +341,8 @@ namespace System.Threading
                         }
                     }
                 }
-                // entering the lock and incrementing waiters must not suffer a thread-abort, else we cannot
-                // clean up m_waitCount correctly, which may lead to deadlock due to non-woken waiters.
-                try { }
-                finally
-                {
-                    Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
-                    if (lockTaken)
-                    {
-                        m_waitCount++;
-                    }
-                }
+                Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
+                m_waitCount++;
 
                 // If there are any async waiters, for fairness we'll get in line behind
                 // then by translating our synchronous wait into an asynchronous one that we
@@ -440,6 +430,7 @@ namespace System.Threading
         /// <param name="startTime">The start ticks to calculate the elapsed time</param>
         /// <param name="cancellationToken">The CancellationToken to observe.</param>
         /// <returns>true if the monitor received a signal, false if the timeout expired</returns>
+        [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(int millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
@@ -626,12 +617,12 @@ namespace System.Threading
                 {
                     --m_currentCount;
                     if (m_waitHandle != null && m_currentCount == 0) m_waitHandle.Reset();
-                    return s_trueTask;
+                    return Task.FromResult(true);
                 }
                 else if (millisecondsTimeout == 0)
                 {
                     // No counts, if timeout is zero fail fast
-                    return s_falseTask;
+                    return Task.FromResult(false);
                 }
                 // If there aren't, create and return a task to the caller.
                 // The task will be completed either when they've successfully acquired
@@ -729,7 +720,7 @@ namespace System.Threading
             {
                 // Wait until either the task is completed or cancellation is requested.
                 var cancellationTask = new Task(null, TaskCreationOptions.RunContinuationsAsynchronously, promiseStyle: true);
-                using (cancellationToken.UnsafeRegister(s => ((Task)s!).TrySetResult(), cancellationTask))
+                using (cancellationToken.UnsafeRegister(static s => ((Task)s!).TrySetResult(), cancellationTask))
                 {
                     if (asyncWaiter == await Task.WhenAny(asyncWaiter, cancellationTask).ConfigureAwait(false))
                     {

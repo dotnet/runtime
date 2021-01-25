@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -58,6 +57,8 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Sin(float x);
+
+        public static (float Sin, float Cos) SinCos(float x) => (Sin(x), Cos(x));
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Sinh(float x);

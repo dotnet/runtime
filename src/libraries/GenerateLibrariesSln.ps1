@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 # Creates a .sln that includes all of the library src, ref, or tests projects.
 
@@ -36,5 +35,5 @@ foreach ($f in Get-ChildItem -Recurse -Path $([System.IO.Path]::Combine("*", $ty
 if ($type -eq "src")
 {
     # Also add CoreLib if this is for src projects
-    dotnet sln $SolutionName add --in-root $f.FullName $([System.IO.Path]::Combine("..", "coreclr", "src", "System.Private.CoreLib", "System.Private.CoreLib.csproj"))
+    dotnet sln $SolutionName add --in-root $f.FullName $([System.IO.Path]::Combine("..", "coreclr", "System.Private.CoreLib", "System.Private.CoreLib.csproj"))
 }

@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
@@ -21,17 +20,13 @@ namespace Microsoft.Extensions.Caching.Memory
     /// </summary>
     public class MemoryCache : IMemoryCache
     {
-        private readonly ConcurrentDictionary<object, CacheEntry> _entries;
-        private long _cacheSize = 0;
-        private bool _disposed;
-        private ILogger _logger;
-
-        // We store the delegates locally to prevent allocations
-        // every time a new CacheEntry is created.
-        private readonly Action<CacheEntry> _setEntry;
-        private readonly Action<CacheEntry> _entryExpirationNotification;
+        internal readonly ILogger _logger;
 
         private readonly MemoryCacheOptions _options;
+        private readonly ConcurrentDictionary<object, CacheEntry> _entries;
+
+        private long _cacheSize;
+        private bool _disposed;
         private DateTimeOffset _lastExpirationScan;
 
         /// <summary>
@@ -62,8 +57,6 @@ namespace Microsoft.Extensions.Caching.Memory
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
             _entries = new ConcurrentDictionary<object, CacheEntry>();
-            _setEntry = SetEntry;
-            _entryExpirationNotification = EntryExpired;
 
             if (_options.Clock == null)
             {
@@ -76,18 +69,12 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Cleans up the background collection events.
         /// </summary>
-        ~MemoryCache()
-        {
-            Dispose(false);
-        }
+        ~MemoryCache() => Dispose(false);
 
         /// <summary>
         /// Gets the count of the current entries for diagnostic purposes.
         /// </summary>
-        public int Count
-        {
-            get { return _entries.Count; }
-        }
+        public int Count => _entries.Count;
 
         // internal for testing
         internal long Size { get => Interlocked.Read(ref _cacheSize); }
@@ -98,17 +85,12 @@ namespace Microsoft.Extensions.Caching.Memory
         public ICacheEntry CreateEntry(object key)
         {
             CheckDisposed();
-
             ValidateCacheKey(key);
 
-            return new CacheEntry(
-                key,
-                _setEntry,
-                _entryExpirationNotification
-            );
+            return new CacheEntry(key, this);
         }
 
-        private void SetEntry(CacheEntry entry)
+        internal void SetEntry(CacheEntry entry)
         {
             if (_disposed)
             {
@@ -118,19 +100,19 @@ namespace Microsoft.Extensions.Caching.Memory
 
             if (_options.SizeLimit.HasValue && !entry.Size.HasValue)
             {
-                throw new InvalidOperationException($"Cache entry must specify a value for {nameof(entry.Size)} when {nameof(_options.SizeLimit)} is set.");
+                throw new InvalidOperationException(SR.Format(SR.CacheEntryHasEmptySize, nameof(entry.Size), nameof(_options.SizeLimit)));
             }
 
-            var utcNow = _options.Clock.UtcNow;
+            DateTimeOffset utcNow = _options.Clock.UtcNow;
 
             DateTimeOffset? absoluteExpiration = null;
-            if (entry._absoluteExpirationRelativeToNow.HasValue)
+            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
             {
-                absoluteExpiration = utcNow + entry._absoluteExpirationRelativeToNow;
+                absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow;
             }
-            else if (entry._absoluteExpiration.HasValue)
+            else if (entry.AbsoluteExpiration.HasValue)
             {
-                absoluteExpiration = entry._absoluteExpiration;
+                absoluteExpiration = entry.AbsoluteExpiration;
             }
 
             // Applying the option's absolute expiration only if it's not already smaller.
@@ -138,9 +120,9 @@ namespace Microsoft.Extensions.Caching.Memory
             // it was set by cascading it to its parent.
             if (absoluteExpiration.HasValue)
             {
-                if (!entry._absoluteExpiration.HasValue || absoluteExpiration.Value < entry._absoluteExpiration.Value)
+                if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration.Value < entry.AbsoluteExpiration.Value)
                 {
-                    entry._absoluteExpiration = absoluteExpiration;
+                    entry.AbsoluteExpiration = absoluteExpiration;
                 }
             }
 
@@ -152,11 +134,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 priorEntry.SetExpired(EvictionReason.Replaced);
             }
 
-            var exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry);
+            bool exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry);
 
             if (!entry.CheckExpired(utcNow) && !exceedsCapacity)
             {
-                var entryAdded = false;
+                bool entryAdded = false;
 
                 if (priorEntry == null)
                 {
@@ -214,6 +196,14 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     TriggerOvercapacityCompaction();
                 }
+                else
+                {
+                    if (_options.SizeLimit.HasValue)
+                    {
+                        // Entry could not be added due to being expired, reset cache size
+                        Interlocked.Add(ref _cacheSize, -entry.Size.Value);
+                    }
+                }
 
                 entry.InvokeEvictionCallbacks();
                 if (priorEntry != null)
@@ -222,53 +212,54 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            StartScanForExpiredItems();
+            StartScanForExpiredItemsIfNeeded(utcNow);
         }
 
         /// <inheritdoc />
         public bool TryGetValue(object key, out object result)
         {
             ValidateCacheKey(key);
-
             CheckDisposed();
 
-            result = null;
-            var utcNow = _options.Clock.UtcNow;
-            var found = false;
+            DateTimeOffset utcNow = _options.Clock.UtcNow;
 
             if (_entries.TryGetValue(key, out CacheEntry entry))
             {
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
-                if (entry.CheckExpired(utcNow) && entry.EvictionReason != EvictionReason.Replaced)
+                if (!entry.CheckExpired(utcNow) || entry.EvictionReason == EvictionReason.Replaced)
+                {
+                    entry.LastAccessed = utcNow;
+                    result = entry.Value;
+
+                    if (entry.CanPropagateOptions())
+                    {
+                        // When this entry is retrieved in the scope of creating another entry,
+                        // that entry needs a copy of these expiration tokens.
+                        entry.PropagateOptions(CacheEntryHelper.Current);
+                    }
+
+                    StartScanForExpiredItemsIfNeeded(utcNow);
+
+                    return true;
+                }
+                else
                 {
                     // TODO: For efficiency queue this up for batch removal
                     RemoveEntry(entry);
                 }
-                else
-                {
-                    found = true;
-                    entry.LastAccessed = utcNow;
-                    result = entry.Value;
-
-                    // When this entry is retrieved in the scope of creating another entry,
-                    // that entry needs a copy of these expiration tokens.
-                    entry.PropagateOptions(CacheEntryHelper.Current);
-                }
             }
 
-            StartScanForExpiredItems();
+            StartScanForExpiredItemsIfNeeded(utcNow);
 
-            return found;
+            result = null;
+            return false;
         }
 
         /// <inheritdoc />
         public void Remove(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ValidateCacheKey(key);
 
             CheckDisposed();
             if (_entries.TryRemove(key, out CacheEntry entry))
@@ -282,7 +273,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.InvokeEvictionCallbacks();
             }
 
-            StartScanForExpiredItems();
+            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
         }
 
         private void RemoveEntry(CacheEntry entry)
@@ -297,21 +288,26 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        private void EntryExpired(CacheEntry entry)
+        internal void EntryExpired(CacheEntry entry)
         {
             // TODO: For efficiency consider processing these expirations in batches.
             RemoveEntry(entry);
-            StartScanForExpiredItems();
+            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
         }
 
         // Called by multiple actions to see how long it's been since we last checked for expired items.
         // If sufficient time has elapsed then a scan is initiated on a background task.
-        private void StartScanForExpiredItems()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void StartScanForExpiredItemsIfNeeded(DateTimeOffset utcNow)
         {
-            var now = _options.Clock.UtcNow;
-            if (_options.ExpirationScanFrequency < now - _lastExpirationScan)
+            if (_options.ExpirationScanFrequency < utcNow - _lastExpirationScan)
             {
-                _lastExpirationScan = now;
+                ScheduleTask(utcNow);
+            }
+
+            void ScheduleTask(DateTimeOffset utcNow)
+            {
+                _lastExpirationScan = utcNow;
                 Task.Factory.StartNew(state => ScanForExpiredItems((MemoryCache)state), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
@@ -319,8 +315,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private static void ScanForExpiredItems(MemoryCache cache)
         {
-            var now = cache._options.Clock.UtcNow;
-            foreach (var entry in cache._entries.Values)
+            DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
+            foreach (CacheEntry entry in cache._entries.Values)
             {
                 if (entry.CheckExpired(now))
                 {
@@ -336,10 +332,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
-            var newSize = 0L;
-            for (var i = 0; i < 100; i++)
+            long newSize = 0L;
+            for (int i = 0; i < 100; i++)
             {
-                var sizeRead = Interlocked.Read(ref _cacheSize);
+                long sizeRead = Interlocked.Read(ref _cacheSize);
                 newSize = sizeRead + entry.Size.Value;
 
                 if (newSize < 0 || newSize > _options.SizeLimit)
@@ -367,11 +363,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private static void OvercapacityCompaction(MemoryCache cache)
         {
-            var currentSize = Interlocked.Read(ref cache._cacheSize);
+            long currentSize = Interlocked.Read(ref cache._cacheSize);
 
             cache._logger.LogDebug($"Overcapacity compaction executing. Current size {currentSize}");
 
-            var lowWatermark = cache._options.SizeLimit * (1 - cache._options.CompactionPercentage);
+            double? lowWatermark = cache._options.SizeLimit * (1 - cache._options.CompactionPercentage);
             if (currentSize > lowWatermark)
             {
                 cache.Compact(currentSize - (long)lowWatermark, entry => entry.Size.Value);
@@ -402,8 +398,8 @@ namespace Microsoft.Extensions.Caching.Memory
             long removedSize = 0;
 
             // Sort items by expired & priority status
-            var now = _options.Clock.UtcNow;
-            foreach (var entry in _entries.Values)
+            DateTimeOffset now = _options.Clock.UtcNow;
+            foreach (CacheEntry entry in _entries.Values)
             {
                 if (entry.CheckExpired(now))
                 {
@@ -435,39 +431,40 @@ namespace Microsoft.Extensions.Caching.Memory
             ExpirePriorityBucket(ref removedSize, removalSizeTarget, computeEntrySize, entriesToRemove, normalPriEntries);
             ExpirePriorityBucket(ref removedSize, removalSizeTarget, computeEntrySize, entriesToRemove, highPriEntries);
 
-            foreach (var entry in entriesToRemove)
+            foreach (CacheEntry entry in entriesToRemove)
             {
                 RemoveEntry(entry);
             }
-        }
 
-        /// Policy:
-        /// 1. Least recently used objects.
-        /// ?. Items with the soonest absolute expiration.
-        /// ?. Items with the soonest sliding expiration.
-        /// ?. Larger objects - estimated by object graph size, inaccurate.
-        private void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<CacheEntry> priorityEntries)
-        {
-            // Do we meet our quota by just removing expired entries?
-            if (removalSizeTarget <= removedSize)
+            // Policy:
+            // 1. Least recently used objects.
+            // ?. Items with the soonest absolute expiration.
+            // ?. Items with the soonest sliding expiration.
+            // ?. Larger objects - estimated by object graph size, inaccurate.
+            static void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<CacheEntry> priorityEntries)
             {
-                // No-op, we've met quota
-                return;
-            }
-
-            // Expire enough entries to reach our goal
-            // TODO: Refine policy
-
-            // LRU
-            foreach (var entry in priorityEntries.OrderBy(entry => entry.LastAccessed))
-            {
-                entry.SetExpired(EvictionReason.Capacity);
-                entriesToRemove.Add(entry);
-                removedSize += computeEntrySize(entry);
-
+                // Do we meet our quota by just removing expired entries?
                 if (removalSizeTarget <= removedSize)
                 {
-                    break;
+                    // No-op, we've met quota
+                    return;
+                }
+
+                // Expire enough entries to reach our goal
+                // TODO: Refine policy
+
+                // LRU
+                priorityEntries.Sort((e1, e2) => e1.LastAccessed.CompareTo(e2.LastAccessed));
+                foreach (CacheEntry entry in priorityEntries)
+                {
+                    entry.SetExpired(EvictionReason.Capacity);
+                    entriesToRemove.Add(entry);
+                    removedSize += computeEntrySize(entry);
+
+                    if (removalSizeTarget <= removedSize)
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -494,16 +491,20 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                Throw();
             }
+
+            static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
         private static void ValidateCacheKey(object key)
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key));
+                Throw();
             }
+
+            static void Throw() => throw new ArgumentNullException(nameof(key));
         }
     }
 }

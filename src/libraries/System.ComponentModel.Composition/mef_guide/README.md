@@ -1,6 +1,6 @@
 # MEF1 vs. MEF2
 
-* MEF1 is used to compose different pieces of code together for dynamic extensions. It has attributes like `Export` and `Import`, hooking up import classes to exports. MEF has a catalog that keeps track of exports and looks at assembly, directory, type catalogs to discover exports. Container instantiates objects and satisfies imports. We do a series of object instantiations, catalog lookups, and finding exports to get the model that is handed out from a container. 
+* MEF1 is used to compose different pieces of code together for dynamic extensions. It has attributes like `Export` and `Import`, hooking up import classes to exports. MEF has a catalog that keeps track of exports and looks at assembly, directory, type catalogs to discover exports. Container instantiates objects and satisfies imports. We do a series of object instantiations, catalog lookups, and finding exports to get the model that is handed out from a container.
 
 * MEF2 is purely type-based and in order to compose the graph it creates a catalog at compile-time. It builds graphs using expression trees. The expression trees in MEF2 fundamentally cannot have cycles in them. This is a limitation you get when you go for MEF2 that is an optimzed version of MEF1. This was done to improve performance and to have the graph known already at compile-time.
 

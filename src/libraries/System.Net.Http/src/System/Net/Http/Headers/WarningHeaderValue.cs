@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -12,10 +11,10 @@ namespace System.Net.Http.Headers
 {
     public class WarningHeaderValue : ICloneable
     {
-        private int _code;
-        private string _agent = null!;
-        private string _text = null!;
-        private DateTimeOffset? _date;
+        private readonly int _code;
+        private readonly string _agent;
+        private readonly string _text;
+        private readonly DateTimeOffset? _date;
 
         public int Code
         {
@@ -58,10 +57,6 @@ namespace System.Net.Http.Headers
             _agent = agent;
             _text = text;
             _date = date;
-        }
-
-        private WarningHeaderValue()
-        {
         }
 
         private WarningHeaderValue(WarningHeaderValue source)
@@ -190,6 +185,8 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
+            string text = input.Substring(textStartIndex, textLength);
+
             current = current + textLength;
 
             // Read <date> in '<code> <agent> <text> ["<date>"]'
@@ -199,13 +196,10 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            WarningHeaderValue result = new WarningHeaderValue();
-            result._code = code;
-            result._agent = agent;
-            result._text = input.Substring(textStartIndex, textLength);
-            result._date = date;
+            parsedValue = date is null ?
+                new WarningHeaderValue(code, agent, text) :
+                new WarningHeaderValue(code, agent, text, date.Value);
 
-            parsedValue = result;
             return current - startIndex;
         }
 

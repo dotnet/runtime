@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerProcessor : IDisposable
     {
         private const int _maxQueuedMessages = 1024;
@@ -44,35 +45,23 @@ namespace Microsoft.Extensions.Logging.Console
             // Adding is completed so just log the message
             try
             {
-                WriteMessage(message);            
+                WriteMessage(message);
             }
             catch (Exception) { }
         }
 
         // for testing
-        internal virtual void WriteMessage(LogMessageEntry message)
+        internal virtual void WriteMessage(LogMessageEntry entry)
         {
-            var console = message.LogAsError ? ErrorConsole : Console;
-
-            if (message.TimeStamp != null)
-            {
-                console.Write(message.TimeStamp, message.MessageColor, message.MessageColor);
-            }
-
-            if (message.LevelString != null)
-            {
-                console.Write(message.LevelString, message.LevelBackground, message.LevelForeground);
-            }
-
-            console.Write(message.Message, message.MessageColor, message.MessageColor);
-            console.Flush();
+            IConsole console = entry.LogAsError ? ErrorConsole : Console;
+            console.Write(entry.Message);
         }
 
         private void ProcessLogQueue()
         {
             try
             {
-                foreach (var message in _messageQueue.GetConsumingEnumerable())
+                foreach (LogMessageEntry message in _messageQueue.GetConsumingEnumerable())
                 {
                     WriteMessage(message);
                 }

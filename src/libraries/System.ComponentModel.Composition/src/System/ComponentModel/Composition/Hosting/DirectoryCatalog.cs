@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,6 +21,13 @@ namespace System.ComponentModel.Composition.Hosting
     [DebuggerTypeProxy(typeof(DirectoryCatalogDebuggerProxy))]
     public partial class DirectoryCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged, ICompositionElement
     {
+        private static bool IsWindows =>
+#if NETSTANDARD || NETCOREAPP2_0
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#else
+            OperatingSystem.IsWindows();
+#endif
+
         private readonly Lock _thisLock = new Lock();
         private readonly ICompositionElement? _definitionOrigin;
         private ComposablePartCatalogCollection _catalogCollection;
@@ -241,6 +247,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Path to the directory to scan for assemblies to add to the catalog.
         ///     The path needs to be absolute or relative to <see cref="AppDomain.BaseDirectory"/>
         /// </param>
+        /// <param name="searchPattern">The search string. The format of the string should be the same as specified for the <see cref="GetFiles"/> method.</param>
         /// <param name="definitionOrigin">
         ///     The <see cref="ICompositionElement"/> CompositionElement used by Diagnostics to identify the source for parts.
         /// </param>
@@ -736,13 +743,19 @@ namespace System.ComponentModel.Composition.Hosting
         private string[] GetFiles()
         {
             string[] files = Directory.GetFiles(_fullPath, _searchPattern);
-            return Array.ConvertAll<string, string>(files, (file) => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? file.ToUpperInvariant() : file);
+
+            if (!IsWindows)
+            {
+                return files;
+            }
+
+            return Array.ConvertAll<string, string>(files, (file) => file.ToUpperInvariant());
         }
 
         private static string GetFullPath(string path)
         {
             var fullPath = IOPath.GetFullPath(path);
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? fullPath.ToUpperInvariant() : fullPath;
+            return IsWindows ? fullPath.ToUpperInvariant() : fullPath;
         }
 
         [MemberNotNull(nameof(_path))]

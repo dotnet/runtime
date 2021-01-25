@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -458,7 +458,7 @@ namespace System.Xml
             CheckAsyncCall();
             string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
 
-            if (_checkCharacters && !_xmlCharType.IsCharData(ch))
+            if (_checkCharacters && !XmlCharType.IsCharData(ch))
             {
                 // we just have a single char, not a surrogate, therefore we have to pass in '\0' for the second char
                 throw XmlConvert.CreateInvalidCharException(ch, '\0');
@@ -661,7 +661,6 @@ namespace System.Xml
                 // Move last buffer character to the beginning of the buffer (so that previous character can always be determined)
                 _bufChars[0] = _bufChars[_bufPos - 1];
 
-
                 // Reset buffer position
                 _textPos = (_textPos == _bufPos) ? 1 : 0;
                 _attrEndPos = (_attrEndPos == _bufPos) ? 1 : 0;
@@ -738,7 +737,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -942,7 +941,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1358,7 +1357,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && _xmlCharType.IsTextChar((char)(ch = *pSrc)))
+                    while (pDst < pDstEnd && XmlCharType.IsTextChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1560,7 +1559,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + _bufLen;
                         }
 
-                        while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar))
+                        while (pDst < pDstEnd && (XmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar))
                         {
                             *pDst = (char)ch;
                             pDst++;
@@ -1750,7 +1749,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + _bufLen;
                         }
 
-                        while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']'))
+                        while (pDst < pDstEnd && (XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']'))
                         {
                             *pDst = (char)ch;
                             pDst++;

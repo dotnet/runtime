@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Threading;
@@ -32,7 +31,7 @@ namespace System.Security.Cryptography.Hashing.Tests
             Assert.Equal(input.Sum(b => (long)b), BitConverter.ToInt64(output, 0));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(0)]
         [InlineData(10)]
         [InlineData(4096)]
@@ -59,7 +58,7 @@ namespace System.Security.Cryptography.Hashing.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ComputeHashAsync_SupportsCancellation()
         {
             using (CancellationTokenSource cancellationSource = new CancellationTokenSource(100))

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -410,7 +410,7 @@ namespace System.Xml
             CheckAsyncCall();
             string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
 
-            if (_checkCharacters && !_xmlCharType.IsCharData(ch))
+            if (_checkCharacters && !XmlCharType.IsCharData(ch))
             {
                 // we just have a single char, not a surrogate, therefore we have to pass in '\0' for the second char
                 throw XmlConvert.CreateInvalidCharException(ch, '\0');
@@ -605,7 +605,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F)
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -808,7 +808,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F)
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1222,7 +1222,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch <= 0x7F))
+                    while (pDst < pDstEnd && XmlCharType.IsTextChar((char)(ch = *pSrc)) && ch <= 0x7F)
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1423,7 +1423,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + _bufLen;
                         }
 
-                        while (pDst < pDstEnd && (_xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar && ch <= 0x7F))
+                        while (pDst < pDstEnd && XmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar && ch <= 0x7F)
                         {
                             *pDst = (byte)ch;
                             pDst++;
@@ -1612,7 +1612,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + _bufLen;
                         }
 
-                        while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']' && ch <= 0x7F))
+                        while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']' && ch <= 0x7F)
                         {
                             *pDst = (byte)ch;
                             pDst++;

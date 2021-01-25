@@ -523,6 +523,7 @@ sgen_register_obj_with_weak_fields (GCObject *obj)
 	alloc_handle (gc_handles_for_type (HANDLE_WEAK_FIELDS), obj, FALSE);
 }
 
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 void
 sgen_gchandle_stats_enable (void)
 {
@@ -596,6 +597,7 @@ sgen_gchandle_stats_report (void)
 		mono_gc_printf (sgen_gc_debug_file, "\n");
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
+#endif
 
 void
 sgen_init_gchandles (void)

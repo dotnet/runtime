@@ -28,7 +28,8 @@ jobs:
   displayName: Docker Linux
   timeoutInMinutes: 120
   pool:
-    name: Hosted Ubuntu 1604
+    name: NetCorePublic-Pool
+    queue: BuildPool.Ubuntu.1604.Amd64.Open
 
   steps:
   - checkout: self
@@ -36,11 +37,11 @@ jobs:
     fetchDepth: 5
 
   - bash: |
-      $(dockerfilesFolder)/build-docker-sdk.ps1 -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
     displayName: Build CLR and Libraries
 
   - bash: |
-      $(sslStressProject)/run-docker-compose.ps1 -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+      $(sslStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
     displayName: Build SslStress
 
   - bash: |
@@ -52,7 +53,8 @@ jobs:
   displayName: Docker NanoServer
   timeoutInMinutes: 120
   pool:
-    vmImage: 'windows-latest'
+    name: NetCorePublic-Pool
+    queue: BuildPool.Server.Amd64.VS2019.Open
 
   steps:
   - checkout: self
@@ -60,15 +62,15 @@ jobs:
     fetchDepth: 5
     lfs: false
 
-  - pwsh: |
+  - powershell: |
       $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
     displayName: Build CLR and Libraries
   
-  - pwsh: |
+  - powershell: |
       $(sslStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
     displayName: Build SslStress
   
-  - pwsh: |
+  - powershell: |
       cd '$(sslStressProject)'
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run SslStress 

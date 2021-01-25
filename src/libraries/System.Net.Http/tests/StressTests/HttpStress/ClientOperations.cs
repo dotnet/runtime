@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -154,8 +153,8 @@ namespace HttpStress
                 string CreateHeaderValue() => HttpUtility.UrlEncode(GetRandomString(1, 30, alphaNumericOnly: false));
                 string[] values = Enumerable.Range(0, _random.Next(1, 6)).Select(_ => CreateHeaderValue()).ToArray();
                 totalSize += name.Length + values.Select(v => v.Length + 2).Sum();
-                
-                if (totalSize > MaxRequestHeaderTotalSize) 
+
+                if (totalSize > MaxRequestHeaderTotalSize)
                 {
                     break;
                 }
@@ -190,7 +189,7 @@ namespace HttpStress
                     using var req = new HttpRequestMessage(HttpMethod.Get, "/get");
                     int expectedLength = ctx.SetExpectedResponseContentLengthHeader(req.Headers);
                     using HttpResponseMessage m = await ctx.SendAsync(req);
-                    
+
                     ValidateStatusCode(m);
                     ValidateServerContent(await m.Content.ReadAsStringAsync(), expectedLength);
                 }),
@@ -217,19 +216,19 @@ namespace HttpStress
                     ctx.PopulateWithRandomHeaders(req.Headers);
                     ulong expectedChecksum = CRC.CalculateHeaderCrc(req.Headers.Select(x => (x.Key, x.Value)));
 
-                    using HttpResponseMessage res = await ctx.SendAsync(req);
+                    using HttpResponseMessage m = await ctx.SendAsync(req);
 
-                    ValidateStatusCode(res);
+                    ValidateStatusCode(m);
 
-                    await res.Content.ReadAsStringAsync();
+                    await m.Content.ReadAsStringAsync();
 
-                    bool isValidChecksum = ValidateServerChecksum(res.Headers, expectedChecksum);
+                    bool isValidChecksum = ValidateServerChecksum(m.Headers, expectedChecksum);
                     string failureDetails = isValidChecksum ? "server checksum matches client checksum" : "server checksum mismatch";
 
                     // Validate that request headers are being echoed
                     foreach (KeyValuePair<string, IEnumerable<string>> reqHeader in req.Headers)
                     {
-                        if (!res.Headers.TryGetValues(reqHeader.Key, out IEnumerable<string>? values))
+                        if (!m.Headers.TryGetValues(reqHeader.Key, out IEnumerable<string>? values))
                         {
                             throw new Exception($"Expected response header name {reqHeader.Key} missing. {failureDetails}");
                         }
@@ -240,11 +239,11 @@ namespace HttpStress
                     }
 
                     // Validate trailing headers are being echoed
-                    if (res.TrailingHeaders.Count() > 0)
+                    if (m.TrailingHeaders.Count() > 0)
                     {
                         foreach (KeyValuePair<string, IEnumerable<string>> reqHeader in req.Headers)
                         {
-                            if (!res.TrailingHeaders.TryGetValues(reqHeader.Key + "-trailer", out IEnumerable<string>? values))
+                            if (!m.TrailingHeaders.TryGetValues(reqHeader.Key + "-trailer", out IEnumerable<string>? values))
                             {
                                 throw new Exception($"Expected trailing header name {reqHeader.Key}-trailer missing. {failureDetails}");
                             }
@@ -283,7 +282,7 @@ namespace HttpStress
                     {
                         using var req = new HttpRequestMessage(HttpMethod.Get, "/abort");
                         ctx.SetExpectedResponseContentLengthHeader(req.Headers, minLength: 2);
-                        
+
                         await ctx.SendAsync(req);
 
                         throw new Exception("Completed unexpectedly");
@@ -308,7 +307,7 @@ namespace HttpStress
                                 case "Http2ProtocolException":
                                 case "Http2ConnectionException":
                                 case "Http2StreamException":
-                                    if ((e.InnerException?.Message?.Contains("INTERNAL_ERROR") ?? false) || // UseKestrel (https://github.com/aspnet/AspNetCore/issues/12256)
+                                    if ((e.InnerException?.Message?.Contains("INTERNAL_ERROR") ?? false) || // UseKestrel (https://github.com/dotnet/aspnetcore/issues/12256)
                                         (e.InnerException?.Message?.Contains("CANCEL") ?? false)) // UseHttpSys
                                     {
                                         return;
@@ -331,6 +330,7 @@ namespace HttpStress
                     using HttpResponseMessage m = await ctx.SendAsync(req);
 
                     ValidateStatusCode(m);
+
                     string checksumMessage = ValidateServerChecksum(m.Headers, checksum) ? "server checksum matches client checksum" : "server checksum mismatch";
                     ValidateContent(content, await m.Content.ReadAsStringAsync(), checksumMessage);
                 }),
@@ -345,6 +345,7 @@ namespace HttpStress
                     using HttpResponseMessage m = await ctx.SendAsync(req);
 
                     ValidateStatusCode(m);
+
                     string checksumMessage = ValidateServerChecksum(m.Headers, checksum) ? "server checksum matches client checksum" : "server checksum mismatch";
                     ValidateContent(formData.expected, await m.Content.ReadAsStringAsync(), checksumMessage);
                 }),
@@ -362,7 +363,7 @@ namespace HttpStress
                     string response = await m.Content.ReadAsStringAsync();
 
                     string checksumMessage = ValidateServerChecksum(m.TrailingHeaders, checksum, required: false) ? "server checksum matches client checksum" : "server checksum mismatch";
-                    ValidateContent(content, await m.Content.ReadAsStringAsync(), checksumMessage);
+                    ValidateContent(content, response, checksumMessage);
                 }),
 
                 ("POST Duplex Slow",
@@ -415,6 +416,7 @@ namespace HttpStress
                     using HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
                     ValidateStatusCode(m);
+
                     string checksumMessage = ValidateServerChecksum(m.Headers, checksum) ? "server checksum matches client checksum" : "server checksum mismatch";
                     ValidateContent(content, await m.Content.ReadAsStringAsync(), checksumMessage);
                 }),
@@ -432,8 +434,8 @@ namespace HttpStress
                     {
                         throw new Exception($"Expected {expectedLength}, got {m.Content.Headers.ContentLength}");
                     }
-                    string r = await m.Content.ReadAsStringAsync();
-                    if (r.Length > 0) throw new Exception($"Got unexpected response: {r}");
+                    string response = await m.Content.ReadAsStringAsync();
+                    if (response.Length > 0) throw new Exception($"Got unexpected response: {response}");
                 }),
 
                 ("PUT",
@@ -446,8 +448,8 @@ namespace HttpStress
 
                     ValidateStatusCode(m);
 
-                    string r = await m.Content.ReadAsStringAsync();
-                    if (r != "") throw new Exception($"Got unexpected response: {r}");
+                    string response = await m.Content.ReadAsStringAsync();
+                    if (response != "") throw new Exception($"Got unexpected response: {response}");
                 }),
 
                 ("PUT Slow",
@@ -460,8 +462,8 @@ namespace HttpStress
 
                     ValidateStatusCode(m);
 
-                    string r = await m.Content.ReadAsStringAsync();
-                    if (r != "") throw new Exception($"Got unexpected response: {r}");
+                    string response = await m.Content.ReadAsStringAsync();
+                    if (response != "") throw new Exception($"Got unexpected response: {response}");
                 }),
 
                 ("GET Slow",
@@ -488,7 +490,7 @@ namespace HttpStress
         {
             if (actualContent != expectedContent)
             {
-                int divergentIndex = 
+                int divergentIndex =
                     Enumerable
                         .Zip(actualContent, expectedContent)
                         .Select((x,i) => (x.First, x.Second, i))

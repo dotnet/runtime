@@ -1,8 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable disable
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+#if SYSTEM_PRIVATE_CORELIB
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System
 {
@@ -83,12 +90,86 @@ namespace System
             buffer[startingIndex] = (char)(packedResult >> 8);
         }
 
+#if SYSTEM_PRIVATE_CORELIB
+        private static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
+        {
+            Debug.Assert(bytes.Length >= 4);
+            nint pos = 0;
+
+            Vector128<byte> shuffleMask = Vector128.Create(
+                0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 1, 0xFF,
+                0xFF, 0xFF, 2, 0xFF, 0xFF, 0xFF, 3, 0xFF);
+
+            Vector128<byte> asciiTable = (casing == Casing.Upper) ?
+                Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                                 (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                                 (byte)'8', (byte)'9', (byte)'A', (byte)'B',
+                                 (byte)'C', (byte)'D', (byte)'E', (byte)'F') :
+                Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                                 (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                                 (byte)'8', (byte)'9', (byte)'a', (byte)'b',
+                                 (byte)'c', (byte)'d', (byte)'e', (byte)'f');
+
+            do
+            {
+                // Read 32bits from "bytes" span at "pos" offset
+                uint block = Unsafe.ReadUnaligned<uint>(
+                    ref Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos));
+
+                // Calculate nibbles
+                Vector128<byte> lowNibbles = Ssse3.Shuffle(
+                    Vector128.CreateScalarUnsafe(block).AsByte(), shuffleMask);
+                Vector128<byte> highNibbles = Sse2.ShiftRightLogical(
+                    Sse2.ShiftRightLogical128BitLane(lowNibbles, 2).AsInt32(), 4).AsByte();
+
+                // Lookup the hex values at the positions of the indices
+                Vector128<byte> indices = Sse2.And(
+                    Sse2.Or(lowNibbles, highNibbles), Vector128.Create((byte)0xF));
+                Vector128<byte> hex = Ssse3.Shuffle(asciiTable, indices);
+
+                // The high bytes (0x00) of the chars have also been converted
+                // to ascii hex '0', so clear them out.
+                hex = Sse2.And(hex, Vector128.Create((ushort)0xFF).AsByte());
+
+                // Save to "chars" at pos*2 offset
+                Unsafe.WriteUnaligned(
+                    ref Unsafe.As<char, byte>(
+                        ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
+
+                pos += 4;
+            } while (pos < bytes.Length - 3);
+
+            // Process trailing elements (bytes.Length % 4)
+            for (; pos < bytes.Length; pos++)
+            {
+                ToCharsBuffer(Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos), chars, (int)pos * 2, casing);
+            }
+        }
+#endif
+
+        public static void EncodeToUtf16(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
+        {
+            Debug.Assert(chars.Length >= bytes.Length * 2);
+
+#if SYSTEM_PRIVATE_CORELIB
+            if (Ssse3.IsSupported && bytes.Length >= 4)
+            {
+                EncodeToUtf16_Ssse3(bytes, chars, casing);
+                return;
+            }
+#endif
+            for (int pos = 0; pos < bytes.Length; pos++)
+            {
+                ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
+            }
+        }
+
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
         public static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
-#if NET45 || NET46 || NET461 || NET462 || NET47 || NET471 || NET472 || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD2_0
+#if NETFRAMEWORK || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD2_0
             Span<char> result = stackalloc char[0];
             if (bytes.Length > 16)
             {
@@ -110,13 +191,10 @@ namespace System
 #else
             fixed (byte* bytesPtr = bytes)
             {
-                return string.Create(bytes.Length * 2, (Ptr: (IntPtr)bytesPtr, bytes.Length, casing), (chars, args) =>
+                return string.Create(bytes.Length * 2, (Ptr: (IntPtr)bytesPtr, bytes.Length, casing), static (chars, args) =>
                 {
                     var ros = new ReadOnlySpan<byte>((byte*)args.Ptr, args.Length);
-                    for (int pos = 0; pos < ros.Length; ++pos)
-                    {
-                        ToCharsBuffer(ros[pos], chars, pos * 2, args.casing);
-                    }
+                    EncodeToUtf16(ros, chars, args.casing);
                 });
             }
 #endif
@@ -149,5 +227,103 @@ namespace System
 
             return (char)value;
         }
+
+        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes)
+        {
+            return TryDecodeFromUtf16(chars, bytes, out _);
+        }
+
+        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        {
+            Debug.Assert(chars.Length % 2 == 0, "Un-even number of characters provided");
+            Debug.Assert(chars.Length / 2 == bytes.Length, "Target buffer not right-sized for provided characters");
+
+            int i = 0;
+            int j = 0;
+            int byteLo = 0;
+            int byteHi = 0;
+            while (j < bytes.Length)
+            {
+                byteLo = FromChar(chars[i + 1]);
+                byteHi = FromChar(chars[i]);
+
+                // byteHi hasn't been shifted to the high half yet, so the only way the bitwise or produces this pattern
+                // is if either byteHi or byteLo was not a hex character.
+                if ((byteLo | byteHi) == 0xFF)
+                    break;
+
+                bytes[j++] = (byte)((byteHi << 4) | byteLo);
+                i += 2;
+            }
+
+            if (byteLo == 0xFF)
+                i++;
+
+            charsProcessed = i;
+            return (byteLo | byteHi) != 0xFF;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int FromChar(int c)
+        {
+            return c >= CharToHexLookup.Length ? 0xFF : CharToHexLookup[c];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int FromUpperChar(int c)
+        {
+            return c > 71 ? 0xFF : CharToHexLookup[c];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int FromLowerChar(int c)
+        {
+            if ((uint)(c - '0') <= '9' - '0')
+                return c - '0';
+
+            if ((uint)(c - 'a') <= 'f' - 'a')
+                return c - 'a' + 10;
+
+            return 0xFF;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsHexChar(int c)
+        {
+            return FromChar(c) != 0xFF;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsHexUpperChar(int c)
+        {
+            return (uint)(c - '0') <= 9 || (uint)(c - 'A') <= ('F' - 'A');
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsHexLowerChar(int c)
+        {
+            return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
+        }
+
+        /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
+        public static ReadOnlySpan<byte> CharToHexLookup => new byte[]
+        {
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 15
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 31
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 47
+            0x0,  0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x8,  0x9,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 63
+            0xFF, 0xA,  0xB,  0xC,  0xD,  0xE,  0xF,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 79
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 95
+            0xFF, 0xa,  0xb,  0xc,  0xd,  0xe,  0xf,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 111
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 127
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 143
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 159
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 175
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 191
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 207
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 223
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 239
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF  // 255
+        };
     }
 }

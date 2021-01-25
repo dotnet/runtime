@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using Xunit;
@@ -127,6 +126,22 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(listeners[14], new IPEndPoint(IPAddress.Parse("::"), 0x8B58));
             Assert.Equal(listeners[15], new IPEndPoint(IPAddress.Parse("fec0::aa64:0:0:1"), 123));
             Assert.Equal(listeners[16], new IPEndPoint(IPAddress.Parse("fe80::215:5dff:fe00:402"), 123));
+        }
+
+        [Fact]
+        public void WSLListenersParsing()
+        {
+            // WSL1 may have files empty
+            string emptyFile = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("NetworkFiles/empty", emptyFile);
+
+            IPEndPoint[] tcpListeners = StringParsingHelpers.ParseActiveTcpListenersFromFiles(emptyFile, emptyFile);
+            IPEndPoint[] udpListeners = StringParsingHelpers.ParseActiveUdpListenersFromFiles(emptyFile, emptyFile);
+            TcpConnectionInformation[] tcpConnections = StringParsingHelpers.ParseActiveTcpConnectionsFromFiles(emptyFile, emptyFile);
+
+            Assert.Equal(0, tcpListeners.Length);
+            Assert.Equal(0, udpListeners.Length);
+            Assert.Equal(0, tcpConnections.Length);
         }
 
         private static void ValidateInfo(TcpConnectionInformation tcpConnectionInformation, IPEndPoint localEP, IPEndPoint remoteEP, TcpState state)

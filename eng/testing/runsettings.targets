@@ -28,15 +28,16 @@
       <RunSettingsFileContent>$([System.IO.File]::ReadAllText('$(RunSettingsInputFilePath)'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' == 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '1'))</RunSettingsFileContent>
       <RunSettingsFileContent Condition="'$(TestDisableParallelization)' != 'true'">$(RunSettingsFileContent.Replace('$$MAXCPUCOUNT$$', '0'))</RunSettingsFileContent>
+      <!-- Arm64 is currently not a known TargetPlatform value in VSTEST: https://github.com/microsoft/vstest/issues/2566 -->
+      <RunSettingsFileContent Condition="'$(TargetArchitecture)' != 'arm64'">$(RunSettingsFileContent.Replace('$$TARGETPLATFORM$$', '<TargetPlatform>$(TargetArchitecture)</TargetPlatform>'))</RunSettingsFileContent>
+      <RunSettingsFileContent Condition="'$(TargetArchitecture)' == 'arm64'">$(RunSettingsFileContent.Replace('$$TARGETPLATFORM$$', ''))</RunSettingsFileContent>
       <RunSettingsFileContent>$(RunSettingsFileContent.Replace('$$COVERAGE_INCLUDE$$', '$(CoverageIncludeFilter)')
                                                       .Replace('$$COVERAGE_EXCLUDEBYFILE$$', '$(CoverageExcludeByFileFilter)')
                                                       .Replace('$$COVERAGE_INCLUDEDIRECTORY$$', '$(CoverageIncludeDirectoryFilter)')
                                                       .Replace('$$COVERAGE_ENABLED$$', '$([MSBuild]::ValueOrDefault('$(Coverage)', 'false'))')
-                                                      .Replace('$$TARGETPLATFORM$$', '$(TargetArchitecture)')
                                                       .Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))')
                                                       .Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))')
                                                       .Replace('$$TESTCASEFILTER$$', '$(_testFilter)')
-                                                      .Replace('$$DEVPATH$$', '$(TestHostRootPath)')
                                                       .Replace('$$DOTNETHOSTPATH$$', '$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))'))</RunSettingsFileContent>
     </PropertyGroup>
 

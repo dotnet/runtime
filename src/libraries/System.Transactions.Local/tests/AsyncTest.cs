@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using Xunit;
@@ -25,7 +24,7 @@ namespace System.Transactions.Tests
             Transaction.Current = null;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void AsyncFail1()
         {
             Assert.Throws<InvalidOperationException>(() =>
@@ -45,7 +44,7 @@ namespace System.Transactions.Tests
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void AsyncFail2()
         {
             Assert.Throws<TransactionAbortedException>(() =>
@@ -92,7 +91,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void AsyncFail3()
         {
             s_delayedException = null;
@@ -116,7 +115,7 @@ namespace System.Transactions.Tests
             Assert.IsType<TransactionAbortedException>(s_delayedException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Async1()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -138,7 +137,7 @@ namespace System.Transactions.Tests
                 throw new Exception("", s_delayedException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Async2()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -157,7 +156,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Async3()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -175,7 +174,7 @@ namespace System.Transactions.Tests
             irm.Check(1, 1, 0, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Async4()
         {
             IntResourceManager irm = new IntResourceManager(1);
@@ -194,7 +193,7 @@ namespace System.Transactions.Tests
             irm.Check(1, 1, 0, 0, "irm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void Async5()
         {
             IntResourceManager irm = new IntResourceManager(1);

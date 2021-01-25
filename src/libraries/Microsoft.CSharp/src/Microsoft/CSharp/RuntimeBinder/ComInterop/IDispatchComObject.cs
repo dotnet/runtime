@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -74,7 +73,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// just find and invoke the multicast delegate corresponding to the invoked
     /// dispid.
     ///  </summary>
-
     internal sealed class IDispatchComObject : ComObject, IDynamicMetaObjectProvider
     {
         private ComTypeDesc _comTypeDesc;
@@ -271,7 +269,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return ComTypeDesc.GetMemberNames(dataOnly);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal override IList<KeyValuePair<string, object>> GetMembers(IEnumerable<string> names)
         {
             if (names == null)
@@ -321,7 +318,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return new IDispatchMetaObject(parameter, this);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         private static void GetFuncDescForDescIndex(ComTypes.ITypeInfo typeInfo, int funcIndex, out ComTypes.FUNCDESC funcDesc, out IntPtr funcDescHandle)
         {
             IntPtr pFuncDesc;
@@ -453,7 +449,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     // adding new events and putting them on new interfaces while keeping the
                     // old interfaces around. This may cause name collisioning which we are
                     // resolving by keeping only the first event with the same name.
-                    if (events.ContainsKey(name) == false)
+                    if (!events.ContainsKey(name))
                     {
                         ComEventDesc eventDesc = new ComEventDesc
                         {

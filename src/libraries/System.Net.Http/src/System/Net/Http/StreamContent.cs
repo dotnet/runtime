@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -51,7 +51,15 @@ namespace System.Net.Http
             {
                 _start = content.Position;
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, content);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, content);
+        }
+
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
+            Debug.Assert(stream != null);
+            PrepareContent();
+            // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
+            StreamToStreamCopy.Copy(_content, stream, _bufferSize, !_content.CanSeek);
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
@@ -97,6 +105,9 @@ namespace System.Net.Http
             }
             base.Dispose(disposing);
         }
+
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            new ReadOnlyStream(_content);
 
         protected override Task<Stream> CreateContentReadStreamAsync()
         {

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildThisFileDirectory)monozlib.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)shimglobalization.targets" Condition="'$(MONO_ENABLE_NETCORE)'=='true'"/>
-  <Import Project="$(MSBuildThisFileDirectory)libeventpipe.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)libmonoruntime-common.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)libmonoruntime-win32.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)libmonoruntime-posix.targets" />
-</Project>

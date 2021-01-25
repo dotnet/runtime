@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -52,7 +51,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
             File.WriteAllText(secretsFilePath, contents.ToString(), Encoding.UTF8);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttribute()
         {
@@ -61,13 +60,13 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
 
             SetSecret(TestSecretsId, configKey, randValue);
             var config = new ConfigurationBuilder()
-                .AddUserSecrets(typeof(ConfigurationExtensionTest).GetTypeInfo().Assembly)
+                .AddUserSecrets(typeof(ConfigurationExtensionTest).Assembly)
                 .Build();
 
             Assert.Equal(randValue, config[configKey]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_FindsAssemblyAttributeFromType()
         {
@@ -87,12 +86,12 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         {
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 new ConfigurationBuilder().AddUserSecrets<string>());
-            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(string).GetTypeInfo().Assembly.GetName().Name),
+            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(string).Assembly.GetName().Name),
                 ex.Message);
 
             ex = Assert.Throws<InvalidOperationException>(() =>
                 new ConfigurationBuilder().AddUserSecrets(typeof(JObject).Assembly));
-            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(JObject).GetTypeInfo().Assembly.GetName().Name),
+            Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(JObject).Assembly.GetName().Name),
                 ex.Message);
         }
 
@@ -108,7 +107,20 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
             Assert.Empty(config.AsEnumerable());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
+        public void AddUserSecrets_DoesThrowsIfNotOptionalAndSecretDoesNotExist()
+        {
+            var secretId = Assembly.GetExecutingAssembly().GetName().Name;
+            var secretPath = PathHelper.GetSecretsPathFromSecretsId(secretId);
+            if (File.Exists(secretPath))
+            {
+                File.Delete(secretPath);
+            }
+
+            Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddUserSecrets(Assembly.GetExecutingAssembly(), false).Build());
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {

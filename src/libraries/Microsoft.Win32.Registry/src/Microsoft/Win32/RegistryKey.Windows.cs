@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -188,6 +187,7 @@ namespace Microsoft.Win32
         /// HKEY_CURRENT_CONFIG.
         /// </summary>
         /// <param name="hKeyHive">HKEY_* to open.</param>
+        /// <param name="view">Which view over the registry to employ.</param>
         /// <returns>The RegistryKey requested.</returns>
         private static RegistryKey OpenBaseKeyCore(RegistryHive hKeyHive, RegistryView view)
         {

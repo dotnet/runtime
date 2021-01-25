@@ -44,6 +44,8 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/dtrace.h>
+#include <mono/utils/mono-context.h>
+#include <mono/utils/w32subset.h>
 
 #include "mini.h"
 #include "mini-runtime.h"
@@ -51,13 +53,8 @@
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#include "version.h"
 
 #include "jit-icalls.h"
-
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-#include <mmsystem.h>
-#endif
 
 #define MONO_HANDLER_DELIMITER ','
 #define MONO_HANDLER_DELIMITER_LEN G_N_ELEMENTS(MONO_HANDLER_DELIMITER)-1
@@ -74,7 +71,7 @@ typedef struct {
 	handler handler;
 } HandlerItem;
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_CONSOLE
 /**
 * atexit_wait_keypress:
 *
@@ -121,7 +118,7 @@ install_atexit_wait_keypress (void)
 	return;
 }
 
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#endif /* HAVE_API_SUPPORT_WIN32_CONSOLE */
 
 // Table describing handlers that can be installed at process startup. Adding a new handler can be done by adding a new item to the table together with an install handler function.
 const HandlerItem g_handler_items[] = { { MONO_HANDLER_ATEXIT_WAIT_KEYPRESS, MONO_HANDLER_ATEXIT_WAIT_KEYPRESS_LEN, install_atexit_wait_keypress },
@@ -229,13 +226,13 @@ mono_runtime_install_custom_handlers_usage (void)
 		 "   --handlers=HANDLERS            Enable handler support, HANDLERS is a comma\n"
 		 "                                  separated list of available handlers to install.\n"
 		 "\n"
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_CONSOLE
 		 "HANDLERS is composed of:\n"
 		 "    atexit-waitkeypress           Install an atexit handler waiting for a keypress\n"
 		 "                                  before exiting process.\n");
 #else
 		 "No handlers supported on current platform.\n");
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#endif /* HAVE_API_SUPPORT_WIN32_CONSOLE */
 }
 
 void
@@ -258,7 +255,6 @@ mono_cleanup_native_crash_info (void)
 	return;
 }
 
-#if G_HAVE_API_SUPPORT (HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 /* mono_chain_signal:
  *
  *   Call the original signal handler for the signal given by the arguments, which
@@ -273,6 +269,7 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	return TRUE;
 }
 
+#if !HAVE_EXTERN_DEFINED_NATIVE_CRASH_HANDLER
 #ifndef MONO_CROSS_COMPILE
 void
 mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
@@ -287,10 +284,11 @@ mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_
 		abort ();
 }
 #endif /* !MONO_CROSS_COMPILE */
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#endif /* !HAVE_EXTERN_DEFINED_NATIVE_CRASH_HANDLER */
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-static MMRESULT	g_timer_event = 0;
+#if HAVE_API_SUPPORT_WIN32_TIMERS
+#include <mmsystem.h>
+static MMRESULT g_timer_event = 0;
 static HANDLE g_timer_main_thread = INVALID_HANDLE_VALUE;
 
 static VOID
@@ -371,32 +369,67 @@ mono_runtime_shutdown_stat_profiler (void)
 	stop_profiler_timer_event ();
 	return;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_TIMERS
+void
+mono_runtime_setup_stat_profiler (void)
+{
+	g_unsupported_api ("timeGetDevCaps, timeBeginPeriod, timeEndPeriod, timeSetEvent, timeKillEvent");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return;
+}
 
+void
+mono_runtime_shutdown_stat_profiler (void)
+{
+	g_unsupported_api ("timeGetDevCaps, timeBeginPeriod, timeEndPeriod, timeSetEvent, timeKillEvent");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_TIMERS */
+
+#if HAVE_API_SUPPORT_WIN32_OPEN_THREAD
 gboolean
 mono_setup_thread_context(DWORD thread_id, MonoContext *mono_context)
 {
 	HANDLE handle;
-	CONTEXT context;
+#if defined(MONO_HAVE_SIMD_REG_AVX) && HAVE_API_SUPPORT_WIN32_CONTEXT_XSTATE
+	BYTE context_buffer [2048];
+	DWORD context_buffer_len = G_N_ELEMENTS (context_buffer);
+	PCONTEXT context = NULL;
+	BOOL success = InitializeContext (context_buffer, CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL | CONTEXT_XSTATE, &context, &context_buffer_len);
+	success &= SetXStateFeaturesMask (context, XSTATE_MASK_AVX);
+	g_assert (success == TRUE);
+#else
+	CONTEXT context_buffer;
+	PCONTEXT context = &context_buffer;
+	context->ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
+#endif
 
 	g_assert (thread_id != GetCurrentThreadId ());
 
 	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, thread_id);
 	g_assert (handle);
 
-	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
-
-	if (!GetThreadContext (handle, &context)) {
+	if (!GetThreadContext (handle, context)) {
 		CloseHandle (handle);
 		return FALSE;
 	}
 
 	memset (mono_context, 0, sizeof (MonoContext));
-	mono_sigctx_to_monoctx (&context, mono_context);
+	mono_sigctx_to_monoctx (context, mono_context);
 
 	CloseHandle (handle);
 	return TRUE;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_OPEN_THREAD
+gboolean
+mono_setup_thread_context (DWORD thread_id, MonoContext *mono_context)
+{
+	g_unsupported_api ("OpenThread");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_OPEN_THREAD */
 
 gboolean
 mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info, void *sigctx)
@@ -410,8 +443,18 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 		DWORD id = mono_thread_info_get_tid (info);
 		mono_setup_thread_context (id, &tctx->ctx);
 	} else {
+#ifdef ENABLE_CHECKED_BUILD
 		g_assert (((CONTEXT *)sigctx)->ContextFlags & CONTEXT_INTEGER);
 		g_assert (((CONTEXT *)sigctx)->ContextFlags & CONTEXT_CONTROL);
+		g_assert (((CONTEXT *)sigctx)->ContextFlags & CONTEXT_FLOATING_POINT);
+#if defined(MONO_HAVE_SIMD_REG_AVX) && HAVE_API_SUPPORT_WIN32_CONTEXT_XSTATE
+		DWORD64 features = 0;
+		g_assert (((CONTEXT *)sigctx)->ContextFlags & CONTEXT_XSTATE);
+		g_assert (GetXStateFeaturesMask (((CONTEXT *)sigctx), &features) == TRUE);
+		g_assert ((features & XSTATE_MASK_LEGACY_SSE) != 0);
+		g_assert ((features & XSTATE_MASK_AVX) != 0);
+#endif
+#endif
 		mono_sigctx_to_monoctx (sigctx, &tctx->ctx);
 	}
 

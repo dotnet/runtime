@@ -1,0 +1,2363 @@
+<?xml version="1.0"?>
+<Root><xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns='xsdResources'
+		targetNamespace='xsdResources'>
+	<xs:element name="ResourceStrings">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element maxOccurs="unbounded" name="HRESULT">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="SymbolicName" type="xs:string" />
+							<xs:element minOccurs="0" name="Message" type="xs:string" />
+							<xs:element minOccurs="0" name="Comment" type="xs:string" />
+						</xs:sequence>
+						<xs:attribute name="NumericValue" type="xs:string" use="required" />
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
+
+<hc:ResourceStrings xmlns:hc="xsdResources">
+
+<!--                                          -->
+<!-- This XML file is used to generate the public header file corerror.h -->
+<!-- and resource file msgurt.rc. All new HRESULT declarations should be added to this XML. -->
+<!--                                          -->
+<!--     IMPORTANT***IMPORTANT***IMPORTANT    -->
+<!--                                          -->
+<!--     All CLR errror codes should be in     -->
+<!--     HRESULT NumericValue="0x......" format -->
+<!--                                          -->
+<!-- These HRESULTs are used for mapping managed exceptions to COM error codes -->
+<!-- and vice versa through COM Interop.  For background on COM error codes see -->
+<!-- http://msdn.microsoft.com/library/default.asp?url=/library/en-us/com/error_9td2.asp. -->
+
+<!-- The range (0x8013xxxx) and (0x13xxxx) is reserved for the .NET Framework SDK teams. -->
+<!-- Within that range, the following subranges have been allocated for different feature areas: -->
+<!-- 0x10yy for Execution Engine -->
+<!-- 0x11yy for Metadata, TypeLib Export, and CLDB -->
+<!-- 0x12yy for MetaData Validator -->
+<!-- 0x13yy for Debugger and Profiler errors -->
+<!-- 0x14yy for Security -->
+<!-- 0x15yy for BCL-->
+<!-- 0x1600 - 0x161F for Reflection -->
+<!-- 0x1620 - 0x163F for System.IO -->
+<!-- 0x1640 - 0x165F for Security -->
+<!-- 0x1660 - 0x16FF for BCL -->
+<!-- 0x17yy for shim -->
+<!-- 0x18yy for IL Verifier -->
+<!-- 0x19yy for .NET Framework -->
+<!-- 0x1Ayy for .NET Framework -->
+<!-- 0x1Byy for MetaData Validator -->
+<!-- 0x1Cyy for more debugger errors -->
+<!-- 0x1Dyy for PE Format Validation -->
+<!-- 0x1Eyy for CLR Optimization Service errors -->
+<!-- 0x1Fyy for NGEN errors -->
+<!-- 0x30yy for VSA errors -->
+<!-- 0x31yy for NGEN errors -->
+<!-- 0x32yy for binder errors -->
+<!-- Base class library HRESULTs are copied from this file into many different -->
+<!-- files named __HResults.cs under the BCL directory.  Frameworks HRESULTs are -->
+<!-- defined in src/main/HResults.cs. If you make any modifications to -->
+<!-- the range allocations described above, please make sure this xml file gets updated. -->
+<!--                                          -->
+
+
+<HRESULT NumericValue="0x131106">
+	<SymbolicName>CLDB_S_TRUNCATION</SymbolicName>
+	<Comment> STATUS: Data value was truncated. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x131197">
+	<SymbolicName>META_S_DUPLICATE</SymbolicName>
+	<Comment> Attempt to define an object that already exists in valid scenerios. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x13130b">
+	<SymbolicName>CORDBG_S_BAD_START_SEQUENCE_POINT</SymbolicName>
+	<Comment> Attempt to SetIP not at a sequence point sequence point. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x13130c">
+	<SymbolicName>CORDBG_S_BAD_END_SEQUENCE_POINT</SymbolicName>
+	<Comment> Attempt to SetIP when not going to a sequence point. If both this and CORDBG_E_BAD_START_SEQUENCE_POINT are true, only CORDBG_E_BAD_START_SEQUENCE_POINT will be reported.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x131316">
+	<SymbolicName>CORDBG_S_FUNC_EVAL_HAS_NO_RESULT</SymbolicName>
+	<Comment> Some Func evals will lack a return value, </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x131317">
+	<SymbolicName>CORDBG_S_VALUE_POINTS_TO_VOID</SymbolicName>
+	<Comment> The Debugging API doesn't support dereferencing void pointers. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x131319">
+	<SymbolicName>CORDBG_S_FUNC_EVAL_ABORTED</SymbolicName>
+	<Comment> The func eval completed, but was aborted. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x131324">
+    <SymbolicName>CORDBG_S_AT_END_OF_STACK</SymbolicName>
+    <Message>"The stack walk has reached the end of the stack.  There are no more frames to walk."</Message>
+    <Comment> The stack walk has reached the end of the stack.  There are no more frames to walk. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x131c13">
+	<SymbolicName>CORDBG_S_NOT_ALL_BITS_SET</SymbolicName>
+	<Comment> Not all bits specified were successfully applied </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131001">
+	<SymbolicName>CEE_E_CVTRES_NOT_FOUND</SymbolicName>
+	<Message>"cvtres.exe not found."</Message>
+	<Comment> cannot find cvtres.exe </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131013">
+	<SymbolicName>COR_E_TYPEUNLOADED</SymbolicName>
+	<Message>"Type has been unloaded."</Message>
+	<Comment> The type had been unloaded.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131014">
+	<SymbolicName>COR_E_APPDOMAINUNLOADED</SymbolicName>
+	<Message>"Attempted to access an unloaded appdomain."</Message>
+	<Comment> access unloaded appdomain </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131015">
+	<SymbolicName>COR_E_CANNOTUNLOADAPPDOMAIN</SymbolicName>
+	<Message>"Error while unloading appdomain."</Message>
+	<Comment> Error while unloading an appdomain </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131016">
+	<SymbolicName>MSEE_E_ASSEMBLYLOADINPROGRESS</SymbolicName>
+	<Message>"Assembly is still being loaded."</Message>
+	<Comment> Assembly is being currently being loaded </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131018">
+	<SymbolicName>COR_E_ASSEMBLYEXPECTED</SymbolicName>
+	<Message>"The module was expected to contain an assembly manifest."</Message>
+	<Comment> The module was expected to contain an assembly manifest.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131019">
+	<SymbolicName>COR_E_FIXUPSINEXE</SymbolicName>
+	<Message>"Attempt to load an unverifiable executable with fixups (IAT with more than 2 sections or a TLS section.)"</Message>
+	<Comment> Attempt to load an unverifiable exe with fixups (IAT with more than 2 sections or a TLS section) </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013101b">
+	<SymbolicName>COR_E_NEWER_RUNTIME</SymbolicName>
+	<Message>"This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded."</Message>
+	<Comment> The assembly is built by a runtime newer than the currently loaded runtime, and cannot be loaded. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013101e">
+	<SymbolicName>COR_E_MULTIMODULEASSEMBLIESDIALLOWED</SymbolicName>
+	<Message>"The module cannot be loaded because only single file assemblies are supported."</Message>
+	<Comment> The module cannot be loaded because only single file assemblies are supported. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131020">
+	<SymbolicName>HOST_E_DEADLOCK</SymbolicName>
+	<Message>"Host detected a deadlock on a blocking operation."</Message>
+	<Comment> Host detects deadlock on a blocking operation </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131022">
+	<SymbolicName>HOST_E_INVALIDOPERATION</SymbolicName>
+	<Message>"Invalid operation."</Message>
+	<Comment> The operation is invalid </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131023">
+	<SymbolicName>HOST_E_CLRNOTAVAILABLE</SymbolicName>
+	<Message>"CLR has been disabled due to unrecoverable error."</Message>
+	<Comment> CLR has been disabled due to unrecoverable error </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131027">
+	<SymbolicName>HOST_E_EXITPROCESS_THREADABORT</SymbolicName>
+	<Message>"Process exited due to ThreadAbort escalation."</Message>
+	<Comment> ExitProcess due to ThreadAbort escalation </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131028">
+	<SymbolicName>HOST_E_EXITPROCESS_ADUNLOAD</SymbolicName>
+	<Message>"Process exited due to AD Unload escalation."</Message>
+	<Comment> ExitProcess due to AD Unload escalation </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131029">
+	<SymbolicName>HOST_E_EXITPROCESS_TIMEOUT</SymbolicName>
+	<Message>"Process exited due to Timeout escalation."</Message>
+	<Comment> ExitProcess due to Timeout escalation </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013102a">
+	<SymbolicName>HOST_E_EXITPROCESS_OUTOFMEMORY</SymbolicName>
+	<Message>"Process exited due to OutOfMemory escalation."</Message>
+	<Comment> ExitProcess due to OutOfMemory escalation </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131039">
+	<SymbolicName>COR_E_MODULE_HASH_CHECK_FAILED</SymbolicName>
+	<Message>"The check of the module's hash failed."</Message>
+	<Comment> The check of the module's hash failed. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131040">
+	<SymbolicName>FUSION_E_REF_DEF_MISMATCH</SymbolicName>
+	<Message>"The located assembly's manifest definition does not match the assembly reference."</Message>
+	<Comment> The located assembly's manifest definition does not match the assembly reference. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131041">
+	<SymbolicName>FUSION_E_INVALID_PRIVATE_ASM_LOCATION</SymbolicName>
+	<Message>"The private assembly was located outside the appbase directory."</Message>
+	<Comment> The private assembly was located outside the appbase directory. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131042">
+	<SymbolicName>FUSION_E_ASM_MODULE_MISSING</SymbolicName>
+	<Message>"A module specified in the manifest was not found."</Message>
+	<Comment> A module specified in the manifest was not found. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131044">
+	<SymbolicName>FUSION_E_PRIVATE_ASM_DISALLOWED</SymbolicName>
+	<Message>"A strongly-named assembly is required."</Message>
+	<Comment> A strongly-named assembly is required. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131045">
+	<SymbolicName>FUSION_E_SIGNATURE_CHECK_FAILED</SymbolicName>
+	<Message>"Strong name signature could not be verified.  The assembly may have been tampered with, or it was delay signed but not fully signed with the correct private key."</Message>
+	<Comment> The check of the signature failed. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131047">
+	<SymbolicName>FUSION_E_INVALID_NAME</SymbolicName>
+	<Message>"The given assembly name or codebase was invalid."</Message>
+	<Comment> The given assembly name or codebase was invalid. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131048">
+	<SymbolicName>FUSION_E_CODE_DOWNLOAD_DISABLED</SymbolicName>
+	<Message>"HTTP download of assemblies has been disabled for this appdomain."</Message>
+	<Comment> HTTP download of assemblies has been disabled for this appdomain. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131050">
+	<SymbolicName>FUSION_E_HOST_GAC_ASM_MISMATCH</SymbolicName>
+	<Message>"Assembly in host store has a different signature than assembly in GAC."</Message>
+	<Comment> Assembly in host store has a different signature than assembly in GAC </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131051">
+	<SymbolicName>FUSION_E_LOADFROM_BLOCKED</SymbolicName>
+	<Message>"LoadFrom(), LoadFile(), Load(byte[]) and LoadModule() have been disabled by the host."</Message>
+	<Comment> Hosted environment doesn't permit loading by location </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131052">
+	<SymbolicName>FUSION_E_CACHEFILE_FAILED</SymbolicName>
+	<Message>"Failed to add file to AppDomain cache."</Message>
+	<Comment> Failed to add file to AppDomain cache </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131053">
+	<SymbolicName>FUSION_E_APP_DOMAIN_LOCKED</SymbolicName>
+	<Message>"The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."</Message>
+	<Comment> The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131054">
+	<SymbolicName>FUSION_E_CONFIGURATION_ERROR</SymbolicName>
+	<Message>"The requested assembly name was neither found in the GAC nor in the manifest or the manifest's specified location is wrong."</Message>
+	<Comment> The requested assembly name was neither found in the GAC nor in the manifest or the manifest's specified location is wrong </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131055">
+	<SymbolicName>FUSION_E_MANIFEST_PARSE_ERROR</SymbolicName>
+	<Message>"Unexpected error while parsing the specified manifest."</Message>
+	<Comment> Unexpected error while parsing the specified manifest </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131058">
+	<SymbolicName>COR_E_LOADING_REFERENCE_ASSEMBLY</SymbolicName>
+	<Message>"Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context."</Message>
+	<Comment> Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131059">
+  <SymbolicName>COR_E_NI_AND_RUNTIME_VERSION_MISMATCH</SymbolicName>
+  <Message>"The native image could not be loaded, because it was generated for use by a different version of the runtime."</Message>
+  <Comment> The native image could not be loaded, because it was generated for use by a different version of the runtime. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131069">
+  <SymbolicName>COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY</SymbolicName>
+  <Message>"Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies."</Message>
+  <Comment> Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013106A">
+  <SymbolicName>COR_E_AMBIGUOUSIMPLEMENTATION</SymbolicName>
+  <Message>"Ambiguous implementation found."</Message>
+  <Comment> Ambiguous implementation found </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131100">
+	<SymbolicName>CLDB_E_FILE_BADREAD</SymbolicName>
+	<Message>"Error occurred during a read."</Message>
+	<Comment> Error occurred during a read. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131101">
+	<SymbolicName>CLDB_E_FILE_BADWRITE</SymbolicName>
+	<Message>"Error occurred during a write."</Message>
+	<Comment> Error occurred during a write. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131107">
+	<SymbolicName>CLDB_E_FILE_OLDVER</SymbolicName>
+	<Message>"Old version error."</Message>
+	<Comment> Old version error. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013110a">
+	<SymbolicName>CLDB_E_SMDUPLICATE</SymbolicName>
+	<Message>"Create of shared memory failed.  A memory mapping of the same name already exists."</Message>
+	<Comment> Create of shared memory failed.  A memory mapping of the same name already exists. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013110b">
+	<SymbolicName>CLDB_E_NO_DATA</SymbolicName>
+	<Message>"No .CLB data in the memory or stream."</Message>
+	<Comment> There isn't .CLB data in the memory or stream. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013110d">
+	<SymbolicName>CLDB_E_INCOMPATIBLE</SymbolicName>
+	<Message>"Importing scope is not compatible with the emitting scope."</Message>
+	<Comment> The importing scope is not comptabile with the emitting scope </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013110e">
+	<SymbolicName>CLDB_E_FILE_CORRUPT</SymbolicName>
+	<Message>"File is corrupt."</Message>
+	<Comment> File is corrupt. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131110">
+	<SymbolicName>CLDB_E_BADUPDATEMODE</SymbolicName>
+	<Message>"Cannot open a incrementally build scope for full update."</Message>
+	<Comment> cannot open a incrementally build scope for full update </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131124">
+	<SymbolicName>CLDB_E_INDEX_NOTFOUND</SymbolicName>
+	<Message>"Index not found."</Message>
+	<Comment> Index %s not found. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131130">
+	<SymbolicName>CLDB_E_RECORD_NOTFOUND</SymbolicName>
+	<Message>"Record not found on lookup."</Message>
+	<Comment> Record wasn't found on lookup. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131135">
+	<SymbolicName>CLDB_E_RECORD_OUTOFORDER</SymbolicName>
+	<Message>"Record is emitted out of order."</Message>
+	<Comment> Record is emitted out of order. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131154">
+	<SymbolicName>CLDB_E_TOO_BIG</SymbolicName>
+	<Message>"A blob or string was too big."</Message>
+	<Comment> A blob or string was too big. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013115f">
+	<SymbolicName>META_E_INVALID_TOKEN_TYPE</SymbolicName>
+	<Message>"A token of the wrong type passed to a metadata function."</Message>
+	<Comment> A token of the wrong type passed to a metadata function. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131165">
+	<SymbolicName>TLBX_E_LIBNOTREGISTERED</SymbolicName>
+	<Message>"Typelib export: Type library is not registered."</Message>
+	<Comment> Typelib export: type library is not registered. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013118a">
+	<SymbolicName>META_E_BADMETADATA</SymbolicName>
+	<Message>"Merge: Inconsistency in meta data import scope."</Message>
+	<Comment> Merge: Inconsistency in meta data import scope </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131192">
+	<SymbolicName>META_E_BAD_SIGNATURE</SymbolicName>
+	<Message>"Bad binary signature."</Message>
+	<Comment> Bad binary signature </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131193">
+	<SymbolicName>META_E_BAD_INPUT_PARAMETER</SymbolicName>
+	<Message>"Bad input parameters."</Message>
+	<Comment> Bad input parameters </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131196">
+	<SymbolicName>META_E_CANNOTRESOLVETYPEREF</SymbolicName>
+	<Message>"Cannot resolve typeref."</Message>
+	<Comment> Cannot resolve typeref </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131198">
+	<SymbolicName>META_E_STRINGSPACE_FULL</SymbolicName>
+	<Message>"No logical space left to create more user strings."</Message>
+	<Comment> No logical space left to create more user strings. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013119a">
+	<SymbolicName>META_E_HAS_UNMARKALL</SymbolicName>
+	<Message>"Unmark all has been called already."</Message>
+	<Comment> Unmark all has been called already </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013119b">
+	<SymbolicName>META_E_MUST_CALL_UNMARKALL</SymbolicName>
+	<Message>"Must call UnmarkAll first before marking."</Message>
+	<Comment> Must call UnmarkAll first before marking. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311c0">
+	<SymbolicName>META_E_CA_INVALID_TARGET</SymbolicName>
+	<Message>"Known custom attribute on invalid target."</Message>
+	<Comment> Known custom attribute on invalid target. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311c1">
+	<SymbolicName>META_E_CA_INVALID_VALUE</SymbolicName>
+	<Message>"Known custom attribute had invalid value."</Message>
+	<Comment> Known custom attribute had invalid value. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311c2">
+	<SymbolicName>META_E_CA_INVALID_BLOB</SymbolicName>
+	<Message>"Known custom attribute blob has bad format."</Message>
+	<Comment> Known custom attribute blob is bad format. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311c3">
+	<SymbolicName>META_E_CA_REPEATED_ARG</SymbolicName>
+	<Message>"Known custom attribute blob has repeated named argument."</Message>
+	<Comment> Known custom attribute blob has repeated named argument. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311c4">
+	<SymbolicName>META_E_CA_UNKNOWN_ARGUMENT</SymbolicName>
+	<Message>"Known custom attribute named argument not recognized."</Message>
+	<Comment> Known custom attrubte named arg not recognized. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311c7">
+	<SymbolicName>META_E_CA_UNEXPECTED_TYPE</SymbolicName>
+	<Message>"Known attribute parser found unexpected type."</Message>
+	<Comment> Known attribute parser found unexpected type. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311c8">
+	<SymbolicName>META_E_CA_INVALID_ARGTYPE</SymbolicName>
+	<Message>"Known attribute parser only handles fields, not properties."</Message>
+	<Comment> Known attribute parser only handles fields -- no properties. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311c9">
+	<SymbolicName>META_E_CA_INVALID_ARG_FOR_TYPE</SymbolicName>
+	<Message>"Known attribute parser found an argument that is invalid for the object it is applied to."</Message>
+	<Comment> Known attribute parser found an argument that is invalid for the object it is applied to. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311ca">
+	<SymbolicName>META_E_CA_INVALID_UUID</SymbolicName>
+	<Message>"The format of the UUID was invalid."</Message>
+	<Comment> The format of the UUID was invalid. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311cb">
+	<SymbolicName>META_E_CA_INVALID_MARSHALAS_FIELDS</SymbolicName>
+	<Message>"The MarshalAs attribute has fields set that are not valid for the specified unmanaged type."</Message>
+	<Comment> The MarshalAs attribute has fields set that are not valid for the specified unmanaged type. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311cc">
+	<SymbolicName>META_E_CA_NT_FIELDONLY</SymbolicName>
+	<Message>"The specified unmanaged type is only valid on fields."</Message>
+	<Comment> The specified unmanaged type is only valid on fields. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311cd">
+	<SymbolicName>META_E_CA_NEGATIVE_PARAMINDEX</SymbolicName>
+	<Message>"The parameter index cannot be negative."</Message>
+	<Comment> The parameter index cannot be negative. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311cf">
+	<SymbolicName>META_E_CA_NEGATIVE_CONSTSIZE</SymbolicName>
+	<Message>"The constant size cannot be negative."</Message>
+	<Comment> The constant size cannot be negative. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311d0">
+	<SymbolicName>META_E_CA_FIXEDSTR_SIZE_REQUIRED</SymbolicName>
+	<Message>"A fixed string requires a size."</Message>
+	<Comment> A fixed string requires a size. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311d1">
+	<SymbolicName>META_E_CA_CUSTMARSH_TYPE_REQUIRED</SymbolicName>
+	<Message>"A custom marshaler requires the custom marshaler type."</Message>
+	<Comment> A custom marshaler requires the custom marshaler type. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311d4">
+	<SymbolicName>META_E_NOT_IN_ENC_MODE</SymbolicName>
+	<Message>"SaveDelta was called without being in EnC mode."</Message>
+	<Comment> SaveDelta was called without being in EnC mode </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311e5">
+	<SymbolicName>META_E_CA_BAD_FRIENDS_ARGS</SymbolicName>
+	<Message>"InternalsVisibleTo can't have a version, culture, or processor architecture."</Message>
+	<Comment> InternalsVisibleTo can't have a version, culture, or processor architecture. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801311e6">
+	<SymbolicName>META_E_CA_FRIENDS_SN_REQUIRED</SymbolicName>
+	<Comment> Strong-name signed assemblies can only grant friend access to strong name-signed assemblies </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131203">
+	<SymbolicName>VLDTR_E_RID_OUTOFRANGE</SymbolicName>
+	<Message>"Rid is out of range."</Message>
+	<Comment> Rid is out of range. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131206">
+	<SymbolicName>VLDTR_E_STRING_INVALID</SymbolicName>
+	<Message>"String offset is invalid."</Message>
+	<Comment> String offset is invalid. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131207">
+	<SymbolicName>VLDTR_E_GUID_INVALID</SymbolicName>
+	<Message>"GUID offset is invalid."</Message>
+	<Comment> GUID offset is invalid. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131208">
+	<SymbolicName>VLDTR_E_BLOB_INVALID</SymbolicName>
+	<Message>"Blob offset if invalid."</Message>
+	<Comment> Blob offset if invalid. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131224">
+	<SymbolicName>VLDTR_E_MR_BADCALLINGCONV</SymbolicName>
+	<Message>"MemberRef has invalid calling convention."</Message>
+	<Comment> MemberRef has invalid calling convention. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131237">
+	<SymbolicName>VLDTR_E_SIGNULL</SymbolicName>
+	<Message>"Signature specified is zero-sized."</Message>
+	<Comment> Signature specified is zero-sized. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131239">
+	<SymbolicName>VLDTR_E_MD_BADCALLINGCONV</SymbolicName>
+	<Message>"Method signature has invalid calling convention."</Message>
+	<Comment> Method signature has invalid calling convention. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013123a">
+	<SymbolicName>VLDTR_E_MD_THISSTATIC</SymbolicName>
+	<Message>"Method is marked static but has HASTHIS/EXPLICITTHIS set on the calling convention."</Message>
+	<Comment> Method is marked static but has HASTHIS/EXPLICITTHIS set on the calling convention. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013123b">
+	<SymbolicName>VLDTR_E_MD_NOTTHISNOTSTATIC</SymbolicName>
+	<Message>"Method is not marked static but is not HASTHIS or EXPLICITTHIS."</Message>
+	<Comment> Method is not marked static but is not HASTHIS/EXPLICITTHIS. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013123c">
+	<SymbolicName>VLDTR_E_MD_NOARGCNT</SymbolicName>
+	<Message>"Method signature is missing the argument count."</Message>
+	<Comment> Method signature is missing the argument count. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013123d">
+	<SymbolicName>VLDTR_E_SIG_MISSELTYPE</SymbolicName>
+	<Message>"Signature missing element type."</Message>
+	<Comment> Signature missing element type. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013123e">
+	<SymbolicName>VLDTR_E_SIG_MISSTKN</SymbolicName>
+	<Message>"Signature missing token."</Message>
+	<Comment> Signature missing token. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013123f">
+	<SymbolicName>VLDTR_E_SIG_TKNBAD</SymbolicName>
+	<Message>"Signature has bad token."</Message>
+	<Comment> Signature has bad token. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131240">
+	<SymbolicName>VLDTR_E_SIG_MISSFPTR</SymbolicName>
+	<Message>"Signature is missing function pointer."</Message>
+	<Comment> Signature is missing function pointer. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131241">
+	<SymbolicName>VLDTR_E_SIG_MISSFPTRARGCNT</SymbolicName>
+	<Message>"Signature has function pointer missing argument count."</Message>
+	<Comment> Signature has function pointer missing argument count. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131242">
+	<SymbolicName>VLDTR_E_SIG_MISSRANK</SymbolicName>
+	<Message>"Signature is missing rank specification."</Message>
+	<Comment> Signature is missing rank specification. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131243">
+	<SymbolicName>VLDTR_E_SIG_MISSNSIZE</SymbolicName>
+	<Message>"Signature is missing count of sized dimensions."</Message>
+	<Comment> Signature is missing count of sized dimensions. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131244">
+	<SymbolicName>VLDTR_E_SIG_MISSSIZE</SymbolicName>
+	<Message>"Signature is missing size of dimension."</Message>
+	<Comment> Signature is missing size of dimension. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131245">
+	<SymbolicName>VLDTR_E_SIG_MISSNLBND</SymbolicName>
+	<Message>"Signature is missing count of lower bounds."</Message>
+	<Comment> Signature is missing count of lower bounds. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131246">
+	<SymbolicName>VLDTR_E_SIG_MISSLBND</SymbolicName>
+	<Message>"Signature is missing a lower bound."</Message>
+	<Comment> Signature is missing a lower bound. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131247">
+	<SymbolicName>VLDTR_E_SIG_BADELTYPE</SymbolicName>
+	<Message>"Signature has bad element type."</Message>
+	<Comment> Signature has bad element type. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131256">
+	<SymbolicName>VLDTR_E_TD_ENCLNOTNESTED</SymbolicName>
+	<Message>"TypeDef not nested has encloser."</Message>
+	<Comment> TypeDef not nested has encloser. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131277">
+	<SymbolicName>VLDTR_E_FMD_PINVOKENOTSTATIC</SymbolicName>
+	<Message>"Field or method is PInvoke but is not marked Static."</Message>
+	<Comment> Field/method is PInvoke but is not marked Static. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801312df">
+	<SymbolicName>VLDTR_E_SIG_SENTINMETHODDEF</SymbolicName>
+	<Message>"E_T_SENTINEL in MethodDef signature."</Message>
+	<Comment> E_T_SENTINEL in MethodDef signature </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801312e0">
+	<SymbolicName>VLDTR_E_SIG_SENTMUSTVARARG</SymbolicName>
+	<Message>"E_T_SENTINEL &lt;=&gt; VARARG."</Message>
+	<Comment> E_T_SENTINEL &lt;=&gt; VARARG </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801312e1">
+	<SymbolicName>VLDTR_E_SIG_MULTSENTINELS</SymbolicName>
+	<Message>"Multiple E_T_SENTINELs."</Message>
+	<Comment> Multiple E_T_SENTINELs </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801312e3">
+	<SymbolicName>VLDTR_E_SIG_MISSARG</SymbolicName>
+	<Message>"Signature missing argument."</Message>
+	<Comment> Signature missing argument </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x801312e4">
+	<SymbolicName>VLDTR_E_SIG_BYREFINFIELD</SymbolicName>
+	<Message>"Field of ByRef type."</Message>
+	<Comment> Field of ByRef type </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131300">
+	<SymbolicName>CORDBG_E_UNRECOVERABLE_ERROR</SymbolicName>
+	<Message>"Unrecoverable API error."</Message>
+	<Comment> Unrecoverable API error. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131301">
+	<SymbolicName>CORDBG_E_PROCESS_TERMINATED</SymbolicName>
+	<Message>"Process was terminated."</Message>
+	<Comment> Process was terminated. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131302">
+	<SymbolicName>CORDBG_E_PROCESS_NOT_SYNCHRONIZED</SymbolicName>
+	<Message>"Process not synchronized."</Message>
+	<Comment> Process not synchronized. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131303">
+	<SymbolicName>CORDBG_E_CLASS_NOT_LOADED</SymbolicName>
+	<Message>"A class is not loaded."</Message>
+	<Comment> A class is not loaded. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131304">
+	<SymbolicName>CORDBG_E_IL_VAR_NOT_AVAILABLE</SymbolicName>
+	<Message>"An IL variable is not available at the current native IP."</Message>
+	<Comment> An IL variable is not available at the </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131305">
+	<SymbolicName>CORDBG_E_BAD_REFERENCE_VALUE</SymbolicName>
+	<Message>"A reference value was found to be bad during dereferencing."</Message>
+	<Comment> A reference value was found to be bad </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131306">
+	<SymbolicName>CORDBG_E_FIELD_NOT_AVAILABLE</SymbolicName>
+	<Message>"A field in a class is not available, because the runtime optimized it away."</Message>
+	<Comment> A field in a class is not available, </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131307">
+	<SymbolicName>CORDBG_E_NON_NATIVE_FRAME</SymbolicName>
+	<Message>"'Native-frame-only' operation on non-native frame."</Message>
+	<Comment> "Native frame only" operation on </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131309">
+	<SymbolicName>CORDBG_E_CODE_NOT_AVAILABLE</SymbolicName>
+	<Message>"The code is currently unavailable."</Message>
+	<Comment> The code is currently unavailable </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013130a">
+	<SymbolicName>CORDBG_E_FUNCTION_NOT_IL</SymbolicName>
+	<Message>"Attempt to get a ICorDebugFunction for a function that is not IL."</Message>
+	<Comment> Attempt to get a ICorDebugFunction for </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013130e">
+	<SymbolicName>CORDBG_E_CANT_SET_IP_INTO_FINALLY</SymbolicName>
+	<Message>"SetIP is not possible because SetIP would move EIP from outside of an exception handling finally clause to a point inside of one."</Message>
+	<Comment> SetIP isn't possible, because SetIP would </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013130f">
+	<SymbolicName>CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY</SymbolicName>
+	<Message>"SetIP is not possible because it would move EIP from within an exception handling finally clause to a point outside of one."</Message>
+	<Comment> SetIP isn't possible because it would move </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131310">
+	<SymbolicName>CORDBG_E_CANT_SET_IP_INTO_CATCH</SymbolicName>
+	<Message>"SetIP is not possible, because SetIP would move EIP from outside of an exception handling catch clause to a point inside of one."</Message>
+	<Comment> SetIP isn't possible, because SetIP would </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131311">
+	<SymbolicName>CORDBG_E_SET_IP_NOT_ALLOWED_ON_NONLEAF_FRAME</SymbolicName>
+	<Message>"SetIP cannot be done on any frame except the leaf frame."</Message>
+	<Comment> Setip cannot be done on any frame except </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131312">
+	<SymbolicName>CORDBG_E_SET_IP_IMPOSSIBLE</SymbolicName>
+	<Message>"SetIP is not allowed."</Message>
+	<Comment> SetIP isn't allowed. For example, there is </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131313">
+	<SymbolicName>CORDBG_E_FUNC_EVAL_BAD_START_POINT</SymbolicName>
+	<Message>"Func eval cannot work. Bad starting point."</Message>
+	<Comment> Func eval can't work if we're, for example, </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131314">
+	<SymbolicName>CORDBG_E_INVALID_OBJECT</SymbolicName>
+	<Message>"This object value is no longer valid."</Message>
+	<Comment> This object value is no longer valid. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131315">
+	<SymbolicName>CORDBG_E_FUNC_EVAL_NOT_COMPLETE</SymbolicName>
+	<Message>"CordbEval::GetResult called before func eval has finished."</Message>
+	<Comment> If you call CordbEval::GetResult before the </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013131a">
+	<SymbolicName>CORDBG_E_STATIC_VAR_NOT_AVAILABLE</SymbolicName>
+	<Message>"A static variable is not available because it has not been initialized yet."</Message>
+	<Comment> A static variable isn't available because </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013131c">
+	<SymbolicName>CORDBG_E_CANT_SETIP_INTO_OR_OUT_OF_FILTER</SymbolicName>
+	<Message>"SetIP cannot leave or enter a filter."</Message>
+	<Comment> SetIP can't leave or enter a filter </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013131d">
+	<SymbolicName>CORDBG_E_CANT_CHANGE_JIT_SETTING_FOR_ZAP_MODULE</SymbolicName>
+	<Message>"JIT settings for ZAP modules cannot be changed."</Message>
+	<Comment> You can't change JIT settings for ZAP </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013131e">
+	<SymbolicName>CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY_ON_WIN64</SymbolicName>
+	<Message>"SetIP is not possible because it would move EIP from within a finally clause to a point outside of one on this platforms."</Message>
+	<Comment> SetIP isn't possible because it would move </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013131f">
+	<SymbolicName>CORDBG_E_CANT_SET_IP_OUT_OF_CATCH_ON_WIN64</SymbolicName>
+	<Message>"SetIP is not possible because it would move EIP from within a catch clause to a point outside of one on this platforms."</Message>
+	<Comment> SetIP isn't possible because it would move </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131323">
+	<SymbolicName>CORDBG_E_CANT_SET_TO_JMC</SymbolicName>
+	<Message>"Cannot use JMC on this code (likely wrong JIT settings)."</Message>
+	<Comment> Can't use JMC on this code (likely wrong jit settings). </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131325">
+    <SymbolicName>CORDBG_E_NO_CONTEXT_FOR_INTERNAL_FRAME</SymbolicName>
+    <Message>"Internal frame markers have no associated context."</Message>
+    <Comment> Internal frame markers have no associated context. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131326">
+    <SymbolicName>CORDBG_E_NOT_CHILD_FRAME</SymbolicName>
+    <Message>"The current frame is not a child frame."</Message>
+    <Comment> The current frame is not a child frame. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131327">
+    <SymbolicName>CORDBG_E_NON_MATCHING_CONTEXT</SymbolicName>
+    <Message>"The provided CONTEXT does not match the specified thread."</Message>
+    <Comment> The provided CONTEXT does not match the specified thread.
+    The stack pointer in the provided CONTEXT must match the cached stack base and stack limit of the thread.
+    </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131328">
+    <SymbolicName>CORDBG_E_PAST_END_OF_STACK</SymbolicName>
+    <Message>"The stackwalker is now past the end of stack.  No information is available."</Message>
+    <Comment> The stackwalker is now past the end of stack.  No information is available. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131329">
+    <SymbolicName>CORDBG_E_FUNC_EVAL_CANNOT_UPDATE_REGISTER_IN_NONLEAF_FRAME</SymbolicName>
+    <Message>"Func eval cannot update a variable stored in a register on a non-leaf frame.  The most likely cause is that such a variable is passed as a ref/out argument."</Message>
+    <Comment> Func eval cannot update a variable stored in a register on a non-leaf frame.  The most likely cause is that such a variable is passed as a ref/out argument. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013132d">
+	<SymbolicName>CORDBG_E_BAD_THREAD_STATE</SymbolicName>
+	<Message>"The state of the thread is invalid."</Message>
+	<Comment> The state of the thread is invalid. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013132e">
+	<SymbolicName>CORDBG_E_DEBUGGER_ALREADY_ATTACHED</SymbolicName>
+	<Message>"This process has already been attached."</Message>
+	<Comment> This process has already been attached to </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013132f">
+	<SymbolicName>CORDBG_E_SUPERFLOUS_CONTINUE</SymbolicName>
+	<Message>"Returned from a call to Continue that was not matched with a stopping event."</Message>
+	<Comment> Returned from a call to Continue that was </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131330">
+	<SymbolicName>CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME</SymbolicName>
+	<Message>"Cannot perfrom SetValue on non-leaf frames."</Message>
+	<Comment> Can't perfrom SetValue on non-leaf frames. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131332">
+	<SymbolicName>CORDBG_E_ENC_MODULE_NOT_ENC_ENABLED</SymbolicName>
+	<Message>"Tried to do Edit and Continue on a module that was not started in Edit and Continue mode."</Message>
+	<Comment> Tried to do EnC on a module that wasn't </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131333">
+	<SymbolicName>CORDBG_E_SET_IP_NOT_ALLOWED_ON_EXCEPTION</SymbolicName>
+	<Message>"SetIP cannot be done on any exception."</Message>
+	<Comment> Setip cannot be done on any exception </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131334">
+	<SymbolicName>CORDBG_E_VARIABLE_IS_ACTUALLY_LITERAL</SymbolicName>
+	<Message>"The 'variable' does not exist because it is a literal optimized away by the compiler."</Message>
+	<Comment> The 'variable' doesn't exist because it is a </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131335">
+	<SymbolicName>CORDBG_E_PROCESS_DETACHED</SymbolicName>
+	<Message>"Process has been detached."</Message>
+	<Comment> Process has been detached from </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131338">
+	<SymbolicName>CORDBG_E_ENC_CANT_ADD_FIELD_TO_VALUE_OR_LAYOUT_CLASS</SymbolicName>
+	<Message>"Adding a field to a value or layout class is prohibited."</Message>
+	<Comment> Adding a field to a value or layout class is prohibitted, </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013133b">
+	<SymbolicName>CORDBG_E_FIELD_NOT_STATIC</SymbolicName>
+	<Message>"GetStaticFieldValue called on a non-static field."</Message>
+	<Comment> Returned if someone tries to call GetStaticFieldValue </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013133c">
+	<SymbolicName>CORDBG_E_FIELD_NOT_INSTANCE</SymbolicName>
+	<Message>"Returned if someone tries to call GetStaticFieldValue on a non-instance field."</Message>
+	<Comment> Returned if someone tries to call GetStaticFieldValue </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013133f">
+	<SymbolicName>CORDBG_E_ENC_JIT_CANT_UPDATE</SymbolicName>
+	<Message>"The JIT is unable to update the method."</Message>
+	<Comment> The JIT is unable to update the method. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131341">
+	<SymbolicName>CORDBG_E_ENC_INTERNAL_ERROR</SymbolicName>
+	<Message>"Internal Runtime Error while doing Edit-and-Continue."</Message>
+	<Comment> Generic message for "Something user doesn't control went wrong" message. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131342">
+	<SymbolicName>CORDBG_E_ENC_HANGING_FIELD</SymbolicName>
+	<Message>"The field was added via Edit and Continue after the class was loaded."</Message>
+	<Comment> The field was added via EnC after the class was loaded, and so instead of the the field being contiguous with the other fields, it's 'hanging' off the instance or type.  This error is used to indicate that either the storage for this field is not yet available and so the field value cannot be read, or the debugger needs to use an EnC specific code path to get the value.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131343">
+	<SymbolicName>CORDBG_E_MODULE_NOT_LOADED</SymbolicName>
+	<Message>"Module not loaded."</Message>
+	<Comment> If the module isn't loaded, including if it's been unloaded. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131345">
+	<SymbolicName>CORDBG_E_UNABLE_TO_SET_BREAKPOINT</SymbolicName>
+	<Message>"Cannot set a breakpoint here."</Message>
+	<Comment> Can't set a breakpoint here. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131346">
+	<SymbolicName>CORDBG_E_DEBUGGING_NOT_POSSIBLE</SymbolicName>
+	<Message>"Debugging is not possible due to an incompatibility within the CLR implementation."</Message>
+	<Comment> Debugging isn't possible due to an incompatibility within the CLR implementation. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131347">
+	<SymbolicName>CORDBG_E_KERNEL_DEBUGGER_ENABLED</SymbolicName>
+	<Message>"A kernel debugger is enabled on the system.  User-mode debugging will trap to the kernel debugger."</Message>
+	<Comment> Debugging isn't possible because a kernel debugger is enabled on the system. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131348">
+	<SymbolicName>CORDBG_E_KERNEL_DEBUGGER_PRESENT</SymbolicName>
+	<Message>"A kernel debugger is present on the system.  User-mode debugging will trap to the kernel debugger."</Message>
+	<Comment> Debugging isn't possible because a kernel debugger is present on the system. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013134b">
+	<SymbolicName>CORDBG_E_INCOMPATIBLE_PROTOCOL</SymbolicName>
+	<Message>"The debugger's protocol is incompatible with the debuggee."</Message>
+	<Comment> The debugger's protocol is incompatible with the debuggee. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013134c">
+	<SymbolicName>CORDBG_E_TOO_MANY_PROCESSES</SymbolicName>
+	<Message>"The debugger can only handle a finite number of debuggees."</Message>
+	<Comment> The debugger can only handle a finite number of debuggees. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013134d">
+	<SymbolicName>CORDBG_E_INTEROP_NOT_SUPPORTED</SymbolicName>
+	<Message>"Interop debugging is not supported."</Message>
+	<Comment> Interop debugging is not supported </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013134e">
+	<SymbolicName>CORDBG_E_NO_REMAP_BREAKPIONT</SymbolicName>
+	<Message>"Cannot call RemapFunction until have received RemapBreakpoint."</Message>
+	<Comment> Cannot call RemapFunction until have received RemapBreakpoint </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013134f">
+	<SymbolicName>CORDBG_E_OBJECT_NEUTERED</SymbolicName>
+	<Message>"Object is in a zombie state."</Message>
+	<Comment> Object has been neutered (it's in a zombie state). </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131350">
+	<SymbolicName>CORPROF_E_FUNCTION_NOT_COMPILED</SymbolicName>
+	<Message>"Function not yet compiled."</Message>
+	<Comment> Function not yet compiled. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131351">
+	<SymbolicName>CORPROF_E_DATAINCOMPLETE</SymbolicName>
+	<Message>"The ID is not fully loaded/defined yet."</Message>
+	<Comment> The ID is not fully loaded/defined yet. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131354">
+	<SymbolicName>CORPROF_E_FUNCTION_NOT_IL</SymbolicName>
+	<Message>"The Method has no associated IL."</Message>
+	<Comment> The Method has no associated IL </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131355">
+	<SymbolicName>CORPROF_E_NOT_MANAGED_THREAD</SymbolicName>
+	<Message>"The thread has never run managed code before."</Message>
+	<Comment> The thread has never run managed code before </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131356">
+	<SymbolicName>CORPROF_E_CALL_ONLY_FROM_INIT</SymbolicName>
+	<Message>"The function may only be called during profiler initialization."</Message>
+	<Comment> The function may only be called during profiler init </Comment>
+</HRESULT>
+
+
+<HRESULT NumericValue="0x8013135b">
+	<SymbolicName>CORPROF_E_NOT_YET_AVAILABLE</SymbolicName>
+	<Message>"Requested information is not yet available."</Message>
+	<Comment> This is a general error used to indicated that the information </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013135c">
+	<SymbolicName>CORPROF_E_TYPE_IS_PARAMETERIZED</SymbolicName>
+	<Message>"The given type is a generic and cannot be used with this method."</Message>
+	<Comment> The given type is a generic and cannot be used with this method. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013135d">
+	<SymbolicName>CORPROF_E_FUNCTION_IS_PARAMETERIZED</SymbolicName>
+	<Message>"The given function is a generic and cannot be used with this method."</Message>
+	<Comment> The given function is a generic and cannot be used with this method. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013135e">
+	<SymbolicName>CORPROF_E_STACKSNAPSHOT_INVALID_TGT_THREAD</SymbolicName>
+	<Comment> A profiler tried to walk the stack of an invalid thread </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013135f">
+	<SymbolicName>CORPROF_E_STACKSNAPSHOT_UNMANAGED_CTX</SymbolicName>
+	<Comment> A profiler can not walk a thread that is currently executing unmanaged code </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131360">
+	<SymbolicName>CORPROF_E_STACKSNAPSHOT_UNSAFE</SymbolicName>
+	<Comment> A stackwalk at this point may cause dead locks or data corruption </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131361">
+	<SymbolicName>CORPROF_E_STACKSNAPSHOT_ABORTED</SymbolicName>
+	<Comment> Stackwalking callback requested the walk to abort </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131362">
+	<SymbolicName>CORPROF_E_LITERALS_HAVE_NO_ADDRESS</SymbolicName>
+	<Comment> Returned when asked for the address of a static that is a literal. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131363">
+	<SymbolicName>CORPROF_E_UNSUPPORTED_CALL_SEQUENCE</SymbolicName>
+    <Comment> A call was made at an unsupported time.  Examples include illegally calling a profiling API method asynchronously, calling a method that might trigger a GC at an unsafe time, and calling a method at a time that could cause locks to be taken out of order.  </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131364">
+	<SymbolicName>CORPROF_E_ASYNCHRONOUS_UNSAFE</SymbolicName>
+	<Comment> A legal asynchronous call was made at an unsafe time (e.g., CLR locks are held)  </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131365">
+	<SymbolicName>CORPROF_E_CLASSID_IS_ARRAY</SymbolicName>
+	<Comment> The specified ClassID cannot be inspected by this function because it is an array </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131366">
+	<SymbolicName>CORPROF_E_CLASSID_IS_COMPOSITE</SymbolicName>
+	<Comment> The specified ClassID is a non-array composite type (e.g., ref) and cannot be inspected </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131367">
+  <SymbolicName>CORPROF_E_PROFILER_DETACHING</SymbolicName>
+  <Comment> The profiler's call into the CLR is disallowed because the profiler is attempting to detach. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131368">
+  <SymbolicName>CORPROF_E_PROFILER_NOT_ATTACHABLE</SymbolicName>
+  <Comment> The profiler does not support attaching to a live process. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131369">
+  <SymbolicName>CORPROF_E_UNRECOGNIZED_PIPE_MSG_FORMAT</SymbolicName>
+  <Comment> The message sent on the profiling API attach pipe is in an unrecognized format. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013136A">
+  <SymbolicName>CORPROF_E_PROFILER_ALREADY_ACTIVE</SymbolicName>
+  <Comment> The request to attach a profiler was denied because a profiler is already loaded. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013136B">
+  <SymbolicName>CORPROF_E_PROFILEE_INCOMPATIBLE_WITH_TRIGGER</SymbolicName>
+  <Comment> Unable to request a profiler attach because the target profilee's runtime is of a version incompatible with the current process calling AttachProfiler(). </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013136C">
+  <SymbolicName>CORPROF_E_IPC_FAILED</SymbolicName>
+  <Comment> AttachProfiler() encountered an error while communicating on the pipe to the target profilee.  This is often caused by a target profilee that is shutting down or killed while AttachProfiler() is reading or writing the pipe. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013136D">
+  <SymbolicName>CORPROF_E_PROFILEE_PROCESS_NOT_FOUND</SymbolicName>
+  <Comment> AttachProfiler() was unable to find a profilee with the specified process ID. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013136E">
+  <SymbolicName>CORPROF_E_CALLBACK3_REQUIRED</SymbolicName>
+  <Comment> Profiler must implement ICorProfilerCallback3 interface for this call to be supported. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013136F">
+  <SymbolicName>CORPROF_E_UNSUPPORTED_FOR_ATTACHING_PROFILER</SymbolicName>
+  <Comment> This call was attempted by a profiler that attached to the process after startup, but this call is only supported by profilers that are loaded into the process on startup.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131370">
+  <SymbolicName>CORPROF_E_IRREVERSIBLE_INSTRUMENTATION_PRESENT</SymbolicName>
+  <Comment> Detach is impossible because the profiler has either instrumented IL or inserted enter/leave hooks. Detach was not attempted; the profiler is still fully attached. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131371">
+  <SymbolicName>CORPROF_E_RUNTIME_UNINITIALIZED</SymbolicName>
+  <Comment> The profiler called a function that cannot complete because the CLR is not yet fully initialized.  The profiler may try again once the CLR has fully started. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131372">
+  <SymbolicName>CORPROF_E_IMMUTABLE_FLAGS_SET</SymbolicName>
+  <Comment> Detach is impossible because immutable flags were set by the profiler at startup. Detach was not attempted; the profiler is still fully attached. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131373">
+  <SymbolicName>CORPROF_E_PROFILER_NOT_YET_INITIALIZED</SymbolicName>
+  <Comment> The profiler called a function that cannot complete because the profiler is not yet fully initialized. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131374">
+  <SymbolicName>CORPROF_E_INCONSISTENT_WITH_FLAGS</SymbolicName>
+  <Comment> The profiler called a function that first requires additional flags to be set in the event mask.  This HRESULT may also indicate that the profiler called a function that first requires that some of the flags currently set in the event mask be reset. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131375">
+  <SymbolicName>CORPROF_E_PROFILER_CANCEL_ACTIVATION</SymbolicName>
+  <Comment> The profiler has requested that the CLR instance not load the profiler into this process. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131376">
+  <SymbolicName>CORPROF_E_CONCURRENT_GC_NOT_PROFILABLE</SymbolicName>
+  <Comment> Concurrent GC mode is enabled, which prevents use of COR_PRF_MONITOR_GC </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131378">
+    <SymbolicName>CORPROF_E_DEBUGGING_DISABLED</SymbolicName>
+    <Comment> This functionality requires CoreCLR debugging to be enabled. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131379">
+    <SymbolicName>CORPROF_E_TIMEOUT_WAITING_FOR_CONCURRENT_GC</SymbolicName>
+    <Comment> Timed out on waiting for concurrent GC to finish during attach. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013137A">
+  <SymbolicName>CORPROF_E_MODULE_IS_DYNAMIC</SymbolicName>
+  <Comment> The specified module was dynamically generated (e.g., via Reflection.Emit API), and is thus not supported by this API method. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013137B">
+  <SymbolicName>CORPROF_E_CALLBACK4_REQUIRED</SymbolicName>
+  <Comment> Profiler must implement ICorProfilerCallback4 interface for this call to be supported. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013137C">
+  <SymbolicName>CORPROF_E_REJIT_NOT_ENABLED</SymbolicName>
+  <Comment> This call is not supported unless ReJIT is first enabled during initialization by setting COR_PRF_ENABLE_REJIT via SetEventMask. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013137E">
+    <SymbolicName>CORPROF_E_FUNCTION_IS_COLLECTIBLE</SymbolicName>
+    <Comment> The specified function is instantiated into a collectible assembly, and is thus not supported by this API method. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131380">
+    <SymbolicName>CORPROF_E_CALLBACK6_REQUIRED</SymbolicName>
+    <Comment> Profiler must implement ICorProfilerCallback6 interface for this call to be supported. </Comment>
+</HRESULT>
+
+<!-- This HRESULT is used only internally by our rejit implementation right now. If it ever appears in
+     a public API HRESULT it is a bug. It is included here to prevent anyone else from defining
+     a new failure with the same value and causing confusion.
+<HRESULT NumericValue="0x80131381">
+    <SymbolicName>CORPROF_E_RUNTIME_SUSPEND_REQUIRED</SymbolicName>
+    <Comment> This call can't be completed safely because the runtime is not suspended </Comment>
+</HRESULT>
+-->
+
+<HRESULT NumericValue="0x80131382">
+    <SymbolicName>CORPROF_E_CALLBACK7_REQUIRED</SymbolicName>
+    <Comment> Profiler must implement ICorProfilerCallback7 interface for this call to be supported. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131383">
+    <SymbolicName>CORPROF_E_REJIT_INLINING_DISABLED</SymbolicName>
+    <Comment> The runtime's tracking of inlined methods for ReJIT is not enabled. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131384">
+    <SymbolicName>CORDIAGIPC_E_BAD_ENCODING</SymbolicName>
+    <Comment> The runtime was unable to decode the Header or Payload. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131385">
+    <SymbolicName>CORDIAGIPC_E_UNKNOWN_COMMAND</SymbolicName>
+    <Comment> The specified CommandSet or CommandId is unknown. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131386">
+    <SymbolicName>CORDIAGIPC_E_UNKNOWN_MAGIC</SymbolicName>
+    <Comment> The magic version of Diagnostics IPC is unknown. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131387">
+    <SymbolicName>CORDIAGIPC_E_UNKNOWN_ERROR</SymbolicName>
+    <Comment> An unknown error occurred in the Diagnpostics IPC Server. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131388">
+    <SymbolicName>CORPROF_E_SUSPENSION_IN_PROGRESS</SymbolicName>
+    <Comment> The runtime cannot be suspened since a suspension is already in progress. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131401">
+	<SymbolicName>SECURITY_E_INCOMPATIBLE_SHARE</SymbolicName>
+	<Message>"Loading this assembly would produce a different grant set from other instances."</Message>
+	<Comment> Loading this assembly would produce a different grant set from other instances </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131402">
+	<SymbolicName>SECURITY_E_UNVERIFIABLE</SymbolicName>
+	<Message>"Unverifiable code failed policy check."</Message>
+	<Comment> Unverifable code failed policy check </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131403">
+	<SymbolicName>SECURITY_E_INCOMPATIBLE_EVIDENCE</SymbolicName>
+	<Message>"Assembly already loaded without additional security evidence."</Message>
+	<Comment> Assembly already loaded without additional security evidence. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131416">
+	<SymbolicName>CORSEC_E_POLICY_EXCEPTION</SymbolicName>
+	<Message>"PolicyException thrown."</Message>
+	<Comment> PolicyException thrown </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131417">
+	<SymbolicName>CORSEC_E_MIN_GRANT_FAIL</SymbolicName>
+	<Message>"Failed to grant minimum permission requests."</Message>
+	<Comment> Failed to grant minimum permission requests </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131418">
+	<SymbolicName>CORSEC_E_NO_EXEC_PERM</SymbolicName>
+	<Message>"Failed to grant permission to execute."</Message>
+	<Comment> Failed to grant permission to execute </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131419">
+	<SymbolicName>CORSEC_E_XMLSYNTAX</SymbolicName>
+	<Message>"XML Syntax error."</Message>
+	<Comment> XML Syntax error </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013141a">
+	<SymbolicName>CORSEC_E_INVALID_STRONGNAME</SymbolicName>
+	<Message>"Strong name validation failed."</Message>
+	<Comment> Strong name validation failed </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013141b">
+	<SymbolicName>CORSEC_E_MISSING_STRONGNAME</SymbolicName>
+	<Message>"Assembly is not strong named."</Message>
+	<Comment> Assembly is not strong named </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013141d">
+	<SymbolicName>CORSEC_E_INVALID_IMAGE_FORMAT</SymbolicName>
+	<Message>"Invalid assembly file format."</Message>
+	<Comment> Invalid assembly file format </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013141e">
+	<SymbolicName>CORSEC_E_INVALID_PUBLICKEY</SymbolicName>
+	<Message>"Invalid assembly public key."</Message>
+	<Comment> Invalid assembly public key </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131420">
+	<SymbolicName>CORSEC_E_SIGNATURE_MISMATCH</SymbolicName>
+	<Message>"Signature size mismatch."</Message>
+	<Comment> Signature size mismatch </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131430">
+	<SymbolicName>CORSEC_E_CRYPTO</SymbolicName>
+	<Message>"Failure during Cryptographic operation."</Message>
+	<Comment> generic CryptographicException </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131431">
+	<SymbolicName>CORSEC_E_CRYPTO_UNEX_OPER</SymbolicName>
+	<Message>"Unexpected Cryptographic operation."</Message>
+	<Comment> generic CryptographicUnexpectedOperationException </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131442">
+	<SymbolicName>CORSECATTR_E_BAD_ACTION</SymbolicName>
+	<Message>"Invalid security action code."</Message>
+	<Comment> Invalid security action code </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131500">
+	<SymbolicName>COR_E_EXCEPTION</SymbolicName>
+	<Message>"General Exception"</Message>
+	<Comment> Base class for all exceptions in the runtime</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131501">
+	<SymbolicName>COR_E_SYSTEM</SymbolicName>
+	<Message>"System.Exception"</Message>
+	<Comment> The base class for the runtime's "less serious" exceptions</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131502">
+	<SymbolicName>COR_E_ARGUMENTOUTOFRANGE</SymbolicName>
+	<Message>"An argument was out of its legal range."</Message>
+	<Comment> An argument was out of its legal range.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131503">
+	<SymbolicName>COR_E_ARRAYTYPEMISMATCH</SymbolicName>
+	<Message>"Attempted to store an object of the wrong type in an array."</Message>
+	<Comment> Attempted to store an object of the wrong type in an array</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131504">
+	<SymbolicName>COR_E_CONTEXTMARSHAL</SymbolicName>
+	<Message>"Attempted to marshal an object across a context boundary."</Message>
+	<Comment></Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131505">
+	<SymbolicName>COR_E_TIMEOUT</SymbolicName>
+	<Message>"Operation timed out."</Message>
+	<Comment></Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131506">
+	<SymbolicName>COR_E_EXECUTIONENGINE</SymbolicName>
+	<Message>"Internal CLR error."</Message>
+	<Comment> An internal error happened in the Common Language Runtime's Execution Engine</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131507">
+	<SymbolicName>COR_E_FIELDACCESS</SymbolicName>
+	<Message>"Access to this field is denied."</Message>
+	<Comment> Access to this field is denied.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131508">
+	<SymbolicName>COR_E_INDEXOUTOFRANGE</SymbolicName>
+	<Message>"Array subscript out of range."</Message>
+	<Comment> Attempted to access an element within an array by using an index that is</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131509">
+	<SymbolicName>COR_E_INVALIDOPERATION</SymbolicName>
+	<Message>"An operation is not legal in the current state."</Message>
+	<Comment> An operation is not legal in the current state.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013150a">
+	<SymbolicName>COR_E_SECURITY</SymbolicName>
+	<Message>"An error relating to security occurred."</Message>
+	<Comment> An error relating to security occurred.</Comment>
+</HRESULT>
+
+
+<HRESULT NumericValue="0x8013150c">
+	<SymbolicName>COR_E_SERIALIZATION</SymbolicName>
+	<Message>"An error relating to serialization occurred."</Message>
+	<Comment> An error relating to serialization has occurred.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013150d">
+	<SymbolicName>COR_E_VERIFICATION</SymbolicName>
+	<Message>"A verification failure has occurred."</Message>
+	<Comment> A verification failure occurred</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131510">
+	<SymbolicName>COR_E_METHODACCESS</SymbolicName>
+	<Message>"Access to this method is denied."</Message>
+	<Comment> Access to this method is denied.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131511">
+	<SymbolicName>COR_E_MISSINGFIELD</SymbolicName>
+	<Message>"Field does not exist."</Message>
+	<Comment> An attempt was made to dynamically access a field that does not exist.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131512">
+	<SymbolicName>COR_E_MISSINGMEMBER</SymbolicName>
+	<Message>"Member does not exist."</Message>
+	<Comment> An attempt was made to dynamically invoke or access a field or method</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131513">
+	<SymbolicName>COR_E_MISSINGMETHOD</SymbolicName>
+	<Message>"Method does not exist."</Message>
+	<Comment> An attempt was made to dynamically invoke a method that does not exist</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131514">
+	<SymbolicName>COR_E_MULTICASTNOTSUPPORTED</SymbolicName>
+	<Message>"Attempt to combine delegates that are not multicast."</Message>
+	<Comment> Attempted to combine delegates that are not multicast</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131515">
+	<SymbolicName>COR_E_NOTSUPPORTED</SymbolicName>
+	<Message>"Operation is not supported."</Message>
+	<Comment> The operation is not supported</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131516">
+	<SymbolicName>COR_E_OVERFLOW</SymbolicName>
+	<Message>"Arithmetic, casting or conversion operation overflowed or underflowed."</Message>
+	<Comment> An arithmetic, casting, or conversion operation overflowed or underflowed.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131517">
+	<SymbolicName>COR_E_RANK</SymbolicName>
+	<Message>"An array has the wrong number of dimensions for a particular operation."</Message>
+	<Comment> An array has the wrong number of dimensions for a particular operation.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131518">
+	<SymbolicName>COR_E_SYNCHRONIZATIONLOCK</SymbolicName>
+	<Message>"This operation must be called from a synchronized block."</Message>
+	<Comment> Wait(), Notify() or NotifyAll() was called from an unsynchronized ** block of c</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131519">
+	<SymbolicName>COR_E_THREADINTERRUPTED</SymbolicName>
+	<Message>"Thread was interrupted from a waiting state."</Message>
+	<Comment> Indicates that the thread was interrupted from a waiting state</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013151a">
+	<SymbolicName>COR_E_MEMBERACCESS</SymbolicName>
+	<Message>"Access to this member is denied."</Message>
+	<Comment> Access to this member is denied.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131520">
+	<SymbolicName>COR_E_THREADSTATE</SymbolicName>
+	<Message>"Thread is in an invalid state for this operation."</Message>
+	<Comment> Indicate that the Thread class is in an invalid state for the method call</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131521">
+	<SymbolicName>COR_E_THREADSTOP</SymbolicName>
+	<Message>"Thread is stopping."</Message>
+	<Comment> Thrown into a thread to cause it to stop. This exception is typically not caught</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131522">
+	<SymbolicName>COR_E_TYPELOAD</SymbolicName>
+	<Message>"Could not find or load a type."</Message>
+	<Comment> Could not find or load a specific type (class, enum, etc).</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131523">
+	<SymbolicName>COR_E_ENTRYPOINTNOTFOUND</SymbolicName>
+	<Message>"Could not find the specified DllImport entrypoint."</Message>
+	<Comment> Could not find the specified DllImport entry point</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131524">
+	<SymbolicName>COR_E_DLLNOTFOUND</SymbolicName>
+	<Message>"Could not find the specified DllImport Dll."</Message>
+	<Comment> Could not find the specified DllImport DLL.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131525">
+	<SymbolicName>COR_E_THREADSTART</SymbolicName>
+	<Comment> Indicate that a user thread fails to start.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131527">
+	<SymbolicName>COR_E_INVALIDCOMOBJECT</SymbolicName>
+	<Message>"An invalid __ComObject has been used."</Message>
+	<Comment> An invalid __ComObject has been used.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131528">
+	<SymbolicName>COR_E_NOTFINITENUMBER</SymbolicName>
+	<Message>"Not a Number."</Message>
+	<Comment>  Thrown if value (a floating point number) is either the not a number value (NaN) or +- infinity value</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131529">
+	<SymbolicName>COR_E_DUPLICATEWAITOBJECT</SymbolicName>
+	<Message>"An object appears more than once in the wait objects array."</Message>
+	<Comment> An object appears more than once in the wait objects array.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013152b">
+	<SymbolicName>COR_E_SEMAPHOREFULL</SymbolicName>
+	<Message>"Reached maximum count for semaphore."</Message>
+	<Comment> Adding the given count to the semaphore would cause it to exceed its maximum count.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013152c">
+	<SymbolicName>COR_E_WAITHANDLECANNOTBEOPENED</SymbolicName>
+	<Message>"No semaphore of the given name exists."</Message>
+	<Comment> No Semaphore of the given name exists.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013152d">
+	<SymbolicName>COR_E_ABANDONEDMUTEX</SymbolicName>
+	<Message>"The wait completed due to an abandoned mutex."</Message>
+	<Comment> The wait completed due to an abandoned mutex.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131530">
+	<SymbolicName>COR_E_THREADABORTED</SymbolicName>
+	<Message>"Thread has aborted."</Message>
+	<Comment> Thrown into a thread to cause it to abort. Not catchable.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131531">
+	<SymbolicName>COR_E_INVALIDOLEVARIANTTYPE</SymbolicName>
+	<Message>"OLE Variant has an invalid type."</Message>
+	<Comment> The type of an OLE variant that was passed into the runtime is invalid.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131532">
+	<SymbolicName>COR_E_MISSINGMANIFESTRESOURCE</SymbolicName>
+	<Message>"An expected resource in the assembly manifest was missing."</Message>
+	<Comment> An expected resource in the assembly manifest was missing.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131533">
+	<SymbolicName>COR_E_SAFEARRAYTYPEMISMATCH</SymbolicName>
+	<Message>"A mismatch has occurred between the runtime type of the array and the sub type recorded in the metadata."</Message>
+	<Comment> A mismatch has occurred between the runtime type of the array and the subtype recorded in the metadata</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131534">
+	<SymbolicName>COR_E_TYPEINITIALIZATION</SymbolicName>
+	<Message>"Uncaught exception during type initialization."</Message>
+	<Comment> An exception was thrown by a type's initializer (.cctor).</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131535">
+	<SymbolicName>COR_E_MARSHALDIRECTIVE</SymbolicName>
+	<Message>"Invalid marshaling directives."</Message>
+	<Comment> The marshaling directives are invalid.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131536">
+	<SymbolicName>COR_E_MISSINGSATELLITEASSEMBLY</SymbolicName>
+	<Message>"An expected satellite assembly containing the ultimate fallback resources for a given culture was not found or could not be loaded."</Message>
+	<Comment> An expected satellite assembly containing the ultimate fallback resources</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131537">
+	<SymbolicName>COR_E_FORMAT</SymbolicName>
+	<Message>"The format of one argument does not meet the contract of the method."</Message>
+	<Comment> The format of one argument does not meet the contract of the method.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131538">
+	<SymbolicName>COR_E_SAFEARRAYRANKMISMATCH</SymbolicName>
+	<Message>"A mismatch has occurred between the runtime rank of the array and the rank recorded in the metadata."</Message>
+	<Comment> A mismatch has occurred between the runtime rank of the array and the rank recorded in the metadata</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131539">
+	<SymbolicName>COR_E_PLATFORMNOTSUPPORTED</SymbolicName>
+	<Message>"Operation is not supported on this platform."</Message>
+	<Comment> The method is not supported on this platform</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013153a">
+	<SymbolicName>COR_E_INVALIDPROGRAM</SymbolicName>
+	<Message>"Invalid IL or CLR metadata."</Message>
+	<Comment> A program contained invalid IL or bad metadata.  Usually this is a compiler bug.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013153b">
+	<SymbolicName>COR_E_OPERATIONCANCELED</SymbolicName>
+	<Message>"The operation was cancelled."</Message>
+	<Comment> The operation was cancelled.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013153d">
+	<SymbolicName>COR_E_INSUFFICIENTMEMORY</SymbolicName>
+	<Comment> Not enough memory was available for an operation.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013153e">
+	<SymbolicName>COR_E_RUNTIMEWRAPPED</SymbolicName>
+	<Comment> An object that does not derive from System.Exception has been wrapped in a RuntimeWrappedException.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131541">
+	<SymbolicName>COR_E_DATAMISALIGNED</SymbolicName>
+	<Message>"A datatype misalignment was detected in a load or store instruction."</Message>
+	<Comment> A datatype misalignment was detected in a load or store instruction.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131542">
+	<SymbolicName>COR_E_CODECONTRACTFAILED</SymbolicName>
+	<Message>"A managed code contract (ie, precondition, postcondition, invariant, or assert) failed."</Message>
+	<Comment> A managed code contract (ie, precondition, postcondition, invariant, or assert) failed.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131543">
+  <SymbolicName>COR_E_TYPEACCESS</SymbolicName>
+  <Message>"Access to this type is denied."</Message>
+  <Comment>Access to this type is denied.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131544">
+  <SymbolicName>COR_E_ACCESSING_CCW</SymbolicName>
+  <Message>"Fail to access a CCW because the corresponding managed object is already collected."</Message>
+  <Comment>Fail to access a CCW because the corresponding managed object is already collected.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131577">
+	<SymbolicName>COR_E_KEYNOTFOUND</SymbolicName>
+	<Message>"The given key was not present in the dictionary."</Message>
+	<Comment></Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131578">
+  <SymbolicName>COR_E_INSUFFICIENTEXECUTIONSTACK</SymbolicName>
+  <Message>"Insufficient stack to continue executing the program safely. This can happen from having too many functions on the call stack or function on the stack using too much stack space."</Message>
+  <Comment> Insufficient stack to continue executing the program safely. This can happen from having too many functions on the call stack or function on the stack using too much stack space.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131600">
+	<SymbolicName>COR_E_APPLICATION</SymbolicName>
+	<Message>"Application exception"</Message>
+	<Comment> The base class for all "less serious" exceptions.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131601">
+	<SymbolicName>COR_E_INVALIDFILTERCRITERIA</SymbolicName>
+	<Message>"The given filter criteria does not match the filter content."</Message>
+	<Comment> The given filter criteria does not match the filter contract.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131602">
+	<SymbolicName>COR_E_REFLECTIONTYPELOAD</SymbolicName>
+	<Message>"Could not find or load a specific class that was requested through Reflection."</Message>
+	<Comment> Could not find or load a specific class that was requested through Reflection</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131603">
+	<SymbolicName>COR_E_TARGET</SymbolicName>
+	<Message>"Attempt to invoke non-static method with a null Object."</Message>
+	<Comment> - If you attempt to invoke a non-static method with a null Object - If you atte</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131604">
+	<SymbolicName>COR_E_TARGETINVOCATION</SymbolicName>
+	<Message>"Uncaught exception thrown by method called through Reflection."</Message>
+	<Comment> If the method called throws an exception</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131605">
+	<SymbolicName>COR_E_CUSTOMATTRIBUTEFORMAT</SymbolicName>
+	<Message>"Custom attribute has invalid format."</Message>
+	<Comment> If the binary format of a custom attribute is invalid.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131620">
+	<SymbolicName>COR_E_IO</SymbolicName>
+	<Message>"Error during managed I/O."</Message>
+	<Comment> Some sort of I/O error.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131621">
+	<SymbolicName>COR_E_FILELOAD</SymbolicName>
+	<Message>"Could not find or load a specific file."</Message>
+	<Comment></Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131622">
+	<SymbolicName>COR_E_OBJECTDISPOSED</SymbolicName>
+	<Message>"The object has already been disposed."</Message>
+	<Comment> The object has already been disposed.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131623">
+	<SymbolicName>COR_E_FAILFAST</SymbolicName>
+	<Message>"Runtime operation halted by call to System.Environment.FailFast()."</Message>
+	<Comment> Runtime operation halted by call to System.Environment.FailFast().</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131640">
+	<SymbolicName>COR_E_HOSTPROTECTION</SymbolicName>
+	<Message>"The host has forbidden this operation."</Message>
+	<Comment> Attempted to perform an operation that was forbidden by the host.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131641">
+	<SymbolicName>COR_E_ILLEGAL_REENTRANCY</SymbolicName>
+	<Message>"Attempted to call into managed code when executing inside a low level extensibility point."</Message>
+	<Comment> Attempted to call into managed code when executing inside a low level extensibility point.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131700">
+	<SymbolicName>CLR_E_SHIM_RUNTIMELOAD</SymbolicName>
+	<Message>"Failed to load the runtime."</Message>
+	<Comment> Failed to load the runtime </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131704">
+	<SymbolicName>CLR_E_SHIM_LEGACYRUNTIMEALREADYBOUND</SymbolicName>
+	<Message>"A runtime has already been bound for legacy activation policy use."</Message>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131815">
+	<SymbolicName>VER_E_FIELD_SIG</SymbolicName>
+	<Message>"[field sig]"</Message>
+</HRESULT>
+
+<HRESULT NumericValue="0x801318ce">
+	<SymbolicName>VER_E_CIRCULAR_VAR_CONSTRAINTS</SymbolicName>
+	<Message>"Method parent has circular class type parameter constraints."</Message>
+</HRESULT>
+
+<HRESULT NumericValue="0x801318cf">
+	<SymbolicName>VER_E_CIRCULAR_MVAR_CONSTRAINTS</SymbolicName>
+	<Message>"Method has circular method type parameter constraints."</Message>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131920">
+	<SymbolicName>COR_E_Data</SymbolicName>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131b24">
+	<SymbolicName>VLDTR_E_SIG_BADVOID</SymbolicName>
+	<Message>"Illegal 'void' in signature."</Message>
+	<Comment> Illegal "void" in signature </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131b2d">
+	<SymbolicName>VLDTR_E_GP_ILLEGAL_VARIANT_MVAR</SymbolicName>
+	<Message>"GenericParam is a method type parameter and must be non-variant."</Message>
+	<Comment> GenericParam is a method type parameter and must be non-variant </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c00">
+	<SymbolicName>CORDBG_E_THREAD_NOT_SCHEDULED</SymbolicName>
+	<Message>"Thread is not scheduled. Thus we may not have OSThreadId, handle, or context."</Message>
+	<Comment> Thread is not scheduled. Thus we may not have OSThreadId, handle, or context </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c01">
+	<SymbolicName>CORDBG_E_HANDLE_HAS_BEEN_DISPOSED</SymbolicName>
+	<Message>"Handle has been disposed."</Message>
+	<Comment> Handle has been disposed. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c02">
+	<SymbolicName>CORDBG_E_NONINTERCEPTABLE_EXCEPTION</SymbolicName>
+	<Message>"Cannot intercept this exception."</Message>
+	<Comment> Cant intercept this exception. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c04">
+	<SymbolicName>CORDBG_E_INTERCEPT_FRAME_ALREADY_SET</SymbolicName>
+	<Message>"The intercept frame for this exception has already been set."</Message>
+	<Comment> The intercept frame for this exception has already been set. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c05">
+	<SymbolicName>CORDBG_E_NO_NATIVE_PATCH_AT_ADDR</SymbolicName>
+	<Message>"There is no native patch at the given address."</Message>
+	<Comment> there's no native patch at the given address. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c06">
+	<SymbolicName>CORDBG_E_MUST_BE_INTEROP_DEBUGGING</SymbolicName>
+	<Message>"This API is only allowed when interop debugging."</Message>
+	<Comment> This API is only allowed when interop debugging. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c07">
+	<SymbolicName>CORDBG_E_NATIVE_PATCH_ALREADY_AT_ADDR</SymbolicName>
+	<Message>"There is already a native patch at the address."</Message>
+	<Comment> There's already a native patch at the address </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c08">
+	<SymbolicName>CORDBG_E_TIMEOUT</SymbolicName>
+	<Message>"A wait timed out, likely an indication of deadlock."</Message>
+	<Comment> a wait timed out .. likely an indication of deadlock. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c09">
+	<SymbolicName>CORDBG_E_CANT_CALL_ON_THIS_THREAD</SymbolicName>
+	<Message>"Cannot use the API on this thread."</Message>
+	<Comment> Can't use the API on this thread. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c0a">
+	<SymbolicName>CORDBG_E_ENC_INFOLESS_METHOD</SymbolicName>
+	<Message>"Method was not JIT'd in EnC mode."</Message>
+	<Comment> Method was not JITed in EnC mode </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c0c">
+	<SymbolicName>CORDBG_E_ENC_IN_FUNCLET</SymbolicName>
+	<Message>"Method is in a callable handler/filter. Cannot increase stack."</Message>
+	<Comment> Method is in a callable handler/filter. Cant grow stack </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c0e">
+	<SymbolicName>CORDBG_E_ENC_EDIT_NOT_SUPPORTED</SymbolicName>
+	<Message>"Attempt to perform unsupported edit."</Message>
+	<Comment> Attempt to perform unsupported edit </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c10">
+	<SymbolicName>CORDBG_E_NOTREADY</SymbolicName>
+	<Message>"The LS is not in a good spot to perform the requested operation."</Message>
+	<Comment> The LS is not in a good spot to perform the requested operation. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c11">
+	<SymbolicName>CORDBG_E_CANNOT_RESOLVE_ASSEMBLY</SymbolicName>
+	<Message>"We failed to resolve assembly given an AssemblyRef token. Assembly may be not loaded yet or not a valid token."</Message>
+	<Comment> We failed to resolve assembly given an AssemblyRef token. Assembly may be not loaded yet or not a valid token. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c12">
+	<SymbolicName>CORDBG_E_MUST_BE_IN_LOAD_MODULE</SymbolicName>
+	<Message>"Must be in context of LoadModule callback to perform requested operation."</Message>
+	<Comment> Must be in context of LoadModule callback to perform requested operation </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c13">
+	<SymbolicName>CORDBG_E_CANNOT_BE_ON_ATTACH</SymbolicName>
+	<Message>"Requested operation cannot be performed during an attach operation."</Message>
+	<Comment> Requested operation cannot be performed during an attach operation </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c14">
+	<SymbolicName>CORDBG_E_NGEN_NOT_SUPPORTED</SymbolicName>
+	<Message>"NGEN must be supported to perform the requested operation."</Message>
+	<Comment> NGEN must be supported to perform the requested operation </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c15">
+	<SymbolicName>CORDBG_E_ILLEGAL_SHUTDOWN_ORDER</SymbolicName>
+	<Message>"Trying to shutdown out of order."</Message>
+	<Comment> Trying to shutdown out of order. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c16">
+	<SymbolicName>CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS</SymbolicName>
+	<Message>"Debugging fiber mode managed process is not supported."</Message>
+	<Comment> For Whidbey, we don't support debugging fiber mode managed process </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c17">
+	<SymbolicName>CORDBG_E_MUST_BE_IN_CREATE_PROCESS</SymbolicName>
+	<Message>"Must be in context of CreateProcess callback to perform requested operation."</Message>
+	<Comment> Must be in context of CreateProcess callback to perform requested operation </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c18">
+	<SymbolicName>CORDBG_E_DETACH_FAILED_OUTSTANDING_EVALS</SymbolicName>
+	<Message>"All outstanding func-evals have not completed, detaching is not allowed at this time."</Message>
+	<Comment> All outstanding func-evals have not completed, detaching is not allowed at this time. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c19">
+	<SymbolicName>CORDBG_E_DETACH_FAILED_OUTSTANDING_STEPPERS</SymbolicName>
+	<Message>"All outstanding steppers have not been closed, detaching is not allowed at this time."</Message>
+	<Comment> All outstanding steppers have not been closed, detaching is not allowed at this time. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c20">
+	<SymbolicName>CORDBG_E_CANT_INTEROP_STEP_OUT</SymbolicName>
+	<Message>"Cannot have an ICorDebugStepper do a native step-out."</Message>
+	<Comment> Can't have an ICorDebugStepper do a native step-out. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c21">
+	<SymbolicName>CORDBG_E_DETACH_FAILED_OUTSTANDING_BREAKPOINTS</SymbolicName>
+	<Message>"All outstanding breakpoints have not been closed, detaching is not allowed at this time."</Message>
+	<Comment> All outstanding breakpoints have not been closed, detaching is not allowed at this time. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c22">
+	<SymbolicName>CORDBG_E_ILLEGAL_IN_STACK_OVERFLOW</SymbolicName>
+	<Message>"The operation is illegal because of a stack overflow."</Message>
+	<Comment> the operation is illegal because of a stackoverflow. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c23">
+	<SymbolicName>CORDBG_E_ILLEGAL_AT_GC_UNSAFE_POINT</SymbolicName>
+	<Message>"The operation failed because it is a GC unsafe point."</Message>
+	<Comment> The operation failed because it's a GC unsafe point. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c24">
+	<SymbolicName>CORDBG_E_ILLEGAL_IN_PROLOG</SymbolicName>
+	<Message>"The operation failed because the thread is in the prolog."</Message>
+	<Comment> The operation failed because the thread is in the prolog </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c25">
+	<SymbolicName>CORDBG_E_ILLEGAL_IN_NATIVE_CODE</SymbolicName>
+	<Message>"The operation failed because the thread is in native code."</Message>
+	<Comment> The operation failed because the thread is in native code </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c26">
+	<SymbolicName>CORDBG_E_ILLEGAL_IN_OPTIMIZED_CODE</SymbolicName>
+	<Message>"The operation failed because the thread is in optimized code."</Message>
+	<Comment> The operation failed because the thread is in optimized code. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c28">
+	<SymbolicName>CORDBG_E_APPDOMAIN_MISMATCH</SymbolicName>
+	<Message>"A supplied object or type belongs to the wrong AppDomain."</Message>
+	<Comment> A supplied object or type belongs to the wrong AppDomain </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c29">
+	<SymbolicName>CORDBG_E_CONTEXT_UNVAILABLE</SymbolicName>
+	<Message>"The thread's context is not available."</Message>
+	<Comment> The thread's context is not available. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c30">
+	<SymbolicName>CORDBG_E_UNCOMPATIBLE_PLATFORMS</SymbolicName>
+	<Message>"The operation failed because debuggee and debugger are on incompatible platforms."</Message>
+	<Comment> The operation failed because debuggee and debugger are on incompatible platform </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c31">
+	<SymbolicName>CORDBG_E_DEBUGGING_DISABLED</SymbolicName>
+	<Message>"The operation failed because the debugging has been disabled"</Message>
+	<Comment> The operation failed because the debugging has been disabled </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c32">
+	<SymbolicName>CORDBG_E_DETACH_FAILED_ON_ENC</SymbolicName>
+	<Message>"Detach is illegal after an Edit and Continue on a module."</Message>
+	<Comment> Detach is illegal after a module has been EnCed. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c33">
+	<SymbolicName>CORDBG_E_CURRENT_EXCEPTION_IS_OUTSIDE_CURRENT_EXECUTION_SCOPE</SymbolicName>
+	<Message>"Cannot intercept the current exception at the specified frame."</Message>
+	<Comment> Interception of the current exception is not legal </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c34">
+	<SymbolicName>CORDBG_E_HELPER_MAY_DEADLOCK</SymbolicName>
+	<Message>"The debugger helper thread cannot obtain the locks it needs to perform this operation."</Message>
+	<Comment> Helper thread can not safely run code. The opereration may work at a later time. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c35">
+    <SymbolicName>CORDBG_E_MISSING_METADATA</SymbolicName>
+    <Message>"The operation failed because the debugger could not get the metadata."</Message>
+    <Comment>The operation failed because the debugger could not get the metadata.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c36">
+    <SymbolicName>CORDBG_E_TARGET_INCONSISTENT</SymbolicName>
+    <Message>"The debuggee is in a corrupt state."</Message>
+    <Comment>The debuggee is in a corrupt state.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c37">
+  <SymbolicName>CORDBG_E_DETACH_FAILED_OUTSTANDING_TARGET_RESOURCES</SymbolicName>
+  <Message>"Detach failed because there are outstanding resources in the target."</Message>
+  <Comment>The debugger is holding resource in the target (such as GC handles, function evaluations, etc).
+  These resources must be released through the appropriate ICorDebug API before detach can succeed.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c38">
+    <SymbolicName>CORDBG_E_TARGET_READONLY</SymbolicName>
+    <Message>"The debuggee is read-only."</Message>
+    <Comment>The provided ICorDebugDataTarget does not implement ICorDebugMutableDataTarget.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c39">
+  <SymbolicName>CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS</SymbolicName>
+  <Message>"The version of clr.dll in the target does not match the one mscordacwks.dll was built for."</Message>
+  <Comment>A clr/mscordacwks mismatch will cause DAC to fail to initialize in ClrDataAccess::Initialize</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c3a">
+    <SymbolicName>CORDBG_E_MODULE_LOADED_FROM_DISK</SymbolicName>
+    <Message>"Symbols are not supplied for modules loaded from disk."</Message>
+    <Comment>Symbols are not supplied for modules loaded from disk</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c3b">
+    <SymbolicName>CORDBG_E_SYMBOLS_NOT_AVAILABLE</SymbolicName>
+    <Message>"The application did not supply symbols when it loaded or created this module, or they are not yet available."</Message>
+    <Comment>The application did not supply symbols when it loaded or created this module, or they are not yet available</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c3c">
+  <SymbolicName>CORDBG_E_DEBUG_COMPONENT_MISSING</SymbolicName>
+  <Message>"A debug component is not installed."</Message>
+  <Comment>A debug component is not installed</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c43">
+    <SymbolicName>CORDBG_E_LIBRARY_PROVIDER_ERROR</SymbolicName>
+    <Message>"The ICLRDebuggingLibraryProvider callback returned an error or did not provide a valid handle."</Message>
+    <Comment>The ICLRDebuggingLibraryProvider callback returned an error or did not provide a valid handle</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c44">
+    <SymbolicName>CORDBG_E_NOT_CLR</SymbolicName>
+    <Message>"The module at the base address indicated was not recognized as a CLR"</Message>
+    <Comment>The module at the base address indicated was not recognized as a CLR</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c45">
+    <SymbolicName>CORDBG_E_MISSING_DATA_TARGET_INTERFACE</SymbolicName>
+    <Message>"The provided data target does not implement the required interfaces for this version of the runtime"</Message>
+    <Comment>The provided data target does not implement the required interfaces for this version of the runtime</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c46">
+    <SymbolicName>CORDBG_E_UNSUPPORTED_DEBUGGING_MODEL</SymbolicName>
+    <Message>"This debugging model is unsupported by the specified runtime"</Message>
+    <Comment>This debugging model is unsupported by the specified runtime</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c47">
+    <SymbolicName>CORDBG_E_UNSUPPORTED_FORWARD_COMPAT</SymbolicName>
+    <Message>"The debugger is not designed to support the version of the CLR the debuggee is using."</Message>
+    <Comment>The debugger is not designed to support the version of the CLR the debuggee is using.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c48">
+    <SymbolicName>CORDBG_E_UNSUPPORTED_VERSION_STRUCT</SymbolicName>
+    <Message>"The version struct has an unrecognized value for wStructVersion"</Message>
+    <Comment>The version struct has an unrecognized value for wStructVersion</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c49">
+    <SymbolicName>CORDBG_E_READVIRTUAL_FAILURE</SymbolicName>
+    <Message>"A call into a ReadVirtual implementation returned failure"</Message>
+    <Comment>A call into a ReadVirtual implementation returned failure</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c4a">
+  <SymbolicName>CORDBG_E_VALUE_POINTS_TO_FUNCTION</SymbolicName>
+  <Message>"The Debugging API doesn't support dereferencing function pointers."</Message>
+  <Comment>The Debugging API doesn't support dereferencing function pointers.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c4b">
+  <SymbolicName>CORDBG_E_CORRUPT_OBJECT</SymbolicName>
+  <Message>"The address provided does not point to a valid managed object."</Message>
+  <Comment>The address provided does not point to a valid managed object.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c4c">
+  <SymbolicName>CORDBG_E_GC_STRUCTURES_INVALID</SymbolicName>
+  <Message>"The GC heap structures are not in a valid state for traversal."</Message>
+  <Comment>The GC heap structures are not in a valid state for traversal.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c4d">
+  <SymbolicName>CORDBG_E_INVALID_OPCODE</SymbolicName>
+  <Message>"The specified IL offset or opcode is not supported for this operation."</Message>
+  <Comment>The specified IL offset or opcode is not supported for this operation.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c4e">
+  <SymbolicName>CORDBG_E_UNSUPPORTED</SymbolicName>
+  <Message>"The specified action is unsupported by this version of the runtime."</Message>
+  <Comment>The specified action is unsupported by this version of the runtime.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c4f">
+  <SymbolicName>CORDBG_E_MISSING_DEBUGGER_EXPORTS</SymbolicName>
+  <Message>"The debuggee memory space does not have the expected debugging export table."</Message>
+  <Comment>The debuggee memory space does not have the expected debugging export table.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c61">
+  <SymbolicName>CORDBG_E_DATA_TARGET_ERROR</SymbolicName>
+  <Message>"Failure when calling a data target method."</Message>
+  <Comment>Failure when calling a data target method.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c64">
+  <SymbolicName>CORDBG_E_NO_IMAGE_AVAILABLE</SymbolicName>
+  <Message>"Couldn't find a native image."</Message>
+  <Comment>Couldn't find a native image.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131c68">
+  <SymbolicName>CORDBG_E_UNSUPPORTED_DELEGATE</SymbolicName>
+  <Message>"The delegate contains a delegate currently not supported by the API."</Message>
+  <Comment>The delegate contains a delegate currently not supported by the API.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131d02">
+	<SymbolicName>PEFMT_E_64BIT</SymbolicName>
+	<Message>"File is PE32+."</Message>
+	<Comment> File is PE32+ </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131d0b">
+	<SymbolicName>PEFMT_E_32BIT</SymbolicName>
+	<Message>"File is PE32"</Message>
+	<Comment> File is PE32 </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131fff">
+	<SymbolicName>CLDB_E_INTERNALERROR</SymbolicName>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132000">
+	<SymbolicName>CLR_E_BIND_ASSEMBLY_VERSION_TOO_LOW</SymbolicName>
+	<Message>"The bound assembly has a version that is lower than that of the request."</Message>
+	<Comment>For AppX binder, indicates that bound assembly has a version lower than that requested, and we will refuse version rollback.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132001">
+	<SymbolicName>CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH</SymbolicName>
+	<Message>"The assembly version has a public key token that does not match that of the request."</Message>
+	<Comment>For AppX binder, indicates that bound assembly's public key token doesn't match the key in the assembly name.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132002">
+	<SymbolicName>CLR_E_BIND_IMAGE_UNAVAILABLE</SymbolicName>
+	<Message>"The requested image was not found or is unavailable."</Message>
+	<Comment>Occurs if a request for a native image is made on an ICLRPrivAssembly interface when one is not available.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132003">
+	<SymbolicName>CLR_E_BIND_UNRECOGNIZED_IDENTITY_FORMAT</SymbolicName>
+	<Message>"The provided identity format is not recognized."</Message>
+	<Comment>If a binder is provided an identity format that it cannot parse, it returns this error.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132004">
+	<SymbolicName>CLR_E_BIND_ASSEMBLY_NOT_FOUND</SymbolicName>
+	<Message>"A binding for the specified assembly name was not found."</Message>
+	<Comment>Returned by binders that bind based on assembly identity.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132005">
+	<SymbolicName>CLR_E_BIND_TYPE_NOT_FOUND</SymbolicName>
+	<Message>"A binding for the specified type name was not found."</Message>
+	<Comment>Returned by binders that bind based on type identity.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132006">
+	<SymbolicName>CLR_E_BIND_SYS_ASM_NI_MISSING</SymbolicName>
+	<Message>"Could not use native image because System.Private.CoreLib.dll is missing a native image"</Message>
+	<Comment>Returned when loading an assembly that only has a native image and no IL and cannot hardbind to System.Private.CoreLib.ni.dll.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132007">
+	<SymbolicName>CLR_E_BIND_NI_SECURITY_FAILURE</SymbolicName>
+	<Message>"Native image was generated in a different trust level than present at runtime"</Message>
+	<Comment>Returned when an assembly is NGened in full trust and then used in partial trust or vice versa.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132008">
+	<SymbolicName>CLR_E_BIND_NI_DEP_IDENTITY_MISMATCH</SymbolicName>
+	<Message>"Native image identity mismatch with respect to its dependencies"</Message>
+	<Comment>Returned when an assembly's identities have changed so the native image is no longer valid.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80132009">
+	<SymbolicName>CLR_E_GC_OOM</SymbolicName>
+	<Message>"Failfast due to an OOM during a GC"</Message>
+	<Comment>During a GC when we try to allocate memory for GC datastructures we could not.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013200A">
+	<SymbolicName>CLR_E_GC_BAD_AFFINITY_CONFIG</SymbolicName>
+	<Message>"GCHeapAffinitizeMask or GCHeapAffinitizeRanges didn't specify any CPUs the current process is affinitized to."</Message>
+	<Comment>During a GC initialization, the affinity mask specified via GCHeapAffinitizeMask or GCHeapAffinitizeRanges didn't contain any CPUs the current process is affinitized to.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013200B">
+	<SymbolicName>CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT</SymbolicName>
+	<Message>"GCHeapAffinitizeRanges configuration string has invalid format."</Message>
+	<Comment>During a GC initialization, the GCHeapAffinitizeRanges config couldn't be parsed due to its invalid format.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013200C">
+	<SymbolicName>CLR_E_CROSSGEN_NO_IBC_DATA_FOUND</SymbolicName>
+	<Message>"Cannot compile using the PartialNgen flag because no IBC data was found."</Message>
+	<Comment>During crossgen compilation, the PartialNgen flag was set, but no IBC data was found in the resources section of the input image, and no IBC file was externally provided.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="E_ACCESSDENIED">
+	<SymbolicName>COR_E_UNAUTHORIZEDACCESS</SymbolicName>
+	<Comment> 0x80070005 // Access is denied.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="E_INVALIDARG">
+	<SymbolicName>COR_E_ARGUMENT</SymbolicName>
+	<Comment> 0x80070057 // An argument does not meet the contract of the method.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="E_NOINTERFACE">
+	<SymbolicName>COR_E_INVALIDCAST</SymbolicName>
+	<Comment> 0x80004002 // Indicates a bad cast condition</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="E_OUTOFMEMORY">
+	<SymbolicName>COR_E_OUTOFMEMORY</SymbolicName>
+	<Comment> 0x8007000E // The EE thows this exception when no more memory is avaible to continue execution</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="E_POINTER">
+	<SymbolicName>COR_E_NULLREFERENCE</SymbolicName>
+	<Comment> 0x80004003 // Dereferencing a null reference. In general class libraries should not throw this</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW)">
+	<SymbolicName>COR_E_ARITHMETIC</SymbolicName>
+	<Comment> 0x80070216 // Overflow or underflow in mathematical operations.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_FILENAME_EXCED_RANGE)">
+	<SymbolicName>COR_E_PATHTOOLONG</SymbolicName>
+	<Comment> The specified path was too long.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)">
+	<SymbolicName>COR_E_FILENOTFOUND</SymbolicName>
+	<Comment></Comment>
+</HRESULT>
+
+<HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_HANDLE_EOF)">
+	<SymbolicName>COR_E_ENDOFSTREAM</SymbolicName>
+	<Comment> Thrown when the End of file is reached</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)">
+	<SymbolicName>COR_E_DIRECTORYNOTFOUND</SymbolicName>
+	<Comment> The specified path couldn't be found.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_STACK_OVERFLOW)">
+	<SymbolicName>COR_E_STACKOVERFLOW</SymbolicName>
+	<Comment> 0x800703E9 // Is raised by the EE when the execution stack overflows as it is attempting to ex</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="_HRESULT_TYPEDEF_(0x8000211DL)">
+	<SymbolicName>COR_E_AMBIGUOUSMATCH</SymbolicName>
+	<Comment> While late binding to a method via reflection, could not resolve between</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="_HRESULT_TYPEDEF_(0x8002000EL)">
+	<SymbolicName>COR_E_TARGETPARAMCOUNT</SymbolicName>
+	<Comment> DISP_E_BADPARAMCOUNT // There was a mismatch between number of arguments provided and the number expected</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="_HRESULT_TYPEDEF_(0x80020012L)">
+	<SymbolicName>COR_E_DIVIDEBYZERO</SymbolicName>
+	<Comment> DISP_E_DIVBYZERO // Attempted to divide a number by zero.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="_HRESULT_TYPEDEF_(0x8007000BL)">
+	<SymbolicName>COR_E_BADIMAGEFORMAT</SymbolicName>
+	<Message>"The format of a DLL or executable being loaded is invalid."</Message>
+	<Comment> The format of DLL or executable being loaded is invalid.</Comment>
+</HRESULT>
+
+</hc:ResourceStrings>
+</Root>

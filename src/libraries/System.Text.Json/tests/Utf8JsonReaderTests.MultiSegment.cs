@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -486,6 +485,12 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(LargeTestCases))]
         public static void TestJsonReaderLargeUtf8SegmentSizeOne(bool compactData, TestCaseType type, string jsonString)
         {
+            // Skipping really large JSON on Browser to prevent OOM
+            if (PlatformDetection.IsBrowser && (type == TestCaseType.Json40KB || type == TestCaseType.Json400KB || type == TestCaseType.ProjectLockJson))
+            {
+                return;
+            }
+
             ReadFullySegmentSizeOne(compactData, type, jsonString);
         }
 
@@ -1834,6 +1839,7 @@ namespace System.Text.Json.Tests
         [InlineData("{\"Property1\": {\"Property1.1\": 42} // comment\n,5}")]
         [InlineData("{\"Property1\": {\"Property1.1\": 42}, // comment\n // comment\n5}")]
         [InlineData("{// comment\n5}")]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
         public static void ReadInvalidJsonStringsWithComments(string jsonString)
         {
             byte[] input = Encoding.UTF8.GetBytes(jsonString);

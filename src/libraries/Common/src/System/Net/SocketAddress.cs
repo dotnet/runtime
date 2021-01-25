@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Sockets;
@@ -215,10 +215,7 @@ namespace System.Net.Internals
 
                 for (i = 0; i < size; i += 4)
                 {
-                    _hash ^= (int)Buffer[i]
-                            | ((int)Buffer[i + 1] << 8)
-                            | ((int)Buffer[i + 2] << 16)
-                            | ((int)Buffer[i + 3] << 24);
+                    _hash ^= BinaryPrimitives.ReadInt32LittleEndian(Buffer.AsSpan(i));
                 }
                 if ((Size & 3) != 0)
                 {

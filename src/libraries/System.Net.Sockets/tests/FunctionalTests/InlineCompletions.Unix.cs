@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Diagnostics;
@@ -29,11 +28,11 @@ namespace System.Net.Sockets.Tests
                 await new AcceptEap(null).Accept_ConcurrentAcceptsAfterConnects_Success(5);
 
                 // Send/Receive tests
-                await new SendReceiveEap(null).SendRecv_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: false);
-                await new SendReceiveEap(null).SendRecv_Stream_TCP_MultipleConcurrentReceives(IPAddress.Loopback, useMultipleBuffers: false);
-                await new SendReceiveEap(null).SendRecv_Stream_TCP_MultipleConcurrentSends(IPAddress.Loopback, useMultipleBuffers: false);
-                await new SendReceiveEap(null).TcpReceiveSendGetsCanceledByDispose(receiveOrSend: true);
-                await new SendReceiveEap(null).TcpReceiveSendGetsCanceledByDispose(receiveOrSend: false);
+                await new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: false);
+                await new SendReceive_Eap(null).SendRecv_Stream_TCP_MultipleConcurrentReceives(IPAddress.Loopback, useMultipleBuffers: false);
+                await new SendReceive_Eap(null).SendRecv_Stream_TCP_MultipleConcurrentSends(IPAddress.Loopback, useMultipleBuffers: false);
+                await new SendReceive_Eap(null).TcpReceiveSendGetsCanceledByDispose(receiveOrSend: true, ipv6Server: false, dualModeClient: false);
+                await new SendReceive_Eap(null).TcpReceiveSendGetsCanceledByDispose(receiveOrSend: false, ipv6Server: false, dualModeClient: false);
             }, options).Dispose();
         }
     }

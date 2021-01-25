@@ -89,7 +89,7 @@ alloc_code (LLVMValueRef function, int size)
 {
 	auto cfg = (MonoCompile *)mono_native_tls_get_value (current_cfg_tls_id);
 	g_assert (cfg);
-	return (unsigned char *)mono_domain_code_reserve (cfg->domain, size);
+	return (unsigned char *)mono_mem_manager_code_reserve (cfg->mem_manager, size);
 }
 
 class MonoJitMemoryManager : public RTDyldMemoryManager
@@ -247,7 +247,7 @@ struct MonoLLVMJIT {
 			void *sym = nullptr;
 			auto err = mono_dl_symbol (current, name, &sym);
 			if (!sym) {
-				outs () << "R: " << namestr << "\n";
+				outs () << "R: " << namestr << " " << err << "\n";
 			}
 			assert (sym);
 			return JITSymbol{(uint64_t)(gssize)sym, flags};
@@ -299,7 +299,8 @@ struct MonoLLVMJIT {
 		auto k = add_module (std::unique_ptr<Module>(module));
 		auto bodysym = compile_layer.findSymbolIn (k, mangle (func), false);
 		auto bodyaddr = bodysym.getAddress ();
-		assert (bodyaddr);
+		if (!bodyaddr)
+			g_assert_not_reached();
 		for (int i = 0; i < nvars; ++i) {
 			auto var = unwrap<GlobalVariable> (callee_vars[i]);
 			auto sym = compile_layer.findSymbolIn (k, mangle (var->getName ()), true);
@@ -404,7 +405,8 @@ public:
 		auto ModuleHandle = addModule (F, m);
 		auto BodySym = CompileLayer.findSymbolIn(ModuleHandle, mangle (F), false);
 		auto BodyAddr = BodySym.getAddress();
-		assert (BodyAddr);
+		if (!BodyAddr)
+			g_assert_not_reached ();
 
 		for (int i = 0; i < nvars; ++i) {
 			GlobalVariable *var = unwrap<GlobalVariable>(callee_vars [i]);
@@ -457,7 +459,7 @@ init_passes_and_options ()
 	// FIXME: find optimal mono specific order of passes
 	// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
 	// the following order is based on a stripped version of "OPT -O2"
-	const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks -sroa -instcombine" NO_CALL_FRAME_OPT;
+	const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -sroa -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks -sroa -instcombine" NO_CALL_FRAME_OPT;
 	const char *opts = g_getenv ("MONO_LLVM_OPT");
 	if (opts == NULL)
 		opts = default_opts;

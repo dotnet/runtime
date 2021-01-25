@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -8,6 +7,8 @@ namespace System.Security.Cryptography.Csp.Tests
 {
     public static class CspParametersTests
     {
+        public static bool ManualTestsEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANUAL_TESTS"));
+
         const int PROV_RSA_FULL = 1;
         const int PROV_RSA_AES = 24;
 
@@ -46,7 +47,7 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [Theory(Skip = "Manual test - requires Smart Card - read instructions")]
+        [ConditionalTheory(nameof(ManualTestsEnabled))] // requires Smart Card - read instructions
         [InlineData(true)]
         [InlineData(false)]
         public static void KeyPassword_SmartCard_Manual_Test(bool correctPassword)

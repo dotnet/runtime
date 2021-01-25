@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -56,7 +55,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <returns>Does not return</returns>
         public Stream CreateReadStream()
         {
-            throw new FileNotFoundException($"The file {Name} does not exist.");
+            throw new FileNotFoundException(SR.Format(SR.FileNotExists, Name));
         }
     }
 }

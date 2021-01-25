@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_mount.h"
@@ -30,7 +29,7 @@
 #endif
 #endif
 
-static int32_t GetMountInfo(MountPointFound onFound)
+int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
 {
 #if HAVE_MNTINFO
     // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
@@ -93,11 +92,6 @@ static int32_t GetMountInfo(MountPointFound onFound)
 }
 
 #endif
-
-int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
-{
-    return GetMountInfo(onFound);
-}
 
 int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
 {

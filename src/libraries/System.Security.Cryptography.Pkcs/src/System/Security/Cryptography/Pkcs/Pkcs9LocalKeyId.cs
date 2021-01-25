@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -13,7 +12,7 @@ namespace System.Security.Cryptography.Pkcs
         private byte[]? _lazyKeyId;
 
         public Pkcs9LocalKeyId() :
-            base(new Oid(Oids.LocalKeyId))
+            base(Oids.LocalKeyIdOid.CopyOid())
         {
         }
 

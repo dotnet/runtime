@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -22,8 +21,8 @@ namespace System.Net.NetworkInformation
         private readonly long _speed;
 
         // Any interface can have two completely different valid indexes for ipv4 and ipv6.
-        private readonly uint _index = 0;
-        private readonly uint _ipv6Index = 0;
+        private readonly uint _index;
+        private readonly uint _ipv6Index;
         private readonly Interop.IpHlpApi.AdapterFlags _adapterFlags;
         private readonly SystemIPInterfaceProperties _interfaceProperties;
 
@@ -72,7 +71,7 @@ namespace System.Net.NetworkInformation
             }
             catch (NetworkInformationException nie)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, nie);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, nie);
             }
 
             return false;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Factories;
@@ -145,7 +144,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Imports()
         {
             ComposablePartDefinition part1 = typeof(PartImportingContract1).AsPart();
@@ -159,7 +157,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Imports_CardinalityIgnored_WhenNotSpecified()
         {
             ComposablePartDefinition part1 = typeof(PartImportingContract1).AsPart();
@@ -172,7 +169,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Imports_CardinalityNotIgnored_WhenSpecified()
         {
             ComposablePartDefinition part1 = typeof(PartImportingContract1).AsPart();
@@ -203,7 +199,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportsGeneric()
         {
             ComposablePartDefinition part1 = typeof(PartImportingContract1).AsPart();
@@ -217,7 +212,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportsGeneric_CardinalityIgnored_WhenNotSpecified()
         {
             ComposablePartDefinition part1 = typeof(PartImportingContract1).AsPart();
@@ -230,7 +224,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportsGeneric_CardinalityNotIgnored_WhenSpecified()
         {
             ComposablePartDefinition part1 = typeof(PartImportingContract1).AsPart();

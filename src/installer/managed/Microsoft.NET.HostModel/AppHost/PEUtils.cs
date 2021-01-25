@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -13,7 +12,7 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <summary>
         /// The first two bytes of a PE file are a constant signature.
         /// </summary>
-        private const UInt16 PEFileSignature = 0x5A4D;
+        private const ushort PEFileSignature = 0x5A4D;
 
         /// <summary>
         /// The offset of the PE header pointer in the DOS header.
@@ -28,12 +27,12 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <summary>
         /// The value of the sybsystem field which indicates Windows GUI (Graphical UI)
         /// </summary>
-        private const UInt16 WindowsGUISubsystem = 0x2;
+        private const ushort WindowsGUISubsystem = 0x2;
 
         /// <summary>
         /// The value of the subsystem field which indicates Windows CUI (Console)
         /// </summary>
-        private const UInt16 WindowsCUISubsystem = 0x3;
+        private const ushort WindowsCUISubsystem = 0x3;
 
         /// <summary>
         /// Check whether the apphost file is a windows PE image by looking at the first few bytes.
@@ -51,7 +50,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
                 // https://en.wikipedia.org/wiki/Portable_Executable
                 // Validate that we're looking at Windows PE file
-                if (((UInt16*)bytes)[0] != PEFileSignature || accessor.Capacity < PEHeaderPointerOffset + sizeof(UInt32))
+                if (((ushort*)bytes)[0] != PEFileSignature || accessor.Capacity < PEHeaderPointerOffset + sizeof(uint))
                 {
                     return false;
                 }
@@ -70,7 +69,7 @@ namespace Microsoft.NET.HostModel.AppHost
         {
             using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
             {
-                if (reader.BaseStream.Length < PEHeaderPointerOffset + sizeof(UInt32))
+                if (reader.BaseStream.Length < PEHeaderPointerOffset + sizeof(uint))
                 {
                     return false;
                 }
@@ -94,14 +93,14 @@ namespace Microsoft.NET.HostModel.AppHost
                 byte* bytes = pointer + accessor.PointerOffset;
 
                 // https://en.wikipedia.org/wiki/Portable_Executable
-                UInt32 peHeaderOffset = ((UInt32*)(bytes + PEHeaderPointerOffset))[0];
+                uint peHeaderOffset = ((uint*)(bytes + PEHeaderPointerOffset))[0];
 
-                if (accessor.Capacity < peHeaderOffset + SubsystemOffset + sizeof(UInt16))
+                if (accessor.Capacity < peHeaderOffset + SubsystemOffset + sizeof(ushort))
                 {
                     throw new AppHostNotPEFileException();
                 }
 
-                UInt16* subsystem = ((UInt16*)(bytes + peHeaderOffset + SubsystemOffset));
+                ushort* subsystem = ((ushort*)(bytes + peHeaderOffset + SubsystemOffset));
 
                 // https://docs.microsoft.com/en-us/windows/desktop/Debug/pe-format#windows-subsystem
                 // The subsystem of the prebuilt apphost should be set to CUI
@@ -137,7 +136,7 @@ namespace Microsoft.NET.HostModel.AppHost
         /// This method will return the subsystem CUI/GUI value. The apphost file should be a windows PE file.
         /// </summary>
         /// <param name="accessor">The memory accessor which has the apphost file opened.</param>
-        internal static unsafe UInt16 GetWindowsGraphicalUserInterfaceBit(MemoryMappedViewAccessor accessor)
+        internal static unsafe ushort GetWindowsGraphicalUserInterfaceBit(MemoryMappedViewAccessor accessor)
         {
             byte* pointer = null;
 
@@ -147,14 +146,14 @@ namespace Microsoft.NET.HostModel.AppHost
                 byte* bytes = pointer + accessor.PointerOffset;
 
                 // https://en.wikipedia.org/wiki/Portable_Executable
-                UInt32 peHeaderOffset = ((UInt32*)(bytes + PEHeaderPointerOffset))[0];
+                uint peHeaderOffset = ((uint*)(bytes + PEHeaderPointerOffset))[0];
 
-                if (accessor.Capacity < peHeaderOffset + SubsystemOffset + sizeof(UInt16))
+                if (accessor.Capacity < peHeaderOffset + SubsystemOffset + sizeof(ushort))
                 {
                     throw new AppHostNotPEFileException();
                 }
 
-                UInt16* subsystem = ((UInt16*)(bytes + peHeaderOffset + SubsystemOffset));
+                ushort* subsystem = ((ushort*)(bytes + peHeaderOffset + SubsystemOffset));
 
                 return subsystem[0];
             }
@@ -167,7 +166,7 @@ namespace Microsoft.NET.HostModel.AppHost
             }
         }
 
-        public static unsafe UInt16 GetWindowsGraphicalUserInterfaceBit(string filePath)
+        public static unsafe ushort GetWindowsGraphicalUserInterfaceBit(string filePath)
         {
             using (var mappedFile = MemoryMappedFile.CreateFromFile(filePath))
             {

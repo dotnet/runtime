@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // #define StressTest // set to raise the amount of time spent in concurrency tests that stress the collections
 
@@ -98,7 +97,7 @@ namespace System.Collections.Concurrent.Tests
             AssertSetsEqual(expected, actual);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Add_TakeFromAnotherThread_ExpectedItemsTaken()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();
@@ -187,7 +186,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(oracle.Count, c.Count);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(100, 1, 100, true)]
         [InlineData(100, 4, 10, false)]
         [InlineData(1000, 11, 100, true)]
@@ -736,7 +735,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public void ManyConcurrentAddsTakes_CollectionRemainsConsistent()
         {

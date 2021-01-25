@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -44,7 +43,7 @@ namespace System.Reflection.Tests
         //
         public static T CallUsingReflection<T>(this object _this, string name, Type[] parameterTypes = null, object[] arguments = null)
         {
-            parameterTypes = parameterTypes ?? Array.Empty<Type>();
+            parameterTypes = parameterTypes ?? Type.EmptyTypes;
             arguments = arguments ?? Array.Empty<object>();
             Type implementationType = _this.GetType();
             MethodInfo m = implementationType.GetMethod(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.ExactBinding, null, parameterTypes, null);

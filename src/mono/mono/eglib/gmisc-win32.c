@@ -27,17 +27,13 @@
  */
 
 #include <config.h>
-
 #include <stdlib.h>
 #include <glib.h>
-
 #include <windows.h>
-#if _MSC_VER && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-#include <shlobj.h>
-#endif
 #include <direct.h>
 #include <io.h>
 #include <assert.h>
+#include "../utils/w32subset.h"
 
 gboolean
 g_hasenv (const gchar *variable)
@@ -97,18 +93,43 @@ g_unsetenv(const gchar *variable)
 	g_free(var);
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_LOCAL_INFO || HAVE_API_SUPPORT_WIN32_LOCAL_INFO_EX
 gchar*
 g_win32_getlocale(void)
 {
+	gunichar2 buf[19];
+	gint ccBuf = 0;
+#if HAVE_API_SUPPORT_WIN32_LOCAL_INFO_EX
+	ccBuf = GetLocaleInfoEx (LOCALE_NAME_USER_DEFAULT, LOCALE_SISO639LANGNAME, buf, 9);
+#elif HAVE_API_SUPPORT_WIN32_LOCAL_INFO
 	LCID lcid = GetThreadLocale();
-	gchar buf[19];
-	gint ccBuf = GetLocaleInfoA(lcid, LOCALE_SISO639LANGNAME, buf, 9);
-	buf[ccBuf - 1] = '-';
-	ccBuf += GetLocaleInfoA(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
-	return g_strdup (buf);
+	ccBuf = GetLocaleInfoW(lcid, LOCALE_SISO639LANGNAME, buf, 9);
+#endif
+	if (ccBuf != 0) {
+		buf[ccBuf - 1] = L'-';
+#if HAVE_API_SUPPORT_WIN32_LOCAL_INFO_EX
+	ccBuf = GetLocaleInfoEx (LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
+#elif HAVE_API_SUPPORT_WIN32_LOCAL_INFO
+	ccBuf = GetLocaleInfoW(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
+#endif
+		assert (ccBuf <= 9);
+	}
+
+	// Check for failure.
+	if (ccBuf == 0)
+		buf[0] = L'\0';
+
+	return u16to8 (buf);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_LOCAL_INFO && !HAVE_EXTERN_DEFINED_WIN32_LOCAL_INFO_EX
+gchar*
+g_win32_getlocale(void)
+{
+	g_unsupported_api ("GetLocaleInfo, GetLocaleInfoEx");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_LOCAL_INFO || HAVE_API_SUPPORT_WIN32_LOCAL_INFO_EX */
 
 gboolean
 g_path_is_absolute (const char *filename)
@@ -128,7 +149,8 @@ g_path_is_absolute (const char *filename)
 	return FALSE;
 }
 
-#if _MSC_VER && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if _MSC_VER && HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH
+#include <shlobj.h>
 static gchar*
 g_get_known_folder_path (void)
 {
@@ -147,15 +169,13 @@ g_get_known_folder_path (void)
 
 	return folder_path;
 }
-
-#else
-
-static gchar *
+#elif !HAVE_EXTERN_DEFINED_WIN32_SH_GET_FOLDER_PATH
+static inline gchar *
 g_get_known_folder_path (void)
 {
 	return NULL;
 }
-#endif
+#endif /* HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH */
 
 const gchar *
 g_get_home_dir (void)

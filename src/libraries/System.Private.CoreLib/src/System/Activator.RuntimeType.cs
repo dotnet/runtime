@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -92,13 +91,19 @@ namespace System
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
-            if (type.UnderlyingSystemType is RuntimeType rt)
-                return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, skipCheckThis: false, fillCache: true, wrapExceptions: wrapExceptions);
+            if (type.UnderlyingSystemType is not RuntimeType rt)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
-            throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, wrapExceptions: wrapExceptions);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2096:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         private static ObjectHandle? CreateInstanceInternal(string assemblyString,
                                                            string typeName,
@@ -143,9 +148,9 @@ namespace System
         }
 
         [System.Runtime.CompilerServices.Intrinsic]
-        public static T CreateInstance<T>()
+        public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
         {
-            return (T)((RuntimeType)typeof(T)).CreateInstanceDefaultCtor(publicOnly: true, skipCheckThis: true, fillCache: true, wrapExceptions: true)!;
+            return (T)((RuntimeType)typeof(T)).CreateInstanceOfT()!;
         }
 
         private static T CreateDefaultInstance<T>() where T : struct => default;

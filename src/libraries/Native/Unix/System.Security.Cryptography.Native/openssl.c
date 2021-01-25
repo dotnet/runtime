@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_err.h"
 #include "pal_types.h"
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
 #include "openssl.h"
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+#include "opensslshim.h"
+#endif
 
 #include <assert.h>
 #include <limits.h>
@@ -1312,6 +1315,8 @@ int32_t CryptoNative_EnsureOpenSslInitialized()
     // If 1.0, call the 1.0 one.
     // Otherwise call the 1.1 one.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    InitializeOpenSSLShim();
+
     if (API_EXISTS(SSL_state))
     {
         return EnsureOpenSsl10Initialized();

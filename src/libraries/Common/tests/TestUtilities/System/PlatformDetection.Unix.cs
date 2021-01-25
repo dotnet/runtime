@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.InteropServices;
@@ -48,9 +47,10 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        public static bool IsSuperUser => !IsWindows ?
-            libc.geteuid() == 0 :
-            throw new PlatformNotSupportedException();
+        // Android
+        public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("Android"));
+
+        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows ?
             GetOpenSslVersion() :
@@ -164,7 +164,7 @@ namespace System
                 // What we want is major release as minor releases should be compatible.
                 result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split()[1].Split('.')[0]);
             }
-            else if (IsIllumos)
+            else if (Isillumos)
             {
                 // examples:
                 //   on OmniOS
@@ -195,7 +195,8 @@ namespace System
                 // example:
                 //   SunOS 5.11 11.3
                 result.Id = "Solaris";
-                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split(' ')[2]); // e.g. 11.3
+                // we only need the major version; 11
+                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split(' ')[2].Split('.')[0]); // e.g. 11
             }
             else if (File.Exists("/etc/os-release"))
             {

@@ -1,7 +1,6 @@
 /*
  * Licensed to the .NET Foundation under one or more agreements.
  * The .NET Foundation licenses this file to you under the MIT license.
- * See the LICENSE file in the project root for more information.
  */
 
 #include <config.h>
@@ -15,6 +14,7 @@
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/w32subset.h>
 
 MonoProfilerState mono_profiler_state;
 
@@ -149,7 +149,11 @@ mono_profiler_load (const char *desc)
 	mname = libname = NULL;
 
 	if (!desc || !strcmp ("default", desc))
+#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32)
 		desc = "log:report";
+#else
+		desc = "log";
+#endif
 
 	if ((col = strchr (desc, ':')) != NULL) {
 		mname = (char *) g_memdup (desc, col - desc + 1);

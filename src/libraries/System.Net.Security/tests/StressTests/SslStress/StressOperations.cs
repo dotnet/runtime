@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // SslStream stress scenario
 //
@@ -78,11 +77,11 @@ namespace SslStress
         {
             // length
             int numsize = s_encoding.GetBytes(segment.Length.ToString(), _buffer);
-            await stream.WriteAsync(_buffer.AsMemory().Slice(0, numsize), token);
+            await stream.WriteAsync(_buffer.AsMemory(0, numsize), token);
             stream.WriteByte((byte)',');
             // checksum
             numsize = s_encoding.GetBytes(segment.Checksum.ToString(), _buffer);
-            await stream.WriteAsync(_buffer.AsMemory().Slice(0, numsize), token);
+            await stream.WriteAsync(_buffer.AsMemory(0, numsize), token);
             stream.WriteByte((byte)',');
             // payload
             Memory<byte> source = segment.AsMemory();
@@ -148,7 +147,7 @@ namespace SslStress
 
             ReadOnlySequence<byte> lengthBytes = buffer.Slice(0, pos.Value);
             int numSize = s_encoding.GetChars(lengthBytes.ToArray(), _charBuffer);
-            int length = int.Parse(_charBuffer.AsSpan().Slice(0, numSize));
+            int length = int.Parse(_charBuffer.AsSpan(0, numSize));
             buffer = buffer.Slice(buffer.GetPosition(1, pos.Value));
 
             // checksum
@@ -160,7 +159,7 @@ namespace SslStress
 
             ReadOnlySequence<byte> checksumBytes = buffer.Slice(0, pos.Value);
             numSize = s_encoding.GetChars(checksumBytes.ToArray(), _charBuffer);
-            ulong checksum = ulong.Parse(_charBuffer.AsSpan().Slice(0, numSize));
+            ulong checksum = ulong.Parse(_charBuffer.AsSpan(0, numSize));
             buffer = buffer.Slice(buffer.GetPosition(1, pos.Value));
 
             // payload
@@ -286,10 +285,10 @@ namespace SslStress
                     return Task.CompletedTask;
                 }
             }
-            
+
             async Task Monitor(CancellationToken token)
             {
-                do 
+                do
                 {
                     await Task.Delay(500);
 

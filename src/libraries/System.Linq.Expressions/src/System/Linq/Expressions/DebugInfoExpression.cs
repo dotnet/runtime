@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -37,7 +36,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the start line of this <see cref="DebugInfoExpression"/>.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual int StartLine
         {
             get { throw ContractUtils.Unreachable; }
@@ -46,7 +45,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the start column of this <see cref="DebugInfoExpression"/>.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual int StartColumn
         {
             get { throw ContractUtils.Unreachable; }
@@ -55,7 +54,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the end line of this <see cref="DebugInfoExpression"/>.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual int EndLine
         {
             get { throw ContractUtils.Unreachable; }
@@ -64,7 +63,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the end column of this <see cref="DebugInfoExpression"/>.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual int EndColumn
         {
             get { throw ContractUtils.Unreachable; }
@@ -78,7 +77,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the value to indicate if the <see cref="DebugInfoExpression"/> is for clearing a sequence point.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual bool IsClear
         {
             get { throw ContractUtils.Unreachable; }

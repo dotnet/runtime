@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -55,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 case CallSiteKind.ServiceScopeFactory:
                     return VisitServiceScopeFactory((ServiceScopeFactoryCallSite)callSite, argument);
                 default:
-                    throw new NotSupportedException($"Call site type {callSite.GetType()} is not supported");
+                    throw new NotSupportedException(SR.Format(SR.CallSiteTypeNotSupported, callSite.GetType()));
             }
         }
 

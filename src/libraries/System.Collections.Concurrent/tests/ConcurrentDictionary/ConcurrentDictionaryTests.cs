@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1033,7 +1032,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [OuterLoop("Runs for several seconds")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConcurrentWriteRead_NoTornValues()
         {
             var cd = new ConcurrentDictionary<int, KeyValuePair<long, long>>();

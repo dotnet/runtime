@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -24,7 +23,7 @@ namespace System.Threading
             Debug.Assert(maximumCount >= 1);
             Debug.Assert(initialCount <= maximumCount);
 
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_BROWSER
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
@@ -63,7 +62,7 @@ namespace System.Threading
                     return OpenExistingResult.NameNotFound;
                 if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND)
                     return OpenExistingResult.PathNotFound;
-                if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+                if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     return OpenExistingResult.NameInvalid;
                 // this is for passed through NativeMethods Errors
                 throw Win32Marshal.GetExceptionForLastWin32Error();

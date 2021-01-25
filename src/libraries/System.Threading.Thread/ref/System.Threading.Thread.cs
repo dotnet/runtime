@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -51,7 +50,9 @@ namespace System.Threading
         public string? Name { get { throw null; } set { } }
         public System.Threading.ThreadPriority Priority { get { throw null; } set { } }
         public System.Threading.ThreadState ThreadState { get { throw null; } }
+        [System.ObsoleteAttribute("Thread.Abort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void Abort() { }
+        [System.ObsoleteAttribute("Thread.Abort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void Abort(object? stateInfo) { }
         public static System.LocalDataStoreSlot AllocateDataSlot() { throw null; }
         public static System.LocalDataStoreSlot AllocateNamedDataSlot(string name) { throw null; }
@@ -76,9 +77,11 @@ namespace System.Threading
         public bool Join(int millisecondsTimeout) { throw null; }
         public bool Join(System.TimeSpan timeout) { throw null; }
         public static void MemoryBarrier() { }
+        [System.ObsoleteAttribute("Thread.ResetAbort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ResetAbort() { }
         [System.ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Resume() { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void SetApartmentState(System.Threading.ApartmentState state) { }
         [System.ObsoleteAttribute("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
         public void SetCompressedStack(System.Threading.CompressedStack stack) { }
@@ -86,11 +89,17 @@ namespace System.Threading
         public static void Sleep(int millisecondsTimeout) { }
         public static void Sleep(System.TimeSpan timeout) { }
         public static void SpinWait(int iterations) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Start() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Start(object? parameter) { }
         [System.ObsoleteAttribute("Thread.Suspend has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Suspend() { }
         public bool TrySetApartmentState(System.Threading.ApartmentState state) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public void UnsafeStart() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public void UnsafeStart(object? parameter) { }
         public static byte VolatileRead(ref byte address) { throw null; }
         public static double VolatileRead(ref double address) { throw null; }
         public static short VolatileRead(ref short address) { throw null; }
@@ -98,7 +107,7 @@ namespace System.Threading
         public static long VolatileRead(ref long address) { throw null; }
         public static System.IntPtr VolatileRead(ref System.IntPtr address) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("address")]
-        public static object? VolatileRead(ref object? address) { throw null; }
+        public static object? VolatileRead([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("address")] ref object? address) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte VolatileRead(ref sbyte address) { throw null; }
         public static float VolatileRead(ref float address) { throw null; }

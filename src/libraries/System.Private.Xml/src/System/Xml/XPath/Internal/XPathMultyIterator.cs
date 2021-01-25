@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace MS.Internal.Xml.XPath
 {
@@ -23,7 +22,9 @@ namespace MS.Internal.Xml.XPath
             this.arr = new ResetableIterator[inputArray.Count];
             for (int i = 0; i < this.arr.Length; i++)
             {
-                this.arr[i] = new XPathArrayIterator((ArrayList)inputArray[i]);
+                var iterator = (ArrayList?)inputArray[i];
+                Debug.Assert(iterator != null);
+                this.arr[i] = new XPathArrayIterator(iterator);
             }
             Init();
         }
@@ -60,39 +61,6 @@ namespace MS.Internal.Xml.XPath
             return true;
         }
 
-#if false
-        string dump { get { return Dump(); } }
-
-        string Dump(ResetableIterator it) {
-            it = (ResetableIterator) it.Clone();
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            sb.Append('(');
-            do {
-                XPathNavigator nav = it.Current.Clone();
-                nav.MoveToAttribute("id1", "");
-                sb.Append(nav.Value);
-                sb.Append(", ");
-            } while (it.MoveNext());
-            sb.Length = sb.Length - 2;
-            sb.Append(')');
-            return sb.ToString();
-        }
-
-        string Dump() {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            for (int i = 0; i < arr.Length; i ++) {
-                sb.Append(i);
-                sb.Append(": ");
-                if (i < firstNotEmpty) {
-                    sb.Append("()");
-                }   else {
-                    sb.Append(Dump(arr[i]));
-                }
-                sb.Append("; ");
-            }
-            return sb.ToString();
-        }
-#endif
 
         // Invariant: a[i] < a[i+1] for i > item
         // returns flase is head of the list was moved & as a result consistancy of list depends on head consistancy.
@@ -102,14 +70,16 @@ namespace MS.Internal.Xml.XPath
             ResetableIterator it = arr[item];
             while (item + 1 < arr.Length)
             {
-                XmlNodeOrder order = Query.CompareNodes(it.Current, arr[item + 1].Current);
+                ResetableIterator itNext = arr[item + 1];
+                Debug.Assert(it.Current != null && itNext.Current != null);
+                XmlNodeOrder order = Query.CompareNodes(it.Current, itNext.Current);
                 if (order == XmlNodeOrder.Before)
                 {
                     break;
                 }
                 if (order == XmlNodeOrder.After)
                 {
-                    arr[item] = arr[item + 1];
+                    arr[item] = itNext;
                     //arr[item + 1] = it;
                     item++;
                 }
@@ -150,7 +120,7 @@ namespace MS.Internal.Xml.XPath
             return new XPathMultyIterator(this);
         }
 
-        public override XPathNavigator Current
+        public override XPathNavigator? Current
         {
             get
             {

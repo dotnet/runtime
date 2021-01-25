@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.IO;
@@ -31,11 +29,11 @@ namespace System.Xml.Schema
         private XmlAttribute[]? _moreAttributes;
 
         // compiled info
-        private bool _isCompiled = false;
-        private bool _isCompiledBySet = false;
-        private bool _isPreprocessed = false;
-        private bool _isRedefined = false;
-        private int _errorCount = 0;
+        private bool _isCompiled;
+        private bool _isCompiledBySet;
+        private bool _isPreprocessed;
+        private bool _isRedefined;
+        private int _errorCount;
         private XmlSchemaObjectTable? _attributes;
         private XmlSchemaObjectTable _attributeGroups = new XmlSchemaObjectTable();
         private XmlSchemaObjectTable _elements = new XmlSchemaObjectTable();
@@ -57,17 +55,17 @@ namespace System.Xml.Schema
 
         public XmlSchema() { }
 
-        public static XmlSchema? Read(TextReader reader, ValidationEventHandler validationEventHandler)
+        public static XmlSchema? Read(TextReader reader, ValidationEventHandler? validationEventHandler)
         {
             return Read(new XmlTextReader(reader), validationEventHandler);
         }
 
-        public static XmlSchema? Read(Stream stream, ValidationEventHandler validationEventHandler)
+        public static XmlSchema? Read(Stream stream, ValidationEventHandler? validationEventHandler)
         {
             return Read(new XmlTextReader(stream), validationEventHandler);
         }
 
-        public static XmlSchema? Read(XmlReader reader, ValidationEventHandler validationEventHandler)
+        public static XmlSchema? Read(XmlReader reader, ValidationEventHandler? validationEventHandler)
         {
             XmlNameTable nameTable = reader.NameTable;
             Parser parser = new Parser(SchemaType.XSD, nameTable, new SchemaNames(nameTable), validationEventHandler);
@@ -137,7 +135,7 @@ namespace System.Xml.Schema
                 {
                     ns.Add("xs", XmlReservedNs.NsXs);
                 }
-                foreach (string? prefix in namespaceManager)
+                foreach (string prefix in namespaceManager)
                 {
                     if (prefix != "xml" && prefix != "xmlns")
                     {
@@ -147,7 +145,7 @@ namespace System.Xml.Schema
             }
             else if (this.Namespaces != null && this.Namespaces.Count > 0)
             {
-                Dictionary<string, string> serializerNS = this.Namespaces.Namespaces;
+                Dictionary<string, string?> serializerNS = this.Namespaces.Namespaces;
                 if (!serializerNS.ContainsKey("xs") && !serializerNS.ContainsValue(XmlReservedNs.NsXs))
                 { //Prefix xs not defined AND schema namespace not already mapped to a prefix
                     serializerNS.Add("xs", XmlReservedNs.NsXs);
@@ -167,7 +165,7 @@ namespace System.Xml.Schema
         }
 
         [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public void Compile(ValidationEventHandler validationEventHandler)
+        public void Compile(ValidationEventHandler? validationEventHandler)
         {
             SchemaInfo sInfo = new SchemaInfo();
             sInfo.SchemaType = SchemaType.XSD;
@@ -175,7 +173,7 @@ namespace System.Xml.Schema
         }
 
         [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public void Compile(ValidationEventHandler validationEventHandler, XmlResolver resolver)
+        public void Compile(ValidationEventHandler? validationEventHandler, XmlResolver? resolver)
         {
             SchemaInfo sInfo = new SchemaInfo();
             sInfo.SchemaType = SchemaType.XSD;

@@ -66,4 +66,8 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="$(XUnitVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Xml\src\System.Security.Cryptography.Xml.csproj" />
+  </ItemGroup>
 </Project>

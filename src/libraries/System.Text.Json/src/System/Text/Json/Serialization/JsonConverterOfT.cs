@@ -1,11 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization
 {
@@ -22,11 +19,23 @@ namespace System.Text.Json.Serialization
         {
             // Today only typeof(object) can have polymorphic writes.
             // In the future, this will be check for !IsSealed (and excluding value types).
-            CanBePolymorphic = TypeToConvert == typeof(object);
+            CanBePolymorphic = TypeToConvert == JsonClassInfo.ObjectType;
             IsValueType = TypeToConvert.IsValueType;
-            HandleNull = IsValueType;
-            CanBeNull = !IsValueType || Nullable.GetUnderlyingType(TypeToConvert) != null;
+            CanBeNull = !IsValueType || TypeToConvert.IsNullableOfT();
             IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
+
+            if (HandleNull)
+            {
+                HandleNullOnRead = true;
+                HandleNullOnWrite = true;
+            }
+
+            // For the HandleNull == false case, either:
+            // 1) The default values are assigned in this type's virtual HandleNull property
+            // or
+            // 2) A converter overroad HandleNull and returned false so HandleNullOnRead and HandleNullOnWrite
+            // will be their default values of false.
+
             CanUseDirectReadOrWrite = !CanBePolymorphic && IsInternalConverter && ClassType == ClassType.Value;
         }
 
@@ -64,19 +73,39 @@ namespace System.Text.Json.Serialization
         /// <remarks>
         /// The default value is <see langword="true"/> for converters for value types, and <see langword="false"/> for converters for reference types.
         /// </remarks>
-        public virtual bool HandleNull { get; }
+        public virtual bool HandleNull
+        {
+            get
+            {
+                // HandleNull is only called by the framework once during initialization and any
+                // subsequent calls elsewhere would just re-initialize to the same values (we don't
+                // track a "hasInitialized" flag since that isn't necessary).
+
+                // If the type doesn't support null, allow the converter a chance to modify.
+                // These semantics are backwards compatible with 3.0.
+                HandleNullOnRead = !CanBeNull;
+
+                // The framework handles null automatically on writes.
+                HandleNullOnWrite = false;
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Does the converter want to be called when reading null tokens.
+        /// </summary>
+        internal bool HandleNullOnRead { get; private set; }
+
+        /// <summary>
+        /// Does the converter want to be called for null values.
+        /// </summary>
+        internal bool HandleNullOnWrite { get; private set; }
 
         /// <summary>
         /// Can <see langword="null"/> be assigned to <see cref="TypeToConvert"/>?
         /// </summary>
         internal bool CanBeNull { get; }
-
-        /// <summary>
-        /// Is the converter built-in.
-        /// </summary>
-        internal bool IsInternalConverter { get; set; }
-
-        internal readonly EqualityComparer<T> _defaultComparer = EqualityComparer<T>.Default;
 
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
@@ -93,7 +122,7 @@ namespace System.Text.Json.Serialization
         }
 
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
+        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
             value = Read(ref reader, typeToConvert, options);
             return true;
@@ -109,10 +138,9 @@ namespace System.Text.Json.Serialization
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>The value that was converted.</returns>
-        [return: MaybeNull]
-        public abstract T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
+        public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
-        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
+        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
             if (ClassType == ClassType.Value)
             {
@@ -120,7 +148,7 @@ namespace System.Text.Json.Serialization
                 Debug.Assert(!state.IsContinuation);
 
                 // For perf and converter simplicity, handle null here instead of forwarding to the converter.
-                if (reader.TokenType == JsonTokenType.Null && !HandleNull)
+                if (reader.TokenType == JsonTokenType.Null && !HandleNullOnRead)
                 {
                     if (!CanBeNull)
                     {
@@ -135,7 +163,14 @@ namespace System.Text.Json.Serialization
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    value = Read(ref reader, typeToConvert, options);
+                    if (state.Current.NumberHandling != null)
+                    {
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
+                    }
+                    else
+                    {
+                        value = Read(ref reader, typeToConvert, options);
+                    }
                 }
                 else
 #endif
@@ -144,13 +179,33 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    value = Read(ref reader, typeToConvert, options);
+                    if (state.Current.NumberHandling != null)
+                    {
+                        value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value);
+                    }
+                    else
+                    {
+                        value = Read(ref reader, typeToConvert, options);
+                    }
+
                     VerifyRead(
                         originalPropertyTokenType,
                         originalPropertyDepth,
                         originalPropertyBytesConsumed,
                         isValueConverter: true,
                         ref reader);
+                }
+
+                if (CanBePolymorphic && options.ReferenceHandler != null && value is JsonElement element)
+                {
+                    // Edge case where we want to lookup for a reference when parsing into typeof(object)
+                    // instead of return `value` as a JsonElement.
+                    Debug.Assert(TypeToConvert == typeof(object));
+
+                    if (JsonSerializer.TryGetReferenceFromJsonElement(ref state, element, out object? referenceValue))
+                    {
+                        value = (T?)referenceValue;
+                    }
                 }
 
                 return true;
@@ -167,7 +222,7 @@ namespace System.Text.Json.Serialization
             // For performance, only perform validation on internal converters on debug builds.
             if (IsInternalConverter)
             {
-                if (reader.TokenType == JsonTokenType.Null && !HandleNull && !wasContinuation)
+                if (reader.TokenType == JsonTokenType.Null && !HandleNullOnRead && !wasContinuation)
                 {
                     if (!CanBeNull)
                     {
@@ -189,7 +244,7 @@ namespace System.Text.Json.Serialization
                 if (!wasContinuation)
                 {
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
-                    if (reader.TokenType == JsonTokenType.Null && !HandleNull)
+                    if (reader.TokenType == JsonTokenType.Null && !HandleNullOnRead)
                     {
                         if (!CanBeNull)
                         {
@@ -234,12 +289,14 @@ namespace System.Text.Json.Serialization
 
         internal override sealed bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
         {
-            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T typedValue);
+            bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;
             return success;
         }
 
-        internal bool TryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal virtual bool IsNull(in T value) => value == null;
+
+        internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
@@ -250,7 +307,7 @@ namespace System.Text.Json.Serialization
             {
                 if (value == null)
                 {
-                    if (!HandleNull)
+                    if (!HandleNullOnWrite)
                     {
                         writer.WriteNullValue();
                     }
@@ -268,16 +325,17 @@ namespace System.Text.Json.Serialization
                 }
 
                 Type type = value.GetType();
-                if (type == typeof(object))
+                if (type == JsonClassInfo.ObjectType)
                 {
                     writer.WriteStartObject();
                     writer.WriteEndObject();
                     return true;
                 }
 
-                if (type != TypeToConvert)
+                if (type != TypeToConvert && IsInternalConverter)
                 {
-                    // Handle polymorphic case and get the new converter.
+                    // For internal converter only: Handle polymorphic case and get the new converter.
+                    // Custom converter, even though polymorphic converter, get called for reading AND writing.
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                     if (jsonConverter != this)
                     {
@@ -286,9 +344,9 @@ namespace System.Text.Json.Serialization
                     }
                 }
             }
-            else if (value == null && !HandleNull)
+            else if (CanBeNull && !HandleNullOnWrite && IsNull(value))
             {
-                // We do not pass null values to converters unless HandleNull is true. Null values for properties were
+                // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
                 // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
                 writer.WriteNullValue();
                 return true;
@@ -300,7 +358,15 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                Write(writer, value, options);
+                if (state.Current.NumberHandling != null && IsInternalConverterForNumberType)
+                {
+                    WriteNumberWithCustomHandling(writer, value, state.Current.NumberHandling.Value);
+                }
+                else
+                {
+                    Write(writer, value, options);
+                }
+
                 VerifyWrite(originalPropertyDepth, writer);
                 return true;
             }
@@ -337,8 +403,6 @@ namespace System.Text.Json.Serialization
             }
 
             Debug.Assert(this is JsonDictionaryConverter<T>);
-
-            state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
@@ -436,5 +500,20 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value to convert.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
+
+        internal virtual T ReadWithQuotes(ref Utf8JsonReader reader)
+            => throw new InvalidOperationException();
+
+        internal virtual void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, ref WriteStack state)
+            => throw new InvalidOperationException();
+
+        internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
+            => WriteWithQuotes(writer, (T)value, options, ref state);
+
+        internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+            => throw new InvalidOperationException();
+
+        internal virtual void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
+            => throw new InvalidOperationException();
     }
 }

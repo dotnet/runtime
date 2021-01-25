@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -193,6 +192,22 @@ namespace System.Net.Mail.Tests
             var n = new MailAddress("Mr. Bar <a@example.com>");
             var n2 = new MailAddress("MR. BAR <a@EXAMPLE.com>");
             Assert.Equal(n, n2);
+        }
+
+        [Fact]
+        public void GetHashCodeTest()
+        {
+            var n = new MailAddress("Mr. Bar <a@example.com>");
+            var n2 = new MailAddress("a@example.com", "Mr. Bar");
+            Assert.Equal(n.GetHashCode(), n2.GetHashCode());
+        }
+
+        [Fact]
+        public void GetHashCodeTest2()
+        {
+            var n = new MailAddress("Mr. Bar <a@example.com>");
+            var n2 = new MailAddress("MR. BAR <a@EXAMPLE.com>");
+            Assert.Equal(n.GetHashCode(), n2.GetHashCode());
         }
 
         [Theory]

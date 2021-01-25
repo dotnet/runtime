@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Collections;
@@ -20,34 +19,34 @@ namespace System.DirectoryServices
         private DirectoryEntry _searchRoot;
         private string _filter = defaultFilter;
         private StringCollection _propertiesToLoad;
-        private bool _disposed = false;
+        private bool _disposed;
 
         private static readonly TimeSpan s_minusOneSecond = new TimeSpan(0, 0, -1);
 
         // search preference variables
         private SearchScope _scope = System.DirectoryServices.SearchScope.Subtree;
-        private bool _scopeSpecified = false;
-        private int _sizeLimit = 0;
+        private bool _scopeSpecified;
+        private int _sizeLimit;
         private TimeSpan _serverTimeLimit = s_minusOneSecond;
         private TimeSpan _clientTimeout = s_minusOneSecond;
-        private int _pageSize = 0;
+        private int _pageSize;
         private TimeSpan _serverPageTimeLimit = s_minusOneSecond;
         private ReferralChasingOption _referralChasing = ReferralChasingOption.External;
         private SortOption _sort = new SortOption();
         private bool _cacheResults = true;
-        private bool _cacheResultsSpecified = false;
-        private bool _rootEntryAllocated = false;             // true: if a temporary entry inside Searcher has been created
-        private string _assertDefaultNamingContext = null;
+        private bool _cacheResultsSpecified;
+        private bool _rootEntryAllocated;             // true: if a temporary entry inside Searcher has been created
+        private string _assertDefaultNamingContext;
         private string _attributeScopeQuery = "";
-        private bool _attributeScopeQuerySpecified = false;
+        private bool _attributeScopeQuerySpecified;
         private DereferenceAlias _derefAlias = DereferenceAlias.Never;
         private SecurityMasks _securityMask = SecurityMasks.None;
         private ExtendedDN _extendedDN = ExtendedDN.None;
-        private DirectorySynchronization _sync = null;
-        internal bool directorySynchronizationSpecified = false;
-        private DirectoryVirtualListView _vlv = null;
-        internal bool directoryVirtualListViewSpecified = false;
-        internal SearchResultCollection searchResult = null;
+        private DirectorySynchronization _sync;
+        internal bool directorySynchronizationSpecified;
+        private DirectoryVirtualListView _vlv;
+        internal bool directoryVirtualListViewSpecified;
+        internal SearchResultCollection searchResult;
 
         private const string defaultFilter = "(objectClass=*)";
 
@@ -231,6 +230,8 @@ namespace System.DirectoryServices
         /// Gets the set of properties retrieved during the search. By default, the <see cref='System.DirectoryServices.DirectoryEntry.Path'/>
         /// and <see cref='System.DirectoryServices.DirectoryEntry.Name'/> properties are retrieved.
         /// </devdoc>
+        [Editor("System.Windows.Forms.Design.StringCollectionEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public StringCollection PropertiesToLoad
         {
             get

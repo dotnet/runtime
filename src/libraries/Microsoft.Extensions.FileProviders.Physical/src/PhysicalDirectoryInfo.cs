@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -54,7 +53,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <returns>Never returns</returns>
         public Stream CreateReadStream()
         {
-            throw new InvalidOperationException("Cannot create a stream for a directory.");
+            throw new InvalidOperationException(SR.CannotCreateStream);
         }
     }
 }

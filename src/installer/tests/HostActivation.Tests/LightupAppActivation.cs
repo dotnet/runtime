@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Newtonsoft.Json.Linq;
 using System;
@@ -43,7 +42,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             var repoDirectories = new RepoDirectoriesProvider(builtDotnet: _currentWorkingDir);
             GlobalLightupClientFixture = new TestProjectFixture("LightupClient", repoDirectories)
-                .EnsureRestored(sharedTestState.RepoDirectories.CorehostPackages)
+                .EnsureRestored()
                 .BuildProject();
 
             string greatestVersionSharedFxPath = sharedTestState.LightupLibFixture_Built.BuiltDotnet.GreatestVersionSharedFxPath;
@@ -559,15 +558,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 RepoDirectories = new RepoDirectoriesProvider();
 
                 LightupLibFixture_Built = new TestProjectFixture("LightupLib", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
                 LightupLibFixture_Published = new TestProjectFixture("LightupLib", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
 
                 LightupClientFixture = new TestProjectFixture("LightupClient", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
             }
 

@@ -1,6 +1,5 @@
 ﻿' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 Option Strict On
 Option Explicit On
 
@@ -741,7 +740,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             ' Cannot call through IO.File.WriteAllBytes (since they don't support append)
             ' so only check for trailing separator
-            CheckFilePathTrailingSeparator(file, "file")
+            CheckFilePathTrailingSeparator(file, NameOf(file))
 
             Dim FileStream As IO.FileStream = Nothing
             Try
@@ -788,7 +787,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             'Cannot call through IO.File.WriteAllText (since they don't support: append, prefer current encoding than specified one)
             ' so only check for trailing separator.
-            CheckFilePathTrailingSeparator(file, "file")
+            CheckFilePathTrailingSeparator(file, NameOf(file))
 
             Dim StreamWriter As IO.StreamWriter = Nothing
             Try
@@ -2196,7 +2195,7 @@ Namespace Microsoft.VisualBasic.FileIO
             Private m_SearchText As String ' The text to search.
             Private m_IgnoreCase As Boolean ' Should we ignore case?
             Private m_Decoder As Text.Decoder ' The Decoder to use.
-            Private m_PreviousCharBuffer() As Char = {} ' The cached character array from previous call to IsTextExist.
+            Private m_PreviousCharBuffer() As Char = Array.Empty(Of Char)() ' The cached character array from previous call to IsTextExist.
             Private m_CheckPreamble As Boolean = True ' True to check for preamble. False otherwise.
             Private m_Preamble() As Byte ' The byte order mark we need to consider.
         End Class 'Private Class TextSearchHelper

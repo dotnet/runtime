@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -74,6 +74,7 @@ namespace System.Threading
             return (uint)_writerSeqNum > (uint)seqNum;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void AcquireReaderLock(int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
@@ -276,6 +277,7 @@ namespace System.Threading
             ++threadLocalLockEntry._readerLevel;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void AcquireReaderLock(TimeSpan timeout) => AcquireReaderLock(ToTimeoutMilliseconds(timeout));
 
         public void AcquireWriterLock(int millisecondsTimeout)
@@ -666,6 +668,7 @@ namespace System.Threading
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public LockCookie UpgradeToWriterLock(int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
@@ -745,6 +748,7 @@ namespace System.Threading
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public LockCookie UpgradeToWriterLock(TimeSpan timeout) => UpgradeToWriterLock(ToTimeoutMilliseconds(timeout));
 
         public void DowngradeFromWriterLock(ref LockCookie lockCookie)
@@ -912,6 +916,7 @@ namespace System.Threading
             return lockCookie;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void RestoreLock(ref LockCookie lockCookie)
         {
             // Validate cookie
@@ -977,6 +982,7 @@ namespace System.Threading
         /// <summary>
         /// Helper function that restores the lock to the original state indicated by parameters
         /// </summary>
+        [UnsupportedOSPlatform("browser")]
         private void RecoverLock(ref LockCookie lockCookie, LockCookieFlags flags)
         {
             // Contrary to the legacy code, this method does not use a finite timeout for recovering the previous lock state, as

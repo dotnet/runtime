@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -13,7 +12,7 @@ namespace System.IO.Ports
 {
     internal sealed class SafeSerialDeviceHandle : SafeHandleMinusOneIsInvalid
     {
-        private SafeSerialDeviceHandle() : base(ownsHandle: true)
+        public SafeSerialDeviceHandle() : base(ownsHandle: true)
         {
         }
 

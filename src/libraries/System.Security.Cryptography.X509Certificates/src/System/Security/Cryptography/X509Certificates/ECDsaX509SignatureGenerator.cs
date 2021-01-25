@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -96,7 +95,7 @@ namespace System.Security.Cryptography.X509Certificates
             Buffer.BlockCopy(ecParameters.Q.X, 0, uncompressedPoint, 1, ecParameters.Q.X.Length);
             Buffer.BlockCopy(ecParameters.Q.Y, 0, uncompressedPoint, 1 + ecParameters.Q.X.Length, ecParameters.Q.Y.Length);
 
-            Oid ecPublicKey = new Oid(Oids.EcPublicKey);
+            Oid ecPublicKey = Oids.EcPublicKeyOid;
 
             return new PublicKey(
                 ecPublicKey,

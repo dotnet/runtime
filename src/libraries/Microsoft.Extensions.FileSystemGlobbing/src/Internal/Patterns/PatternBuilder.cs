@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -30,7 +29,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
         {
             if (pattern == null)
             {
-                throw new ArgumentNullException("pattern");
+                throw new ArgumentNullException(nameof(pattern));
             }
 
             pattern = pattern.TrimStart(_slashes);
@@ -43,17 +42,17 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
             }
 
             var allSegments = new List<IPathSegment>();
-            var isParentSegmentLegal = true;
+            bool isParentSegmentLegal = true;
 
             IList<IPathSegment> segmentsPatternStartsWith = null;
             IList<IList<IPathSegment>> segmentsPatternContains = null;
             IList<IPathSegment> segmentsPatternEndsWith = null;
 
-            var endPattern = pattern.Length;
+            int endPattern = pattern.Length;
             for (int scanPattern = 0; scanPattern < endPattern;)
             {
-                var beginSegment = scanPattern;
-                var endSegment = NextIndex(pattern, _slashes, scanPattern, endPattern);
+                int beginSegment = scanPattern;
+                int endSegment = NextIndex(pattern, _slashes, scanPattern, endPattern);
 
                 IPathSegment segment = null;
 
@@ -105,7 +104,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                         pattern[beginSegment + 2] == '.')
                     {
                         // recognize **.
-                        // swallow the first *, add the recursive path segment and 
+                        // swallow the first *, add the recursive path segment and
                         // the remaining part will be treat as wild card in next loop.
                         segment = new RecursiveWildcardSegment();
                         endSegment = beginSegment;
@@ -114,14 +113,14 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
                 if (segment == null)
                 {
-                    var beginsWith = string.Empty;
+                    string beginsWith = string.Empty;
                     var contains = new List<string>();
-                    var endsWith = string.Empty;
+                    string endsWith = string.Empty;
 
                     for (int scanSegment = beginSegment; scanSegment < endSegment;)
                     {
-                        var beginLiteral = scanSegment;
-                        var endLiteral = NextIndex(pattern, _star, scanSegment, endSegment);
+                        int beginLiteral = scanSegment;
+                        int endLiteral = NextIndex(pattern, _star, scanSegment, endSegment);
 
                         if (beginLiteral == beginSegment)
                         {
@@ -212,7 +211,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
         private static int NextIndex(string pattern, char[] anyOf, int beginIndex, int endIndex)
         {
-            var index = pattern.IndexOfAny(anyOf, beginIndex, endIndex - beginIndex);
+            int index = pattern.IndexOfAny(anyOf, beginIndex, endIndex - beginIndex);
             return index == -1 ? endIndex : index;
         }
 

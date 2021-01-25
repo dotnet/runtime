@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <!-- These need to be set here because the root Directory.Build.props sets up the intermediate path early -->
+    <Configuration>Release</Configuration>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.props"/>
+
+  <PropertyGroup>
+    <OutputPath>bin</OutputPath>
+    <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+  </PropertyGroup>
+
+  <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
+</Project>

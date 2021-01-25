@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
 #endif
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using System.Threading;
 
 #if ES_BUILD_STANDALONE
@@ -24,6 +24,7 @@ namespace System.Diagnostics.Tracing
     /// See https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
     /// which shows tests, which are also useful in seeing actual use.
     /// </summary>
+    [UnsupportedOSPlatform("browser")]
     public partial class EventCounter : DiagnosticCounter
     {
         /// <summary>
@@ -43,7 +44,7 @@ namespace System.Diagnostics.Tracing
             {
                 bufferedValues[i] = UnusedBufferSlotValue;
             }
-            Volatile.Write(ref _bufferedValues, bufferedValues);
+            _bufferedValues = bufferedValues;
 
             Publish();
         }

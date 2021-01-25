@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -277,8 +276,8 @@ namespace System.Threading.Tasks
             m_task = task;
             m_options = options;
             m_taskScheduler = scheduler;
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(m_task, "Task.ContinueWith: " + task.m_action!.Method.Name);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationBegin(m_task.Id, "Task.ContinueWith: " + task.m_action!.Method.Name, 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(m_task);
@@ -312,10 +311,10 @@ namespace System.Threading.Tasks
                 // If the task was cancel before running (e.g a ContinueWhenAll with a cancelled caancelation token)
                 // we will still flow it to ScheduleAndStart() were it will check the status before running
                 // We check here to avoid faulty logs that contain a join event to an operation that was already set as completed.
-                if (!continuationTask.IsCanceled && AsyncCausalityTracer.LoggingOn)
+                if (TplEventSource.Log.IsEnabled() && !continuationTask.IsCanceled)
                 {
                     // Log now that we are sure that this continuation is being ran
-                    AsyncCausalityTracer.TraceOperationRelation(continuationTask, CausalityRelation.AssignDelegate);
+                    TplEventSource.Log.TraceOperationRelation(continuationTask.Id, CausalityRelation.AssignDelegate);
                 }
                 continuationTask.m_taskScheduler = m_taskScheduler;
 
@@ -365,7 +364,7 @@ namespace System.Threading.Tasks
     internal sealed class SynchronizationContextAwaitTaskContinuation : AwaitTaskContinuation
     {
         /// <summary>SendOrPostCallback delegate to invoke the action.</summary>
-        private static readonly SendOrPostCallback s_postCallback = state =>
+        private static readonly SendOrPostCallback s_postCallback = static state =>
         {
             Debug.Assert(state is Action);
             ((Action)state)();
@@ -420,7 +419,7 @@ namespace System.Threading.Tasks
             var c = (SynchronizationContextAwaitTaskContinuation)state;
 
             TplEventSource log = TplEventSource.Log;
-            if (log.TasksSetActivityIds && c.m_continuationId != 0)
+            if (log.IsEnabled() && log.TasksSetActivityIds && c.m_continuationId != 0)
             {
                 c.m_syncContext.Post(s_postCallback, GetActionLogDelegate(c.m_continuationId, c.m_action));
             }
@@ -491,7 +490,7 @@ namespace System.Threading.Tasks
 
                 // Create the continuation task task. If we're allowed to inline, try to do so.
                 // The target scheduler may still deny us from executing on this thread, in which case this'll be queued.
-                Task task = CreateTask(state =>
+                Task task = CreateTask(static state =>
                 {
                     try
                     {
@@ -630,7 +629,7 @@ namespace System.Threading.Tasks
             }
 
             Guid savedActivityId = default;
-            if (log.TasksSetActivityIds && m_continuationId != 0)
+            if (log.IsEnabled() && log.TasksSetActivityIds && m_continuationId != 0)
             {
                 Guid activityId = TplEventSource.CreateGuidForTaskID(m_continuationId);
                 System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out savedActivityId);
@@ -657,7 +656,7 @@ namespace System.Threading.Tasks
             }
             finally
             {
-                if (log.TasksSetActivityIds && m_continuationId != 0)
+                if (log.IsEnabled() && log.TasksSetActivityIds && m_continuationId != 0)
                 {
                     System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(savedActivityId);
                 }
@@ -665,7 +664,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Cached delegate that invokes an Action passed as an object parameter.</summary>
-        private static readonly ContextCallback s_invokeContextCallback = (state) =>
+        private static readonly ContextCallback s_invokeContextCallback = static (state) =>
         {
             Debug.Assert(state is Action);
             ((Action)state)();

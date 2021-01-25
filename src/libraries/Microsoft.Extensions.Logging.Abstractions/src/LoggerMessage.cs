@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -21,7 +20,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, IDisposable> DefineScope(string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
 
             var logValues = new LogValues(formatter);
 
@@ -36,7 +35,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, IDisposable> DefineScope<T1>(string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
 
             return (logger, arg1) => logger.BeginScope(new LogValues<T1>(formatter, arg1));
         }
@@ -50,7 +49,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, T2, IDisposable> DefineScope<T1, T2>(string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
 
             return (logger, arg1, arg2) => logger.BeginScope(new LogValues<T1, T2>(formatter, arg1, arg2));
         }
@@ -65,9 +64,60 @@ namespace Microsoft.Extensions.Logging
         /// <returns>A delegate which when invoked creates a log scope.</returns>
         public static Func<ILogger, T1, T2, T3, IDisposable> DefineScope<T1, T2, T3>(string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
 
             return (logger, arg1, arg2, arg3) => logger.BeginScope(new LogValues<T1, T2, T3>(formatter, arg1, arg2, arg3));
+        }
+
+        /// <summary>
+        /// Creates a delegate which can be invoked to create a log scope.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
+        /// <param name="formatString">The named format string</param>
+        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        public static Func<ILogger, T1, T2, T3, T4, IDisposable> DefineScope<T1, T2, T3, T4>(string formatString)
+        {
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
+
+            return (logger, arg1, arg2, arg3, arg4) => logger.BeginScope(new LogValues<T1, T2, T3, T4>(formatter, arg1, arg2, arg3, arg4));
+        }
+
+        /// <summary>
+        /// Creates a delegate which can be invoked to create a log scope.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
+        /// <param name="formatString">The named format string</param>
+        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        public static Func<ILogger, T1, T2, T3, T4, T5, IDisposable> DefineScope<T1, T2, T3, T4, T5>(string formatString)
+        {
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
+
+            return (logger, arg1, arg2, arg3, arg4, arg5) => logger.BeginScope(new LogValues<T1, T2, T3, T4, T5>(formatter, arg1, arg2, arg3, arg4, arg5));
+        }
+
+        /// <summary>
+        /// Creates a delegate which can be invoked to create a log scope.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
+        /// <typeparam name="T6">The type of the sixth parameter passed to the named format string.</typeparam>
+        /// <param name="formatString">The named format string</param>
+        /// <returns>A delegate which when invoked creates a log scope.</returns>
+        public static Func<ILogger, T1, T2, T3, T4, T5, T6, IDisposable> DefineScope<T1, T2, T3, T4, T5, T6>(string formatString)
+        {
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
+
+            return (logger, arg1, arg2, arg3, arg4, arg5, arg6) => logger.BeginScope(new LogValues<T1, T2, T3, T4, T5, T6>(formatter, arg1, arg2, arg3, arg4, arg5, arg6));
         }
 
         /// <summary>
@@ -77,9 +127,9 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id</param>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, Exception> Define(LogLevel logLevel, EventId eventId, string formatString)
+        public static Action<ILogger, Exception?> Define(LogLevel logLevel, EventId eventId, string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
 
             return (logger, exception) =>
             {
@@ -98,11 +148,11 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id</param>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, Exception> Define<T1>(LogLevel logLevel, EventId eventId, string formatString)
+        public static Action<ILogger, T1, Exception?> Define<T1>(LogLevel logLevel, EventId eventId, string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
 
-            void Log(ILogger logger, T1 arg1, Exception exception)
+            void Log(ILogger logger, T1 arg1, Exception? exception)
             {
                 logger.Log(logLevel, eventId, new LogValues<T1>(formatter, arg1), exception, LogValues<T1>.Callback);
             }
@@ -125,11 +175,11 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id</param>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, Exception> Define<T1, T2>(LogLevel logLevel, EventId eventId, string formatString)
+        public static Action<ILogger, T1, T2, Exception?> Define<T1, T2>(LogLevel logLevel, EventId eventId, string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
 
-            void Log(ILogger logger, T1 arg1, T2 arg2, Exception exception)
+            void Log(ILogger logger, T1 arg1, T2 arg2, Exception? exception)
             {
                 logger.Log(logLevel, eventId, new LogValues<T1, T2>(formatter, arg1, arg2), exception, LogValues<T1, T2>.Callback);
             }
@@ -153,11 +203,11 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id</param>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, T3, Exception> Define<T1, T2, T3>(LogLevel logLevel, EventId eventId, string formatString)
+        public static Action<ILogger, T1, T2, T3, Exception?> Define<T1, T2, T3>(LogLevel logLevel, EventId eventId, string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
 
-            void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, Exception exception)
+            void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, Exception? exception)
             {
                 logger.Log(logLevel, eventId, new LogValues<T1, T2, T3>(formatter, arg1, arg2, arg3), exception, LogValues<T1, T2, T3>.Callback);
             }
@@ -182,11 +232,11 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id</param>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, T3, T4, Exception> Define<T1, T2, T3, T4>(LogLevel logLevel, EventId eventId, string formatString)
+        public static Action<ILogger, T1, T2, T3, T4, Exception?> Define<T1, T2, T3, T4>(LogLevel logLevel, EventId eventId, string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
 
-            void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, T4 arg4, Exception exception)
+            void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, T4 arg4, Exception? exception)
             {
                 logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4>(formatter, arg1, arg2, arg3, arg4), exception, LogValues<T1, T2, T3, T4>.Callback);
             }
@@ -212,9 +262,9 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id</param>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, T3, T4, T5, Exception> Define<T1, T2, T3, T4, T5>(LogLevel logLevel, EventId eventId, string formatString)
+        public static Action<ILogger, T1, T2, T3, T4, T5, Exception?> Define<T1, T2, T3, T4, T5>(LogLevel logLevel, EventId eventId, string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
 
             return (logger, arg1, arg2, arg3, arg4, arg5, exception) =>
             {
@@ -238,9 +288,9 @@ namespace Microsoft.Extensions.Logging
         /// <param name="eventId">The event id</param>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log message.</returns>
-        public static Action<ILogger, T1, T2, T3, T4, T5, T6, Exception> Define<T1, T2, T3, T4, T5, T6>(LogLevel logLevel, EventId eventId, string formatString)
+        public static Action<ILogger, T1, T2, T3, T4, T5, T6, Exception?> Define<T1, T2, T3, T4, T5, T6>(LogLevel logLevel, EventId eventId, string formatString)
         {
-            var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
+            LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
 
             return (logger, arg1, arg2, arg3, arg4, arg5, arg6, exception) =>
             {
@@ -255,7 +305,7 @@ namespace Microsoft.Extensions.Logging
         {
             var logValuesFormatter = new LogValuesFormatter(formatString);
 
-            var actualCount = logValuesFormatter.ValueNames.Count;
+            int actualCount = logValuesFormatter.ValueNames.Count;
             if (actualCount != expectedNamedParameterCount)
             {
                 throw new ArgumentException(
@@ -265,9 +315,9 @@ namespace Microsoft.Extensions.Logging
             return logValuesFormatter;
         }
 
-        private readonly struct LogValues : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues : IReadOnlyList<KeyValuePair<string, object?>>
         {
-            public static readonly Func<LogValues, Exception, string> Callback = (state, exception) => state.ToString();
+            public static readonly Func<LogValues, Exception?, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
 
@@ -276,13 +326,13 @@ namespace Microsoft.Extensions.Logging
                 _formatter = formatter;
             }
 
-            public KeyValuePair<string, object> this[int index]
+            public KeyValuePair<string, object?> this[int index]
             {
                 get
                 {
                     if (index == 0)
                     {
-                        return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
+                        return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                     }
                     throw new IndexOutOfRangeException(nameof(index));
                 }
@@ -290,7 +340,7 @@ namespace Microsoft.Extensions.Logging
 
             public int Count => 1;
 
-            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
                 yield return this[0];
             }
@@ -303,9 +353,9 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private readonly struct LogValues<T0> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0> : IReadOnlyList<KeyValuePair<string, object?>>
         {
-            public static readonly Func<LogValues<T0>, Exception, string> Callback = (state, exception) => state.ToString();
+            public static readonly Func<LogValues<T0>, Exception?, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
             private readonly T0 _value0;
@@ -316,16 +366,16 @@ namespace Microsoft.Extensions.Logging
                 _value0 = value0;
             }
 
-            public KeyValuePair<string, object> this[int index]
+            public KeyValuePair<string, object?> this[int index]
             {
                 get
                 {
                     switch (index)
                     {
                         case 0:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[0], _value0);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[0], _value0);
                         case 1:
-                            return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
+                            return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
                             throw new IndexOutOfRangeException(nameof(index));
                     }
@@ -334,7 +384,7 @@ namespace Microsoft.Extensions.Logging
 
             public int Count => 2;
 
-            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
                 for (int i = 0; i < Count; ++i)
                 {
@@ -351,9 +401,9 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private readonly struct LogValues<T0, T1> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1> : IReadOnlyList<KeyValuePair<string, object?>>
         {
-            public static readonly Func<LogValues<T0, T1>, Exception, string> Callback = (state, exception) => state.ToString();
+            public static readonly Func<LogValues<T0, T1>, Exception?, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
             private readonly T0 _value0;
@@ -366,18 +416,18 @@ namespace Microsoft.Extensions.Logging
                 _value1 = value1;
             }
 
-            public KeyValuePair<string, object> this[int index]
+            public KeyValuePair<string, object?> this[int index]
             {
                 get
                 {
                     switch (index)
                     {
                         case 0:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[0], _value0);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[0], _value0);
                         case 1:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[1], _value1);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[1], _value1);
                         case 2:
-                            return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
+                            return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
                             throw new IndexOutOfRangeException(nameof(index));
                     }
@@ -386,7 +436,7 @@ namespace Microsoft.Extensions.Logging
 
             public int Count => 3;
 
-            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
                 for (int i = 0; i < Count; ++i)
                 {
@@ -402,9 +452,9 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private readonly struct LogValues<T0, T1, T2> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1, T2> : IReadOnlyList<KeyValuePair<string, object?>>
         {
-            public static readonly Func<LogValues<T0, T1, T2>, Exception, string> Callback = (state, exception) => state.ToString();
+            public static readonly Func<LogValues<T0, T1, T2>, Exception?, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
             private readonly T0 _value0;
@@ -413,20 +463,20 @@ namespace Microsoft.Extensions.Logging
 
             public int Count => 4;
 
-            public KeyValuePair<string, object> this[int index]
+            public KeyValuePair<string, object?> this[int index]
             {
                 get
                 {
                     switch (index)
                     {
                         case 0:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[0], _value0);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[0], _value0);
                         case 1:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[1], _value1);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[1], _value1);
                         case 2:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[2], _value2);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[2], _value2);
                         case 3:
-                            return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
+                            return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
                             throw new IndexOutOfRangeException(nameof(index));
                     }
@@ -443,7 +493,7 @@ namespace Microsoft.Extensions.Logging
 
             public override string ToString() => _formatter.Format(_value0, _value1, _value2);
 
-            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
                 for (int i = 0; i < Count; ++i)
                 {
@@ -457,9 +507,9 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private readonly struct LogValues<T0, T1, T2, T3> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1, T2, T3> : IReadOnlyList<KeyValuePair<string, object?>>
         {
-            public static readonly Func<LogValues<T0, T1, T2, T3>, Exception, string> Callback = (state, exception) => state.ToString();
+            public static readonly Func<LogValues<T0, T1, T2, T3>, Exception?, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
             private readonly T0 _value0;
@@ -469,22 +519,22 @@ namespace Microsoft.Extensions.Logging
 
             public int Count => 5;
 
-            public KeyValuePair<string, object> this[int index]
+            public KeyValuePair<string, object?> this[int index]
             {
                 get
                 {
                     switch (index)
                     {
                         case 0:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[0], _value0);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[0], _value0);
                         case 1:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[1], _value1);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[1], _value1);
                         case 2:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[2], _value2);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[2], _value2);
                         case 3:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[3], _value3);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[3], _value3);
                         case 4:
-                            return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
+                            return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
                             throw new IndexOutOfRangeException(nameof(index));
                     }
@@ -500,11 +550,11 @@ namespace Microsoft.Extensions.Logging
                 _value3 = value3;
             }
 
-            private object[] ToArray() => new object[] { _value0, _value1, _value2, _value3 };
+            private object?[] ToArray() => new object?[] { _value0, _value1, _value2, _value3 };
 
             public override string ToString() => _formatter.Format(ToArray());
 
-            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
                 for (int i = 0; i < Count; ++i)
                 {
@@ -518,9 +568,9 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private readonly struct LogValues<T0, T1, T2, T3, T4> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1, T2, T3, T4> : IReadOnlyList<KeyValuePair<string, object?>>
         {
-            public static readonly Func<LogValues<T0, T1, T2, T3, T4>, Exception, string> Callback = (state, exception) => state.ToString();
+            public static readonly Func<LogValues<T0, T1, T2, T3, T4>, Exception?, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
             private readonly T0 _value0;
@@ -531,24 +581,24 @@ namespace Microsoft.Extensions.Logging
 
             public int Count => 6;
 
-            public KeyValuePair<string, object> this[int index]
+            public KeyValuePair<string, object?> this[int index]
             {
                 get
                 {
                     switch (index)
                     {
                         case 0:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[0], _value0);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[0], _value0);
                         case 1:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[1], _value1);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[1], _value1);
                         case 2:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[2], _value2);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[2], _value2);
                         case 3:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[3], _value3);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[3], _value3);
                         case 4:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[4], _value4);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[4], _value4);
                         case 5:
-                            return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
+                            return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
                             throw new IndexOutOfRangeException(nameof(index));
                     }
@@ -565,11 +615,11 @@ namespace Microsoft.Extensions.Logging
                 _value4 = value4;
             }
 
-            private object[] ToArray() => new object[] { _value0, _value1, _value2, _value3, _value4 };
+            private object?[] ToArray() => new object?[] { _value0, _value1, _value2, _value3, _value4 };
 
             public override string ToString() => _formatter.Format(ToArray());
 
-            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
                 for (int i = 0; i < Count; ++i)
                 {
@@ -583,9 +633,9 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private readonly struct LogValues<T0, T1, T2, T3, T4, T5> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1, T2, T3, T4, T5> : IReadOnlyList<KeyValuePair<string, object?>>
         {
-            public static readonly Func<LogValues<T0, T1, T2, T3, T4, T5>, Exception, string> Callback = (state, exception) => state.ToString();
+            public static readonly Func<LogValues<T0, T1, T2, T3, T4, T5>, Exception?, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
             private readonly T0 _value0;
@@ -597,26 +647,26 @@ namespace Microsoft.Extensions.Logging
 
             public int Count => 7;
 
-            public KeyValuePair<string, object> this[int index]
+            public KeyValuePair<string, object?> this[int index]
             {
                 get
                 {
                     switch (index)
                     {
                         case 0:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[0], _value0);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[0], _value0);
                         case 1:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[1], _value1);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[1], _value1);
                         case 2:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[2], _value2);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[2], _value2);
                         case 3:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[3], _value3);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[3], _value3);
                         case 4:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[4], _value4);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[4], _value4);
                         case 5:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[5], _value5);
+                            return new KeyValuePair<string, object?>(_formatter.ValueNames[5], _value5);
                         case 6:
-                            return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
+                            return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
                             throw new IndexOutOfRangeException(nameof(index));
                     }
@@ -634,11 +684,11 @@ namespace Microsoft.Extensions.Logging
                 _value5 = value5;
             }
 
-            private object[] ToArray() => new object[] { _value0, _value1, _value2, _value3, _value4, _value5 };
+            private object?[] ToArray() => new object?[] { _value0, _value1, _value2, _value3, _value4, _value5 };
 
             public override string ToString() => _formatter.Format(ToArray());
 
-            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
                 for (int i = 0; i < Count; ++i)
                 {

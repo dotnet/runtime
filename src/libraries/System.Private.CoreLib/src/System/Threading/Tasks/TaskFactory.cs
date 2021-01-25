@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -71,7 +70,6 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory()
-            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, null)
         {
         }
 
@@ -92,8 +90,8 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(CancellationToken cancellationToken)
-            : this(cancellationToken, TaskCreationOptions.None, TaskContinuationOptions.None, null)
         {
+            m_defaultCancellationToken = cancellationToken;
         }
 
         /// <summary>
@@ -116,8 +114,8 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskScheduler? scheduler) // null means to use TaskScheduler.Current
-            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
         {
+            m_defaultScheduler = scheduler;
         }
 
         /// <summary>
@@ -147,8 +145,12 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions)
-            : this(default, creationOptions, continuationOptions, null)
         {
+            CheckMultiTaskContinuationOptions(continuationOptions);
+            CheckCreationOptions(creationOptions);
+
+            m_defaultCreationOptions = creationOptions;
+            m_defaultContinuationOptions = continuationOptions;
         }
 
         /// <summary>
@@ -187,14 +189,10 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(CancellationToken cancellationToken, TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions, TaskScheduler? scheduler)
+            : this(creationOptions, continuationOptions)
         {
-            CheckMultiTaskContinuationOptions(continuationOptions);
-            CheckCreationOptions(creationOptions);
-
             m_defaultCancellationToken = cancellationToken;
             m_defaultScheduler = scheduler;
-            m_defaultCreationOptions = creationOptions;
-            m_defaultContinuationOptions = continuationOptions;
         }
 
         internal static void CheckCreationOptions(TaskCreationOptions creationOptions)
@@ -1557,8 +1555,8 @@ namespace System.Threading.Tasks
                 _tasks = tasksCopy;
                 _count = tasksCopy.Length;
 
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCreation(this, "TaskFactory.ContinueWhenAll");
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationBegin(this.Id, "TaskFactory.ContinueWhenAll", 0);
 
                 if (Task.s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
@@ -1566,14 +1564,14 @@ namespace System.Threading.Tasks
 
             public void Invoke(Task completingTask)
             {
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Join);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Join);
 
                 if (completingTask.IsWaitNotificationEnabled) this.SetNotificationForWaitCompletion(enabled: true);
                 if (Interlocked.Decrement(ref _count) == 0)
                 {
-                    if (AsyncCausalityTracer.LoggingOn)
-                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                    if (TplEventSource.Log.IsEnabled())
+                        TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
 
                     if (Task.s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
@@ -1627,8 +1625,8 @@ namespace System.Threading.Tasks
                 _tasks = tasksCopy;
                 _count = tasksCopy.Length;
 
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCreation(this, "TaskFactory.ContinueWhenAll<>");
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationBegin(this.Id, "TaskFactory.ContinueWhenAll<>", 0);
 
                 if (Task.s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
@@ -1636,14 +1634,14 @@ namespace System.Threading.Tasks
 
             public void Invoke(Task completingTask)
             {
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Join);
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Join);
 
                 if (completingTask.IsWaitNotificationEnabled) this.SetNotificationForWaitCompletion(enabled: true);
                 if (Interlocked.Decrement(ref _count) == 0)
                 {
-                    if (AsyncCausalityTracer.LoggingOn)
-                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                    if (TplEventSource.Log.IsEnabled())
+                        TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
 
                     if (Task.s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
@@ -2282,8 +2280,8 @@ namespace System.Threading.Tasks
                     _stateFlags = SyncBlockingFlag;
                 }
 
-                if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCreation(this, "TaskFactory.ContinueWhenAny");
+                if (TplEventSource.Log.IsEnabled())
+                    TplEventSource.Log.TraceOperationBegin(this.Id, "TaskFactory.ContinueWhenAny", 0);
 
                 if (Task.s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
@@ -2298,10 +2296,10 @@ namespace System.Threading.Tasks
                 if (isCompleted == 0 &&
                     Interlocked.Exchange(ref _stateFlags, isSyncBlockingFlag | CompletedFlag) == isSyncBlockingFlag)
                 {
-                    if (AsyncCausalityTracer.LoggingOn)
+                    if (TplEventSource.Log.IsEnabled())
                     {
-                        AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Choice);
-                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                        TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Choice);
+                        TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
                     }
 
                     if (Task.s_asyncDebuggingEnabled)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Runtime.Versioning;
@@ -9,7 +8,7 @@ namespace System.Data.Odbc
 {
     internal sealed class OdbcEnvironmentHandle : OdbcHandle
     {
-        internal OdbcEnvironmentHandle() : base(ODBC32.SQL_HANDLE.ENV, null)
+        public OdbcEnvironmentHandle() : base(ODBC32.SQL_HANDLE.ENV, null)
         {
             ODBC32.RetCode retcode;
 

@@ -8,12 +8,12 @@ set "__MsgPrefix=CROSSGEN-CORELIB: "
 echo %__MsgPrefix%Starting Build at %TIME%
 
 set __ThisScriptFull="%~f0"
-set __ThisScriptDir="%~dp0"
+set __ThisScriptDir=%~dp0
 
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
 ::      __BuildType         -- default: Debug
-::      __TargetOS           -- default: Windows_NT
+::      __TargetOS           -- default: windows
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
@@ -26,7 +26,7 @@ set __ThisScriptDir="%~dp0"
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
-set __TargetOS=Windows_NT
+set __TargetOS=windows
 
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
@@ -182,7 +182,7 @@ if %__PgoInstrument% EQU 1 (
         goto ExitWithError
     )
 
-    REM HACK: Workaround for [dotnet/coreclr#13970](https://github.com/dotnet/coreclr/issues/13970)
+    REM HACK: Workaround for [dotnet/runtime#8929](https://github.com/dotnet/runtime/issues/8929)
     set __PgoRtPath=
     for /f "tokens=*" %%f in ('where pgort*.dll') do (
         if not defined __PgoRtPath set "__PgoRtPath=%%~f"

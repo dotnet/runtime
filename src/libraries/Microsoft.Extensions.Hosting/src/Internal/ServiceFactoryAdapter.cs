@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,7 +31,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 if (_serviceProviderFactory == null)
                 {
-                    throw new InvalidOperationException("The resolver returned a null IServiceProviderFactory");
+                    throw new InvalidOperationException(SR.ResolverReturnedNull);
                 }
             }
             return _serviceProviderFactory.CreateBuilder(services);
@@ -42,7 +41,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             if (_serviceProviderFactory == null)
             {
-                throw new InvalidOperationException("CreateBuilder must be called before CreateServiceProvider");
+                throw new InvalidOperationException(SR.CreateBuilderCallBeforeCreateServiceProvider);
             }
 
             return _serviceProviderFactory.CreateServiceProvider((TContainerBuilder)containerBuilder);

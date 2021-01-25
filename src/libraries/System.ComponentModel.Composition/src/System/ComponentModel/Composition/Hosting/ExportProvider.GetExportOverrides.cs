@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -474,8 +473,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     An error occurred during composition. <see cref="CompositionException.Errors"/> will
         ///     contain a collection of errors that occurred.
         /// </exception>
-        [return: MaybeNull]
-        public T GetExportedValue<T>()
+        public T? GetExportedValue<T>()
         {
             return GetExportedValue<T>((string?)null);
         }
@@ -525,8 +523,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     An error occurred during composition. <see cref="CompositionException.Errors"/> will
         ///     contain a collection of errors that occurred.
         /// </exception>
-        [return: MaybeNull]
-        public T GetExportedValue<T>(string? contractName)
+        public T? GetExportedValue<T>(string? contractName)
         {
             return GetExportedValueCore<T>(contractName, ImportCardinality.ExactlyOne);
         }
@@ -576,8 +573,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     An error occurred during composition. <see cref="CompositionException.Errors"/> will
         ///     contain a collection of errors that occurred.
         /// </exception>
-        [return: MaybeNull]
-        public T GetExportedValueOrDefault<T>()
+        public T? GetExportedValueOrDefault<T>()
         {
             return GetExportedValueOrDefault<T>((string?)null);
         }
@@ -627,8 +623,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     An error occurred during composition. <see cref="CompositionException.Errors"/> will
         ///     contain a collection of errors that occurred.
         /// </exception>
-        [return: MaybeNull]
-        public T GetExportedValueOrDefault<T>(string? contractName)
+        public T? GetExportedValueOrDefault<T>(string? contractName)
         {
             return GetExportedValueCore<T>(contractName, ImportCardinality.ZeroOrOne);
         }
@@ -725,8 +720,7 @@ namespace System.ComponentModel.Composition.Hosting
             return result;
         }
 
-        [return: MaybeNull]
-        private T GetExportedValueCore<T>(string? contractName, ImportCardinality cardinality)
+        private T? GetExportedValueCore<T>(string? contractName, ImportCardinality cardinality)
         {
             if (!cardinality.IsAtMostOne())
             {
@@ -735,7 +729,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             Export? export = GetExportsCore(typeof(T), (Type?)null, contractName, cardinality).SingleOrDefault();
 
-            return (export != null) ? ExportServices.GetCastedExportedValue<T>(export) : default(T)!;
+            return (export != null) ? ExportServices.GetCastedExportedValue<T>(export) : default;
         }
 
         private IEnumerable<Lazy<T>> GetExportsCore<T>(string? contractName)

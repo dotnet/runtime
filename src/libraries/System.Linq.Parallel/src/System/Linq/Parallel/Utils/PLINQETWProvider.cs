@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -38,7 +37,7 @@ namespace System.Linq.Parallel
         /// <remarks>If PLINQ ever supports other schedulers, that information will need to be passed into the query events.</remarks>
         private static readonly int s_defaultSchedulerId = TaskScheduler.Default.Id;
         /// <summary>Static counter used to generate unique IDs</summary>
-        private static int s_queryId = 0;
+        private static int s_queryId;
 
         /// <summary>Generates the next consecutive query ID.</summary>
         [NonEvent]

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -144,14 +143,72 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             var dict = new Hashtable()
                 {
                     {"data__ConnectionString", "connection"},
-                    {"SQLCONNSTR__db1", "connStr"}
+                    {"SQLCONNSTR_db1", "connStr"}
                 };
             var envConfigSrc = new EnvironmentVariablesConfigurationProvider();
 
             envConfigSrc.Load(dict);
 
             Assert.Equal("connection", envConfigSrc.Get("data:ConnectionString"));
-            Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:_db1_ProviderName"));
+            Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:db1_ProviderName"));
+        }
+
+        [Fact]
+        public void ReplaceDoubleUnderscoreInEnvironmentVariablesButNotPrefix()
+        {
+            var dict = new Hashtable()
+                {
+                    {"test__prefix__with__double__underscores__data__ConnectionString", "connection"}
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("test__prefix__with__double__underscores__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("connection", envConfigSrc.Get("data:ConnectionString"));
+        }
+
+        [Fact]
+        public void ReplaceDoubleUnderscoreInEnvironmentVariablesButNotInAnomalousPrefix()
+        {
+            var dict = new Hashtable()
+                {
+                    {"_____EXPERIMENTAL__data__ConnectionString", "connection"}
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("_____EXPERIMENTAL__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("connection", envConfigSrc.Get("data:ConnectionString"));
+        }
+
+        [Fact]
+        public void ReplaceDoubleUnderscoreInEnvironmentVariablesWithDuplicatedPrefix()
+        {
+            var dict = new Hashtable()
+                {
+                    {"test__test__ConnectionString", "connection"}
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("test__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("connection", envConfigSrc.Get("test:ConnectionString"));
+        }
+
+        [Fact]
+        public void PrefixPreventsLoadingSqlConnectionStrings()
+        {
+            var dict = new Hashtable()
+                {
+                    {"test__test__ConnectionString", "connection"},
+                    {"SQLCONNSTR_db1", "connStr"}
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("test__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("connection", envConfigSrc.Get("test:ConnectionString"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:db1_ProviderName"));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

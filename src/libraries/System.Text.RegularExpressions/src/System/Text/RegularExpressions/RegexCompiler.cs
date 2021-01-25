@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,6 +15,9 @@ namespace System.Text.RegularExpressions
     /// RegexCompiler translates a block of RegexCode to MSIL, and creates a
     /// subclass of the RegexRunner type.
     /// </summary>
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+        Target = "M:System.Text.RegularExpressions.RegexCompiler.#cctor",
+        Justification = "The referenced methods don't have any DynamicallyAccessedMembers annotations. See https://github.com/mono/linker/issues/1727")]
     internal abstract class RegexCompiler
     {
         private static readonly FieldInfo s_runtextbegField = RegexRunnerField("runtextbeg");
@@ -1336,9 +1338,8 @@ namespace System.Text.RegularExpressions
                 }
 
                 // ch = runtext[runtextpos];
-                // if (ch == lastChar) goto partialMatch;
                 Rightchar();
-                if (_boyerMoorePrefix.CaseInsensitive && ParticipatesInCaseConversion(chLast))
+                if (_boyerMoorePrefix.CaseInsensitive)
                 {
                     CallToLower();
                 }
@@ -1350,6 +1351,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(chLocal);
                     Ldc(chLast);
 
+                    // if (ch == lastChar) goto partialMatch;
                     BeqFar(lPartialMatch);
 
                     // ch -= lowAscii;
@@ -3831,7 +3833,7 @@ namespace System.Text.RegularExpressions
                             // if (count >= 0)
                             PopStack();
                             Stloc(_runtextposLocal!);
-                            PushTrack(count);                       // Tracked(0) is alredy on the track
+                            PushTrack(count);                       // Tracked(0) is already on the track
                             TrackUnique2(Branchcountback2);
                             Advance();
 
@@ -5354,7 +5356,7 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         /// <summary>Emit code to print out the current state of the runner.</summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         private void DumpBacktracking()
         {
             Mvlocfld(_runtextposLocal!, s_runtextposField);

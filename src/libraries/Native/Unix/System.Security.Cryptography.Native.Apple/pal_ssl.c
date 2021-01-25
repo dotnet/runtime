@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_ssl.h"
 #include <dlfcn.h>
@@ -393,6 +392,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     if (anchors == NULL)
     {
         CFRelease(certs);
+        CFRelease(existingTrust);
         return -6;
     }
 
@@ -514,6 +514,9 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     if (anchors != NULL)
         CFRelease(anchors);
 
+    if (existingTrust != NULL)
+        CFRelease(existingTrust);
+
     CFRelease(sslPolicy);
     return ret;
 }
@@ -591,7 +594,7 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         // macOS
-        return SSLSetEnabledCiphers(sslContext, cipherSuites, (size_t)numCipherSuites);
+        return SSLSetEnabledCiphers(sslContext, (const SSLCipherSuite *)cipherSuites, (size_t)numCipherSuites);
 #pragma clang diagnostic pop   
     }
     else

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -38,7 +37,7 @@ namespace System.Xml.Tests
             var xmlDocument = new XmlDocument();
             var cdata = xmlDocument.CreateCDataSection("]]>");
 
-            AssertExtensions.Throws<ArgumentException>(null, () => { var test = cdata.OuterXml; });
+            AssertExtensions.Throws<ArgumentException>(null, () => cdata.OuterXml);
             Assert.Equal(string.Empty, cdata.InnerXml);
             Assert.Equal("]]>", cdata.InnerText);
             Assert.Equal(XmlNodeType.CDATA, cdata.NodeType);

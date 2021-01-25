@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -9,7 +8,7 @@ namespace System.Drawing.Printing
     /// <summary>
     /// Defines a reusable object that sends output to the printer.
     /// </summary>
-    [SRDescription(nameof(SR.PrintDocumentDesc))]
+    [DefaultProperty("DocumentName"), DefaultEvent("PrintPage"), SRDescription(nameof(SR.PrintDocumentDesc))]
     public class PrintDocument : Component
     {
         private string _documentName = "document";

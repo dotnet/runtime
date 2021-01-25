@@ -1,18 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Data.Common
 {
     public abstract class DbColumn
     {
         public bool? AllowDBNull { get; protected set; }
-        public string BaseCatalogName { get; protected set; }
-        public string BaseColumnName { get; protected set; }
-        public string BaseSchemaName { get; protected set; }
-        public string BaseServerName { get; protected set; }
-        public string BaseTableName { get; protected set; }
-        public string ColumnName { get; protected set; }
+        public string? BaseCatalogName { get; protected set; }
+        public string? BaseColumnName { get; protected set; }
+        public string? BaseSchemaName { get; protected set; }
+        public string? BaseServerName { get; protected set; }
+        public string? BaseTableName { get; protected set; }
+        public string ColumnName { get; protected set; } = "";
         public int? ColumnOrdinal { get; protected set; }
         public int? ColumnSize { get; protected set; }
         public bool? IsAliased { get; protected set; }
@@ -26,10 +25,10 @@ namespace System.Data.Common
         public bool? IsUnique { get; protected set; }
         public int? NumericPrecision { get; protected set; }
         public int? NumericScale { get; protected set; }
-        public string UdtAssemblyQualifiedName { get; protected set; }
-        public Type DataType { get; protected set; }
-        public string DataTypeName { get; protected set; }
-        public virtual object this[string property] =>
+        public string? UdtAssemblyQualifiedName { get; protected set; }
+        public Type? DataType { get; protected set; }
+        public string? DataTypeName { get; protected set; }
+        public virtual object? this[string property] =>
             property switch
             {
                 nameof(AllowDBNull) => AllowDBNull,

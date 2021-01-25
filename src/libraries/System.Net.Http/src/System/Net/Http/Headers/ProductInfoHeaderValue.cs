@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -49,10 +48,6 @@ namespace System.Net.Http.Headers
 
             _product = source._product;
             _comment = source._comment;
-        }
-
-        private ProductInfoHeaderValue()
-        {
         }
 
         public override string ToString()
@@ -154,6 +149,8 @@ namespace System.Net.Http.Headers
 
                 current = current + commentLength;
                 current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+
+                parsedValue = new ProductInfoHeaderValue(comment);
             }
             else
             {
@@ -166,11 +163,10 @@ namespace System.Net.Http.Headers
                 }
 
                 current = current + productLength;
+
+                parsedValue = new ProductInfoHeaderValue(product!);
             }
 
-            parsedValue = new ProductInfoHeaderValue();
-            parsedValue._product = product;
-            parsedValue._comment = comment;
             return current - startIndex;
         }
 

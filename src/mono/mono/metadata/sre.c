@@ -480,27 +480,39 @@ mono_reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
 
 	rmb->ilgen = mb->ilgen;
+	MONO_HANDLE_PIN (rmb->ilgen);
 	rmb->rtype = (MonoReflectionType*)mb->rtype;
-	return_val_if_nok (error, FALSE);
+	MONO_HANDLE_PIN (rmb->rtype);
 	rmb->parameters = mb->parameters;
+	MONO_HANDLE_PIN (rmb->parameters);
 	rmb->generic_params = mb->generic_params;
+	MONO_HANDLE_PIN (rmb->generic_params);
 	rmb->generic_container = mb->generic_container;
 	rmb->opt_types = NULL;
 	rmb->pinfo = mb->pinfo;
+	MONO_HANDLE_PIN (rmb->pinfo);
 	rmb->attrs = mb->attrs;
 	rmb->iattrs = mb->iattrs;
 	rmb->call_conv = mb->call_conv;
 	rmb->code = mb->code;
+	MONO_HANDLE_PIN (rmb->code);
 	rmb->type = mb->type;
+	MONO_HANDLE_PIN (rmb->type);
 	rmb->name = mb->name;
+	MONO_HANDLE_PIN (rmb->name);
 	rmb->table_idx = &mb->table_idx;
 	rmb->init_locals = mb->init_locals;
 	rmb->skip_visibility = FALSE;
 	rmb->return_modreq = mb->return_modreq;
+	MONO_HANDLE_PIN (rmb->return_modreq);
 	rmb->return_modopt = mb->return_modopt;
+	MONO_HANDLE_PIN (rmb->return_modopt);
 	rmb->param_modreq = mb->param_modreq;
+	MONO_HANDLE_PIN (rmb->param_modreq);
 	rmb->param_modopt = mb->param_modopt;
+	MONO_HANDLE_PIN (rmb->param_modopt);
 	rmb->permissions = mb->permissions;
+	MONO_HANDLE_PIN (rmb->permissions);
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
@@ -510,7 +522,9 @@ mono_reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 		rmb->extra_flags = mb->extra_flags;
 		rmb->native_cc = mb->native_cc;
 		rmb->dllentry = mb->dllentry;
+		MONO_HANDLE_PIN (rmb->dllentry);
 		rmb->dll = mb->dll;
+		MONO_HANDLE_PIN (rmb->dll);
 	}
 
 	return TRUE;
@@ -528,28 +542,37 @@ mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, M
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
 
 	rmb->ilgen = mb->ilgen;
+	MONO_HANDLE_PIN (rmb->ilgen);
 	rmb->rtype = mono_type_get_object_checked (mono_domain_get (), mono_get_void_type (), error);
 	return_val_if_nok (error, FALSE);
+	MONO_HANDLE_PIN (rmb->rtype);
 	rmb->parameters = mb->parameters;
+	MONO_HANDLE_PIN (rmb->parameters);
 	rmb->generic_params = NULL;
 	rmb->generic_container = NULL;
 	rmb->opt_types = NULL;
 	rmb->pinfo = mb->pinfo;
+	MONO_HANDLE_PIN (rmb->pinfo);
 	rmb->attrs = mb->attrs;
 	rmb->iattrs = mb->iattrs;
 	rmb->call_conv = mb->call_conv;
 	rmb->code = NULL;
 	rmb->type = mb->type;
+	MONO_HANDLE_PIN (rmb->type);
 	rmb->name = mono_string_new_checked (mono_domain_get (), name, error);
 	return_val_if_nok (error, FALSE);
+	MONO_HANDLE_PIN (rmb->name);
 	rmb->table_idx = &mb->table_idx;
 	rmb->init_locals = mb->init_locals;
 	rmb->skip_visibility = FALSE;
 	rmb->return_modreq = NULL;
 	rmb->return_modopt = NULL;
 	rmb->param_modreq = mb->param_modreq;
+	MONO_HANDLE_PIN (rmb->param_modreq);
 	rmb->param_modopt = mb->param_modopt;
+	MONO_HANDLE_PIN (rmb->param_modopt);
 	rmb->permissions = mb->permissions;
+	MONO_HANDLE_PIN (rmb->permissions);
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
@@ -565,8 +588,11 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
 
 	rmb->ilgen = mb->ilgen;
+	MONO_HANDLE_PIN (rmb->ilgen);
 	rmb->rtype = mb->rtype;
+	MONO_HANDLE_PIN (rmb->type);
 	rmb->parameters = mb->parameters;
+	MONO_HANDLE_PIN (rmb->parameters);
 	rmb->generic_params = NULL;
 	rmb->generic_container = NULL;
 	rmb->opt_types = NULL;
@@ -576,7 +602,9 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 	rmb->call_conv = mb->call_conv;
 	rmb->code = NULL;
 	rmb->type = (MonoObject *) mb->owner;
+	MONO_HANDLE_PIN (rmb->type);
 	rmb->name = mb->name;
+	MONO_HANDLE_PIN (rmb->name);
 	rmb->table_idx = NULL;
 	rmb->init_locals = mb->init_locals;
 	rmb->skip_visibility = mb->skip_visibility;
@@ -3262,23 +3290,26 @@ fail:
 static MonoMethod*
 ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb, MonoError *error)
 {
+	/* We need to clear handles for rmb fields created in mono_reflection_methodbuilder_from_ctor_builder */
+	HANDLE_FUNCTION_ENTER ();
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
+	MonoMethod *ret;
 
 	mono_loader_lock ();
 
 	if (!mono_reflection_methodbuilder_from_ctor_builder (&rmb, mb, error)) {
 		mono_loader_unlock ();
-		return NULL;
+		goto exit_null;
 	}
 
 	g_assert (klass->image != NULL);
 	sig = ctor_builder_to_signature_raw (klass->image, mb, error); /* FIXME use handles */
 	mono_loader_unlock ();
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, exit_null);
 
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, exit_null);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
 
 	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->save) {
@@ -3286,14 +3317,22 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb, Mon
 		mb->ilgen = NULL;
 	}
 
-	return mb->mhandle;
+	ret = mb->mhandle;
+	goto exit;
+exit_null:
+	ret = NULL;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
 
 static MonoMethod*
 methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilderHandle ref_mb, MonoError *error)
 {
+	/* We need to clear handles for rmb fields created in mono_reflection_methodbuilder_from_method_builder */
+	HANDLE_FUNCTION_ENTER ();
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
+	MonoMethod *ret, *method;
 
 	error_init (error);
 
@@ -3302,23 +3341,28 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilderHandl
 	MonoReflectionMethodBuilder *mb = MONO_HANDLE_RAW (ref_mb); /* FIXME use handles */
 	if (!mono_reflection_methodbuilder_from_method_builder (&rmb, mb, error)) {
 		mono_loader_unlock ();
-		return NULL;
+		goto exit_null;
 	}
 
 	g_assert (klass->image != NULL);
 	sig = method_builder_to_signature (klass->image, ref_mb, error);
 	mono_loader_unlock ();
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, exit_null);
 
-	MonoMethod *method = reflection_methodbuilder_to_mono_method (klass, &rmb, sig, error);
-	return_val_if_nok (error, NULL);
+	method = reflection_methodbuilder_to_mono_method (klass, &rmb, sig, error);
+	goto_if_nok (error, exit_null);
 	MONO_HANDLE_SETVAL (ref_mb, mhandle, MonoMethod*, method);
 	mono_save_custom_attrs (klass->image, method, mb->cattrs);
 
 	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->save)
 		/* ilgen is no longer needed */
 		mb->ilgen = NULL;
-	return method;
+	ret = method;
+	goto exit;
+exit_null:
+	ret = NULL;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
 
 static MonoMethod*
@@ -3668,9 +3712,11 @@ typebuilder_setup_one_field (MonoDynamicImage *dynamic_image, MonoClass *klass, 
 		if (klass->enumtype && strcmp (field->name, "value__") == 0) // used by enum classes to store the instance value
 			field->type->attrs |= FIELD_ATTRIBUTE_RT_SPECIAL_NAME;
 
-		if (!klass->enumtype && !mono_type_get_underlying_type (field->type)) {
-			mono_class_set_type_load_failure (klass, "Field '%s' is an enum type with a bad underlying type", field->name);
-			goto leave;
+		if (!mono_type_get_underlying_type (field->type)) {
+			if (!(klass->enumtype && mono_metadata_type_equal (field->type, m_class_get_byval_arg (klass)))) {
+				mono_class_set_type_load_failure (klass, "Field '%s' is an enum type with a bad underlying type", field->name);
+				goto leave;
+			}
 		}
 
 		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && (rva_data = fb->rva_data)) {
@@ -4040,12 +4086,15 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	 *
 	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
-	if (domain->type_hash && mono_class_is_gtd (klass)) {
+	if (mono_class_is_gtd (klass)) {
+		MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 		struct remove_instantiations_user_data data;
 		data.klass = klass;
 		data.error = error;
 		mono_error_assert_ok (error);
-		mono_g_hash_table_foreach_remove (domain->type_hash, remove_instantiations_of_and_ensure_contents, &data);
+		mono_mem_manager_lock (memory_manager);
+		mono_g_hash_table_foreach_remove (memory_manager->type_hash, remove_instantiations_of_and_ensure_contents, &data);
+		mono_mem_manager_unlock (memory_manager);
 		goto_if_nok (error, failure);
 	}
 
@@ -4105,6 +4154,8 @@ free_dynamic_method (void *dynamic_method)
 static gboolean
 reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, MonoError *error)
 {
+	/* We need to clear handles for rmb fields created in reflection_methodbuilder_from_dynamic_method */
+	HANDLE_FUNCTION_ENTER ();
 	MonoReferenceQueue *queue;
 	MonoMethod *handle;
 	DynamicMethodReleaseData *release_data;
@@ -4114,6 +4165,9 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	MonoDomain *domain;
 	GSList *l;
 	int i;
+	gboolean ret = TRUE;
+	MonoReflectionDynamicMethod *mb;
+	MonoAssembly *ass = NULL;
 
 	error_init (error);
 
@@ -4125,9 +4179,9 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	}
 
 	sig = dynamic_method_to_signature (ref_mb, error);
-	return_val_if_nok (error, FALSE);
+	goto_if_nok (error, exit_false);
 
-	MonoReflectionDynamicMethod *mb = MONO_HANDLE_RAW (ref_mb); /* FIXME convert reflection_create_dynamic_method to use handles */
+	mb = MONO_HANDLE_RAW (ref_mb); /* FIXME convert reflection_create_dynamic_method to use handles */
 	reflection_methodbuilder_from_dynamic_method (&rmb, mb);
 
 	/*
@@ -4143,6 +4197,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 		MonoClass *handle_class;
 		gpointer ref;
 		MonoObject *obj = mono_array_get_internal (mb->refs, MonoObject*, i);
+		MONO_HANDLE_PIN (obj);
 
 		if (strcmp (obj->vtable->klass->name, "DynamicMethod") == 0) {
 			MonoReflectionDynamicMethod *method = (MonoReflectionDynamicMethod*)obj;
@@ -4155,19 +4210,18 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 			if (method->mhandle) {
 				ref = method->mhandle;
 			} else {
-				/* FIXME: GC object stored in unmanaged memory */
 				ref = method;
 
-				/* FIXME: GC object stored in unmanaged memory */
 				method->referenced_by = g_slist_append (method->referenced_by, mb);
 			}
 			handle_class = mono_defaults.methodhandle_class;
 		} else {
 			MonoException *ex = NULL;
 			ref = mono_reflection_resolve_object (mb->module->image, obj, &handle_class, NULL, error);
+			/* ref should not be a reference. Otherwise we would need a handle for it */
 			if (!is_ok  (error)) {
 				g_free (rmb.refs);
-				return FALSE;
+				goto exit_false;
 			}
 			if (!ref)
 				ex = mono_get_exception_type_load (NULL, NULL);
@@ -4177,20 +4231,19 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 			if (ex) {
 				g_free (rmb.refs);
 				mono_error_set_exception_instance (error, ex);
-				return FALSE;
+				goto exit_false;
 			}
 		}
 
-		rmb.refs [i] = ref; /* FIXME: GC object stored in unmanaged memory (change also resolve_object() signature) */
+		rmb.refs [i] = ref;
 		rmb.refs [i + 1] = handle_class;
 	}		
 
-	MonoAssembly *ass = NULL;
 	if (mb->owner) {
 		MonoType *owner_type = mono_reflection_type_get_handle ((MonoReflectionType*)mb->owner, error);
 		if (!is_ok (error)) {
 			g_free (rmb.refs);
-			return FALSE;
+			goto exit_false;
 		}
 		klass = mono_class_from_mono_type_internal (owner_type);
 		ass = klass->image->assembly;
@@ -4202,7 +4255,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	mb->mhandle = handle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig, error);
 	((MonoDynamicMethod*)handle)->assembly = ass;
 	g_free (rmb.refs);
-	return_val_if_nok (error, FALSE);
+	goto_if_nok (error, exit_false);
 
 	release_data = g_new (DynamicMethodReleaseData, 1);
 	release_data->handle = handle;
@@ -4233,7 +4286,11 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	g_hash_table_insert (domain->method_to_dyn_method, handle, mono_gchandle_new_weakref_internal ((MonoObject *)mb, TRUE));
 	mono_domain_unlock (domain);
 
-	return TRUE;
+	goto exit;
+exit_false:
+	ret = FALSE;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
 
 void

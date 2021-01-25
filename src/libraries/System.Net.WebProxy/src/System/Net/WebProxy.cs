@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.NetworkInformation;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 
 namespace System.Net
@@ -64,12 +65,13 @@ namespace System.Net
 
         public bool BypassProxyOnLocal { get; set; }
 
+        [AllowNull]
         public string[] BypassList
         {
             get { return _bypassList != null ? (string[])_bypassList.ToArray(typeof(string)) : Array.Empty<string>(); }
             set
             {
-                _bypassList = new ArrayList(value);
+                _bypassList = value != null ? new ArrayList(value) : null;
                 UpdateRegexList(true);
             }
         }
@@ -159,6 +161,7 @@ namespace System.Net
 
             string hostString = host.Host;
 
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/43751
             if (IPAddress.TryParse(hostString, out IPAddress? hostAddress))
             {
                 return IPAddress.IsLoopback(hostAddress) || IsAddressLocal(hostAddress);
@@ -173,11 +176,13 @@ namespace System.Net
 
             // If it matches the primary domain, it's local.  (Whether or not the hostname matches.)
             string local = "." + IPGlobalProperties.GetIPGlobalProperties().DomainName;
+#pragma warning restore CA1416 // Validate platform compatibility
             return
                 local.Length == (hostString.Length - dot) &&
                 string.Compare(local, 0, hostString, dot, local.Length, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
+        [UnsupportedOSPlatform("browser")]
         private static bool IsAddressLocal(IPAddress ipAddress)
         {
             // Perf note: The .NET Framework caches this and then uses network change notifications to track

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -20,7 +19,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly bool _isAssignableCollectionType;
         private Type _contractType;
         private Func<Export, object>? _castSingleValue;
-        private readonly bool _isOpenGeneric = false;
+        private readonly bool _isOpenGeneric;
 
         [ThreadStatic]
         internal static Dictionary<Type, Func<Export, object>?>? _castSingleValueCache;
