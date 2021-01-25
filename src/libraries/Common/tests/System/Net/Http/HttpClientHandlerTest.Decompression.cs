@@ -319,8 +319,7 @@ namespace System.Net.Http.Functional.Tests
             string manualAcceptEncodingHeaderValues,
             string expectedHandlerAddedAcceptEncodingHeaderValues)
         {
-            // Brotli only supported on SocketsHttpHandler.
-            if (IsWinHttpHandler && manualAcceptEncodingHeaderValues.Contains("br"))
+            if (IsWinHttpHandler)
             {
                 return;
             }
