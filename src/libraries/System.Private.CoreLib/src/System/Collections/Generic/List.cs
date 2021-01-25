@@ -403,11 +403,24 @@ namespace System.Collections.Generic
             if (_items.Length < capacity)
             {
                 int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length * 2;
+                while (newCapacity < capacity)
+                {
+                    newCapacity *= 2;
+                }
                 // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
                 // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > Array.MaxArrayLength) newCapacity = Array.MaxArrayLength;
-                if (newCapacity < capacity) newCapacity = capacity;
-                Capacity = newCapacity;
+                if ((uint)newCapacity > Array.MaxArrayLength)
+                {
+                    newCapacity = Array.MaxArrayLength;
+                    if (newCapacity < capacity) newCapacity = capacity;
+                }
+
+                T[] newItems = new T[newCapacity];
+                if (_size > 0)
+                {
+                    Array.Copy(_items, newItems, _size);
+                }
+                _items = newItems;
             }
 
             return _items.Length;
