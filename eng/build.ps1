@@ -18,6 +18,7 @@ Param(
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [switch]$ninja,
   [string]$cmakeargs,
+  [switch]$pgoinstrument,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -79,6 +80,7 @@ function Get-Help() {
   Write-Host "Native build settings:"
   Write-Host "  -cmakeargs              User-settable additional arguments passed to CMake."
   Write-Host "  -ninja                  Use Ninja instead of MSBuild to run the native build."
+  Write-Host "  -pgoinstrument          Build the CLR with PGO instrumentation."
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
   Write-Host "The above arguments can be shortened as much as to be unambiguous."
@@ -178,7 +180,7 @@ if ($vs) {
       }
     }
   }
-  
+
   . $PSScriptRoot\common\tools.ps1
 
   # This tells .NET Core to use the bootstrapped runtime
@@ -233,6 +235,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     "cmakeargs"              { $arguments += " /p:CMakeArgs=`"$($PSBoundParameters[$argument])`"" }
     "ninja"                  { $arguments += " /p:Ninja=$($PSBoundParameters[$argument])" }
+    "pgoinstrument"          { $arguments += " /p:PgoInstrument=$($PSBoundParameters[$argument])"}
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}

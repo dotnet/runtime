@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
+    <SharedFrameworkName Condition="'$(PgoOptimize)' != ''">$(SharedFrameworkName).PGO</SharedFrameworkName>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
   </PropertyGroup>
 
@@ -14,7 +15,7 @@
     <!-- LINUX -->
 
     <!-- OSX -->
-    
+
     <!-- Windows -->
     <SingleFileHostIncludeFilename Include="mscordaccore.dll" />
   </ItemGroup>
