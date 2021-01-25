@@ -156,9 +156,9 @@ namespace System.Net.Sockets.Tests
         public async Task CancelDuringOperation_Throws()
         {
             const int DatagramCount = 100;
-            const int DatagramSize = 32768;
+            const int DatagramSize = 9216; // Default maximum datagram size on Mac
 
-            TimeSpan cancelAfter = TimeSpan.FromMilliseconds(1);
+            TimeSpan cancelAfter = TimeSpan.FromMilliseconds(2);
 
             await RetryHelper.ExecuteAsync(async () =>
             {
@@ -180,7 +180,7 @@ namespace System.Net.Sockets.Tests
                 cts.CancelAfter(cancelAfter);
 
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(tasks));
-            }, maxAttempts: 4);
+            }, maxAttempts: 7);
         }
     }
 
