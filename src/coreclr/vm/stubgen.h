@@ -604,6 +604,7 @@ protected:
     void SetStubTargetReturnType(CorElementType typ);
     void SetStubTargetReturnType(LocalDesc* pLoc);
     void SetStubTargetCallingConv(CorCallingConvention uNativeCallingConv);
+    void SetStubTargetCallingConv(CorInfoCallConvExtension callConv);
 
     bool ReturnOpcodePopsStack()
     {

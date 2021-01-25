@@ -13501,6 +13501,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         op1->gtFlags |= (GTF_OVERFLOW | GTF_EXCEPT);
                     }
+
+                    if (op1->gtGetOp1()->OperIsConst() && opts.OptimizationEnabled())
+                    {
+                        // Try and fold the introduced cast
+                        op1 = gtFoldExprConst(op1);
+                    }
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -17331,6 +17337,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         // On ARM64, the native instance calling convention variant
         // requires the implicit ByRef to be explicitly returned.
         else if (callConvIsInstanceMethodCallConv(info.compCallConv))
+        {
+            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
+        }
+#endif
+#if defined(TARGET_X86)
+        else if (info.compCallConv != CorInfoCallConvExtension::Managed)
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }

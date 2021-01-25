@@ -12,7 +12,7 @@
 // be changed. This is the identifier verified by ICorJitCompiler::getVersionIdentifier().
 //
 // You can use "uuidgen.exe -s" to generate this value.
-// 
+//
 // Note that this file is parsed by some tools, namely superpmi.py, so make sure the first line is exactly
 // of the form:
 //
@@ -30,12 +30,13 @@
 // NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 
-constexpr GUID JITEEVersionIdentifier = { /* f556df6c-b9c7-479c-b895-8e1f1959fe59 */
-    0xf556df6c,
-    0xb9c7,
-    0x479c,
-    {0xb8, 0x95, 0x8e, 0x1f, 0x19, 0x59, 0xfe, 0x59}
+constexpr GUID JITEEVersionIdentifier = { /* 000b3acb-92d2-4003-8760-e545241dd9a8 */
+    0x000b3acb,
+    0x92d2,
+    0x4003,
+    {0x87, 0x60, 0xe5, 0x45, 0x24, 0x1d, 0xd9, 0xa8}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

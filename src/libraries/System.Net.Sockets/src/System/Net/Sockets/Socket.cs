@@ -417,22 +417,15 @@ namespace System.Net.Sockets
             }
         }
 
+        // On .NET Framework, this property functions as a socket-level switch between IOCP-based and Win32 event based async IO.
+        // On that platform, setting UseOnlyOverlappedIO = true prevents assigning a completion port to the socket,
+        // allowing calls to DuplicateAndClose() even after performing asynchronous IO.
+        // .NET (Core) Windows sockets are entirely IOCP-based, and the concept of "overlapped IO"
+        // does not exist on other platforms, therefore UseOnlyOverlappedIO is a dummy, compat-only property.
         public bool UseOnlyOverlappedIO
         {
-            get
-            {
-                return false;
-            }
-            set
-            {
-                //
-                // This implementation does not support non-IOCP-based async I/O on Windows, and this concept is
-                // not even meaningful on other platforms.  This option is really only functionally meaningful
-                // if the user calls DuplicateAndClose.  Since we also don't support DuplicateAndClose,
-                // we can safely ignore the caller's choice here, rather than breaking compat further with something
-                // like PlatformNotSupportedException.
-                //
-            }
+            get { return false; }
+            set { }
         }
 
         // Gets the connection state of the Socket. This property will return the latest

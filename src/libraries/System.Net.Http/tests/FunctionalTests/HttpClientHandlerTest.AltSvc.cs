@@ -20,7 +20,7 @@ namespace System.Net.Http.Functional.Tests
         /// </summary>
         protected override HttpClient CreateHttpClient()
         {
-            HttpClientHandler handler = CreateHttpClientHandler(HttpVersion30);
+            HttpClientHandler handler = CreateHttpClientHandler(HttpVersion.Version30);
 
             return CreateHttpClient(handler);
         }

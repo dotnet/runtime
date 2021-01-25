@@ -161,6 +161,27 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsZeroSizedReferenceType
+        {
+            get
+            {
+                if (Category != TypeFlags.Class)
+                {
+                    throw new InvalidOperationException("Only reference types are allowed.");
+                }
+
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
+                {
+                    ComputeInstanceLayout(InstanceLayoutKind.TypeOnly);
+                }
+
+                // test that size without padding is zero:
+                //   _instanceByteCountUnaligned - _instanceByteAlignment == LayoutInt.Zero
+                // simplified to:
+                return _instanceByteCountUnaligned == _instanceByteAlignment;
+            }
+        }
+
         /// <summary>
         /// The type has stable Abi layout
         /// </summary>

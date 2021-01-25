@@ -8,7 +8,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeEvpPKeyCtxHandle : SafeHandle
     {
-        private SafeEvpPKeyCtxHandle()
+        public SafeEvpPKeyCtxHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

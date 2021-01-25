@@ -1,24 +1,10 @@
 <Project>
-  <!-- Find all DeltaBase items and their Deltas metadata and create a single
-       DeltaFiles item that includes all of them.  Also create a DeltaCount property is the number of Deltas
-  -->
-  <Target Name="GetDeltaNames">
-    <ItemGroup>
-      <DeltaFiles Include="@(DeltaBase)"/>
-      <DeltaFiles Include="%(DeltaBase.Deltas)"/>
-      <_JustDeltas Include="%(DeltaBase.Deltas)"/>
-    </ItemGroup>
-    <PropertyGroup>
-      <DeltaCount>@(_JustDeltas->Count())</DeltaCount>
-    </PropertyGroup>
-    <Message Importance="Low" Text="in GetDeltaNames, @(DeltaFiles)"/>
-  </Target>
-
-  <!-- Invoke roslynildiff to appl the DeltaFiles to the output assembly to
+  <!-- Invoke roslynildiff to apply the DeltaScript to the output assembly to
        create the .dmeta, .dil and .dpdb files on the OutputPath -->
   <!-- Have to be careful about AfterTargets. If we happen to go after a design-time target, we could get into an infinite loop. -->
-  <Target Name="CompileDiff" AfterTargets="Build" DependsOnTargets="GetDeltaNames">
+  <Target Name="CompileDiff" AfterTargets="Build">
     <Message Importance="High" Condition="'$(RoslynILDiffFullPath)' == ''" Text="WARNING: RoslynILDiffFullPath property is unset.  Using default which may be wrong on your system" />
+    <Error Condition="'$(DeltaScript)' == ''" Text="DeltaScript property not set in project - don't know how to invoke roslynildiff" />
     <PropertyGroup>
       <RoslynILDiffFullPath Condition="'$(RoslynILDiffFullPath)' == ''">/Users/alklig/work/roslynildiff/roslynildiff</RoslynILDiffFullPath>
       <RoslynILDiffArgs>-msbuild:$(MSBuildProjectFullPath)</RoslynILDiffArgs>
@@ -26,7 +12,7 @@
 	   What other properties do  I need to pass? Maybe roslynildiff should just expose an MSBuild task so we can pass everything -->
       <RoslynILDiffArgs Condition="'$(Configuration)' != ''">$(RoslynILDiffArgs) -p:Configuration=$(Configuration)</RoslynILDiffArgs>
       <RoslynILDiffArgs Condition="'$(RuntimeIdentifier)' != ''">$(RoslynILDiffArgs) -p:RuntimeIdentifier=$(RuntimeIdentifier)</RoslynILDiffArgs>
-      <RoslynILDiffArgs>$(RoslynILDiffArgs) @(DeltaFiles, ' ')</RoslynILDiffArgs>
+      <RoslynILDiffArgs>$(RoslynILDiffArgs) -script:$(DeltaScript)</RoslynILDiffArgs>
     </PropertyGroup>
     <Exec Command="$(RoslynILDiffFullPath) $(RoslynILDiffArgs)"/>
   </Target>
@@ -74,6 +60,7 @@ DeltaOutputs = result;
 
 
   <Target Name="ComputeDeltaFileOutputNames">
+    <Error Condition="'$(DeltaCount)' == ''" Text="Set the DeltaCount property to the total number of deltas in this project" />
     <!-- FIXME: is AssemblyName the best property to get the output assembly? -->
     <ComputeDeltaFileOutputNames BaseAssemblyName="$(OutputPath)\$(AssemblyName).dll" DeltaCount="$(DeltaCount)">
       <Output TaskParameter="DeltaOutputs" ItemName="_DeltaFileForPublish" />
