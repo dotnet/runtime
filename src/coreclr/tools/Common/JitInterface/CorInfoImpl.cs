@@ -297,7 +297,12 @@ namespace Internal.JitInterface
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
                 _methodCodeNode.Fixups.Add(node);
             }
+#else
+            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
+            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
 #endif
+
             PublishProfileData();
         }
 
@@ -388,6 +393,8 @@ namespace Internal.JitInterface
 
             _parameterIndexToNameMap = null;
             _localSlotToInfoMap = null;
+
+            _additionalDependencies = null;
 #endif
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -1315,6 +1322,8 @@ namespace Internal.JitInterface
                 {
                     _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, HandleToModuleToken(ref pResolvedToken));
                 }
+#else
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, method);
 #endif
             }
             else
@@ -1341,6 +1350,8 @@ namespace Internal.JitInterface
                 {
                     _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, HandleToModuleToken(ref pResolvedToken));
                 }
+#else
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, field);
 #endif
             }
             else
@@ -3262,13 +3273,6 @@ namespace Internal.JitInterface
 
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
-#if READYTORUN
-                if (targetArchitecture == TargetArchitecture.X86)
-                {
-                    throw new RequiresRuntimeJitException("ReadyToRun: Methods with UnmanagedCallersOnlyAttribute not implemented");
-                }
-#endif
-
                 // Validate UnmanagedCallersOnlyAttribute usage
                 if (!this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
                 {

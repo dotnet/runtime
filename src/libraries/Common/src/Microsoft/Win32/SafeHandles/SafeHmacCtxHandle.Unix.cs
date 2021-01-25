@@ -8,7 +8,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeHmacCtxHandle : SafeHandle
     {
-        private SafeHmacCtxHandle() :
+        public SafeHmacCtxHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

@@ -60,6 +60,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _stringResource = s;
         }
 
+        internal static string _stringResource2;
+        private static void InvokeString2(string s)
+        {
+            _stringResource2 = s;
+        }
+
         internal static string _marshalledString;
         private static string InvokeMarshalString()
         {

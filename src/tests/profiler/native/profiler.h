@@ -68,14 +68,14 @@ public:
 // ELT hooks will continue to be called. We would AV if we tried to call
 // in to freed resources.
 #define SHUTDOWNGUARD()                         \
-    ShutdownGuard();                            \
+    ShutdownGuard shutdownGuard;                \
     if (ShutdownGuard::HasShutdownStarted())    \
     {                                           \
         return S_OK;                            \
     }
 
 #define SHUTDOWNGUARD_RETVOID()                 \
-    ShutdownGuard();                            \
+    ShutdownGuard shutdownGuard;                \
     if (ShutdownGuard::HasShutdownStarted())    \
     {                                           \
         return;                                 \

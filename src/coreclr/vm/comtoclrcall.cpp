@@ -226,7 +226,7 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
     INT_PTR dangerousThis;
     *(OBJECTREF *)&dangerousThis = orThis;
 
-    DWORD dwStackSlots = pCMD->GetNumStackBytes() / STACK_ELEM_SIZE;
+    DWORD dwStackSlots = pCMD->GetNumStackBytes() / TARGET_POINTER_SIZE;
 
     // Managed code is generally "THROWS" and we have no exception handler here that the contract system can
     // see.  We ensure that we don't get exceptions here by generating a try/catch in the IL stub that covers
@@ -827,7 +827,7 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
     NewArrayHolder<UINT16> pwStubStackSlotOffsets;
     UINT16 *pOutputStack = NULL;
 
-    UINT16 wStubStackSlotCount = static_cast<UINT16>(dwArgStack) / STACK_ELEM_SIZE;
+    UINT16 wStubStackSlotCount = static_cast<UINT16>(dwArgStack) / TARGET_POINTER_SIZE;
     if (wStubStackSlotCount > 0)
     {
         pwStubStackSlotOffsets = new UINT16[wStubStackSlotCount];
@@ -843,15 +843,15 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
     if (!pStubMD->IsStatic())
     {
         numRegistersUsed++;
-        wInputStack += STACK_ELEM_SIZE;
+        wInputStack += TARGET_POINTER_SIZE;
     }
 
     // process the return buffer parameter
     if (argit.HasRetBuffArg())
     {
         numRegistersUsed++;
-        wSourceSlotEDX = wInputStack / STACK_ELEM_SIZE;
-        wInputStack += STACK_ELEM_SIZE;
+        wSourceSlotEDX = wInputStack / TARGET_POINTER_SIZE;
+        wInputStack += TARGET_POINTER_SIZE;
     }
 
     // process ordinary parameters
@@ -864,17 +864,18 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
 
         if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
         {
-            wSourceSlotEDX = wInputStack / STACK_ELEM_SIZE;
-            wInputStack += STACK_ELEM_SIZE;
+            wSourceSlotEDX = wInputStack / TARGET_POINTER_SIZE;
+            wInputStack += TARGET_POINTER_SIZE;
         }
         else
         {
             // we may need more stack slots for larger parameters
-            pOutputStack -= StackElemSize(cbSize) / STACK_ELEM_SIZE;
-            for (UINT slot = 0; slot < (StackElemSize(cbSize) / STACK_ELEM_SIZE); slot++)
+            UINT slotsCount = StackElemSize(cbSize) / TARGET_POINTER_SIZE;
+            pOutputStack -= slotsCount;
+            for (UINT slot = 0; slot < slotsCount; slot++)
             {
                 pOutputStack[slot] = wInputStack;
-                wInputStack += STACK_ELEM_SIZE;
+                wInputStack += TARGET_POINTER_SIZE;
             }
         }
     }
@@ -1461,7 +1462,7 @@ MethodDesc* ComCall::GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags)
     return NDirect::CreateCLRToNativeILStub(&sigDesc,
                                             (CorNativeLinkType)0,
                                             (CorNativeLinkFlags)0,
-                                            (CorPinvokeMap)0,
+                                            MetaSig::GetDefaultUnmanagedCallingConvention(),
                                             dwStubFlags);
 }
 

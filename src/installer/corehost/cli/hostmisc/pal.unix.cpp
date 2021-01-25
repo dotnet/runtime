@@ -27,6 +27,10 @@
 #include <sys/sysctl.h>
 #elif defined(__sun)
 #include <sys/utsname.h>
+#elif defined(TARGET_FREEBSD)
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
 #endif
 
 #if !HAVE_DIRENT_D_TYPE

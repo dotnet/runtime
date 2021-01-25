@@ -81,9 +81,6 @@ namespace System.Threading
         public static extern long CompareExchange(ref long location1, long value, long comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern double CompareExchange(ref double location1, double value, double comparand);
 
         [return: NotNullIfNotNull("location1")]
@@ -113,10 +110,6 @@ namespace System.Threading
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
-
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr Exchange(ref IntPtr location1, IntPtr value);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
