@@ -105,3 +105,4 @@ namespace System.IO
             return flags;
         }
     }
+}
