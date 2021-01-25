@@ -1995,13 +1995,19 @@ gc_safe_transition_builder_cleanup (GCSafeTransitionBuilder *builder)
  * \param method if non-NULL, the pinvoke method to call
  * \param check_exceptions Whenever to check for pending exceptions after the native call
  * \param func_param the function to call is passed as a boxed IntPtr as the first parameter
+ * \param func_param_unboxed combined with \p func_param, expect the function to call as an unboxed IntPtr as the first parameter
  * \param skip_gc_trans Whenever to skip GC transitions
  *
  * generates IL code for the pinvoke wrapper, the generated code calls \p func .
  */
 static void
-emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans)
+emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags)
 {
+	gboolean aot = (flags & EMIT_NATIVE_WRAPPER_AOT) != 0;
+	gboolean check_exceptions = (flags & EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS) != 0;
+	gboolean func_param = (flags & EMIT_NATIVE_WRAPPER_FUNC_PARAM) != 0;
+	gboolean func_param_unboxed = (flags & EMIT_NATIVE_WRAPPER_FUNC_PARAM_UNBOXED) != 0;
+	gboolean skip_gc_trans = (flags & EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS) != 0;
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
 	MonoClass *klass;
@@ -2139,9 +2145,11 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	/* call the native method */
 	if (func_param) {
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
-		mono_mb_emit_op (mb, CEE_UNBOX, mono_defaults.int_class);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+		if (!func_param_unboxed) {
+			mono_mb_emit_op (mb, CEE_UNBOX, mono_defaults.int_class);
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
+		}
+		if (piinfo && (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) != 0) {
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
 		}
@@ -2442,7 +2450,6 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass = mono_class_from_mono_type_internal (t);
-	gboolean need_convert, need_free;
 	MonoMarshalNative encoding;
 
 	encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
@@ -2463,6 +2470,10 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_icall_id (mb, conv_to_icall (MONO_MARSHAL_CONV_ARRAY_LPARRAY, NULL));
 			mono_mb_emit_stloc (mb, conv_arg);
 		} else {
+#ifdef DISABLE_NONBLITTABLE
+			char *msg = g_strdup ("Non-blittable marshalling conversion is disabled");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+#else
 			guint32 label1, label2, label3;
 			int index_var, src_var, dest_ptr, esize;
 			MonoMarshalConv conv;
@@ -2574,11 +2585,14 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 
 			mono_mb_patch_branch (mb, label1);
+#endif
 		}
 
 		break;
 
-	case MARSHAL_ACTION_CONV_OUT:
+	case MARSHAL_ACTION_CONV_OUT: {
+#ifndef DISABLE_NONBLITTABLE
+		gboolean need_convert, need_free;
 		/* Unicode character arrays are implicitly marshalled as [Out] under MS.NET */
 		need_convert = ((eklass == mono_defaults.char_class) && (encoding == MONO_NATIVE_LPWSTR)) || (eklass == mono_class_try_get_stringbuilder_class ()) || (t->attrs & PARAM_ATTRIBUTE_OUT);
 		need_free = mono_marshal_need_free (m_class_get_byval_arg (eklass), m->piinfo, spec);
@@ -2717,6 +2731,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_patch_branch (mb, label1);
 			mono_mb_patch_branch (mb, label3);
 		}
+#endif
 		
 		if (m_class_is_blittable (eklass)) {
 			/* free memory allocated (if any) by MONO_MARSHAL_CONV_ARRAY_LPARRAY */
@@ -2729,6 +2744,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		break;
+	}
 
 	case MARSHAL_ACTION_PUSH:
 		if (t->byref)
@@ -2802,16 +2818,20 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* FIXME: Optimize blittable case */
 
+#ifndef DISABLE_NONBLITTABLE
 		if (eklass == mono_defaults.string_class) {
 			is_string = TRUE;
+			gboolean need_free;
 			conv = mono_marshal_get_ptr_to_string_conv (m->piinfo, spec, &need_free);
 		}
 		else if (eklass == mono_class_try_get_stringbuilder_class ()) {
 			is_string = TRUE;
+			gboolean need_free;
 			conv = mono_marshal_get_ptr_to_stringbuilder_conv (m->piinfo, spec, &need_free);
 		}
 		else
 			conv = MONO_MARSHAL_CONV_INVALID;
+#endif
 
 		mono_marshal_load_type_info (eklass);
 
@@ -2894,7 +2914,12 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_patch_branch (mb, label1);
 			break;
 		}
-
+#ifdef DISABLE_NONBLITTABLE
+		else {
+			char *msg = g_strdup ("Non-blittable marshalling conversion is disabled");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+		}
+#else
 		/* Emit marshalling loop */
 		index_var = mono_mb_add_local (mb, int_type);
 		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
@@ -2931,6 +2956,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		mono_mb_patch_branch (mb, label1);
 		mono_mb_patch_branch (mb, label3);
+#endif
 		
 		break;
 	}
@@ -2964,6 +2990,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* FIXME: Optimize blittable case */
 
+#ifndef DISABLE_NONBLITTABLE
 		if (eklass == mono_defaults.string_class) {
 			is_string = TRUE;
 			conv = mono_marshal_get_string_to_ptr_conv (m->piinfo, spec);
@@ -2974,6 +3001,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 		else
 			conv = MONO_MARSHAL_CONV_INVALID;
+#endif
 
 		mono_marshal_load_type_info (eklass);
 
@@ -3006,9 +3034,11 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_MUL);
 			mono_mb_emit_byte (mb, CEE_PREFIX1);
 			mono_mb_emit_byte (mb, CEE_CPBLK);			
+			mono_mb_patch_branch (mb, label1);
 			break;
 		}
 
+#ifndef DISABLE_NONBLITTABLE
 		/* Emit marshalling loop */
 		index_var = mono_mb_add_local (mb, int_type);
 		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
@@ -3049,10 +3079,12 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		mono_mb_patch_branch (mb, label1);
 		mono_mb_patch_branch (mb, label3);
+#endif
 
 		break;
 	}
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
+#ifndef DISABLE_NONBLITTABLE
 		guint32 label1, label2, label3;
 		int index_var, src, dest, esize;
 		MonoMarshalConv conv = MONO_MARSHAL_CONV_INVALID;
@@ -3144,10 +3176,67 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		mono_mb_patch_branch (mb, label3);
 		mono_mb_patch_branch (mb, label1);
+#endif
 		break;
 	}
 	default:
 		g_assert_not_reached ();
+	}
+	return conv_arg;
+}
+
+static int
+emit_marshal_ptr_ilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
+		  MonoMarshalSpec *spec, int conv_arg, 
+		  MonoType **conv_arg_type, MarshalAction action)
+{
+	MonoMethodBuilder *mb = m->mb;
+
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		/* MS seems to allow this in some cases, ie. bxc #158 */
+		/*
+		if (MONO_TYPE_ISSTRUCT (t->data.type) && !mono_class_from_mono_type_internal (t->data.type)->blittable) {
+			char *msg = g_strdup_printf ("Can not marshal 'parameter #%d': Pointers can not reference marshaled structures. Use byref instead.", argnum + 1);
+			mono_mb_emit_exception_marshal_directive (m->mb, msg);
+		}
+		*/
+		break;
+
+	case MARSHAL_ACTION_PUSH:
+		mono_mb_emit_ldarg (mb, argnum);
+		break;
+
+	case MARSHAL_ACTION_CONV_RESULT:
+		/* no conversions necessary */
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
+	default:
+		break;
+	}
+	return conv_arg;
+}
+
+static int
+emit_marshal_scalar_ilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
+		     MonoMarshalSpec *spec, int conv_arg, 
+		     MonoType **conv_arg_type, MarshalAction action)
+{
+	MonoMethodBuilder *mb = m->mb;
+
+	switch (action) {
+	case MARSHAL_ACTION_PUSH:
+		mono_mb_emit_ldarg (mb, argnum);
+		break;
+
+	case MARSHAL_ACTION_CONV_RESULT:
+		/* no conversions necessary */
+		mono_mb_emit_stloc (mb, 3);
+		break;
+
+	default:
+		break;
 	}
 	return conv_arg;
 }
@@ -3304,39 +3393,6 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 static int
-emit_marshal_ptr_ilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
-		  MonoMarshalSpec *spec, int conv_arg, 
-		  MonoType **conv_arg_type, MarshalAction action)
-{
-	MonoMethodBuilder *mb = m->mb;
-
-	switch (action) {
-	case MARSHAL_ACTION_CONV_IN:
-		/* MS seems to allow this in some cases, ie. bxc #158 */
-		/*
-		if (MONO_TYPE_ISSTRUCT (t->data.type) && !mono_class_from_mono_type_internal (t->data.type)->blittable) {
-			char *msg = g_strdup_printf ("Can not marshal 'parameter #%d': Pointers can not reference marshaled structures. Use byref instead.", argnum + 1);
-			mono_mb_emit_exception_marshal_directive (m->mb, msg);
-		}
-		*/
-		break;
-
-	case MARSHAL_ACTION_PUSH:
-		mono_mb_emit_ldarg (mb, argnum);
-		break;
-
-	case MARSHAL_ACTION_CONV_RESULT:
-		/* no conversions necessary */
-		mono_mb_emit_stloc (mb, 3);
-		break;
-
-	default:
-		break;
-	}
-	return conv_arg;
-}
-
-static int
 emit_marshal_char_ilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
 		   MonoMarshalSpec *spec, int conv_arg, 
 		   MonoType **conv_arg_type, MarshalAction action)
@@ -3353,29 +3409,6 @@ emit_marshal_char_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_CONV_RESULT:
 		/* fixme: we need conversions here */
-		mono_mb_emit_stloc (mb, 3);
-		break;
-
-	default:
-		break;
-	}
-	return conv_arg;
-}
-
-static int
-emit_marshal_scalar_ilgen (EmitMarshalContext *m, int argnum, MonoType *t, 
-		     MonoMarshalSpec *spec, int conv_arg, 
-		     MonoType **conv_arg_type, MarshalAction action)
-{
-	MonoMethodBuilder *mb = m->mb;
-
-	switch (action) {
-	case MARSHAL_ACTION_PUSH:
-		mono_mb_emit_ldarg (mb, argnum);
-		break;
-
-	case MARSHAL_ACTION_CONV_RESULT:
-		/* no conversions necessary */
 		mono_mb_emit_stloc (mb, 3);
 		break;
 
@@ -5424,7 +5457,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				 */
 				ctor = mono_class_get_method_from_name_checked (t->data.klass, ".ctor", 0, 0, local_error);
 				if (ctor == NULL || !is_ok (local_error)){
-					mono_mb_emit_exception (mb, "MissingMethodException", "paramterless constructor required");
+					mono_mb_emit_exception (mb, "MissingMethodException", "parameterless constructor required");
 					mono_error_cleanup (local_error);
 					break;
 				}
@@ -5470,7 +5503,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (ctor == NULL || !is_ok (error)){
 			mono_error_cleanup (error);
 			mono_mb_emit_byte (mb, CEE_POP);
-			mono_mb_emit_exception (mb, "MissingMethodException", "paramterless constructor required");
+			mono_mb_emit_exception (mb, "MissingMethodException", "parameterless constructor required");
 			break;
 		}
 		/* Store the IntPtr results into a local */
@@ -6797,10 +6830,11 @@ mono_marshal_ilgen_init (void)
 	MonoMarshalCallbacks cb;
 	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
 	cb.emit_marshal_array = emit_marshal_array_ilgen;
-	cb.emit_marshal_boolean = emit_marshal_boolean_ilgen;
 	cb.emit_marshal_ptr = emit_marshal_ptr_ilgen;
-	cb.emit_marshal_char = emit_marshal_char_ilgen;
 	cb.emit_marshal_scalar = emit_marshal_scalar_ilgen;
+#ifndef DISABLE_NONBLITTABLE
+	cb.emit_marshal_boolean = emit_marshal_boolean_ilgen;
+	cb.emit_marshal_char = emit_marshal_char_ilgen;
 	cb.emit_marshal_custom = emit_marshal_custom_ilgen;
 	cb.emit_marshal_asany = emit_marshal_asany_ilgen;
 	cb.emit_marshal_vtype = emit_marshal_vtype_ilgen;
@@ -6809,6 +6843,7 @@ mono_marshal_ilgen_init (void)
 	cb.emit_marshal_handleref = emit_marshal_handleref_ilgen;
 	cb.emit_marshal_object = emit_marshal_object_ilgen;
 	cb.emit_marshal_variant = emit_marshal_variant_ilgen;
+#endif
 	cb.emit_castclass = emit_castclass_ilgen;
 	cb.emit_struct_to_ptr = emit_struct_to_ptr_ilgen;
 	cb.emit_ptr_to_struct = emit_ptr_to_struct_ilgen;
@@ -6838,5 +6873,8 @@ mono_marshal_ilgen_init (void)
 	cb.mb_emit_exception = mb_emit_exception_ilgen;
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;
+#ifdef DISABLE_NONBLITTABLE
+	mono_marshal_noilgen_init_blittable (&cb);
+#endif
 	mono_install_marshal_callbacks (&cb);
 }

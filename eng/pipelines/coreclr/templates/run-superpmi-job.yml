@@ -20,7 +20,9 @@ parameters:
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   projectFile: 'superpmi.proj'    # optional -- project file to build helix workitems
   runKind: ''                     # required -- test category
+  collectionType: ''
   collectionName: ''
+  dependOnEvaluatePaths: false
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -34,7 +36,9 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
+    collectionType: $ {{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
@@ -59,6 +63,7 @@ jobs:
     - HelixApiAccessToken: ''
     - HelixPreCommand: ''
     - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
+    - CollectionType: ${{ parameters.collectionType }}
     - CollectionName: ${{ parameters.collectionName }}
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
@@ -105,7 +110,7 @@ jobs:
     - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
       parameters:
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixType: 'test/superpmi/$(CollectionName)/$(_Framework)/$(Architecture)'
+        HelixType: 'test/superpmi/$(CollectionName)/$(CollectionType)/$(_Framework)/$(Architecture)'
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: $(Queue)
         HelixPreCommands: $(HelixPreCommand)
@@ -117,25 +122,26 @@ jobs:
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         InputArtifacts: '$(InputArtifacts)'
+        CollectionType: '$(CollectionType)'
         CollectionName: '$(CollectionName)'
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI collection
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
-        artifactName: 'SuperPMI_Result_$(CollectionName)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
+        artifactName: 'SuperPMI_Result_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
       continueOnError: true
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(MchFilesLocation)$(CollectionName).pmi*.mch  -output_mch_path $(MchFilesLocation)$(CollectionName).pmi.$(MchFileTag).mch
-      displayName: ${{ format('Merge {0} SuperPMI collections', parameters.collectionName) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MchFilesLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
+      displayName: ${{ format('Merge {0}-{1} SuperPMI collections', parameters.collectionName, parameters.collectionType) }}
       continueOnError: true
       condition: always()
 
     # For now, we won't upload merged collection as an artifact.
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(MchFilesLocation)$(CollectionName).pmi.$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
-      displayName: ${{ format('Upload SuperPMI {0} collection to Azure Storage', parameters.collectionName) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -arch $(archType) -build_type $(buildConfig) -mch_files $(MchFilesLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+      displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
       continueOnError: true
@@ -145,6 +151,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
       continueOnError: true
       condition: always()

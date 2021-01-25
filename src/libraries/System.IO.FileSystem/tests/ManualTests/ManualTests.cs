@@ -76,6 +76,29 @@ namespace System.IO.ManualTests
             });
         }
 
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public static void FileCopy_WorksToExFatVolume()
+        {
+            // We copy attributes after copying the file; when copying to EXFAT,
+            // where all files appeared to be owned by root, we can't copy attributes
+            // (unless we're root) and should skip silently
+
+            /* This test requires an EXFAT partition. That can be created in memory like this:
+
+            sudo mkdir /mnt/ramdisk
+            sudo mount -t ramfs ramfs /mnt/ramdisk
+            sudo dd if=/dev/zero of=/mnt/ramdisk/exfat.image bs=1M count=512
+            sudo mkfs.exfat /mnt/ramdisk/exfat.image
+            sudo mkdir /mnt/exfatrd
+            sudo mount -o loop /mnt/ramdisk/exfat.image /mnt/exfatrd
+
+            */
+
+            File.WriteAllText("/mnt/exfatrd/1", "content");
+            File.Copy("/mnt/exfatrd/1", "/mnt/exfatrd/2");
+            Assert.True(File.Exists("/mnt/exfatrd/2"));
+        }
 
         const long InitialFileSize = 1024;
 

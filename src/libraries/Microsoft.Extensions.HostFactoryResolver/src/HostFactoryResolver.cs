@@ -4,6 +4,8 @@
 using System;
 using System.Reflection;
 
+#nullable enable
+
 namespace Microsoft.Extensions.Hosting
 {
     internal class HostFactoryResolver
@@ -14,22 +16,22 @@ namespace Microsoft.Extensions.Hosting
         public static readonly string CreateWebHostBuilder = nameof(CreateWebHostBuilder);
         public static readonly string CreateHostBuilder = nameof(CreateHostBuilder);
 
-        public static Func<string[], TWebHost> ResolveWebHostFactory<TWebHost>(Assembly assembly)
+        public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
         {
             return ResolveFactory<TWebHost>(assembly, BuildWebHost);
         }
 
-        public static Func<string[], TWebHostBuilder> ResolveWebHostBuilderFactory<TWebHostBuilder>(Assembly assembly)
+        public static Func<string[], TWebHostBuilder>? ResolveWebHostBuilderFactory<TWebHostBuilder>(Assembly assembly)
         {
             return ResolveFactory<TWebHostBuilder>(assembly, CreateWebHostBuilder);
         }
 
-        public static Func<string[], THostBuilder> ResolveHostBuilderFactory<THostBuilder>(Assembly assembly)
+        public static Func<string[], THostBuilder>? ResolveHostBuilderFactory<THostBuilder>(Assembly assembly)
         {
             return ResolveFactory<THostBuilder>(assembly, CreateHostBuilder);
         }
 
-        private static Func<string[], T> ResolveFactory<T>(Assembly assembly, string name)
+        private static Func<string[], T>? ResolveFactory<T>(Assembly assembly, string name)
         {
             var programType = assembly?.EntryPoint?.DeclaringType;
             if (programType == null)
@@ -43,11 +45,11 @@ namespace Microsoft.Extensions.Hosting
                 return null;
             }
 
-            return args => (T)factory.Invoke(null, new object[] { args });
+            return args => (T)factory!.Invoke(null, new object[] { args })!;
         }
 
         // TReturn Factory(string[] args);
-        private static bool IsFactory<TReturn>(MethodInfo factory)
+        private static bool IsFactory<TReturn>(MethodInfo? factory)
         {
             return factory != null
                 && typeof(TReturn).IsAssignableFrom(factory.ReturnType)
@@ -56,7 +58,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         // Used by EF tooling without any Hosting references. Looses some return type safety checks.
-        public static Func<string[], IServiceProvider> ResolveServiceProviderFactory(Assembly assembly)
+        public static Func<string[], IServiceProvider?>? ResolveServiceProviderFactory(Assembly assembly)
         {
             // Prefer the older patterns by default for back compat.
             var webHostFactory = ResolveWebHostFactory<object>(assembly);
@@ -94,13 +96,13 @@ namespace Microsoft.Extensions.Hosting
             return null;
         }
 
-        private static object Build(object builder)
+        private static object? Build(object builder)
         {
             var buildMethod = builder.GetType().GetMethod("Build");
             return buildMethod?.Invoke(builder, Array.Empty<object>());
         }
 
-        private static IServiceProvider GetServiceProvider(object host)
+        private static IServiceProvider? GetServiceProvider(object? host)
         {
             if (host == null)
             {
@@ -108,7 +110,7 @@ namespace Microsoft.Extensions.Hosting
             }
             var hostType = host.GetType();
             var servicesProperty = hostType.GetProperty("Services", DeclaredOnlyLookup);
-            return (IServiceProvider)servicesProperty.GetValue(host);
+            return (IServiceProvider?)servicesProperty?.GetValue(host);
         }
     }
 }

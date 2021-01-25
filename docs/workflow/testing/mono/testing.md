@@ -5,7 +5,7 @@ Before running tests, [build Mono](../../building/mono/README.md) using the desi
 ## Runtime Tests
 ### Desktop Mono:
 
-To build the runtime tests for Mono JIT or interpreter, execute the following command from `$(REPO_ROOT)/src/tests`
+To build the runtime tests for Mono JIT or interpreter, build CoreCLR and execute the following command from `$(REPO_ROOT)/src/tests`
 ```
 ./build.sh excludemonofailures <release|debug>
 ```
@@ -25,7 +25,7 @@ make run-tests-coreclr-all
 ### WebAssembly:
 Build the runtime tests for WebAssembly
 ```
-$(REPO_ROOT)/src/tests/build.sh -skipstressdependencies -excludemonofailures os Browser wasm <Release/Debug>
+$(REPO_ROOT)/src/tests/build.sh -excludemonofailures os Browser wasm <Release/Debug>
 ```
 
 The last few lines of the build log should contain something like this:
@@ -42,7 +42,7 @@ To run all tests, execute that command, adding `wasm` to the end.
 ### Android:
 Build the runtime tests for Android x64
 ```
-$(REPO_ROOT)/src/tests/build.sh -skipstressdependencies -excludemonofailures os Android x64 <Release/Debug>
+$(REPO_ROOT)/src/tests/build.sh -excludemonofailures os Android x64 <Release/Debug>
 ```
 
 The last few lines of the build log should contain something like this:

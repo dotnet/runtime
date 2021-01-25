@@ -5,20 +5,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Configuration;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
-using System.Threading;
-#if FEATURE_COMPILED_XSL
-using System.Xml.Xsl.IlGen;
-#endif
 using System.Xml.Xsl.Runtime;
-using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Xslt
 {

@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -98,9 +97,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             SanityCheckBlob(obj, blobs);
 
-            // SqlException, ReflectionTypeLoadException and LicenseException aren't deserializable from Desktop --> Core.
+            // ReflectionTypeLoadException and LicenseException aren't deserializable from Desktop --> Core.
             // Therefore we remove the second blob which is the one from Desktop.
-            if (!PlatformDetection.IsNetFramework && (obj is SqlException || obj is ReflectionTypeLoadException || obj is LicenseException))
+            if (!PlatformDetection.IsNetFramework && (obj is ReflectionTypeLoadException || obj is LicenseException))
             {
                 var tmpList = new List<TypeSerializableValue>(blobs);
                 tmpList.RemoveAt(1);

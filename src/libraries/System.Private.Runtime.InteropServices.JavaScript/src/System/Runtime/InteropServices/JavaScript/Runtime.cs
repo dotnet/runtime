@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -18,6 +19,9 @@ namespace System.Runtime.InteropServices.JavaScript
         //    Once the key dies, the dictionary automatically removes the key/value entry.
         // No need to lock as it is thread safe.
         private static readonly ConditionalWeakTable<Delegate, JSObject> _weakDelegateTable = new ConditionalWeakTable<Delegate, JSObject>();
+
+        private const string TaskGetResultName = "get_Result";
+        private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
 
         // <summary>
         // Execute the provided string in the JavaScript context
@@ -56,7 +60,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (!_rawToJS.Remove(obj, out jsobj))
                 {
-                    throw new JSException($"Error releasing object {obj}");
+                    throw new JSException(SR.Format(SR.ErrorReleasingObject, obj));
                 }
             }
         }
@@ -64,6 +68,11 @@ namespace System.Runtime.InteropServices.JavaScript
         public static object GetGlobalObject(string? str = null)
         {
             return Interop.Runtime.GetGlobalObject(str);
+        }
+
+        public static void DumpAotProfileData (ref byte buf, int len, string extraArg)
+        {
+            Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
         private static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
@@ -101,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     var instance = existingObj.Target as JSObject;
                     if (instance?.Int32Handle != (int)(IntPtr)h && h.IsAllocated)
-                        throw new JSException($"Multiple handles pointing at jsId: {jsId}");
+                        throw new JSException(SR.Format(SR.MultipleHandlesPointingJsId, jsId));
 
                     obj = instance;
                 }
@@ -320,7 +329,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         else
                         {
                             if (t.IsValueType)
-                                throw new NotSupportedException("ValueType arguments are not supported.");
+                                throw new NotSupportedException(SR.ValueTypeNotSupported);
                             res[c] = 'o';
                         }
                         break;
@@ -350,8 +359,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         }
                         else
                         {
-                            result = task_type.GetMethod("get_Result")?.Invoke(task, System.Array.Empty<object>());
+                            result = GetTaskResultMethodInfo(task_type)?.Invoke(task, null);
                         }
+
                         continuationObj.Invoke("resolve", result);
                     }
                     else
@@ -371,6 +381,30 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        /// <summary>
+        /// Gets the MethodInfo for the Task{T}.Result property getter.
+        /// </summary>
+        /// <remarks>
+        /// This ensures the returned MethodInfo is strictly for the Task{T} type, and not
+        /// a "Result" property on some other class that derives from Task or a "new Result"
+        /// property on a class that derives from Task{T}.
+        ///
+        /// The reason for this restriction is to make this use of Reflection trim-compatible,
+        /// ensuring that trimming doesn't change the application's behavior.
+        /// </remarks>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Task<T>.Result is preserved by the ILLinker because _taskGetResultMethodInfo was initialized with it.")]
+        private static MethodInfo? GetTaskResultMethodInfo(Type taskType)
+        {
+            MethodInfo? result = taskType.GetMethod(TaskGetResultName);
+            if (result != null && result.HasSameMetadataDefinitionAs(_taskGetResultMethodInfo))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
         private static string ObjectToString(object o)
         {
             return o.ToString() ?? string.Empty;
@@ -381,7 +415,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (dtv == null)
                 throw new ArgumentNullException(nameof(dtv));
             if (!(dtv is DateTime dt))
-                throw new InvalidCastException($"Unable to cast object of type {dtv.GetType()} to type DateTime.");
+                throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
             if (dt.Kind == DateTimeKind.Local)
                 dt = dt.ToUniversalTime();
             else if (dt.Kind == DateTimeKind.Unspecified)

@@ -157,7 +157,7 @@ namespace System.Transactions.Tests
         }
 
         [OuterLoop] // transaction timeout of 1.5 seconds per InlineData invocation.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.Serializable, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.RepeatableRead, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.ReadCommitted, false, TransactionStatus.Aborted)]

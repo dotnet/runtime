@@ -364,7 +364,7 @@ namespace System.Threading.Tasks
         public void TaskWaitContinuationComplete(int TaskID)
         {
             // Log an event if indicated.
-            if (IsEnabled() && IsEnabled(EventLevel.Verbose, Keywords.Tasks))
+            if (IsEnabled() && IsEnabled(EventLevel.Verbose, Keywords.TaskStops))
                 WriteEvent(TASKWAITCONTINUATIONCOMPLETE_ID, TaskID);
         }
 
@@ -373,7 +373,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="TaskID">The task ID.</param>
         [Event(TASKWAITCONTINUATIONSTARTED_ID,
-         Level = EventLevel.Verbose, Keywords = Keywords.TaskStops)]
+         Level = EventLevel.Verbose, Keywords = Keywords.Tasks)]
         public void TaskWaitContinuationStarted(int TaskID)
         {
             // Log an event if indicated.

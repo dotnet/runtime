@@ -601,6 +601,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39674", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
         public static void DictionariesRoundTrip()
         {
             RunAllDictionariessRoundTripTest(JsonNumberTestData.ULongs);

@@ -293,6 +293,7 @@ TESTS_CS_SRC=		\
 	assemblyresolve_event4.cs	\
 	assemblyresolve_event5.cs	\
 	assemblyresolve_event6.cs	\
+	assemblyresolve_event7.cs	\
 	checked.cs		\
 	char-isnumber.cs	\
 	field-layout.cs		\
@@ -707,6 +708,7 @@ TESTS_CS_SRC=		\
 	bug-58782-capture-and-throw.cs \
 	recursive-struct-arrays.cs \
 	struct-explicit-layout.cs \
+	struct-static.cs \
 	bug-59281.cs	\
 	init_array_with_lazy_type.cs \
 	weak-fields.cs \
@@ -1332,6 +1334,7 @@ PROFILE_DISABLED_TESTS += \
 	resolve_method_bug.2.exe \
 	resolve_field_bug.2.exe \
 	resolve_type_bug.2.exe \
+	struct-static.exe \
 	bug-81691.exe \
 	bug-327438.2.exe \
 	newobj-abstract.exe \
@@ -1634,6 +1637,7 @@ PROFILE_DISABLED_TESTS += \
 	bug-80307.exe
 
 PROFILE_DISABLED_TESTS += \
+	struct-static.exe \
 	transparentproxy.exe
 
 # Tests depending on assembly load order. Under Full AOT using WinAOT
@@ -1687,7 +1691,8 @@ CI_DISABLED_TESTS = \
 	main-returns-background-abort-resetabort.exe	\
 	assemblyresolve_event3.exe \
 	finally_guard.exe \
-	generic-xdomain.2.exe
+	generic-xdomain.2.exe \
+	localloc-noinit.exe
 
 # failing tests which we temporarily disable for PRs
 # so they don't interfere with other people's work

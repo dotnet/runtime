@@ -507,6 +507,10 @@ internal static partial class Interop
             {
                 APICallHistory.WinHttpOptionRedirectPolicy = optionData;
             }
+            else if (option == Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT)
+            {
+                APICallHistory.WinHttpOptionReceiveTimeout = optionData;
+            }
 
             return true;
         }

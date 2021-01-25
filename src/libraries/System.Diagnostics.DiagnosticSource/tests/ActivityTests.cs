@@ -120,6 +120,55 @@ namespace System.Diagnostics.Tests
             Assert.Equal("4", a.GetBaggageItem("1"));
         }
 
+        [Fact]
+        public void TestSetBaggage()
+        {
+            Activity a = new Activity("SetBaggage");
+            Assert.Equal(0, a.Baggage.Count());
+
+            a.SetBaggage("1", "1");
+            a.SetBaggage("2", "2");
+            a.SetBaggage("3", "3");
+            a.SetBaggage("4", "4");
+            a.SetBaggage("5", "5");
+
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("1", a.GetBaggageItem("1"));
+            Assert.Equal("2", a.GetBaggageItem("2"));
+            Assert.Equal("3", a.GetBaggageItem("3"));
+            Assert.Equal("4", a.GetBaggageItem("4"));
+            Assert.Equal("5", a.GetBaggageItem("5"));
+
+            // Check not added item
+            Assert.Null(a.GetBaggageItem("6")); 
+
+            // Adding none existing key with null value is no-op
+            a.SetBaggage("6", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("6")); 
+
+            // Check updated item
+            a.SetBaggage("5", "5.1");
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Add() always add new entry even we have matching key in the list.
+            // Baggage always return last entered value
+            a.AddBaggage("5", "5.2");
+            Assert.Equal(6, a.Baggage.Count());
+            Assert.Equal("5.2", a.GetBaggageItem("5"));
+
+            // Now Remove first duplicated item
+            a.SetBaggage("5", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Now Remove second item
+            a.SetBaggage("5", null);
+            Assert.Equal(4, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("5")); 
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestBaggageWithChainedActivities()
         {
@@ -599,22 +648,28 @@ namespace System.Diagnostics.Tests
             Activity activity0 = new Activity("activity0");
             Activity activity1 = new Activity("activity1");
             Activity activity2 = new Activity("activity2");
+            Activity activity3 = new Activity("activity3");
             activity0.SetParentId("01-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
             activity0.Start();
             activity1.SetParentId("cc-1123456789abcdef0123456789abcdef-1123456789abcdef-00");
             activity1.Start();
             activity2.SetParentId("fe-2123456789abcdef0123456789abcdef-2123456789abcdef-00");
             activity2.Start();
+            activity3.SetParentId("ef-3123456789abcdef0123456789abcdef-3123456789abcdef-00");
+            activity3.Start();
 
             Assert.Equal(ActivityIdFormat.W3C, activity0.IdFormat);
             Assert.Equal(ActivityIdFormat.W3C, activity1.IdFormat);
             Assert.Equal(ActivityIdFormat.W3C, activity2.IdFormat);
+            Assert.Equal(ActivityIdFormat.W3C, activity3.IdFormat);
             Assert.Equal("0123456789abcdef0123456789abcdef", activity0.TraceId.ToHexString());
             Assert.Equal("1123456789abcdef0123456789abcdef", activity1.TraceId.ToHexString());
             Assert.Equal("2123456789abcdef0123456789abcdef", activity2.TraceId.ToHexString());
+            Assert.Equal("3123456789abcdef0123456789abcdef", activity3.TraceId.ToHexString());
             Assert.Equal("0123456789abcdef", activity0.ParentSpanId.ToHexString());
             Assert.Equal("1123456789abcdef", activity1.ParentSpanId.ToHexString());
             Assert.Equal("2123456789abcdef", activity2.ParentSpanId.ToHexString());
+            Assert.Equal("3123456789abcdef", activity3.ParentSpanId.ToHexString());
         }
 
         [Fact]

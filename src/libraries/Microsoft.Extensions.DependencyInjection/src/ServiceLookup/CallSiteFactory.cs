@@ -221,7 +221,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
                 else
                 {
-                    throw new InvalidOperationException("Invalid service descriptor");
+                    throw new InvalidOperationException(SR.InvalidServiceDescriptor);
                 }
 
                 return callSite;
@@ -469,7 +469,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                 }
 
-                throw new InvalidOperationException("Requested service descriptor doesn't exist.");
+                throw new InvalidOperationException(SR.ServiceDescriptorNotExist);
             }
 
             public ServiceDescriptorCacheItem Add(ServiceDescriptor descriptor)

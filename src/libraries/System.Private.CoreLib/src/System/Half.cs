@@ -635,6 +635,7 @@ namespace System
                 {
                     sig = (ushort)ShiftRightJam(sig, -exp);
                     exp = 0;
+                    roundBits = sig & 0xF;
                 }
                 else if (exp > 0x1D || sig + RoundIncrement >= 0x8000) // Overflow
                 {
@@ -683,10 +684,10 @@ namespace System
         }
 
         private static float CreateSingle(bool sign, byte exp, uint sig)
-            => BitConverter.Int32BitsToSingle((int)(((sign ? 1U : 0U) << float.SignShift) | ((uint)exp << float.ExponentShift) | sig));
+            => BitConverter.Int32BitsToSingle((int)(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.ExponentShift) + sig));
 
         private static double CreateDouble(bool sign, ushort exp, ulong sig)
-            => BitConverter.Int64BitsToDouble((long)(((sign ? 1UL : 0UL) << double.SignShift) | ((ulong)exp << double.ExponentShift) | sig));
+            => BitConverter.Int64BitsToDouble((long)(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.ExponentShift) + sig));
 
         #endregion
     }

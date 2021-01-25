@@ -38,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     ComTypeDesc typeDesc = new ComTypeDesc(typeInfo, null);
                     return typeDesc;
                 default:
-                    throw new InvalidOperationException("Attempting to wrap an unsupported enum type.");
+                    throw new InvalidOperationException(SR.UnsupportedEnum);
             }
         }
 

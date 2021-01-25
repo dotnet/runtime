@@ -1,38 +1,29 @@
 parameters:
-  buildConfig: ''
-  archType: ''
+  buildConfig: 'Debug'
   osGroup: ''
-  osSubgroup: ''
   platform: ''
   container: ''
   timeoutInMinutes: ''
   variables: {}
   pool: ''
   condition: true
-  runtimeVariant: ''
   isOfficialBuild: false
-  crossBuild: false
-  crossrootfsDir: ''
 
 ### Product build
 jobs:
 - template: xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
-    archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
-    osSubgroup: ${{ parameters.osSubgroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
-    runtimeVariant: ${{ parameters.runtimeVariant }}
-    crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
-    name: ${{ format('mono_{0}_offsets_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Mono {0} AOT offsets {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    name: ${{ format('mono_{0}_offsets', parameters.osGroup) }}
+    displayName: ${{ format('Mono {0} AOT offsets', parameters.osGroup) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -44,22 +35,11 @@ jobs:
     variables:
     - name: osGroup
       value: ${{ parameters.osGroup }}
-    - name: osSubgroup
-      value: ${{ parameters.osSubgroup }}
     - name: officialBuildIdArg
-      value: ''
-    - name: osOverride
       value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '/p:officialBuildId=$(Build.BuildNumber)'
-    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
-      # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
-      # lowercase for RID format. (Detection normally converts, but we're preventing it.)
-      - name: OutputRidArg
-        value: /p:OutputRid=linux-musl-${{ parameters.archType }}
-      - name: _PortableBuild
-        value: true
     - name: osOverride
       value: -os Linux
     - name: archType
@@ -82,31 +62,31 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOnly=true
-        displayName: Build product
+      - script: ./build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
+        displayName: Generate AOT offsets
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOnly=true
-        displayName: Build product
+      - script: build$(scriptExt) -subset mono.aotcross -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
+        displayName: Generate AOT offsets
 
     # Upload offset files
     - task: CopyFiles@2
       displayName: Collect offset files
       inputs:
         sourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/'
-        contents: '**/offsets-*-android.h'
-        targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles/'
+        contents: '**/offsets-*.h'
+        targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles/'
 
     - task: PublishPipelineArtifact@1
       displayName: Upload offset files
       inputs:
-        targetPath: '$(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles'
-        artifactName: 'Mono_Offsets_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        targetPath: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
+        artifactName: 'Mono_Offsets_$(osGroup)'
 
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_Mono_Offsets_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'BuildLogs_Mono_Offsets_$(osGroup)'
       continueOnError: true
       condition: always()

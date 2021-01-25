@@ -541,8 +541,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28922", TestPlatforms.AnyUnix)]
-        public unsafe void TestCheckChildProcessUserAndGroupIds()
+        public void TestCheckChildProcessUserAndGroupIds()
         {
             string userName = GetCurrentRealUserName();
             string userId = GetUserId(userName);
@@ -923,7 +922,11 @@ namespace System.Diagnostics.Tests
                 }
 
                 // Return this as a HashSet to filter out duplicates.
-                return new HashSet<uint>(groups.Slice(0, rv).ToArray());
+                var result = new HashSet<uint>(groups.Slice(0, rv).ToArray());
+                // according to https://man7.org/linux/man-pages/man2/getgroups.2.html it's not specified
+                // if this group is included in the list returned by getgroups
+                result.Add(getegid());
+                return result;
             }
         }
 

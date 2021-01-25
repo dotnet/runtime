@@ -17,8 +17,9 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/mono-os-wait.h>
-#include <limits.h>
+#include <mono/utils/mono-context.h>
 #include <mono/utils/w32subset.h>
+#include <limits.h>
 
 enum Win32APCInfo {
 	WIN32_APC_INFO_CLEARED = 0,
@@ -205,9 +206,19 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	/* in mono's thread state machine implementation on Windows. By requesting a threads context after issuing a */
 	/* suspended request, this will wait until thread is suspended and thread context has been collected */
 	/* and returned. */
-	CONTEXT context;
-	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
-	if (!GetThreadContext (handle, &context)) {
+#if defined(MONO_HAVE_SIMD_REG_AVX) && HAVE_API_SUPPORT_WIN32_CONTEXT_XSTATE
+	BYTE context_buffer [2048];
+	DWORD context_buffer_len = G_N_ELEMENTS (context_buffer);
+	PCONTEXT context = NULL;
+	BOOL success = InitializeContext (context_buffer, CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL | CONTEXT_XSTATE, &context, &context_buffer_len);
+	success &= SetXStateFeaturesMask (context, XSTATE_MASK_AVX);
+	g_assert (success == TRUE);
+#else
+	CONTEXT context_buffer;
+	PCONTEXT context = &context_buffer;
+	context->ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
+#endif
+	if (!GetThreadContext (handle, context)) {
 		result = ResumeThread (handle);
 		g_assert (result == 1);
 		if (!mono_threads_transition_abort_async_suspend (info)) {
@@ -234,7 +245,7 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
 		return TRUE;
 	}
-	info->suspend_can_continue = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info, &context);
+	info->suspend_can_continue = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info, context);
 	THREADS_SUSPEND_DEBUG ("thread state %p -> %u\n", GUINT_TO_POINTER (id), result);
 	if (info->suspend_can_continue) {
 		if (interrupt_kernel)
@@ -295,6 +306,8 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 		info->async_target = NULL;
 		info->user_data = NULL;
 
+		// When using MONO_HAVE_SIMD_REG_AVX, Mono won't change YMM (read only), so no need to
+		// read extended context state.
 		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 
 		if (!GetThreadContext (handle, &context)) {
@@ -304,6 +317,8 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 
 		mono_monoctx_to_sigctx (&ctx, &context);
 
+		// When using MONO_HAVE_SIMD_REG_AVX, Mono won't change YMM (read only), so no need to
+		// write extended context state.
 		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_CONTROL;
 		res = SetThreadContext (handle, &context);
 		if (!res) {

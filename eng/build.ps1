@@ -17,6 +17,7 @@ Param(
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [switch]$ninja,
+  [string]$cmakeargs,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -76,6 +77,7 @@ function Get-Help() {
   Write-Host ""
 
   Write-Host "Native build settings:"
+  Write-Host "  -cmakeargs              User-settable additional arguments passed to CMake."
   Write-Host "  -ninja                  Use Ninja instead of MSBuild to run the native build."
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
@@ -150,7 +152,7 @@ if ($vs) {
       $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono\netcore" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
     } else {
       # Search for the solution in coreclr
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\src" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
     }
 
     if (-Not (Test-Path $vs)) {
@@ -229,6 +231,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
     "properties"             { $arguments += " " + $properties }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
+    "cmakeargs"              { $arguments += " /p:CMakeArgs=`"$($PSBoundParameters[$argument])`"" }
     "ninja"                  { $arguments += " /p:Ninja=$($PSBoundParameters[$argument])" }
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}

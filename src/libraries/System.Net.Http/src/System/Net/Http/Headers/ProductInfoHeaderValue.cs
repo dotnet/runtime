@@ -50,10 +50,6 @@ namespace System.Net.Http.Headers
             _comment = source._comment;
         }
 
-        private ProductInfoHeaderValue()
-        {
-        }
-
         public override string ToString()
         {
             if (_product == null)
@@ -153,6 +149,8 @@ namespace System.Net.Http.Headers
 
                 current = current + commentLength;
                 current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+
+                parsedValue = new ProductInfoHeaderValue(comment);
             }
             else
             {
@@ -165,11 +163,10 @@ namespace System.Net.Http.Headers
                 }
 
                 current = current + productLength;
+
+                parsedValue = new ProductInfoHeaderValue(product!);
             }
 
-            parsedValue = new ProductInfoHeaderValue();
-            parsedValue._product = product;
-            parsedValue._comment = comment;
             return current - startIndex;
         }
 

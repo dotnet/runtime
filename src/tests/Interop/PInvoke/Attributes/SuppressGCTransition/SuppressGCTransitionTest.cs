@@ -8,35 +8,51 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using TestLibrary;
 
-static class SuppressGCTransitionNative
+unsafe static class SuppressGCTransitionNative
 {
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "NextUInt")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "NextUInt")]
     [SuppressGCTransition]
     public static extern unsafe int NextUInt_Inline_NoGCTransition(int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "NextUInt")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "NextUInt")]
     public static extern unsafe int NextUInt_Inline_GCTransition(int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "NextUInt")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "NextUInt")]
     [SuppressGCTransition]
     public static extern unsafe bool NextUInt_NoInline_NoGCTransition(int* n);
 
-    [DllImport(nameof(SuppressGCTransitionNative), EntryPoint = "NextUInt")]
+    [DllImport(nameof(SuppressGCTransitionNative), CallingConvention=CallingConvention.Cdecl, EntryPoint = "NextUInt")]
     public static extern unsafe bool NextUInt_NoInline_GCTransition(int* n);
+
+    private static IntPtr nativeLibrary;
 
     public static IntPtr GetNextUIntFunctionPointer()
     {
-        IntPtr mod = GetNativeLibrary();
+        if (nativeLibrary == IntPtr.Zero)
+        {
+            nativeLibrary = GetNativeLibrary();
+        }
 
         IntPtr fptr;
-        if (NativeLibrary.TryGetExport(mod, "NextUInt", out fptr)
-            || NativeLibrary.TryGetExport(mod, "_NextUInt@4", out fptr))
+        if (NativeLibrary.TryGetExport(nativeLibrary, "NextUInt", out fptr))
         {
             return fptr;
         }
 
         throw new Exception($"Failed to find native export");
     }
+
+    public static delegate* unmanaged[Cdecl]<int*, int> GetNextUIntFunctionPointer_Inline_GCTransition()
+        => (delegate* unmanaged[Cdecl]<int*, int>)GetNextUIntFunctionPointer();
+
+    public static delegate* unmanaged[Cdecl, SuppressGCTransition]<int*, int> GetNextUIntFunctionPointer_Inline_NoGCTransition()
+        => (delegate* unmanaged[Cdecl, SuppressGCTransition]<int*, int>)GetNextUIntFunctionPointer();
+
+    public static delegate* unmanaged[Cdecl]<int*, bool> GetNextUIntFunctionPointer_NoInline_GCTransition()
+        => (delegate* unmanaged[Cdecl]<int*, bool>)GetNextUIntFunctionPointer();
+
+    public static delegate* unmanaged[Cdecl, SuppressGCTransition]<int*, bool> GetNextUIntFunctionPointer_NoInline_NoGCTransition()
+        => (delegate* unmanaged[Cdecl, SuppressGCTransition]<int*, bool>)GetNextUIntFunctionPointer();
 
     private static IntPtr GetNativeLibrary()
     {
@@ -131,6 +147,43 @@ unsafe class SuppressGCTransitionTest
         return n + 1;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Inline_NoGCTransition_FunctionPointer(int expected)
+    {
+        Console.WriteLine($"{nameof(Inline_NoGCTransition)} ({expected}) ...");
+        int n;
+        SuppressGCTransitionNative.GetNextUIntFunctionPointer_Inline_NoGCTransition()(&n);
+        Assert.AreEqual(expected, n);
+        return n + 1;
+    }
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Inline_GCTransition_FunctionPointer(int expected)
+    {
+        Console.WriteLine($"{nameof(Inline_GCTransition)} ({expected}) ...");
+        int n;
+        SuppressGCTransitionNative.GetNextUIntFunctionPointer_Inline_GCTransition()(&n);
+        Assert.AreEqual(expected, n);
+        return n + 1;
+    }
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NoInline_NoGCTransition_FunctionPointer(int expected)
+    {
+        Console.WriteLine($"{nameof(NoInline_NoGCTransition)} ({expected}) ...");
+        int n;
+        SuppressGCTransitionNative.GetNextUIntFunctionPointer_NoInline_NoGCTransition()(&n);
+        Assert.AreEqual(expected, n);
+        return n + 1;
+    }
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int NoInline_GCTransition_FunctionPointer(int expected)
+    {
+        Console.WriteLine($"{nameof(NoInline_GCTransition)} ({expected}) ...");
+        int n;
+        SuppressGCTransitionNative.GetNextUIntFunctionPointer_NoInline_GCTransition()(&n);
+        Assert.AreEqual(expected, n);
+        return n + 1;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallAsFunctionPointer(int expected)
     {
         Console.WriteLine($"{nameof(CallAsFunctionPointer)} ({expected}) ...");
@@ -158,6 +211,10 @@ unsafe class SuppressGCTransitionTest
             n = NoInline_GCTransition(n);
             n = Mixed(n);
             n = Mixed_TightLoop(n);
+            n = Inline_NoGCTransition_FunctionPointer(n);
+            n = Inline_GCTransition_FunctionPointer(n);
+            n = NoInline_NoGCTransition_FunctionPointer(n);
+            n = NoInline_GCTransition_FunctionPointer(n);
             n = CallAsFunctionPointer(n);
         }
         catch (Exception e)

@@ -30,7 +30,7 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Interop.Libraries.cs" />
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LUID.cs"
              Link="Common\Interop\Interop.LUID.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LUID_AND_ATTRIBUTES.cs"

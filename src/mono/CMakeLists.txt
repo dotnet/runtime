@@ -72,6 +72,7 @@ if(ENABLE_NETCORE)
   set(DISABLE_REMOTING 1)
   set(DISABLE_REFLECTION_EMIT_SAVE 1)
   set(DISABLE_APPDOMAINS 1)
+  set(DISABLE_SHADOW_COPY 1)
   set(DISABLE_CLEANUP 1)
   set(DISABLE_ASSEMBLY_REMAPPING 1)
   set(DISABLE_SECURITY 1)
@@ -215,7 +216,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(ANDROID_UNIFIED_HEADERS 1)
   set(ENABLE_MONODROID 1)
   set(DISABLE_EXECUTABLES 1)
-  set(GC_SUSPEND "hybrid")
   # Force some defines
   set(HAVE_SCHED_GETAFFINITY 0)
   set(HAVE_SCHED_SETAFFINITY 0)
@@ -236,10 +236,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_NO_SYMLINKS 1)
   set(MONO_KEYWORD_THREAD "__declspec (thread)")
   set(MONO_ZERO_LEN_ARRAY 1)
-
-  # FIXME: disable SIMD support for Windows, see https://github.com/dotnet/runtime/issues/1933
-  set(DISABLE_SIMD 1)
-
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options(/W3)   # set warning level 3
   add_compile_options(/EHsc) # set exception handling behavior
@@ -267,9 +263,6 @@ if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
   set(TARGET_DARWIN 1)
-  if (GC_SUSPEND STREQUAL "default")
-    set(GC_SUSPEND "hybrid")
-  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   set(TARGET_MACH 1)
   set(TARGET_IOS 1)
@@ -557,6 +550,20 @@ if (GC_SUSPEND STREQUAL "coop")
   set(ENABLE_COOP_SUSPEND 1)
 elseif(GC_SUSPEND STREQUAL "hybrid")
   set(ENABLE_HYBRID_SUSPEND 1)
+elseif(GC_SUSPEND STREQUAL "preemptive")
+elseif(GC_SUSPEND STREQUAL "default")
+  # set some kind of fallback default
+  if(TARGET_SYSTEM_NAME STREQUAL "watchOS")
+    set(ENABLE_COOP_SUSPEND 1)
+  elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
+    # use preemptive
+  elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
+    # use preemptive
+  else()
+    set(ENABLE_HYBRID_SUSPEND 1)
+  endif()
+else()
+  message(FATAL_ERROR "GC_SUSPEND (set to '${GC_SUSPEND}') must be one of coop, hybrid or preemptive")
 endif()
 
 ######################################

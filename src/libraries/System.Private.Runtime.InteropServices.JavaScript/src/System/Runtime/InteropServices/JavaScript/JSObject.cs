@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object result = Interop.Runtime.BindCoreObject(JSHandle, Int32Handle, out int exception);
             if (exception != 0)
-                throw new JSException($"JSObject Error binding: {result}");
+                throw new JSException(SR.Format(SR.JSObjectErrorBinding, result));
 
         }
 

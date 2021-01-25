@@ -2,22 +2,18 @@ project(System.IO.Compression.Native C)
 
 if (CLR_CMAKE_TARGET_BROWSER)
     add_definitions(-s USE_ZLIB)
-elseif (CLR_CMAKE_TARGET_ANDROID)
-    # need special case here since we want to link against libz.so but find_package() would resolve libz.a
-    set(ZLIB_LIBRARIES z)
-elseif (CLR_CMAKE_TARGET_SUNOS)
-    set(ZLIB_LIBRARIES z m)
-else ()
-    find_package(ZLIB REQUIRED)
-endif ()
+endif()
+
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_compression_libs(NATIVE_LIBS_EXTRA)
 
 set(NATIVECOMPRESSION_SOURCES
     ../../AnyOS/zlib/pal_zlib.c
 )
 
 if (NOT CLR_CMAKE_TARGET_BROWSER)
-    add_definitions(-DBROTLI_SHARED_COMPILATION)
-
     #Include Brotli include files
     include_directories("../../AnyOS/brotli/include")
 
@@ -52,6 +48,7 @@ if (NOT CLR_CMAKE_TARGET_BROWSER)
         ../../AnyOS/brotli/enc/metablock.c
         ../../AnyOS/brotli/enc/static_dict.c
         ../../AnyOS/brotli/enc/utf8_util.c
+        ../../AnyOS/System.IO.Compression.Native/entrypoints.c
     )
 
     # Disable implicit fallthrough warning for Brotli
@@ -59,6 +56,8 @@ if (NOT CLR_CMAKE_TARGET_BROWSER)
 endif()
 
 if (GEN_SHARED_LIB)
+    add_definitions(-DBROTLI_SHARED_COMPILATION)
+
     add_library(System.IO.Compression.Native
         SHARED
         ${NATIVECOMPRESSION_SOURCES}
@@ -66,8 +65,31 @@ if (GEN_SHARED_LIB)
     )
 
     target_link_libraries(System.IO.Compression.Native
-        ${ZLIB_LIBRARIES}
+        ${NATIVE_LIBS_EXTRA}
     )
+
+    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
+        set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/System.IO.Compression.Native.exports)
+        generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+        set_exports_linker_option(${EXPORTS_FILE})
+
+        add_custom_target(System.IO.Compression.Native_exports DEPENDS ${EXPORTS_FILE})
+        add_dependencies(System.IO.Compression.Native System.IO.Compression.Native_exports)
+
+        set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+        set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+
+        add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
+            COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                $<TARGET_FILE:System.IO.Compression.Native>
+                ${CMAKE_CURRENT_SOURCE_DIR}/../../AnyOS/System.IO.Compression.Native/entrypoints.c
+                ${CMAKE_NM}
+            VERBATIM
+        )
+    endif()
+
     install_with_stripped_symbols (System.IO.Compression.Native PROGRAMS .)
 endif ()
 
@@ -78,4 +100,4 @@ add_library(System.IO.Compression.Native-Static
 
 set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.IO.Compression.Native-Static DESTINATION .)
+install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})

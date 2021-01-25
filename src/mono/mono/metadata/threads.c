@@ -126,6 +126,7 @@ struct _StaticDataFreeList {
 	StaticDataFreeList *next;
 	guint32 offset;
 	guint32 size;
+	gint32 align;
 };
 
 typedef struct {
@@ -937,6 +938,11 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 
 	set_current_thread_for_domain (domain, internal, thread);
 
+#ifdef MONO_METADATA_UPDATE
+	/* Roll up to the latest published metadata generation */
+	mono_metadata_update_thread_expose_published ();
+#endif
+
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, internal->tid, internal->handle));
 
 	return TRUE;
@@ -998,7 +1004,9 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	thread->abort_state_handle = 0;
 
 	thread->abort_exc = NULL;
+#ifndef ENABLE_NETCORE
 	thread->current_appcontext = NULL;
+#endif
 
 	LOCK_THREAD (thread);
 
@@ -1932,8 +1940,11 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 	mono_threads_close_native_thread_handle (MONO_GPOINTER_TO_NATIVE_THREAD_HANDLE (this_obj->native_handle));
 	this_obj->native_handle = NULL;
 
-	/* Possibly free synch_cs, if the thread already detached also. */
-	dec_longlived_thread_data (this_obj->longlived);
+	/* might be null if the constructor threw an exception */
+	if (this_obj->longlived) {
+		/* Possibly free synch_cs, if the thread already detached also. */
+		dec_longlived_thread_data (this_obj->longlived);
+	}
 
 	mono_thread_name_cleanup (&this_obj->name);
 }
@@ -2606,10 +2617,12 @@ ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*loc
 	mono_gc_wbarrier_generic_nostore_internal ((gpointer)location); // FIXME volatile
 }
 
+#ifndef ENABLE_NETCORE
 gpointer ves_icall_System_Threading_Interlocked_Exchange_IntPtr (gpointer *location, gpointer value)
 {
 	return mono_atomic_xchg_ptr(location, value);
 }
+#endif
 
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location, gfloat value)
 {
@@ -2675,10 +2688,12 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volat
 	mono_gc_wbarrier_generic_nostore_internal ((gpointer)location); // FIXME volatile
 }
 
+#ifndef ENABLE_NETCORE
 gpointer ves_icall_System_Threading_Interlocked_CompareExchange_IntPtr(gpointer *location, gpointer value, gpointer comparand)
 {
 	return mono_atomic_cas_ptr(location, value, comparand);
 }
+#endif
 
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location, gfloat value, gfloat comparand)
 {
@@ -4932,12 +4947,12 @@ alloc_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 }
 
 static StaticDataFreeList*
-search_slot_in_freelist (StaticDataInfo *static_data, guint32 size, guint32 align)
+search_slot_in_freelist (StaticDataInfo *static_data, guint32 size, gint32 align)
 {
 	StaticDataFreeList* prev = NULL;
 	StaticDataFreeList* tmp = static_data->freelist;
 	while (tmp) {
-		if (tmp->size == size) {
+		if (tmp->size == size && tmp->align == align) {
 			if (prev)
 				prev->next = tmp->next;
 			else
@@ -5038,7 +5053,11 @@ mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 off
 	if (static_type == SPECIAL_STATIC_OFFSET_TYPE_THREAD) {
 		return get_thread_static_data (thread, offset);
 	} else {
+#ifndef ENABLE_NETCORE
 		return get_context_static_data (thread->current_appcontext, offset);
+#else
+		g_assert_not_reached ();
+#endif
 	}
 }
 
@@ -5095,7 +5114,7 @@ free_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 }
 
 static void
-do_free_special_slot (guint32 offset, guint32 size)
+do_free_special_slot (guint32 offset, guint32 size, gint32 align)
 {
 	guint32 static_type = ACCESS_SPECIAL_STATIC_OFFSET (offset, type);
 	MonoBitSet **sets;
@@ -5128,6 +5147,7 @@ do_free_special_slot (guint32 offset, guint32 size)
 
 		item->offset = offset;
 		item->size = size;
+		item->align = align;
 
 		item->next = info->freelist;
 		info->freelist = item;
@@ -5142,7 +5162,7 @@ do_free_special (gpointer key, gpointer value, gpointer data)
 	gint32 align;
 	guint32 size;
 	size = mono_type_size (field->type, &align);
-	do_free_special_slot (offset, size);
+	do_free_special_slot (offset, size, align);
 }
 
 void

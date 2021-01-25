@@ -66,7 +66,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
         public static int? WinHttpOptionSendTimeout { get; set; }
 
-        public static int? WinHttpOptionReceiveTimeout { get; set; }
+        public static uint? WinHttpOptionReceiveTimeout { get; set; }
 
         public static List<IntPtr> WinHttpOptionClientCertContext { get { return winHttpOptionClientCertContextList; } }
 

@@ -231,13 +231,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
 
                 ApplicationFixture = new TestProjectFixture("AppWithCustomEntryPoints", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject(selfContained: false);
                 ComponentWithNoDependenciesFixture = new TestProjectFixture("ComponentWithNoDependencies", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
                 SelfContainedApplicationFixture = new TestProjectFixture("AppWithCustomEntryPoints", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject(selfContained: true);
                 ComponentTypeName = $"Component.Component, {ComponentWithNoDependenciesFixture.TestProject.AssemblyName}";
                 FunctionPointerTypeName = $"AppWithCustomEntryPoints.Program, {ApplicationFixture.TestProject.AssemblyName}";

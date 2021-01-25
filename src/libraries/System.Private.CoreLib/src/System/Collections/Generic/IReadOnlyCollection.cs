@@ -6,6 +6,12 @@ namespace System.Collections.Generic
     // Provides a read-only, covariant view of a generic list.
     public interface IReadOnlyCollection<out T> : IEnumerable<T>
     {
-        int Count { get; }
+        int Count
+        {
+#if MONO
+            [System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(Array.InternalArray__IReadOnlyCollection_get_Count), typeof(Array))]
+#endif
+            get;
+        }
     }
 }

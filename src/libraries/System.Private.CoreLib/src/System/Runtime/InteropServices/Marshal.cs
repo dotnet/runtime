@@ -996,5 +996,16 @@ namespace System.Runtime.InteropServices
 
         [SupportedOSPlatform("windows")]
         public static Type? GetTypeFromCLSID(Guid clsid) => GetTypeFromCLSID(clsid, null, throwOnError: false);
+
+        /// <summary>
+        /// Initializes the underlying handle of a newly created <see cref="SafeHandle" /> to the provided value.
+        /// </summary>
+        /// <param name="safeHandle"><see cref="SafeHandle"/> instance to update</param>
+        /// <param name="handle">Pre-existing handle</param>
+        public static void InitHandle(SafeHandle safeHandle, IntPtr handle)
+        {
+            // To help maximize performance of P/Invokes, don't check if safeHandle is null.
+            safeHandle.SetHandle(handle);
+        }
     }
 }

@@ -121,12 +121,15 @@ set(metadata_common_sources
     marshal.c
     marshal.h
     marshal-internals.h
+    marshal-noilgen.c
     mempool.c
     mempool.h
     mempool-internals.h
     metadata.c
     metadata-verify.c
     metadata-internals.h
+    metadata-update.h
+    metadata-update.c
     method-builder.h
     method-builder-internals.h
     method-builder.c

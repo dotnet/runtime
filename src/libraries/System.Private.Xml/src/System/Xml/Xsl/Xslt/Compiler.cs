@@ -6,16 +6,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
-using System.Xml.Xsl.XPath;
-using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using TypeFactory = XmlQueryTypeFactory;
-#if DEBUG && FEATURE_COMPILED_XSL
-    using XmlILTrace = System.Xml.Xsl.IlGen.XmlILTrace;
-#endif
-
     internal enum XslVersion
     {
         Version10 = 0,

@@ -12,7 +12,7 @@ There is a design document for the Arm64 intrinsics: https://github.com/dotnet/r
 
 The reference assemblies for the hardware intrinsics live in corefx, but all of the implementation is in the coreclr repo:
 
-* The C# implementation lives in coreclr/src/System.Private.CoreLib/shared/System/Runtime/Intrinsics. These are little more than skeleton methods that are only compiled if needed for indirect invocation.
+* The C# implementation lives in coreclr/System.Private.CoreLib/shared/System/Runtime/Intrinsics. These are little more than skeleton methods that are only compiled if needed for indirect invocation.
 
   * Note that they are mirrored to other repositories, including corefx, corert and mono.
 
@@ -53,7 +53,7 @@ The JIT depends on the VM and configuration settings to determine what target pl
 
 ### Importation
 
-Hardware intrinsics are built on RyuJIT's `NamedIntrinsic` mechanism to identify method calls that should be recognized as intrinsics (see https://github.com/dotnet/runtime/blob/master/src/coreclr/src/jit/namedintrinsiclist.h). In the incoming IL, intrinsic invocations are just method calls, so the JIT must distinguish intrinsic calls from ordinary call-sites and map them to its IR representation: the `GenTreeHWIntrinsic` node.
+Hardware intrinsics are built on RyuJIT's `NamedIntrinsic` mechanism to identify method calls that should be recognized as intrinsics (see https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/namedintrinsiclist.h). In the incoming IL, intrinsic invocations are just method calls, so the JIT must distinguish intrinsic calls from ordinary call-sites and map them to its IR representation: the `GenTreeHWIntrinsic` node.
 
 The [Intrinsic] attribute was added to eliminate the need to check each call-site. It [Intrinsic] attribute has a different meaning on each attribute target:
 
@@ -112,13 +112,13 @@ By design, the actual code generation is fairly straightforward, since the hardw
 
 The only thing that makes the hardware intrinsics different in the area of instruction encodings is that they depend on many instructions (and their encodings) that are not used in any context other than the implementation of the associated hardware intrinsic.
 
-The encodings are largely specified by `coreclr\src\jit\instrs{arch}.h`, and most of the target-specific code is in the `emit{arch}.*` files.
+The encodings are largely specified by `coreclr\jit\instrs{arch}.h`, and most of the target-specific code is in the `emit{arch}.*` files.
 
 This is an area of the JIT that could use some redesign and refactoring (https://github.com/dotnet/runtime/issues/12178 and https://github.com/dotnet/runtime/issues/11631 among others).
 
 ## Testing
 
-The tests for the hardware intrinsics reside in the coreclr/tests/src/JIT/HardwareIntrinsics directory.
+The tests for the hardware intrinsics reside in the src/tests/JIT/HardwareIntrinsics directory.
 
-Many of the tests are generated programmatically from templates. See `coreclr\tests\src\JIT\HardwareIntrinsics\General\Shared\GenerateTests.csx`. We would like to see most, if not all, of the remaining tests converted to use this mechanism.
+Many of the tests are generated programmatically from templates. See `src\tests\JIT\HardwareIntrinsics\General\Shared\GenerateTests.csx`. We would like to see most, if not all, of the remaining tests converted to use this mechanism.
 

@@ -263,7 +263,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             // This is to make sure that we're using the unmodified product binary. If some previous test
             // enabled test-only product behavior on the binary and didn't correctly cleanup, this test would fail.
             File.Copy(
-                Path.Combine(sharedState.RepoDirectories.CorehostPackages, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost")),
+                Path.Combine(sharedState.RepoDirectories.HostArtifacts, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost")),
                 sharedState.NethostPath,
                 overwrite: true);
 
@@ -302,7 +302,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 string productDir = Path.Combine(BaseDirectory, "product");
                 Directory.CreateDirectory(productDir);
                 ProductHostFxrPath = Path.Combine(productDir, HostFxrName);
-                File.Copy(Path.Combine(RepoDirectories.CorehostPackages, HostFxrName), ProductHostFxrPath);
+                File.Copy(Path.Combine(RepoDirectories.HostArtifacts, HostFxrName), ProductHostFxrPath);
             }
 
             private string CreateHostFxr(string destinationDirectory)

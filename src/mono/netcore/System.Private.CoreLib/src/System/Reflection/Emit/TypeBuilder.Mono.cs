@@ -796,10 +796,9 @@ namespace System.Reflection.Emit
         // We require emitted types to have all members on their bases to be accessible.
         // This is basically an identity function for `this`.
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:UnrecognizedReflectionPattern",
-            Justification = "Reflection emitted types have all of their members")]
+            Justification = "Reflection.Emit is not subject to trimming")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public
-        TypeInfo? CreateTypeInfo()
+        public TypeInfo? CreateTypeInfo()
         {
             /* handle nesting_type */
             if (createTypeCalled)
@@ -910,6 +909,8 @@ namespace System.Reflection.Emit
             return this;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't analyze ResolveUserType but it's an identity function")]
         private void ResolveUserTypes()
         {
             parent = ResolveUserType(parent);
@@ -1054,7 +1055,7 @@ namespace System.Reflection.Emit
         /* Needed to keep signature compatibility with MS.NET */
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize GetEvents(BindingFlags.Public) but this is what the body is doing")]
+            Justification = "Linker doesn't recognize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public override EventInfo[] GetEvents()
         {
             const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
@@ -1615,7 +1616,7 @@ namespace System.Reflection.Emit
         public override int MetadataToken => 0x02000000 | table_idx;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize ResolveUserType")]
+            Justification = "Linker doesn't analyze ResolveUserType but it's an identity function")]
         public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             check_not_created();

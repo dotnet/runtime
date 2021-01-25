@@ -10,10 +10,10 @@ namespace System.Net.Http.Headers
 {
     public class ViaHeaderValue : ICloneable
     {
-        private string? _protocolName;
-        private string _protocolVersion = null!;
-        private string _receivedBy = null!;
-        private string? _comment;
+        private readonly string? _protocolName;
+        private readonly string _protocolVersion;
+        private readonly string _receivedBy;
+        private readonly string? _comment;
 
         public string? ProtocolName
         {
@@ -64,10 +64,6 @@ namespace System.Net.Http.Headers
 
             _protocolVersion = protocolVersion;
             _receivedBy = receivedBy;
-        }
-
-        private ViaHeaderValue()
-        {
         }
 
         private ViaHeaderValue(ViaHeaderValue source)
@@ -206,13 +202,7 @@ namespace System.Net.Http.Headers
                 current = current + HttpRuleParser.GetWhitespaceLength(input, current);
             }
 
-            ViaHeaderValue result = new ViaHeaderValue();
-            result._protocolVersion = protocolVersion;
-            result._protocolName = protocolName;
-            result._receivedBy = receivedBy!;
-            result._comment = comment;
-
-            parsedValue = result;
+            parsedValue = new ViaHeaderValue(protocolVersion, receivedBy!, protocolName, comment);
             return current - startIndex;
         }
 

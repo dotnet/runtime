@@ -10,7 +10,7 @@ You must install several components to build the dotnet/runtime repository. Thes
 
 ## Enable Long Paths
 
-The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
+The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
 
 If using Git for Windows you might need to also configure long paths there. Using an admin terminal simply type:
 ```cmd

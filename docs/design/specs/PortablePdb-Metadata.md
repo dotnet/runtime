@@ -24,6 +24,8 @@ The ECMA-335-II standard is amended by an addition of the following tables to th
     * [EditAndContinueLambdaAndClosureMap](#EditAndContinueLambdaAndClosureMap)
     * [EmbeddedSource](#EmbeddedSource)
     * [SourceLink](#SourceLink)
+    * [CompilationMetadataReferences](#CompilationMetadataReferences)
+    * [CompilationOptions](#CompilationOptions)
 
 Debugging metadata tables may be embedded into type system metadata (and part of a PE file), or they may be stored separately in a metadata blob contained in a .pdb file. In the latter case additional information is included that connects the debugging metadata to the type system metadata.
 
@@ -523,3 +525,74 @@ Parent: Module
 Kind: {CC110556-A091-4D38-9FEC-25AB9A351A6A}
 
 The blob stores UTF8 encoded text file in JSON format that includes information on how to locate the content of documents listed in Document table on a source server.
+
+##### <a name="CompilationMetadataReferences"></a>Compilation Metadata References (C# and VB compilers)
+Parent: Module
+
+Kind: {7E4D4708-096E-4C5C-AEDA-CB10BA6A740D}
+
+Stores information about all metadata references used to compile the module.
+
+The blob has the following structure:
+
+    Blob ::= MetadataReferenceInfo+
+    MetadataReferenceInfo ::= file-name aliases flags time-stamp file-size mvid
+
+| terminal   | encoding                                  | description                                               |
+|:-----------|:------------------------------------------|:----------------------------------------------------------|
+| file-name  | UTF8 NIL-terminated                       | Name of the metadata file (includes an extension).        |
+| aliases    | UTF8 NIL-terminated, comma-separated list | List of external aliases for the reference. May be empty. |
+| flags      | byte                                      | Flags.                                                    |
+| time-stamp | uint32                                    | PE COFF header Timestamp field.                           |
+| file-size  | uint32                                    | PE COFF header SizeOfImage field.                         |
+| mvid       | GUID (16 bytes)                           | Module Version Id (ModuleDef table field).                |
+
+The meaning of the _flags_ byte:
+
+| flag      | description                                                     |
+|:----------|:----------------------------------------------------------------|
+| 0b0000001 | The referenced file is an assembly (as opposed to a netmodule). |
+| 0b0000010 | Embed interop types.                                            |
+
+The remaining bits are reserved for future use and have currently no meaning.
+
+> The data can be used to find the reference in a file indexing service such as a symbol server. 
+> For example, the [Simple Symbol Query Protocol](https://github.com/dotnet/symstore/blob/master/docs/specs/Simple_Symbol_Query_Protocol.md) uses a combination of _file-name_, _time-stamp_ and _file-size_ as a [key](https://github.com/dotnet/symstore/blob/master/docs/specs/SSQP_Key_Conventions.md#pe-timestamp-filesize).
+> Other services might use the MVID as it uniquely identifies the module.
+
+##### <a name="CompilationOptions"></a>Compilation Options (C# and VB compilers)
+Parent: Module
+
+Kind: {B5FEEC05-8CD0-4A83-96DA-466284BB4BD8}
+
+Stores compilation options used to compile the module. Only captures information that is not present elsewhere in the PDB, in the PE headers or metadata of the module.
+
+The blob has the following structure:
+
+    Blob ::= (name value)*
+
+| terminal   | encoding            | description                      |
+|:-----------|:--------------------|:---------------------------------|
+| name       | UTF8 NIL-terminated | Name of the compilation option.  |
+| value      | UTF8 NIL-terminated | Value of the compilation option. |
+
+There shall be no two entries with the same _name_ in the list.
+
+It is recommended, but not required that _name_ is lower-case and uses hyphen (`-`) for separating words.
+
+Common options:
+
+| name               | value format                                                   | description                          |
+|:-------------------|:---------------------------------------------------------------|:-------------------------------------|
+| `language`         | `CSharp` or `VisualBasic`                                      | Language name.                       |
+| `compiler-version` | [SemVer2](https://semver.org/spec/v2.0.0.html) version string  | Version of the compiler used to build the module with _build metadata_ set to commit SHA for officially released compiler. |
+| `runtime-version`  | [SemVer2](https://semver.org/spec/v2.0.0.html) version string  | Version of the CLR used to build the module with _build metadata_ set to commit SHA for officially released .NET Core runtime. |
+
+Other options listed in the blob are specific to each compiler. Future versions of the compiler may add additional options.
+The order of the options in the list is insignificant.
+
+> The `runtime-version` is significant since the compiler may have used certain functionality from the runtime that impacts the compilation output (e.g. Unicode tables, etc.)
+
+> The purpose of this data is to allow a tool to reconstruct the compilation the module was built from.
+> The source files for the compilation are expected to be recovered from the source server using [SourceLink](#SourceLink) and/or from [sources embedded](#EmbeddedSource) in the PDB.
+> The metadata references for the compilation are expected to be recovered from a file indexing service (e.g. symbol server) using information in [Compilation Metadata References](#CompilationMetadataReferences) record.

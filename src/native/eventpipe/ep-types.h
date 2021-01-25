@@ -1,11 +1,8 @@
 #ifndef __EVENTPIPE_TYPES_H__
 #define __EVENTPIPE_TYPES_H__
 
-#include <config.h>
-
 #ifdef ENABLE_PERFTRACING
-#include <stdint.h>
-#include <stdbool.h>
+#include "ep-ipc-pal-types.h"
 
 #undef EP_IMPL_GETTER_SETTER
 #ifdef EP_IMPL_EP_GETTER_SETTER
@@ -57,8 +54,6 @@ typedef struct _FastSerializableObjectVtable FastSerializableObjectVtable;
 typedef struct _FastSerializer FastSerializer;
 typedef struct _FileStream FileStream;
 typedef struct _FileStreamWriter FileStreamWriter;
-typedef struct _IpcStream IpcStream;
-typedef struct _IpcStreamVtable IpcStreamVtable;
 typedef struct _IpcStreamWriter IpcStreamWriter;
 typedef struct _StackHashEntry StackHashEntry;
 typedef struct _StackHashKey StackHashKey;
@@ -175,7 +170,6 @@ typedef enum {
 
 typedef intptr_t EventPipeWaitHandle;
 typedef uint64_t EventPipeSessionID;
-typedef char ep_char8_t;
 typedef unsigned short ep_char16_t;
 typedef int64_t ep_timestamp_t;
 typedef int64_t ep_system_timestamp_t;

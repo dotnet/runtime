@@ -28,6 +28,13 @@ namespace System.Diagnostics.Tracing
         [NonEvent]
         internal unsafe void ProcessEvent(uint eventID, uint osThreadID, DateTime timeStamp, Guid activityId, Guid childActivityId, ReadOnlySpan<byte> payload)
         {
+            // A simple fix to avoid dependencies brought by this method if event source is disabled via a feature switch.
+            // Should be reconsidered when https://github.com/dotnet/runtime/issues/43657 is done.
+            if (!IsSupported)
+            {
+                return;
+            }
+
             // Make sure the eventID is valid.
             if (eventID >= m_eventData!.Length)
             {

@@ -5,15 +5,14 @@ trigger:
     - master
   paths:
     include:
-    - src/coreclr/src/jit/*
+    - src/coreclr/jit/*
+    - src/coreclr/inc/jiteeversionguid.h
 
+# This pipeline is supposed to be run only on merged changes
+# and should not be triggerable from a PR. 
 pr: none
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

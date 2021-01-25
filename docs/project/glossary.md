@@ -24,7 +24,7 @@ terminology.
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/garbage-collection.md). |
 | IPC | Inter-Process Communication. |
 | JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
-| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
+| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/master/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
 | MDA | Managed Debugging Assistant - see [details](https://docs.microsoft.com/en-us/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#9418](https://github.com/dotnet/runtime/issues/9418)) |
 | NGen | Native Image Generator. |
@@ -37,7 +37,7 @@ terminology.
 | R2R | Ready-to-Run. A flavor of native images - command line switch of [crossgen](../workflow/building/coreclr/crossgen.md). |
 | Redhawk | Codename for experimental minimal managed code runtime that evolved into [CoreRT](https://github.com/dotnet/corert/). |
 | SOS | [Son of Strike](https://docs.microsoft.com/en-us/archive/blogs/jasonz/sos-debugging-of-the-clr-part-1). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation. |
-| SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/ToolBox/superpmi/readme.txt). |
+| SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/master/src/coreclr/ToolBox/superpmi/readme.txt). |
 | SVR | The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available. |
 | TPA | Trusted Platform Assemblies used to be a special set of assemblies that comprised the platform assemblies, when it was originally designed. As of today, it is simply the set of assemblies known to constitute the application. |
 | URT | Universal Runtime. Ancient name for what ended up being .NET, is used in the WinError facility name FACILITY_URT. |

@@ -13,8 +13,9 @@ parameters:
   isOfficialBuild: false
   crossBuild: false
   crossrootfsDir: ''
-  buildCross: false
-  dependsOn: ''
+  dependsOn: []
+  monoCrossAOTTargetOS: []
+  dependOnEvaluatePaths: false
 
 ### Product build
 jobs:
@@ -29,9 +30,10 @@ jobs:
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     crossBuild: ${{ parameters.crossBuild }}
-    buildCross: ${{ parameters.buildCross }}
+    monoCrossAOTTargetOS: ${{ parameters.monoCrossAOTTargetOS }}
     crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
     name: ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -91,9 +93,9 @@ jobs:
     - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
       - name: llvmParameter
         value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true $(llvmCxxAbi)
-    - ${{ if eq(parameters.buildCross, 'android') }}:
+    - ${{ if gt(length(parameters.monoCrossAOTTargetOS),0) }}:
       - name: aotCrossParameter
-        value: /p:BuildMonoCrossAOT=true /p:SkipMonoCrossJitConfigure=true
+        value: /p:MonoCrossAOTTargetOS=${{join('+',parameters.monoCrossAOTTargetOS)}} /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
     - ${{ parameters.variables }}
 
     steps:
@@ -110,12 +112,12 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-    - ${{ if eq(parameters.buildCross, 'android') }}:
+    - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
-        displayName: Download AOT offset files
+        displayName: Download ${{monoCrossAOTTargetOS}} AOT offset files
         inputs:
-          artifact: Mono_Offsets__Android_x64_Debug
-          path: '$(Build.SourcesDirectory)/artifacts/obj/monooffsetfiles'
+          artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
+          path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
@@ -125,10 +127,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(AotCrossParameter) $(llvmParameter)
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(AotCrossParameter) $(llvmParameter)
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter)
         displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
@@ -150,10 +152,10 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter) -pack $(OutputRidArg)
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter) -pack $(OutputRidArg)
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
 
     # Publish official build

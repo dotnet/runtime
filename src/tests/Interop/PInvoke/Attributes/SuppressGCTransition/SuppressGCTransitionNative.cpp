@@ -13,7 +13,7 @@ namespace
 }
 
 extern "C"
-BOOL DLL_EXPORT NextUInt(/* out */ uint32_t *n)
+BOOL DLL_EXPORT STDMETHODVCALLTYPE NextUInt(/* out */ uint32_t *n)
 {
     if (n == nullptr)
         return FALSE;

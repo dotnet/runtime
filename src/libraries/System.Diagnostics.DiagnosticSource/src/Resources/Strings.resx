@@ -159,4 +159,10 @@
   <data name="InvalidTraceParent" xml:space="preserve">
     <value>"Invalid trace parent."</value>
   </data>
+  <data name="UnableAccessServicePointTable" xml:space="preserve">
+    <value>Unable to access the ServicePointTable field</value>
+  </data>
+  <data name="UnableToInitialize" xml:space="preserve">
+    <value>Unable to initialize all required reflection objects</value>
+  </data>
 </root>

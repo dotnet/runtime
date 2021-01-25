@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 public class Test
 {
-
     public static async Task<int> Main(string[] args)
     {
         await Task.Delay(1);

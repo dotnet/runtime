@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
 #if !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES)
 
 #define DS_IMPL_PROTOCOL_GETTER_SETTER
@@ -414,7 +413,7 @@ ds_ipc_message_try_parse_string_utf16_t (
 	}
 
 	*buffer = *buffer + (string_len * sizeof (ep_char16_t));
-	*buffer_len = *buffer_len + (string_len * sizeof (ep_char16_t));
+	*buffer_len = *buffer_len - (string_len * sizeof (ep_char16_t));
 
 	result = true;
 

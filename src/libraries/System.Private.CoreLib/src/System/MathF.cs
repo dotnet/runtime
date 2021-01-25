@@ -259,6 +259,56 @@ namespace System
             return y;
         }
 
+        /// <summary>Returns an estimate of the reciprocal of a specified number.</summary>
+        /// <param name="x">The number whose reciprocal is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
+        /// <remarks>
+        ///    <para>On x86/x64 hardware this may use the <c>RCPSS</c> instruction which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
+        ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / x</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReciprocalEstimate(float x)
+        {
+            if (Sse.IsSupported)
+            {
+                return Sse.ReciprocalScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return 1.0f / x;
+            }
+        }
+
+        /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
+        /// <param name="x">The number whose reciprocal square root is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal square root <paramref name="x" />.</returns>
+        /// <remarks>
+        ///    <para>On x86/x64 hardware this may use the <c>RSQRTSS</c> instruction which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
+        ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(x)</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReciprocalSqrtEstimate(float x)
+        {
+            if (Sse.IsSupported)
+            {
+                return Sse.ReciprocalSqrtScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return 1.0f / Sqrt(x);
+            }
+        }
+
         [Intrinsic]
         public static float Round(float x)
         {

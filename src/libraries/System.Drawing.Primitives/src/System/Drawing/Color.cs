@@ -248,6 +248,8 @@ namespace System.Drawing
 
         public static Color Purple => new Color(KnownColor.Purple);
 
+        public static Color RebeccaPurple => new Color(KnownColor.RebeccaPurple);
+
         public static Color Red => new Color(KnownColor.Red);
 
         public static Color RosyBrown => new Color(KnownColor.RosyBrown);
@@ -301,7 +303,6 @@ namespace System.Drawing
         public static Color Yellow => new Color(KnownColor.Yellow);
 
         public static Color YellowGreen => new Color(KnownColor.YellowGreen);
-
         //
         //  end "web" colors
         // -------------------------------------------------------------------
@@ -372,7 +373,7 @@ namespace System.Drawing
         public bool IsSystemColor => IsKnownColor && IsKnownColorSystem((KnownColor)knownColor);
 
         internal static bool IsKnownColorSystem(KnownColor knownColor)
-            => (knownColor <= KnownColor.WindowText) || (knownColor > KnownColor.YellowGreen);
+            => ((knownColor >= KnownColor.ActiveBorder) && (knownColor <= KnownColor.WindowText)) || ((knownColor >= KnownColor.ButtonFace) && (knownColor <= KnownColor.MenuHighlight));
 
         // Used for the [DebuggerDisplay]. Inlining in the attribute is possible, but
         // against best practices as the current project language parses the string with
@@ -464,7 +465,7 @@ namespace System.Drawing
         public static Color FromArgb(int red, int green, int blue) => FromArgb(byte.MaxValue, red, green, blue);
 
         public static Color FromKnownColor(KnownColor color) =>
-            color <= 0 || color > KnownColor.MenuHighlight ? FromName(color.ToString()) : new Color(color);
+            color <= 0 || color > KnownColor.RebeccaPurple ? FromName(color.ToString()) : new Color(color);
 
         public static Color FromName(string name)
         {

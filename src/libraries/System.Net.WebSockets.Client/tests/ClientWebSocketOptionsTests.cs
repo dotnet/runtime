@@ -47,6 +47,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43751")]
         public async Task Proxy_SetNull_ConnectsSuccessfully(Uri server)
         {
             for (int i = 0; i < 3; i++) // Connect and disconnect multiple times to exercise shared handler on netcoreapp
