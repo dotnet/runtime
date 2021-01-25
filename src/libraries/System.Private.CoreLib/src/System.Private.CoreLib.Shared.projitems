@@ -1971,6 +1971,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Wrappers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjcWrappers)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Flags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Wrappers.PlatformNotSupported.cs" />
   </ItemGroup>
 </Project>

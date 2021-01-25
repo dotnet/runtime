@@ -151,7 +151,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </code>
         /// </remarks>
         /// <see cref="RegisterInstanceFlags.ManagedDefinition"/>
-        protected unsafe virtual delegate* unmanaged[Cdecl]<IntPtr, int> GetReferenceCallback(bool isManagedRegistration) => 
+        protected unsafe virtual delegate* unmanaged[Cdecl]<IntPtr, int> GetReferenceCallback(bool isManagedRegistration)
             => throw new PlatformNotSupportedException();
 
         /// <summary>
