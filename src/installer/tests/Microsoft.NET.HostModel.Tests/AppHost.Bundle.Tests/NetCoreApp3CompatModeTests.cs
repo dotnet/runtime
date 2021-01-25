@@ -35,9 +35,8 @@ namespace AppHost.Bundle.Tests
 
             var currentDir = Directory.GetCurrentDirectory();
             var cmd = Command.Create(singleFile);
-            Directory.SetCurrentDirectory(Path.GetDirectoryName(singleFile));
-
-            cmd.CaptureStdErr()
+            cmd.WorkingDirectory(Path.GetDirectoryName(singleFile))
+                .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, relativePath)
                 .Execute()

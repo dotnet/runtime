@@ -57,12 +57,20 @@ namespace AppHost.Bundle.Tests
             extractDir.Should().NotHaveFiles(BundleHelper.GetFilesNeverExtracted(fixture));
         }
 
-        [InlineData("./foo")]
-        [InlineData("../foo")]
-        [InlineData("foo")]
-        [InlineData("foo/bar")]
+        [InlineData("./foo", BundleOptions.None)]
+        [InlineData("../foo", BundleOptions.None)]
+        [InlineData("foo", BundleOptions.None)]
+        [InlineData("foo/bar", BundleOptions.None)]
+        [InlineData("./foo", BundleOptions.BundleNativeBinaries)]
+        [InlineData("../foo", BundleOptions.BundleNativeBinaries)]
+        [InlineData("foo", BundleOptions.BundleNativeBinaries)]
+        [InlineData("foo/bar", BundleOptions.BundleNativeBinaries)]
+        [InlineData("./foo", BundleOptions.BundleSymbolFiles)]
+        [InlineData("../foo", BundleOptions.BundleSymbolFiles)]
+        [InlineData("foo", BundleOptions.BundleSymbolFiles)]
+        [InlineData("foo/bar", BundleOptions.BundleSymbolFiles)]
         [Theory]
-        private void Bundle_Extraction_To_Relative_Path_Succeeds (string relativePath)
+        private void Bundle_Extraction_To_Relative_Path_Succeeds (string relativePath, BundleOptions bundleOptions)
         {
             var fixture = sharedTestState.TestFixture.Copy();
             var singleFile = BundleSelfContainedApp(fixture, BundleOptions.None);
