@@ -674,7 +674,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 			return method;
 
 		MonoClass *klass = mono_method_get_class (method);
-		char *async_name = malloc (name_length + 1);
+		char *async_name = malloc (name_length + 2);
 		sprintf (async_name, "%s$", name);
 
 		// look for "<Name>$"
