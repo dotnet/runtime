@@ -499,15 +499,7 @@ namespace System.Net.Http
             _sendBuffer.Commit(2);
 
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-            if (normalizedMethod.Http3EncodedBytes != null)
-            {
-                BufferBytes(normalizedMethod.Http3EncodedBytes);
-            }
-            else
-            {
-                BufferLiteralHeaderWithStaticNameReference(H3StaticTable.MethodGet, normalizedMethod.Method);
-            }
-
+            BufferBytes(normalizedMethod.Http3EncodedBytes);
             BufferIndexedHeader(H3StaticTable.SchemeHttps);
 
             if (request.HasHeaders && request.Headers.Host != null)
