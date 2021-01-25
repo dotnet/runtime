@@ -314,8 +314,9 @@ enum {
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
 #ifdef TARGET_ARM64
-// FIXME: enable for Arm64
-#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
+// SIMD is only supported on arm64 when using the LLVM backend. When not using
+// the LLVM backend, treat SIMD datatypes as regular value types.
+#define MONO_CLASS_IS_SIMD(cfg, klass) ( ((cfg)->opt & MONO_OPT_SIMD) && ( COMPILE_LLVM (cfg) ) && m_class_is_simd_type (klass) )
 #else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass))
 #endif

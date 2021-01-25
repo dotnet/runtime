@@ -17,7 +17,6 @@
 #cmakedefine01 HAVE_SYS_LWP_H
 #cmakedefine01 HAVE_LWP_H
 #cmakedefine01 HAVE_RUNETYPE_H
-#cmakedefine01 HAVE_SYS_SYSCTL_H
 #cmakedefine01 HAVE_GNU_LIBNAMES_H
 #cmakedefine01 HAVE_PRCTL_H
 #cmakedefine01 HAVE_NUMA_H

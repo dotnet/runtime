@@ -16,11 +16,10 @@
   </ItemGroup>
 
 
-  <ItemGroup>
-    <DeltaBase Include="TestClass.cs">
-      <Deltas>TestClass_v1.cs</Deltas>
-    </DeltaBase>
-  </ItemGroup>
+  <PropertyGroup>
+    <DeltaScript>deltascript.json</DeltaScript>
+    <DeltaCount>1</DeltaCount>
+  </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
