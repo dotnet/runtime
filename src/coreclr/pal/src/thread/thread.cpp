@@ -1622,13 +1622,13 @@ CorUnix::InternalSetThreadDescription(
     PAL_ERROR palError = NO_ERROR;
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
-    int error;
+    int error = 0;
     int nameSize;
     char *nameBuf = NULL;
 
 // The exact API of pthread_setname_np varies very wildly depending on OS.
-// For now, only Linux is implemented.
-#if defined(__linux__)
+// For now, only Linux and MacOS are implemented.
+#if defined(__linux__) || defined(__APPLE__)
 
     palError = InternalGetThreadDataFromHandle(
         pThread,
@@ -1681,12 +1681,23 @@ CorUnix::InternalSetThreadDescription(
         nameBuf[15] = '\0';
     }
 
+    #if defined(__Linux__)
     error = pthread_setname_np(pTargetThread->GetPThreadSelf(), nameBuf);
+    #endif
+
+    #if defined(__APPLE__)
+    //on macos, pthread_setname_np only works for the calling thread.
+    if(PlatformGetCurrentThreadId() == pTargetThread->GetThreadId()) 
+    {
+        error = pthread_setname_np(nameBuf);
+    }
+    #endif
 
     if (error != 0)
     {
         palError = ERROR_INTERNAL_ERROR;
     }
+#endif // defined(__linux__) || defined(__APPLE__)
 
 InternalSetThreadDescriptionExit:
 
@@ -1703,8 +1714,6 @@ InternalSetThreadDescriptionExit:
     if (NULL != nameBuf) {
         PAL_free(nameBuf);
     }
-
-#endif // defined(__linux__)
 
     return palError;
 }
