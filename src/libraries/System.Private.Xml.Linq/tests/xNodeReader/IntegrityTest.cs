@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Xml;
 using Microsoft.Test.ModuleCore;
+using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
@@ -249,16 +251,14 @@ namespace CoreXml.Test.XLinq
                 public void GetAttributeOrdinal()
                 {
                     XmlReader DataReader = ReloadSource();
-                    DataReader.Read();
-                    DataReader.GetAttribute(0);
+                    Assert.Throws<InvalidOperationException>(() => DataReader.GetAttribute(0));
                 }
 
                 //[Variation("this[i]")]
                 public void HelperThisOrdinal()
                 {
                     XmlReader DataReader = ReloadSource();
-                    DataReader.Read();
-                    string str = DataReader[0];
+                    Assert.Throws<InvalidOperationException>(() => DataReader[0]);
                 }
 
                 //[Variation("this[name]")]

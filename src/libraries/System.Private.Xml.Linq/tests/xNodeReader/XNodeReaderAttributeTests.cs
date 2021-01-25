@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using CoreXml.Test.XLinq;
 using Xunit;
 
@@ -8,18 +9,10 @@ namespace System.Xml.Linq.xNodeReader.Tests
 {
     public class XNodeReaderAttributeTests
     {
-        private readonly BridgeHelpers _bridgeHelpers;
-
-        public XNodeReaderAttributeTests()
-        {
-            _bridgeHelpers = new BridgeHelpers();
-        }
-
         [Fact]
         public void GetAttributeThrowsOnIndexMinusOne()
         {
-            var dataReader = _bridgeHelpers.GetReader();
-            _bridgeHelpers.PositionOnElement(dataReader, "ACT1");
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElement();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => dataReader.GetAttribute(-1));
         }
@@ -27,8 +20,7 @@ namespace System.Xml.Linq.xNodeReader.Tests
         [Fact]
         public void GetAttributeThrowsOnIndexMinusTwo()
         {
-            XmlReader dataReader = _bridgeHelpers.GetReader();
-            _bridgeHelpers.PositionOnElement(dataReader, "ACT1");
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElement();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => dataReader.GetAttribute(-2));
         }
@@ -36,19 +28,91 @@ namespace System.Xml.Linq.xNodeReader.Tests
         [Fact]
         public void IndexerThrowsOnIndexMinusOne()
         {
-            var dataReader = _bridgeHelpers.GetReader();
-            _bridgeHelpers.PositionOnElement(dataReader, "ACT1");
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElement();
+
             Assert.Throws<ArgumentOutOfRangeException>(() => dataReader[-1]);
         }
 
         [Fact]
         public void IndexerThrowsOnIndexMinusTwo()
         {
-            var dataReader = _bridgeHelpers.GetReader();
-            _bridgeHelpers.PositionOnElement(dataReader, "ACT1");
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElement();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => dataReader[-2]);
         }
 
+        [Fact]
+        public void IndexerThrowsOnNegativeIndicesOnXNodes()
+        {
+            foreach (XNode n in GetXNodeTypes())
+            {
+                using XmlReader r = n.CreateReader();
+
+                r.Read();
+
+                Assert.Throws<ArgumentOutOfRangeException>(() => r[-100000]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => r[-1]);
+            }
+        }
+
+        [Fact]
+        public void GetAttributeThrowsOnNegativeIndicesOnXNodes()
+        {
+            foreach (XNode n in GetXNodeTypes())
+            {
+                using XmlReader r = n.CreateReader();
+
+                r.Read();
+
+                Assert.Throws<ArgumentOutOfRangeException>(() => r.GetAttribute(-100000));
+                Assert.Throws<ArgumentOutOfRangeException>(() => r.GetAttribute(-1));
+            }
+        }
+
+        [Fact]
+        public void GetAttributeThrowsOnNonInteractiveMode()
+        {
+            foreach (XNode n in GetXNodeTypes())
+            {
+                using XmlReader r = n.CreateReader();
+
+                Assert.Throws<InvalidOperationException>(() => r.GetAttribute(0));
+            }
+        }
+
+        [Fact]
+        public void IndexerThrowsOnNonInteractiveMode()
+        {
+            foreach (XNode n in GetXNodeTypes())
+            {
+                using XmlReader r = n.CreateReader();
+
+                Assert.Throws<InvalidOperationException>(() => r[0]);
+            }
+        }
+
+        private static XmlReader GetReaderFromXDocumentAndPositionOnElement()
+        {
+            var bridgeHelpers = new BridgeHelpers();
+            var dataReader = bridgeHelpers.GetReader();
+            bridgeHelpers.PositionOnElement(dataReader, "ACT1");
+            return dataReader;
+        }
+
+        private static IEnumerable<XNode> GetXNodeTypes()
+        {
+            var xNode = new List<XNode>
+            {
+                new XDocument(new XDocumentType("root", "", "", "<!ELEMENT root ANY>"), new XElement("root")),
+                new XElement("elem1"),
+                new XText("text1"),
+                new XComment("comment1"),
+                new XProcessingInstruction("pi1", "pi1pi1pi1pi1pi1"),
+                new XCData("cdata cdata"),
+                new XDocumentType("dtd1", "dtd1dtd1dtd1", "dtd1dtd1", "dtd1dtd1dtd1dtd1")
+            };
+
+            return xNode;
+        }
     }
 }
