@@ -4488,7 +4488,7 @@ Module::GetAssemblyIfLoaded(
             DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->GetDomainAssembly();
             if (pCurAssemblyInExamineDomain == NULL)
             {
-                continue;
+                break;
             }
 
 #ifndef DACCESS_COMPILE
@@ -4504,7 +4504,7 @@ Module::GetAssemblyIfLoaded(
                                                        pCurAssemblyInExamineDomain,
                                                        FALSE /*fAllowAllocation*/)))
                 {
-                    continue;
+                    break;
                 }
 
                 // If we have been passed the binding context for the loaded assembly that is being looked up in the
@@ -4589,7 +4589,7 @@ Module::GetAssemblyIfLoaded(
                 DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->GetDomainAssembly();
                 if (pCurAssemblyInExamineDomain == NULL)
                 {
-                    continue;
+                    break;
                 }
 
                 DomainFile *pDomainFileNativeImage;
