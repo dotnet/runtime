@@ -899,12 +899,18 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
         tieredCompilation_CallCountingDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountingDelayMs);
 
+        bool hasSingleProcessor;
 #ifndef TARGET_UNIX
-        bool hadSingleProcessorAtStartup = CPUGroupInfo::HadSingleProcessorAtStartup();
-#else // !TARGET_UNIX
-        bool hadSingleProcessorAtStartup = g_SystemInfo.dwNumberOfProcessors == 1;
-#endif // !TARGET_UNIX
-        if (hadSingleProcessorAtStartup)
+        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+        {
+            hasSingleProcessor = CPUGroupInfo::GetNumActiveProcessors() == 1;
+        }
+        else
+#endif
+        {
+            hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
+        }
+        if (hasSingleProcessor)
         {
             DWORD delayMultiplier = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_DelaySingleProcMultiplier);
             if (delayMultiplier > 1)
