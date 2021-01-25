@@ -122,6 +122,8 @@ bool ReadCompressedInts(const uint8_t *pByte, size_t cbDataMax, IntHandler intPr
             if (cbDataMax < 9)
                 return false;
             signedInt = (int64_t)((((int64_t)*(pByte + 1)) << 56 | ((int64_t)*(pByte+2)) << 48 | ((int64_t)*(pByte+3)) << 40 | ((int64_t)*(pByte+4)) << 32) | ((int64_t)*(pByte + 5)) << 24 | ((int64_t)*(pByte+6)) << 16 | ((int64_t)*(pByte+7)) << 8 | ((int64_t)*(pByte+8)));
+            pByte += 9;
+            cbDataMax -= 9;
         }
         else
         {
@@ -186,22 +188,22 @@ public:
 
         if ((processingState & InstrumentationDataProcessingState::ILOffset) == InstrumentationDataProcessingState::ILOffset)
         {
-            curSchema.ILOffset += (int32_t)curValue;
+            curSchema.ILOffset = (int32_t)((int64_t)curSchema.ILOffset + curValue);
             processingState = processingState & ~InstrumentationDataProcessingState::ILOffset;
         }
         else if ((processingState & InstrumentationDataProcessingState::Type) == InstrumentationDataProcessingState::Type)
         {
-            curSchema.InstrumentationKind = static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int>(curSchema.InstrumentationKind) + (int32_t)curValue);
+            curSchema.InstrumentationKind = static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int64_t>(curSchema.InstrumentationKind) + curValue);
             processingState = processingState & ~InstrumentationDataProcessingState::Type;
         }
         else if ((processingState & InstrumentationDataProcessingState::Count) == InstrumentationDataProcessingState::Count)
         {
-            curSchema.Count += (int32_t)curValue;
+            curSchema.Count = (int32_t)((int64_t)curSchema.Count + curValue);
             processingState = processingState & ~InstrumentationDataProcessingState::Count;
         }
         else if ((processingState & InstrumentationDataProcessingState::Other) == InstrumentationDataProcessingState::Other)
         {
-            curSchema.Other += (int32_t)curValue;
+            curSchema.Other = (int32_t)((int64_t)curSchema.Other + curValue);
             processingState = processingState & ~InstrumentationDataProcessingState::Other;
         }
 

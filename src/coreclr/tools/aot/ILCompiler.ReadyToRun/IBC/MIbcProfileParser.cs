@@ -10,12 +10,12 @@ using System.Reflection;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.IL;
+using Internal.Pgo;
 
 using System.Linq;
 using System.IO;
 using System.Diagnostics;
 
-using Microsoft.Pgo;
 using System.Reflection.PortableExecutable;
 
 namespace ILCompiler.IBC

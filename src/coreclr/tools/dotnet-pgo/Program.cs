@@ -26,7 +26,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.Diagnostics.CodeAnalysis;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.Tools.Pgo;
-using Microsoft.Pgo;
+using Internal.Pgo;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {

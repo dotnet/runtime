@@ -3,7 +3,7 @@
 
 using Internal.TypeSystem;
 
-namespace Microsoft.Pgo
+namespace Internal.Pgo
 {
     public struct TypeSystemEntityOrUnknown
     {

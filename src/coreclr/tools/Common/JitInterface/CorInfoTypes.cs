@@ -4,8 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.Pgo;
 using Internal.TypeSystem;
-using Microsoft.Pgo;
 
 namespace Internal.JitInterface
 {

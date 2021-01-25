@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using ILCompiler;
 using System.Text.RegularExpressions;
 
-namespace Microsoft.Pgo
+namespace Internal.Pgo
 {
     public enum PgoInstrumentationKind
     {
@@ -254,7 +254,7 @@ namespace Microsoft.Pgo
                 if ((processingState & InstrumentationDataProcessingState.ILOffset) == InstrumentationDataProcessingState.ILOffset)
                 {
                     if (longsAreCompressed)
-                        curSchema.ILOffset += checked((int)value);
+                        curSchema.ILOffset = checked((int)(value + (long)curSchema.ILOffset));
                     else
                         curSchema.ILOffset = checked((int)value);
 
@@ -272,7 +272,7 @@ namespace Microsoft.Pgo
                 else if ((processingState & InstrumentationDataProcessingState.Count) == InstrumentationDataProcessingState.Count)
                 {
                     if (longsAreCompressed)
-                        curSchema.Count += checked((int)value);
+                        curSchema.Count = checked((int)(value + (long)curSchema.Count));
                     else
                         curSchema.Count = checked((int)value);
                     processingState = processingState & ~InstrumentationDataProcessingState.Count;
@@ -280,7 +280,7 @@ namespace Microsoft.Pgo
                 else if ((processingState & InstrumentationDataProcessingState.Other) == InstrumentationDataProcessingState.Other)
                 {
                     if (longsAreCompressed)
-                        curSchema.Other += checked((int)value);
+                        curSchema.Other = checked((int)(value + (long)curSchema.Other));
                     else
                         curSchema.Other = checked((int)value);
                     processingState = processingState & ~InstrumentationDataProcessingState.Other;
