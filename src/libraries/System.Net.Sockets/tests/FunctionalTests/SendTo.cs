@@ -146,42 +146,6 @@ namespace System.Net.Sockets.Tests
 
             Assert.Equal(cts.Token, ex.CancellationToken);
         }
-
-        // On Unix, flooding the kernel with sendto calls will lead to actual asynchronous completions,
-        // so we can test the cancellation logic implemented in SocketAsyncContext.
-        // On Windows, WSASendTo/WSASendMsg implementations are not cancellable with CancelIoEx as of 01/2021,
-        // which means CancellationToken will only take effect if it's precancelled. This may change in the future.
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
-        public async Task CancelDuringOperation_Throws()
-        {
-            const int DatagramCount = 100;
-            const int DatagramSize = 9216; // Default maximum datagram size on Mac
-
-            TimeSpan cancelAfter = TimeSpan.FromMilliseconds(2);
-
-            await RetryHelper.ExecuteAsync(async () =>
-            {
-                cancelAfter /= 2;
-
-                using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                int port = client.BindToAnonymousPort(IPAddress.Any);
-
-                List<Task> tasks = new List<Task>();
-                CancellationTokenSource cts = new CancellationTokenSource();
-
-                // After flooding the socket with a high number of send tasks,
-                // we assume some of them won't complete before the "CancelAfter" period expires.
-                for (int i = 0; i < DatagramCount; i++)
-                {
-                    var leftTask = client.SendToAsync(new byte[DatagramSize], SocketFlags.None, ValidUdpRemoteEndpoint, cts.Token);
-                    tasks.Add(leftTask.AsTask());
-                }
-                cts.CancelAfter(cancelAfter);
-
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(tasks));
-            }, maxAttempts: 7);
-        }
     }
 
     public sealed class SendTo_MemoryArrayTask : SendToBase<SocketHelperMemoryArrayTask>
