@@ -396,6 +396,34 @@
       <MonoLibClang Condition="!$([MSBuild]::IsOSPlatform('OSX'))">$(EMSDK_PATH)/upstream/lib/libclang.so</MonoLibClang>
     </PropertyGroup>
 
+    <!-- Windows specific options -->
+    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows_NT'))">
+      <_MonoAOTCPPFLAGS Include="-DWIN32" />
+      <_MonoAOTCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
+      <!--<_MonoAOTCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
+      <_MonoAOTCPPFLAGS Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'" Include="-DWIN64" />
+      <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Release'" Include="-DNDEBUG" />
+      <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Debug'" Include="-D_DEBUG" />
+      <!-- <_MonoAOTCPPFLAGS Include="-D__default_codegen__" /> --> <!-- doesn't seem to be used -->
+      <_MonoAOTCPPFLAGS Include="-D_CRT_SECURE_NO_WARNINGS" />
+      <_MonoAOTCPPFLAGS Include="-D_CRT_NONSTDC_NO_DEPRECATE" />
+      <!--<_MonoAOTCPPFLAGS Include="-DGC_NOT_DLL" />--> <!-- only used for Boehm -->
+      <_MonoAOTCPPFLAGS Include="-DWIN32_THREADS" />
+      <_MonoAOTCPPFLAGS Include="-DWINVER=0x0601" />
+      <_MonoAOTCPPFLAGS Include="-D_WIN32_WINNT=0x0601" />
+      <_MonoAOTCPPFLAGS Include="-D_WIN32_IE=0x0501" />
+      <_MonoAOTCPPFLAGS Include="-D_UNICODE" />
+      <_MonoAOTCPPFLAGS Include="-DUNICODE" />
+      <_MonoAOTCPPFLAGS Include="-DFD_SETSIZE=1024" />
+      <_MonoAOTCPPFLAGS Include="-DNVALGRIND" />
+
+      <!-- Select generator platform for VS generator -->
+      <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x64'" Include="-A x64" />
+      <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x86'" Include="-A Win32" />
+      <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'arm'" Include="-A ARM" />
+      <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'arm64'" Include="-A ARM64" />
+    </ItemGroup>
+
     <!-- Android specific options -->
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
@@ -426,8 +454,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')"</_MonoAOTCFLAGSOption>
-      <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')"</_MonoAOTCXXFLAGSOption>
+      <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')"</_MonoAOTCFLAGSOption>
+      <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')"</_MonoAOTCXXFLAGSOption>
     </PropertyGroup>
     <ItemGroup>
       <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
@@ -450,34 +478,6 @@
       <!-- thread suspend -->
       <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
     </ItemGroup> 
-
-    <!-- Windows specific options -->
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <_MonoAOTCPPFLAGS Include="-DWIN32" />
-      <_MonoAOTCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
-      <!--<_MonoAOTCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
-      <_MonoAOTCPPFLAGS Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'" Include="-DWIN64" />
-      <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Release'" Include="-DNDEBUG" />
-      <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Debug'" Include="-D_DEBUG" />
-      <!-- <_MonoAOTCPPFLAGS Include="-D__default_codegen__" /> --> <!-- doesn't seem to be used -->
-      <_MonoAOTCPPFLAGS Include="-D_CRT_SECURE_NO_WARNINGS" />
-      <_MonoAOTCPPFLAGS Include="-D_CRT_NONSTDC_NO_DEPRECATE" />
-      <!--<_MonoAOTCPPFLAGS Include="-DGC_NOT_DLL" />--> <!-- only used for Boehm -->
-      <_MonoAOTCPPFLAGS Include="-DWIN32_THREADS" />
-      <_MonoAOTCPPFLAGS Include="-DWINVER=0x0601" />
-      <_MonoAOTCPPFLAGS Include="-D_WIN32_WINNT=0x0601" />
-      <_MonoAOTCPPFLAGS Include="-D_WIN32_IE=0x0501" />
-      <_MonoAOTCPPFLAGS Include="-D_UNICODE" />
-      <_MonoAOTCPPFLAGS Include="-DUNICODE" />
-      <_MonoAOTCPPFLAGS Include="-DFD_SETSIZE=1024" />
-      <_MonoAOTCPPFLAGS Include="-DNVALGRIND" />
-
-      <!-- Select generator platform for VS generator -->
-      <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x64'" Include="-A x64" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x86'" Include="-A Win32" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'arm'" Include="-A ARM" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'arm64'" Include="-A ARM64" />
-    </ItemGroup>
 
     <PropertyGroup>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
