@@ -285,10 +285,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
         if (SF_IsReverseStub(dwStubFlags))
         {
-            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub;
-#if !defined(TARGET_X86)
-            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdUnmanagedCallersOnlyStub;
-#endif
+            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub | DynamicMethodDesc::nomdUnmanagedCallersOnlyStub;
             pMD->GetILStubResolver()->SetStubType(ILStubResolver::NativeToCLRInteropStub);
         }
         else

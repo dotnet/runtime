@@ -309,6 +309,9 @@
   <data name="WarningOverridingOptimize" xml:space="preserve">
     <value>Warning: -Od overrides other optimization options</value>
   </data>
+  <data name="CallChainProfileFile" xml:space="preserve">
+    <value>Json file(s) for predictive profile guided optimization</value>
+  </data>
   <data name="PdbFileOption" xml:space="preserve">
     <value>Generate PDB symbol information file (supported on Windows only)</value>
   </data>

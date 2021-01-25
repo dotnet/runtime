@@ -63,7 +63,6 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ConditionalFact]
-        [PlatformSpecific(~TestPlatforms.Windows)]  // Unreliable on Windows.
         public async Task GetHostEntryAsync_InvalidHost_LogsError()
         {
             using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
@@ -79,8 +78,7 @@ namespace System.Net.NameResolution.Tests
                     }
                     catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
                     {
-                        // Wait a bit to let the event source write it's log
-                        await Task.Delay(100).ConfigureAwait(false);
+                        await WaitForErrorEventAsync(events);
                     }
                     catch (Exception e)
                     {
@@ -95,6 +93,20 @@ namespace System.Net.NameResolution.Tests
                     Assert.NotNull(ev.Payload[0]);
                     Assert.NotNull(ev.Payload[1]);
                     Assert.NotNull(ev.Payload[2]);
+                }
+            }
+
+            static async Task WaitForErrorEventAsync(ConcurrentQueue<EventWrittenEventArgs> events)
+            {
+                const int ErrorEventId = 5;
+                DateTime startTime = DateTime.UtcNow;
+
+                while (!events.Any(e => e.EventId == ErrorEventId))
+                {
+                    if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
+                        throw new TimeoutException("Timeout waiting for error event");
+
+                    await Task.Delay(100);
                 }
             }
         }

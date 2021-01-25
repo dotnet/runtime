@@ -215,10 +215,8 @@ class COMInterlocked
 public:
         static FCDECL2(INT32, Exchange, INT32 *location, INT32 value);
         static FCDECL2_IV(INT64,   Exchange64, INT64 *location, INT64 value);
-        static FCDECL2(LPVOID, ExchangePointer, LPVOID* location, LPVOID value);
         static FCDECL3(INT32, CompareExchange,        INT32* location, INT32 value, INT32 comparand);
         static FCDECL3_IVV(INT64, CompareExchange64,        INT64* location, INT64 value, INT64 comparand);
-        static FCDECL3(LPVOID, CompareExchangePointer, LPVOID* location, LPVOID value, LPVOID comparand);
         static FCDECL2_IV(float, ExchangeFloat, float *location, float value);
         static FCDECL2_IV(double, ExchangeDouble, double *location, double value);
         static FCDECL3_IVV(float, CompareExchangeFloat, float *location, float value, float comparand);

@@ -69,7 +69,9 @@ namespace Internal.TypeSystem
             AssemblyName homeAssembly = FindAssemblyIfNamePresent(name);
             if (homeAssembly != null)
             {
-                homeModule = module.Context.ResolveAssembly(homeAssembly);
+                homeModule = module.Context.ResolveAssembly(homeAssembly, throwIfNotFound);
+                if (homeModule == null)
+                    return null;
             }
             MetadataType typeDef = resolver != null ? resolver(genericTypeDefName.ToString(), homeModule, throwIfNotFound) :
                 ResolveCustomAttributeTypeDefinitionName(genericTypeDefName.ToString(), homeModule, throwIfNotFound);
