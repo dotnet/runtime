@@ -2,24 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    internal sealed partial class WindowsFileStreamStrategy : FileStreamStrategyBase
+    // this type defines a set of stateless FileStreamStrategy helper methods
+    internal static class FileStreamStrategyHelper
     {
-        protected override SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
+        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
-            return CreateFileOpenHandle(mode, share, options);
+            return CreateFileOpenHandle(path, mode, access, share, options);
         }
 
-        private unsafe SafeFileHandle CreateFileOpenHandle(FileMode mode, FileShare share, FileOptions options)
+        private static unsafe SafeFileHandle CreateFileOpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
 
             int fAccess =
-                ((_access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
-                ((_access & FileAccess.Write) == FileAccess.Write ? Interop.Kernel32.GenericOperations.GENERIC_WRITE : 0);
+                ((access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
+                ((access & FileAccess.Write) == FileAccess.Write ? Interop.Kernel32.GenericOperations.GENERIC_WRITE : 0);
 
             // Our Inheritable bit was stolen from Windows, but should be set in
             // the security attributes class.  Don't leave this bit set.
@@ -39,9 +41,11 @@ namespace System.IO
 
             using (DisableMediaInsertionPrompt.Create())
             {
-                Debug.Assert(_path != null);
+                Debug.Assert(path != null);
                 return ValidateFileHandle(
-                    Interop.Kernel32.CreateFile(_path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero));
+                    Interop.Kernel32.CreateFile(path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero),
+                    path,
+                    (options & FileOptions.Asynchronous) != 0);
             }
         }
 
@@ -56,7 +60,6 @@ namespace System.IO
                 return null;
 
             uint fileMode;
-
 
             int status = Interop.NtDll.NtQueryInformationFile(
                 FileHandle: fileHandle,
@@ -89,7 +92,7 @@ namespace System.IO
             return (fileMode & (Interop.NtDll.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
         }
 
-        private static void VerifyHandleIsSync(SafeFileHandle handle)
+        internal static void VerifyHandleIsSync(SafeFileHandle handle)
         {
             // As we can accurately check the handle type when we have access to NtQueryInformationFile we don't need to skip for
             // any particular file handle type.
@@ -101,6 +104,41 @@ namespace System.IO
             // If we can't check the handle, just assume it is ok.
             if (!(IsHandleSynchronous(handle, ignoreInvalid: false) ?? true))
                 throw new ArgumentException(SR.Arg_HandleNotSync, nameof(handle));
+        }
+
+        private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
+        {
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
+            if ((share & FileShare.Inheritable) != 0)
+            {
+                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
+                {
+                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
+                    bInheritHandle = Interop.BOOL.TRUE
+                };
+            }
+            return secAttrs;
+        }
+
+        private static SafeFileHandle ValidateFileHandle(SafeFileHandle fileHandle, string path, bool useAsyncIO)
+        {
+            if (fileHandle.IsInvalid)
+            {
+                // Return a meaningful exception with the full path.
+
+                // NT5 oddity - when trying to open "C:\" as a Win32FileStream,
+                // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
+                // probably be consistent w/ every other directory.
+                int errorCode = Marshal.GetLastWin32Error();
+
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && path!.Length == PathInternal.GetRootLength(path))
+                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+            }
+
+            fileHandle.IsAsync = useAsyncIO;
+            return fileHandle;
         }
     }
 }

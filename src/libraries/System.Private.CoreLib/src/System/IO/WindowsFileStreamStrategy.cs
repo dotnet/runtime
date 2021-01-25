@@ -61,7 +61,7 @@ namespace System.IO
         {
         }
 
-        protected override void Init(FileMode mode, FileShare share, string originalPath)
+        protected override void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
             if (!PathInternal.IsExtended(originalPath))
             {
@@ -182,27 +182,13 @@ namespace System.IO
             }
             else if (!useAsyncIO)
             {
-                VerifyHandleIsSync(handle);
+                FileStreamStrategyHelper.VerifyHandleIsSync(handle);
             }
 
             if (_canSeek)
                 SeekCore(handle, 0, SeekOrigin.Current);
             else
                 _filePosition = 0;
-        }
-
-        private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
-        {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
-            if ((share & FileShare.Inheritable) != 0)
-            {
-                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-                {
-                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    bInheritHandle = Interop.BOOL.TRUE
-                };
-            }
-            return secAttrs;
         }
 
         private bool HasActiveBufferOperation => !_activeBufferOperation.IsCompleted;
@@ -1577,27 +1563,6 @@ namespace System.IO
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error(_path);
             }
-        }
-
-        private SafeFileHandle ValidateFileHandle(SafeFileHandle fileHandle)
-        {
-            if (fileHandle.IsInvalid)
-            {
-                // Return a meaningful exception with the full path.
-
-                // NT5 oddity - when trying to open "C:\" as a Win32FileStream,
-                // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
-                // probably be consistent w/ every other directory.
-                int errorCode = Marshal.GetLastWin32Error();
-
-                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && _path!.Length == PathInternal.GetRootLength(_path))
-                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
-
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
-            }
-
-            fileHandle.IsAsync = _useAsyncIO;
-            return fileHandle;
         }
     }
 }

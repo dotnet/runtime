@@ -92,11 +92,11 @@ namespace System.IO
             if ((options & FileOptions.Asynchronous) != 0)
                 _useAsyncIO = true;
 
-            _fileHandle = OpenHandle(mode, share, options);
+            _fileHandle = FileStreamStrategyHelper.OpenHandle(fullPath, mode, access, share, options);
 
             try
             {
-                Init(mode, share, path);
+                Init(mode, share, path, options);
             }
             catch
             {
@@ -117,9 +117,7 @@ namespace System.IO
 
         protected abstract void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO);
 
-        protected abstract SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options);
-
-        protected abstract void Init(FileMode mode, FileShare share, string originalPath);
+        protected abstract void Init(FileMode mode, FileShare share, string originalPath, FileOptions options);
 
         protected abstract void FlushWriteBuffer(bool calledFromFinalizer = false);
 

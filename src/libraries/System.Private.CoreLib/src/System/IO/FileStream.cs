@@ -90,12 +90,7 @@ namespace System.IO
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
-            : this(handle, access, bufferSize,
-#if TARGET_WINDOWS
-                  WindowsFileStreamStrategy.GetDefaultIsAsync(handle, DefaultIsAsync))
-#else
-                  UnixFileStreamStrategy.GetDefaultIsAsync(handle, DefaultIsAsync))
-#endif
+            : this(handle, access, bufferSize, FileStreamStrategyHelper.GetDefaultIsAsync(handle, DefaultIsAsync))
         {
         }
 
