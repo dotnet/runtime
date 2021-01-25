@@ -862,7 +862,7 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
         if (*fileName != 0) {
                 retString.Set(fileName);
         } else {
-            hr = UtilLoadStringRC(IDS_EE_NAME_UNKNOWN, wszBuffer, sizeof( wszBuffer ) / sizeof( WCHAR ), true );
+            hr = UtilLoadStringRC(W("<Unknown>"), wszBuffer, sizeof( wszBuffer ) / sizeof( WCHAR ), true );
             if (FAILED(hr))
                 COMPlusThrowHR(hr);
             retString.Set(wszBuffer);
@@ -870,7 +870,7 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
     }
     else
     {
-        hr = UtilLoadStringRC(IDS_EE_NAME_INMEMORYMODULE, wszBuffer, sizeof( wszBuffer ) / sizeof( WCHAR ), true );
+        hr = UtilLoadStringRC(W("<In Memory Module>"), wszBuffer, sizeof( wszBuffer ) / sizeof( WCHAR ), true );
         if (FAILED(hr))
             COMPlusThrowHR(hr);
         retString.Set(wszBuffer);
