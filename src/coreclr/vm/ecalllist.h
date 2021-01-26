@@ -928,6 +928,13 @@ FCFuncStart(gComWrappersFuncs)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCWRAPPERS
+FCFuncStart(gObjCWrappersFuncs)
+    QCFuncElement("TrySetGlobalMessageSendCallbacks", ObjCWrappersNative::TrySetGlobalMessageSendCallbacks)
+    QCFuncElement("GetLifetimeMethodsInternal", ObjCWrappersNative::GetLifetimeMethods)
+FCFuncEnd()
+#endif // FEATURE_OBJCWRAPPERS
+
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdRefCustomMarshaler::CreateMarshaler)
     FCFuncElement("ConvertContentsToNative", MngdRefCustomMarshaler::ConvertContentsToNative)
@@ -1158,6 +1165,9 @@ FCClassElement("NativeLibrary", "System.Runtime.InteropServices", gInteropNative
 FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 #endif
 FCClassElement("Object", "System", gObjectFuncs)
+#ifdef FEATURE_OBJCWRAPPERS
+FCClassElement("Wrappers", "System.Runtime.InteropServices.ObjectiveC", gObjCWrappersFuncs)
+#endif // FEATURE_OBJCWRAPPERS
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif

@@ -550,6 +550,29 @@ if(FEATURE_STANDALONE_GC)
         )
 endif(FEATURE_STANDALONE_GC)
 
+# Targeted interop scenarios
+if(FEATURE_COMWRAPPERS OR FEATURE_OBJCWRAPPERS)
+    # Shared assets
+    list(APPEND VM_SOURCES_WKS
+        interoplibinterface_shared.cpp
+        )
+    list(APPEND VM_HEADERS_WKS
+        interoplibinterface.h
+        )
+
+    if (FEATURE_COMWRAPPERS)
+        list(APPEND VM_SOURCES_WKS
+            interoplibinterface.cpp
+            )
+    endif (FEATURE_COMWRAPPERS)
+
+    if (FEATURE_OBJCWRAPPERS)
+        list(APPEND VM_SOURCES_WKS
+            interoplibinterface_objc.cpp
+            )
+    endif (FEATURE_OBJCWRAPPERS)
+endif(FEATURE_COMWRAPPERS OR FEATURE_OBJCWRAPPERS)
+
 if(CLR_CMAKE_TARGET_WIN32)
 
 set(VM_SOURCES_DAC_AND_WKS_WIN32
@@ -576,7 +599,6 @@ list(APPEND VM_SOURCES_WKS
     dispparammarshaler.cpp
     dwreport.cpp
     eventreporter.cpp
-    interoplibinterface.cpp
     mngstdinterfaces.cpp
     notifyexternals.cpp
     olecontexthelpers.cpp
@@ -602,7 +624,6 @@ list(APPEND VM_HEADERS_WKS
     dispparammarshaler.h
     dwreport.h
     eventreporter.h
-    interoplibinterface.h
     mngstdinterfaces.h
     notifyexternals.h
     olecontexthelpers.h
