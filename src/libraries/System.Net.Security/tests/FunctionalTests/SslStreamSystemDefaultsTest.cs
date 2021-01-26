@@ -79,7 +79,8 @@ namespace System.Net.Security.Tests
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
             using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
-                string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
+                string serverHost = Guid.NewGuid().ToString("N") + "." + serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
+                Console.WriteLine(serverHost);
                 var clientCertificates = new X509CertificateCollection() { clientCertificate };
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
@@ -130,6 +131,7 @@ namespace System.Net.Security.Tests
                 case SslPolicyErrors.None:
                 case SslPolicyErrors.RemoteCertificateChainErrors:
                 case SslPolicyErrors.RemoteCertificateNameMismatch:
+                case SslPolicyErrors.RemoteCertificateChainErrors | SslPolicyErrors.RemoteCertificateNameMismatch:
                     return true;
                 case SslPolicyErrors.RemoteCertificateNotAvailable:
                 default:
