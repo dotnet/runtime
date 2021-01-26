@@ -1143,7 +1143,10 @@ void build_signature_info_record (MonoType *type, int* result1, MonoType** resul
 		((mono_type == MONO_TYPE_CLASS) || (mono_type == MONO_TYPE_VALUETYPE))
 			? mono_type_get_class (type)
 			: 0;
-	*result1 = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+	*result1 = 
+		(klass != 0)
+			? mono_wasm_marshal_type_from_mono_type (mono_type, klass, type)
+			: 0;
 	*result2 = type;
 }
 
@@ -1170,6 +1173,8 @@ mono_wasm_create_method_signature_info (MonoMethod *method)
 	result->parameter_marshal_types = (((void*)result) + sizeof(wasm_method_signature_info) + 4);
 	result->parameter_types = ((void*)result->parameter_marshal_types) + (sizeof(int) * parameter_count) + 4;
 
+	build_signature_info_record (mono_signature_get_return_type(sig), &result->result_marshal_type, &result->result_type);
+
 	int i = 0;
 	void *iter = 0;
 	MonoType *p = 0;
@@ -1177,8 +1182,6 @@ mono_wasm_create_method_signature_info (MonoMethod *method)
 		build_signature_info_record (p, &(result->parameter_marshal_types[i]), &(result->parameter_types[i]));
 		i++;
 	}
-
-	build_signature_info_record (mono_signature_get_return_type(sig), &result->result_marshal_type, &result->result_type);
 
 	return result;
 }
