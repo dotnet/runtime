@@ -61,6 +61,6 @@
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureProfAttach)' == 'true'">$(DefineConstants);FEATURE_PROFAPI_ATTACH_DETACH</DefineConstants>
-        <DefineConstants Condition="'$(FeatureObjcWrappers)'" == 'true'"">$(DefineConstants);FEATURE_OBJCWRAPPERS</DefineConstants>
+        <DefineConstants Condition="'$(FeatureObjcWrappers)' == 'true'">$(DefineConstants);FEATURE_OBJCWRAPPERS</DefineConstants>
     </PropertyGroup>
 </Project>
