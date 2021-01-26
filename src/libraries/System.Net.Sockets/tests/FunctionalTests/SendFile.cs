@@ -30,7 +30,7 @@ namespace System.Net.Sockets.Tests
 
 
         [Fact]
-        public async Task NotConnected_ThrowsException()
+        public async Task NotConnected_ThrowsNotSupportedException()
         {
             using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             
@@ -38,6 +38,27 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(s, null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task FileDoesNotExist_ThrowsFileNotFoundException(bool useOverloadWithBuffers)
+        {
+            string doesNotExist = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
+
+            using (client)
+            using (server)
+            {
+                if (!useOverloadWithBuffers)
+                {
+                    await Assert.ThrowsAsync<FileNotFoundException>(() => SendFileAsync(client, doesNotExist));
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<FileNotFoundException>(() => SendFileAsync(client, doesNotExist, null, null, TransmitFileOptions.UseDefaultWorkerThread));
+                }
+            }
+        }
 
         [Theory]
         [InlineData(false)]
@@ -57,14 +78,16 @@ namespace System.Net.Sockets.Tests
 
             client.Connect(listener.LocalEndPoint);
 
+            SocketException ex;
             if (usePreAndPostbufferOverload)
             {
-                await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
+                ex = await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
             }
             else
             {
-                await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path));
+                ex = await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path));
             }
+            Assert.Equal(SocketError.NotConnected, ex.SocketErrorCode);
         }
 
         public static IEnumerable<object[]> SendFile_MemberData()
