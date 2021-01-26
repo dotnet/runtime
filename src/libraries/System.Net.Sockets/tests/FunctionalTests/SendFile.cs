@@ -196,6 +196,33 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(0, client.Available);
         }
 
+        [Fact]
+        public async Task SliceBuffers_Success()
+        {
+            if (!SupportsSendFileSlicing) return; // The overloads under test only support sending byte[]
+
+            Random rnd = new Random(0);
+
+            ArraySegment<byte> preBuffer = new ArraySegment<byte>(new byte[100], 25, 50);
+            ArraySegment<byte> postBuffer = new ArraySegment<byte>(new byte[100], 25, 50);
+            rnd.NextBytes(preBuffer);
+            rnd.NextBytes(postBuffer);
+
+            byte[] expected = preBuffer.ToArray().Concat(postBuffer.ToArray()).ToArray();
+
+            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
+
+            using (client)
+            using (server)
+            {
+                await SendFileAsync(client, null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
+                byte[] receiveBuffer = new byte[100];
+                int receivedBytes = server.Receive(receiveBuffer);
+                Assert.Equal(100, receivedBytes);
+                AssertExtensions.SequenceEqual(expected, receiveBuffer);
+            }
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
         [OuterLoop("Creates and sends a file several gigabytes long")]
         [Fact]

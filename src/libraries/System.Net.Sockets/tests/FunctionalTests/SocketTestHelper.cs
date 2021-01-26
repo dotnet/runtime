@@ -426,6 +426,7 @@ namespace System.Net.Sockets.Tests
         public bool SupportsMultiConnect => _socketHelper.SupportsMultiConnect;
         public bool SupportsAcceptIntoExistingSocket => _socketHelper.SupportsAcceptIntoExistingSocket;
         public bool SupportsAcceptReceive => _socketHelper.SupportsAcceptReceive;
+        public bool SupportsSendFileSlicing => _socketHelper.SupportsSendFileSlicing;
         public void Listen(Socket s, int backlog) => _socketHelper.Listen(s, backlog);
         public void ConfigureNonBlocking(Socket s) => _socketHelper.ConfigureNonBlocking(s);
     }
