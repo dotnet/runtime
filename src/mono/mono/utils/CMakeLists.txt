@@ -6,7 +6,7 @@ set(utils_win32_sources
     os-event-win32.c
     w32subset.h)
 
-if(TARGET_WIN32 AND TARGET_AMD64)
+if(HOST_WIN32 AND HOST_AMD64)
     enable_language(ASM_MASM)
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
