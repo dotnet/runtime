@@ -516,7 +516,13 @@ mono_llvm_jit_init ()
 #endif
 
 	llvm::StringMap<bool> cpu_features;
-	llvm::SmallVector<llvm::StringRef, 64> supported_features;
+	// Why 76? LLVM 9 supports 76 different x86 feature strings. This
+	// requires around 1216 bytes of data in the local activation record.
+	// It'd be possible to stream entries to setMAttrs using
+	// llvm::map_range and llvm::make_filter_range, but llvm::map_range
+	// isn't available in LLVM 6, and it's not worth writing a small
+	// single-purpose one here.
+	llvm::SmallVector<llvm::StringRef, 76> supported_features;
 	if (llvm::sys::getHostCPUFeatures (cpu_features)) {
 		for (const auto &feature : cpu_features) {
 			if (feature.second)
