@@ -931,7 +931,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_create_converter_for_marshal_string: function (args_marshal) {
+		_create_converter_for_marshal_string: function (method, args_marshal) {
 			var primitiveConverters = this._primitive_converters;
 			if (!primitiveConverters)
 				primitiveConverters = this._create_primitive_converters ();
@@ -941,10 +941,26 @@ var BindingSupportLib = {
 			var is_result_definitely_unmarshaled = false,
 				is_result_possibly_unmarshaled = false,
 				result_unmarshaled_if_argc = -1,
-				needs_root_buffer = false;
+				needs_root_buffer = false,
+				depends_on_method_arguments = false;
 
 			for (var i = 0; i < args_marshal.length; ++i) {
 				var key = args_marshal[i];
+
+				if (key === "a") {
+					if (!method)
+						throw new Error ("Cannot use automatic argument type handling without a method ptr");
+					depends_on_method_arguments = true;
+					needs_root_buffer = true;
+					// FIXME
+					steps.push({
+						convert: (() => { throw new Error('nyi'); }),
+						size: 0,
+						needs_root: true,
+						key: 'a'
+					});
+					continue;
+				}
 
 				if (i === args_marshal.length - 1) {
 					if (key === "!") {
@@ -954,24 +970,26 @@ var BindingSupportLib = {
 						is_result_possibly_unmarshaled = true;
 						result_unmarshaled_if_argc = args_marshal.length - 1;
 					}
-				} else if (key === "!")
+				} else if (key === "!") {
 					throw new Error ("! must be at the end of the signature");
+				}
 
-				var conv = primitiveConverters.get (key);
+				conv = primitiveConverters.get (key);
 				if (!conv)
-					throw new Error ("Unknown parameter type " + type);
+					throw new Error (`Unknown parameter type ${key}`);
 
 				var localStep = Object.create (conv.steps[0]);
 				localStep.size = conv.size;
 				if (conv.needs_root)
 					needs_root_buffer = true;
 				localStep.needs_root = conv.needs_root;
-				localStep.key = args_marshal[i];
+				localStep.key = key;
 				steps.push (localStep);
 				size += conv.size;
 			}
 
 			return {
+				method: depends_on_method_arguments ? method : null,
 				steps: steps, size: size, args_marshal: args_marshal,
 				is_result_definitely_unmarshaled: is_result_definitely_unmarshaled,
 				is_result_possibly_unmarshaled: is_result_possibly_unmarshaled,
@@ -980,21 +998,27 @@ var BindingSupportLib = {
 			};
 		},
 
-		_get_converter_for_marshal_string: function (args_marshal) {
+		_get_converter_for_marshal_string: function (method, args_marshal) {
 			if (!this._signature_converters)
 				this._signature_converters = new Map();
 
 			var converter = this._signature_converters.get (args_marshal);
+			if (converter && converter.method && (converter.method !== method)) {
+				// FIXME
+				console.warn(`Not using cached converter for signature '${args_marshal}' because it was compiled for a different method. This will be very slow!`);
+				return this._create_converter_for_marshal_string (method, args_marshal);
+			}
+
 			if (!converter) {
-				converter = this._create_converter_for_marshal_string (args_marshal);
+				converter = this._create_converter_for_marshal_string (method, args_marshal);
 				this._signature_converters.set (args_marshal, converter);
 			}
 
 			return converter;
 		},
 
-		_compile_converter_for_marshal_string: function (args_marshal) {
-			var converter = this._get_converter_for_marshal_string (args_marshal);
+		_compile_converter_for_marshal_string: function (method, args_marshal) {
+			var converter = this._get_converter_for_marshal_string (method, args_marshal);
 			if (typeof (converter.args_marshal) !== "string")
 				throw new Error ("Corrupt converter for '" + args_marshal + "'");
 
@@ -1268,7 +1292,7 @@ var BindingSupportLib = {
 
 			// check if the method signature needs argument mashalling
 			if (needs_converter) {
-				converter = this._compile_converter_for_marshal_string (args_marshal);
+				converter = this._compile_converter_for_marshal_string (method, args_marshal);
 
 				is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
 
@@ -1340,7 +1364,7 @@ var BindingSupportLib = {
 
 			var converter = null;
 			if (typeof (args_marshal) === "string")
-				converter = this._compile_converter_for_marshal_string (args_marshal);
+				converter = this._compile_converter_for_marshal_string (method, args_marshal);
 
 			var closure = {
 				library_mono: MONO,
