@@ -398,7 +398,8 @@
 
     <!-- Windows specific options -->
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <_MonoAOTCPPFLAGS Include="-DTARGET_WIN32" />
+      <_MonoAOTCPPFLAGS Include="-DHOST_WIN32" />
+      <_MonoAOTCPPFLAGS Include="-D__WIN32__" />
       <_MonoAOTCPPFLAGS Include="-DWIN32" />
       <_MonoAOTCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
       <!--<_MonoAOTCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
