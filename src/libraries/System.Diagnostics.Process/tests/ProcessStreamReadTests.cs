@@ -344,42 +344,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [PlatformSpecific(~TestPlatforms.Windows)] // currently on Windows these operations async-over-sync on Windows
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task ReadAsync_OutputStreams_Cancel_RespondsQuickly()
-        {
-            Process p = CreateProcessLong();
-            try
-            {
-                p.StartInfo.RedirectStandardOutput = true;
-                p.StartInfo.RedirectStandardError = true;
-                Assert.True(p.Start());
-
-                using (var cts = new CancellationTokenSource())
-                {
-                    ValueTask<int> vt = p.StandardOutput.ReadAsync(new char[1].AsMemory(), cts.Token);
-                    await Task.Delay(1);
-                    Assert.False(vt.IsCompleted);
-                    cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
-                }
-
-                using (var cts = new CancellationTokenSource())
-                {
-                    ValueTask<int> vt = p.StandardError.ReadAsync(new char[1].AsMemory(), cts.Token);
-                    await Task.Delay(1);
-                    Assert.False(vt.IsCompleted);
-                    cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
-                }
-            }
-            finally
-            {
-                p.Kill();
-                p.Dispose();
-            }
-        }
-
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSyncStreams()
         {
