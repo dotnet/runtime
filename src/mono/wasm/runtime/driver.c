@@ -1132,22 +1132,22 @@ mono_wasm_intern_string (MonoString *string)
 
 typedef struct wasm_method_signature_info {
 	int result_marshal_type;
-	MonoType* result_type;
+	MonoClass* result_class;
 	int parameter_count;
 	int* parameter_marshal_types;
-	MonoType** parameter_types;
+	MonoClass** parameter_classes;
 } wasm_method_signature_info;
 
-void build_signature_info_record (MonoType *type, int* resultMtype, MonoType** resultType) {
+void build_signature_info_record (MonoType *type, int* resultMtype, MonoClass** resultClass) {
 	if (!type) {
 		*resultMtype = 0;
-		*resultType = 0;
+		*resultClass = 0;
 		return;
 	}
 	int mono_type = mono_type_get_type (type);
 	MonoClass * klass = mono_type_get_class (type);
 	*resultMtype = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
-	*resultType = type;
+	*resultClass = klass;
 
 	/*
 	const char * tname = mono_type_get_name (type);
@@ -1175,7 +1175,7 @@ mono_wasm_create_method_signature_info (MonoMethod *method)
 	int parameter_count = mono_signature_get_param_count (sig);
 	int allocation_size = sizeof(wasm_method_signature_info) + 
 		(parameter_count * sizeof(int)) +
-		(parameter_count * sizeof(MonoType *)) +
+		(parameter_count * sizeof(MonoClass *)) +
 		12;
 
 	wasm_method_signature_info *result = malloc (allocation_size);
@@ -1183,15 +1183,15 @@ mono_wasm_create_method_signature_info (MonoMethod *method)
 
 	result->parameter_count = parameter_count;
 	result->parameter_marshal_types = (((void *)result) + sizeof(wasm_method_signature_info) + 4);
-	result->parameter_types = ((void *)result->parameter_marshal_types) + (sizeof(int) * parameter_count) + 4;
+	result->parameter_classes = ((void *)result->parameter_marshal_types) + (sizeof(int) * parameter_count) + 4;
 
-	build_signature_info_record (mono_signature_get_return_type (sig), &result->result_marshal_type, &result->result_type);
+	build_signature_info_record (mono_signature_get_return_type (sig), &result->result_marshal_type, &result->result_class);
 
 	int i = 0;
 	void *iter = 0;
 	MonoType *p = 0;
 	while ((p = mono_signature_get_params (sig, &iter)) != 0) {
-		build_signature_info_record (p, &(result->parameter_marshal_types[i]), &(result->parameter_types[i]));
+		build_signature_info_record (p, &(result->parameter_marshal_types[i]), &(result->parameter_classes[i]));
 		i++;
 	}
 

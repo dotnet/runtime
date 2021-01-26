@@ -10,7 +10,50 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
+        public class CustomClass {
+            public double D;
+
+            public static CustomClass JSToManaged (double d) {
+                Console.WriteLine("CustomClass.JSToManaged {0}", d);
+                return new CustomClass { D = d };
+            }
+
+            public static double ManagedToJS (CustomClass ct) {
+                Console.WriteLine("CustomClass.ManagedToJS {0}", ct?.D);
+                return ct?.D ?? -1;
+            }
+        }
+
+        public struct CustomStruct {
+            public double D;
+
+            public static CustomStruct JSToManaged (double d) {
+                Console.WriteLine("CustomStruct.JSToManaged {0}", d);
+                return new CustomStruct { D = d };
+            }
+
+            public static double ManagedToJS (CustomStruct ct) {
+                Console.WriteLine("CustomStruct.ManagedToJS {0}", ct.D);
+                return ct.D;
+            }
+        }
+
         internal const string INTEROP_CLASS = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
+
+        internal static CustomClass _ccValue;
+        private static void InvokeCustomClass(CustomClass cc)
+        {
+            Console.WriteLine("InvokeCustomClass got argument cc.D == {0}", cc?.D);
+            _ccValue = cc;
+        }
+
+        internal static CustomStruct _csValue;
+        private static void InvokeCustomStruct(CustomStruct cs)
+        {
+            Console.WriteLine("InvokeCustomStruct got argument cs.D == {0}", cs.D);
+            _csValue = cs;
+        }
+
         internal static int _i32Value;
         private static void InvokeI32(int a, int b)
         {

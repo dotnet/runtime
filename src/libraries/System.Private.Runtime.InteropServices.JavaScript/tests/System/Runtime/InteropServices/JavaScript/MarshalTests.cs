@@ -897,6 +897,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
         }
 
+/*
         [Fact]
         public static void MarshalDateTimeByValueAutomatic()
         {
@@ -907,6 +908,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             );
             Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
         }
+*/
 
         [Fact]
         public static void MarshalUri()
@@ -921,15 +923,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalUriAutomatic()
+        public static void MarshalCustomClassAutomatic()
         {
-            var expected = new System.Uri("https://www.example.com/");
-            HelperMarshal._uriValue = default(System.Uri);
+            HelperMarshal._ccValue = new HelperMarshal.CustomClass ();
             Runtime.InvokeJS(
-                @"var uri = 'https://www.example.com/';
-                App.call_test_method ('InvokeUri', [ uri ]);"
+                @"App.call_test_method ('InvokeCustomClass', [ 4.13 ], 'a');"
             );
-            Assert.Equal(expected, HelperMarshal._uriValue);
+            Assert.Equal(4.13, HelperMarshal._ccValue?.D);
+        }
+
+        [Fact]
+        public static void MarshalCustomStructAutomatic()
+        {
+            HelperMarshal._csValue = default(HelperMarshal.CustomStruct);
+            Runtime.InvokeJS(
+                @"App.call_test_method ('InvokeCustomStruct', [ 4.13 ], 'a');"
+            );
+            Assert.Equal(4.13, HelperMarshal._csValue.D);
         }
     }
 }
