@@ -1861,7 +1861,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
     {
         protected ObjectiveCBase() { }
 
-        /// <inheritdoc />
         public void Dispose() { }
 
         protected virtual void Dispose(bool disposing) { }
