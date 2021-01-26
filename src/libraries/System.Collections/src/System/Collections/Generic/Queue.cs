@@ -385,6 +385,63 @@ namespace System.Collections.Generic
             }
         }
 
+        /// <summary>
+        /// Ensures that the capacity of this Queue is at least the specified <paramref name="capacity"/>.
+        /// </summary>
+        /// <param name="capacity">The minimum capacity to ensure</param>
+        public int EnsureCapacity(int capacity)
+        {
+            if (capacity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (_array.Length < capacity)
+            {
+                int newCapacity = (int)((long)(_array.Length == 0 ? 1 : _array.Length) * (long)GrowFactor / 100);
+                while (newCapacity < capacity)
+                {
+                    newCapacity = (int)((long)newCapacity * (long)GrowFactor / 100);
+                }
+
+                // MaxArrayLength is defined in Array.MaxArrayLength and in gchelpers in CoreCLR.
+                // It represents the maximum number of elements that can be in an array where
+                // the size of the element is greater than one byte; a separate, slightly larger constant,
+                // is used when the size of the element is one.
+                const int MaxArrayLength = 0x7FEFFFFF;
+                if ((uint)newCapacity > MaxArrayLength)
+                {
+                    newCapacity = MaxArrayLength;
+                    if (newCapacity < capacity) newCapacity = capacity;
+                }
+
+                if (newCapacity < _array.Length + MinimumGrow)
+                {
+                    newCapacity = _array.Length + MinimumGrow;
+                }
+
+                T[] newArray = new T[newCapacity];
+                if (_size > 0)
+                {
+                    if (_head < _tail)
+                    {
+                        Array.Copy(_array, _head, newArray, 0, _size);
+                    }
+                    else
+                    {
+                        Array.Copy(_array, _head, newArray, 0, _array.Length - _head);
+                        Array.Copy(_array, 0, newArray, _array.Length - _head, _tail);
+                    }
+                }
+
+                _array = newArray;
+                _head = 0;
+                _tail = _size;
+            }
+
+            return _array.Length;
+        }
+
         // Implements an enumerator for a Queue.  The enumerator uses the
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
