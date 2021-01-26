@@ -99,6 +99,7 @@ namespace System.Security.Cryptography
             byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
             HashAlgorithm = hashAlgorithm;
             _hmac = OpenHmac(passwordBytes);
+            CryptographicOperations.ZeroMemory(passwordBytes);
             // _blockSize is in bytes, HashSize is in bits.
             _blockSize = _hmac.HashSize >> 3;
 
