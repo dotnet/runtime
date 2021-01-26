@@ -54,8 +54,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
     [SupportedOSPlatform("macos")]
     public abstract class ObjectiveCBase : IDisposable
     {
-        public static readonly IntPtr InvalidInstanceValue = (IntPtr)(-1);
-
         /// <summary>
         /// Create a <see cref="ObjectiveCBase"/> instance.
         /// </summary>

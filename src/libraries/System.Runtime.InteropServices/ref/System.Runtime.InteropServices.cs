@@ -1859,8 +1859,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
     public abstract class ObjectiveCBase : IDisposable
     {
-        public static readonly IntPtr InvalidInstanceValue = (IntPtr)(-1);
-
         protected ObjectiveCBase() { }
 
         /// <inheritdoc />
