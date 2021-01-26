@@ -51,7 +51,7 @@
     <WasmNativeStrip>true</WasmNativeStrip>
   </PropertyGroup>
 
-  <Target Name="WasmBuildApp" AfterTargets="Publish" />
+  <Target Name="WasmBuildApp" AfterTargets="$(WasmBuildAppAfterThisTarget)" />
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
     <Error Condition="'@(_WasmAssemblies)' == ''" Text="Item _WasmAssemblies is empty" />
