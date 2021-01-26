@@ -20589,7 +20589,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         {
             // AMD64/x86 has FMA3 instructions to directly compute fma. However, in
             // the scenario where it is supported we should have generated GT_HWINTRINSIC
-            // noodes in place of the GT_INTRINSIC node.
+            // nodes in place of the GT_INTRINSIC node.
 
             assert(!compIsaSupportedDebugOnly(InstructionSet_FMA));
             return false;
@@ -20612,7 +20612,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         {
             // ARM64 has AdvSimd instructions to directly compute fma. However, in
             // the scenario where it is supported we should have generated GT_HWINTRINSIC
-            // noodes in place of the GT_INTRINSIC node.
+            // nodes in place of the GT_INTRINSIC node.
 
             assert(!compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
             return false;
