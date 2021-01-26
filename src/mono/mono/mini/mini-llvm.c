@@ -9093,6 +9093,22 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
+		case OP_XOP_X_X: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_LLVM_FABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_FLOAT; break;
+			case SIMD_OP_LLVM_DABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_DOUBLE; break;
+			case SIMD_OP_LLVM_I8ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT8; break;
+			case SIMD_OP_LLVM_I16ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT16; break;
+			case SIMD_OP_LLVM_I32ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT32; break;
+			case SIMD_OP_LLVM_I64ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT64; break;
+			default: g_assert_not_reached (); break;
+			}
+
+			LLVMValueRef arg0 = lhs;
+			values [ins->dreg] = call_intrins (ctx, id, &arg0, "");
+			break;
+		}
 		case OP_LSCNT32:
 		case OP_LSCNT64: {
 			// %shr = ashr i32 %x, 31
@@ -10564,6 +10580,24 @@ add_intrinsic (LLVMModuleRef module, int id)
 	case INTRINS_BITREVERSE_I64:	
 		intrins = add_intrins1 (module, id, LLVMInt64Type ());	
 		break;	
+	case INTRINS_AARCH64_ADV_SIMD_ABS_FLOAT:
+		intrins = add_intrins1 (module, id, sse_r4_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_DOUBLE:
+		intrins = add_intrins1 (module, id, sse_r8_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_INT8:
+		intrins = add_intrins1 (module, id, sse_i1_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_INT16:
+		intrins = add_intrins1 (module, id, sse_i2_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_INT32:
+		intrins = add_intrins1 (module, id, sse_i4_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_INT64:
+		intrins = add_intrins1 (module, id, sse_i8_t);
+		break;
 #endif
 	default:
 		g_assert_not_reached ();
@@ -11951,6 +11985,7 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #if defined(TARGET_ARM64)
 		{ "crc",	MONO_CPU_ARM64_CRC },
 		{ "crypto",	MONO_CPU_ARM64_CRYPTO },
+		{ "neon",	MONO_CPU_ARM64_ADVSIMD }
 #endif
 	};
 	if (!cpu_features)
