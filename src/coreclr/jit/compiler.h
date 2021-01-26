@@ -5561,7 +5561,7 @@ protected:
     bool fgHaveProfileData();
     void fgComputeProfileScale();
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
-    void fgInstrumentMethod();
+    PhaseStatus fgInstrumentMethod();
 
 public:
     // fgIsUsingProfileWeights - returns true if we have real profile data for this method
