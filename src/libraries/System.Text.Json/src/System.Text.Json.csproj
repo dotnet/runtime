@@ -177,6 +177,7 @@
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandlerOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandlingStrategy.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionEmitMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionMemberAccessor.cs" />

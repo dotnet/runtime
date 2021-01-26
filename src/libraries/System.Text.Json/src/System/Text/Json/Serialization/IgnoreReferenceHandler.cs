@@ -5,7 +5,7 @@ namespace System.Text.Json.Serialization
 {
     internal sealed class IgnoreReferenceHandler : ReferenceHandler
     {
-        public IgnoreReferenceHandler() => UsePreserveSemantics = false;
+        public IgnoreReferenceHandler() => HandlingStrategy = ReferenceHandlingStrategy.IgnoreCycle;
 
         public override ReferenceResolver CreateResolver() => new IgnoreReferenceResolver();
     }

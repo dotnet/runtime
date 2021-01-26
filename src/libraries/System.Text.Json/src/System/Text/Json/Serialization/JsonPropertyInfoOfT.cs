@@ -138,8 +138,9 @@ namespace System.Text.Json
         {
             T value = Get!(obj);
 
-            if (JsonSerializer.IsIgnoreCyclesEnabled(Options) && !Converter.IsValueType &&
-                value != null && state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
+            if (Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycle &&
+                !Converter.IsValueType && value != null &&
+                state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
             {
                 // If a reference cycle is detected, treat value as null.
                 value = default!;

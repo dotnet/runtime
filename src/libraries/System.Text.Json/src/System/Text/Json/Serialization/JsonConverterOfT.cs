@@ -196,7 +196,8 @@ namespace System.Text.Json.Serialization
                         ref reader);
                 }
 
-                if (CanBePolymorphic && JsonSerializer.IsPreserveReferencesEnabled(options) && value is JsonElement element)
+                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve &&
+                    CanBePolymorphic && value is JsonElement element)
                 {
                     // Edge case where we want to lookup for a reference when parsing into typeof(object)
                     // instead of return `value` as a JsonElement.
@@ -303,20 +304,17 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
-            bool ignoreCyclesEnabled = JsonSerializer.IsIgnoreCyclesEnabled(options);
-            bool ignoreCyclesPopReference = false;
-
-            if (CanBeNull && IsNull(value))
+            if (CanBeNull && !HandleNullOnWrite && IsNull(value))
             {
-                if (!HandleNullOnWrite)
-                {
-                    // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
-                    // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
-                    writer.WriteNullValue();
-                    return true;
-                }
+                // We do not pass null values to converters unless HandleNullOnWrite is true. Null values for properties were
+                // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
+                writer.WriteNullValue();
+                return true;
             }
-            else if (ignoreCyclesEnabled && !IsValueType)
+
+            bool ignoreCyclesPopReference = false;
+            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycle &&
+                !IsValueType && !IsNull(value))
             {
                 ReferenceResolver resolver = state.ReferenceResolver;
                 // Write null to break reference cycles.
@@ -363,9 +361,10 @@ namespace System.Text.Json.Serialization
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                     if (jsonConverter != this)
                     {
-                        if (ignoreCyclesEnabled && jsonConverter.IsValueType)
+                        if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycle &&
+                            jsonConverter.IsValueType)
                         {
-                            // For boxed value types: push the value before it gets unboxed.
+                            // For boxed value types: push the value before it gets unboxed on TryWriteAsObject.
                             state.ReferenceResolver.PushReferenceForCycleDetection(value);
                             ignoreCyclesPopReference = true;
                         }

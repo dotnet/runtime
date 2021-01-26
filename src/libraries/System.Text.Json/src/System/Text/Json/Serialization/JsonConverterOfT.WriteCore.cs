@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Root object is a boxed value type, we need to push it to the reference stack before it gets unboxed here.
-                if (value != null && JsonSerializer.IsIgnoreCyclesEnabled(options))
+                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycle && value != null)
                 {
                     state.ReferenceResolver.PushReferenceForCycleDetection(value);
                 }

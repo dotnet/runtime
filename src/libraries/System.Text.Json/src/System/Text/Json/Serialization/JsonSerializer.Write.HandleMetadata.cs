@@ -84,11 +84,5 @@ namespace System.Text.Json
 
             return writtenMetadataName;
         }
-
-        internal static bool IsPreserveReferencesEnabled(JsonSerializerOptions options)
-            => options.ReferenceHandler?.UsePreserveSemantics ?? false;
-
-        internal static bool IsIgnoreCyclesEnabled(JsonSerializerOptions options)
-            => !options.ReferenceHandler?.UsePreserveSemantics ?? false;
     }
 }
