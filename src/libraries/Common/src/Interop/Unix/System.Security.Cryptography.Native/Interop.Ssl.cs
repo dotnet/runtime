@@ -368,7 +368,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private SafeSslHandle() : base(IntPtr.Zero, true)
+        public SafeSslHandle() : base(IntPtr.Zero, true)
         {
         }
 

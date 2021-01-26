@@ -9,8 +9,8 @@ namespace System.Net.Http.Headers
 {
     public class RetryConditionHeaderValue : ICloneable
     {
-        private DateTimeOffset? _date;
-        private TimeSpan? _delta;
+        private readonly DateTimeOffset? _date;
+        private readonly TimeSpan? _delta;
 
         public DateTimeOffset? Date
         {
@@ -44,10 +44,6 @@ namespace System.Net.Http.Headers
 
             _delta = source._delta;
             _date = source._date;
-        }
-
-        private RetryConditionHeaderValue()
-        {
         }
 
         public override string ToString()
@@ -166,18 +162,15 @@ namespace System.Net.Http.Headers
                 current = input.Length;
             }
 
-            RetryConditionHeaderValue result = new RetryConditionHeaderValue();
-
             if (deltaSeconds == -1) // we didn't change delta, so we must have found a date.
             {
-                result._date = date;
+                parsedValue = new RetryConditionHeaderValue(date);
             }
             else
             {
-                result._delta = new TimeSpan(0, 0, deltaSeconds);
+                parsedValue = new RetryConditionHeaderValue(new TimeSpan(0, 0, deltaSeconds));
             }
 
-            parsedValue = result;
             return current - startIndex;
         }
 

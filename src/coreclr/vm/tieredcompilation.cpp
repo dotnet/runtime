@@ -821,15 +821,9 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
         PrepareCodeConfigBuffer configBuffer(nativeCodeVersion);
         PrepareCodeConfig *config = configBuffer.GetConfig();
 
-#if defined(TARGET_X86)
-        // Deferring X86 support until a need is observed or
-        // time permits investigation into all the potential issues.
-        // https://github.com/dotnet/runtime/issues/33582
-#else
         // This is a recompiling request which means the caller was
         // in COOP mode since the code already ran.
         _ASSERTE(!pMethod->HasUnmanagedCallersOnlyAttribute());
-#endif
         config->SetCallerGCMode(CallerGCMode::Coop);
         pCode = pMethod->PrepareCode(config);
         LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "TieredCompilationManager::CompileCodeVersion Method=0x%pM (%s::%s), code version id=0x%x, code ptr=0x%p\n",
@@ -928,30 +922,38 @@ NativeCodeVersion TieredCompilationManager::GetNextMethodToOptimize()
 }
 
 //static
-CORJIT_FLAGS TieredCompilationManager::GetJitFlags(NativeCodeVersion nativeCodeVersion)
+CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 {
-    LIMITED_METHOD_CONTRACT;
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(config != nullptr);
+    _ASSERTE(
+        !config->WasTieringDisabledBeforeJitting() ||
+        config->GetCodeVersion().GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
 
     CORJIT_FLAGS flags;
-    MethodDesc *methodDesc = nativeCodeVersion.GetMethodDesc();
-    if (!methodDesc->IsEligibleForTieredCompilation())
-    {
-#ifdef FEATURE_INTERPRETER
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
-#endif
-        return flags;
-    }
 
     // Determine the optimization tier for the default code version (slightly faster common path during startup compared to
     // below), and disable call counting and set the optimization tier if it's not going to be tier 0 (this is used in other
     // places for the default code version where necessary to avoid the extra expense of GetOptimizationTier()).
-    if (nativeCodeVersion.IsDefaultVersion())
+    NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
+    if (nativeCodeVersion.IsDefaultVersion() && !config->WasTieringDisabledBeforeJitting())
     {
+        MethodDesc *methodDesc = nativeCodeVersion.GetMethodDesc();
+        if (!methodDesc->IsEligibleForTieredCompilation())
+        {
+            _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
+        #ifdef FEATURE_INTERPRETER
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
+        #endif
+            return flags;
+        }
+
         NativeCodeVersion::OptimizationTier newOptimizationTier;
         if (!methodDesc->RequestedAggressiveOptimization())
         {
             if (g_pConfig->TieredCompilation_QuickJit())
             {
+                _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 return flags;
             }

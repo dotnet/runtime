@@ -215,6 +215,32 @@ namespace System.Numerics
                 (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
         }
 
+        /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Log2Ceiling(uint value)
+        {
+            int result = Log2(value);
+            if (PopCount(value) != 1)
+            {
+                result++;
+            }
+            return result;
+        }
+
+        /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Log2Ceiling(ulong value)
+        {
+            int result = Log2(value);
+            if (PopCount(value) != 1)
+            {
+                result++;
+            }
+            return result;
+        }
+
         /// <summary>
         /// Returns the population count (number of bits set) of a mask.
         /// Similar in behavior to the x86 instruction POPCNT.

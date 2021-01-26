@@ -16,7 +16,7 @@ namespace System.Data.OleDb
         // stores the exception with last error.HRESULT from IDBProperties.GetProperties
         private Exception? lastErrorFromProvider;
 
-        private DBPropSet() : base(IntPtr.Zero, true)
+        public DBPropSet() : base(IntPtr.Zero, true)
         {
             propertySetCount = 0;
         }

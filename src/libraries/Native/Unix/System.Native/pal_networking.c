@@ -601,12 +601,6 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t ad
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
 
-    sa_family_t platformFamily;
-    if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &platformFamily))
-    {
-        return GetAddrInfoErrorFlags_EAI_FAMILY;
-    }
-
     struct GetAddrInfoAsyncState* state = malloc(sizeof(*state) + addrlen + 1);
 
     if (state == NULL)
@@ -622,24 +616,22 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, int32_t ad
 
     memcpy(state->address, address, addrlen + 1);
 
-    *state = (struct GetAddrInfoAsyncState) {
-        .gai_request = {
-            .ar_name = state->address,
-            .ar_service = NULL,
-            .ar_request = &state->hint,
-            .ar_result = NULL
-        },
-        .gai_requests = &state->gai_request,
-        .sigevent = {
-            .sigev_notify = SIGEV_THREAD,
-            .sigev_value = {
-                .sival_ptr = state
-            },
-            .sigev_notify_function = GetHostEntryForNameAsyncComplete
-        },
-        .entry = entry,
-        .callback = callback
+    state->gai_request = (struct gaicb) {
+        .ar_name = state->address,
+        .ar_service = NULL,
+        .ar_request = &state->hint,
+        .ar_result = NULL
     };
+    state->gai_requests = &state->gai_request;
+    state->sigevent = (struct sigevent) {
+        .sigev_notify = SIGEV_THREAD,
+        .sigev_value = {
+            .sival_ptr = state
+        },
+        .sigev_notify_function = GetHostEntryForNameAsyncComplete
+    };
+    state->entry = entry;
+    state->callback = callback;
 
     atomic_thread_fence(memory_order_release);
 

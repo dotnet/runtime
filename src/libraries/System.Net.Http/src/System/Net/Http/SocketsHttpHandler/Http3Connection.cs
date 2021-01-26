@@ -15,8 +15,7 @@ namespace System.Net.Http
 {
     internal sealed class Http3Connection : HttpConnectionBase, IDisposable
     {
-        // TODO: once HTTP/3 is standardized, create APIs for these.
-        public static readonly Version HttpVersion30 = new Version(3, 0);
+        // TODO: once HTTP/3 is standardized, create APIs for this.
         public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3-29");
 
         private readonly HttpConnectionPool _pool;

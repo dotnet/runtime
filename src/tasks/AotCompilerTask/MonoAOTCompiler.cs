@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
@@ -27,6 +29,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     [Required]
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// Directory where the AOT'ed files will be emitted
+    /// </summary>
+    [NotNull]
+    [Required]
+    public string? OutputDir { get; set; }
 
     /// <summary>
     /// Assemblies which were AOT compiled.
@@ -103,7 +112,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? MsymPath { get; set; }
 
-    public List<string> FileWrites { get; } = new();
+    [Output]
+    public string[]? FileWrites { get; private set; }
+
+    private List<string> _fileWrites = new();
 
     private ConcurrentBag<ITaskItem> compiledAssemblies = new ConcurrentBag<ITaskItem>();
     private MonoAotMode parsedAotMode;
@@ -127,6 +139,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (Assemblies.Length == 0)
         {
             throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
+        }
+
+        if (!Directory.Exists(OutputDir))
+        {
+            Log.LogError($"OutputDir={OutputDir} doesn't exist");
+            return false;
         }
 
         if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
@@ -196,6 +214,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         CompiledAssemblies = compiledAssemblies.ToArray();
+        FileWrites = _fileWrites.ToArray();
 
         return !Log.HasLoggedErrors;
     }
@@ -237,12 +256,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             processArgs.Add("--nollvm");
         }
 
+        string assemblyFilename = Path.GetFileName(assembly);
+
         // compute output mode and file names
         if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.AotInterp)
         {
             aotArgs.Add("llvmonly");
 
-            string llvmBitcodeFile = Path.ChangeExtension(assembly, ".dll.bc");
+            string llvmBitcodeFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.bc"));
             aotAssembly.SetMetadata("LlvmBitcodeFile", llvmBitcodeFile);
 
             if (parsedAotMode == MonoAotMode.AotInterp)
@@ -271,20 +292,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 aotArgs.Add("asmonly");
 
-                string assemblerFile = Path.ChangeExtension(assembly, ".dll.s");
+                string assemblerFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.s"));
                 aotArgs.Add($"outfile={assemblerFile}");
                 aotAssembly.SetMetadata("AssemblerFile", assemblerFile);
             }
             else
             {
-                string objectFile = Path.ChangeExtension(assembly, ".dll.o");
+                string objectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.o"));
                 aotArgs.Add($"outfile={objectFile}");
                 aotAssembly.SetMetadata("ObjectFile", objectFile);
             }
 
             if (UseLLVM)
             {
-                string llvmObjectFile = Path.ChangeExtension(assembly, ".dll-llvm.o");
+                string llvmObjectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll-llvm.o"));
                 aotArgs.Add($"llvm-outfile={llvmObjectFile}");
                 aotAssembly.SetMetadata("LlvmObjectFile", llvmObjectFile);
             }
@@ -350,7 +371,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         using (var writer = File.CreateText(AotModulesTablePath!))
         {
-            FileWrites.Add(AotModulesTablePath!);
+            _fileWrites.Add(AotModulesTablePath!);
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
                 foreach (var symbol in symbols)
@@ -365,7 +386,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 }
                 writer.WriteLine("}");
 
-                foreach (var profiler in profilers!)
+                foreach (var profiler in profilers ?? Enumerable.Empty<string>())
                 {
                     writer.WriteLine($"void mono_profiler_init_{profiler} (const char *desc);");
                     writer.WriteLine("EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_" + profiler + " (const char *desc) { mono_profiler_init_" + profiler + " (desc); }");
@@ -406,6 +427,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 throw new NotSupportedException();
             }
+            Log.LogMessage(MessageImportance.Low, $"Generated {AotModulesTablePath}");
         }
     }
 }

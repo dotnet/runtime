@@ -89,9 +89,6 @@ namespace System
         public static extern double Log2(double x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double ScaleB(double x, int n);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern double FMod(double x, double y);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

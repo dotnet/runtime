@@ -79,6 +79,8 @@ namespace System.Net.Sockets.Tests
             {
                 s.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => s.SendFile(null));
+                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
+                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread));
                 Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null));
                 Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
                 Assert.Throws<ObjectDisposedException>(() => s.EndSendFile(null));
@@ -100,9 +102,42 @@ namespace System.Net.Sockets.Tests
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 Assert.Throws<NotSupportedException>(() => s.SendFile(null));
+                Assert.Throws<NotSupportedException>(() => s.SendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
+                Assert.Throws<NotSupportedException>(() => s.SendFile(null, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread));
                 Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null));
                 Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
             }
+        }
+
+        [ConditionalTheory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UdpConnection_ThrowsException(bool useAsync)
+        {
+            // Create file to send
+            byte[] preBuffer;
+            byte[] postBuffer;
+            Fletcher32 sentChecksum;
+            string filename = CreateFileToSend(size: 1, sendPreAndPostBuffers: false, out preBuffer, out postBuffer, out sentChecksum);
+
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+
+            client.Connect(listener.LocalEndPoint);
+
+            if (useAsync)
+            {
+                await Assert.ThrowsAsync<SocketException>(() => Task.Factory.FromAsync<string>(client.BeginSendFile, client.EndSendFile, filename, null));
+            }
+            else
+            {
+                Assert.Throws<SocketException>(() => client.SendFile(filename));
+            }
+
+            // Clean up the file we created
+            File.Delete(filename);
         }
 
         [Theory]
@@ -146,6 +181,39 @@ namespace System.Net.Sockets.Tests
             {
                 server.SendFile(null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
             }
+
+            byte[] receiveBuffer = new byte[1];
+            for (int i = 0; i < bytesExpected; i++)
+            {
+                Assert.Equal(1, client.Receive(receiveBuffer));
+            }
+
+            Assert.Equal(0, client.Available);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void SendFileSpan_NoFile_Succeeds(bool usePreBuffer, bool usePostBuffer)
+        {
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.BindToAnonymousPort(IPAddress.Loopback);
+            listener.Listen(1);
+
+            client.Connect(listener.LocalEndPoint);
+            using Socket server = listener.Accept();
+
+            server.SendFile(null);
+            Assert.Equal(0, client.Available);
+
+            byte[] preBuffer = usePreBuffer ? new byte[1] : null;
+            byte[] postBuffer = usePostBuffer ? new byte[1] : null;
+            int bytesExpected = (usePreBuffer ? 1 : 0) + (usePostBuffer ? 1 : 0);
+
+            server.SendFile(null, preBuffer.AsSpan(), postBuffer.AsSpan(), TransmitFileOptions.UseDefaultWorkerThread);
 
             byte[] receiveBuffer = new byte[1];
             for (int i = 0; i < bytesExpected; i++)

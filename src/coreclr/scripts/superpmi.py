@@ -1323,6 +1323,7 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitEnableNoWayAssert": "1",
             "COMPlus_JitNoForceFallback": "1",
             "COMPlus_JitRequired": "1",
+            "COMPlus_JitDisasmWithGC": "1",
             "COMPlus_TieredCompilation": "0" }
 
         if self.coreclr_args.gcinfo:

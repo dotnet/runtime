@@ -22,7 +22,7 @@ namespace System.Net.Http.Functional.Tests
         {
             useVersion ??= HttpVersion.Version11;
 
-            HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
+            HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion.Version30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
             if (useVersion >= HttpVersion.Version20)
             {

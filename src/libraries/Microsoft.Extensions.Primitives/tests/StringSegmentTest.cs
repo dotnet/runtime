@@ -271,6 +271,27 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(result);
         }
 
+        [Fact]
+        public void StringSegment_EndsWith_NullString_Throws()
+        {
+            // Arrange
+            var segment = new StringSegment();
+
+            // Act & assert
+            Assert.Throws<ArgumentNullException>("text", () => segment.EndsWith((string)null, StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void StringSegment_EndsWith_String_InvalidComparisonType_Throws()
+        {
+            // Arrange
+            var segment = new StringSegment();
+
+            // Act & assert
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => segment.EndsWith(string.Empty, (StringComparison)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => segment.EndsWith(string.Empty, (StringComparison)6));
+        }
+
         public static TheoryData<string, StringComparison, bool> StartsWithData
         {
             get
@@ -319,6 +340,27 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(result);
         }
 
+        [Fact]
+        public void StringSegment_StartsWith_NullString_Throws()
+        {
+            // Arrange
+            var segment = new StringSegment();
+
+            // Act & assert
+            Assert.Throws<ArgumentNullException>("text", () => segment.StartsWith((string)null, StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void StringSegment_StartsWith_String_InvalidComparisonType_Throws()
+        {
+            // Arrange
+            var segment = new StringSegment();
+
+            // Act & assert
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => segment.StartsWith(string.Empty, (StringComparison)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => segment.StartsWith(string.Empty, (StringComparison)6));
+        }
+
         public static TheoryData<string, StringComparison, bool> EqualsStringData
         {
             get
@@ -344,6 +386,39 @@ namespace Microsoft.Extensions.Primitives
 
             // Assert
             Assert.Equal(expectedResult, result);
+        }
+
+        [Fact]
+        public void StringSegment_Equals_NullString_Throws()
+        {
+            // Arrange
+            var segment = new StringSegment();
+
+            // Act & assert
+            Assert.Throws<ArgumentNullException>("text", () => segment.Equals((string)null));
+            Assert.Throws<ArgumentNullException>("text", () => segment.Equals((string)null, StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void StringSegment_Equals_String_InvalidComparisonType_Throws()
+        {
+            // Arrange
+            var segment = new StringSegment();
+
+            // Act & assert
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => segment.Equals("Hello!", (StringComparison)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => segment.Equals("Hello!", (StringComparison)6));
+        }
+
+        [Fact]
+        public void StringSegment_Equals_StringSegment_InvalidComparisonType_Throws()
+        {
+            // Arrange
+            var segment = new StringSegment();
+
+            // Act & assert
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => segment.Equals(new StringSegment(), (StringComparison)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => segment.Equals(new StringSegment(), (StringComparison)6));
         }
 
         [Fact]
@@ -847,6 +922,17 @@ namespace Microsoft.Extensions.Primitives
             Assert.True(result > 0, $"{segment} should be greater than {candidate}");
         }
 
+        [Fact]
+        public void StringSegment_Compare_InvalidComparisonType_Throws()
+        {
+            // Arrange
+            var segment = new StringSegment();
+
+            // Act & assert
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => StringSegment.Compare(segment, segment, (StringComparison)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("comparisonType", () => StringSegment.Compare(segment, segment, (StringComparison)6));
+        }
+
         [Theory]
         [MemberData(nameof(GetHashCode_ReturnsSameValueForEqualSubstringsData))]
         public void StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(StringSegment segment1, StringSegment segment2)
@@ -1168,6 +1254,181 @@ namespace Microsoft.Extensions.Primitives
 
             // Assert
             Assert.Equal(expected, actual.Value);
+        }
+
+        public static TheoryData<string, string, StringComparison, int> GlobalizationCompareTestData
+        {
+            get
+            {
+                return new()
+                {
+                    { null, string.Empty, StringComparison.Ordinal, -1 }, // null always compares before non-null
+                    { null, string.Empty, StringComparison.InvariantCultureIgnoreCase, -1 }, // null always compares before non-null
+                    { null, null, StringComparison.Ordinal, 0 },
+                    { null, null, StringComparison.InvariantCultureIgnoreCase, 0 },
+                    { string.Empty, null, StringComparison.Ordinal, 1 },
+                    { string.Empty, null, StringComparison.InvariantCultureIgnoreCase, 1 },
+                    { "x\u00E9y", "xE\u0301y", StringComparison.InvariantCulture, -1 }, // linguistic: lowercase sorts before uppercase
+                    { "x\u00E9y", "xE\u0301y", StringComparison.InvariantCultureIgnoreCase, 0 }, // equal (linguistic, one is normalized)
+                    { "Hello", "HELLO", StringComparison.InvariantCulture, -1 }, // linguistic: lowercase sorts before uppercase
+                    { "Hello", "HELLO", StringComparison.InvariantCultureIgnoreCase, 0 },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GlobalizationCompareTestData))]
+        public void StringSegment_CompareEqual_Globalized(string a, string b, StringComparison comparisonType, int expectedCompareToSign)
+        {
+            // quick sanity check: run the parameters against the normal string functions to ensure our test data is valid
+            int returnedSign = string.Compare(a, b, comparisonType);
+            Assert.Equal(expectedCompareToSign, Math.Sign(returnedSign));
+
+            StringSegment sa = MakePaddedStringSegment(a);
+            StringSegment sb = MakePaddedStringSegment(b);
+
+            // StringSegment.Compare
+            {
+                returnedSign = StringSegment.Compare(sa, sb, comparisonType);
+                Assert.Equal(expectedCompareToSign, Math.Sign(returnedSign));
+            }
+
+            // StringSegment.Equals(StringSegment, ...) and op_Equality
+            {
+                bool areEqual = StringSegment.Equals(sa, sb, comparisonType);
+                Assert.Equal(expectedCompareToSign == 0, areEqual);
+
+                areEqual = sa.Equals(sb, comparisonType);
+                Assert.Equal(expectedCompareToSign == 0, areEqual);
+
+                if (comparisonType == StringComparison.Ordinal)
+                {
+                    areEqual = sa.Equals(sb);
+                    Assert.Equal(expectedCompareToSign == 0, areEqual);
+
+                    areEqual = sa.Equals((object)sb);
+                    Assert.Equal(expectedCompareToSign == 0, areEqual);
+
+                    areEqual = (sa == sb);
+                    Assert.Equal(expectedCompareToSign == 0, areEqual);
+
+                    areEqual = !(sa != sb);
+                    Assert.Equal(expectedCompareToSign == 0, areEqual);
+                }
+            }
+
+            // StringSegment.Equals(string, ...) and IEquatable<string>.Equals
+            {
+                if (b == null)
+                {
+                    Assert.False(((IEquatable<string>)sa).Equals(b)); // null string never equal, not even to null StringSegment
+                }
+                else
+                {
+                    bool areEqual = sa.Equals(b, comparisonType);
+                    Assert.Equal(expectedCompareToSign == 0, areEqual);
+
+                    if (comparisonType == StringComparison.Ordinal)
+                    {
+                        areEqual = sa.Equals(b);
+                        Assert.Equal(expectedCompareToSign == 0, areEqual);
+
+                        areEqual = ((IEquatable<string>)sa).Equals(b);
+                        Assert.Equal(expectedCompareToSign == 0, areEqual);
+                    }
+                }
+            }
+        }
+
+        public static TheoryData<string, string, StringComparison, bool> GlobalizationStartsWithData
+        {
+            get
+            {
+                return new()
+                {
+                    { null, "\u200d", StringComparison.Ordinal, false }, // null never starts with anything
+                    { null, "\u200d", StringComparison.InvariantCulture, false }, // null never starts with anything
+                    { null, string.Empty, StringComparison.Ordinal, false }, // null never starts with anything
+                    { string.Empty, string.Empty, StringComparison.Ordinal, true }, // not char-for-char equivalent
+                    { string.Empty, "\u200d", StringComparison.Ordinal, false }, // not char-for-char equivalent
+                    { string.Empty, "\u200d", StringComparison.InvariantCulture, true }, // linguistic: ZWJ is zero-weight, occurs at all indices
+                    { "\u200d", string.Empty, StringComparison.Ordinal, true }, // all strings trivially start with the empty string
+                    { "\u200d", "\u200d\u200d", StringComparison.InvariantCulture, true }, // linguistic: ZWJ is zero-weight
+                    { "Hello", "h", StringComparison.Ordinal, false },
+                    { "Hello", "h", StringComparison.OrdinalIgnoreCase, true },
+                    { "Hello", "hi", StringComparison.Ordinal, false },
+                    { "Hello", "hi", StringComparison.OrdinalIgnoreCase, false },
+                };
+            }
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx has some IsPrefix / IsSuffix globalization bugs.")]
+        [MemberData(nameof(GlobalizationStartsWithData))]
+        public void StringSegment_StartsWith_Globalized(string a, string b, StringComparison comparisonType, bool expectedResult)
+        {
+            // quick sanity check: run the parameters against the normal string functions to ensure our test data is valid
+            if (a != null)
+            {
+                Assert.Equal(expectedResult, a.StartsWith(b, comparisonType));
+            }
+
+            // Arrange
+            StringSegment sa = MakePaddedStringSegment(a);
+
+            // Act
+            bool actualResult = sa.StartsWith(b, comparisonType);
+
+            // Assert
+            Assert.Equal(expectedResult, actualResult);
+        }
+
+        public static TheoryData<string, string, StringComparison, bool> GlobalizationEndsWithData
+        {
+            get
+            {
+                return new()
+                {
+                    { null, "\u200d", StringComparison.Ordinal, false }, // null never ends with anything
+                    { null, "\u200d", StringComparison.InvariantCulture, false }, // null never ends with anything
+                    { null, string.Empty, StringComparison.Ordinal, false }, // null never ends with anything
+                    { string.Empty, string.Empty, StringComparison.Ordinal, true }, // not char-for-char equivalent
+                    { string.Empty, "\u200d", StringComparison.Ordinal, false }, // not char-for-char equivalent
+                    { string.Empty, "\u200d", StringComparison.InvariantCulture, true }, // linguistic: ZWJ is zero-weight, occurs at all indices
+                    { "\u200d", string.Empty, StringComparison.Ordinal, true }, // all strings trivially ends with the empty string
+                    { "\u200d", "\u200d\u200d", StringComparison.InvariantCulture, true }, // linguistic: ZWJ is zero-weight
+                    { "HELLO", "o", StringComparison.Ordinal, false },
+                    { "HELLO", "o", StringComparison.OrdinalIgnoreCase, true },
+                    { "HELLO", "illo", StringComparison.Ordinal, false },
+                    { "HELLO", "illo", StringComparison.OrdinalIgnoreCase, false },
+                };
+            }
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx has some IsPrefix / IsSuffix globalization bugs.")]
+        [MemberData(nameof(GlobalizationEndsWithData))]
+        public void StringSegment_EndsWith_Globalized(string a, string b, StringComparison comparisonType, bool expectedResult)
+        {
+            // quick sanity check: run the parameters against the normal string functions to ensure our test data is valid
+            if (a != null)
+            {
+                Assert.Equal(expectedResult, a.EndsWith(b, comparisonType));
+            }
+
+            // Arrange
+            StringSegment sa = MakePaddedStringSegment(a);
+
+            // Act
+            bool actualResult = sa.EndsWith(b, comparisonType);
+
+            // Assert
+            Assert.Equal(expectedResult, actualResult);
+        }
+
+        private static StringSegment MakePaddedStringSegment(string input)
+        {
+            return (input is null) ? new StringSegment() : new StringSegment("xx" + input + "zzz", 2, input.Length);
         }
     }
 }

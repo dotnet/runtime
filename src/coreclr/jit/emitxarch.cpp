@@ -7416,8 +7416,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
         case ID_OP_CNS:
         case ID_OP_DSP:
         case ID_OP_DSP_CNS:
-        case ID_OP_AMD:
-        case ID_OP_AMD_CNS:
             if (id->idIsLargeCns())
             {
                 if (id->idIsLargeDsp())
@@ -7434,6 +7432,30 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
                 if (id->idIsLargeDsp())
                 {
                     return sizeof(instrDescDsp);
+                }
+                else
+                {
+                    return sizeof(instrDesc);
+                }
+            }
+        case ID_OP_AMD:
+        case ID_OP_AMD_CNS:
+            if (id->idIsLargeCns())
+            {
+                if (id->idIsLargeDsp())
+                {
+                    return sizeof(instrDescCnsAmd);
+                }
+                else
+                {
+                    return sizeof(instrDescCns);
+                }
+            }
+            else
+            {
+                if (id->idIsLargeDsp())
+                {
+                    return sizeof(instrDescAmd);
                 }
                 else
                 {
@@ -8821,7 +8843,7 @@ void emitter::emitDispIns(
             }
             else if (ins == INS_mov_xmm2i)
             {
-                printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), EA_16BYTE));
+                printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
             }
             else if (ins == INS_pmovmskb)
             {
