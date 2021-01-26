@@ -183,6 +183,7 @@ public:
         if (processingState == InstrumentationDataProcessingState::UpdateProcessMaskFlag)
         {
             processingState = (InstrumentationDataProcessingState)curValue;
+            assert((processingState & ~InstrumentationDataProcessingState::UpdateProcessMask) == InstrumentationDataProcessingState::Done);
             return false;
         }
 
@@ -244,7 +245,7 @@ bool ReadInstrumentationSchema(const uint8_t *pByte, size_t cbDataMax, SchemaHan
 }
 
 template<class SchemaAndDataHandler>
-bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDataHandler handler)
+bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDataHandler& handler)
 {
     ProcessSchemaUpdateFunctor schemaHandler;
     bool done = false;
@@ -252,11 +253,11 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
     int64_t lastTypeDataValue = 0;
     int32_t dataCountToRead = 0;
     
-    ReadCompressedInts(pByte, cbDataMax, [&schemaHandler, &done](int64_t curValue)
+    ReadCompressedInts(pByte, cbDataMax, [&](int64_t curValue)
     {
         if (dataCountToRead > 0)
         {
-            switch(prevSchema.InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
+            switch(schemaHandler.GetSchema().InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
             {
             case ICorJitInfo::PgoInstrumentationKind::FourByte:
             case ICorJitInfo::PgoInstrumentationKind::EightByte:
@@ -277,12 +278,9 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
                 break;
             }
             dataCountToRead--;
-            if (dataCountToRead > 0)
-            {
-                return true;
-            }
+            return true;
         }
-        if (schemaHandler(schemaHandler.ProcessInteger((int32_t)curValue)))
+        if (schemaHandler.ProcessInteger((int32_t)curValue))
         {
             if (schemaHandler.GetSchema().InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::Done)
             {
@@ -543,7 +541,8 @@ public:
         return true;
     }
 
-    bool AppendDataFromLastSchema()
+    template<class TypeHandleProcessor>
+    bool AppendDataFromLastSchema(TypeHandleProcessor& thProcessor)
     {
         uint8_t *pData = (pInstrumentationData + prevSchema.Offset);
         for (int32_t iDataElem = 0; iDataElem < prevSchema.Count; iDataElem++)
@@ -555,7 +554,7 @@ public:
                     return true;
                 case ICorJitInfo::PgoInstrumentationKind::FourByte:
                 {
-                    logicalDataToWrite = *(int32_t*)pData;
+                    logicalDataToWrite = *(volatile int32_t*)pData;
                     bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastIntDataWritten, byteWriter);
                     lastIntDataWritten = logicalDataToWrite;
                     if (!returnValue)
@@ -565,7 +564,7 @@ public:
                 }
                 case ICorJitInfo::PgoInstrumentationKind::EightByte:
                 {
-                    logicalDataToWrite = *(int64_t*)pData;
+                    logicalDataToWrite = *(volatile int64_t*)pData;
                     bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastIntDataWritten, byteWriter);
                     lastIntDataWritten = logicalDataToWrite;
                     if (!returnValue)
@@ -575,7 +574,11 @@ public:
                 }
                 case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
                 {
-                    logicalDataToWrite = *(intptr_t*)pData;
+                    logicalDataToWrite = *(volatile intptr_t*)pData;
+
+                    // As there could be tearing otherwise, inform the caller of exactly what value was written.
+                    thProcessor(logicalDataToWrite);
+
                     bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastTypeDataWritten, byteWriter);
                     lastTypeDataWritten = logicalDataToWrite;
                     if (!returnValue)

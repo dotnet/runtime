@@ -187,21 +187,21 @@ public:
         if (!writer.AppendSchema(schema))
             return false;
 
-        if (!writer.AppendDataFromLastSchema())
-            return false;
-        for (int32_t iEntry = 0; iEntry < schema.Count; iEntry++)
+        if (!writer.AppendDataFromLastSchema([&](int64_t thWritten)
         {
-            size_t entryOffset = schema.Offset + iEntry * InstrumentationKindToSize(schema.InstrumentationKind);
-
-            if ((schema.InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask) == ICorJitInfo::PgoInstrumentationKind::TypeHandle)
+            if (thWritten != 0)
             {
-                TypeHandle th = *(TypeHandle*)(pgoData->header.GetData() + entryOffset);
+                TypeHandle th = *(TypeHandle*)&thWritten;
                 if (!th.IsNull())
                 {
                     typeHandlesEncountered.Append(th);
                 }
             }
+        }))
+        {
+            return false;
         }
+
         return true;
     }
 };

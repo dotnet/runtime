@@ -295,7 +295,7 @@ public:
         Align8Byte = 0x20,
         AlignPointer = 0x30,
 
-        // Mask of all schema data types
+        // Mask of all schema alignment types
         AlignMask = 0x30,
 
         DescriptorMin = 0x40,

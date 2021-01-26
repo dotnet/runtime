@@ -2403,7 +2403,7 @@ namespace Internal.JitInterface
                         Debug.Assert((bwInstrumentationData.BaseStream.Position % 8) == 0);
                         nativeSchemas[i].Offset = new IntPtr(checked((int)bwInstrumentationData.BaseStream.Position));
                         nativeSchemas[i].ILOffset = pgoResultsSchemas[i].ILOffset;
-                        nativeSchemas[i].Count= pgoResultsSchemas[i].Count;
+                        nativeSchemas[i].Count = pgoResultsSchemas[i].Count;
                         nativeSchemas[i].Other = pgoResultsSchemas[i].Other;
                         nativeSchemas[i].InstrumentationKind = (PgoInstrumentationKind)pgoResultsSchemas[i].InstrumentationKind;
 

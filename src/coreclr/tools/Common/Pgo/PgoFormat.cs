@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using ILCompiler;
 using System.Text.RegularExpressions;
+using System.Collections;
 
 namespace Internal.Pgo
 {
@@ -52,7 +53,7 @@ namespace Internal.Pgo
     {
         void EmitType(TType type, TType previousValue);
         void EmitLong(long value, long previousValue);
-        void EmitDone();
+        bool EmitDone();
     }
 
     public struct PgoSchemaElem
@@ -66,7 +67,11 @@ namespace Internal.Pgo
         // but for Types/Method/Fields/conditions where Count > 1
         // the DataObject field is used instead
         public long DataLong;
-        public object DataObject;
+        public Array DataObject;
+
+        public bool DataHeldInDataLong => (Count == 1 &&
+                            (((InstrumentationKind & PgoInstrumentationKind.MarshalMask) == PgoInstrumentationKind.FourByte) ||
+                            ((InstrumentationKind & PgoInstrumentationKind.MarshalMask) == PgoInstrumentationKind.EightByte)));
     }
 
     public class PgoProcessor
@@ -86,10 +91,32 @@ namespace Internal.Pgo
         private const long SIGN_MASK_TWOBYTE_64BIT = unchecked((long)0xffffffffffffe000L);
         private const long SIGN_MASK_FOURBYTE_64BIT = unchecked((long)0xffffffff80000000L);
 
-        public static IEnumerable<long> PgoEncodedCompressedIntParser(byte[] bytes, int startOffset)
+        public class PgoEncodedCompressedIntParser : IEnumerable<long>, IEnumerator<long>
         {
-            for (int offset = startOffset; offset < bytes.Length;)
+            long _current;
+            byte[] _bytes;
+
+            public PgoEncodedCompressedIntParser(byte[] bytes, int startOffset)
             {
+                _bytes = bytes;
+                Offset = startOffset;
+            }
+
+            public int Offset { get; private set; }
+
+            public long Current => _current;
+
+            object IEnumerator.Current => throw new NotImplementedException();
+
+            public PgoEncodedCompressedIntParser GetEnumerator() => this;
+
+            public bool MoveNext()
+            {
+                byte[] bytes = _bytes;
+                int offset = Offset;
+                if (offset >= _bytes.Length)
+                    return false;
+
                 // This logic is a variant on CorSigUncompressSignedInt which allows for the full range of an int64_t
                 long signedInt;
                 if ((bytes[offset] & 0x80) == 0x0) // 0??? ????
@@ -132,8 +159,15 @@ namespace Internal.Pgo
                     offset += 5;
                 }
 
-                yield return signedInt;
+                Offset = offset;
+                _current = signedInt;
+                return true;
             }
+
+            void IDisposable.Dispose() { }
+            IEnumerator<long> IEnumerable<long>.GetEnumerator() => this;
+            IEnumerator IEnumerable.GetEnumerator() => this;
+            void IEnumerator.Reset() => throw new NotImplementedException();
         }
 
         public static IEnumerable<byte> PgoEncodedCompressedLongGenerator(IEnumerable<long> input)
@@ -195,9 +229,7 @@ namespace Internal.Pgo
             {
                 if (dataCountToRead > 0)
                 {
-                    if (curSchema.Count == 1 && 
-                            (((curSchema.InstrumentationKind & PgoInstrumentationKind.MarshalMask) == PgoInstrumentationKind.FourByte) ||
-                            ((curSchema.InstrumentationKind & PgoInstrumentationKind.MarshalMask) == PgoInstrumentationKind.EightByte)))
+                    if (curSchema.DataHeldInDataLong)
                     {
                         if (longsAreCompressed)
                             lastDataValue += value;
@@ -425,14 +457,32 @@ namespace Internal.Pgo
             }
 
             // Emit a "done" schema
-            valueEmitter.EmitDone();
+            if (!valueEmitter.EmitDone())
+            {
+                // If EmitDone returns true, no further data needs to be encoded.
+                // Otherwise, emit a "Done" schema
+                valueEmitter.EmitLong((long)InstrumentationDataProcessingState.Type, 0);
+                valueEmitter.EmitLong((long)PgoInstrumentationKind.Done, (long)prevSchema.InstrumentationKind);
+            }
         }
 
 
-        private class PgoSchemeMergeComparer : IComparer<PgoSchemaElem>
+        private class PgoSchemaMergeComparer : IComparer<PgoSchemaElem>, IEqualityComparer<PgoSchemaElem>
         {
-            public static PgoSchemeMergeComparer Singleton = new PgoSchemeMergeComparer();
-            int IComparer<PgoSchemaElem>.Compare(PgoSchemaElem x, PgoSchemaElem y)
+            public static PgoSchemaMergeComparer Singleton = new PgoSchemaMergeComparer();
+
+            private static bool SchemaMergesItemsWithDifferentOtherFields(PgoInstrumentationKind kind)
+            {
+                switch (kind)
+                {
+                    // 
+                    default:
+                        // All non-specified kinds are not distinguishable by Other field
+                        return false;
+                }
+            }
+
+            public int Compare(PgoSchemaElem x, PgoSchemaElem y)
             {
                 if (x.ILOffset != y.ILOffset)
                 {
@@ -440,57 +490,66 @@ namespace Internal.Pgo
                 }
                 if (x.InstrumentationKind != y.InstrumentationKind)
                 {
-                    return x.ILOffset.CompareTo(y.ILOffset);
+                    return x.InstrumentationKind.CompareTo(y.InstrumentationKind);
                 }
                 // Some InstrumentationKinds may be compared based on the Other field, some may not
-                if (x.Other != y.Other)
+                if (x.Other != y.Other && SchemaMergesItemsWithDifferentOtherFields(x.InstrumentationKind))
                 {
-                    switch (x.InstrumentationKind)
-                    {
-                        // 
-                        default:
-                            // All non-specified kinds are not distinguishable by Other field
-                            break;
-                    }
+                    return x.Other.CompareTo(y.Other);
                 }
 
                 return 0;
             }
+
+            public bool Equals(PgoSchemaElem x, PgoSchemaElem y)
+            {
+                if (x.ILOffset != y.ILOffset)
+                    return false;
+                if (x.InstrumentationKind != y.InstrumentationKind)
+                    return false;
+                if (x.InstrumentationKind != y.InstrumentationKind && SchemaMergesItemsWithDifferentOtherFields(x.InstrumentationKind))
+                    return false;
+                return true;
+            }
+            int IEqualityComparer<PgoSchemaElem>.GetHashCode(PgoSchemaElem obj) => obj.ILOffset ^ ((int)obj.InstrumentationKind << 20);
         }
 
         public static PgoSchemaElem[] Merge<TType>(ReadOnlySpan<PgoSchemaElem[]> schemasToMerge)
         {
-            // The merging algorithm will sort the schema data by iloffset, then by InstrumentationKind
-            // From there each individual instrumentation kind shall have a specific merging rule
-            SortedSet<PgoSchemaElem> dataMerger = new SortedSet<PgoSchemaElem>(PgoSchemeMergeComparer.Singleton);
-
-            foreach (PgoSchemaElem[] schemaSet in schemasToMerge)
             {
-                bool foundNumRuns = false;
+                // The merging algorithm will sort the schema data by iloffset, then by InstrumentationKind
+                // From there each individual instrumentation kind shall have a specific merging rule
+                Dictionary<PgoSchemaElem, PgoSchemaElem> dataMerger = new Dictionary<PgoSchemaElem, PgoSchemaElem>(PgoSchemaMergeComparer.Singleton);
 
-                foreach (PgoSchemaElem schema in schemaSet)
+                foreach (PgoSchemaElem[] schemaSet in schemasToMerge)
                 {
-                    if (schema.InstrumentationKind == PgoInstrumentationKind.NumRuns)
-                        foundNumRuns = true;
-                    MergeInSchemaElem(dataMerger, schema);
+                    bool foundNumRuns = false;
+
+                    foreach (PgoSchemaElem schema in schemaSet)
+                    {
+                        if (schema.InstrumentationKind == PgoInstrumentationKind.NumRuns)
+                            foundNumRuns = true;
+                        MergeInSchemaElem(dataMerger, schema);
+                    }
+
+                    if (!foundNumRuns)
+                    {
+                        PgoSchemaElem oneRunSchema = new PgoSchemaElem();
+                        oneRunSchema.InstrumentationKind = PgoInstrumentationKind.NumRuns;
+                        oneRunSchema.ILOffset = 0;
+                        oneRunSchema.Other = 1;
+                        oneRunSchema.Count = 1;
+                        MergeInSchemaElem(dataMerger, oneRunSchema);
+                    }
                 }
 
-                if (!foundNumRuns)
-                {
-                    PgoSchemaElem oneRunSchema = new PgoSchemaElem();
-                    oneRunSchema.InstrumentationKind = PgoInstrumentationKind.NumRuns;
-                    oneRunSchema.ILOffset = 0;
-                    oneRunSchema.Other = 1;
-                    oneRunSchema.Count = 1;
-                    MergeInSchemaElem(dataMerger, oneRunSchema);
-                }
+                PgoSchemaElem[] result = new PgoSchemaElem[dataMerger.Count];
+                dataMerger.Values.CopyTo(result, 0);
+                Array.Sort(result, PgoSchemaMergeComparer.Singleton);
+                return result;
             }
 
-            PgoSchemaElem[] result = new PgoSchemaElem[dataMerger.Count];
-            dataMerger.CopyTo(result, 0);
-            return result;
-
-            void MergeInSchemaElem(SortedSet<PgoSchemaElem> dataMerger, PgoSchemaElem schema)
+            void MergeInSchemaElem(Dictionary<PgoSchemaElem, PgoSchemaElem> dataMerger, PgoSchemaElem schema)
             {
                 long sortKey = ((long)schema.ILOffset) << 32 | (long)schema.InstrumentationKind;
                 if (dataMerger.TryGetValue(schema, out var existingSchemaItem))
@@ -539,15 +598,14 @@ namespace Internal.Pgo
                         }
                     }
 
-                    Debug.Assert(dataMerger.Comparer.Compare(schema, mergedElem) == 0);
-                    dataMerger.Remove(schema);
-                    dataMerger.Add(mergedElem);
+                    Debug.Assert(PgoSchemaMergeComparer.Singleton.Compare(schema, mergedElem) == 0);
+                    Debug.Assert(PgoSchemaMergeComparer.Singleton.Equals(schema, mergedElem) == true);
+                    dataMerger[mergedElem] = mergedElem;
                 }
                 else
                 {
-                    dataMerger.Add(schema);
+                    dataMerger.Add(schema, schema);
                 }
-
             }
         }
     }
