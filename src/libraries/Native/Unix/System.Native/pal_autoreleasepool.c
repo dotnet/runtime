@@ -1,0 +1,20 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include "pal_autoreleasepool.h"
+#include <stdlib.h>
+#include "pal_utilities.h"
+
+// These functions should not be used, but they need to be defined
+// to satisfy the tooling we used to enable redirecting P/Invokes
+// for the single file scenario.
+void* SystemNative_CreateAutoreleasePool()
+{
+    assert_err(false, "Autorelease pools not supported on this platform.", EINVAL);
+    return NULL;
+}
+
+void SystemNative_DrainAutoreleasePool(void* pool)
+{
+    assert_err(false, "Autorelease pools not supported on this platform.", EINVAL);
+}

@@ -21,6 +21,10 @@ using System.Threading.Tasks;
 using Internal.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
+#if FEATURE_OBJCWRAPPERS
+using System.Runtime.InteropServices.ObjectiveC;
+#endif
+
 namespace System.Threading
 {
     internal sealed class ThreadPoolWorkQueue
@@ -691,23 +695,19 @@ namespace System.Threading
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
+                    if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS() ||
+                        (OperatingSystem.IsMacOS() && ThreadPool.EnableDispatchAutoReleasePool))
+                    {
+                        DispatchItemWithAutoReleasePool(workItem, currentThread);
+                    }
 #pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.
-                    if (ThreadPool.EnableWorkerTracking)
+                    else if (ThreadPool.EnableWorkerTracking)
                     {
                         DispatchWorkItemWithWorkerTracking(workItem, currentThread);
                     }
-                    else if (workItem is Task task)
-                    {
-                        // Check for Task first as it's currently faster to type check
-                        // for Task and then Unsafe.As for the interface, rather than
-                        // vice versa, in particular when the object implements a bunch
-                        // of interfaces.
-                        task.ExecuteFromThreadPool(currentThread);
-                    }
                     else
                     {
-                        Debug.Assert(workItem is IThreadPoolWorkItem);
-                        Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+                        DispatchWorkItem(workItem, currentThread);
                     }
 #pragma warning restore CS0162
 
@@ -771,6 +771,33 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [SupportedOSPlatform("macos")]
+        [SupportedOSPlatform("ios")]
+        [SupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("watchos")]
+        private static void DispatchItemWithAutoReleasePool(object workItem, Thread currentThread)
+        {
+            IntPtr autoreleasePool = Interop.Sys.CreateAutoreleasePool();
+            try
+            {
+#pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.
+                if (ThreadPool.EnableWorkerTracking)
+                {
+                    DispatchWorkItemWithWorkerTracking(workItem, currentThread);
+                }
+                else
+                {
+                    DispatchWorkItem(workItem, currentThread);
+                }
+#pragma warning restore CS0162
+            }
+            finally
+            {
+                Interop.Sys.DrainAutoreleasePool(autoreleasePool);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void DispatchWorkItemWithWorkerTracking(object workItem, Thread currentThread)
         {
             Debug.Assert(ThreadPool.EnableWorkerTracking);
@@ -781,20 +808,26 @@ namespace System.Threading
             {
                 ThreadPool.ReportThreadStatus(isWorking: true);
                 reportedStatus = true;
-                if (workItem is Task task)
-                {
-                    task.ExecuteFromThreadPool(currentThread);
-                }
-                else
-                {
-                    Debug.Assert(workItem is IThreadPoolWorkItem);
-                    Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
-                }
+                DispatchWorkItem(workItem, currentThread);
             }
             finally
             {
                 if (reportedStatus)
                     ThreadPool.ReportThreadStatus(isWorking: false);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void DispatchWorkItem(object workItem, Thread currentThread)
+        {
+            if (workItem is Task task)
+            {
+                task.ExecuteFromThreadPool(currentThread);
+            }
+            else
+            {
+                Debug.Assert(workItem is IThreadPoolWorkItem);
+                Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
             }
         }
     }
