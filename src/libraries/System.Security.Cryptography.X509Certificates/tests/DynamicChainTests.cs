@@ -216,20 +216,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void BasicConstraints_ExceedMaximumPathLength()
         {
-            X509Extension[] rootExtensions = new [] {
+            X509Extension[] rootExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: true,
                     hasPathLengthConstraint: true,
                     pathLengthConstraint: 0,
-                    critical: true)
+                    critical: true),
             };
 
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: true,
                     hasPathLengthConstraint: true,
                     pathLengthConstraint: 0,
-                    critical: true)
+                    critical: true),
             };
 
             TestDataGenerator.MakeTestChain4(
@@ -262,7 +264,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void BasicConstraints_ViolatesCaFalse()
         {
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: false,
                     hasPathLengthConstraint: false,
@@ -280,7 +283,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (intermediateCert)
             using (rootCert)
             {
-                TestChain3(rootCert, intermediateCert, endEntityCert,
+                TestChain3(
+                    rootCert,
+                    intermediateCert,
+                    endEntityCert,
                     expectedFlags: X509ChainStatusFlags.InvalidBasicConstraints);
             }
         }
@@ -519,20 +525,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void MismatchKeyIdentifiers()
         {
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 BasicConstraintsCA,
                 new X509Extension(
                     "2.5.29.14",
                     "0414C7AC28EFB300F46F9406ED155628A123633E556F".HexToByteArray(),
-                    critical: false)
+                    critical: false),
             };
 
-            X509Extension[] endEntityExtensions = new [] {
+            X509Extension[] endEntityExtensions = new []
+            {
                 BasicConstraintsEndEntity,
                 new X509Extension(
                     "2.5.29.35",
                     "30168014A84A6A63047DDDBAE6D139B7A64565EFF3A8ECA1".HexToByteArray(),
-                    critical: false)
+                    critical: false),
             };
 
             TestDataGenerator.MakeTestChain3(
@@ -571,7 +579,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [PlatformSpecific(~TestPlatforms.Linux)]
         public static void PolicyConstraints_RequireExplicitPolicy()
         {
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 BasicConstraintsCA,
                 BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
             };
@@ -586,7 +595,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (intermediateCert)
             using (rootCert)
             {
-                TestChain3(rootCert, intermediateCert, endEntityCert,
+                TestChain3(
+                    rootCert,
+                    intermediateCert,
+                    endEntityCert,
                     expectedFlags: PlatformPolicyConstraints(X509ChainStatusFlags.NoIssuanceChainPolicy));
             }
         }
@@ -595,7 +607,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void PolicyConstraints_Malformed()
         {
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 BasicConstraintsCA,
                 // Nonsense ContextSpecific 3.
                 new X509Extension("2.5.29.36", "3003830102".HexToByteArray(), critical: true),
@@ -611,7 +624,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (intermediateCert)
             using (rootCert)
             {
-                TestChain3(rootCert, intermediateCert, endEntityCert,
+                TestChain3(
+                    rootCert,
+                    intermediateCert,
+                    endEntityCert,
                     expectedFlags: X509ChainStatusFlags.InvalidPolicyConstraints);
             }
         }
@@ -620,12 +636,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [PlatformSpecific(~TestPlatforms.Linux)]
         public static void PolicyConstraints_Valid()
         {
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 BasicConstraintsCA,
                 BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
                 BuildPolicyByIdentifiers("2.23.140.1.2.1"), // CABF DV OID
             };
-            X509Extension[] endEntityExtensions = new [] {
+            X509Extension[] endEntityExtensions = new []
+            {
                 BasicConstraintsEndEntity,
                 BuildPolicyByIdentifiers("2.23.140.1.2.1"), // CABF DV OID
             };
@@ -641,7 +659,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (intermediateCert)
             using (rootCert)
             {
-
                 TestChain3(rootCert, intermediateCert, endEntityCert);
             }
         }
@@ -650,12 +667,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [PlatformSpecific(~TestPlatforms.Linux)]
         public static void PolicyConstraints_Mismatch()
         {
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 BasicConstraintsCA,
                 BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
                 BuildPolicyByIdentifiers("2.23.140.1.2.1"), // CABF DV OID
             };
-            X509Extension[] endEntityExtensions = new [] {
+            X509Extension[] endEntityExtensions = new []
+            {
                 BasicConstraintsEndEntity,
                 BuildPolicyByIdentifiers("1.2.3.4"),
             };
@@ -671,7 +690,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (intermediateCert)
             using (rootCert)
             {
-                TestChain3(rootCert, intermediateCert, endEntityCert,
+                TestChain3(
+                    rootCert,
+                    intermediateCert,
+                    endEntityCert,
                     expectedFlags: PlatformPolicyConstraints(X509ChainStatusFlags.NoIssuanceChainPolicy));
             }
         }
@@ -680,12 +702,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [PlatformSpecific(~TestPlatforms.Linux)]
         public static void PolicyConstraints_AnyPolicy()
         {
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 BasicConstraintsCA,
                 BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
                 BuildPolicyByIdentifiers("2.5.29.32.0"), // anyPolicy special OID.
             };
-            X509Extension[] endEntityExtensions = new [] {
+            X509Extension[] endEntityExtensions = new []
+            {
                 BasicConstraintsEndEntity,
                 BuildPolicyByIdentifiers("1.2.3.4"),
             };
@@ -709,13 +733,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [PlatformSpecific(~TestPlatforms.Linux)]
         public static void PolicyConstraints_Mapped()
         {
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 BasicConstraintsCA,
                 BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
                 BuildPolicyByIdentifiers("2.23.140.1.2.1"),
-                BuildPolicyMappings(("2.23.140.1.2.1", "1.2.3.4"))
+                BuildPolicyMappings(("2.23.140.1.2.1", "1.2.3.4")),
             };
-            X509Extension[] endEntityExtensions = new [] {
+            X509Extension[] endEntityExtensions = new []
+            {
                 BasicConstraintsEndEntity,
                 BuildPolicyByIdentifiers("1.2.3.4"),
             };
@@ -778,16 +804,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             SubjectAlternativeNameBuilder endEntitySanBuilder,
             Action<bool, X509Chain> body)
         {
-            X509Extension[] endEntityExtensions = new [] {
+            X509Extension[] endEntityExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: false,
                     hasPathLengthConstraint: false,
                     pathLengthConstraint: 0,
                     critical: true),
-                endEntitySanBuilder.Build()
+                endEntitySanBuilder.Build(),
             };
 
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: true,
                     hasPathLengthConstraint: false,
@@ -796,7 +824,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 new X509Extension(
                     "2.5.29.30",
                     intermediateNameConstraints.HexToByteArray(),
-                    critical: true)
+                    critical: true),
             };
 
             TestDataGenerator.MakeTestChain3(
@@ -832,8 +860,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static X509Extension BuildPolicyConstraints(
             int? requireExplicitPolicySkipCerts = null,
-            int? inhibitPolicyMappingSkipCerts = null
-        )
+            int? inhibitPolicyMappingSkipCerts = null)
         {
             // RFC 5280 4.2.1.11
             //    id-ce-policyConstraints OBJECT IDENTIFIER ::=  { id-ce 36 }
@@ -892,7 +919,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return new X509Extension("2.5.29.32", writer.Encode(), critical: false);
         }
 
-        private static X509Extension BuildPolicyMappings(params (string IssuerDomainPolicy, string SubjectDomainPolicy)[] policyMappings)
+        private static X509Extension BuildPolicyMappings(
+            params (string IssuerDomainPolicy, string SubjectDomainPolicy)[] policyMappings)
         {
             //    PolicyMappings ::= SEQUENCE SIZE (1..MAX) OF SEQUENCE {
             //         issuerDomainPolicy      CertPolicyId,
@@ -903,12 +931,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             using (writer.PushSequence())
             {
-                foreach ((string IssuerDomainPolicy, string SubjectDomainPolicy) in policyMappings)
+                foreach ((string issuerDomainPolicy, string subjectDomainPolicy) in policyMappings)
                 {
                     using (writer.PushSequence())
                     {
-                        writer.WriteObjectIdentifier(IssuerDomainPolicy);
-                        writer.WriteObjectIdentifier(SubjectDomainPolicy);
+                        writer.WriteObjectIdentifier(issuerDomainPolicy);
+                        writer.WriteObjectIdentifier(subjectDomainPolicy);
                     }
                 }
             }
@@ -935,7 +963,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
                 Assert.True(result == (expectedFlags == X509ChainStatusFlags.NoError), $"chain.Build ({actualFlags})");
 
-                Assert.True(actualFlags.HasFlag(expectedFlags),
+                Assert.True(
+                    actualFlags.HasFlag(expectedFlags),
                     $"Expected Flags: \"{expectedFlags}\"; Actual Flags: \"{actualFlags}\"");
             }
         }
