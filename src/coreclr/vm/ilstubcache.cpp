@@ -485,13 +485,13 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         if (SF_IsSharedStub(dwStubFlags))
         {
             size_t cbSizeOfBlob = pHashBlob->m_cbSizeOfBlob;
-            AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
 
             CrstHolder ch(&m_crst);
 
             const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
             if (phe == NULL)
             {
+                AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
                 pBlob = pBlobHolder;
                 _ASSERTE(pHashBlob->m_cbSizeOfBlob == cbSizeOfBlob);
                 memcpy(pBlob, pHashBlob, cbSizeOfBlob);
