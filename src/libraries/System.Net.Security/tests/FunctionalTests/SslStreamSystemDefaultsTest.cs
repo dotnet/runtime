@@ -80,7 +80,6 @@ namespace System.Net.Security.Tests
             using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
                 string serverHost = Guid.NewGuid().ToString("N") + "." + serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
-                Console.WriteLine(serverHost);
                 var clientCertificates = new X509CertificateCollection() { clientCertificate };
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
