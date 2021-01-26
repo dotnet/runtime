@@ -1,6 +1,18 @@
 # Data Formats
 
-IL linker uses several data formats to control or influence the linking process. The data formats are not versioned but are backward compatible.
+## Input Data Formats
+
+ILLink uses several data formats to control or influence the linking process. The data formats are not versioned but are backward compatible.
+
+- [Descriptors](#descriptor-format)
+- [Substitutions](#substitution-format)
+- [Custom Attributes Annotations](#custom-attributes-annotations-format)
+
+## Output Data Formats
+
+- [Dependencies Trace](#dependencies-trace-format)
+
+# Format Details
 
 ## Descriptor Format
 
@@ -542,3 +554,10 @@ example:
 Notice that a descriptor file containing the custom attribute type overrides this behavior. In case the
 custom attribute type is being referenced in a descriptor file and in the attribute annotations file
 for removal, the custom attribute will not be removed.
+
+## Dependencies Trace Format
+
+This is the format of data used to capture linker logic about why
+members, types, and other metadata elements were marked by the linker
+as required and persisted in the linked output. The format includes edges
+of the graph for every dependency which was tracked by the linker.
