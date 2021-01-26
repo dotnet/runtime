@@ -6308,7 +6308,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         {
             // Generates the following code:
             //
-            // When the size of the region is greater than or equal to 320 bytes
+            // When the size of the region is greater than or equal to 256 bytes
             // **and** DC ZVA instruction use is permitted
             // **and** the instruction block size is configured to 64 bytes:
             //
