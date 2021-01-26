@@ -232,6 +232,7 @@ namespace ILCompiler
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
         private bool _generatePdbFile;
+        private Func<MethodDesc, string> _printReproInstructions;
         private string _pdbPath;
         private bool _generatePerfMapFile;
         private string _perfMapPath;
@@ -262,6 +263,7 @@ namespace ILCompiler
             bool generateMapFile,
             bool generateMapCsvFile,
             bool generatePdbFile,
+            Func<MethodDesc, string> printReproInstructions,
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
@@ -294,6 +296,7 @@ namespace ILCompiler
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
+            _printReproInstructions = printReproInstructions;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
@@ -522,6 +525,11 @@ namespace ILCompiler
                     {
                         string methodName = method.ToString();
                         Logger.Writer.WriteLine("Compiling " + methodName);
+                    }
+
+                    if (_printReproInstructions != null)
+                    {
+                        Logger.Writer.WriteLine($"Single method repro args:{_printReproInstructions(method)}");
                     }
 
                     try

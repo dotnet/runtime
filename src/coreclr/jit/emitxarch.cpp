@@ -7416,8 +7416,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
         case ID_OP_CNS:
         case ID_OP_DSP:
         case ID_OP_DSP_CNS:
-        case ID_OP_AMD:
-        case ID_OP_AMD_CNS:
             if (id->idIsLargeCns())
             {
                 if (id->idIsLargeDsp())
@@ -7434,6 +7432,30 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
                 if (id->idIsLargeDsp())
                 {
                     return sizeof(instrDescDsp);
+                }
+                else
+                {
+                    return sizeof(instrDesc);
+                }
+            }
+        case ID_OP_AMD:
+        case ID_OP_AMD_CNS:
+            if (id->idIsLargeCns())
+            {
+                if (id->idIsLargeDsp())
+                {
+                    return sizeof(instrDescCnsAmd);
+                }
+                else
+                {
+                    return sizeof(instrDescCns);
+                }
+            }
+            else
+            {
+                if (id->idIsLargeDsp())
+                {
+                    return sizeof(instrDescAmd);
                 }
                 else
                 {

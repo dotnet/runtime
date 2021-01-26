@@ -236,3 +236,8 @@ METHOD(ComputeCrc32C)
 // X86Base
 METHOD(BitScanForward)
 METHOD(BitScanReverse)
+// Arm64
+METHOD(HashUpdate1)
+METHOD(HashUpdate2)
+METHOD(ScheduleUpdate0)
+METHOD(ScheduleUpdate1)

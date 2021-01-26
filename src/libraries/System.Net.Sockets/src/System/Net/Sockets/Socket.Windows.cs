@@ -392,7 +392,7 @@ namespace System.Net.Sockets
             return acceptSocket;
         }
 
-        private void SendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
             // Open the file, if any
             FileStream? fileStream = OpenFile(fileName);

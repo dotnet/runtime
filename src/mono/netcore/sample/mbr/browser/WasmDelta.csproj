@@ -30,11 +30,6 @@
   </ItemGroup>
 
   <Target Name="PrepareDeltasForWasmApp" DependsOnTargets="Build;CompileDiff;ComputeDeltaFileOutputNames">
-    <PropertyGroup>
-      <WasmBuildDir>$(MSBuildProjectDirectory)\$(PublishDir)\</WasmBuildDir>
-      <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
-    </PropertyGroup>
-
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
       <WasmFilesToIncludeInFileSystem Include="@(_DeltaFileForPublish)">
