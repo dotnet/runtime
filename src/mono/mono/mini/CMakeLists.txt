@@ -26,7 +26,7 @@ include(../eglib/CMakeLists.txt)
 include(../utils/CMakeLists.txt)
 include(../metadata/CMakeLists.txt)
 include(../sgen/CMakeLists.txt)
-if(TARGET_WIN32)  # TODO: hook up HAVE_SYS_ZLIB instead
+if(HOST_WIN32)  # TODO: hook up HAVE_SYS_ZLIB instead
   include(../zlib/CMakeLists.txt)
 endif()
 
