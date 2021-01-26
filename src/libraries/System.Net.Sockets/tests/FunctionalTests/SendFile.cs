@@ -199,7 +199,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task SliceBuffers_Success()
         {
-            if (!SupportsSendFileSlicing) return; // The overloads under test only support sending byte[]
+            if (!SupportsSendFileSlicing) return; // The overloads under test only support sending byte[] without offset and length
 
             Random rnd = new Random(0);
 
