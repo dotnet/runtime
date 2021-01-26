@@ -30,9 +30,6 @@ namespace Profiler.Tests
         static int RunTest()
         {
             LoadCollectibleAssembly();
-
-            Thread.Sleep(TimeSpan.FromSeconds(3));
-
             return 100;
         }
 
@@ -47,8 +44,9 @@ namespace Profiler.Tests
             object instance = Activator.CreateInstance(testType);
 
             Console.WriteLine(instance.GetHashCode());
-
+            Thread.Sleep(TimeSpan.FromSeconds(2));
             collectibleContext.Unload();
+            Thread.Sleep(TimeSpan.FromSeconds(1));
         }
     }
 }
