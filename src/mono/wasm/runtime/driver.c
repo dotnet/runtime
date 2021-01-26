@@ -842,6 +842,8 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 {
 	switch (mono_type) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?
+	case MONO_TYPE_VOID:
+		return MARSHAL_TYPE_VOID;
 	case MONO_TYPE_BOOLEAN:
 		return MARSHAL_TYPE_BOOL;
 	case MONO_TYPE_I1:
@@ -867,28 +869,32 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 	case MONO_TYPE_STRING:
 		return MARSHAL_TYPE_STRING;
 	case MONO_TYPE_SZARRAY:  { // simple zero based one-dim-array
-		MonoClass *eklass = mono_class_get_element_class (klass);
-		MonoType *etype = mono_class_get_type (eklass);
+		if (klass) {
+			MonoClass *eklass = mono_class_get_element_class (klass);
+			MonoType *etype = mono_class_get_type (eklass);
 
-		switch (mono_type_get_type (etype)) {
-			case MONO_TYPE_U1:
-				return MARSHAL_ARRAY_UBYTE;
-			case MONO_TYPE_I1:
-				return MARSHAL_ARRAY_BYTE;
-			case MONO_TYPE_U2:
-				return MARSHAL_ARRAY_USHORT;
-			case MONO_TYPE_I2:
-				return MARSHAL_ARRAY_SHORT;
-			case MONO_TYPE_U4:
-				return MARSHAL_ARRAY_UINT;
-			case MONO_TYPE_I4:
-				return MARSHAL_ARRAY_INT;
-			case MONO_TYPE_R4:
-				return MARSHAL_ARRAY_FLOAT;
-			case MONO_TYPE_R8:
-				return MARSHAL_ARRAY_DOUBLE;
-			default:
-				return MARSHAL_TYPE_OBJECT;
+			switch (mono_type_get_type (etype)) {
+				case MONO_TYPE_U1:
+					return MARSHAL_ARRAY_UBYTE;
+				case MONO_TYPE_I1:
+					return MARSHAL_ARRAY_BYTE;
+				case MONO_TYPE_U2:
+					return MARSHAL_ARRAY_USHORT;
+				case MONO_TYPE_I2:
+					return MARSHAL_ARRAY_SHORT;
+				case MONO_TYPE_U4:
+					return MARSHAL_ARRAY_UINT;
+				case MONO_TYPE_I4:
+					return MARSHAL_ARRAY_INT;
+				case MONO_TYPE_R4:
+					return MARSHAL_ARRAY_FLOAT;
+				case MONO_TYPE_R8:
+					return MARSHAL_ARRAY_DOUBLE;
+				default:
+					return MARSHAL_TYPE_OBJECT;
+			}
+		} else {
+			return MARSHAL_TYPE_OBJECT;
 		}
 	}
 	default:
@@ -898,7 +904,7 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 			return MARSHAL_TYPE_DATE;
 		if (klass == datetimeoffset_class)
 			return MARSHAL_TYPE_DATEOFFSET;
-		if (uri_class && mono_class_is_assignable_from(uri_class, klass))
+		if (uri_class && klass && mono_class_is_assignable_from(uri_class, klass))
 			return MARSHAL_TYPE_URI;
 		if (klass == voidtaskresult_class)
 			return MARSHAL_TYPE_VOID;
@@ -906,11 +912,11 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 			return MARSHAL_TYPE_ENUM;
 		if (!mono_type_is_reference (type)) //vt
 			return MARSHAL_TYPE_VT;
-		if (mono_class_is_delegate (klass))
+		if (klass && mono_class_is_delegate (klass))
 			return MARSHAL_TYPE_DELEGATE;
-		if (class_is_task(klass))
+		if (klass && class_is_task(klass))
 			return MARSHAL_TYPE_TASK;
-		if (safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0))) {
+		if (klass && safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0))) {
 			return MARSHAL_TYPE_SAFEHANDLE;
 		}
 
@@ -1132,22 +1138,28 @@ typedef struct wasm_method_signature_info {
 	MonoType** parameter_types;
 } wasm_method_signature_info;
 
-void build_signature_info_record (MonoType *type, int* result1, MonoType** result2) {
+void build_signature_info_record (MonoType *type, int* resultMtype, MonoType** resultType) {
 	if (!type) {
-		*result1 = 0;
-		*result2 = 0;
+		*resultMtype = 0;
+		*resultType = 0;
 		return;
 	}
 	int mono_type = mono_type_get_type (type);
-	MonoClass * klass = 
-		((mono_type == MONO_TYPE_CLASS) || (mono_type == MONO_TYPE_VALUETYPE))
-			? mono_type_get_class (type)
-			: 0;
-	*result1 = 
-		(klass != 0)
-			? mono_wasm_marshal_type_from_mono_type (mono_type, klass, type)
-			: 0;
-	*result2 = type;
+	MonoClass * klass = mono_type_get_class (type);
+	*resultMtype = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
+	*resultType = type;
+
+	/*
+	const char * tname = mono_type_get_name (type);
+	EM_ASM({
+		var mtype = $0;
+		var type = $1;
+		var tname = Module.UTF8ToString ($2);
+		var klass = $3;
+		var mono_type = $4;
+		console.log (mtype, type, tname, klass, mono_type);
+	}, *resultMtype, *resultType, tname, klass, mono_type);
+	*/
 }
 
 EMSCRIPTEN_KEEPALIVE wasm_method_signature_info * 
@@ -1166,14 +1178,14 @@ mono_wasm_create_method_signature_info (MonoMethod *method)
 		(parameter_count * sizeof(MonoType *)) +
 		12;
 
-	wasm_method_signature_info *result = malloc(allocation_size);
-	memset(result, 0, allocation_size);
+	wasm_method_signature_info *result = malloc (allocation_size);
+	memset (result, 0, allocation_size);
 
 	result->parameter_count = parameter_count;
-	result->parameter_marshal_types = (((void*)result) + sizeof(wasm_method_signature_info) + 4);
-	result->parameter_types = ((void*)result->parameter_marshal_types) + (sizeof(int) * parameter_count) + 4;
+	result->parameter_marshal_types = (((void *)result) + sizeof(wasm_method_signature_info) + 4);
+	result->parameter_types = ((void *)result->parameter_marshal_types) + (sizeof(int) * parameter_count) + 4;
 
-	build_signature_info_record (mono_signature_get_return_type(sig), &result->result_marshal_type, &result->result_type);
+	build_signature_info_record (mono_signature_get_return_type (sig), &result->result_marshal_type, &result->result_type);
 
 	int i = 0;
 	void *iter = 0;
@@ -1208,3 +1220,4 @@ mono_wasm_string_get_data (
 		*outIsInterned = mono_string_instance_is_interned (string);
 	return;
 }
+

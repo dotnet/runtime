@@ -933,13 +933,80 @@ var BindingSupportLib = {
 		},
 
 		get_method_signature_info: function (methodPtr) {
+			if (!methodPtr)
+				throw new Error("Method ptr not provided");
+				
 			if (!this._method_signature_info_table)
 				this._method_signature_info_table = new Map ();
 			var result = this._method_signature_info_table.get (methodPtr);
 			if (!result) {
+				var MarshalTypeValues = {
+					"INT": 1,
+					"FP64": 2,
+					"STRING": 3,
+					"VT": 4,
+					"DELEGATE": 5,
+					"TASK": 6,
+					"OBJECT": 7,
+					"BOOL": 8,
+					"ENUM": 9,
+					"DATE": 20,
+					"DATEOFFSET": 21,
+					"URI": 22,
+					"SAFEHANDLE": 23,
+					"ARRAY_BYTE": 10,
+					"ARRAY_UBYTE": 11,
+					"ARRAY_UBYTE_C": 12,
+					"ARRAY_SHORT": 13,
+					"ARRAY_USHORT": 14,
+					"ARRAY_INT": 15,
+					"ARRAY_UINT": 16,
+					"ARRAY_FLOAT": 17,
+					"ARRAY_DOUBLE": 18,
+					"FP32": 24,
+					"UINT32": 25,
+					"INT64": 26,
+					"UINT64": 27,
+					"CHAR": 28,
+					"STRING_INTERNED": 29,
+					"VOID": 30,
+				};
+				var MarshalTypeNames = {};
+				for (var k in MarshalTypeValues)
+					MarshalTypeNames[MarshalTypeValues[k]] = k;
+
 				result = this.mono_wasm_create_method_signature_info (methodPtr);
 				this._method_signature_info_table.set (methodPtr, result);
 				console.log ("signature info for ptr", methodPtr, "is", result);
+
+				/*
+typedef struct wasm_method_signature_info {
+	int result_marshal_type;
+	MonoType* result_type;
+	int parameter_count;
+	int* parameter_marshal_types;
+	MonoType** parameter_types;
+} wasm_method_signature_info;
+*/
+				var off32 = result >> 2;
+				var pcount = Module.HEAPU32[off32 + 2],
+					pmtypes_ptr = Module.HEAPU32[off32 + 3] >> 2,
+					ptypes_ptr = Module.HEAPU32[off32 + 4] >> 2;
+				var pmtypes = new Array(pcount),
+					ptypes = new Array(pcount);
+				for (var i = 0; i < pcount; i++) {
+					var pmtypei = Module.HEAPU32[pmtypes_ptr + i];
+					pmtypes[i] = MarshalTypeNames[pmtypei] || String(pmtypei);
+					ptypes[i] = Module.HEAPU32[ptypes_ptr + i];
+				}
+				var blob = {
+					"result_marshal_type"     : MarshalTypeNames[Module.HEAPU32[off32 + 0]],
+					"result_type_ptr"         : Module.HEAPU32[off32 + 1],
+					"parameter_count"         : pcount,
+					"parameter_marshal_types" : pmtypes,
+					"parameter_types"         : ptypes
+				};
+				console.log(JSON.stringify(blob));				
 			}
 			return result;
 		},
