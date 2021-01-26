@@ -244,6 +244,7 @@ HRESULT EEConfig::Init()
     fTieredCompilation_CallCounting = false;
     fTieredCompilation_UseCallCountingStubs = false;
     tieredCompilation_CallCountThreshold = 1;
+    tieredCompilation_BackgroundWorkerTimeoutMs = 0;
     tieredCompilation_CallCountingDelayMs = 0;
     tieredCompilation_DeleteCallCountingStubsAfter = 0;
 #endif
@@ -879,6 +880,9 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
                     W("System.Runtime.TieredCompilation.QuickJitForLoops"),
                     CLRConfig::UNSUPPORTED_TC_QuickJitForLoops);
         }
+
+        tieredCompilation_BackgroundWorkerTimeoutMs =
+            CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_BackgroundWorkerTimeoutMs);
 
         fTieredCompilation_CallCounting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCounting) != 0;
 
