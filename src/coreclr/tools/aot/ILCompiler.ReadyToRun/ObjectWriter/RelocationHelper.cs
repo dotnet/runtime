@@ -197,6 +197,13 @@ namespace ILCompiler.PEWriter
                         break;
                     }
 
+                case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                    {
+                        relocationLength = 4;
+                        delta = targetRVA - sourceRVA;
+                        break;
+                    }
+
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                     {
                         relocationLength = 4;
