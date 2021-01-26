@@ -53,10 +53,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by a handful of "next" methods
             internal ulong NextUInt64()
             {
-                ulong s0 = _s0;
-                ulong s1 = _s1;
-                ulong s2 = _s2;
-                ulong s3 = _s3;
+                ulong s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
 
                 ulong result = BitOperations.RotateLeft(s1 * 5, 7) * 9;
                 ulong t = s1 << 17;
@@ -199,10 +196,7 @@ namespace System
 
             public override unsafe void NextBytes(Span<byte> buffer)
             {
-                ulong s0 = _s0;
-                ulong s1 = _s1;
-                ulong s2 = _s2;
-                ulong s3 = _s3;
+                ulong s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
 
                 while (buffer.Length >= sizeof(ulong))
                 {

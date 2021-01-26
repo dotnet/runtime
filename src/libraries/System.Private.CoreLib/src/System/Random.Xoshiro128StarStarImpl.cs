@@ -49,10 +49,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by a handful of "next" methods
             internal uint NextUInt32()
             {
-                uint s0 = _s0;
-                uint s1 = _s1;
-                uint s2 = _s2;
-                uint s3 = _s3;
+                uint s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
 
                 uint result = BitOperations.RotateLeft(s1 * 5, 7) * 9;
                 uint t = s1 << 9;
@@ -209,10 +206,7 @@ namespace System
 
             public override unsafe void NextBytes(Span<byte> buffer)
             {
-                uint s0 = _s0;
-                uint s1 = _s1;
-                uint s2 = _s2;
-                uint s3 = _s3;
+                uint s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
 
                 while (buffer.Length >= sizeof(uint))
                 {
