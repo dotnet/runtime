@@ -19,5 +19,14 @@ namespace System.Text.Json.Serialization
         /// Initializes a new instance of <see cref="JsonIgnoreAttribute"/>.
         /// </summary>
         public JsonIgnoreAttribute() { }
+        
+        /// <summary>
+        /// Initializes a new instance of <see cref="JsonIgnoreCondition"/> with the specified property condition.
+        /// </summary>
+        /// <param name="condition">The condition that must be met before a property or field will be ignored.</param>
+        public JsonIgnoreAttribute(JsonIgnoreCondition condition)
+        {
+            Condition = condition;
+        }
     }
 }
