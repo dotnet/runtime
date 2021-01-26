@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <typeparam name="T">Managed type of the instance.</typeparam>
         /// <param name="instancePtr">Instance pointer</param>
         /// <returns>The managed instance</returns>
-        public unsafe static T GetInstance<T>(Instance* instancePtr) where T : class
+        public static unsafe T GetInstance<T>(Instance* instancePtr) where T : class
             => throw new PlatformNotSupportedException();
     }
 
@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <typeparam name="T">The delegate type the block is associated with.</typeparam>
         /// <param name="block">The block instance</param>
         /// <returns>A delegate</returns>
-        public unsafe static T GetDelegate<T>(BlockLiteral* block) where T : Delegate
+        public static unsafe T GetDelegate<T>(BlockLiteral* block) where T : Delegate
             => throw new PlatformNotSupportedException();
     }
 
@@ -237,7 +237,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <param name="signature">Type Encoding for returned block</param>
         /// <returns>A callable function pointer for Block dispatch by the Objective-C runtime</returns>
         /// <remarks>
-        /// Defer to the implementer for determining the <a cref="https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html#//apple_ref/doc/uid/TP40008048-CH100">Block signature</a>
+        /// Defer to the implementer for determining the <a href="https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html#//apple_ref/doc/uid/TP40008048-CH100">Block signature</a>
         /// that should be used to project the managed Delegate.
         /// </remarks>
         protected abstract IntPtr GetBlockInvokeAndSignature(Delegate del, CreateBlockFlags flags, out string signature);
