@@ -1,15 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Net.Http
 {
     public partial class HttpClient
     {
-        private const string CustomHandlerTypeEnvVar = "XA_HTTP_CLIENT_HANDLER_TYPE";
+        private const string CustomHandlerTypeEnvVar = "USE_NATIVE_HTTP_HANDLER";
 
         private static Type? s_customHandlerType;
 
@@ -17,28 +13,12 @@ namespace System.Net.Http
         {
             if (s_customHandlerType != null)
             {
-#pragma warning disable IL2057
                 return (HttpMessageHandler)Activator.CreateInstance(s_customHandlerType)!;
-#pragma warning restore IL2057
             }
-
-            string? envVar = Environment.GetEnvironmentVariable(CustomHandlerTypeEnvVar)?.Trim();
-            if (!string.IsNullOrEmpty(envVar))
+            if (bool.TryParse(Environment.GetEnvironmentVariable(CustomHandlerTypeEnvVar), out bool useNativeHandler) && useNativeHandler)
             {
-#pragma warning disable IL2072
-                Type? handlerType = Type.GetType(envVar, false);
-                if (handlerType == null && !envVar.Contains(", "))
-                {
-                    // Look for custom handlers in Mono.Android by default if assembly name is not specified.
-                    handlerType = Type.GetType(envVar + ", Mono.Android", false);
-                }
-#pragma warning restore IL2072
-                if (handlerType != null && Activator.CreateInstance(handlerType) is HttpMessageHandler handler)
-                {
-                    // Create instance or fallback to default one if the type is invalid (current XA behavior).
-                    s_customHandlerType = handlerType;
-                    return handler;
-                }
+                s_customHandlerType = Type.GetType("Xamarin.Android.Net.AndroidClientHandler, Mono.Android");
+                return (HttpMessageHandler)Activator.CreateInstance(s_customHandlerType!)!;
             }
             return new HttpClientHandler();
         }
