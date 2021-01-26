@@ -976,7 +976,7 @@ Example tracing commands used to generate the input to this tool:
                                 offset += arr.Length;
                             }
 
-                            var intDecompressor = PgoProcessor.PgoEncodedCompressedIntParser(instrumentationData, 0);
+                            var intDecompressor = new PgoProcessor.PgoEncodedCompressedIntParser(instrumentationData, 0);
                             methodData.InstrumentationData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown>(pgoDataLoader, intDecompressor, true).ToArray();
                         }
                         methodsUsedInProcess.Add(methodData);
@@ -1078,9 +1078,10 @@ Example tracing commands used to generate the input to this tool:
                 return _emitter.AddGlobalMethod(methodName, _il, 8);
             }
 
-            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitDone()
+            bool IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitDone()
             {
                 _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataEnd"));
+                return true;
             }
 
             void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitLong(long value, long previousValue)
