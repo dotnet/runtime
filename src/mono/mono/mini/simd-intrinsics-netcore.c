@@ -817,6 +817,16 @@ static SimdIntrinsic crc32_methods [] = {
 	{SN_get_IsSupported}
 };
 
+static SimdIntrinsic sha1_methods [] = {
+	{SN_FixedRotate, OP_XOP_X_X, SIMD_OP_ARM64_SHA1H},
+	{SN_HashUpdateChoose, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1C},
+	{SN_HashUpdateMajority, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1M},
+	{SN_HashUpdateParity, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1P},
+	{SN_ScheduleUpdate0, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1SU0},
+	{SN_ScheduleUpdate1, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA1SU1},
+	{SN_get_IsSupported}
+};
+
 static SimdIntrinsic sha256_methods [] = {
 	{SN_HashUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H},
 	{SN_HashUpdate2, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H2},
@@ -904,6 +914,12 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		feature = MONO_CPU_ARM64_CRYPTO;
 		intrinsics = sha256_methods;
 		intrinsics_size = sizeof (sha256_methods);
+	}
+
+	if (is_hw_intrinsics_class (klass, "Sha1", &is_64bit)) {
+		feature = MONO_CPU_ARM64_CRYPTO;
+		intrinsics = sha1_methods;
+		intrinsics_size = sizeof (sha1_methods);
 	}
 
 	/*
