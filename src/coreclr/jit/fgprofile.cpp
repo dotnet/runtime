@@ -877,6 +877,71 @@ PhaseStatus Compiler::fgInstrumentMethod()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+//------------------------------------------------------------------------
+// fgIncorporateProfileData: add block/edge profile data to the flowgraph
+//
+// Returns:
+//   appropriate phase status
+//
+PhaseStatus Compiler::fgIncorporateProfileData()
+{
+    assert(fgHaveProfileData());
+    assert(fgPgoBlockCounts > 0);
+    fgIncorporateBlockCounts();
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgIncorporateBlockCounts: read block count based profile data
+//   and set block weights
+//
+// Notes:
+//   Count data for inlinees is scaled (usually down).
+//
+// Todo:
+//   Normalize counts.
+//
+//   Take advantage of the (likely) correspondence between block order
+//   and schema order?
+//
+void Compiler::fgIncorporateBlockCounts()
+{
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        BasicBlock::weight_t profileWeight;
+
+        // Skip internal and un-imported blocks.
+        //
+        if ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) != BBF_IMPORTED)
+        {
+            continue;
+        }
+
+        if (fgGetProfileWeightForBasicBlock(block->bbCodeOffs, &profileWeight))
+        {
+            if (compIsForInlining())
+            {
+                if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
+                {
+                    double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
+                    profileWeight       = (BasicBlock::weight_t)scaledWeight;
+                }
+            }
+
+            block->setBBProfileWeight(profileWeight);
+
+            if (profileWeight == 0)
+            {
+                block->bbSetRunRarely();
+            }
+            else
+            {
+                block->bbFlags &= ~BBF_RUN_RARELY;
+            }
+        }
+    }
+}
+
 bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop)
 {
     bool result = false;
