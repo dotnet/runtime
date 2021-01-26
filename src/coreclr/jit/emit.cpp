@@ -4651,9 +4651,12 @@ bool emitter::emitEndsWithAlignInstr()
 //               such that it doesn't exceed the maxLoopSize.
 //
 //  Arguments:
-//       igLoopHeader - The header IG of a loop
-//       maxLoopSize  - Maximum loop size. If the loop is bigger than this value, we will just
-//                      return this value.
+//       igLoopHeader    - The header IG of a loop
+//       maxLoopSize     - Maximum loop size. If the loop is bigger than this value, we will just
+//                         return this value.
+//       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
+//                         During generating code, it is 'false' (because we haven't adjusted the size yet).
+//                         During outputting code, it is 'true'.
 //
 //  Returns:  size of a loop in bytes.
 //
@@ -4691,7 +4694,7 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
                 unsigned adjustedPadding = 0;
                 if (emitComp->opts.compJitAlignLoopAdaptive)
                 {
-                    adjustedPadding = alignInstr->paddingNeeded;
+                    adjustedPadding = alignInstr->idCodeSize();
                 }
                 else
                 {
@@ -4699,7 +4702,7 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
                     for (; alignInstrToAdj != nullptr && alignInstrToAdj->idaIG == alignInstr->idaIG;
                          alignInstrToAdj = alignInstrToAdj->idaNext)
                     {
-                        adjustedPadding += alignInstrToAdj->paddingNeeded;
+                        adjustedPadding += alignInstrToAdj->idCodeSize();
                     }
                 }
 
@@ -4852,10 +4855,6 @@ void emitter::emitLoopAlignAdjustments()
             {
                 assert(actualPaddingNeeded < MAX_ENCODED_SIZE);
                 alignInstr->idCodeSize(actualPaddingNeeded);
-#ifdef DEBUG
-                assert(alignInstr->paddingNeeded == estimatedPaddingNeeded);
-                alignInstr->paddingNeeded = actualPaddingNeeded;
-#endif
             }
             else
             {
@@ -4872,9 +4871,6 @@ void emitter::emitLoopAlignAdjustments()
                 {
                     unsigned newPadding = min(paddingToAdj, MAX_ENCODED_SIZE);
                     alignInstrToAdj->idCodeSize(newPadding);
-#ifdef DEBUG
-                    alignInstrToAdj->paddingNeeded = newPadding;
-#endif
                     paddingToAdj -= newPadding;
                     prevAlignInstr = alignInstrToAdj;
 #ifdef DEBUG
@@ -4922,6 +4918,13 @@ void emitter::emitLoopAlignAdjustments()
 //-----------------------------------------------------------------------------
 //  emitCalculatePaddingForLoopAlignment: Calculate the padding to insert at the
 //    end of 'ig' so the loop that starts after 'ig' is aligned.
+//
+//  Arguments:
+//       ig              - The IG having 'align' instruction in the end.
+//       offset          - The offset at which the IG that follows 'ig' starts.
+//       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
+//                         During generating code, it is 'false' (because we haven't adjusted the size yet).
+//                         During outputting code, it is 'true'.
 //
 //  Returns: Padding amount.
 //    0 means no padding is needed, either because loop is already aligned or it

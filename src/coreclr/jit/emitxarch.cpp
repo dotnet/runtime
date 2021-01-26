@@ -2674,9 +2674,6 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     instrDescAlign* id = emitNewInstrAlign();
     id->idCodeSize(paddingBytes);
     id->idaIG = emitCurIG;
-#ifdef DEBUG
-    id->paddingNeeded = paddingBytes;
-#endif
 
     /* Append this instruction to this IG's alignment list */
     id->idaNext = emitCurIGAlignList;

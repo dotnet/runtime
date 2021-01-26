@@ -1378,13 +1378,6 @@ protected:
     {
         instrDescAlign* idaNext; // next align in the group/method
         insGroup*       idaIG;   // containing group
-#ifdef DEBUG
-        // amount of padding this align instruction adds.
-
-        // Before emitLoopAlignAdjustments(), it will be opts.compJitAlignPaddingLimit
-        // After that, it will be actual padding calculated based on offset of idaIG->igNext.
-        unsigned paddingNeeded;
-#endif
     };
 #endif
 
