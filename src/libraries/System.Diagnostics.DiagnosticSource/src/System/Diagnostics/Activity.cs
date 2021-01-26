@@ -1494,6 +1494,7 @@ namespace System.Diagnostics
 
             public object? Get(string key)
             {
+                // We don't take the lock here so it is possible the Add/Remove operations mutate the list during the Get operation.
                 LinkedListNode<KeyValuePair<string, object?>>? current = _first;
                 while (current != null)
                 {
@@ -1504,6 +1505,7 @@ namespace System.Diagnostics
 
                     current = current.Next;
                 }
+
                 return null;
             }
 
