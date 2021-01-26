@@ -332,66 +332,6 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public class SendFileTest_old
-    {
-        public static IEnumerable<object[]> SendFile_MemberData()
-        {
-            foreach (IPAddress listenAt in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback })
-            {
-                foreach (bool sendPreAndPostBuffers in new[] { true, false })
-                {
-                    foreach (int bytesToSend in new[] { 512, 1024, 12345678 })
-                    {
-                        yield return new object[] { listenAt, sendPreAndPostBuffers, bytesToSend };
-                    }
-                }
-            }
-        }
-
-        public static IEnumerable<object[]> SendFileSync_MemberData()
-        {
-            foreach (object[] memberData in SendFile_MemberData())
-            {
-                yield return memberData.Concat(new object[] { true }).ToArray();
-                yield return memberData.Concat(new object[] { false }).ToArray();
-            }
-        }
-
-        private TempFile CreateFileToSend(int size, bool sendPreAndPostBuffers, out byte[] preBuffer, out byte[] postBuffer, out Fletcher32 checksum)
-        {
-            // Create file to send
-            var random = new Random();
-            int fileSize = sendPreAndPostBuffers ? size - 512 : size;
-
-            checksum = new Fletcher32();
-
-            preBuffer = null;
-            if (sendPreAndPostBuffers)
-            {
-                preBuffer = new byte[256];
-                random.NextBytes(preBuffer);
-                checksum.Add(preBuffer, 0, preBuffer.Length);
-            }
-
-            byte[] fileBuffer = new byte[fileSize];
-            random.NextBytes(fileBuffer);
-
-            var tempFile = TempFile.Create(fileBuffer);
-
-            checksum.Add(fileBuffer, 0, fileBuffer.Length);
-
-            postBuffer = null;
-            if (sendPreAndPostBuffers)
-            {
-                postBuffer = new byte[256];
-                random.NextBytes(postBuffer);
-                checksum.Add(postBuffer, 0, postBuffer.Length);
-            }
-
-            return tempFile;
-        }
-    }
-
     public sealed class SendFile_SyncSpan : SendFileBase<SocketHelperSpanSync>
     {
         public SendFile_SyncSpan(ITestOutputHelper output) : base(output) { }
