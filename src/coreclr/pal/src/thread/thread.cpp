@@ -1697,7 +1697,6 @@ CorUnix::InternalSetThreadDescription(
     {
         palError = ERROR_INTERNAL_ERROR;
     }
-#endif // defined(__linux__) || defined(__APPLE__)
 
 InternalSetThreadDescriptionExit:
 
@@ -1714,6 +1713,8 @@ InternalSetThreadDescriptionExit:
     if (NULL != nameBuf) {
         PAL_free(nameBuf);
     }
+
+#endif // defined(__linux__) || defined(__APPLE__)
 
     return palError;
 }
