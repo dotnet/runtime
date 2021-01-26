@@ -73,7 +73,7 @@ namespace AppHost.Bundle.Tests
         private void Bundle_Extraction_To_Relative_Path_Succeeds (string relativePath, BundleOptions bundleOptions)
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture, BundleOptions.None);
+            var singleFile = BundleSelfContainedApp(fixture, bundleOptions);
 
             // Run the bundled app (extract files to <path>)
             Command.Create(singleFile)

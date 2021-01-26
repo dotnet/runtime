@@ -37,6 +37,8 @@ pal::string_t& extractor_t::extraction_dir()
             pal::string_t relative_path(m_extraction_dir);
             if (!pal::realpath(&current_dir))
             {
+                trace::error(_X("Failure processing application bundle."));
+                trace::error(_X("Failed to obtain the current directory for extracting bundled files to relative path [%s]."), m_extraction_dir.c_str());
                 throw StatusCode::BundleExtractionFailure;
             }
 
