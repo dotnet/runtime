@@ -62,9 +62,11 @@ namespace System.Net.Sockets.Tests
         }
 
 
-        [Fact]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task UdpConnection_ThrowsException()
+        public async Task UdpConnection_ThrowsException(bool usePreAndPostbufferOverload)
         {
             // Create file to send
             byte[] preBuffer;
@@ -78,8 +80,14 @@ namespace System.Net.Sockets.Tests
 
             client.Connect(listener.LocalEndPoint);
 
-            await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path));
-            await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
+            if (usePreAndPostbufferOverload)
+            {
+                await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
+            }
+            else
+            {
+                await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path));
+            }
         }
 
         [Theory]
