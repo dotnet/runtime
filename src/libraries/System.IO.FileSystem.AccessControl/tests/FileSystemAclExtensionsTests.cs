@@ -211,14 +211,21 @@ namespace System.IO
             }
         }
 
-        [Fact]
-        public void DirectoryInfo_Create_DirectorySecurityWithSpecificAccessRule()
+        [Theory]
+        // Must have at least one Read, otherwise the TempAclDirectory will fail to delete that item on dispose
+        [InlineData(FileSystemRights.FullControl)]
+        [InlineData(FileSystemRights.Read)]
+        [InlineData(FileSystemRights.Read | FileSystemRights.Write)]
+        [InlineData(FileSystemRights.Read | FileSystemRights.Write | FileSystemRights.ExecuteFile)]
+        [InlineData(FileSystemRights.ReadAndExecute)]
+        [InlineData(FileSystemRights.ReadAttributes | FileSystemRights.ReadData | FileSystemRights.ReadPermissions)]
+        public void DirectoryInfo_Create_DirectorySecurityWithSpecificAccessRule(FileSystemRights rights)
         {
             using var directory = new TempAclDirectory();
             string path = Path.Combine(directory.Path, "directory");
             DirectoryInfo info = new DirectoryInfo(path);
 
-            DirectorySecurity expectedSecurity = GetDirectorySecurity(FileSystemRights.FullControl);
+            DirectorySecurity expectedSecurity = GetDirectorySecurity(rights);
 
             info.Create(expectedSecurity);
 
