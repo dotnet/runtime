@@ -15,7 +15,7 @@
   <PropertyGroup>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">false</MonoForceInterpreter>
-    <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ScriptExt>
+    <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExt>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
     <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</CoreClrFileName>
