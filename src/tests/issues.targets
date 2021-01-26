@@ -976,6 +976,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
         </ExcludeList>
 
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/Runtimelab_578/arr/*">
+            <Issue>https://github.com/dotnet/runtime/issues/47458</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Regression/GitHub_43569/**">
             <Issue>https://github.com/dotnet/runtime/issues/43676</Issue>
         </ExcludeList>
