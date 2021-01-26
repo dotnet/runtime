@@ -212,6 +212,91 @@ namespace System.Net.Sockets.Tests
             }.WhenAllOrAnyFailed();
         }
 
+        [Fact]
+        public async Task SendFileGetsCanceledByDispose()
+        {
+            // We try this a couple of times to deal with a timing race: if the Dispose happens
+            // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
+            // see a SocketException either.
+            int msDelay = 100;
+            await RetryHelper.ExecuteAsync(async () =>
+            {
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+                using (socket2)
+                {
+                    Task socketOperation = Task.Run(async () =>
+                    {
+                        // Create a large file that will cause SendFile to block until the peer starts reading.
+                        using var tempFile = TempFile.Create();
+                        using (var fs = new FileStream(tempFile.Path, FileMode.CreateNew, FileAccess.Write))
+                        {
+                            fs.SetLength(20 * 1024 * 1024 /* 20MB */);
+                        }
+
+                        await SendFileAsync(socket1, tempFile.Path);
+                    });
+
+                    // Wait a little so the operation is started.
+                    await Task.Delay(msDelay);
+                    msDelay *= 2;
+                    Task disposeTask = Task.Run(() => socket1.Dispose());
+
+                    await Task.WhenAny(disposeTask, socketOperation).TimeoutAfter(30000);
+                    await disposeTask;
+
+                    SocketError? localSocketError = null;
+                    bool thrownDisposed = false;
+                    try
+                    {
+                        await socketOperation;
+                    }
+                    catch (SocketException se)
+                    {
+                        localSocketError = se.SocketErrorCode;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        thrownDisposed = true;
+                    }
+
+                    if (UsesSync)
+                    {
+                        Assert.Equal(SocketError.ConnectionAborted, localSocketError);
+                    }
+                    else
+                    {
+                        Assert.True(thrownDisposed);
+                    }
+                    
+
+                    // On OSX, we're unable to unblock the on-going socket operations and
+                    // perform an abortive close.
+                    if (!(UsesSync && PlatformDetection.IsOSXLike))
+                    {
+                        SocketError? peerSocketError = null;
+                        var receiveBuffer = new byte[4096];
+                        while (true)
+                        {
+                            try
+                            {
+                                int received = socket2.Receive(receiveBuffer);
+                                if (received == 0)
+                                {
+                                    break;
+                                }
+                            }
+                            catch (SocketException se)
+                            {
+                                peerSocketError = se.SocketErrorCode;
+                                break;
+                            }
+                        }
+                        Assert.Equal(SocketError.ConnectionReset, peerSocketError);
+                    }
+                }
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
+        }
+
         private TempFile CreateFileToSend(int size, bool sendPreAndPostBuffers, out byte[] preBuffer, out byte[] postBuffer, out Fletcher32 checksum)
         {
             // Create file to send
@@ -304,79 +389,6 @@ namespace System.Net.Sockets.Tests
             }
 
             return tempFile;
-        }
-
-        [Fact]
-        public async Task SyncSendFileGetsCanceledByDispose()
-        {
-            // We try this a couple of times to deal with a timing race: if the Dispose happens
-            // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
-            // see a SocketException either.
-            int msDelay = 100;
-            await RetryHelper.ExecuteAsync(async () =>
-            {
-                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
-                using (socket2)
-                {
-                    Task socketOperation = Task.Run(() =>
-                    {
-                        // Create a large file that will cause SendFile to block until the peer starts reading.
-                        using var tempFile = TempFile.Create();
-                        using (var fs = new FileStream(tempFile.Path, FileMode.CreateNew, FileAccess.Write))
-                        {
-                            fs.SetLength(20 * 1024 * 1024 /* 20MB */);
-                        }
-
-                        socket1.SendFile(tempFile.Path);
-                    });
-
-                    // Wait a little so the operation is started.
-                    await Task.Delay(msDelay);
-                    msDelay *= 2;
-                    Task disposeTask = Task.Run(() => socket1.Dispose());
-
-                    await Task.WhenAny(disposeTask, socketOperation).TimeoutAfter(30000);
-                    await disposeTask;
-
-                    SocketError? localSocketError = null;
-                    try
-                    {
-                        await socketOperation;
-                    }
-                    catch (SocketException se)
-                    {
-                        localSocketError = se.SocketErrorCode;
-                    }
-                    catch (ObjectDisposedException)
-                    { }
-                    Assert.Equal(SocketError.ConnectionAborted, localSocketError);
-
-                    // On OSX, we're unable to unblock the on-going socket operations and
-                    // perform an abortive close.
-                    if (!PlatformDetection.IsOSXLike)
-                    {
-                        SocketError? peerSocketError = null;
-                        var receiveBuffer = new byte[4096];
-                        while (true)
-                        {
-                            try
-                            {
-                                int received = socket2.Receive(receiveBuffer);
-                                if (received == 0)
-                                {
-                                    break;
-                                }
-                            }
-                            catch (SocketException se)
-                            {
-                                peerSocketError = se.SocketErrorCode;
-                                break;
-                            }
-                        }
-                        Assert.Equal(SocketError.ConnectionReset, peerSocketError);
-                    }
-                }
-            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
     }
 
