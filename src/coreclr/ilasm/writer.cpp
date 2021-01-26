@@ -1046,6 +1046,9 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
         {
             goto exit;
         }
+
+        // Public-sign by default
+        m_dwComImageFlags |= COMIMAGE_FLAGS_STRONGNAMESIGNED;
     }
 
     if(bClock) bClock->cMDEmit2 = GetTickCount();
@@ -1424,7 +1427,7 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
     }
 
     if (FAILED(hr=m_pCeeFileGen->ClearComImageFlags(m_pCeeFile, COMIMAGE_FLAGS_ILONLY))) goto exit;
-    if (FAILED(hr=m_pCeeFileGen->SetComImageFlags(m_pCeeFile, m_dwComImageFlags & ~COMIMAGE_FLAGS_STRONGNAMESIGNED))) goto exit;
+    if (FAILED(hr=m_pCeeFileGen->SetComImageFlags(m_pCeeFile, m_dwComImageFlags))) goto exit;
 
     if(m_dwFileAlignment)
     {
