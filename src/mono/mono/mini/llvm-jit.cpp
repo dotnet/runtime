@@ -515,9 +515,15 @@ mono_llvm_jit_init ()
 	g_assert_not_reached ();
 #endif
 
-	llvm::StringMap<bool> host_cpu_features;
-	if (llvm::sys::getHostCPUFeatures (host_cpu_features))
-		EB.setMAttrs (host_cpu_features.keys ());
+	llvm::StringMap<bool> cpu_features;
+	llvm::SmallVector<llvm::StringRef, 64> supported_features;
+	if (llvm::sys::getHostCPUFeatures (cpu_features)) {
+		for (const auto &feature : cpu_features) {
+			if (feature.second)
+				supported_features.push_back (feature.first ());
+		}
+		EB.setMAttrs (supported_features);
+	}
 
 	auto TM = EB.selectTarget ();
 	assert (TM);
