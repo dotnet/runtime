@@ -222,6 +222,9 @@
   <data name="SaveDetailedLogOption" xml:space="preserve">
     <value>Save detailed log of dependency analysis</value>
   </data>
+  <data name="PrintReproInstructionsOption" xml:space="preserve">
+    <value>When compiling each method, print out the set of arguments needed to compile that method only</value>
+  </data>
   <data name="SingleMethodGenericArgs" xml:space="preserve">
     <value>Single method compilation: generic arguments to the method</value>
   </data>
@@ -308,5 +311,20 @@
   </data>
   <data name="WarningOverridingOptimize" xml:space="preserve">
     <value>Warning: -Od overrides other optimization options</value>
+  </data>
+  <data name="CallChainProfileFile" xml:space="preserve">
+    <value>Json file(s) for predictive profile guided optimization</value>
+  </data>
+  <data name="PdbFileOption" xml:space="preserve">
+    <value>Generate PDB symbol information file (supported on Windows only)</value>
+  </data>
+  <data name="PerfMapFileOption" xml:space="preserve">
+    <value>Generate PerfMap symbol information file for use by PerfInfo</value>
+  </data>
+  <data name="PdbFilePathOption" xml:space="preserve">
+    <value>Explicit specification of the output PDB file path</value>
+  </data>
+  <data name="PerfMapFilePathOption" xml:space="preserve">
+    <value>Explicit specification of the PerfMap file path</value>
   </data>
 </root>

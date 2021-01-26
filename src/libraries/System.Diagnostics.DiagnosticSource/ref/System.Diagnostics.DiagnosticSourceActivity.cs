@@ -135,9 +135,10 @@ namespace System.Diagnostics
         public string Name { get { throw null; } }
         public string? Version { get { throw null; } }
         public bool HasListeners() { throw null; }
-        public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind = ActivityKind.Internal)  { throw null; }
+        public System.Diagnostics.Activity? StartActivity([System.Runtime.CompilerServices.CallerMemberName] string name = "", System.Diagnostics.ActivityKind kind = ActivityKind.Internal)  { throw null; }
         public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
         public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind, string parentId, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
+        public System.Diagnostics.Activity? StartActivity(System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, DateTimeOffset startTime = default, [System.Runtime.CompilerServices.CallerMemberName] string name = "") { throw null; }
         public static void AddActivityListener(System.Diagnostics.ActivityListener listener) { throw null; }
         public void Dispose() { throw null; }
     }

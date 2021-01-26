@@ -806,9 +806,14 @@ check_type_size(
      BUILTIN_TYPES_ONLY)
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 
-check_include_files(
-    "sys/types.h;sys/sysctl.h"
-    HAVE_SYS_SYSCTL_H)
+if (CLR_CMAKE_TARGET_LINUX)
+    # sysctl is deprecated on Linux
+    set(HAVE_SYS_SYSCTL_H 0)
+else ()
+    check_include_files(
+        "sys/types.h;sys/sysctl.h"
+        HAVE_SYS_SYSCTL_H)
+endif()
 
 check_include_files(
     "sys/ioctl.h"

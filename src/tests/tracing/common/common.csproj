@@ -11,6 +11,5 @@
     <Compile Include="NetPerfFile.cs" />
     <Compile Include="TraceControl.cs" />
     <Compile Include="TraceConfiguration.cs" />
-    <Compile Include="AbstractTraceTest.cs" />
   </ItemGroup>
 </Project>

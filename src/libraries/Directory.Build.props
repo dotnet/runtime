@@ -95,9 +95,6 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
-
-    <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
-    <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->

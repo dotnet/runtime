@@ -17,7 +17,7 @@ namespace Internal.Win32.SafeHandles
 #endif
     sealed partial class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeRegistryHandle() : base(true) { }
+        public SafeRegistryHandle() : base(true) { }
 
         public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
         {

@@ -188,7 +188,7 @@ namespace DebuggerTests
             });
 
         public static IEnumerable<object[]> MembersForLocalNestedStructData(bool is_async)
-            => StructGetPropertiesTestData(false).Select (datum => datum [1..]);
+            => StructGetPropertiesTestData(false).Select(datum => datum[1..]);
 
         [Theory]
         [MemberData(nameof(MembersForLocalNestedStructData), parameters: false)]
@@ -217,7 +217,7 @@ namespace DebuggerTests
                 AssertEqual(expected_names.Length, cs_props.Count(), $"expected number of properties");
             });
 
-        public static TheoryData<bool, bool?, bool?, string[]> JSGetPropertiesTestData(bool test_js)=> new TheoryData<bool, bool?, bool?, string[]>
+        public static TheoryData<bool, bool?, bool?, string[]> JSGetPropertiesTestData(bool test_js) => new TheoryData<bool, bool?, bool?, string[]>
         {
             // default, no args set
             {
@@ -282,49 +282,40 @@ namespace DebuggerTests
         // [MemberData(nameof(JSGetPropertiesTestData), parameters: false)]
         public async Task GetPropertiesTestJSAndManaged(bool test_js, bool? own_properties, bool? accessors_only, string[] expected_names)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
+            string eval_expr;
+            if (test_js)
             {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                string eval_expr;
-                if (test_js)
-                {
-                    await SetBreakpoint("/other.js", 93, 1);
-                    eval_expr = "window.setTimeout(function() { get_properties_test (); }, 1)";
-                }
-                else
-                {
-                    await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.GetPropertiesTests.DerivedClassForJSTest", "run", 2);
-                    eval_expr = "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClassForJSTest:run'); }, 1)";
-                }
+                await SetBreakpoint("/other.js", 93, 1);
+                eval_expr = "window.setTimeout(function() { get_properties_test (); }, 1)";
+            }
+            else
+            {
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.GetPropertiesTests.DerivedClassForJSTest", "run", 2);
+                eval_expr = "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClassForJSTest:run'); }, 1)";
+            }
 
-                var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
+            var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
+            var pause_location = await insp.WaitFor(Inspector.PAUSE);
 
-                var id = pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>();
+            var id = pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>();
 
-                var frame_locals = await GetProperties(id);
-                var obj = GetAndAssertObjectWithName(frame_locals, "obj");
-                var obj_props = await GetProperties(obj["value"]?["objectId"]?.Value<string>(),
-                                        own_properties: own_properties, accessors_only: accessors_only);
+            var frame_locals = await GetProperties(id);
+            var obj = GetAndAssertObjectWithName(frame_locals, "obj");
+            var obj_props = await GetProperties(obj["value"]?["objectId"]?.Value<string>(),
+                                    own_properties: own_properties, accessors_only: accessors_only);
 
-                IEnumerable<JToken> filtered_props;
-                if (test_js)
-                {
-                    filtered_props = obj_props.Children().Where(jt => jt["enumerable"]?.Value<bool>() == true);
-                }
-                else
-                {
-                    // we don't set `enumerable` right now
-                    filtered_props = obj_props.Children().Where(jt=> true);
-                }
+            IEnumerable<JToken> filtered_props;
+            if (test_js)
+            {
+                filtered_props = obj_props.Children().Where(jt => jt["enumerable"]?.Value<bool>() == true);
+            }
+            else
+            {
+                // we don't set `enumerable` right now
+                filtered_props = obj_props.Children().Where(jt => true);
+            }
 
-                var expected_props = new Dictionary<string, (JObject exp_obj, bool is_own)> ()
+            var expected_props = new Dictionary<string, (JObject exp_obj, bool is_own)>()
                 {
                     // own
                     {"owner_name", (TString("foo"), true)},
@@ -336,13 +327,12 @@ namespace DebuggerTests
                     {"available", (TGetter("available"), false)},
                 };
 
-                await CheckExpectedProperties(
-                        expected_names,
-                        name => filtered_props.Where(jt => jt["name"]?.Value<string> () == name).SingleOrDefault(),
-                        expected_props);
+            await CheckExpectedProperties(
+                    expected_names,
+                    name => filtered_props.Where(jt => jt["name"]?.Value<string>() == name).SingleOrDefault(),
+                    expected_props);
 
-                AssertEqual(expected_names.Length, filtered_props.Count(), $"expected number of properties");
-            });
+            AssertEqual(expected_names.Length, filtered_props.Count(), $"expected number of properties");
         }
 
         private async Task CheckExpectedProperties(string[] expected_names, Func<string, JToken> get_actual_prop, Dictionary<string, (JObject, bool)> all_props)
@@ -356,7 +346,7 @@ namespace DebuggerTests
                 var (exp_prop, is_own) = expected;
                 var actual_prop = get_actual_prop(exp_name);
 
-                AssertEqual(is_own, actual_prop["isOwn"]?.Value<bool> () == true, $"{exp_name}#isOwn");
+                AssertEqual(is_own, actual_prop["isOwn"]?.Value<bool>() == true, $"{exp_name}#isOwn");
 
                 if (exp_prop["__custom_type"]?.Value<string>() == "getter")
                 {
@@ -373,14 +363,14 @@ namespace DebuggerTests
             }
         }
 
-        private static void AssertHasOnlyExpectedProperties (string[] expected_names, IEnumerable<JObject> actual)
+        private static void AssertHasOnlyExpectedProperties(string[] expected_names, IEnumerable<JObject> actual)
         {
             var exp = new HashSet<string>(expected_names);
 
             foreach (var obj in actual)
             {
-                if (!exp.Contains(obj["name"]?.Value<string> ()))
-                    Console.WriteLine ($"Unexpected: {obj}");
+                if (!exp.Contains(obj["name"]?.Value<string>()))
+                    Console.WriteLine($"Unexpected: {obj}");
             }
         }
 

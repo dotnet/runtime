@@ -534,7 +534,7 @@ namespace System
             if (position == -1)
                 return stringToUnescape;
 
-            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
             vsb.EnsureCapacity(stringToUnescape.Length);
 
             vsb.Append(stringToUnescape.AsSpan(0, position));

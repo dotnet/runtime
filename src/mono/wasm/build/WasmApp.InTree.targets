@@ -10,7 +10,7 @@
         <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackRidDir)..\..\</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
-    <Message Text="RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="low" />
+    <Message Text="Using RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="Low" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">

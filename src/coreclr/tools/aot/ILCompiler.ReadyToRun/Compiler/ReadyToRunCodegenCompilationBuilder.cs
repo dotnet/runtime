@@ -12,6 +12,7 @@ using ILCompiler.Win32Resources;
 using Internal.IL;
 using Internal.JitInterface;
 using Internal.ReadyToRunConstants;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
@@ -24,7 +25,12 @@ namespace ILCompiler
         private bool _resilient;
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
+        private bool _generatePdbFile;
+        private string _pdbPath;
+        private bool _generatePerfMapFile;
+        private string _perfMapPath;
         private int _parallelism;
+        Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
         private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
@@ -133,9 +139,29 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UsePdbFile(bool generatePdbFile, string pdbPath)
+        {
+            _generatePdbFile = generatePdbFile;
+            _pdbPath = pdbPath;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath)
+        {
+            _generatePerfMapFile = generatePerfMapFile;
+            _perfMapPath = perfMapPath;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseParallelism(int parallelism)
         {
             _parallelism = parallelism;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UsePrintReproInstructions(Func<MethodDesc, string> printReproInstructions)
+        {
+            _printReproInstructions = printReproInstructions;
             return this;
         }
 
@@ -245,9 +271,14 @@ namespace ILCompiler
                 _inputFiles,
                 _compositeRootPath,
                 _instructionSetSupport,
-                _resilient,
-                _generateMapFile,
-                _generateMapCsvFile,
+                resilient: _resilient,
+                generateMapFile: _generateMapFile,
+                generateMapCsvFile: _generateMapCsvFile,
+                generatePdbFile: _generatePdbFile,
+                printReproInstructions: _printReproInstructions,
+                pdbPath: _pdbPath,
+                generatePerfMapFile: _generatePerfMapFile,
+                perfMapPath: _perfMapPath,
                 _parallelism,
                 _profileData,
                 _r2rMethodLayoutAlgorithm,
