@@ -199,11 +199,11 @@ namespace System.Net.Sockets.Tests
         public override Task SendFileAsync(Socket s, string fileName) =>
             Task.Factory.FromAsync(
                 (callback, state) => s.BeginSendFile(fileName, callback, state),
-                s.EndSendTo, null);
+                s.EndSendFile, null);
         public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
             Task.Factory.FromAsync(
                 (callback, state) => s.BeginSendFile(fileName, preBuffer.Array, postBuffer.Array, flags, callback, state),
-                s.EndSendTo, null);
+                s.EndSendFile, null);
         public override bool UsesApm => true;
     }
 
