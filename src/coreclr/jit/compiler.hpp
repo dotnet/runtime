@@ -61,14 +61,6 @@ inline float forceCastToFloat(double d)
 // Enforce UInt32 narrowing for buggy compilers (notably Whidbey Beta 2 LKG)
 inline UINT32 forceCastToUInt32(double d)
 {
-#if defined(_MSC_VER) && defined(TARGET_X86)
-    // MSVC x86 emits __ftoui3 call for (UINT32)d
-    // and it returns 4294967295U for float.MaxValue instead of 0.
-    if (d == 3.40282346638528859e+38)
-    {
-        return 0;
-    }
-#endif
     Volatile<UINT32> u = (UINT32)d;
     return u;
 }
