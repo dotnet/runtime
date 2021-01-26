@@ -66,7 +66,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <!--<IncludeDotNetCli>true</IncludeDotNetCli>-->
     <DotNetCliPackageType>aspnetcore-runtime</DotNetCliPackageType>
     <DotNetCliVersion>5.0.0</DotNetCliVersion>
   </PropertyGroup>
