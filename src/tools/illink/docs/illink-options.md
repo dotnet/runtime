@@ -39,7 +39,7 @@ The command:
 
 will use the XML descriptor as a source. That means that the linker will
 use this file to decide what to link in a set of assemblies. The format of the
-descriptors is described in [data-formats document](../data-formats.md).
+descriptors is described in [data-formats document](data-formats.md).
 
 ### Actions on the assemblies
 
@@ -194,6 +194,16 @@ the emitted format depends upon the argument that is passed to this option (`cs`
 The attributes contained in these files are assembly-level attributes of type `UnconditionalSuppressMessage`
 specifying the required `Scope` and `Target` properties for each of the warnings seen. The
 generated files are saved in the output directory and named `<AssemblyName>.WarningSuppressions.<extension>`.
+
+### Detailed dependencies tracing
+
+For tracking why linker kept specific metadata you can use `--dump-dependencies` option
+which by default writes detailed information into a compressed file called `linker-dependencies.xml.gz`
+inside output directory. The default output filename can be changed with `--dependencies-file`
+option.
+
+The format of the data is XML and it's intentionally human-readable but due
+to a large amount of data, it's recommended to use tools which can analyze the data.
 
 ## monolinker specific options
 
