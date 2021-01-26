@@ -5,7 +5,7 @@
   <!-- We want to override the one from tests.mobile.targets -->
   <Target Name="PrepareForWasmBuildApp">
     <PropertyGroup>
-      <WasmMainAssemblyPath>$(OutDir)debugger-test.dll</WasmMainAssemblyPath>
+      <WasmMainAssemblyFileName>$(OutDir)debugger-test.dll</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
       <WasmDebugLevel>1</WasmDebugLevel>
@@ -14,6 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <WasmAssembliesToBundle Include="$(OutDir)debugger-test.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 
