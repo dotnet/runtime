@@ -146,6 +146,10 @@ namespace System.Net.Sockets.Tests
             socket.BindToAnonymousPort(IPAddress.Any);
             socket.Shutdown(shutdown);
 
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/47469")]
+            // Shutdown(Both) does not seem to take immediate effect for Receive(Message)From in a consistent manner, trying to workaround with a delay:
+            if (shutdown == SocketShutdown.Both) await Task.Delay(50);
+
             SocketException exception = await Assert.ThrowsAnyAsync<SocketException>(() => ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()))
                 .TimeoutAfter(CancellationTestTimeout);
 
