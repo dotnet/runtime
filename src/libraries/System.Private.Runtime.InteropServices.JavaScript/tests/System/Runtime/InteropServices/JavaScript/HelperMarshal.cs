@@ -110,6 +110,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 Console.WriteLine("boxed value was of type " + boxed.GetType());
             _dateTimeValue = (DateTime)boxed;
         }
+        private static void InvokeDateTimeByValue(DateTime dt)
+        {
+            _dateTimeValue = dt;
+        }
 
         internal static System.Uri _uriValue;
         private static void InvokeUri(System.Uri uri)

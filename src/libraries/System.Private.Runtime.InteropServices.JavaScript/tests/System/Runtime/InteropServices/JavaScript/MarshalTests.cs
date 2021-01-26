@@ -858,6 +858,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
         }
 
+        const string ExpectedDateString = "1937-07-02T05:35:02.0000000Z";
+        static readonly DateTime ExpectedDateTime = DateTime.Parse(ExpectedDateString).ToUniversalTime();
+
         [Fact]
         public static void InternedStringReturnValuesWork()
         {
@@ -875,17 +878,34 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void MarshalDateTime()
         {
-            int year = 1937, month = 7, day = 2, hour = 5, minute = 35, second = 2, millisecond = 0;
-            var expected = new DateTime(
-                year, month, day, hour, minute, second, millisecond, DateTimeKind.Utc
-            );
             HelperMarshal._dateTimeValue = default(DateTime);
             Runtime.InvokeJS(
-                // $"var dt = new Date({year}, {month - 1}, {day}, {hour}, {minute}, {second}, {millisecond});\r\n" +
-                "var dt = new Date('1937-07-02T05:35:02.0000000Z');\r\n" +
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
                 "App.call_test_method ('InvokeDateTime', [ dt ], 'o');"
             );
-            Assert.Equal(expected, HelperMarshal._dateTimeValue);
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
+
+        [Fact]
+        public static void MarshalDateTimeAutomatic()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                "App.call_test_method ('InvokeDateTime', [ dt ]);"
+            );
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
+
+        [Fact]
+        public static void MarshalDateTimeByValueAutomatic()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                "App.call_test_method ('InvokeDateTimeByValue', [ 12345 ], 'a');"
+            );
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
         }
 
         [Fact]
@@ -896,6 +916,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(
                 @"var uri = 'https://www.example.com/';
                 App.call_test_method ('InvokeUri', [ uri ], 'u');"
+            );
+            Assert.Equal(expected, HelperMarshal._uriValue);
+        }
+
+        [Fact]
+        public static void MarshalUriAutomatic()
+        {
+            var expected = new System.Uri("https://www.example.com/");
+            HelperMarshal._uriValue = default(System.Uri);
+            Runtime.InvokeJS(
+                @"var uri = 'https://www.example.com/';
+                App.call_test_method ('InvokeUri', [ uri ]);"
             );
             Assert.Equal(expected, HelperMarshal._uriValue);
         }
