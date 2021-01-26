@@ -12,6 +12,7 @@ using ILCompiler.Win32Resources;
 using Internal.IL;
 using Internal.JitInterface;
 using Internal.ReadyToRunConstants;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
@@ -29,6 +30,7 @@ namespace ILCompiler
         private bool _generatePerfMapFile;
         private string _perfMapPath;
         private int _parallelism;
+        Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
         private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
@@ -157,6 +159,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UsePrintReproInstructions(Func<MethodDesc, string> printReproInstructions)
+        {
+            _printReproInstructions = printReproInstructions;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseInstructionSetSupport(InstructionSetSupport instructionSetSupport)
         {
             _instructionSetSupport = instructionSetSupport;
@@ -267,6 +275,7 @@ namespace ILCompiler
                 generateMapFile: _generateMapFile,
                 generateMapCsvFile: _generateMapCsvFile,
                 generatePdbFile: _generatePdbFile,
+                printReproInstructions: _printReproInstructions,
                 pdbPath: _pdbPath,
                 generatePerfMapFile: _generatePerfMapFile,
                 perfMapPath: _perfMapPath,
