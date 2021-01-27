@@ -897,23 +897,13 @@ namespace System.Globalization
                 }
             }
 
-            private static unsafe int wcslen(char* s)
-            {
-                int result = 0;
-                while (*s++ != '\0')
-                {
-                    result++;
-                }
-                return result;
-            }
-
             private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[]? groupDigits, string sDecimal, string? sGroup)
             {
                 Debug.Assert(sGroup != null || groupDigits == null);
 
                 int digPos = number.scale;
                 char* dig = number.digits;
-                int digLength = wcslen(dig);
+                int digLength = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(dig).Length;
 
                 if (digPos > 0)
                 {
