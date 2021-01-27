@@ -144,20 +144,12 @@ enum CheckedWriteBarrierKinds {
 
 #include "corjithost.h"
 
-#if !defined(_MSC_VER) && !defined(__stdcall)
-#ifdef __i386__
-#define __stdcall      __attribute__((stdcall))
-#else
-#define __stdcall
-#endif
-#endif
-
-extern "C" void __stdcall jitStartup(ICorJitHost* host);
+extern "C" void jitStartup(ICorJitHost* host);
 
 class ICorJitCompiler;
 class ICorJitInfo;
 
-extern "C" ICorJitCompiler* __stdcall getJit();
+extern "C" ICorJitCompiler* getJit();
 
 // #EEToJitInterface
 // ICorJitCompiler is the interface that the EE uses to get IL bytecode converted to native code. Note that
@@ -178,9 +170,7 @@ public:
     //
     // * In the 32 bit jit this is implemented by code:CILJit.compileMethod
     // * For the 64 bit jit this is implemented by code:PreJit.compileMethod
-    //
-    // Note: Obfuscators that are hacking the JIT depend on this method having __stdcall calling convention
-    virtual CorJitResult __stdcall compileMethod (
+    virtual CorJitResult compileMethod (
             ICorJitInfo                 *comp,               /* IN */
             struct CORINFO_METHOD_INFO  *info,               /* IN */
             unsigned /* code:CorJitFlag */   flags,          /* IN */

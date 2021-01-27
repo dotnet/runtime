@@ -27,12 +27,12 @@ public:
 // * For the 64 bit jit this is implemented by code:PreJit.compileMethod
 //
 // Note: Obfuscators that are hacking the JIT depend on this method having __stdcall calling convention
-CorJitResult __stdcall compileMethod(ICorJitInfo*                comp,     /* IN */
-                                     struct CORINFO_METHOD_INFO* info,     /* IN */
-                                     unsigned /* code:CorJitFlag */ flags, /* IN */
-                                     uint8_t** nativeEntry,                /* OUT */
-                                     uint32_t* nativeSizeOfCode            /* OUT */
-                                     );
+CorJitResult compileMethod(ICorJitInfo*                comp,     /* IN */
+                           struct CORINFO_METHOD_INFO* info,     /* IN */
+                           unsigned /* code:CorJitFlag */ flags, /* IN */
+                           uint8_t** nativeEntry,                /* OUT */
+                           uint32_t* nativeSizeOfCode            /* OUT */
+                           );
 
 // Do any appropriate work at process shutdown.  Default impl is to do nothing.
 void ProcessShutdownWork(ICorStaticInfo* info); /* {}; */
