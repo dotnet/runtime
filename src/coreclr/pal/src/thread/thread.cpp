@@ -1704,7 +1704,7 @@ CorUnix::InternalSetThreadDescription(
     #endif
 
     #if defined(__APPLE__)
-    //on macos, pthread_setname_np only works for the calling thread.
+    // on macos, pthread_setname_np only works for the calling thread.
     if (PlatformGetCurrentThreadId() == pTargetThread->GetThreadId()) 
     {
         error = pthread_setname_np(nameBuf);
@@ -1732,7 +1732,7 @@ InternalSetThreadDescriptionExit:
         PAL_free(nameBuf);
     }
 
-#endif // defined(__linux__) || defined(__APPLE__)
+#endif //defined(__linux__) || defined(__APPLE__)
 
     return palError;
 }
