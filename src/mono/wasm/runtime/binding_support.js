@@ -72,6 +72,7 @@ var BindingSupportLib = {
 			this.mono_wasm_get_delegate_invoke = Module.cwrap ('mono_wasm_get_delegate_invoke', 'number', ['number']);
 			this.mono_wasm_string_array_new = Module.cwrap ('mono_wasm_string_array_new', 'number', ['number']);
 			this.mono_wasm_create_method_signature_info = Module.cwrap ('mono_wasm_create_method_signature_info', 'number', ['number']);
+			this.mono_wasm_unbox_rooted = Module.cwrap ('mono_wasm_unbox_rooted', 'number', ['number']);
 
 			this._box_buffer = Module._malloc(16);
 			this._unbox_buffer = Module._malloc(16);
@@ -999,16 +1000,22 @@ typedef struct wasm_method_signature_info {
 
 				var parms = new Array(pcount);
 				for (var i = 0; i < pcount; i++)
-					parms[i] = [Module.HEAPU32[pmtypesPtr + i], Module.HEAPU32[pclassesPtr + i]];					
+					parms[i] = { 
+						"marshalType": Module.HEAPU32[pmtypesPtr + i], 
+						"class": Module.HEAPU32[pclassesPtr + i]
+					};
 
 				result = {
-					"result": [	Module.HEAPU32[off32 + 0], Module.HEAPU32[off32 + 1] ],
+					"result": {
+						"marshalType": Module.HEAPU32[off32 + 0], 
+						"class": Module.HEAPU32[off32 + 1] 
+					},
 					"parameters": parms
 				};
 
 				Module._free(infoPtr);
 				this._method_signature_info_table.set (methodPtr, result);
-				console.log(methodPtr, JSON.stringify(result));
+				// console.log(methodPtr, JSON.stringify(result));
 			}
 			return result;
 		},
@@ -1023,29 +1030,41 @@ typedef struct wasm_method_signature_info {
 				// Return unboxed so it can go directly into the arguments list
 				signature += "!";
 				var boundConverter = this.bind_method (
-					convMethod, 0, signature, "automatic_converter_for_type_" + classPtr
+					convMethod, 0, signature, "JSToManaged_class" + classPtr
 				);
-				console.log(signature, boundConverter);
 				this._automatic_converter_table.set (classPtr, boundConverter);
 			}
 			return this._automatic_converter_table.get (classPtr);
 		},
 
 		_pick_automatic_converter: function (methodPtr, args_marshal, paramRecord) {
-			var mtype = paramRecord[0], classPtr = paramRecord[1];
+			var result = {
+				size: 0,
+				needs_unbox: false,
+				needs_root: true,
+				key: 'a'
+			};
 
-			switch (mtype) {
-				case 4: // VT
+			switch (paramRecord.marshalType) {
+				case 4: // Struct
+					result.needs_unbox = true;
+					; // FIXME: Fall-through
 				case 7: // OBJECT
-					var res = this._pick_automatic_converter_for_user_type (methodPtr, args_marshal, classPtr);
-					if (res)
-						return res;						
-				// FIXME: Handle stuff like Uri?
+					var res = this._pick_automatic_converter_for_user_type (methodPtr, args_marshal, paramRecord.class);
+					if (res) {
+						result.convert = res;
+						break;
+					}
+					; // FIXME: Fall-through
 				default:
 					// FIXME
-					console.log("found no automatic converter for mtype", paramRecord);
-					return this.js_to_mono_obj.bind(this);
+					console.log("found no automatic converter for mtype", paramRecord.marshalType);
+					result.convert = this.js_to_mono_obj.bind(this);
+					break;
 			}
+
+			console.log(JSON.stringify(result));
+			return result;
 		},
 
 		_create_converter_for_marshal_string: function (method, args_marshal) {
@@ -1070,14 +1089,12 @@ typedef struct wasm_method_signature_info {
 					if (!method)
 						throw new Error ("Cannot use automatic argument type handling without a method ptr");
 					depends_on_method_arguments = true;
+					var step = this._pick_automatic_converter(method, args_marshal, sigInfo.parameters[i]);
+					if (!step)
+						throw new Error (`Failed to select an automatic converter for parameter #${i} of method ${method}`);
+					steps.push(step);
 					needs_root_buffer = true;
-					// FIXME
-					steps.push({
-						convert: this._pick_automatic_converter(method, args_marshal, sigInfo.parameters[i]),
-						size: 0,
-						needs_root: true,
-						key: 'a'
-					});
+					size += step.size;
 					continue;
 				}
 
@@ -1144,7 +1161,7 @@ typedef struct wasm_method_signature_info {
 			if (converter.compiled_function && converter.compiled_variadic_function)
 				return converter;
 
-			var converterName = args_marshal.replace("!", "_result_unmarshaled");
+			var converterName = args_marshal.replace ("!", "_result_unmarshaled");
 			converter.name = converterName;
 
 			var body = [];
@@ -1177,13 +1194,21 @@ typedef struct wasm_method_signature_info {
 
 				if (step.convert) {
 					closure[closureKey] = step.convert;
-					body.push (`var ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
+					body.push (`var ${valueKey} = ${closureKey} (${argKey}, method, ${i});`);
 				} else {
 					body.push (`var ${valueKey} = ${argKey};`);
 				}
 
 				if (step.needs_root)
 					body.push (`rootBuffer.set (${i}, ${valueKey});`);
+
+				// HACK: needs_unbox indicates that we were passed a pointer to a managed object, and either
+				//  it was already rooted by our caller or (needs_root = true) by us. Now we can unbox it and
+				//  pass the raw address of its boxed value into the callee.
+				if (step.needs_unbox) {
+					closure.mono_wasm_unbox_rooted = this.mono_wasm_unbox_rooted;
+					body.push (`${valueKey} = mono_wasm_unbox_rooted (${valueKey});`);
+				}
 
 				if (step.indirect) {
 					var heapArrayName = null;

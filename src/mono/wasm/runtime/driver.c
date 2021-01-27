@@ -1221,3 +1221,10 @@ mono_wasm_string_get_data (
 	return;
 }
 
+EMSCRIPTEN_KEEPALIVE void *
+mono_wasm_unbox_rooted (MonoObject *obj)
+{
+	if (!obj)
+		return 0;
+	return mono_object_unbox (obj);
+}

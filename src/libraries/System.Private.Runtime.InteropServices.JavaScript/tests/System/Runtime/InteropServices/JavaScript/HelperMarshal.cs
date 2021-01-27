@@ -38,6 +38,28 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
+        public struct CustomDate {
+            public DateTime Date;
+
+            public static CustomDate JSToManaged (double d) {
+                Console.WriteLine($"CustomDate.JSToManaged({d})");
+                var unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)d);
+                return new CustomDate { 
+                    Date = unixTime.DateTime
+                };
+            }
+
+            public static double ManagedToJS (CustomDate cd) {
+                Console.WriteLine($"CustomDate.ManagedToJS({cd})");
+                var dt = cd.Date;
+                if (dt.Kind == DateTimeKind.Local)
+                    dt = dt.ToUniversalTime();
+                else if (dt.Kind == DateTimeKind.Unspecified)
+                    dt = new DateTime(dt.Ticks, DateTimeKind.Utc);
+                return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
+            }
+        }
+
         internal const string INTEROP_CLASS = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
 
         internal static CustomClass _ccValue;
@@ -156,6 +178,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static void InvokeDateTimeByValue(DateTime dt)
         {
             _dateTimeValue = dt;
+        }
+        private static void InvokeCustomDate(CustomDate cd)
+        {
+            _dateTimeValue = cd.Date;
         }
 
         internal static System.Uri _uriValue;
