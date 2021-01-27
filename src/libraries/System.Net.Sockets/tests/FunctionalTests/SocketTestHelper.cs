@@ -33,6 +33,8 @@ namespace System.Net.Sockets.Tests
         public abstract Task<int> SendAsync(Socket s, ArraySegment<byte> buffer);
         public abstract Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList);
         public abstract Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endpoint);
+        public abstract Task SendFileAsync(Socket s, string fileName);
+        public abstract Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags);
         public virtual bool GuaranteedSendOrdering => true;
         public virtual bool ValidatesArrayArguments => true;
         public virtual bool UsesSync => false;
@@ -42,6 +44,7 @@ namespace System.Net.Sockets.Tests
         public virtual bool SupportsMultiConnect => true;
         public virtual bool SupportsAcceptIntoExistingSocket => true;
         public virtual bool SupportsAcceptReceive => false;
+        public virtual bool SupportsSendFileSlicing => false;
         public virtual void Listen(Socket s, int backlog) { s.Listen(backlog); }
         public virtual void ConfigureNonBlocking(Socket s) { }
     }
@@ -90,7 +93,9 @@ namespace System.Net.Sockets.Tests
             Task.Run(() => s.Send(bufferList, SocketFlags.None));
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             Task.Run(() => s.SendTo(buffer.Array, buffer.Offset, buffer.Count, SocketFlags.None, endPoint));
-
+        public override Task SendFileAsync(Socket s, string fileName) => Task.Run(() => s.SendFile(fileName));
+        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
+            Task.Run(() => s.SendFile(fileName, preBuffer.Array, postBuffer.Array, flags));
         public override bool GuaranteedSendOrdering => false;
         public override bool UsesSync => true;
         public override bool ConnectAfterDisconnectResultsInInvalidOperationException => true;
@@ -191,7 +196,14 @@ namespace System.Net.Sockets.Tests
             Task.Factory.FromAsync(
                 (callback, state) => s.BeginSendTo(buffer.Array, buffer.Offset, buffer.Count, SocketFlags.None, endPoint, callback, state),
                 s.EndSendTo, null);
-
+        public override Task SendFileAsync(Socket s, string fileName) =>
+            Task.Factory.FromAsync(
+                (callback, state) => s.BeginSendFile(fileName, callback, state),
+                s.EndSendFile, null);
+        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
+            Task.Factory.FromAsync(
+                (callback, state) => s.BeginSendFile(fileName, preBuffer.Array, postBuffer.Array, flags, callback, state),
+                s.EndSendFile, null);
         public override bool UsesApm => true;
     }
 
@@ -221,6 +233,8 @@ namespace System.Net.Sockets.Tests
             s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             s.SendToAsync(buffer, SocketFlags.None, endPoint);
+        public override Task SendFileAsync(Socket s, string fileName) => throw new NotSupportedException();
+        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) => throw new NotSupportedException();
     }
 
     // Same as above, but call the CancellationToken overloads where possible
@@ -255,6 +269,8 @@ namespace System.Net.Sockets.Tests
             s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             s.SendToAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask() ;
+        public override Task SendFileAsync(Socket s, string fileName) => throw new NotSupportedException();
+        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) => throw new NotSupportedException();
     }
 
     public sealed class SocketHelperEap : SocketHelperBase
@@ -344,7 +360,8 @@ namespace System.Net.Sockets.Tests
                 e.RemoteEndPoint = endPoint;
                 return s.SendToAsync(e);
             });
-
+        public override Task SendFileAsync(Socket s, string fileName) => throw new NotSupportedException();
+        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) => throw new NotSupportedException();
         private static Task<TResult> InvokeAsync<TResult>(
             Socket s,
             Func<SocketAsyncEventArgs, TResult> getResult,
@@ -399,6 +416,9 @@ namespace System.Net.Sockets.Tests
         public Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) => _socketHelper.SendAsync(s, buffer);
         public Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) => _socketHelper.SendAsync(s, bufferList);
         public Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endpoint) => _socketHelper.SendToAsync(s, buffer, endpoint);
+        public Task SendFileAsync(Socket s, string fileName) => _socketHelper.SendFileAsync(s, fileName);
+        public Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
+            _socketHelper.SendFileAsync(s, fileName, preBuffer, postBuffer, flags);
         public bool GuaranteedSendOrdering => _socketHelper.GuaranteedSendOrdering;
         public bool ValidatesArrayArguments => _socketHelper.ValidatesArrayArguments;
         public bool UsesSync => _socketHelper.UsesSync;
@@ -408,6 +428,7 @@ namespace System.Net.Sockets.Tests
         public bool SupportsMultiConnect => _socketHelper.SupportsMultiConnect;
         public bool SupportsAcceptIntoExistingSocket => _socketHelper.SupportsAcceptIntoExistingSocket;
         public bool SupportsAcceptReceive => _socketHelper.SupportsAcceptReceive;
+        public bool SupportsSendFileSlicing => _socketHelper.SupportsSendFileSlicing;
         public void Listen(Socket s, int backlog) => _socketHelper.Listen(s, backlog);
         public void ConfigureNonBlocking(Socket s) => _socketHelper.ConfigureNonBlocking(s);
     }
@@ -419,7 +440,10 @@ namespace System.Net.Sockets.Tests
             Task.Run(() => s.Receive((Span<byte>)buffer, SocketFlags.None));
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
             Task.Run(() => s.Send((ReadOnlySpan<byte>)buffer, SocketFlags.None));
+        public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
+            Task.Run(() => s.SendFile(fileName, preBuffer, postBuffer, flags));
         public override bool UsesSync => true;
+        public override bool SupportsSendFileSlicing => true;
     }
 
     public sealed class SocketHelperSpanSyncForceNonBlocking : SocketHelperSpanSync
