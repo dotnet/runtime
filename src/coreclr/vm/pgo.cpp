@@ -187,7 +187,7 @@ public:
         if (!writer.AppendSchema(schema))
             return false;
 
-        if (!writer.AppendDataFromLastSchema([&](int64_t thWritten)
+        auto lambda = [&](int64_t thWritten)
         {
             if (thWritten != 0)
             {
@@ -197,7 +197,9 @@ public:
                     typeHandlesEncountered.Append(th);
                 }
             }
-        }))
+        };
+
+        if (!writer.AppendDataFromLastSchema(lambda))
         {
             return false;
         }
@@ -278,7 +280,7 @@ void PgoManager::WritePgoData()
         uint8_t* data = pgoData->header.GetData();
 
         unsigned lastOffset  = 0;
-        if (!ReadInstrumentationSchemaWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, [data, pgoDataFile] (const ICorJitInfo::PgoInstrumentationSchema &schema)
+        auto lambda = [data, pgoDataFile] (const ICorJitInfo::PgoInstrumentationSchema &schema)
         {
             fprintf(pgoDataFile, s_RecordString, schema.InstrumentationKind, schema.ILOffset, schema.Count, schema.Other);
             for (int32_t iEntry = 0; iEntry < schema.Count; iEntry++)
@@ -325,8 +327,9 @@ void PgoManager::WritePgoData()
                 }
             }
             return true;
-        }
-        ))
+        };
+
+        if (!ReadInstrumentationSchemaWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, lambda))
         {
             return true;;
         }

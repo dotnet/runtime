@@ -276,6 +276,9 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
                     return false;
                 }
                 break;
+            default:
+                assert(false);
+                break;
             }
             dataCountToRead--;
             return true;
@@ -369,11 +372,13 @@ bool ReadInstrumentationSchemaWithLayout(const uint8_t *pByte, size_t cbDataMax,
 
 inline bool ReadInstrumentationSchemaWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchemas)
 {
-    return ReadInstrumentationSchemaWithLayout(pByte, cbDataMax, initialOffset, [pSchemas](const ICorJitInfo::PgoInstrumentationSchema &schema)
+    auto lambda = [pSchemas](const ICorJitInfo::PgoInstrumentationSchema &schema)
     {
         pSchemas->Append(schema);
         return true;
-    });
+    };
+
+    return ReadInstrumentationSchemaWithLayout(pByte, cbDataMax, initialOffset, lambda);
 }
 
 
