@@ -3223,7 +3223,8 @@ get_bb (TransformData *td, unsigned char *ip)
 		bb->index = td->bb_count++;
 		td->offset_to_bb [offset] = bb;
 
-		td->basic_blocks = g_list_append_mempool (td->mempool, td->basic_blocks, bb);
+                /* Add the blocks in reverse order */
+		td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, bb);
 	}
 
 	return bb;
@@ -3320,6 +3321,9 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header)
 		if (i == CEE_THROW || i == CEE_ENDFINALLY || i == CEE_RETHROW)
 			get_bb (td, ip);
 	}
+
+        /* get_bb added blocks in reverse order, unreverse now */
+        td->basic_blocks = g_list_reverse (td->basic_blocks);
 }
 
 static void
