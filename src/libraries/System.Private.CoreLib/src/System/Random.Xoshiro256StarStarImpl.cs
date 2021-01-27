@@ -53,16 +53,23 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by a handful of "next" methods
             internal ulong NextUInt64()
             {
-                ulong result = BitOperations.RotateLeft(_s1 * 5, 7) * 9;
-                ulong t = _s1 << 17;
+                ulong s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
 
-                _s2 ^= _s0;
-                _s3 ^= _s1;
-                _s1 ^= _s2;
-                _s0 ^= _s3;
+                ulong result = BitOperations.RotateLeft(s1 * 5, 7) * 9;
+                ulong t = s1 << 17;
 
-                _s2 ^= t;
-                _s3 = BitOperations.RotateLeft(_s3, 45);
+                s2 ^= s0;
+                s3 ^= s1;
+                s1 ^= s2;
+                s0 ^= s3;
+
+                s2 ^= t;
+                s3 = BitOperations.RotateLeft(s3, 45);
+
+                _s0 = s0;
+                _s1 = s1;
+                _s2 = s2;
+                _s3 = s3;
 
                 return result;
             }
@@ -189,22 +196,50 @@ namespace System
 
             public override unsafe void NextBytes(Span<byte> buffer)
             {
+                ulong s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
+
                 while (buffer.Length >= sizeof(ulong))
                 {
-                    Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(buffer), NextUInt64());
+                    Unsafe.WriteUnaligned(
+                        ref MemoryMarshal.GetReference(buffer),
+                        BitOperations.RotateLeft(s1 * 5, 7) * 9);
+
+                    // Update PRNG state.
+                    ulong t = s1 << 17;
+                    s2 ^= s0;
+                    s3 ^= s1;
+                    s1 ^= s2;
+                    s0 ^= s3;
+                    s2 ^= t;
+                    s3 = BitOperations.RotateLeft(s3, 45);
+
                     buffer = buffer.Slice(sizeof(ulong));
                 }
 
                 if (!buffer.IsEmpty)
                 {
-                    ulong next = NextUInt64();
+                    ulong next = BitOperations.RotateLeft(s1 * 5, 7) * 9;
                     byte* remainingBytes = (byte*)&next;
                     Debug.Assert(buffer.Length < sizeof(ulong));
                     for (int i = 0; i < buffer.Length; i++)
                     {
                         buffer[i] = remainingBytes[i];
                     }
+
+                    // Update PRNG state.
+                    ulong t = s1 << 17;
+                    s2 ^= s0;
+                    s3 ^= s1;
+                    s1 ^= s2;
+                    s0 ^= s3;
+                    s2 ^= t;
+                    s3 = BitOperations.RotateLeft(s3, 45);
                 }
+
+                _s0 = s0;
+                _s1 = s1;
+                _s2 = s2;
+                _s3 = s3;
             }
 
             public override double NextDouble() =>

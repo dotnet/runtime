@@ -54,7 +54,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //                          Default: false.
 //
 // Return Value:
-//    returns true if the immediate was too large and tmpReg was used and modified.
+//    returns true if the immediate was small enough to be encoded inside instruction. If not,
+//    returns false meaning the immediate was too large and tmpReg was used and modified.
 //
 bool CodeGen::genInstrWithConstant(instruction ins,
                                    emitAttr    attr,

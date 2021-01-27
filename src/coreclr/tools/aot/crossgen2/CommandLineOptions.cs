@@ -46,6 +46,7 @@ namespace ILCompiler
         public bool Resilient;
         public bool Map;
         public bool MapCsv;
+        public bool PrintReproInstructions;
         public bool Pdb;
         public string PdbPath;
         public bool PerfMap;
@@ -113,6 +114,7 @@ namespace ILCompiler
                 syntax.DefineOption("targetos", ref TargetOS, SR.TargetOSOption);
                 syntax.DefineOption("jitpath", ref JitPath, SR.JitPathOption);
 
+                syntax.DefineOption("print-repro-instructions", ref PrintReproInstructions, SR.PrintReproInstructionsOption);
                 syntax.DefineOption("singlemethodtypename", ref SingleMethodTypeName, SR.SingleMethodTypeName);
                 syntax.DefineOption("singlemethodname", ref SingleMethodName, SR.SingleMethodMethodName);
                 syntax.DefineOption("singlemethodindex", ref SingleMethodIndex, SR.SingleMethodIndex);
