@@ -183,7 +183,7 @@ METHOD(MoveAndDuplicate)
 METHOD(MoveHighAndDuplicate)
 METHOD(MoveLowAndDuplicate)
 // Ssse3
-METHOD(Abs)
+METHOD(Abs) // Also used by ARM64
 METHOD(AlignRight)
 METHOD(HorizontalAddSaturate)
 METHOD(HorizontalSubtractSaturate)
