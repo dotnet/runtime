@@ -9090,16 +9090,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_UMULH: {
 			LLVMValueRef op1, op2;
 			if (ins->opcode == OP_ARM64_SMULH) {
-				op1 = LLVMBuildSExt (builder, lhs, LLVMInt128Type(), "");
-				op2 = LLVMBuildSExt (builder, rhs, LLVMInt128Type(), "");
+				op1 = LLVMBuildSExt (builder, lhs, LLVMInt128Type (), "");
+				op2 = LLVMBuildSExt (builder, rhs, LLVMInt128Type (), "");
 			} else {
-				op1 = LLVMBuildZExt (builder, lhs, LLVMInt128Type(), "");
-				op2 = LLVMBuildZExt (builder, rhs, LLVMInt128Type(), "");
+				op1 = LLVMBuildZExt (builder, lhs, LLVMInt128Type (), "");
+				op2 = LLVMBuildZExt (builder, rhs, LLVMInt128Type (), "");
 			}
 			LLVMValueRef mul = LLVMBuildMul (builder, op1, op2, "");
 			LLVMValueRef hi64 = LLVMBuildLShr (builder, mul,
-				LLVMConstInt(LLVMInt128Type (), 64, FALSE), "");
-			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type(), "");
+				LLVMConstInt (LLVMInt128Type (), 64, FALSE), "");
+			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
 			break;
 		}
 #endif
