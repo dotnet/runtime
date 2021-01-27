@@ -1865,9 +1865,11 @@ namespace System.Diagnostics.Tracing
                     {
                         dataType = Enum.GetUnderlyingType(dataType);
 
-                        int dataTypeSize = System.Runtime.InteropServices.Marshal.SizeOf(dataType);
-                        if (dataTypeSize < sizeof(int))
+                        if (dataType == typeof(byte) || dataType == typeof(sbyte)
+                            || dataType == typeof(ushort) || dataType == typeof(short))
+                        {
                             dataType = typeof(int);
+                        }
                         goto Again;
                     }
 
