@@ -113,6 +113,16 @@ namespace System.Threading
                 }
                 count = prevCount;
             } while (count > 0);
+
+            if (count == 0)
+            {
+                // Blocking pressure decreased, switch off and clear marked methods
+                lock (Processor)
+                {
+                    Volatile.Write(ref s_enabled, false);
+                    s_blockingItems = null;
+                }
+            }
         }
 
         public static bool RequiresMitigation(object? workItem)
