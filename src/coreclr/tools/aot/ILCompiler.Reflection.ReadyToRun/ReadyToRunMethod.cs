@@ -11,6 +11,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using Internal.Pgo;
 using Internal.Runtime;
 
 namespace ILCompiler.Reflection.ReadyToRun

@@ -55,7 +55,7 @@ const char* const         PgoManager::s_TypeHandle = "TypeHandle: %s\n";
 struct HistogramEntry
 {
     // Class that was observed at runtime
-    CORINFO_CLASS_HANDLE m_mt;
+    INT_PTR m_mt; // This may be an "unknown type handle"
     // Number of observations in the table
     unsigned             m_count;
 };
@@ -83,7 +83,6 @@ Histogram::Histogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigne
 
     for (unsigned k = 0; k < entryCount; k++)
     {
-
         if (histogramEntries[k] == 0)
         {
             continue;
@@ -91,17 +90,7 @@ Histogram::Histogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigne
         
         m_totalCount++;
 
-        if (IsUnknownTypeHandle(histogramEntries[k]))
-        {
-            if (AddTypeHandleToUnknownTypeHandleMask(histogramEntries[k], &unknownTypeHandleMask))
-            {
-                m_unknownTypes++;
-            }
-            // An unknown type handle will adjust total count but not set of entries
-            continue;
-        }
-
-        CORINFO_CLASS_HANDLE currentEntry = (CORINFO_CLASS_HANDLE)histogramEntries[k];
+        INT_PTR currentEntry = histogramEntries[k];
         
         bool found = false;
         unsigned h = 0;
@@ -1154,22 +1143,30 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
 
                 case 1:
                 {
+                    if (IsUnknownTypeHandle(h.m_histogram[0].m_mt))
+                    {
+                        return NULL;
+                    }
                     *pLikelihood = 100;
-                    return h.m_histogram[0].m_mt;
+                    return (CORINFO_CLASS_HANDLE)h.m_histogram[0].m_mt;
                 }
                 break;
 
                 case 2:
                 {
-                    if (h.m_histogram[0].m_count >= h.m_histogram[1].m_count)
+                    if ((h.m_histogram[0].m_count >= h.m_histogram[1].m_count) && !IsUnknownTypeHandle(h.m_histogram[0].m_mt))
                     {
                         *pLikelihood = (100 * h.m_histogram[0].m_count) / h.m_totalCount;
-                        return h.m_histogram[0].m_mt;
+                        return (CORINFO_CLASS_HANDLE)h.m_histogram[0].m_mt;
+                    }
+                    else if (!IsUnknownTypeHandle(h.m_histogram[1].m_mt))
+                    {
+                        *pLikelihood = (100 * h.m_histogram[1].m_count) / h.m_totalCount;
+                        return (CORINFO_CLASS_HANDLE)h.m_histogram[1].m_mt;
                     }
                     else
                     {
-                        *pLikelihood = (100 * h.m_histogram[1].m_count) / h.m_totalCount;
-                        return h.m_histogram[1].m_mt;
+                        return NULL;
                     }
                 }
                 break;
@@ -1178,22 +1175,28 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
                 {
                     // Find maximum entry and return it
                     //
-                    unsigned maxIndex = 0;
                     unsigned maxCount = 0;
+                    unsigned maxKnownIndex = 0;
+                    unsigned maxKnownCount = 0;
 
                     for (unsigned m = 0; m < h.m_histogram.GetCount(); m++)
                     {
+                        if ((h.m_histogram[m].m_count > maxKnownCount) && !IsUnknownTypeHandle(h.m_histogram[m].m_mt))
+                        {
+                            maxKnownIndex = m;
+                            maxKnownCount = h.m_histogram[m].m_count;
+                        }
                         if (h.m_histogram[m].m_count > maxCount)
                         {
-                            maxIndex = m;
                             maxCount = h.m_histogram[m].m_count;
                         }
                     }
 
-                    if (maxCount > 0)
+                    UINT32 maxKnownLikelihood = (100 * maxKnownCount) / h.m_totalCount;
+                    if ((maxKnownCount > 0) && ((maxKnownCount == maxCount) || (maxKnownLikelihood > 33)))
                     {
-                        *pLikelihood = (100 * maxCount) / h.m_totalCount;
-                        return h.m_histogram[maxIndex].m_mt;
+                        *pLikelihood = maxKnownLikelihood;
+                        return (CORINFO_CLASS_HANDLE)h.m_histogram[maxKnownIndex].m_mt;
                     }
 
                     return NULL;
@@ -1235,8 +1238,10 @@ void PgoManager::VerifyAddress(void* address)
 
 // Stub version for !FEATURE_PGO builds
 //
-CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset)
+CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
 {
+    *pLikelihood = 0;
+    *pNumberOfClasses = 0;
     return NULL;
 }
 
