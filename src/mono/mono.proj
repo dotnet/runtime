@@ -135,6 +135,7 @@
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$(MonoObjDir)out"/>
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_LIBDIR=lib"/>
       <_MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
+      <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''" Include="$(CMakeArgs)"/>
       <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)" />
       <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
     </ItemGroup>

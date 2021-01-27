@@ -236,3 +236,12 @@ METHOD(ComputeCrc32C)
 // X86Base
 METHOD(BitScanForward)
 METHOD(BitScanReverse)
+// Crypto
+METHOD(FixedRotate)
+METHOD(HashUpdateChoose)
+METHOD(HashUpdateMajority)
+METHOD(HashUpdateParity)
+METHOD(HashUpdate1)
+METHOD(HashUpdate2)
+METHOD(ScheduleUpdate0)
+METHOD(ScheduleUpdate1)

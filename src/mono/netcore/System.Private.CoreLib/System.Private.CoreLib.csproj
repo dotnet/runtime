@@ -50,30 +50,28 @@
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
-    <DefineConstants>TARGET_64BIT;TARGET_AMD64;$(DefineConstants)</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_AMD64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <PlatformTarget>x86</PlatformTarget>
-    <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
     <PlatformTarget>arm</PlatformTarget>
-    <DefineConstants>TARGET_32BIT;TARGET_ARM;$(DefineConstants)</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_ARM</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>TARGET_64BIT;TARGET_ARM64;$(DefineConstants)</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
-    <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
+    <DefineConstants>$(DefineConstants);_LOGGING;DEBUG</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
@@ -103,7 +101,7 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn),618,67</NoWarn>
 
-    <DefineConstants>MONO_FEATURE_SRE;$(DefineConstants)</DefineConstants>
+    <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>

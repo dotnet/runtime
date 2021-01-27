@@ -2904,7 +2904,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
         JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema "
                 "elements, %d runs\n",
-                info.compFullName, hr, fgPgoSchema, fgPgoData, fgPgoSchemaCount, fgNumProfileRuns);
+                info.compFullName, hr, dspPtr(fgPgoSchema), dspPtr(fgPgoData), fgPgoSchemaCount, fgNumProfileRuns);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -4420,6 +4420,13 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
+    // If instrumenting, add block and class probes.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
+    }
+
     // Transform indirect calls that require control flow expansion.
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
@@ -4493,11 +4500,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // we can pass tests that contain try/catch EH, but don't actually throw any exceptions.
     fgRemoveEH();
 #endif // !FEATURE_EH
-
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-    {
-        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
-    }
 
     // We could allow ESP frames. Just need to reserve space for
     // pushing EBP if the method becomes an EBP-frame after an edit.

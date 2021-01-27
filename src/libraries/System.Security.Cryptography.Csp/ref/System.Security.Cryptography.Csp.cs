@@ -144,13 +144,17 @@ namespace System.Security.Cryptography
     {
         public PasswordDeriveBytes(byte[] password, byte[]? salt) { }
         public PasswordDeriveBytes(byte[] password, byte[]? salt, System.Security.Cryptography.CspParameters? cspParams) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
         public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
         public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations, System.Security.Cryptography.CspParameters? cspParams) { }
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt) { }
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, System.Security.Cryptography.CspParameters? cspParams) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations, System.Security.Cryptography.CspParameters? cspParams) { }
-        public string HashName { get { throw null; } set { } }
+        public string HashName { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")] set { } }
         public int IterationCount { get { throw null; } set { } }
         public byte[]? Salt { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]

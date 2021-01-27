@@ -398,6 +398,7 @@ namespace System.Tests
             Type implType = typeof(Random)
                 .GetNestedTypes(BindingFlags.NonPublic)
                 .Single(t => t.Name.StartsWith("Xoshiro", StringComparison.Ordinal));
+            Assert.NotNull(implType);
 
             var randOuter = new Random();
             object randInner = randOuter.GetType().GetField("_impl", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(randOuter);
@@ -415,8 +416,6 @@ namespace System.Tests
 
             if (IntPtr.Size == 8)
             {
-                Assert.Contains("256", implType.Name);
-
                 // Example seeds from https://www.pcg-random.org/posts/a-quick-look-at-xoshiro256.html
                 s0.SetValue(randInner, 0x01d353e5f3993bb0ul);
                 s1.SetValue(randInner, 0x7b9c0df6cb193b20ul);
@@ -487,8 +486,6 @@ namespace System.Tests
             }
             else
             {
-                Assert.Contains("128", implType.Name);
-
                 s0.SetValue(randInner, 0x01d353e5u);
                 s1.SetValue(randInner, 0x7b9c0df6u);
                 s2.SetValue(randInner, 0xfdfcaa91u);

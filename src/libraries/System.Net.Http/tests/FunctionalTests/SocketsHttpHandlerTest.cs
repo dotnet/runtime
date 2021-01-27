@@ -408,7 +408,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadRequestHeaderAsync();
                         try
                         {
-                            await connection.Writer.WriteAsync(LoopbackServer.GetContentModeResponse(mode, content, connectionClose: false));
+                            await connection.WriteStringAsync(LoopbackServer.GetContentModeResponse(mode, content, connectionClose: false));
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 
@@ -460,7 +460,7 @@ namespace System.Net.Http.Functional.Tests
                         try
                         {
                             // Write out only part of the response
-                            await connection.Writer.WriteAsync(response.Substring(0, response.Length / 2));
+                            await connection.WriteStringAsync(response.Substring(0, response.Length / 2));
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 
@@ -1324,7 +1324,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Task serverTask1 = server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.Writer.WriteAsync(LoopbackServer.GetHttpResponse(connectionClose: false) + "here is a bunch of garbage");
+                        await connection.WriteStringAsync(LoopbackServer.GetHttpResponse(connectionClose: false) + "here is a bunch of garbage");
                         await releaseServer.Task; // keep connection alive on the server side
                     });
                     await client.GetStringAsync(uri);

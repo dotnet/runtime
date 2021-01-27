@@ -329,11 +329,19 @@ namespace System.Diagnostics
             return null;
         }
 
+        /// <summary>
+        /// Returns the value of the Activity tag mapped to the input key/>.
+        /// Returns null if that key does not exist.
+        /// </summary>
+        /// <param name="key">The tag key string.</param>
+        /// <returns>The tag value mapped to the input key.</returns>
+        public object? GetTagItem(string key) => _tags?.Get(key) ?? null;
+
         /* Constructors  Builder methods */
 
         /// <summary>
         /// Note that Activity has a 'builder' pattern, where you call the constructor, a number of 'Set*' and 'Add*' APIs and then
-        /// call <see cref="Start"/> to build the activity.  You MUST call <see cref="Start"/> before using it.
+        /// call <see cref="Start"/> to build the activity. You MUST call <see cref="Start"/> before using it.
         /// </summary>
         /// <param name="operationName">Operation's name <see cref="OperationName"/></param>
         public Activity(string operationName)
@@ -1482,6 +1490,23 @@ namespace System.Diagnostics
                     _last!.Next = newNode;
                     _last = newNode;
                 }
+            }
+
+            public object? Get(string key)
+            {
+                // We don't take the lock here so it is possible the Add/Remove operations mutate the list during the Get operation.
+                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                while (current != null)
+                {
+                    if (current.Value.Key == key)
+                    {
+                        return current.Value.Value;
+                    }
+
+                    current = current.Next;
+                }
+
+                return null;
             }
 
             public void Remove(string key)
